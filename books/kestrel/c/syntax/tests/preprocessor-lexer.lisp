@@ -17,119 +17,131 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-lex (fn input &key pos more-inputs std extensions cond)
-  ;; INPUT is an ACL2 term with the text to lex,
-  ;; where the term evaluates to a string or a list of bytes.
-  ;; Optional POS is the initial position for the preprocessing state.
-  ;; Optional MORE-INPUTS go just before preprocessing state input.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; EXTENSIONS indicates whether GCC/CLANG extensions are enabled (default NIL).
-  ;; Optional COND may be over variables AST, POS/SPAN, PPSTATE.
+(defmacro test-lex (fn ; lexing function
+                    input ; ACL2 term with text to lex (string or bytes)
+                    &key
+                    more-inputs ; additional inputs to lexing function
+                    (index '0) ; where to start lexing
+                    (cond 't) ; condition on AST for success
+                    (std '17)
+                    (gcc 'nil)
+                    (clang 'nil)
+                    (fail 'nil)) ; test must fail
   `(assert!-stobj
-    (b* ((std (or ,std 23))
-         (ppstate (init-ppstate (if (stringp ,input)
-                                    (acl2::string=>nats ,input)
-                                  ,input)
-                                (macro-init (c::version-c17))
-                                (make-ppoptions :full-expansion nil
-                                                :keep-comments t
-                                                :trace-expansion t
-                                                :no-errors/warnings nil)
-                                (ienv-default :std std
-                                              :extensions ,extensions)
-                                ppstate))
-         ,@(and pos
-                `((ppstate (update-ppstate->position ,pos ppstate))))
+    (b* ((version (case ,std
+                    (17 (cond (,gcc (c::version-c17+gcc))
+                              (,clang (c::version-c17+clang))
+                              (t (c::version-c17))))
+                    (23 (cond (,gcc (c::version-c23+gcc))
+                              (,clang (c::version-c23+clang))
+                              (t (c::version-c23))))))
+         (ienv (change-ienv (ienv-default) :version version))
+         (macros (macro-init version))
+         (options (make-ppoptions :full-expansion nil
+                                  :keep-comments t
+                                  :trace-expansion t
+                                  :no-errors/warnings nil))
+         ((mv erp ppstate)
+          (ppstate-for-file (if (stringp ,input)
+                                (acl2::string=>nats ,input)
+                              ,input)
+                            macros
+                            options
+                            ienv
+                            ppstate))
+         ((when erp) (mv (cw "Initialization fails.") ppstate))
+         (ppstate (update-ppstate->char-index ,index ppstate))
          (,(if (eq fn 'plex-*-hexadecimal-digit)
                '(mv erp ?ast ?pos/span ?pos/span2 ppstate)
              '(mv erp ?ast ?pos/span ppstate))
           (,fn ,@more-inputs ppstate)))
-      (mv
-       (if erp
-           (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
-         ,(or cond t)) ; assertion passes if COND is absent or else holds
-       ppstate))
+      (if ,fail
+          (mv (and erp (not (cw "~@0" erp))) ppstate)
+        (mv (and (not erp) ,cond) ppstate)))
     ppstate))
 
-(defmacro test-lex-fail (fn input &key pos more-inputs std extensions)
-  ;; INPUT is an ACL2 term with the text to lex,
-  ;; where the term evaluates to a string or a list of bytes.
-  ;; Optional POS is the initial position for the preprocessing state.
-  ;; Optional MORE-INPUTS go just before preproceessing state input.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; EXTENSIONS indicates whether GCC/CLANG extensions are enabled (default NIL).
-  `(assert!-stobj
-    (b* ((std (or ,std 23))
-         (ppstate (init-ppstate (if (stringp ,input)
-                                    (acl2::string=>nats ,input)
-                                  ,input)
-                                (macro-init (c::version-c17))
-                                (make-ppoptions :full-expansion nil
-                                                :keep-comments t
-                                                :trace-expansion t
-                                                :no-errors/warnings nil)
-                                (ienv-default :std std :extensions ,extensions)
-                                ppstate))
-         ,@(and pos
-                `((ppstate (update-ppstate->position ,pos ppstate))))
-         (,(if (member-eq fn '(plex-*-hexadecimal-digit))
-               '(mv erp & & & ppstate)
-             '(mv erp & & ppstate))
-          (,fn ,@more-inputs ppstate)))
-      (mv erp ppstate))
-    ppstate))
+(defmacro test-lex-lexeme (input
+                           &key
+                           (cond 't)
+                           (std '17)
+                           (gcc 'nil)
+                           (clang 'nil)
+                           (fail 'nil))
+  `(test-lex plex-lexeme
+             ,input
+             :more-inputs (nil)
+             :index 0
+             :cond ,cond
+             :std ,std
+             :gcc ,gcc
+             :clang ,clang
+             :fail ,fail))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defmacro test-lex-lexeme-headerp (input
+                                   &key
+                                   (cond 't)
+                                   (std '17)
+                                   (gcc 'nil)
+                                   (clang 'nil)
+                                   (fail 'nil))
+  `(test-lex plex-lexeme
+             ,input
+             :more-inputs (t)
+             :index 0
+             :cond ,cond
+             :std ,std
+             :gcc ,gcc
+             :clang ,clang
+             :fail ,fail))
+
+(defmacro pos (line column)
+  `(position ,line ,column))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; plex-identifier
 
 (test-lex
  plex-identifier
- " abc"
- :pos (position 8 4)
- :more-inputs ((char-code #\w) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "w")))
-            (equal pos/span (span (position 8 3) (position 8 3)))))
+ "w abc"
+ :more-inputs ((char-code #\w) (pos 1 1))
+ :index 1
+ :cond (equal ast (plexeme-ident (ident "w"))))
 
 (test-lex
  plex-identifier
- "abc456"
- :pos (position 8 4)
- :more-inputs ((char-code #\u) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "uabc456")))
-            (equal pos/span (span (position 8 3) (position 8 9)))))
+ "uabc456"
+ :more-inputs ((char-code #\u) (pos 1 1))
+ :index 1
+ :cond (equal ast (plexeme-ident (ident "uabc456"))))
 
 (test-lex
  plex-identifier
- "tatic"
- :pos (position 8 4)
- :more-inputs ((char-code #\s) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "static")))
-            (equal pos/span (span (position 8 3) (position 8 8)))))
+ "static"
+ :more-inputs ((char-code #\s) (pos 1 1))
+ :index 1
+ :cond (equal ast (plexeme-ident (ident "static"))))
 
 (test-lex
  plex-identifier
- "nclude"
- :pos (position 8 4)
- :more-inputs ((char-code #\i) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "include")))
-            (equal pos/span (span (position 8 3) (position 8 9)))))
+ "include"
+ :more-inputs ((char-code #\i) (pos 1 1))
+ :index 1
+ :cond (equal ast (plexeme-ident (ident "include"))))
 
 (test-lex
  plex-identifier
- "nclud_"
- :pos (position 8 4)
- :more-inputs ((char-code #\i) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "includ_")))
-            (equal pos/span (span (position 8 3) (position 8 9)))))
+ "includ_"
+ :more-inputs ((char-code #\i) (pos 1 1))
+ :index 1
+ :cond (equal ast (plexeme-ident (ident "includ_"))))
 
 (test-lex
  plex-identifier
- "nclud+"
- :pos (position 8 4)
- :more-inputs ((char-code #\i) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "includ")))
-            (equal pos/span (span (position 8 3) (position 8 8)))))
+ "includ+"
+ :more-inputs ((char-code #\i) (pos 1 1))
+ :index 1
+ :cond (equal ast (plexeme-ident (ident "includ"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,52 +149,59 @@
 
 (test-lex
  plex-pp-number
- ""
- :more-inputs (nil #\3 (position 3 7))
+ "3"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number (pnumber-digit #\3))))
 
 (test-lex
  plex-pp-number
- "+"
- :more-inputs (nil #\3 (position 3 7))
+ "3+"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number (pnumber-digit #\3))))
 
 (test-lex
  plex-pp-number
- ""
- :more-inputs (t #\3 (position 3 7))
+ ".3"
+ :more-inputs (t #\3 (pos 1 2))
+ :index 2
  :cond (equal ast
               (plexeme-number (pnumber-dot-digit #\3))))
 
 (test-lex
  plex-pp-number
- "+"
- :more-inputs (t #\3 (position 3 7))
+ ".3+"
+ :more-inputs (t #\3 (pos 1 2))
+ :index 2
  :cond (equal ast
               (plexeme-number (pnumber-dot-digit #\3))))
 
 (test-lex
  plex-pp-number
- "4"
- :more-inputs (nil #\3 (position 3 7))
+ "34"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-digit (pnumber-digit #\3) #\4))))
 
 (test-lex
  plex-pp-number
- "4"
- :more-inputs (t #\3 (position 3 7))
+ ".34"
+ :more-inputs (t #\3 (pos 1 2))
+ :index 2
  :cond (equal ast
               (plexeme-number
                (pnumber-number-digit (pnumber-dot-digit #\3) #\4))))
 
 (test-lex
  plex-pp-number
- "e+"
- :more-inputs (nil #\3 (position 3 7))
+ "3e+"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-locase-e-sign (pnumber-digit #\3)
@@ -190,8 +209,9 @@
 
 (test-lex
  plex-pp-number
- "e-"
- :more-inputs (nil #\3 (position 3 7))
+ "3e-"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-locase-e-sign (pnumber-digit #\3)
@@ -199,16 +219,18 @@
 
 (test-lex
  plex-pp-number
- "e*"
- :more-inputs (nil #\3 (position 3 7))
+ "3e*"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-nondigit (pnumber-digit #\3) #\e))))
 
 (test-lex
  plex-pp-number
- "E+"
- :more-inputs (nil #\3 (position 3 7))
+ "3E+"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-upcase-e-sign (pnumber-digit #\3)
@@ -216,8 +238,9 @@
 
 (test-lex
  plex-pp-number
- "E-"
- :more-inputs (nil #\3 (position 3 7))
+ "3E-"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-upcase-e-sign (pnumber-digit #\3)
@@ -225,16 +248,18 @@
 
 (test-lex
  plex-pp-number
- "E/"
- :more-inputs (nil #\3 (position 3 7))
+ "3E/"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-nondigit (pnumber-digit #\3) #\E))))
 
 (test-lex
  plex-pp-number
- "p+"
- :more-inputs (nil #\3 (position 3 7))
+ "3p+"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-locase-p-sign (pnumber-digit #\3)
@@ -242,8 +267,9 @@
 
 (test-lex
  plex-pp-number
- "p-"
- :more-inputs (nil #\3 (position 3 7))
+ "3p-"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-locase-p-sign (pnumber-digit #\3)
@@ -251,16 +277,18 @@
 
 (test-lex
  plex-pp-number
- "p*"
- :more-inputs (nil #\3 (position 3 7))
+ "3p*"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-nondigit (pnumber-digit #\3) #\p))))
 
 (test-lex
  plex-pp-number
- "P+"
- :more-inputs (nil #\3 (position 3 7))
+ "3P+"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-upcase-p-sign (pnumber-digit #\3)
@@ -268,8 +296,9 @@
 
 (test-lex
  plex-pp-number
- "P-"
- :more-inputs (nil #\3 (position 3 7))
+ "3P-"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-upcase-p-sign (pnumber-digit #\3)
@@ -277,40 +306,45 @@
 
 (test-lex
  plex-pp-number
- "P/"
- :more-inputs (nil #\3 (position 3 7))
+ "3P/"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-nondigit (pnumber-digit #\3) #\P))))
 
 (test-lex
  plex-pp-number
- "a"
- :more-inputs (nil #\3 (position 3 7))
+ "3a"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-nondigit (pnumber-digit #\3) #\a))))
 
 (test-lex
  plex-pp-number
- "a+"
- :more-inputs (nil #\3 (position 3 7))
+ "3a+"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-nondigit (pnumber-digit #\3) #\a))))
 
 (test-lex
  plex-pp-number
- "."
- :more-inputs (nil #\3 (position 3 7))
+ "3."
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-dot (pnumber-digit #\3)))))
 
 (test-lex
  plex-pp-number
- "7abP-.x"
- :more-inputs (t #\3 (position 3 7))
+ "37abP-.x"
+ :more-inputs (t #\3 (pos 1 1))
+ :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-nondigit
@@ -358,28 +392,32 @@
 (test-lex
  plex-hexadecimal-digit
  "fy"
- :cond (and (equal ast #\f)
-            (equal (ppstate->bytes ppstate) (list (char-code #\y)))))
+ :cond (equal ast #\f))
 
-(test-lex-fail
+(test-lex
  plex-hexadecimal-digit
- "")
+ ""
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-hexadecimal-digit
- " ")
+ " "
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-hexadecimal-digit
- " c")
+ " c"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-hexadecimal-digit
- "g")
+ "g"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-hexadecimal-digit
- "@")
+ "@"
+ :fail t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -398,16 +436,17 @@
 (test-lex
  plex-hex-quad
  "DeadBeef"
- :cond (and (equal ast (hex-quad #\D #\e #\a #\d))
-            (equal (ppstate->bytes ppstate) (acl2::string=>nats "Beef"))))
+ :cond (equal ast (hex-quad #\D #\e #\a #\d)))
 
-(test-lex-fail
+(test-lex
  plex-hex-quad
- "")
+ ""
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-hex-quad
- "7aa")
+ "7aa"
+ :fail t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -416,29 +455,20 @@
 (test-lex
  plex-*-hexadecimal-digit
  ""
- :pos (position 20 88)
- :more-inputs ((position 20 87))
- :cond (and (equal ast nil)
-            (equal pos/span (position 20 87))
-            (equal pos/span2 (position 20 88))))
+ :more-inputs ((pos 1 0))
+ :cond (equal ast nil))
 
 (test-lex
  plex-*-hexadecimal-digit
  "dEadbeFf"
- :pos (position 1 1)
- :more-inputs ((position 1 0))
- :cond (and (equal ast '(#\d #\E #\a #\d #\b #\e #\F #\f))
-            (equal pos/span (position 1 8))
-            (equal pos/span2 (position 1 9))))
+ :more-inputs ((pos 1 0))
+ :cond (equal ast '(#\d #\E #\a #\d #\b #\e #\F #\f)))
 
 (test-lex
  plex-*-hexadecimal-digit
  "1"
- :pos (position 10 10)
- :more-inputs ((position 10 9))
- :cond (and (equal ast '(#\1))
-            (equal pos/span (position 10 10))
-            (equal pos/span2 (position 10 11))))
+ :more-inputs ((pos 1 0))
+ :cond (equal ast '(#\1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,7 +491,7 @@
 
 (test-lex
  plex-escape-sequence
- "\\ " ; extra space to avoid end-of-file with backslash
+ "\\"
  :cond (equal ast (escape-simple (simple-escape-bslash))))
 
 (test-lex
@@ -504,9 +534,10 @@
  "vv"
  :cond (equal ast (escape-simple (simple-escape-v))))
 
-(test-lex-fail
+(test-lex
  plex-escape-sequence
- "w")
+ "w"
+ :fail t)
 
 (test-lex
  plex-escape-sequence
@@ -533,9 +564,10 @@
  "6011"
  :cond (equal ast (escape-oct (oct-escape-three #\6 #\0 #\1))))
 
-(test-lex-fail
+(test-lex
  plex-escape-sequence
- "8")
+ "8"
+ :fail t)
 
 (test-lex
  plex-escape-sequence
@@ -547,13 +579,15 @@
  "x829s"
  :cond (equal ast (escape-hex (list #\8 #\2 #\9))))
 
-(test-lex-fail
+(test-lex
  plex-escape-sequence
- "x")
+ "x"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-escape-sequence
- "x+")
+ "x+"
+ :fail t)
 
 (test-lex
  plex-escape-sequence
@@ -568,22 +602,25 @@
                    (univ-char-name-upcase-u (hex-quad #\7 #\4 #\4 #\d)
                                             (hex-quad #\D #\9 #\0 #\0)))))
 
-(test-lex-fail
+(test-lex
  plex-escape-sequence
- "u123")
+ "u123"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-escape-sequence
- "U0000123")
-
-(test-lex-fail
- plex-escape-sequence
- "%")
+ "U0000123"
+ :fail t)
 
 (test-lex
  plex-escape-sequence
  "%"
- :extensions :gcc
+ :fail t)
+
+(test-lex
+ plex-escape-sequence
+ "%"
+ :gcc t
  :cond (equal ast (escape-simple (simple-escape-percent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -629,33 +666,40 @@
                              (c-char-char (char-code #\q))))
             (equal pos/span (position 1 3))))
 
-(test-lex-fail
+(test-lex
  plex-*-c-char
- "")
+ ""
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-c-char
- "a")
+ "a"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-c-char
- "a\\'")
+ "a\\'"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-c-char
- "a\\z'")
+ "a\\z'"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-c-char
- (list (char-code #\a) 10 (char-code #\b) (char-code #\')))
+ (list (char-code #\a) 10 (char-code #\b) (char-code #\'))
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-c-char
- (list (char-code #\a) 13 (char-code #\b) (char-code #\')))
+ (list (char-code #\a) 13 (char-code #\b) (char-code #\'))
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-c-char
- (list (char-code #\a) 13 10 (char-code #\')))
+ (list (char-code #\a) 13 10 (char-code #\'))
+ :fail t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -682,25 +726,30 @@
  :cond (equal ast (list (s-char-char (char-code #\1))
                         (s-char-char (char-code #\2)))))
 
-(test-lex-fail
+(test-lex
  plex-*-s-char
- "")
+ ""
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-s-char
- "noclose")
+ "noclose"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-s-char
- "\\k\"")
+ "\\k\""
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-s-char
- (list (char-code #\U) 10 (char-code #\")))
+ (list (char-code #\U) 10 (char-code #\"))
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-s-char
- (list (char-code #\U) 13 (char-code #\")))
+ (list (char-code #\U) 13 (char-code #\"))
+ :fail t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -728,21 +777,25 @@
  "<>"
  :cond (equal ast (list (h-char (char-code #\<)))))
 
-(test-lex-fail
+(test-lex
  plex-*-h-char
- "")
+ ""
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-h-char
- "noclose")
+ "noclose"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-h-char
- (list (char-code #\U) 10 (char-code #\>)))
+ (list (char-code #\U) 10 (char-code #\>))
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-h-char
- (list (char-code #\U) 13 (char-code #\>)))
+ (list (char-code #\U) 13 (char-code #\>))
+ :fail t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -765,21 +818,25 @@
  "'\""
  :cond (equal ast (list (q-char (char-code #\')))))
 
-(test-lex-fail
+(test-lex
  plex-*-q-char
- "")
+ ""
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-q-char
- "noclose")
+ "noclose"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-q-char
- (list (char-code #\U) 10 (char-code #\")))
+ (list (char-code #\U) 10 (char-code #\"))
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-*-q-char
- (list (char-code #\U) 13 (char-code #\")))
+ (list (char-code #\U) 13 (char-code #\"))
+ :fail t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -788,8 +845,7 @@
 (test-lex
  plex-character-constant
  "e'"
- :pos (position 1 1)
- :more-inputs (nil (position 1 0))
+ :more-inputs (nil (pos 1 0))
  :cond (equal ast
               (plexeme-char
                (cconst nil
@@ -798,25 +854,24 @@
 (test-lex
  plex-character-constant
  "\\aA'"
- :pos (position 1 2)
- :more-inputs ((cprefix-locase-u) (position 1 1))
+ :more-inputs ((cprefix-locase-u) (pos 1 0))
  :cond (equal ast
               (plexeme-char
                (cconst (cprefix-locase-u)
                        (list (c-char-escape (escape-simple (simple-escape-a)))
                              (c-char-char (char-code #\A)))))))
 
-(test-lex-fail
+(test-lex
  plex-character-constant
  "''"
- :pos (position 1 1)
- :more-inputs (nil (position 1 0)))
+ :more-inputs (nil (pos 1 0))
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-character-constant
  (list 10 (char-code #\'))
- :pos (position 1 1)
- :more-inputs (nil (position 1 0)))
+ :more-inputs (nil (pos 1 0))
+ :fail t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -825,8 +880,7 @@
 (test-lex
  plex-string-literal
  "\""
- :pos (position 1 1)
- :more-inputs (nil (position 1 0))
+ :more-inputs (nil (pos 1 0))
  :cond (equal ast
               (plexeme-string
                (stringlit nil nil))))
@@ -834,8 +888,7 @@
 (test-lex
  plex-string-literal
  "helo\""
- :pos (position 10 10)
- :more-inputs ((eprefix-upcase-l) (position 10 9))
+ :more-inputs ((eprefix-upcase-l) (pos 1 0))
  :cond (equal ast
               (plexeme-string
                (stringlit (eprefix-upcase-l)
@@ -844,15 +897,17 @@
                                 (s-char-char (char-code #\l))
                                 (s-char-char (char-code #\o)))))))
 
-(test-lex-fail
+(test-lex
  plex-string-literal
  "wrong'"
- :more-inputs (nil (position 1 0)))
+ :more-inputs (nil (pos 1 0))
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-string-literal
  (list 10 (char-code #\"))
- :more-inputs (nil (position 1 0)))
+ :more-inputs (nil (pos 1 0))
+ :fail t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;l
 
@@ -885,21 +940,25 @@
                                          (q-char (char-code #\.))
                                          (q-char (char-code #\h)))))))
 
-(test-lex-fail
+(test-lex
  plex-header-name
- "")
+ ""
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-header-name
- "noopen")
+ "noopen"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-header-name
- "<noclose")
+ "<noclose"
+ :fail t)
 
-(test-lex-fail
+(test-lex
  plex-header-name
- "\"noclose")
+ "\"noclose"
+ :fail t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -908,28 +967,28 @@
 (test-lex
  plex-block-comment
  "*/"
- :more-inputs ((position 1 2))
+ :more-inputs ((pos 1 0))
  :cond (equal ast
               (plexeme-block-comment nil)))
 
 (test-lex
  plex-block-comment
  "comment*/"
- :more-inputs ((position 1 2))
+ :more-inputs ((pos 1 0))
  :cond (equal ast
               (plexeme-block-comment (acl2::string=>nats "comment"))))
 
 (test-lex
  plex-block-comment
  "comment****/"
- :more-inputs ((position 1 2))
+ :more-inputs ((pos 1 0))
  :cond (equal ast
               (plexeme-block-comment (acl2::string=>nats "comment***"))))
 
 (test-lex
  plex-block-comment
  "/*comment*/"
- :more-inputs ((position 1 2))
+ :more-inputs ((pos 1 0))
  :cond (equal ast
               (plexeme-block-comment (acl2::string=>nats "/*comment"))))
 
@@ -940,7 +999,7 @@
          (acl2::string=>nats "multiline comment.")
          (list 10)
          (acl2::string=>nats "*/"))
- :more-inputs ((position 1 2))
+ :more-inputs ((pos 1 0))
  :cond (equal ast
               (plexeme-block-comment
                (append (acl2::string=>nats " This is a")
@@ -953,7 +1012,7 @@
  (append (acl2::string=>nats "// no special significance")
          (list 10)
          (acl2::string=>nats "*/"))
- :more-inputs ((position 1 2))
+ :more-inputs ((pos 1 0))
  :cond (equal ast
               (plexeme-block-comment
                (append (acl2::string=>nats "// no special significance")
@@ -965,22 +1024,25 @@
 
 (test-lex
  plex-line-comment
- (list 10)
- :more-inputs ((position 1 2) (position 1 3))
+ (list (char-code #\/) (char-code #\/) 10)
+ :more-inputs ((pos 1 0) (pos 1 1))
+ :index 2
  :cond (equal ast
               (plexeme-line-comment nil)))
 
 (test-lex
  plex-line-comment
- (append (acl2::string=>nats "comment") (list 10 13))
- :more-inputs ((position 1 2) (position 1 3))
+ (append (acl2::string=>nats "//comment") (list 10 13))
+ :more-inputs ((pos 1 0) (pos 1 1))
+ :index 2
  :cond (equal ast
               (plexeme-line-comment (acl2::string=>nats "comment"))))
 
 (test-lex
  plex-line-comment
- (append (acl2::string=>nats "/* no special significance */") (list 13))
- :more-inputs ((position 1 2) (position 1 3))
+ (append (acl2::string=>nats "///* no special significance */") (list 13))
+ :more-inputs ((pos 1 0) (pos 1 1))
+ :index 2
  :cond (equal ast
               (plexeme-line-comment
                (acl2::string=>nats "/* no special significance */"))))
@@ -992,58 +1054,30 @@
 (test-lex
  plex-spaces
  nil
- :more-inputs ((position 1 1))
+ :more-inputs ((pos 1 0))
  :cond (equal ast (plexeme-spaces 1)))
 
 (test-lex
  plex-spaces
  "a"
- :more-inputs ((position 1 1))
+ :more-inputs ((pos 1 0))
  :cond (equal ast (plexeme-spaces 1)))
 
 (test-lex
  plex-spaces
  "    "
- :more-inputs ((position 1 1))
+ :more-inputs ((pos 1 0))
  :cond (equal ast (plexeme-spaces 5)))
 
 (test-lex
  plex-spaces
  "   a"
- :more-inputs ((position 1 1))
+ :more-inputs ((pos 1 0))
  :cond (equal ast (plexeme-spaces 4)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; plex-lexer
-
-(defmacro test-lex-lexeme (input &key cond)
-  `(test-lex
-    plex-lexeme
-    ,input
-    :more-inputs (nil)
-    :cond ,cond))
-
-(defmacro test-lex-lexeme-headerp (input &key cond)
-  `(test-lex
-    plex-lexeme
-    ,input
-    :more-inputs (t)
-    :cond ,cond))
-
-(defmacro test-lex-lexeme-fail (input)
-  `(test-lex-fail
-    plex-lexeme
-    ,input
-    :more-inputs (nil)))
-
-(defmacro test-lex-lexeme-headerp-fail (input)
-  `(test-lex-fail
-    plex-lexeme
-    ,input
-    :more-inputs (t)))
-
-;;;;;;;;;;;;;;;;;;;;
 
 ; no lexeme
 

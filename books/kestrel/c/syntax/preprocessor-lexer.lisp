@@ -160,9 +160,7 @@
 
      ///
 
-     (verify-guards plex-identifier-loop
-       :hints (("Goal" :in-theory (enable rationalp-when-natp
-                                          acl2-numberp-when-natp))))
+     (verify-guards plex-identifier-loop)
 
      (defret-rec-same-lexmarks plex-identifier-loop)
 
@@ -170,7 +168,7 @@
        (<= (ppstate->size new-ppstate)
            (ppstate->size ppstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t :in-theory (enable fix))))))
 
   ///
 
@@ -356,10 +354,7 @@
                   (position-fix current-pos)
                   ppstate)))))
      :measure (ppstate->size ppstate)
-     :guard-hints (("Goal" :in-theory (enable integerp-when-natp
-                                              rationalp-when-natp
-                                              acl2-numberp-when-natp
-                                              dec-digit-char-p
+     :guard-hints (("Goal" :in-theory (enable dec-digit-char-p
                                               str::letter/uscore-char-p)))
 
      ///
@@ -370,7 +365,7 @@
        (<= (ppstate->size new-ppstate)
            (ppstate->size ppstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t :in-theory (enable fix))))))
 
   ///
 
@@ -389,8 +384,7 @@
                        :hints
                        (("Goal" :in-theory (enable hex-digit-char-p
                                                    unsigned-byte-p
-                                                   integer-range-p
-                                                   integerp-when-natp))))
+                                                   integer-range-p))))
                (pos positionp)
                (new-ppstate ppstatep))
   :short "Lex a hexadecimal digit during preprocessing."
@@ -416,8 +410,6 @@
                     :expected "a hexadecimal digit"
                     :found (char-to-msg char))))
     (retok (code-char char) pos ppstate))
-  :guard-hints (("Goal" :in-theory (enable rationalp-when-natp
-                                           integerp-when-natp)))
   :no-function nil
 
   ///
@@ -487,8 +479,7 @@
                           :in-theory (enable plex-*-hexadecimal-digit
                                              hex-digit-char-p
                                              unsigned-byte-p
-                                             integer-range-p
-                                             integerp-when-natp))))
+                                             integer-range-p))))
                (last-pos positionp)
                (next-pos positionp)
                (new-ppstate ppstatep))
@@ -518,8 +509,6 @@
     (retok (cons hexdig hexdigs) last-pos next-pos ppstate))
   :measure (ppstate->size ppstate)
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable rationalp-when-natp
-                                           integerp-when-natp)))
 
   ///
 
@@ -644,10 +633,7 @@
                              or a letter in {a, b, f, n, r, t, v, u, U, x} ~
                              or an octal digit"
                   :found (char-to-msg char)))))
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp
-                                           rationalp-when-natp
-                                           integerp-when-natp
-                                           oct-digit-char-p
+  :guard-hints (("Goal" :in-theory (enable oct-digit-char-p
                                            unsigned-byte-p
                                            integer-range-p)))
   :no-function nil
@@ -711,7 +697,6 @@
     (retok (cons cchar cchars) closing-squote-pos ppstate))
   :measure (ppstate->size ppstate)
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
   :no-function nil
 
   ///
@@ -776,7 +761,6 @@
     (retok (cons schar schars) closing-dquote-pos ppstate))
   :measure (ppstate->size ppstate)
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
   :no-function nil
 
   ///
@@ -832,7 +816,6 @@
     (retok (cons hchar hchars) closing-angle-pos ppstate))
   :measure (ppstate->size ppstate)
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
   :no-function nil
 
   ///
@@ -888,7 +871,6 @@
     (retok (cons qchar qchars) closing-dquote-pos ppstate))
   :measure (ppstate->size ppstate)
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
   :no-function nil
 
   ///
@@ -1030,7 +1012,6 @@
                   :expected "a greater-than ~
                              or a double quote"
                   :found (char-to-msg char)))))
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
   :no-function nil
 
   ///
@@ -1167,8 +1148,6 @@
        :measure (ppstate->size ppstate)
        :no-function nil)
 
-     :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
-
      ///
 
      (fty::deffixequiv-mutual plex-block-comment-loops)
@@ -1283,7 +1262,6 @@
                (plex-line-comment-loop first-pos pos ppstate)))
            (retok (cons char content) last-pos ppstate)))))
      :measure (ppstate->size ppstate)
-     :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
      :no-function nil
 
      ///
@@ -1294,7 +1272,7 @@
        (<= (ppstate->size new-ppstate)
            (ppstate->size ppstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t :in-theory (enable fix))))))
 
   ///
 
@@ -1361,7 +1339,7 @@
        (<= (ppstate->size new-ppstate)
            (ppstate->size ppstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t :in-theory (enable fix))))))
 
   ///
 
