@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -17,10 +17,8 @@
 (include-book "projects/abnf/operations/in-terminal-set" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ; (depends-on "grammar.abnf")
 
@@ -112,7 +110,6 @@
                                     (abnf::rulename rulename))
                                    *grammar*))
   :no-function t
-  :hooks (:fix)
   ///
 
   (defrule abnf-treep-when-abnf-tree-with-root-p
@@ -156,5 +153,4 @@
                                  :rulename? (abnf::rulename (car rulenames))
                                  :branches (list (list tree)))
                                 (cdr rulenames))))
-    :guard-hints (("Goal" :in-theory (enable string-listp)))
-    :hooks (:fix)))
+    :guard-hints (("Goal" :in-theory (enable string-listp)))))
