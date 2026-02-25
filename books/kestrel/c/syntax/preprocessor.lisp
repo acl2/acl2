@@ -777,7 +777,7 @@
        ((erp lexmark ppstate) (read-lexmark ppstate)))
     (cond
      ((not lexmark) ; EOF
-      (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+      (reterr-msg :where (position-to-msg (ppstate->current-position ppstate))
                   :expected "a lexmark"
                   :found "end of file"))
      ((lexmark-case lexmark :start) ; start(M)
@@ -2569,12 +2569,13 @@
               ((:arg-nonlast :arg-last :arg-dots)
                (if directivep
                    (reterr-msg :where (position-to-msg
-                                       (ppstate->position ppstate))
+                                       (ppstate->current-position ppstate))
                                :expected "the completion of a macro call"
                                :found "end of line (which ends the directive)")
                  (retok (lexmark-list-fix rev-lexmarks) ppstate)))
               (t (prog2$ (impossible) (reterr :impossible))))
-          (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+          (reterr-msg :where (position-to-msg
+                              (ppstate->current-position ppstate))
                       :expected "a lexmark"
                       :found "end of file")))
        ((lexmark-case lexmark :start) ; start(M)
@@ -3241,7 +3242,8 @@
          (psize (ppstate->size ppstate))
          ((erp groupend ppstate) (pproc-*-group-part-skipped ppstate))
          ((when (groupend-case groupend :eof))
-          (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+          (reterr-msg :where (position-to-msg
+                              (ppstate->current-position ppstate))
                       :expected "a #elif or ~
                                  a #else or ~
                                  a #endif"
@@ -3253,7 +3255,8 @@
          ((when (groupend-case groupend :else))
           (b* (((erp groupend ppstate) (pproc-*-group-part-skipped ppstate))
                ((unless (groupend-case groupend :endif))
-                (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+                (reterr-msg :where (position-to-msg
+                                    (ppstate->current-position ppstate))
                             :expected "a #endif"
                             :found (case (groupend-kind groupend)
                                      (:eof "end of file")
@@ -4082,7 +4085,16 @@
                      macros
                      ppstate
                      state)
-                (b* ((ppstate (init-ppstate bytes macros options ienv ppstate))
+                (b* (((mv erp ppstate)
+                      (ppstate-for-file bytes macros options ienv ppstate))
+                     ((when erp)
+                      (mv erp
+                          (irr-pfile)
+                          (irr-groupend)
+                          nil
+                          (irr-macro-table)
+                          ppstate
+                          state))
                      ((mv erp pparts groupend pfiles ppstate state)
                       (pproc-*-group-part file
                                           base-dir
@@ -4091,8 +4103,16 @@
                                           pending
                                           ppstate
                                           state
-                                          (1- limit))))
-                  (mv erp
+                                          (1- limit)))
+                     ((when erp)
+                      (mv erp
+                          (irr-pfile)
+                          (irr-groupend)
+                          nil
+                          (irr-macro-table)
+                          ppstate
+                          state)))
+                  (mv nil
                       (make-pfile :parts pparts)
                       groupend
                       pfiles
@@ -4991,7 +5011,8 @@
          (donep (or donep condp)))
       (groupend-case
        groupend
-       :eof (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+       :eof (reterr-msg :where (position-to-msg
+                                (ppstate->current-position ppstate))
                         :expected "a #elif or a #else or a #endif"
                         :found "end of file")
        :elif (b* (((erp pexpr condp ppstate) ; #elif constexpr EOL
@@ -5037,7 +5058,7 @@
                          (retok nil groupend pfiles ppstate state)))))
                   ((unless (groupend-case groupend :endif)) ; #endif
                    (reterr-msg :where (position-to-msg
-                                       (ppstate->position ppstate))
+                                       (ppstate->current-position ppstate))
                                :expected "a #endif"
                                :found (case (groupend-kind groupend)
                                         (:eof "end of file")
