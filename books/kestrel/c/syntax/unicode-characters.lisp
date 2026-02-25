@@ -58,6 +58,14 @@
 
   ///
 
+  (defruled ucharp-alt-def
+    (equal (ucharp x)
+           (and (integerp x)
+                (<= 0 x)
+                (<= x #x10ffff)
+                (not (and (<= #xd800 x)
+                          (<= x #xdfff))))))
+
   (defruled natp-when-ucharp
     (implies (ucharp x)
              (natp x))
