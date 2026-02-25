@@ -51,8 +51,10 @@
      for our purpose it is simpler to identify characters with scalar values,
      which justifies the name of this recognizer."))
   (and (integerp x)
-       (or (integer-range-p 0 #xd7ff x)
-           (integer-range-p #xe000 #x10ffff x)))
+       (or (and (<= 0 x)
+                (<= x #xd7ff))
+           (and (<= #xe000 x)
+                (<= x #x10ffff))))
 
   ///
 
@@ -87,6 +89,13 @@
     :fix uchar-fix
     :equiv uchar-equiv
     :define t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption uchar-option
+  uchar
+  :short "Fixtype of optional Unicode characters."
+  :pred uchar-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
