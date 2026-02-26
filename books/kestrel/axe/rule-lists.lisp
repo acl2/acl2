@@ -798,6 +798,8 @@
      bvminus-of-bvplus-and-bvplus-same-2-2
      bvminus-of-ifix-arg2
      bvminus-of-ifix-arg3
+     bvminus-normalize-constant-arg2
+     bvminus-normalize-constant-arg3
 
      bvplus-of-0-arg2
      ;; bvplus-of-0-arg3 ; in case we are not commuting constants forward ; todo: enable
@@ -4408,6 +4410,9 @@
 (set-axe-rule-priority bvlt-transitive-5-a 1)
 (set-axe-rule-priority bvlt-transitive-5-b 1)
 
+;; If this rule is present, then we must want to always get rid of bvminus
+;; todo: try uncommenting:
+;;(set-axe-rule-priority bvminus-becomes-bvplus-of-bvuminus -1)
 
 ;; (defconst *super-rules*
 ;;   '(

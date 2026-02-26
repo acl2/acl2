@@ -1,7 +1,7 @@
 ; Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -2044,3 +2044,17 @@
            (equal (bvminus size x y)
                   (cancel-bvplus-arg path size y x)))
   :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd equal-of-constant-and-bvnot
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)
+                              (not (quotep x)) ; prevents loops
+                              ))
+                (natp size))
+           (equal (equal k (bvnot size x))
+                  (and (unsigned-byte-p size k)
+                       (equal (bvchop size x) (bvnot size k)))))
+  :hints (("Goal" :use equal-of-bvnot-and-constant
+                  :in-theory (disable equal-of-bvnot-and-constant))))
