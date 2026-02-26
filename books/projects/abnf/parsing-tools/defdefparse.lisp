@@ -995,6 +995,12 @@
                                 :branches treess)
              input))
        :no-function nil
+       :guard-hints
+       (("Goal"
+         :in-theory
+         (enable treep-when-tree-resultp-and-not-reserrp
+                 tree-listp-when-tree-list-resultp-and-not-reserrp
+                 tree-list-listp-when-tree-list-list-resultp-and-not-reserrp)))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-rulename '-<=)
@@ -1056,6 +1062,12 @@
                                 :branches treess)
              input))
        :no-function nil
+       :guard-hints
+       (("Goal"
+         :in-theory
+         (enable treep-when-tree-resultp-and-not-reserrp
+                 tree-listp-when-tree-list-resultp-and-not-reserrp
+                 tree-list-listp-when-tree-list-list-resultp-and-not-reserrp)))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-group '-<=)
@@ -1123,6 +1135,12 @@
                                 :branches treess)
              input))
        :no-function nil
+       :guard-hints
+       (("Goal"
+         :in-theory
+         (enable treep-when-tree-resultp-and-not-reserrp
+                 tree-listp-when-tree-list-resultp-and-not-reserrp
+                 tree-list-listp-when-tree-list-list-resultp-and-not-reserrp)))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-option '-<=)
@@ -1176,6 +1194,12 @@
        :no-function nil
        :measure (len input)
        :hints (("Goal" :in-theory (enable o< o-finp)))
+       :guard-hints
+       (("Goal"
+         :in-theory
+         (enable treep-when-tree-resultp-and-not-reserrp
+                 tree-listp-when-tree-list-resultp-and-not-reserrp
+                 tree-list-listp-when-tree-list-list-resultp-and-not-reserrp)))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-repetition)
