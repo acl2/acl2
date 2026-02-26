@@ -70,8 +70,8 @@
      (xdoc::ul
       (xdoc::li "@(see field) — Koala Bear field arithmetic")
       (xdoc::li "@(see traces) — execution traces as tables of field elements")
-      (xdoc::li "@(see constraints) — polynomial constraints characterizing valid executions")
-      (xdoc::li "@(see equivalence) — proofs that constraints match the operational semantics"))))
+      (xdoc::li "@(see pfcs-constraints) and @(see pfcs-lifting) — polynomial constraints characterizing valid executions, in PFCS form")
+      (xdoc::li "@(see correctness) — proofs that constraints match the operational semantics"))))
    (xdoc::h3 "Field")
    (xdoc::p
     "Model 0 uses the Koala Bear prime field,
