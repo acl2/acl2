@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -20,6 +20,17 @@
 (include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
 (include-book "std/util/defines" :dir :system)
 (include-book "unicode/read-utf8" :dir :system)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
+(acl2::controlled-configuration :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (in-theory (enable abnf::treep-when-tree-resultp-and-not-reserrp
+                    abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -139,19 +150,21 @@
   (b* (((when (atom input)) (mv nil nil))
        (input (abnf::tree-list-fix input)))
     (mv (car input) (cdr input)))
-  :hooks (:fix)
+
   ///
 
   (defret len-of-parse-token-<=
     (<= (len rest-input)
         (len input))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints (("Goal" :induct (len input) :in-theory (enable len))))
 
   (defret len-of-parse-token-<
     (implies tree?
              (< (len rest-input)
                 (len input)))
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal" :induct (len input) :in-theory (enable len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -169,8 +182,7 @@
      we need to take into account the next token.
      We count it as 1 if present, as 0 if absent."))
   (+ (abnf::tree-option-case token? :some 1 :none 0)
-     (len input))
-  :hooks (:fix))
+     (len input)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -178,7 +190,7 @@
   :returns (yes/no booleanp)
   :short "Check if the given token has the given rule name as root."
   (abnf-tree-with-root-p (abnf::tree-option-fix token) rulename)
-  :hooks (:fix)
+
   ///
 
   (defruled token-nonnil-when-rootp
@@ -196,7 +208,7 @@
    :some (equal (abnf::tree->string token.val)
                 (string=>nats (str-fix string)))
    :none nil)
-  :hooks (:fix)
+
   ///
 
   (defruled token-nonnil-when-stringp
@@ -220,8 +232,7 @@
    :some (if (token-rootp rulename token.val)
              token.val
            (reserrf (list :required (str-fix rulename) :found token.val)))
-   :none (reserrf (list :required (str-fix rulename) :found nil)))
-  :hooks (:fix))
+   :none (reserrf (list :required (str-fix rulename) :found nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,8 +250,7 @@
    :some (if (token-stringp string token.val)
              token.val
            (reserrf (list :required (str-fix string) :found token.val)))
-   :none (reserrf (list :required (str-fix string) :found nil)))
-  :hooks (:fix))
+   :none (reserrf (list :required (str-fix string) :found nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,21 +284,21 @@
        (tree (abnf::tree-leafterm (string=>nats (str-fix operator))))
        ((mv token input) (parse-token input)))
     (mv tree token input))
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-operator-<=
     (<= (parsize next-token rest-input)
         (parsize token input))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize))))
+    :hints (("Goal" :in-theory (enable parsize fix))))
 
   (defret parsize-of-parse-operator-<
     (implies (not (reserrp tree))
              (< (parsize next-token rest-input)
                 (parsize token input)))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize))))
+    :hints (("Goal" :in-theory (enable parsize fix))))
 
   (defret len-of-parse-operator-<=
     (<= (len rest-input)
@@ -335,7 +345,6 @@
        (tree (abnf::tree-leafterm fringe))
        ((mv token input) (parse-token input)))
     (mv tree token input))
-  :hooks (:fix)
 
   :prepwork
   ((define parse-operator-among-aux ((nats nat-listp) (strings string-listp))
@@ -344,8 +353,7 @@
      (and (consp strings)
           (or (equal (string=>nats (str-fix (car strings)))
                      (nat-list-fix nats))
-              (parse-operator-among-aux nats (cdr strings))))
-     :hooks (:fix)))
+              (parse-operator-among-aux nats (cdr strings))))))
 
   ///
 
@@ -353,14 +361,14 @@
     (<= (parsize next-token rest-input)
         (parsize token input))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize))))
+    :hints (("Goal" :in-theory (enable parsize fix))))
 
   (defret parsize-of-parse-operator-among-<
     (implies (not (reserrp tree))
              (< (parsize next-token rest-input)
                 (parsize token input)))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize))))
+    :hints (("Goal" :in-theory (enable parsize fix))))
 
   (defret len-of-parse-operator-among-<=
     (<= (len rest-input)
@@ -406,21 +414,21 @@
        (tree (abnf::tree-leafterm (string=>nats (str-fix separator))))
        ((mv token input) (parse-token input)))
     (mv tree token input))
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-separator-<=
     (<= (parsize next-token rest-input)
         (parsize token input))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize))))
+    :hints (("Goal" :in-theory (enable parsize fix))))
 
   (defret parsize-of-parse-separator-<
     (implies (not (reserrp tree))
              (< (parsize next-token rest-input)
                 (parsize token input)))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize))))
+    :hints (("Goal" :in-theory (enable parsize fix))))
 
   (defret len-of-parse-separator-<=
     (<= (len rest-input)
@@ -446,21 +454,21 @@
        ((when (reserrp tree)) (perr (reserrf-push tree)))
        ((mv token input) (parse-token input)))
     (mv tree token input))
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-identifier-<=
     (<= (parsize next-token rest-input)
         (parsize token input))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize))))
+    :hints (("Goal" :in-theory (enable parsize fix))))
 
   (defret parsize-of-parse-identifier-<
     (implies (not (reserrp tree))
              (< (parsize next-token rest-input)
                 (parsize token input)))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize))))
+    :hints (("Goal" :in-theory (enable parsize fix))))
 
   (defret len-of-parse-identifier-<=
     (<= (len rest-input)
@@ -486,21 +494,21 @@
        ((when (reserrp tree)) (perr (reserrf-push tree)))
        ((mv token input) (parse-token input)))
     (mv tree token input))
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-numeral-<=
     (<= (parsize next-token rest-input)
         (parsize token input))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize))))
+    :hints (("Goal" :in-theory (enable parsize fix))))
 
   (defret parsize-of-parse-numeral-<
     (implies (not (reserrp tree))
              (< (parsize next-token rest-input)
                 (parsize token input)))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize))))
+    :hints (("Goal" :in-theory (enable parsize fix))))
 
   (defret len-of-parse-numeral-<=
     (<= (len rest-input)
@@ -724,13 +732,14 @@
 
   :ruler-extenders :all
 
+  :hints (("Goal" :in-theory (enable nfix)))
+
   :verify-guards nil ; done below
 
   :returns-hints
   (("Goal"
     :in-theory
-    (e/d (abnf::treep-when-tree-resultp-and-not-reserrp
-          abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)
+    (e/d ()
          (parse-expression
           parse-additive-expression
           parse-additive-expression-rest
@@ -871,7 +880,7 @@
                          (list tree3)))
         token
         input))
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-equality-expression-<=
@@ -891,14 +900,7 @@
 
 (define parse-*-comma-expression ((token abnf::tree-optionp)
                                   (input abnf::tree-listp))
-  :returns (mv (trees
-                abnf::tree-list-resultp
-                :hints
-                (("Goal"
-                  :in-theory
-                  (enable
-                   abnf::treep-when-tree-resultp-and-not-reserrp
-                   abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+  :returns (mv (trees abnf::tree-list-resultp)
                (next-token abnf::tree-optionp)
                (rest-input abnf::tree-listp))
   :short "Parse a @('*( \",\" expression )')."
@@ -929,13 +931,14 @@
            ((pok trees) (parse-*-comma-expression token input)))
         (mv (cons tree trees) token input))))
   :measure (parsize token input)
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-*-comma-expression-<=
     (<= (parsize next-token rest-input)
         (parsize token input))
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
 
 (define parse-relation-constraint ((token abnf::tree-optionp)
                                    (input abnf::tree-listp))
@@ -965,7 +968,7 @@
                          (list tree3)
                          (list tree4)))
         token input))
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-relation-constraint-<=
@@ -996,7 +999,7 @@
        ((pok tree) (parse-relation-constraint token input)))
     (mv (abnf-tree-wrap tree "constraint")
         token input))
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-constraint-<=
@@ -1017,14 +1020,7 @@
 
 (define parse-*-comma-identifier ((token abnf::tree-optionp)
                                   (input abnf::tree-listp))
-  :returns (mv (trees
-                abnf::tree-list-resultp
-                :hints
-                (("Goal"
-                  :in-theory
-                  (enable
-                   abnf::treep-when-tree-resultp-and-not-reserrp
-                   abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+  :returns (mv (trees abnf::tree-list-resultp)
                (next-token abnf::tree-optionp)
                (rest-input abnf::tree-listp))
   :short "Parse a @('*( \",\" identifier )')."
@@ -1055,24 +1051,18 @@
            ((pok trees) (parse-*-comma-identifier token input)))
         (mv (cons tree trees) token input))))
   :measure (parsize token input)
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-*-comma-identifier-<=
     (<= (parsize next-token rest-input)
         (parsize token input))
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
 
 (define parse-*-comma-constraint ((token abnf::tree-optionp)
                                   (input abnf::tree-listp))
-  :returns (mv (trees
-                abnf::tree-list-resultp
-                :hints
-                (("Goal"
-                  :in-theory
-                  (enable
-                   abnf::treep-when-tree-resultp-and-not-reserrp
-                   abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+  :returns (mv (trees abnf::tree-list-resultp)
                (next-token abnf::tree-optionp)
                (rest-input abnf::tree-listp))
   :short "Parse a @('*( \",\" constraint )')."
@@ -1103,13 +1093,14 @@
            ((pok trees) (parse-*-comma-constraint token input)))
         (mv (cons tree trees) token input))))
   :measure (parsize token input)
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-*-comma-constraint-<=
     (<= (parsize next-token rest-input)
         (parsize token input))
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
 
 (define parse-definition ((token abnf::tree-optionp)
                           (input abnf::tree-listp))
@@ -1157,7 +1148,7 @@
                          (list tree7)
                          (list tree8)))
         token input))
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-definition-<=
@@ -1177,13 +1168,7 @@
 
 (define parse-*-definition  ((token abnf::tree-optionp)
                              (input abnf::tree-listp))
-  :returns (mv (trees abnf::tree-list-resultp
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable
-                         abnf::treep-when-tree-resultp-and-not-reserrp
-                         abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+  :returns (mv (trees abnf::tree-list-resultp)
                (next-token abnf::tree-optionp)
                (rest-input abnf::tree-listp))
   :short "Parse a @('*definition')."
@@ -1198,23 +1183,18 @@
                                         input-after-definition)))
     (mv (cons tree trees) token input))
   :measure (parsize token input)
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-*-definition-<=
     (<= (parsize next-token rest-input)
         (parsize token input))
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
 
 (define parse-*-constraint  ((token abnf::tree-optionp)
                              (input abnf::tree-listp))
-  :returns (mv (trees abnf::tree-list-resultp
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable
-                         abnf::treep-when-tree-resultp-and-not-reserrp
-                         abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+  :returns (mv (trees abnf::tree-list-resultp)
                (next-token abnf::tree-optionp)
                (rest-input abnf::tree-listp))
   :short "Parse a @('*constraint')."
@@ -1229,13 +1209,14 @@
                                         input-after-constraint)))
     (mv (cons tree trees) token input))
   :measure (parsize token input)
-  :hooks (:fix)
+
   ///
 
   (defret parsize-of-parse-*-constraint-<=
     (<= (parsize next-token rest-input)
         (parsize token input))
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
 
 (define parse-system ((input abnf::tree-listp))
   :returns (mv (tree abnf::tree-resultp)
@@ -1268,5 +1249,4 @@
          :rulename? (abnf::rulename "system")
          :branches (list trees1
                          trees2))
-        token input))
-  :hooks (:fix))
+        token input)))
