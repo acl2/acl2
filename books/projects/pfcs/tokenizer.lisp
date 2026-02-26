@@ -16,7 +16,7 @@
 
 (include-book "projects/abnf/tree-utilities" :dir :system)
 
-(acl2::controlled-configuration)
+(acl2::controlled-configuration :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -78,8 +78,7 @@
        ;; item returned is a tree.
        ((unless (abnf::treep (car repetition)))
         (reserrf "lexeme repetition item should be an ABNF tree")))
-    (car repetition))
-  :no-function nil)
+    (car repetition)))
 
 ;; token = identifier / integer / operator / separator
 (define check-and-deref-tree-token? ((tree abnf::treep))
@@ -109,8 +108,7 @@
        ;; item returned is a tree.
        ((unless (abnf::treep (car repetition)))
         (reserrf "token repetition item should be an ABNF tree")))
-    (car repetition))
-  :no-function nil)
+    (car repetition)))
 
 (define filter-and-reduce-lexeme-tree-to-subtoken-trees
     ((trees abnf::tree-listp))
@@ -152,7 +150,6 @@
               processed-rest-trees))
     ;; can't get here, but return '() for logic reasons
     '())
-  :no-function nil
   :guard-hints
   (("Goal" :in-theory (enable abnf::treep-when-tree-resultp-and-not-reserrp)))
   :hooks nil)
@@ -179,7 +176,6 @@
        ((when (reserrp subtoken-trees))
         (reserrf "problem with structure of lexeme tree")))
     subtoken-trees)
-  :no-function nil
   :guard-hints
   (("Goal"
     :in-theory
@@ -203,7 +199,6 @@
        ((when (reserrp subtoken-trees))
         (reserrf "problem with structure of lexeme tree")))
     subtoken-trees)
-  :no-function nil
   :guard-hints
   (("Goal"
     :in-theory
