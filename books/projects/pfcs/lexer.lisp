@@ -17,7 +17,7 @@
 (include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
 (include-book "unicode/read-utf8" :dir :system)
 
-(acl2::controlled-configuration)
+(acl2::controlled-configuration :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,7 +236,6 @@
         (lex-*-digit input-after-thing1)))
     (mv (cons tree-thing1 trees)
         input-after-trees))
-  :no-function nil
 
   ///
   (defret len-of-lex-1*-digit-<=
@@ -324,8 +323,7 @@
        ;; but if it does, we should look at it.
        ((unless (null rest-input))
         (reserrf (cons :cannot-fully-lex (cons trees rest-input)))))
-    trees)
-  :no-function nil)
+    trees))
 
 (define lexemize-pfcs-from-bytes ((pfcs-bytes nat-listp))
   :returns (pfcs-lexemes abnf::tree-list-resultp)
@@ -350,7 +348,6 @@
        ((unless (nat-listp codepoints))
         (reserrf (cons :invalid-utf-8 pfcs-bytes))))
     (lexemize-pfcs codepoints))
-  :no-function nil
   :hooks nil)
 
 (define lexemize-pfcs-from-string ((pfcs-string stringp))
@@ -372,5 +369,4 @@
         (reserrf (cons :not-a-string pfcs-string)))
        (octets (string=>nats pfcs-string)))
     (lexemize-pfcs-from-bytes octets))
-  :no-function nil
   :hooks nil)
