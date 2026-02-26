@@ -1,6 +1,6 @@
 ; Extract and export only Kestrel xdoc material
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,6 +21,7 @@
  (progn
    (include-book "abstract-domains/top")
    (include-book "acl2pl/top")
+   (include-book "air/top")
    (include-book "apt/doc")
    (include-book "arm/doc")
    (include-book "axe/doc")
