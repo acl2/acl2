@@ -19,9 +19,8 @@
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -145,7 +144,8 @@
   (:sub ((arg1 expression) (arg2 expression)))
   (:mul ((arg1 expression) (arg2 expression)))
   :pred expressionp
-  :prepwork ((local (in-theory (enable ifix)))))
+  :prepwork ((local (in-theory (enable ifix)))
+             (set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -265,6 +265,7 @@
   (defruled rev-of-definition-list-fix
     (equal (rev (definition-list-fix defs))
            (definition-list-fix (rev defs)))
+    :induct t
     :enable definition-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
