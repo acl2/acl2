@@ -386,7 +386,7 @@
 
 (defruled generate-min-trace-is-generate-trace*-of-min-termination-limit
   :short "Relation between @(tsee generate-min-trace)
-          and @(tsee generate-min-trace*)."
+          and @(tsee generate-trace*)."
   :long
   (xdoc::topstring
    (xdoc::p

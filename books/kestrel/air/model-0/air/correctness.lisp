@@ -442,7 +442,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This extends @(tsee pfcs-transition-to-def-of-next),
+    "This extends @(tsee pfcs-transition-pred-to-def-of-next),
      which is solely in terms of field elements,
      to a property that about the program and its execution.")
    (xdoc::p
