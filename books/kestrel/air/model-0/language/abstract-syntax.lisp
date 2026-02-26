@@ -44,9 +44,9 @@
    (xdoc::p
     "The three opcodes are:")
    (xdoc::ul
-    (xdoc::li "@(':incr') — increment the accumulator (with wrap-around)")
-    (xdoc::li "@(':decr') — decrement the accumulator (with wrap-around)")
-    (xdoc::li "@(':halt') — halt execution")))
+    (xdoc::li "@(':incr') - increment the accumulator (with wrap-around)")
+    (xdoc::li "@(':decr') - decrement the accumulator (with wrap-around)")
+    (xdoc::li "@(':halt') - halt execution")))
   (:incr ())
   (:decr ())
   (:halt ()))

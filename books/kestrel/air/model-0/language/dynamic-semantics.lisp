@@ -91,9 +91,9 @@
    (xdoc::p
     "The VM state consists of:")
    (xdoc::ul
-    (xdoc::li "@('pc') — the program counter (a natural number)")
-    (xdoc::li "@('acc') — the 8-bit accumulator register")
-    (xdoc::li "@('halted') — a flag indicating whether execution has halted")))
+    (xdoc::li "@('pc') - the program counter (a natural number)")
+    (xdoc::li "@('acc') - the 8-bit accumulator register")
+    (xdoc::li "@('halted') - a flag indicating whether execution has halted")))
   ((pc     natp      :default 0)
    (acc    ubyte8    :default 0)
    (halted booleanp  :default nil))
@@ -123,9 +123,9 @@
     "If the VM is halted, the state is unchanged (frozen).
      Otherwise, we fetch the current instruction and execute it:")
    (xdoc::ul
-    (xdoc::li "@('INCR') — increment accumulator, advance PC")
-    (xdoc::li "@('DECR') — decrement accumulator, advance PC")
-    (xdoc::li "@('HALT') — set halted flag, freeze PC and accumulator")))
+    (xdoc::li "@('INCR') - increment accumulator, advance PC")
+    (xdoc::li "@('DECR') - decrement accumulator, advance PC")
+    (xdoc::li "@('HALT') - set halted flag, freeze PC and accumulator")))
   (if (vm-state->halted st)
       (vm-state-fix st)
     (let ((op (fetch prog (vm-state->pc st))))
