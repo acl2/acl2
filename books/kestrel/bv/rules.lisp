@@ -3570,13 +3570,6 @@
                          (logext n y))))
   :hints (("Goal" :use (:instance equal-of-logext-and-logext (size n)))))
 
-(defthm logext-of-+-of-bvchop
-  (implies (and (integerp x)
-                (integerp k))
-           (equal (LOGEXT 32 (+ (bvchop 32 K) X))
-                  (LOGEXT 32 (+ K X))))
-  :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
-
 ;fixme move
 ;restrict to constants?
 (defthm logext-when-usb-cheap
