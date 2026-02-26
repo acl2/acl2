@@ -13,6 +13,8 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/deffixer" :dir :system)
 
+(local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
+
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
@@ -49,10 +51,20 @@
      for our purpose it is simpler to identify characters with scalar values,
      which justifies the name of this recognizer."))
   (and (integerp x)
-       (or (integer-range-p 0 #xd7ff x)
-           (integer-range-p #xe000 #x10ffff x)))
+       (or (and (<= 0 x)
+                (<= x #xd7ff))
+           (and (<= #xe000 x)
+                (<= x #x10ffff))))
 
   ///
+
+  (defruled ucharp-alt-def
+    (equal (ucharp x)
+           (and (integerp x)
+                (<= 0 x)
+                (<= x #x10ffff)
+                (not (and (<= #xd800 x)
+                          (<= x #xdfff))))))
 
   (defruled natp-when-ucharp
     (implies (ucharp x)
@@ -88,9 +100,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption uchar-option
+  uchar
+  :short "Fixtype of optional Unicode characters."
+  :pred uchar-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist uchar-list
   :short "Fixtype of lists of Unicode characters."
   :elt-type uchar
   :true-listp t
   :elementp-of-nil nil
-  :pred uchar-listp)
+  :pred uchar-listp
+
+  ///
+
+  (defruled uchar-listp-of-resize-list
+    (implies (and (uchar-listp chars)
+                  (ucharp default))
+             (uchar-listp (resize-list chars length default)))
+    :induct t
+    :enable resize-list))

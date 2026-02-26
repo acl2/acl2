@@ -1,6 +1,6 @@
 ; Kestrel Books
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -30,7 +30,8 @@
 (include-book "c/top")
 (merge-io-pairs
  dm::primep
- (include-book "crypto/top"))
+ (include-book "crypto/top")
+ (include-book "air/top"))
 (include-book "csv/parse-csv-file")
 (include-book "data/top")
 (include-book "error-checking/top")

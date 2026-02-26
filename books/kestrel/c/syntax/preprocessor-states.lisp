@@ -10,6 +10,7 @@
 
 (in-package "C$")
 
+(include-book "unicode-characters")
 (include-book "preprocessor-options")
 (include-book "preprocessor-lexemes")
 (include-book "macro-tables")
@@ -26,6 +27,7 @@
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
+(local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -179,7 +181,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar to @(tsee parstate), but for the preprocessor.")
+    "This is analogous to @(tsee parstate), but for the preprocessor.")
    (xdoc::p
     "Our preprocessing functions take and return preprocessor states.")
    (xdoc::p
@@ -190,27 +192,37 @@
      conceptually,
      the preprocessor state could be defined as a @(tsee fty::defprod).")
    (xdoc::p
-    "Most of the components of the preprocessor state
-     are analogous to the ones of the parser state
-     (see the documentation of @(tsee parstate) first),
-     but there are differences:")
+    "The preprocessor state consists of the following components:")
    (xdoc::ul
     (xdoc::li
-     "Instead of just a C version as in the parser state,
-      the preprocessor state has a full implementation environment.
-      Probably parser states should have that too.")
+     "An array of Unicode characters.
+      The array is initialized from the Unicode characters obtained
+      by UTF-8-decoding the bytes of the file to be preprocessed.
+      Once initialized, this array never changes. ")
     (xdoc::li
-     "Instead of an array and two indices that represent
-      a sequence of read and unread tokens,
-      we have a single list of pending lexmarks.
-      This is used like the sequence of unread tokens in the parser state,
-      in the sense that the next lexeme is read from the list if non-empty,
-      and otherwise it is lexed from the input characters.
-      However, lexmarks are added to the pending list
-      not only when unreading lexemes,
-      which actually happens rarely in our preprocessor,
+     "An array of the positions of the characters in the array above,
+      in the same order, i.e. the position at index @('i') is
+      the one of the character at index @('i').
+      This array is exactly one element longer than the array of characters:
+      the last position is the one just past the end of file,
+      which does not correspond to any character.
+      Once initialized, this array never changes.")
+    (xdoc::li
+     "The index of the current character.
+      This is initially 0, and is incremented as we read the characters.
+      This is always an index into the character array,
+      or equal to the length of that array when we reach the end of the file.
+      This is always an index into the position array,
+      which is one element longer than the character array as noted above.")
+    (xdoc::li
+     "A list of lexmarks to be read next,
+      before lexing lexemes from the character array.
+      Conceptually, this list is in front of the remaining characters,
+      i.e. the ones starting at the current character index.
+      The list of lexmarks is initially empty,
+      and gets extended when unreading lexemes,
       but also when expanding macros.
-      When a macro is expanded, the expansion is added to the pending list,
+      When a macro is expanded, the expansion is added to this list,
       so that preprocessing continues with the expansion,
       thus realizing rescanning and further replacement [C17:6.10.3.4].
       The @(':start') and @(':end') markers are added around that expansion,
@@ -218,16 +230,19 @@
       so that we can prevent recursive expansion,
       as explained in more detail elsewhere.")
     (xdoc::li
-     "The preprocessor state also contains
-      a macro table that consists of all the macros in scope.")
+     "The current size of the input,
+      defined as the sum of the remaining characters to be read
+      and the lexmarks in the pending list.
+      This is derivable from other components,
+      but it is cached for efficiency.")
     (xdoc::li
-     "The preprocessor state also contains a flag saying whether
-      @('#error') and @('#warning') directives should be ignored,
-      i.e. treated as no-ops.
-      This flag is set when files are re-preprocessed
-      in a fresh context as explained in @(see preservable-inclusions).")
+     "The macro table that consists of all the macros in scope.")
     (xdoc::li
-     "The preprocessor state also contains the preprocessor options.")))
+     "The options supplied to the preprocessor.
+      This is set when the stobj is initialized, and never changes.")
+    (xdoc::li
+     "The implementation environment,
+      which affects certain aspects of preprocessing.")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -237,18 +252,14 @@
 
   (make-event
    `(defstobj ppstate
-      (bytes :type (satisfies byte-listp)
-             :initially nil)
-      (position :type (satisfies positionp)
-                :initially ,(irr-position))
-      (chars :type (array (satisfies char+position-p) (1))
-             :initially ,(make-char+position :char 0
-                                             :position (irr-position))
+      (chars :type (array (satisfies ucharp) (0))
+             :initially 0
              :resizable t)
-      (chars-read :type (integer 0 *)
+      (positions :type (array (satisfies positionp) (1))
+                 :initially ,(irr-position)
+                 :resizable t)
+      (char-index :type (integer 0 *)
                   :initially 0)
-      (chars-unread :type (integer 0 *)
-                    :initially 0)
       (lexmarks :type (satisfies lexmark-listp)
                 :initially nil)
       (size :type (integer 0 *)
@@ -260,35 +271,31 @@
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       :renaming (;; field recognizers:
-                 (bytesp raw-ppstate->bytes-p)
-                 (positionp raw-ppstate->position-p)
                  (charsp raw-ppstate->chars-p)
-                 (chars-readp raw-ppstate->chars-read-p)
-                 (chars-unreadp raw-ppstate->chars-unread-p)
+                 (positionsp raw-ppstate->positions-p)
+                 (char-indexp raw-ppstate->char-index-p)
                  (lexmarksp raw-ppstate->lexmarks-p)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
                  (optionsp raw-ppstate->options-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
-                 (bytes raw-ppstate->bytes)
-                 (position raw-ppstate->position)
                  (chars-length raw-ppstate->chars-length)
                  (charsi raw-ppstate->char)
-                 (chars-read raw-ppstate->chars-read)
-                 (chars-unread raw-ppstate->chars-unread)
+                 (positions-length raw-ppstate->positions-length)
+                 (positionsi raw-ppstate->position)
+                 (char-index raw-ppstate->char-index)
                  (lexmarks raw-ppstate->lexmarks)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
                  (options raw-ppstate->options)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
-                 (update-bytes raw-update-ppstate->bytes)
-                 (update-position raw-update-ppstate->position)
                  (resize-chars raw-update-ppstate->chars-length)
                  (update-charsi raw-update-ppstate->char)
-                 (update-chars-read raw-update-ppstate->chars-read)
-                 (update-chars-unread raw-update-ppstate->chars-unread)
+                 (resize-positions raw-update-ppstate->positions-length)
+                 (update-positionsi raw-update-ppstate->position)
+                 (update-char-index raw-update-ppstate->char-index)
                  (update-lexmarks raw-update-ppstate->lexmarks)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
@@ -321,43 +328,21 @@
 
   ;; normalize recognizers:
 
-  (defrule raw-ppstate->chars-p-becomes-char+position-listp
+  (defrule raw-ppstate->chars-p-to-uchar-listp
     (equal (raw-ppstate->chars-p x)
-           (char+position-listp x))
-    :induct t
-    :enable (raw-ppstate->chars-p
-             char+position-listp))
+           (uchar-listp x))
+    :induct t)
 
-  (defrule raw-ppstate->lexmarks-p-becomes-lexmark-listp
-    (equal (raw-ppstate->lexmarks-p x)
-           (lexmark-listp x))
-    :induct t
-    :enable (raw-ppstate->lexmarks-p
-             lexmark-listp))
+  (defrule raw-ppstate->positions-p-to-position-listp
+    (equal (raw-ppstate->positions-p x)
+           (position-listp x))
+    :induct t)
 
   ;; needed for subsequent proofs:
 
-  (local (in-theory (enable ppstate-fix
-                            nfix
-                            update-nth-array
-                            byte-list-listp-of-resize-list
-                            char+position-listp-of-resize-list
-                            byte-list-listp-of-update-nth-strong
-                            char+position-listp-of-update-nth-strong)))
+  (local (in-theory (enable ppstate-fix nfix)))
 
   ;; readers:
-
-  (define ppstate->bytes (ppstate)
-    :returns (bytes byte-listp)
-    (mbe :logic (non-exec (raw-ppstate->bytes (ppstate-fix ppstate)))
-         :exec (raw-ppstate->bytes ppstate))
-    :inline t)
-
-  (define ppstate->position (ppstate)
-    :returns (position positionp)
-    (mbe :logic (non-exec (raw-ppstate->position (ppstate-fix ppstate)))
-         :exec (raw-ppstate->position ppstate))
-    :inline t)
 
   (define ppstate->chars-length (ppstate)
     :returns (length natp)
@@ -367,23 +352,44 @@
 
   (define ppstate->char ((i natp) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
-    :returns (char+pos char+position-p)
-    (char+position-fix
-     (mbe :logic (non-exec (raw-ppstate->char (nfix i) (ppstate-fix ppstate)))
-          :exec (raw-ppstate->char i ppstate)))
+    :returns (char ucharp)
+    (mbe :logic (non-exec
+                 (uchar-fix
+                  (raw-ppstate->char (nfix i) (ppstate-fix ppstate))))
+         :exec (raw-ppstate->char i ppstate))
     :inline t
-    :prepwork ((local (in-theory (enable ppstate->chars-length)))))
+    :prepwork ((local (in-theory (enable ppstate->chars-length))))
+    :guard-hints
+    (("Goal" :in-theory (enable raw-ppstate->chars-p-to-uchar-listp)))
 
-  (define ppstate->chars-read (ppstate)
-    :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (non-exec (raw-ppstate->chars-read (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-read ppstate))
+    ///
+
+    (more-returns
+     (char natp :rule-classes :type-prescription
+           :hints (("Goal" :in-theory (enable natp-when-ucharp))))))
+
+  (define ppstate->positions-length (ppstate)
+    :returns (length natp)
+    (mbe :logic (non-exec (raw-ppstate->positions-length (ppstate-fix ppstate)))
+         :exec (raw-ppstate->positions-length ppstate))
     :inline t)
 
-  (define ppstate->chars-unread (ppstate)
-    :returns (chars-unread natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (non-exec (raw-ppstate->chars-unread (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-unread ppstate))
+  (define ppstate->position ((i natp) ppstate)
+    :guard (< i (ppstate->positions-length ppstate))
+    :returns (pos positionp)
+    (mbe :logic (non-exec
+                 (position-fix
+                  (raw-ppstate->position (nfix i) (ppstate-fix ppstate))))
+         :exec (raw-ppstate->position i ppstate))
+    :inline t
+    :prepwork ((local (in-theory (enable ppstate->positions-length))))
+    :guard-hints
+    (("Goal" :in-theory (enable raw-ppstate->positions-p-to-position-listp))))
+
+  (define ppstate->char-index (ppstate)
+    :returns (char-index natp :rule-classes (:rewrite :type-prescription))
+    (mbe :logic (non-exec (raw-ppstate->char-index (ppstate-fix ppstate)))
+         :exec (raw-ppstate->char-index ppstate))
     :inline t)
 
   (define ppstate->lexmarks (ppstate)
@@ -416,58 +422,63 @@
          :exec (raw-ppstate->ienv ppstate))
     :inline t)
 
+  ;; needed for subsequent proofs:
+
+  (local (in-theory (enable update-nth-array)))
+
   ;; writers:
 
-  (define update-ppstate->bytes ((bytes byte-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->bytes (byte-list-fix bytes)
-                                                     (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->bytes bytes ppstate))
-    :inline t)
-
-  (define update-ppstate->position ((position positionp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec
-                 (raw-update-ppstate->position (position-fix position)
-                                               (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->position position ppstate))
-    :inline t)
-
   (define update-ppstate->chars-length ((length natp) ppstate)
-    :returns (ppstate ppstatep)
+    :returns (ppstate ppstatep
+                      :hints
+                      (("Goal"
+                        :in-theory (enable uchar-listp-of-resize-list))))
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-length (nfix length)
                                                    (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->chars-length length ppstate))
     :inline t)
 
-  (define update-ppstate->char ((i natp) (char+pos char+position-p) ppstate)
+  (define update-ppstate->char ((i natp) (char ucharp) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (if (< (nfix i) (ppstate->chars-length ppstate))
-                     (raw-update-ppstate->char (nfix i)
-                                               (char+position-fix char+pos)
-                                               (ppstate-fix ppstate))
+                     (raw-update-ppstate->char
+                      (nfix i) (uchar-fix char) (ppstate-fix ppstate))
                    (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->char i char+pos ppstate))
+         :exec (raw-update-ppstate->char i char ppstate))
     :inline t
     :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
-  (define update-ppstate->chars-read ((chars-read natp) ppstate)
-    :returns (ppstate ppstatep)
+  (define update-ppstate->positions-length ((length natp) ppstate)
+    :returns (ppstate ppstatep
+                      :hints
+                      (("Goal"
+                        :in-theory (enable position-listp-of-resize-list))))
     (mbe :logic (non-exec
-                 (raw-update-ppstate->chars-read (nfix chars-read)
-                                                 (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-read chars-read ppstate))
+                 (raw-update-ppstate->positions-length (nfix length)
+                                                       (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->positions-length length ppstate))
     :inline t)
 
-  (define update-ppstate->chars-unread ((chars-unread natp) ppstate)
+  (define update-ppstate->position ((i natp) (pos positionp) ppstate)
+    :guard (< i (ppstate->positions-length ppstate))
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
-                 (raw-update-ppstate->chars-unread (nfix chars-unread)
-                                                   (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-unread chars-unread ppstate))
+                 (if (< (nfix i) (ppstate->positions-length ppstate))
+                     (raw-update-ppstate->position
+                      (nfix i) (position-fix pos) (ppstate-fix ppstate))
+                   (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->position i pos ppstate))
+    :inline t
+    :prepwork ((local (in-theory (enable ppstate->positions-length)))))
+
+  (define update-ppstate->char-index ((char-index natp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->char-index
+                           (nfix char-index) (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->char-index char-index ppstate))
     :inline t)
 
   (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
@@ -510,11 +521,20 @@
 
   ;; readers over writers:
 
-  (defrule ppstate->chars-length-of-update-ppstate->bytes
-    (equal (ppstate->chars-length (update-ppstate->bytes bytes ppstate))
+  (defrule ppstate->chars-length-of-update-ppstate->chars-length
+    (equal (ppstate->chars-length (update-ppstate->chars-length length ppstate))
+           (nfix length))
+    :enable (ppstate->chars-length
+             update-ppstate->chars-length
+             uchar-listp-of-resize-list))
+
+  (defrule ppstate->chars-length-of-update-ppstate->char
+    (equal (ppstate->chars-length (update-ppstate->char i char ppstate))
            (ppstate->chars-length ppstate))
     :enable (ppstate->chars-length
-             update-ppstate->bytes))
+             update-ppstate->char
+             max
+             len))
 
   (defrule ppstate->chars-length-of-update-ppstate->size
     (equal (ppstate->chars-length (update-ppstate->size size ppstate))
@@ -522,51 +542,52 @@
     :enable (ppstate->chars-length
              update-ppstate->size))
 
-  (defrule ppstate->chars-read-of-update-ppstate->bytes
-    (equal (ppstate->chars-read (update-ppstate->bytes bytes ppstate))
-           (ppstate->chars-read ppstate))
-    :enable (ppstate->chars-read
-             update-ppstate->bytes))
+  (defrule ppstate->positions-length-of-update-ppstate->positions-length
+    (equal (ppstate->positions-length
+            (update-ppstate->positions-length length ppstate))
+           (nfix length))
+    :enable (ppstate->positions-length
+             update-ppstate->positions-length
+             position-listp-of-resize-list))
 
-  (defrule ppstate->chars-read-of-update-ppstate->size
-    (equal (ppstate->chars-read (update-ppstate->size size ppstate))
-           (ppstate->chars-read ppstate))
-    :enable (ppstate->chars-read
+  (defrule ppstate->positions-length-of-update-ppstate->position
+    (equal (ppstate->positions-length (update-ppstate->position i pos ppstate))
+           (ppstate->positions-length ppstate))
+    :enable (ppstate->positions-length
+             update-ppstate->position
+             max
+             len))
+
+  (defrule ppstate->positions-length-of-update-ppstate->char-index
+    (equal (ppstate->positions-length
+            (update-ppstate->char-index char-index ppstate))
+           (ppstate->positions-length ppstate))
+    :enable (ppstate->positions-length
+             update-ppstate->char-index))
+
+  (defrule ppstate->positions-length-of-update-ppstate->size
+    (equal (ppstate->positions-length (update-ppstate->size size ppstate))
+           (ppstate->positions-length ppstate))
+    :enable (ppstate->positions-length
              update-ppstate->size))
 
-  (defrule ppstate->lexmarks-of-update-ppstate->bytes
-    (equal (ppstate->lexmarks (update-ppstate->bytes bytes ppstate))
-           (ppstate->lexmarks ppstate))
-    :enable (ppstate->lexmarks
-             update-ppstate->bytes))
+  (defrule ppstate->char-index-of-update-ppstate->char-index
+    (equal (ppstate->char-index (update-ppstate->char-index char-index ppstate))
+           (nfix char-index))
+    :enable (ppstate->char-index
+             update-ppstate->char-index))
 
-  (defrule ppstate->lexmarks-of-update-ppstate->position
-    (equal (ppstate->lexmarks
-            (update-ppstate->position position ppstate))
-           (ppstate->lexmarks ppstate))
-    :enable (ppstate->lexmarks
-             update-ppstate->position))
+  (defrule ppstate->char-index-of-update-ppstate->size
+    (equal (ppstate->char-index (update-ppstate->size size ppstate))
+           (ppstate->char-index ppstate))
+    :enable (ppstate->char-index
+             update-ppstate->size))
 
-  (defrule ppstate->lexmarks-of-update-ppstate->char
-    (equal (ppstate->lexmarks (update-ppstate->char i char ppstate))
+  (defrule ppstate->lexmarks-of-update-ppstate->char-index
+    (equal (ppstate->lexmarks (update-ppstate->char-index char-index ppstate))
            (ppstate->lexmarks ppstate))
     :enable (ppstate->lexmarks
-             update-ppstate->char
-             ppstate->chars-length))
-
-  (defrule ppstate->lexmarks-of-update-ppstate->chars-read
-    (equal (ppstate->lexmarks
-            (update-ppstate->chars-read chars-read ppstate))
-           (ppstate->lexmarks ppstate))
-    :enable (ppstate->lexmarks
-             update-ppstate->chars-read))
-
-  (defrule ppstate->lexmarks-of-update-ppstate->chars-unread
-    (equal (ppstate->lexmarks
-            (update-ppstate->chars-unread chars-unread ppstate))
-           (ppstate->lexmarks ppstate))
-    :enable (ppstate->lexmarks
-             update-ppstate->chars-unread))
+             update-ppstate->char-index))
 
   (defrule ppstate->lexmarks-of-update-ppstate->size
     (equal (ppstate->lexmarks (update-ppstate->size size ppstate))
@@ -574,36 +595,11 @@
     :enable (ppstate->lexmarks
              update-ppstate->size))
 
-  (defrule ppstate->size-of-update-ppstate->bytes
-    (equal (ppstate->size (update-ppstate->bytes bytes ppstate))
+  (defrule ppstate->size-of-update-ppstate->char-index
+    (equal (ppstate->size (update-ppstate->char-index char-index ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->bytes))
-
-  (defrule ppstate->size-of-update-ppstate->position
-    (equal (ppstate->size (update-ppstate->position position ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->position))
-
-  (defrule ppstate->size-of-update-ppstate->char
-    (equal (ppstate->size (update-ppstate->char i char+pos ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->char
-             ppstate->chars-length))
-
-  (defrule ppstate->size-of-update-ppstate->chars-read
-    (equal (ppstate->size (update-ppstate->chars-read chars-read ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->chars-read))
-
-  (defrule ppstate->size-of-update-ppstate->chars-unread
-    (equal (ppstate->size (update-ppstate->chars-unread chars-unread ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->chars-unread))
+             update-ppstate->char-index))
 
   (defrule ppstate->size-of-update-ppstate->lexmarks
     (equal (ppstate->size (update-ppstate->lexmarks lexmarks ppstate))
@@ -625,19 +621,44 @@
 
   ;; writers over readers:
 
-  (defrule update-ppstate->chars-read-of-ppstate->chars-read
-    (equal (update-ppstate->chars-read
-            (ppstate->chars-read ppstate) ppstate)
+  (defrule update-ppstate->chars-index-of-ppstate->chars-index
+    (equal (update-ppstate->char-index (ppstate->char-index ppstate)
+                                       ppstate)
            (ppstate-fix ppstate))
-    :enable (update-ppstate->chars-read
-             ppstate->chars-read))
+    :enable (update-ppstate->char-index
+             ppstate->char-index
+             nfix))
 
-  (defrule update-ppstate->chars-read-of-ppstate->chars-unread
-    (equal (update-ppstate->chars-unread
-            (ppstate->chars-unread ppstate) ppstate)
+  (defrule update-ppstate->size-of-ppstate->size
+    (equal (update-ppstate->size (ppstate->size ppstate) ppstate)
            (ppstate-fix ppstate))
-    :enable (update-ppstate->chars-unread
-             ppstate->chars-unread))
+    :enable (update-ppstate->size
+             ppstate->size
+             nfix))
+
+  ;; writers over writers:
+
+  (defrule update-ppstate->char-index-of-update-ppstate->char-index
+    (equal (update-ppstate->char-index char-index
+                                       (update-ppstate->char-index char-index2
+                                                                   ppstate))
+           (update-ppstate->char-index char-index ppstate))
+    :enable update-ppstate->char-index)
+
+  (defrule update-ppstate->size-of-update-ppstate->size
+    (equal (update-ppstate->size size (update-ppstate->size size2 ppstate))
+           (update-ppstate->size size ppstate))
+    :enable update-ppstate->size)
+
+  (defruled update-ppstate->size-of-update-ppstate->char-index
+    (equal (update-ppstate->size size
+                                 (update-ppstate->char-index char-index
+                                                             ppstate))
+           (update-ppstate->char-index char-index
+                                       (update-ppstate->size size
+                                                             ppstate)))
+    :enable (update-ppstate->char-index
+             update-ppstate->size))
 
   ;; keep recognizer disabled:
 
@@ -652,43 +673,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-ppstate ((data byte-listp)
+(define ppstate->current-position ((ppstate ppstatep))
+  :returns (pos positionp)
+  :short "Current position in the preprocessor state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the position of the current character,
+     or one past the end of the file."))
+  (b* ((index (ppstate->char-index ppstate))
+       ((unless (< index (ppstate->positions-length ppstate)))
+        (raise "Internal error: ~
+                the index ~x0 is not below ~
+                the length ~x1 of the positions array."
+               index
+               (ppstate->positions-length ppstate))
+        (irr-position)))
+    (ppstate->position index ppstate))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-ppstate ((chars uchar-listp)
+                      (poss position-listp)
                       (macros macro-tablep)
                       (options ppoptionsp)
                       (ienv ienvp)
-                      ppstate)
-  :returns (ppstate ppstatep)
+                      (ppstate ppstatep))
+  :guard (equal (len poss) (1+ (len chars)))
+  :returns (new-ppstate ppstatep)
   :short "Initialize the preprocessor state."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the state when we start preprocessing a file.
      It is built from
-     (the data of) a file to preprocess,
+     the characters read from the file,
+     their positions,
      the current table of macros in scope,
      the preprocessor options,
-     and an implementation environment.")
+     and the implementation environment.")
    (xdoc::p
-    "The array of byte lists is resized to the file recursion limit,
-     which is set by the caller of this function.
-     The bytes of the file are stored into the first element of the array,
-     to which the current byte list index is set to point.
-     The position is the initial one.
-     There are no read or unread characters,
-     and no lexmarks pending.
-     We resize the arrays of characters to the number of bytes,
-     which suffices because there are never more characters than bytes."))
-  (b* ((ppstate (update-ppstate->bytes data ppstate))
-       (ppstate (update-ppstate->position (position-init) ppstate))
-       (ppstate (update-ppstate->chars-length (len data) ppstate))
-       (ppstate (update-ppstate->chars-read 0 ppstate))
-       (ppstate (update-ppstate->chars-unread 0 ppstate))
-       (ppstate (update-ppstate->lexmarks nil ppstate))
-       (ppstate (update-ppstate->size (len data) ppstate))
+    "We resize the character and position arrays
+     to the lengths of the lists,
+     which are related as expressed in the guard,
+     and as explained in @(tsee ppstate).
+     The character index is set to 0, i.e. the beginning.
+     The size is set to the number of unread characters (all)."))
+  (b* ((ppstate (update-ppstate->chars-length (len chars) ppstate))
+       (ppstate (init-ppstate-chars-loop chars 0 ppstate))
+       (ppstate (update-ppstate->positions-length (len poss) ppstate))
+       (ppstate (init-ppstate-positions-loop poss 0 ppstate))
+       (ppstate (update-ppstate->char-index 0 ppstate))
+       (ppstate (update-ppstate->size (len chars) ppstate))
        (ppstate (update-ppstate->macros macros ppstate))
        (ppstate (update-ppstate->options options ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate)))
-    ppstate))
+    ppstate)
+
+  :prepwork
+
+  ((define init-ppstate-chars-loop ((chars uchar-listp)
+                                    (i natp)
+                                    (ppstate ppstatep))
+     :guard (<= (+ i (len chars))
+                (ppstate->chars-length ppstate))
+     :returns (new-ppstate ppstatep)
+     :parents nil
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((when (endp chars)) ppstate)
+          (ppstate (update-ppstate->char i (car chars) ppstate)))
+       (init-ppstate-chars-loop (cdr chars) (1+ (lnfix i)) ppstate)))
+
+   (define init-ppstate-positions-loop ((poss position-listp)
+                                        (i natp)
+                                        (ppstate ppstatep))
+     :guard (<= (+ i (len poss))
+                (ppstate->positions-length ppstate))
+     :returns (new-ppstate ppstatep)
+     :parents nil
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((when (endp poss)) ppstate)
+          (ppstate (update-ppstate->position i (car poss) ppstate)))
+       (init-ppstate-positions-loop (cdr poss) (1+ (lnfix i)) ppstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
