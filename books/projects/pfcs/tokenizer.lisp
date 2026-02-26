@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -16,10 +16,7 @@
 
 (include-book "projects/abnf/tree-utilities" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,7 +78,8 @@
        ;; item returned is a tree.
        ((unless (abnf::treep (car repetition)))
         (reserrf "lexeme repetition item should be an ABNF tree")))
-    (car repetition)))
+    (car repetition))
+  :no-function nil)
 
 ;; token = identifier / integer / operator / separator
 (define check-and-deref-tree-token? ((tree abnf::treep))
@@ -111,7 +109,8 @@
        ;; item returned is a tree.
        ((unless (abnf::treep (car repetition)))
         (reserrf "token repetition item should be an ABNF tree")))
-    (car repetition)))
+    (car repetition))
+  :no-function nil)
 
 (define filter-and-reduce-lexeme-tree-to-subtoken-trees
     ((trees abnf::tree-listp))
@@ -152,7 +151,11 @@
         (cons first-tree-under-token
               processed-rest-trees))
     ;; can't get here, but return '() for logic reasons
-    '()))
+    '())
+  :no-function nil
+  :guard-hints
+  (("Goal" :in-theory (enable abnf::treep-when-tree-resultp-and-not-reserrp)))
+  :hooks nil)
 
 (define tokenize-pfcs ((pfcs-string stringp))
   :returns (pfcs-lexemes abnf::tree-list-resultp)
@@ -175,7 +178,13 @@
                         lexeme-trees-result))
        ((when (reserrp subtoken-trees))
         (reserrf "problem with structure of lexeme tree")))
-    subtoken-trees))
+    subtoken-trees)
+  :no-function nil
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)))
+  :hooks nil)
 
 ;; A variation on tokenize-pfcs that takes a list of bytes
 (define tokenize-pfcs-bytes ((pfcs-bytes nat-listp))
@@ -193,4 +202,10 @@
                         lexeme-trees-result))
        ((when (reserrp subtoken-trees))
         (reserrf "problem with structure of lexeme tree")))
-    subtoken-trees))
+    subtoken-trees)
+  :no-function nil
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)))
+  :hooks nil)
