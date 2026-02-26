@@ -173,6 +173,63 @@
         halted_transition(op, hlt, hlt_next)
     }"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pfcs-bit ()
+  :returns (pdef pfcs::definitionp)
+  :short "Bit constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This constrains a field element to be a bit, i.e. 0 or 1.
+     It is used as part of the byte constraints;
+     see motivation there."))
+  (pfcs::parse-def
+   "bit(x) := {
+        x * (1 - x) == 0
+    }"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pfcs-byte ()
+  :returns (pdef pfcs::definitionp)
+  :short "Byte constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This constrains a field element to be a byte,
+     i.e. expressible as the weighted sum of eight bits.")
+   (xdoc::p
+    "This could be parameterized over the number of bits,
+     but for simplicity, and since there are only eight bits,
+     we define it as fixed PFCS constraints for now.")
+   (xdoc::p
+    "This is used to constrain the accumulator values in a trace.
+     It is actually not yet clear to us whether this condition
+     would be (in a full system) captured as AIR constraints
+     or in some other way external to the AIR constraints.
+     For now we use AIR constraints for this."))
+  (pfcs::parse-def
+   "byte(x) := {
+        bit(x0),
+        bit(x1),
+        bit(x2),
+        bit(x3),
+        bit(x4),
+        bit(x5),
+        bit(x6),
+        bit(x7),
+        x0 +
+        x1 * 2 +
+        x2 * 4 +
+        x3 * 8 +
+        x4 * 16 +
+        x5 * 32 +
+        x6 * 64 +
+        x7 * 128
+        - x == 0
+    }"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pfcs-table-vars ((n natp))
@@ -305,7 +362,7 @@
 
 (define pfcs-path ((path nat-listp))
   :returns (pdef pfcs::definitionp)
-  :short "Constraints for the execution path."
+  :short "Constraints on the execution path."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -341,7 +398,7 @@
 
 (define pfcs-opcodes ((opcodes program-p))
   :returns (pdef pfcs::definitionp)
-  :short "Constraints for the opcodes of the program."
+  :short "Constraints on the opcodes of the program."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -376,6 +433,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pfcs-accumulators ((n natp))
+  :returns (pdef pfcs::definitionp)
+  :short "Constraints on the accumulator of the trace."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each accumulator must be a byte.
+     This does not follow from the transition constraints,
+     even if the initial accumulator is a byte.
+     It is not yet clear whether this is expressed as AIR constraints,
+     in typical systems that use AIR constraints for execution traces,
+     or whether this kind of constraint is enforced externally;
+     this needs further investigation, but for now, for simplicity,
+     we capture these byte constraints are AIR constraints.")
+   (xdoc::p
+    "The PFCS definition has the form")
+   (xdoc::codeblock
+    "accumulators(acc[0], ..., acc[n]) := {"
+    "    byte(acc[0]),"
+    "    ...,"
+    "    byte(acc[n])"
+    "}"))
+  (b* ((name (pfcs::pfname "accumulators"))
+       (params (pfcs::pfnames "acc" (1+ (nfix n))))
+       (constrs (rev (pfcs-accumulators-loop n))))
+    (pfcs::definition name params constrs))
+
+  :prepwork
+  ((define pfcs-accumulators-loop ((n natp))
+     :returns (constrs pfcs::constraint-listp)
+     :parents nil
+     (b* ((constr (pfcs::constraint-relation
+                   (pfcs::pfname "byte")
+                   (list (pfcs::expression-var
+                          (pfcs::pfname "acc" (nfix n))))))
+          ((when (zp n)) (list constr)))
+       (cons constr (pfcs-accumulators-loop (1- n))))
+     :prepwork ((local (in-theory (enable nfix)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pfcs-table ((n natp))
   :returns (pdef pfcs::definitionp)
   :short "Table constraints."
@@ -395,7 +493,8 @@
     "              ...,"
     "              pc[n], acc[n], op[n], hlt[n]),"
     "    path(pc[0], ..., pc[n]),"
-    "    opcodes(op[0], ..., op[n])"
+    "    opcodes(op[0], ..., op[n]),"
+    "    accumulators(acc[0], ..., acc[n])"
     "}"))
   (b* ((name (pfcs::pfname "table"))
        (params (pfcs-table-vars n))
@@ -406,14 +505,53 @@
        (path-constr (pfcs::constraint-relation
                      (pfcs::pfname "path")
                      (pfcs::expression-var-list
-                      (pfcs::pfnames "pc" (nfix n)))))
+                      (pfcs::pfnames "pc" (1+ (nfix n))))))
        (opcodes-constr (pfcs::constraint-relation
                         (pfcs::pfname "opcodes")
                         (pfcs::expression-var-list
-                         (pfcs::pfnames "op" (nfix n)))))
+                         (pfcs::pfnames "op" (1+ (nfix n))))))
+       (accumulators-constr (pfcs::constraint-relation
+                             (pfcs::pfname "accumulators")
+                             (pfcs::expression-var-list
+                              (pfcs::pfnames "acc" (1+ (nfix n))))))
        (constrs (list execution-constr
                       path-constr
-                      opcodes-constr)))
+                      opcodes-constr
+                      accumulators-constr)))
+    (pfcs::definition name params constrs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pfcs-computation ((n natp))
+  :returns (pdef pfcs::definitionp)
+  :short "Input/output computation constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We join the table constraints
+     with two constraints that tie input and output to
+     the accumulator in the initial and final states:")
+   (xdoc::codeblock
+    "computation(input, output) := {"
+    "    table(pc[0], acc[0], op[0], hlt[0],"
+    "          ...,"
+    "          pc[n], acc[n], op[n], hlt[n]),"
+    "    input == acc[0],"
+    "    output == acc[n]"
+    "}"))
+  (b* ((name (pfcs::pfname "computation"))
+       (params (list (pfcs::pfname "input")
+                     (pfcs::pfname "output")))
+       (table-constr (pfcs::constraint-relation
+                      (pfcs::pfname "table")
+                      (pfcs::expression-var-list (pfcs-table-vars n))))
+       (input-constr (pfcs::pf= (pfcs::pfvar (pfcs::pfname "input"))
+                                (pfcs::pfvar (pfcs::pfname "acc" 0))))
+       (output-constr (pfcs::pf= (pfcs::pfvar (pfcs::pfname "output"))
+                                 (pfcs::pfvar (pfcs::pfname "acc" n))))
+       (constrs (list table-constr
+                      input-constr
+                      output-constr)))
     (pfcs::definition name params constrs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -428,11 +566,13 @@
    (xdoc::p
     "The result of compilation is a list of PFCS definitions,
      which build on each other.
-     The top-level definition is for the @('table') PFCS relation,
-     which characterizes the behavior of the program
-     on all the inputs whose execution
+     The top-level definition is for the @('computation') PFCS relation,
+     which characterizes the input/output behavior of
+     the programs on all the inputs whose execution
      terminates and hits the same execution path as @('input0').
-     The opcodes are the ones on that path."))
+     The opcodes are the ones on that path,
+     and the accumulators are constrained to be bytes
+     (see @(tsee pfcs-accumulators) for a discussion of this)."))
   (b* ((n (1+ (min-termination-limit prog input0)))
        (path (execution-path prog input0))
        (opcodes (fetch-list prog path)))
@@ -446,4 +586,6 @@
           (pfcs-execution n)
           (pfcs-path path)
           (pfcs-opcodes opcodes)
-          (pfcs-table n))))
+          (pfcs-accumulators n)
+          (pfcs-table n)
+          (pfcs-computation n))))

@@ -188,6 +188,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled pfcs-bit-pred-to-bitp
+  :short "The bit constraints are equivalent to @(tsee bitp)."
+  (implies (and (pfcs::primep prime)
+                (pfield::fep x prime))
+           (equal (pfcs-bit-pred x prime)
+                  (bitp x)))
+  :enable (pfcs-bit-pred))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled pfcs-byte-pred-to-<-256
+  :short "The byte constraints are equivalent to being below 256."
+  (implies (and (pfcs::primep prime)
+                (pfield::fep x prime))
+           (equal (pfcs-byte-pred x prime)
+                  (< x 256)))
+  :use (soundness completeness)
+
+  :prep-lemmas
+
+  ((defruled soundness
+     (implies (and (pfcs::primep prime)
+                   (pfield::fep x prime))
+              (implies (pfcs-byte-pred x prime)
+                       (< x 256)))
+     :enable (pfcs-byte-pred
+              pfcs-bit-pred-to-bitp
+              pfield::add
+              pfield::neg
+              pfield::mul
+              fix))
+
+   (defruled completeness
+     (implies (and (pfcs::primep prime)
+                   (pfield::fep x prime))
+              (implies (< x 256)
+                       (pfcs-byte-pred x prime)))
+     :use (:instance pfcs-byte-pred-suff
+                     (x0 (mod x 2))
+                     (x1 (mod (floor x 2) 2))
+                     (x2 (mod (floor x 4) 2))
+                     (x3 (mod (floor x 8) 2))
+                     (x4 (mod (floor x 16) 2))
+                     (x5 (mod (floor x 32) 2))
+                     (x6 (mod (floor x 64) 2))
+                     (x7 (mod (floor x 128) 2)))
+     :enable pfcs-bit-pred-to-bitp
+     :hints (`(:cases ,(cases 255)))
+     :prep-lemmas
+     ((defun cases (n)
+        (if (zp n)
+            nil
+          (cons `(equal x ,n)
+                (cases (1- n)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled pfcs-initial-pred-to-pc=hlt=0
   :short "The first row constraints are equivalent to
           the program counter being 0."
@@ -746,7 +803,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled pfcs-table-pred-to-min-trace-and-path-and-opcodes
+(defruled pfcs-accumulators-pred-to-all-<-256
+  :short "The accumulator constraints are equivalent to
+          all the accumulator values being below 256."
+  (implies (and (pfcs::primep prime)
+                (pfield::fe-listp accs prime))
+           (equal (pfcs-accumulators-pred accs prime)
+                  (all-< accs 256)))
+  :induct t
+  :enable (pfcs-accumulators-pred
+           pfcs-byte-pred-to-<-256))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled pfcs-table-pred-to-min-trace-and-path-and-opcodes-and-accumulators
   :short "The table constraints are equivalent to
           the generation of the minimal trace,
           the program counters being the executino path,
@@ -777,7 +847,6 @@
                 (terminatesp prog (car accs))
                 (equal (execution-path prog (car accs)) path)
                 (equal (len pcs) (len path))
-                (all-< accs 256)
                 (> prime 510)
                 (<= (len prog) prime))
            (equal (pfcs-table-pred path opcodes pcs accs ops hlts prime)
@@ -785,11 +854,13 @@
                        (equal (generate-min-trace prog (car accs))
                               (trace-from-field pcs accs hlts prog))
                        (equal pcs (execution-path prog (car accs)))
-                       (equal ops (opcode-list-to-field opcodes)))))
+                       (equal ops (opcode-list-to-field opcodes))
+                       (all-< accs 256))))
   :enable (pfcs-table-pred
            pfcs-execution-pred-to-min-trace
            pfcs-path-pred-to-def-of-pcs
            pfcs-opcodes-pred-to-def-of-ops
+           pfcs-accumulators-pred-to-all-<-256
            all-<-of-prime-when-all-<-of-len-prog)
   :use ((:instance len-of-execution-path (input input0))
         (:instance len-of-execution-path (input (car accs))))
@@ -805,106 +876,118 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled pfcs-table-pred-to-program-ouput-soundness
-  :short "Soundness of the PFCS constraints."
+(defruled pfcs-computation-pred-to-program-output
+  :short "The computation constraints are equivalent to
+          the input/output semantics of the program."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the table constraints are satisfied,
-     the final accumulator is the program output
-     for the initial accumulator as input,
-     for all inputs on which the program terminates
-     following the same path as a known input @('input0').")
-   (xdoc::p
-    "Note the hypothesis that all the accumulators are below 256.
-     This is not enforced directly in the AIR constraints,
-     and thus has to be an explicit hypothesis."))
-  (implies (and (pfcs::primep prime)
-                (pfield::fe-listp pcs prime)
-                (pfield::fe-listp accs prime)
-                (pfield::fe-listp ops prime)
-                (pfield::fe-listp hlts prime)
-                (equal (len accs) (len pcs))
-                (equal (len ops) (len pcs))
-                (equal (len hlts) (len pcs))
-                (program-well-formed-p prog)
+    "Given a program,
+     and a specific input @('input0') on which the program terminates,
+     then for every generic input @('input')
+     on which the program also terminates
+     and follows the same path as @('input0'),
+     the computation constraints are satisfied exactly when
+     the output matches the one returned by the program on @('input')."))
+  (implies (and (program-well-formed-p prog)
                 (terminatesp prog input0)
                 (equal path (execution-path prog input0))
                 (equal opcodes (fetch-list prog path))
                 (terminatesp prog input)
                 (equal (execution-path prog input) path)
-                (equal (len pcs) (len path))
-                (all-< accs 256)
-                (> prime 510)
-                (<= (len prog) prime)
-                (equal input (car accs))
-                (equal output (car (last accs)))
-                (pfcs-table-pred path opcodes pcs accs ops hlts prime))
-           (equal (program-output prog input)
-                  output))
-  :enable (pfcs-table-pred-to-min-trace-and-path-and-opcodes
-           program-output-as-generate-min-trace
-           ubyte8p
-           unsigned-byte-p
-           integer-range-p
-           row-to-state)
-  :use row-to-state-of-last-of-trace-from-field)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled pfcs-table-pred-to-program-output-completeness
-  :short "Completeness of the PFCS constraints."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Given an input @('input') whose execution terminates
-     with the same path as a known input @('input0'),
-     the table constraints are satisfied by a solution consisting of
-     the program counters of the trace,
-     the accumulators of the trace
-     (with the input as start and the output as end),
-     the opcode encodings of the trace,
-     and the halted flags of the trace."))
-  (implies (and (pfcs::primep prime)
-                (program-well-formed-p prog)
-                (terminatesp prog input0)
-                (equal path (execution-path prog input0))
-                (equal opcodes (fetch-list prog path))
-                (terminatesp prog input)
-                (equal (execution-path prog input) path)
+                (pfcs::primep prime)
                 (> prime 510)
                 (<= (len prog) prime)
                 (ubyte8p input)
-                (equal (program-output prog input)
-                       output))
-           (b* ((pcs path)
-                (ops (opcode-list-to-field opcodes))
-                (accs (trace-accs (generate-min-trace prog input)))
-                (hlts (bool-list->bit-list
-                       (trace-halteds (generate-min-trace prog input)))))
-             (implies (and (equal input (car accs))
-                           (equal output (car (last accs))))
-                      (pfcs-table-pred path opcodes pcs accs ops hlts prime))))
-  :enable (pfield::fe-listp-when-nat-listp-and-all-<-prime
-           pfield::fe-listp-when-ubyte8-listp
-           pfield::fe-listp-when-bit-listp
-           program-output-as-generate-min-trace
-           ubyte8p
-           unsigned-byte-p
-           integer-range-p
-           pfcs-table-pred-to-min-trace-and-path-and-opcodes
-           trace-from-field-of-trace-comps
-           execution-path
-           last-of-trace-accs
-           trace-opcodes-of-generate-min-trace)
-  :disable len-of-trace-pcs
-  :use ((:instance len-of-trace-pcs (x (generate-min-trace prog input)))
-        (:instance len-of-trace-pcs (x (generate-min-trace prog input0))))
+                (ubyte8p output))
+           (equal (pfcs-computation-pred path opcodes input output prime)
+                  (equal (program-output prog input)
+                         output)))
+  :use (soundness completeness)
 
   :prep-lemmas
-  ((defrule all-<-of-prime-when-all-<-of-len-prog
-     (implies (and (<= (len prog) prime)
-                   (all-< pcs (len prog)))
-              (all-< pcs prime))
-     :induct t
-     :enable all-<)))
+
+  ((defruled soundness
+     (implies (and (program-well-formed-p prog)
+                   (terminatesp prog input0)
+                   (equal path (execution-path prog input0))
+                   (equal opcodes (fetch-list prog path))
+                   (terminatesp prog input)
+                   (equal (execution-path prog input) path)
+                   (pfcs::primep prime)
+                   (> prime 510)
+                   (<= (len prog) prime)
+                   (ubyte8p input)
+                   (ubyte8p output)
+                   (pfcs-computation-pred path opcodes input output prime))
+              (equal (program-output prog input)
+                     output))
+     :enable (pfcs-computation-pred
+              pfcs-table-pred-to-min-trace-and-path-and-opcodes-and-accumulators
+              program-output-as-generate-min-trace
+              ubyte8p
+              unsigned-byte-p
+              integer-range-p
+              row-to-state)
+     :use (:instance row-to-state-of-last-of-trace-from-field
+                     (pcs (execution-path prog input))
+                     (accs (mv-nth 1
+                                   (pfcs-computation-pred-witness
+                                    (execution-path prog input)
+                                    (fetch-list prog
+                                                (execution-path prog input))
+                                    input output prime)))
+                     (hlts (mv-nth 3
+                                   (pfcs-computation-pred-witness
+                                    (execution-path prog input)
+                                    (fetch-list prog
+                                                (execution-path prog input))
+                                    input output prime)))))
+
+   (defruled completeness
+     (implies (and (program-well-formed-p prog)
+                   (terminatesp prog input0)
+                   (equal path (execution-path prog input0))
+                   (equal opcodes (fetch-list prog path))
+                   (terminatesp prog input)
+                   (equal (execution-path prog input) path)
+                   (pfcs::primep prime)
+                   (> prime 510)
+                   (<= (len prog) prime)
+                   (ubyte8p input)
+                   (ubyte8p output)
+                   (equal (program-output prog input)
+                          output))
+              (pfcs-computation-pred path opcodes input output prime))
+     :enable (pfield::fe-listp-when-nat-listp-and-all-<-prime
+              pfield::fe-listp-when-ubyte8-listp
+              pfield::fe-listp-when-bit-listp
+              program-output-as-generate-min-trace
+              ubyte8p
+              unsigned-byte-p
+              integer-range-p
+              pfcs-table-pred-to-min-trace-and-path-and-opcodes-and-accumulators
+              trace-from-field-of-trace-comps
+              execution-path
+              last-of-trace-accs
+              trace-opcodes-of-generate-min-trace)
+     :disable len-of-trace-pcs
+     :use ((:instance len-of-trace-pcs (x (generate-min-trace prog input)))
+           (:instance len-of-trace-pcs (x (generate-min-trace prog input0)))
+           (:instance pfcs-computation-pred-suff
+                      (path (execution-path prog input0))
+                      (opcodes (fetch-list prog (execution-path prog input0)))
+                      (pcs (execution-path prog input0))
+                      (ops (opcode-list-to-field
+                            (fetch-list prog (execution-path prog input0))))
+                      (accs (trace-accs (generate-min-trace prog input)))
+                      (hlts (bool-list->bit-list
+                             (trace-halteds (generate-min-trace prog input))))))
+
+     :prep-lemmas
+     ((defrule all-<-of-prime-when-all-<-of-len-prog
+        (implies (and (<= (len prog) prime)
+                      (all-< pcs (len prog)))
+                 (all-< pcs prime))
+        :induct t
+        :enable all-<)))))
