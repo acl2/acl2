@@ -35,6 +35,18 @@
     (implies (unsigned-byte-p 32 x)
              (integerp x))))
 
+(local
+ (defthm equal-of-+-of-bvchop-same-31-32-linear
+   (implies (and (unsigned-byte-p 32 x)
+                 (integerp y))
+            (equal x (+ (bvchop 31 x) (* (expt 2 31) (getbit 31 x)))))
+   :rule-classes :linear
+   :hints (("Goal" :use (:instance acl2::split-bv
+                                   (x x)
+                                   (n 32)
+                                   (m 31))
+                   :in-theory (enable bvcat acl2::logapp getbit)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *unpredictable* :unpredictable)
@@ -459,7 +471,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv result carry_out overflow).
-;; todo: chop inputs to improve the rules below?
 (defund AddWithCarry (n x y carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (unsigned-byte-p n y)
@@ -472,7 +483,7 @@
          (overflow (if (== (sint n result) signed_sum) 0 1)))
     (mv result carry_out overflow)))
 
-;; todo: other rvs
+;; Output 0 is just the sum of x and y and carry_in.
 (defthm mv-nth-0-of-AddWithCarry
   (implies (and (posp n)
                 (integerp x)
@@ -484,12 +495,14 @@
 
 (local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for acl2::unsigned-byte-p-when-top-bit-0
+;; This expresses the carry_out in using BV operations.
 (defthm mv-nth-1-of-AddWithCarry
   (implies (and (posp n)
                 (unsigned-byte-p n x)
                 (unsigned-byte-p n y)
                 (bitp carry_in))
            (equal (mv-nth 1 (AddWithCarry n x y carry_in))
+                  ;; we use one extra bit of width for the sum, so no chopping or overflow happens:
                   (getbit n (bvplus (+ 1 n) x (bvplus (+ 1 n) y carry_in)))))
   :hints (("Goal" :cases ((unsigned-byte-p (+ 1 n) (+ carry_in x y)))
                   :use (:instance acl2::unsigned-byte-p-of-+-with-carry
@@ -529,18 +542,6 @@
 ;;                                    (n 8)
 ;;                                    (m 7))
 ;;                    :in-theory (enable bvcat acl2::logapp getbit)))))
-
-(local
- (defthm equal-of-+-of-bvchop-same-31-32-linear
-   (implies (and (unsigned-byte-p 32 x)
-                 (integerp y))
-            (equal x (+ (bvchop 31 x) (* (expt 2 31) (getbit 31 x)))))
-   :rule-classes :linear
-   :hints (("Goal" :use (:instance acl2::split-bv
-                                   (x x)
-                                   (n 32)
-                                   (m 31))
-                   :in-theory (enable bvcat acl2::logapp getbit)))))
 
 (local
  (defthmd mv-nth-2-of-AddWithCarry-carry-0
@@ -610,6 +611,7 @@
    ))
 
 ;; todo: can this be simplified?
+;; This uses BV ops.
 (defund addwithcarry-overflow (n x y carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (unsigned-byte-p n y)
@@ -623,12 +625,11 @@
                      (sbvlt n y (bvminus n (bvminus n (- (expt 2 (- n 1))) x) carry_in))))))
 
 (defthm unsigned-byte-p-of-addwithcarry-overflow
-  (implies (and (<= n size)
-                (posp size))
+  (implies (posp size)
            (unsigned-byte-p size (addwithcarry-overflow n x y carry_in)))
   :hints (("Goal" :in-theory (enable addwithcarry-overflow))))
 
-;; Expresses the signed overflow bit in terms of BV ops
+;; Expresses the signed overflow bit in terms of addwithcarry-overflow, which uses BV ops.
 ;; TODO: Is there a nicer way to do this?
 ;; If carry_in=0, this reduces to mv-nth-2-of-AddWithCarry-carry-0.
 ;; If carry_in=1, this reduces to mv-nth-2-of-AddWithCarry-carry-1.
@@ -664,29 +665,23 @@
   ;;                ))
   )
 
-
 (defthm unsigned-byte-p-of-mv-nth-0-of-AddWithCarry
-  (implies (and (unsigned-byte-p n x)
-                (unsigned-byte-p n y)
+  (implies (and ;(unsigned-byte-p n x)
+                ;(unsigned-byte-p n y)
                 (posp n) ; so there is a sign bit
-                (bitp carry_in))
+                ;(bitp carry_in)
+                )
            (unsigned-byte-p n (mv-nth 0 (AddWithCarry n x y carry_in))))
   :hints (("Goal" :in-theory (enable AddWithCarry))))
 
 (defthm unsigned-byte-p-of-mv-nth-1-of-AddWithCarry
-  (implies (and (unsigned-byte-p n x)
-                (unsigned-byte-p n y)
-                (posp n) ; so there is a sign bit
-                (bitp carry_in))
-           (unsigned-byte-p 1 (mv-nth 1 (AddWithCarry n x y carry_in))))
+  (implies (posp size)
+           (unsigned-byte-p size (mv-nth 1 (AddWithCarry n x y carry_in))))
   :hints (("Goal" :in-theory (enable AddWithCarry))))
 
 (defthm unsigned-byte-p-of-mv-nth-2-of-AddWithCarry
-  (implies (and (unsigned-byte-p n x)
-                (unsigned-byte-p n y)
-                (posp n) ; so there is a sign bit
-                (bitp carry_in))
-           (unsigned-byte-p 1 (mv-nth 2 (AddWithCarry n x y carry_in))))
+  (implies (posp size)
+           (unsigned-byte-p size (mv-nth 2 (AddWithCarry n x y carry_in))))
   :hints (("Goal" :in-theory (enable AddWithCarry))))
 
 ;; (thm
