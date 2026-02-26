@@ -21,7 +21,6 @@
  (progn
    (include-book "abstract-domains/top")
    (include-book "acl2pl/top")
-   (include-book "air/top")
    (include-book "apt/doc")
    (include-book "arm/doc")
    (include-book "axe/doc")
@@ -35,7 +34,8 @@
    (include-book "c/top")
    (merge-io-pairs
     dm::primep
-    (include-book "crypto/top"))
+    (include-book "crypto/top")
+    (include-book "air/top"))
    (include-book "data/doc")
    (include-book "error-checking/top")
    (include-book "event-macros/top")
