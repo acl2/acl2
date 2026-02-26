@@ -59,14 +59,14 @@
    (xdoc::ul
     (xdoc::li
      (xdoc::b "Language component")
-     " — defines the ISA:"
+     " - defines the ISA:"
      (xdoc::ul
       (xdoc::li "@(see abstract-syntax) - opcodes and programs")
       (xdoc::li "@(see static-semantics) - program well-formedness")
       (xdoc::li "@(see dynamic-semantics) - interpreter")))
     (xdoc::li
      (xdoc::b "AIR component")
-     " — represents execution as polynomial constraints over a finite field:"
+     " - represents execution as polynomial constraints over a finite field:"
      (xdoc::ul
       (xdoc::li "@(see field) - Koala Bear field arithmetic")
       (xdoc::li "@(see traces) - execution traces as tables of field elements")
