@@ -52,10 +52,10 @@
    (xdoc::p
     "A trace row captures the VM state at one execution step:")
    (xdoc::ul
-    (xdoc::li "@('pc') — program counter")
-    (xdoc::li "@('acc') — accumulator value (8-bit)")
-    (xdoc::li "@('opcode') — instruction being executed")
-    (xdoc::li "@('halted') — whether execution has halted")))
+    (xdoc::li "@('pc') - program counter")
+    (xdoc::li "@('acc') - accumulator value (8-bit)")
+    (xdoc::li "@('opcode') - instruction being executed")
+    (xdoc::li "@('halted') - whether execution has halted")))
   ((pc     natp)
    (acc    ubyte8)
    (opcode opcode)
