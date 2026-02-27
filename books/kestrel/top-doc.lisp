@@ -1,6 +1,6 @@
 ; Extract and export only Kestrel xdoc material
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,7 +34,8 @@
    (include-book "c/top")
    (merge-io-pairs
     dm::primep
-    (include-book "crypto/top"))
+    (include-book "crypto/top")
+    (include-book "air/top"))
    (include-book "data/doc")
    (include-book "error-checking/top")
    (include-book "event-macros/top")

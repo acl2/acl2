@@ -273,7 +273,7 @@
      stat32p-of-write
      ;; stat32p-of-set-pc ; uncomment?
 
-     ;; regiseter names (we expand these to REG):
+     ;; register names (we expand these to REG):
      x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
      ;; register aliases:
      ;; zero
@@ -290,7 +290,6 @@
      riscv::feat
      riscv::feat->base$inline
      riscv::feat->m$inline-constant-opener ; should all of these be constant-openers?
-
 
      riscv32im-le::feat-rv32im-le ; todo: use constant-openers more for these?
 
