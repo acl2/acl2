@@ -60,24 +60,22 @@
   :parents (instruction-semantic-functions)
   :short "Specification for the SIMD addition instructions."
   :long
-  "<p>
-   This is for the (V)PADDB/(V)PADDW/(V)PADDD/(V)PADDQ instructions.
-   </p>
-   <p>
-   Given @('x') and @('y'), each of size @('total-size') in bits,
-   we add each chunk of size @('chunk-size') in bits,
-   independently from the other chunks,
-   keeping the low @('chunk-size') bits of each result,
-   and putting the resulting chunks together, in the same order,
-   to obtain the final result of size @('total-size').
-   This kind of operation is illustrated in
-   Intel Manual Volume 1 Figure 9-4 (Dec 2023).
-   </p>
-   <p>
-   The @('total-size') must be a multiple of @('chunk-size').
-   For instance, for the VEX form of VPADDW,
-   @('total-size') is 128 and @('chunk-size') is 16.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the (V)PADDB/(V)PADDW/(V)PADDD/(V)PADDQ instructions.")
+   (xdoc::p
+    "Given @('x') and @('y'), each of size @('total-size') in bits,
+     we add each chunk of size @('chunk-size') in bits,
+     independently from the other chunks,
+     keeping the low @('chunk-size') bits of each result,
+     and putting the resulting chunks together, in the same order,
+     to obtain the final result of size @('total-size').
+     This kind of operation is illustrated in
+     Intel Manual Volume 1 Figure 9-4 (Dec 2023).")
+   (xdoc::p
+    "The @('total-size') must be a multiple of @('chunk-size').
+     For instance, for the VEX form of VPADDW,
+     @('total-size') is 128 and @('chunk-size') is 16."))
   (b* (((when (zp total-size)) 0)
        ((unless (mbt (posp chunk-size))) 0)
        (x-lo (loghead chunk-size x))
