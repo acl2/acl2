@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -994,6 +994,13 @@
          (mv (make-tree-nonleaf :rulename? (rulename ,rulename)
                                 :branches treess)
              input))
+       :no-function nil
+       :prepwork
+       ((local
+         (in-theory
+          (enable treep-when-tree-resultp-and-not-reserrp
+                  tree-listp-when-tree-list-resultp-and-not-reserrp
+                  tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-rulename '-<=)
@@ -1054,6 +1061,13 @@
          (mv (make-tree-nonleaf :rulename? nil
                                 :branches treess)
              input))
+       :no-function nil
+       :prepwork
+       ((local
+         (in-theory
+          (enable treep-when-tree-resultp-and-not-reserrp
+                  tree-listp-when-tree-list-resultp-and-not-reserrp
+                  tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-group '-<=)
@@ -1120,6 +1134,13 @@
          (mv (make-tree-nonleaf :rulename? nil
                                 :branches treess)
              input))
+       :no-function nil
+       :prepwork
+       ((local
+         (in-theory
+          (enable treep-when-tree-resultp-and-not-reserrp
+                  tree-listp-when-tree-list-resultp-and-not-reserrp
+                  tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-option '-<=)
@@ -1170,8 +1191,15 @@
             ((when (reserrp tree)) (mv nil input))
             ((mv trees input) (,parse-repetition input)))
          (mv (cons tree trees) input))
+       :no-function nil
        :measure (len input)
-       :hints (("Goal" :in-theory (enable o< o-finp)))
+       :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+       :prepwork
+       ((local
+         (in-theory
+          (enable treep-when-tree-resultp-and-not-reserrp
+                  tree-listp-when-tree-list-resultp-and-not-reserrp
+                  tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-repetition)

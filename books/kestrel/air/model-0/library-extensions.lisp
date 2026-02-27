@@ -19,6 +19,7 @@
 (include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
@@ -70,6 +71,13 @@
   :induct t
   :enable (butlast fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled nth-of-len-minus-1-is-car-last
+  (implies (consp lst)
+           (equal (nth (1- (len lst)) lst)
+                  (car (last lst)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule all-<-256-when-ubyte8-listp
@@ -80,6 +88,13 @@
            ubyte8p
            unsigned-byte-p
            integer-range-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled ubyte8p-of-mod-256
+  (implies (integerp x)
+           (ubyte8p (mod x 256)))
+  :enable ubyte8p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -13,11 +13,12 @@
 
 (include-book "../portcullis")
 
-(include-book "kestrel/arithmetic-light/mod" :dir :system)
 (include-book "kestrel/crypto/primes/koala-bear" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
+
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
