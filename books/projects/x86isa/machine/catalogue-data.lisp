@@ -234,7 +234,8 @@ what the instruction. Not sure why they are listed that way.</p>")
         PADDB/PADDW/PADDD/PADDQ,
         PADDUSB/PADDUSW,
         PADDSB/PADDSW,
-        PSUBB/PSUBW/PSUBD, and
+        PSUBB/PSUBW/PSUBD,
+        PSUBSB/PSUBSW, and
         PSUBUSB/PSUBUSW.
         A few have SSE versions implemented.</p>")
 
