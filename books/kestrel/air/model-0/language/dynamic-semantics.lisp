@@ -144,12 +144,6 @@
                :halted t))))
   :hooks (:fix))
 
-;; Helper lemma: nth at position (len-1) equals car of last
-(defthm nth-of-len-minus-1
-  (implies (consp lst)
-           (equal (nth (1- (len lst)) lst)
-                  (car (last lst)))))
-
 ;; Key property: for well-formed programs, step1 preserves PC bounds.
 ;; This is needed for guard verification of run.
 (defthm step1-preserves-pc-bound
@@ -159,7 +153,8 @@
   :hints (("Goal" :in-theory (enable step1 fetch
                                      program-well-formed-p
                                      program-nonempty-p
-                                     program-ends-with-halt-p))))
+                                     program-ends-with-halt-p
+                                     nth-of-len-minus-1-is-car-last))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Multi-Step Execution (Interpreter)
