@@ -3,7 +3,7 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2024, Kestrel Technology LLC
+; Copyright (C) 2026, Kestrel Technology LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -40,8 +40,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils" :ttags (:undef-flg))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
@@ -101,10 +100,10 @@
 
   :long
   "<code>
-   PADDB mm, mm2/m64
-   PADDW mm, mm2/m64
-   PADDD mm, mm2/m64
-   PADDQ mm, mm2/m64
+   PADDB mm, mm/m64
+   PADDW mm, mm/m64
+   PADDD mm, mm/m64
+   PADDQ mm, mm/m64
    </code>"
 
   :modr/m t
