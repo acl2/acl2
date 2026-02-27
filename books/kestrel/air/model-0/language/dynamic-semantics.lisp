@@ -41,14 +41,9 @@
 ;; Byte Arithmetic
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Helper lemma: mod of a natural by 256 is always a ubyte8
-(defthm ubyte8p-of-mod-256
-  (implies (integerp x)
-           (ubyte8p (mod x 256)))
-  :hints (("Goal" :in-theory (enable ubyte8p))))
-
 (define byte-incr ((x ubyte8p))
-  :returns (result ubyte8p)
+  :returns (result ubyte8p
+                   :hints (("Goal" :in-theory (enable ubyte8p-of-mod-256))))
   :short "Increment a byte with wrap-around."
   :long
   (xdoc::topstring
@@ -58,7 +53,8 @@
        :exec (mod (1+ x) 256)))
 
 (define byte-decr ((x ubyte8p))
-  :returns (result ubyte8p)
+  :returns (result ubyte8p
+                   :hints (("Goal" :in-theory (enable ubyte8p-of-mod-256))))
   :short "Decrement a byte with wrap-around."
   :long
   (xdoc::topstring
