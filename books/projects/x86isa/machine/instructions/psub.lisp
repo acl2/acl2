@@ -3,7 +3,7 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2024, Kestrel Technology LLC
+; Copyright (C) 2026, Kestrel Technology LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -40,8 +40,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils" :ttags (:undef-flg))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
@@ -61,24 +60,22 @@
   :parents (instruction-semantic-functions)
   :short "Specification for the SIMD subtraction instructions."
   :long
-  "<p>
-   This is for the (V)PSUBB/(V)PSUBW/(V)PSUBD/(V)PSUBQ instructions.
-   </p>
-   <p>
-   Given @('x') and @('y') of size @('total-size') in bits,
-   we perform a subtraction on each chunk of size @('chunk-size') in bits,
-   independently from the other chunks,
-   keeping the low @('chunk-size') bits of each result,
-   and putting the resulting chunks together, in the same order,
-   to obtain the final result of size @('total-size').
-   This kind of operation is illustrated in
-   Intel Manual Volume 1 Figure 9-4 (Dec 2023).
-   </p>
-   <p>
-   The @('total-size') must be a multiple of @('chunk-size').
-   For instance, for the VEX form of VPSUBW,
-   @('total-size') is 128 and @('chunk-size') is 16.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the (V)PSUBB/(V)PSUBW/(V)PSUBD/(V)PSUBQ instructions.")
+   (xdoc::p
+    "Given @('x') and @('y') of size @('total-size') in bits,
+     we perform a subtraction on each chunk of size @('chunk-size') in bits,
+     independently from the other chunks,
+     keeping the low @('chunk-size') bits of each result,
+     and putting the resulting chunks together, in the same order,
+     to obtain the final result of size @('total-size').
+     This kind of operation is illustrated in
+     Intel Manual Volume 1 Figure 9-4 (Dec 2023).")
+   (xdoc::p
+    "The @('total-size') must be a multiple of @('chunk-size').
+     For instance, for the VEX form of VPSUBW,
+     @('total-size') is 128 and @('chunk-size') is 16."))
   (b* (((when (zp total-size)) 0)
        ((unless (mbt (posp chunk-size))) 0)
        (x-lo (loghead chunk-size x))
@@ -90,6 +87,97 @@
         (simd-sub-spec (- total-size chunk-size) chunk-size x-hi y-hi)))
     (logapp chunk-size result-lo result-hi))
   :measure (nfix total-size))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-psubb/psubw/psubd-mmx
+
+  :parents (two-byte-opcodes)
+
+  :short "Subtract packed integers (MMX variants)."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "PSUBB mm, mm/m64"
+    "PSUBW mm, mm/m64"
+    "PSUBD mm, mm/m64")
+   (xdoc::p
+    "Unlike PADDQ, the PSUBQ instruction has no MMX variant."))
+
+  :modr/m t
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; The operand size is always 64 bits, i.e. 8 bytes.
+       (operand-size 8)
+
+       ;; The first source operand (Operand 1 in the Intel manual)
+       ;; is the MMX register specified in Reg.
+       ;; This is also the destination operand,
+       ;; and thus we obtain the index for later use.
+       ;; Since there are only 8 MMX registers, the REX byte is not used.
+       ((the (unsigned-byte 4) src1/dst-index) reg)
+       ((the (unsigned-byte 128) src1) (mmx src1/dst-index x86))
+
+       ;; The second source operand (Operand 2 in the Intel manual)
+       ;; is the MMX register, or memory operand, specified in Mod and R/M.
+       (inst-ac? t) ; Intel Manual Volume 2 Table 2-21 (Dec 2023)
+       ((mv flg
+            (the (unsigned-byte 64) src2)
+            (the (integer 0 4) increment-rip-by)
+            ?addr
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*mmx-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not a memory operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Calculate the result.
+       (result (case opcode
+                 (#xfc (simd-sub-spec (* 8 operand-size) 08 src1 src2))
+                 (#xfd (simd-sub-spec (* 8 operand-size) 16 src1 src2))
+                 (#xfe (simd-sub-spec (* 8 operand-size) 32 src1 src2))
+                 (#xd4 (simd-sub-spec (* 8 operand-size) 64 src1 src2))
+                 (t 0))) ; unreachable
+
+       ;; Store the result into the destination register.
+       (x86 (!mmx src1/dst-index result x86))
+       (x86 (mmx-instruction-updates x86))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
