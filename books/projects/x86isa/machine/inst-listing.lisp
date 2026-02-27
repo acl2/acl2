@@ -11235,7 +11235,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSUBUSB/PSUBUSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSUBUSB"
           (OP :OP #xFD8 :PFX :66 :FEAT '(:SSE2))
@@ -11283,7 +11283,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSUBUSB/PSUBUSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSUBUSW"
           (OP :OP #xFD9 :PFX :66 :FEAT '(:SSE2))

@@ -234,8 +234,8 @@ what the instruction. Not sure why they are listed that way.</p>")
         PADDB/PADDW/PADDD/PADDQ,
         PADDUSB/PADDUSW,
         PADDSB/PADDSW,
-        and
-        PSUBB/PSUBW/PSUBD.
+        PSUBB/PSUBW/PSUBD, and
+        PSUBUSB/PSUBUSW.
         A few have SSE versions implemented.</p>")
 
 (def-sdm-instruction-section "5.4.4 MMX Comparison Instructions"
