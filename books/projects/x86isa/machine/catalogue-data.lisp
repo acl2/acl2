@@ -231,7 +231,9 @@ what the instruction. Not sure why they are listed that way.</p>")
                      PSUBD PSUBSB PSUBSW PSUBUSB PSUBUSW PMULHW PMULLW PMADDWD)
   :features '(or :mmx (and :sse "PMULHW"))
   :doc "<p>MMX versions are all unimplemented except for
-        PADDB/PADDW/PADDD/PADDQ and PSUBB/PSUBW/PSUBD.
+        PADDB/PADDW/PADDD/PADDQ,
+        PADDUSB/PADDUSW, and
+        PSUBB/PSUBW/PSUBD.
         A few have SSE versions implemented.</p>")
 
 (def-sdm-instruction-section "5.4.4 MMX Comparison Instructions"

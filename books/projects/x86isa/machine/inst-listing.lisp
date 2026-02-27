@@ -11450,7 +11450,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDUSB/PADDUSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDUSB"
           (OP :OP #xFDC :PFX :66 :FEAT '(:SSE2))
@@ -11498,7 +11498,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDUSB/PADDUSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDUSW"
           (OP :OP #xFDD :PFX :66 :FEAT '(:SSE2))
