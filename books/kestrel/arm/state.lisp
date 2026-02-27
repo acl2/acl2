@@ -318,6 +318,7 @@
 (defthm reg-of-set-apsr.q (equal (reg n (set-apsr.q bit arm)) (reg n arm)) :hints (("Goal" :in-theory (enable set-apsr.q reg))))
 
 (defthm reg-of-update-isetstate (equal (reg n (update-isetstate v arm)) (reg n arm)) :hints (("Goal" :in-theory (enable reg))))
+(defthm reg-of-update-itstate (equal (reg n (update-itstate v arm)) (reg n arm)) :hints (("Goal" :in-theory (enable reg))))
 
 (defthm error-of-set-apsr.n (equal (error (set-apsr.n bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.n reg))))
 (defthm error-of-set-apsr.z (equal (error (set-apsr.z bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.z reg))))

@@ -1,7 +1,7 @@
 ; Signed bit-vector "less than" comparison
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -448,4 +448,32 @@
 (defthm sbvlt-of-ifix-arg3
   (equal (sbvlt size x (ifix y))
          (sbvlt size x y))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm sbvlt-of-+-of-constant-trim-arg2
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)
+                              (not (quotep x)) ;defeats acl2's over-aggressive matching
+                              ))
+                (not (unsigned-byte-p size k))
+                (integerp x)
+                (integerp k)
+                (posp size))
+           (equal (sbvlt size (+ k x) y)
+                  (sbvlt size (+ (bvchop size k) x) y)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthm sbvlt-of-+-of-constant-trim-arg3
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)
+                              (not (quotep x)) ;defeats acl2's over-aggressive matching
+                              ))
+                (not (unsigned-byte-p size k))
+                (integerp x)
+                (integerp k)
+                (posp size))
+           (equal (sbvlt size y (+ k x))
+                  (sbvlt size y (+ (bvchop size k) x))))
   :hints (("Goal" :in-theory (enable sbvlt))))

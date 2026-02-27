@@ -1466,6 +1466,7 @@
 (defthm read-byte-of-set-apsr.q (equal (read-byte addr (set-apsr.q bit arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable set-apsr.q read-byte))))
 
 (defthm read-byte-of-update-isetstate (equal (read-byte addr (update-isetstate v arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable read-byte))))
+(defthm read-byte-of-update-itstate (equal (read-byte addr (update-itstate v arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable read-byte))))
 
 (defthm read-of-set-apsr.n (equal (read n addr (set-apsr.n bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
 (defthm read-of-set-apsr.z (equal (read n addr (set-apsr.z bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
@@ -1474,6 +1475,7 @@
 (defthm read-of-set-apsr.q (equal (read n addr (set-apsr.q bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
 
 (defthm read-of-update-isetstate (equal (read n addr (update-isetstate v arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
+(defthm read-of-update-itstate (equal (read n addr (update-itstate v arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

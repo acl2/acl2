@@ -877,6 +877,8 @@
        ;; Decide which rules to monitor:
        (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
+       (- (and rules-to-monitor (cw "(Monitoring: ~x0)~%" rules-to-monitor)))
+       (- (and (acl2::print-missing-rules rules-to-monitor lifter-rule-alist)))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep hits2 state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions

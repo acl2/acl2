@@ -1,7 +1,7 @@
 ; Arithmetic negation of a bit-vector
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -171,22 +171,18 @@
 
 ;rename
 (defthm bvplus-of-bvuminus-same-2
-  (implies (natp size)
-           (equal (bvplus size x (bvplus size (bvuminus size x) y))
-                  (bvchop size y)))
+  (equal (bvplus size x (bvplus size (bvuminus size x) y))
+         (bvchop size y))
   :hints (("Goal" :in-theory (e/d (bvplus
                                    bvuminus bvchop-when-i-is-not-an-integer)
                                   (bvchop-of-minus)))))
 
 ;rename
 (defthm bvplus-of-bvuminus-same-2-alt
-  (implies (natp size)
-           (equal (bvplus size (bvuminus size x) (bvplus size x y))
-                  (bvchop size y)))
+  (equal (bvplus size (bvuminus size x) (bvplus size x y))
+         (bvchop size y))
   :hints (("Goal" :use bvplus-of-bvuminus-same-2
-           :in-theory (disable bvplus-of-bvuminus-same-2))))
-
-
+                  :in-theory (disable bvplus-of-bvuminus-same-2))))
 
 ;; -(x+y) becomes -x + -y
 (defthm bvuminus-of-bvplus
