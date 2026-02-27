@@ -16,7 +16,6 @@
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

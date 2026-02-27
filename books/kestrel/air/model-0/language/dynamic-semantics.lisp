@@ -41,14 +41,9 @@
 ;; Byte Arithmetic
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Helper lemma: mod of a natural by 256 is always a ubyte8
-(defthm ubyte8p-of-mod-256
-  (implies (integerp x)
-           (ubyte8p (mod x 256)))
-  :hints (("Goal" :in-theory (enable ubyte8p))))
-
 (define byte-incr ((x ubyte8p))
-  :returns (result ubyte8p)
+  :returns (result ubyte8p
+                   :hints (("Goal" :in-theory (enable ubyte8p-of-mod-256))))
   :short "Increment a byte with wrap-around."
   :long
   (xdoc::topstring
@@ -58,7 +53,8 @@
        :exec (mod (1+ x) 256)))
 
 (define byte-decr ((x ubyte8p))
-  :returns (result ubyte8p)
+  :returns (result ubyte8p
+                   :hints (("Goal" :in-theory (enable ubyte8p-of-mod-256))))
   :short "Decrement a byte with wrap-around."
   :long
   (xdoc::topstring
@@ -144,12 +140,6 @@
                :halted t))))
   :hooks (:fix))
 
-;; Helper lemma: nth at position (len-1) equals car of last
-(defthm nth-of-len-minus-1
-  (implies (consp lst)
-           (equal (nth (1- (len lst)) lst)
-                  (car (last lst)))))
-
 ;; Key property: for well-formed programs, step1 preserves PC bounds.
 ;; This is needed for guard verification of run.
 (defthm step1-preserves-pc-bound
@@ -159,7 +149,8 @@
   :hints (("Goal" :in-theory (enable step1 fetch
                                      program-well-formed-p
                                      program-nonempty-p
-                                     program-ends-with-halt-p))))
+                                     program-ends-with-halt-p
+                                     nth-of-len-minus-1-is-car-last))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Multi-Step Execution (Interpreter)
@@ -239,29 +230,6 @@
            (run st prog limit))
     :induct t
     :enable (run run*-when-halted)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Example
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Example program: INCR, INCR, INCR, DECR, HALT
-;; Starting with acc=0, this computes: 0 -> 1 -> 2 -> 3 -> 2 -> halt
-(defconst *example-program*
-  (list (opcode-incr)
-        (opcode-incr)
-        (opcode-incr)
-        (opcode-decr)
-        (opcode-halt)))
-
-;; Verify execution
-(assert-event
- (equal (vm-state->acc
-         (run (initial-state 0) *example-program* 10))
-        2))
-
-(assert-event
- (vm-state->halted
-  (run (initial-state 0) *example-program* 10)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Termination

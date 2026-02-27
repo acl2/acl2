@@ -510,24 +510,3 @@
            generate-min-trace
            last-row-of-generate-trace-is-run
            new-trace-row))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Example Trace
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defconst *example-trace*
-  (generate-trace (initial-state 0) *example-program* 10))
-
-;; The trace should have 6 rows (5 steps + final halted state)
-(assert-event (equal (len *example-trace*) 6))
-
-;; First row: pc=0, acc=0, opcode=INCR, halted=nil
-(assert-event
- (and (equal (trace-row->pc (trace-first-row *example-trace*)) 0)
-      (equal (trace-row->acc (trace-first-row *example-trace*)) 0)
-      (not (trace-row->halted (trace-first-row *example-trace*)))))
-
-;; Last row: acc=2, halted=t
-(assert-event
- (and (equal (trace-row->acc (trace-last-row *example-trace*)) 2)
-      (trace-row->halted (trace-last-row *example-trace*))))

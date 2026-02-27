@@ -1,7 +1,7 @@
 ; AIR Library
 ; Model 0: A Minimal zkVM with AIR Constraints
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -25,10 +25,12 @@
 (include-book "air/pfcs-lifting")
 (include-book "air/correctness")
 
+(include-book "../portcullis")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ model-0
-  :parents (projects)
+  :parents (air::air)
   :short "A minimal zkVM formalized in ACL2 with AIR constraints."
   :long
   (xdoc::topstring
