@@ -242,28 +242,18 @@
      from index 0 to index @('n').
      Each row has four variables, for
      program counter, accumulator, opcode, and halted flag,
-     for which we use PFCS indexed names."))
-  (append (if (zp n)
-              nil
-            (pfcs-table-vars (1- n)))
-          (list (pfcs::pfname "pc" (nfix n))
-                (pfcs::pfname "acc" (nfix n))
-                (pfcs::pfname "op" (nfix n))
-                (pfcs::pfname "hlt" (nfix n))))
-  :measure (nfix n)
-  :ruler-extenders :all
+     for which we use PFCS indexed names.
+     We group the variables by columns."))
+  (append (pfcs::pfnames "pc" (1+ (nfix n)))
+          (pfcs::pfnames "acc" (1+ (nfix n)))
+          (pfcs::pfnames "op" (1+ (nfix n)))
+          (pfcs::pfnames "hlt" (1+ (nfix n))))
 
   ///
 
-  (fty::deffixequiv pfcs-table-vars
-    :hints (("Goal" :induct t :in-theory (enable nfix))))
-
   (defret len-of-pfcs-table-vars
     (equal (len vars)
-           (* 4 (1+ (nfix n))))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable nfix fix)))))
+           (* 4 (1+ (nfix n))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -292,9 +282,10 @@
    (xdoc::p
     "The PFCS definition has the form")
    (xdoc::codeblock
-    "all_transitions(pc[0], acc[0], op[0], hlt[0],"
-    "                ...,"
-    "                pc[n], acc[n], op[n], hlt[n]) := {"
+    "all_transitions(pc[0], ..., pc[n],"
+    "                acc[0], .., acc[n],"
+    "                op[0], ..., op[n],"
+    "                hlt[0], ..., hlt[n]) := {"
     "    transition(pc[0], acc[0], op[0], hlt[0],"
     "               pc[1], acc[1], op[1], hlt[1]),"
     "    ...,"
@@ -334,13 +325,14 @@
    (xdoc::p
     "The PFCS definition has the form")
    (xdoc::codeblock
-    "execution(pc[0], acc[0], op[0], hlt[0],"
-    "          ...,"
-    "          pc[n], acc[n], op[n], hlt[n]) := {"
+    "execution(pc[0], ..., pc[n],"
+    "          acc[0], .., acc[n],"
+    "          op[0], ..., op[n],"
+    "          hlt[0], ..., hlt[n]) := {"
     "    initial(pc[0], acc[0], op[0], hlt[0]),"
-    "    all_transitions(pc[0], acc[0], op[0], hlt[0],"
-    "                    ...,"
-    "                    pc[n], acc[n], op[n], hlt[n])"
+    "    all_transitions(pc[0], ..., pc[n],"
+    "                    acc[0], ..., acc[n],"
+    "                    hlt[0], ..., hlt[n])"
     "    final(pc[n], acc[n], op[n], hlt[n])"
     "}"))
   (b* ((name (pfcs::pfname "execution"))
@@ -486,12 +478,14 @@
    (xdoc::p
     "The PFCS definition has the form")
    (xdoc::codeblock
-    "table(pc[0], acc[0], op[0], hlt[0],"
-    "      ...,"
-    "      pc[n], acc[n], op[n], hlt[n]) := {"
-    "    execution(pc[0], acc[0], op[0], hlt[0],"
-    "              ...,"
-    "              pc[n], acc[n], op[n], hlt[n]),"
+    "table(pc[0], ..., pc[n],"
+    "      acc[0], .., acc[n],"
+    "      op[0], ..., op[n],"
+    "      hlt[0], ..., hlt[n]) := {"
+    "    execution(pc[0], ..., pc[n],"
+    "              acc[0], ..., acc[n],"
+    "              op[0], ..., op[n],"
+    "              hlt[0], ..., hlt[n]),"
     "    path(pc[0], ..., pc[n]),"
     "    opcodes(op[0], ..., op[n]),"
     "    accumulators(acc[0], ..., acc[n])"
@@ -533,9 +527,10 @@
      the accumulator in the initial and final states:")
    (xdoc::codeblock
     "computation(input, output) := {"
-    "    table(pc[0], acc[0], op[0], hlt[0],"
-    "          ...,"
-    "          pc[n], acc[n], op[n], hlt[n]),"
+    "    table(pc[0], ..., pc[n],"
+    "          acc[0], .., acc[n],"
+    "          op[0], ..., op[n],"
+    "          hlt[0], ..., hlt[n]),"
     "    input == acc[0],"
     "    output == acc[n]"
     "}"))
