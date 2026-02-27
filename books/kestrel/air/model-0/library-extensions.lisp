@@ -70,6 +70,13 @@
   :induct t
   :enable (butlast fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled nth-of-len-minus-1-is-car-last
+  (implies (consp lst)
+           (equal (nth (1- (len lst)) lst)
+                  (car (last lst)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule all-<-256-when-ubyte8-listp

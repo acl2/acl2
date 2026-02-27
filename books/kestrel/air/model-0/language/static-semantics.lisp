@@ -15,13 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel nth-of-len-minus-1
-  (implies (consp lst)
-           (equal (nth (1- (len lst)) lst)
-                  (car (last lst)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ static-semantics
   :parents (model-0)
   :short "Static semantics of Model 0."
@@ -79,4 +72,5 @@
     :cases ((equal pc (1- (len prog))))
     :enable (program-nonempty-p
              program-ends-with-halt-p
-             fetch)))
+             fetch
+             nth-of-len-minus-1-is-car-last)))
