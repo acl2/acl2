@@ -232,7 +232,9 @@ what the instruction. Not sure why they are listed that way.</p>")
   :features '(or :mmx (and :sse "PMULHW"))
   :doc "<p>MMX versions are all unimplemented except for
         PADDB/PADDW/PADDD/PADDQ,
-        PADDUSB/PADDUSW, and
+        PADDUSB/PADDUSW,
+        PADDSB/PADDSW,
+        and
         PSUBB/PSUBW/PSUBD.
         A few have SSE versions implemented.</p>")
 

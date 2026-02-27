@@ -12358,7 +12358,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDSB/PADDSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDSB"
           (OP :OP #xFEC :PFX :66 :FEAT '(:SSE2))
@@ -12406,7 +12406,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDSB/PADDSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDSW"
           (OP :OP #xFED :PFX :66 :FEAT '(:SSE2))
