@@ -1064,8 +1064,10 @@
                                (dag-to-term result-dag-or-quotep)))
        ;; Print the result:
        (- (and print
-               (if termp
-                   (cw "(Result: ~x0)~%" maybe-result-term)
+               (if (<= result-dag-size max-printed-term-size)
+                   (cw "(Result: ~x0)~%" (if termp
+                                             maybe-result-term ; we re-use this when it's valid
+                                           (dag-to-term result-dag-or-quotep)))
                  (progn$ (cw "(Result:~%")
                          (cw "~X01" result-dag-or-quotep nil)
                          (cw ")~%")))))
