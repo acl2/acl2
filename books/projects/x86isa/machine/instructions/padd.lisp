@@ -112,7 +112,7 @@
     "This is for the (V)PADDUSB/(V)PADDUSW instructions.")
    (xdoc::p
     "This is similar to @(tsee simd-add-spec),
-     but if the result of each chunk's unsigned addition
+     but if the result of a chunk's unsigned addition
      is above the range representable in the chunk size,
      instead of keeping the low bits,
      we saturate to the maximum value representable in the chunk size,
@@ -157,7 +157,7 @@
     "This is for the (V)PADDSB/(V)PADDSW instructions.")
    (xdoc::p
     "This is similar to @(tsee simd-add-spec),
-     but if the result of each chunk's signed addition
+     but if the result of a chunk's signed addition
      is below or above the range represetable in the chunk size,
      instead of keeping the low bits,
      we saturate to the minimum or maximum value
