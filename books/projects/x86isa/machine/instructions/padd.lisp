@@ -105,7 +105,7 @@
                     '(:cases ((>= total-size chunk-size)))))
   :parents (instruction-semantic-functions)
   :short "Specification for
-          the SIMD addition instructions with unsigned saturation."
+          the SIMD unsigned addition instructions with unsigned saturation."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -150,7 +150,7 @@
                     '(:cases ((>= total-size chunk-size)))))
   :parents (instruction-semantic-functions)
   :short "Specification for
-          the SIMD addition instructions with signed saturation."
+          the SIMD signed addition instructions with signed saturation."
   :long
   (xdoc::topstring
    (xdoc::p
