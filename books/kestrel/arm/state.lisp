@@ -8,10 +8,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Remove this (after testing on GCL) since we now use :non-executable for the stobj:
+;; TODO: Remove this restriction for GCL (after testing) since we now use
+;; :non-executable for the stobj:
 ; Matt K. mod: An array is too big for GCL 2.7.1 (and probably any version of
-; GCL starting with 2.7.0).
-; cert_param: (non-gcl)
+; GCL starting with 2.7.0).  It is also too big for 32-bit CMUCL (compilation
+; error, apparently).
+; cert_param: (non-gcl , non-cmucl)
 
 (in-package "ARM")
 
