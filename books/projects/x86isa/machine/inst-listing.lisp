@@ -12785,7 +12785,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PMADDWD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PMADDWD"
           (OP :OP #xFF5 :PFX :66 :FEAT '(:SSE2))

@@ -69,6 +69,8 @@
               :ttags (:undef-flg))
 (include-book "padd"
               :ttags (:undef-flg))
+(include-book "pmadd"
+              :ttags (:undef-flg))
 (include-book "pmul"
               :ttags (:undef-flg))
 (include-book "psub"
