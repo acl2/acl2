@@ -145,12 +145,6 @@
     (xdoc::seetopic "aleobft::aleobft" "AleoBFT library")
     " is now a sub-library of this broader Aleo library.")
 
-   (xdoc::p
-    "We have added an ABNF grammar of the "
-    (xdoc::ahref "https://www.leo-lang.org" "Leo language")
-    ", along with ACL2 code to parse the grammar into an ACL2 representation
-     and prove some properties of the grammar.")
-
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "ACL2-IN-HOL Link Support")
