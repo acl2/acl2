@@ -7871,7 +7871,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-MOVQ-FROM-MMX/MEM)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVDQA"
           (OP :OP #xF6F :PFX :66 :FEAT '(:SSE2))
@@ -9548,7 +9548,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(Q Q) :OP2 '(P Q))
-          'NIL
+          '(X86-MOVQ-TO-MMX/MEM)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVDQA"
           (OP :OP #xF7F :PFX :66 :FEAT '(:SSE2))

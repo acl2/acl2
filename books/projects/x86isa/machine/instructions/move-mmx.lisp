@@ -1,0 +1,189 @@
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2026, Kestrel Technology LLC
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "X86ISA")
+
+(include-book "../decoding-and-spec-utils" :ttags (:undef-flg))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; MOVQ
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-movq-to-mmx/mem
+
+  :parents (two-byte-opcodes)
+
+  :short "Move quadword from register to register or memory (MMX variant)."
+
+  :long
+  "<code>
+   NP 0F 7F /r    MOVQ mm/m64, mm
+   </code>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; The source operand (Operand 2 in the Intel manual)
+       ;; is the MMX register specified in Reg.
+       ;; Since there are only 8 MMX registers, the REX byte is not used.
+       ((the (unsigned-byte 64) src) (mmx reg x86))
+
+       ;; The destination operand (Operand 1 in the Intel manual)
+       ;; is the MMX register, or memory operand, specified in Mod and R/M.
+       ((mv flg0
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
+        (if (int= mod #b11)
+            (mv nil 0 0 x86)
+          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
+       ((when flg0)
+        (!!ms-fresh :x86-effective-addr-error flg0))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Store the value into the destination.
+       (inst-ac? t)
+       ((mv flg1 x86) (x86-operand-to-mmx/mem proc-mode
+                                              inst-ac?
+                                              src
+                                              seg-reg
+                                              addr
+                                              r/m
+                                              mod
+                                              x86))
+       ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
+       ((when flg1)
+        (!!ms-fresh :x86-operand-to-xmm/mem flg1))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-movq-from-mmx/mem
+
+  :parents (two-byte-opcodes)
+
+  :short "Move quadword from register or memory to register (MMX variant)."
+
+  :long
+  "<code>
+   NP 0F 6F /r    MOVQ mm, mm/m64
+   </code>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; The source operand (Operand 2 in the Intel manual)
+       ;; is the MMX register, or memory operand, specified in Mod and R/M.
+       (inst-ac? t)
+       ((mv flg0
+            src
+            (the (integer 0 4) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (if (int= mod #b11)
+            (mv nil (mmx r/m x86) 0 0 x86)
+          (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                                 #.*gpr-access* ; irrelevant
+                                                 8
+                                                 inst-ac?
+                                                 nil ;; Not a memory pointer operand
+                                                 seg-reg
+                                                 p4?
+                                                 temp-rip
+                                                 rex-byte
+                                                 r/m
+                                                 mod
+                                                 sib
+                                                 0 ;; No immediate operand
+                                                 x86)))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Store the value into the destination.
+       ;; The destination operand (Operand 1 in the Intel manual)
+       ;; is the MMX register specified in Reg.
+       ;; Since there are only 8 MMX registers, the REX byte is not used.
+       (x86 (!mmx reg src x86))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86))

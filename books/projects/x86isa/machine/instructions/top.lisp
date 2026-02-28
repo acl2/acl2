@@ -61,6 +61,8 @@
               :ttags (:undef-flg))
 (include-book "move"
               :ttags (:undef-flg))
+(include-book "move-mmx"
+              :ttags (:undef-flg))
 (include-book "move-sse"
               :ttags (:undef-flg))
 (include-book "move-vex"
