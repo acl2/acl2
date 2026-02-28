@@ -48,7 +48,4 @@
                     lexing-and-parsing
                     keywords
                     symbols
-                    lexer
-                    parser
-                    parser-interface
                     pretty-printer))
