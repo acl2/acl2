@@ -3,7 +3,7 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2024, Kestrel Technology LLC
+; Copyright (C) 2026, Kestrel Technology LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -40,8 +40,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils" :ttags (:undef-flg))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
@@ -56,29 +55,28 @@
   :returns (result (unsigned-byte-p total-size result)
                    :hyp :guard
                    :hints
-                   (("Goal" :induct (simd-add-spec total-size chunk-size x y))
+                   (("Goal"
+                     :induct (simd-add-spec total-size chunk-size x y))
                     '(:cases ((>= total-size chunk-size)))))
   :parents (instruction-semantic-functions)
   :short "Specification for the SIMD addition instructions."
   :long
-  "<p>
-   This is for the (V)PADDB/(V)PADDW/(V)PADDD/(V)PADDQ instructions.
-   </p>
-   <p>
-   Given @('x') and @('y'), each of size @('total-size') in bits,
-   we add each chunk of size @('chunk-size') in bits,
-   independently from the other chunks,
-   keeping the low @('chunk-size') bits of each result,
-   and putting the resulting chunks together, in the same order,
-   to obtain the final result of size @('total-size').
-   This kind of operation is illustrated in
-   Intel Manual Volume 1 Figure 9-4 (Dec 2023).
-   </p>
-   <p>
-   The @('total-size') must be a multiple of @('chunk-size').
-   For instance, for the VEX form of VPADDW,
-   @('total-size') is 128 and @('chunk-size') is 16.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the (V)PADDB/(V)PADDW/(V)PADDD/(V)PADDQ instructions.")
+   (xdoc::p
+    "Given @('x') and @('y'), each of size @('total-size') in bits,
+     we add each chunk of size @('chunk-size') in bits,
+     independently from the other chunks,
+     keeping the low @('chunk-size') bits of each result,
+     and putting the resulting chunks together, in the same order,
+     to obtain the final result of size @('total-size').
+     This kind of operation is illustrated in
+     Intel Manual Volume 1 Figure 9-4 (Dec 2023).")
+   (xdoc::p
+    "The @('total-size') must be a multiple of @('chunk-size').
+     For instance, for the VEX form of VPADDW,
+     @('total-size') is 128 and @('chunk-size') is 16."))
   (b* (((when (zp total-size)) 0)
        ((unless (mbt (posp chunk-size))) 0)
        (x-lo (loghead chunk-size x))
@@ -88,6 +86,99 @@
        (y-hi (logtail chunk-size y))
        (result-hi
         (simd-add-spec (- total-size chunk-size) chunk-size x-hi y-hi)))
+    (logapp chunk-size result-lo result-hi))
+  :measure (nfix total-size))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simd-add-unsigned-sat-spec ((total-size natp)
+                                    (chunk-size posp)
+                                    (x (unsigned-byte-p total-size x))
+                                    (y (unsigned-byte-p total-size y)))
+  :guard (integerp (/ total-size chunk-size))
+  :returns (result (unsigned-byte-p total-size result)
+                   :hyp :guard
+                   :hints
+                   (("Goal"
+                     :induct (simd-add-unsigned-sat-spec
+                              total-size chunk-size x y))
+                    '(:cases ((>= total-size chunk-size)))))
+  :parents (instruction-semantic-functions)
+  :short "Specification for
+          the SIMD unsigned addition instructions with unsigned saturation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the (V)PADDUSB/(V)PADDUSW instructions.")
+   (xdoc::p
+    "This is similar to @(tsee simd-add-spec),
+     but if the result of a chunk's unsigned addition
+     is above the range representable in the chunk size,
+     instead of keeping the low bits,
+     we saturate to the maximum value representable in the chunk size,
+     e.g. FFh for 8-bit chunks."))
+  (b* (((when (zp total-size)) 0)
+       ((unless (mbt (posp chunk-size))) 0)
+       (x-lo (loghead chunk-size x))
+       (y-lo (loghead chunk-size y))
+       (result-lo (+ x-lo y-lo))
+       (max-chunk-val (1- (expt 2 chunk-size)))
+       (result-lo (if (< result-lo max-chunk-val)
+                      result-lo
+                    max-chunk-val))
+       (x-hi (logtail chunk-size x))
+       (y-hi (logtail chunk-size y))
+       (result-hi
+        (simd-add-unsigned-sat-spec
+         (- total-size chunk-size) chunk-size x-hi y-hi)))
+    (logapp chunk-size result-lo result-hi))
+  :measure (nfix total-size))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simd-add-signed-sat-spec ((total-size natp)
+                                  (chunk-size posp)
+                                  (x (unsigned-byte-p total-size x))
+                                  (y (unsigned-byte-p total-size y)))
+  :guard (integerp (/ total-size chunk-size))
+  :returns (result (unsigned-byte-p total-size result)
+                   :hyp :guard
+                   :hints
+                   (("Goal"
+                     :induct (simd-add-signed-sat-spec
+                              total-size chunk-size x y))
+                    '(:cases ((>= total-size chunk-size)))))
+  :parents (instruction-semantic-functions)
+  :short "Specification for
+          the SIMD signed addition instructions with signed saturation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for the (V)PADDSB/(V)PADDSW instructions.")
+   (xdoc::p
+    "This is similar to @(tsee simd-add-spec),
+     but if the result of a chunk's signed addition
+     is below or above the range represetable in the chunk size,
+     instead of keeping the low bits,
+     we saturate to the minimum or maximum value
+     representable in the chunk size,
+     e.g. 80H (= -128) or 7Fh (= 127) for 8-bit chunks."))
+  (b* (((when (zp total-size)) 0)
+       ((unless (mbt (posp chunk-size))) 0)
+       (x-lo (logext chunk-size x))
+       (y-lo (logext chunk-size y))
+       (result-lo (+ x-lo y-lo))
+       (min-chunk-val (- (expt 2 (1- chunk-size))))
+       (max-chunk-val (1- (expt 2 (1- chunk-size))))
+       (result-lo (cond ((< result-lo min-chunk-val) min-chunk-val)
+                        ((> result-lo max-chunk-val) max-chunk-val)
+                        (t result-lo)))
+       (result-lo (loghead chunk-size result-lo))
+       (x-hi (logtail chunk-size x))
+       (y-hi (logtail chunk-size y))
+       (result-hi
+        (simd-add-signed-sat-spec
+         (- total-size chunk-size) chunk-size x-hi y-hi)))
     (logapp chunk-size result-lo result-hi))
   :measure (nfix total-size))
 
@@ -101,10 +192,10 @@
 
   :long
   "<code>
-   PADDB mm, mm2/m64
-   PADDW mm, mm2/m64
-   PADDD mm, mm2/m64
-   PADDQ mm, mm2/m64
+   PADDB mm, mm/m64
+   PADDW mm, mm/m64
+   PADDD mm, mm/m64
+   PADDQ mm, mm/m64
    </code>"
 
   :modr/m t
@@ -169,6 +260,180 @@
                  (#xfe (simd-add-spec (* 8 operand-size) 32 src1 src2))
                  (#xd4 (simd-add-spec (* 8 operand-size) 64 src1 src2))
                  (t 0))) ; unreachable
+
+       ;; Store the result into the destination register.
+       (x86 (!mmx src1/dst-index result x86))
+       (x86 (mmx-instruction-updates x86))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-paddusb/paddusw-mmx
+
+  :parents (two-byte-opcodes)
+
+  :short "Add packed unsigned integers with unsigned saturation (MMX variants)."
+
+  :long
+  "<code>
+   PADDUSB mm, mm/m64
+   PADDUSW mm, mm/m64
+   </code>"
+
+  :modr/m t
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; The operand size is always 64 bits, i.e. 8 bytes.
+       (operand-size 8)
+
+       ;; The first source operand (Operand 1 in the Intel manual)
+       ;; is the MMX register specified in Reg.
+       ;; This is also the destination operand,
+       ;; and thus we obtain the index for later use.
+       ;; Since there are only 8 MMX registers, the REX byte is not used.
+       ((the (unsigned-byte 4) src1/dst-index) reg)
+       ((the (unsigned-byte 128) src1) (mmx src1/dst-index x86))
+
+       ;; The second source operand (Operand 2 in the Intel manual)
+       ;; is the MMX register, or memory operand, specified in Mod and R/M.
+       (inst-ac? t) ; Intel Manual Volume 2 Table 2-21 (Dec 2023)
+       ((mv flg
+            (the (unsigned-byte 64) src2)
+            (the (integer 0 4) increment-rip-by)
+            ?addr
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*mmx-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not a memory operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Calculate the result.
+       (result
+        (case opcode
+          (#xdc (simd-add-unsigned-sat-spec (* 8 operand-size) 08 src1 src2))
+          (#xdd (simd-add-unsigned-sat-spec (* 8 operand-size) 16 src1 src2))
+          (t 0))) ; unreachable
+
+       ;; Store the result into the destination register.
+       (x86 (!mmx src1/dst-index result x86))
+       (x86 (mmx-instruction-updates x86))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-paddsb/paddsw-mmx
+
+  :parents (two-byte-opcodes)
+
+  :short "Add packed signed integers with signed saturation (MMX variants)."
+
+  :long
+  "<code>
+   PADDSB mm, mm/m64
+   PADDSW mm, mm/m64
+   </code>"
+
+  :modr/m t
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; The operand size is always 64 bits, i.e. 8 bytes.
+       (operand-size 8)
+
+       ;; The first source operand (Operand 1 in the Intel manual)
+       ;; is the MMX register specified in Reg.
+       ;; This is also the destination operand,
+       ;; and thus we obtain the index for later use.
+       ;; Since there are only 8 MMX registers, the REX byte is not used.
+       ((the (unsigned-byte 4) src1/dst-index) reg)
+       ((the (unsigned-byte 128) src1) (mmx src1/dst-index x86))
+
+       ;; The second source operand (Operand 2 in the Intel manual)
+       ;; is the MMX register, or memory operand, specified in Mod and R/M.
+       (inst-ac? t) ; Intel Manual Volume 2 Table 2-21 (Dec 2023)
+       ((mv flg
+            (the (unsigned-byte 64) src2)
+            (the (integer 0 4) increment-rip-by)
+            ?addr
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*mmx-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not a memory operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Calculate the result.
+       (result
+        (case opcode
+          (#xec (simd-add-signed-sat-spec (* 8 operand-size) 08 src1 src2))
+          (#xed (simd-add-signed-sat-spec (* 8 operand-size) 16 src1 src2))
+          (t 0))) ; unreachable
 
        ;; Store the result into the destination register.
        (x86 (!mmx src1/dst-index result x86))
