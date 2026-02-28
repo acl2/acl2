@@ -252,7 +252,7 @@
      We omit @(':enum'), whose tags are not yet being tracked."))
   (:struct ())
   (:union ())
-  :pred tag-kind)
+  :pred tag-kindp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
