@@ -8,10 +8,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Remove this (after testing on GCL) since we now use :non-executable for the stobj:
+;; TODO: Remove this restriction for GCL (after testing) since we now use
+;; :non-executable for the stobj:
 ; Matt K. mod: An array is too big for GCL 2.7.1 (and probably any version of
-; GCL starting with 2.7.0).
-; cert_param: (non-gcl)
+; GCL starting with 2.7.0).  It is also too big for 32-bit CMUCL (compilation
+; error, apparently).
+; cert_param: (non-gcl , non-cmucl)
 
 (in-package "ARM")
 
@@ -318,6 +320,7 @@
 (defthm reg-of-set-apsr.q (equal (reg n (set-apsr.q bit arm)) (reg n arm)) :hints (("Goal" :in-theory (enable set-apsr.q reg))))
 
 (defthm reg-of-update-isetstate (equal (reg n (update-isetstate v arm)) (reg n arm)) :hints (("Goal" :in-theory (enable reg))))
+(defthm reg-of-update-itstate (equal (reg n (update-itstate v arm)) (reg n arm)) :hints (("Goal" :in-theory (enable reg))))
 
 (defthm error-of-set-apsr.n (equal (error (set-apsr.n bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.n reg))))
 (defthm error-of-set-apsr.z (equal (error (set-apsr.z bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.z reg))))

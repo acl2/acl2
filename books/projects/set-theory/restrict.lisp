@@ -55,7 +55,8 @@
          (int2 (domain f) s))
   :props (zfc restrict$prop domain$prop diff$prop)
   :hints (("Goal"
-           :in-theory (enable extensionality-rewrite subset))))
+           :in-theory (e/d (extensionality-rewrite subset)
+                           (subset-x-0)))))
 
 (defthmz apply-restrict
   (implies (and (funp f)
