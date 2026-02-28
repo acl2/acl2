@@ -409,6 +409,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
+
+   (xdoc::p
+    "Support for several instructions has been added.
+     Currently supported instructions can be seen at
+     @(see x86isa::sdm-instruction-set-summary),
+     organized according to some sections of the Intel manuals.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
 
    (xdoc::p
