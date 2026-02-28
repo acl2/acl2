@@ -177,12 +177,13 @@
    (xdoc::h4 (xdoc::seetopic "riscv::riscv" "RISC-V ISA Model"))
 
    (xdoc::p
-    "A preliminary model of RISC-V ISA has been added,
-     which covers unprivileged RV32IM and RV64IM
-     (except for @('FENCE'), @('HINT'), @('ECALL'), and @('EBREAK')),
-     little endian memory access,
+    "A model of RISC-V ISA has been added, which covers
+     unprivileged RV32IM, RV64IM, RV32EM, and RV64EM,
+     (except for
+     the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
      fully readable and writable address space,
-     and no alignment checks.")
+     and no alignment checks for data in memory
+     (but there are alignment checks for instructions).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
