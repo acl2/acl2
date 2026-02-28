@@ -228,6 +228,15 @@
      a validator,
      and a preprocessor that preserves inclusions under suitable conditions.")
 
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5
+    (xdoc::seetopic "c2c::transformation-tools" "C Transformation Tools"))
+
+   (xdoc::p
+    "We have added several transformations,
+     along with proof generation capabilities for some of the transformations.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "acl2::fty" "FTY Library"))
