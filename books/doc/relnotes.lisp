@@ -222,7 +222,11 @@
    (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
 
    (xdoc::p
-    "We have added a disambiguator and a validator.")
+    "We have made several extensions and improvements.
+     Most notably, we have added
+     a disambiguator,
+     a validator,
+     and a preprocessor that preserves inclusions under suitable conditions.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
