@@ -77,7 +77,7 @@
    (xdoc::p
     "The @('total-size') must be a multiple of @('chunk-size').
      For instance, for the MMX form of PMULLW,
-     @('total-size') is 128 and @('chunk-size') is 16."))
+     @('total-size') is 64 and @('chunk-size') is 16."))
   (b* (((when (zp total-size)) 0)
        ((unless (mbt (posp chunk-size))) 0)
        (x-lo (logext chunk-size x))
@@ -123,7 +123,7 @@
    (xdoc::p
     "The @('total-size') must be a multiple of @('chunk-size').
      For instance, for the MMX form of PMULLW,
-     @('total-size') is 128 and @('chunk-size') is 16."))
+     @('total-size') is 64 and @('chunk-size') is 16."))
   (b* (((when (zp total-size)) 0)
        ((unless (mbt (posp chunk-size))) 0)
        (x-lo (logext chunk-size x))
