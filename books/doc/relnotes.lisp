@@ -319,6 +319,19 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
+
+   (xdoc::p
+    "A macro @('controlled-configuration') has been added,
+     in @('[books]/std/basic/controlled-configuration'),
+     to go into a ``controlled configuration'',
+     i.e. one where many built-ins are disabled (including tau),
+     there is no implicit induction,
+     and certain options of @(tsee define) (if present)
+     are set to certain values.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
                              "Standard Typed Alists Library"))
 
