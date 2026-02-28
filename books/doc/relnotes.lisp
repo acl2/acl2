@@ -133,6 +133,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "air::air" "AIR"))
+
+   (xdoc::p
+    "A preliminary library about AIR (Algebraic Intermediate Representation),
+     which is used to express computations in zero-knowledge proofs.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "aleo::aleo" "Aleo Library"))
 
    (xdoc::p
