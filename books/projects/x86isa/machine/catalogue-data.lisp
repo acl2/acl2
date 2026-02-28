@@ -230,14 +230,7 @@ what the instruction. Not sure why they are listed that way.</p>")
   :mnemonics '(PADDB PADDW PADDD PADDSB PADDSW PADDUSB PADDUSW PSUBB PSUBW
                      PSUBD PSUBSB PSUBSW PSUBUSB PSUBUSW PMULHW PMULLW PMADDWD)
   :features '(or :mmx (and :sse "PMULHW"))
-  :doc "<p>MMX versions are all unimplemented except for
-        PADDB/PADDW/PADDD/PADDQ,
-        PADDUSB/PADDUSW,
-        PADDSB/PADDSW,
-        PSUBB/PSUBW/PSUBD,
-        PSUBSB/PSUBSW, and
-        PSUBUSB/PSUBUSW.
-        A few have SSE versions implemented.</p>")
+  :doc "<p>MMX versions are all implemented except for PMULHW and PMADDWD.</p>")
 
 (def-sdm-instruction-section "5.4.4 MMX Comparison Instructions"
   :mnemonics '(PCMPEQB PCMPEQW PCMPEQD PCMPGTB PCMPGTW PCMPGTD)
