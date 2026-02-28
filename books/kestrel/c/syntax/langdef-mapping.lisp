@@ -165,6 +165,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ldm-iconst-option ((iconst? iconst-optionp))
+  :returns (iconst?1 c::iconst-optionp)
+  :short "Map an optional integer constant to
+          an optional integer constant in the language definition."
+  (iconst-option-case
+   iconst?
+   :some (ldm-iconst iconst?.val)
+   :none nil)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ldm-const ((const constp))
   :returns (mv erp (const1 c::constp))
   :short "Map a constant to

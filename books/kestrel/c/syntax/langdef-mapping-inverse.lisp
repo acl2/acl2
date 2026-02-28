@@ -11,12 +11,15 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-operations")
+(include-book "langdef-mapping")
 
 (include-book "../language/abstract-syntax")
+(include-book "../language/decimal-0-to-octal-0")
 
 (include-book "kestrel/fty/string-option" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -43,7 +46,14 @@
   :returns (ident1 identp)
   :short "Map an identifier in the language definition
           to an identifier in the syntax for tools."
-  (ident (c::ident->name ident)))
+  (ident (c::ident->name ident))
+
+  ///
+
+  (defrule ldm-ident-of-ildm-ident
+    (equal (ldm-ident (ildm-ident ident))
+           (mv nil (c::ident-fix ident)))
+    :enable (ldm-ident identity)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,11 +61,6 @@
   :returns (iconst iconstp)
   :short "Map an integer constant in the language definition
           to an integer constant in the syntax for tools."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The AST of the language definition may use a decimal base for 0.
-     Thus, we need to map that case to an octal constant."))
   (b* (((c::iconst iconst) iconst)
        (suffix? (if iconst.unsignedp
                     (c::iconst-length-case
@@ -69,7 +74,7 @@
                    iconst.length
                    :none nil
                    :long (isuffix-l (lsuffix-upcase-l))
-                   :llong (isuffix-l (lsuffix-upcase-l))))))
+                   :llong (isuffix-l (lsuffix-upcase-ll))))))
     (c::iconst-base-case
      iconst.base
      :dec (if (= iconst.value 0)
@@ -94,7 +99,47 @@
                   :prefix (hprefix-locase-0x)
                   :digits (str::nat-to-hex-chars iconst.value))
            :suffix? suffix?
-           :info nil))))
+           :info nil)))
+
+  ///
+
+  (defrule ldm-iconst-of-ildm-iconst
+    (equal (ldm-iconst (ildm-iconst iconst))
+           (c::iconst-dec0-to-oct0 iconst))
+    :enable (ldm-iconst
+             ldm-dec/oct/hex-const
+             ldm-isuffix-option
+             ldm-isuffix
+             ldm-lsuffix
+             nfix
+             c::iconst-dec0-to-oct0)
+    :disable ((:e c::iconst-base-dec)
+              (:e c::iconst-base-hex)
+              (:e c::iconst-base-oct)
+              (:e c::iconst-length-none)
+              (:e c::iconst-length-llong)
+              (:e c::iconst-length-long))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ildm-iconst-option ((iconst? c::iconst-optionp))
+  :returns (iconst?1 iconst-optionp)
+  :short "Map an optional integer constant in the language definition
+          to an optional integer constant in the syntax for tools."
+  (c::iconst-option-case
+   iconst?
+   :some (ildm-iconst iconst?.val)
+   :none nil)
+
+  ///
+
+  (defrule ldm-iconst-option-of-ildm-iconst-option
+    (equal (ldm-iconst-option (ildm-iconst-option iconst?))
+           (c::iconst-option-dec0-to-oct0 iconst?))
+    :enable (ldm-iconst-option
+             iconst-option-some->val
+             c::iconst-option-some->val
+             c::iconst-option-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,7 +153,16 @@
    :otherwise (prog2$ (raise "Unsupported non-integer constant ~x0."
                              (c::const-fix const))
                       (irr-const)))
-  :no-function nil)
+  :no-function nil
+
+  ///
+
+  (defrule ldm-const-of-ildm-const
+    (implies (c::const-case const :int)
+             (equal (ldm-const (ildm-const const))
+                    (mv nil (c::const-dec0-to-oct0 const))))
+    :enable (ldm-const
+             c::const-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,11 +180,11 @@
                 (type-spec-char))
    :sshort (if tyspecs.signed
                (if tyspecs.int
-                   (list (type-spec-short)
-                         (type-spec-signed (keyword-uscores-none))
+                   (list (type-spec-signed (keyword-uscores-none))
+                         (type-spec-short)
                          (type-spec-int))
-                 (list (type-spec-short)
-                       (type-spec-signed (keyword-uscores-none))))
+                 (list (type-spec-signed (keyword-uscores-none))
+                       (type-spec-short)))
              (if tyspecs.int
                  (list (type-spec-short)
                        (type-spec-int))
@@ -155,11 +209,11 @@
            (list (type-spec-unsigned)))
    :slong (if tyspecs.signed
               (if tyspecs.int
-                  (list (type-spec-long)
-                        (type-spec-signed (keyword-uscores-none))
+                  (list (type-spec-signed (keyword-uscores-none))
+                        (type-spec-long)
                         (type-spec-int))
-                (list (type-spec-long)
-                      (type-spec-signed (keyword-uscores-none))))
+                (list (type-spec-signed (keyword-uscores-none))
+                      (type-spec-long)))
             (if tyspecs.int
                 (list (type-spec-long)
                       (type-spec-int))
@@ -172,13 +226,13 @@
                   (type-spec-long)))
    :sllong (if tyspecs.signed
                (if tyspecs.int
-                   (list (type-spec-long)
+                   (list (type-spec-signed (keyword-uscores-none))
                          (type-spec-long)
-                         (type-spec-signed (keyword-uscores-none))
+                         (type-spec-long)
                          (type-spec-int))
-                 (list (type-spec-long)
+                 (list (type-spec-signed (keyword-uscores-none))
                        (type-spec-long)
-                       (type-spec-signed (keyword-uscores-none))))
+                       (type-spec-long)))
              (if tyspecs.int
                  (list (type-spec-long)
                        (type-spec-long)
@@ -223,7 +277,29 @@
    :typedef (list (type-spec-typedef (ildm-ident tyspecs.name))))
   :guard-hints (("Goal"
                  :use (:instance c::tyspecseq-sint-requirements (x tyspecs))
-                 :in-theory (disable c::tyspecseq-sint-requirements))))
+                 :in-theory (disable c::tyspecseq-sint-requirements)))
+
+  ///
+
+  (defrule ldm-type-spec-list-of-ildm-tyspecseq
+    (equal (ldm-type-spec-list (ildm-tyspecseq tyspecs))
+           (mv nil (c::tyspecseq-fix tyspecs)))
+    :enable (ldm-type-spec-list
+             check-struni-spec-no-members
+             check-enum-spec-no-list)
+    :disable ((:e c::tyspecseq-sshort)
+              (:e c::tyspecseq-ushort)
+              (:e c::tyspecseq-sint)
+              (:e c::tyspecseq-uint)
+              (:e c::tyspecseq-slong)
+              (:e c::tyspecseq-ulong)
+              (:e c::tyspecseq-sllong)
+              (:e c::tyspecseq-ullong)
+              (:e c::tyspecseq-float)
+              (:e c::tyspecseq-double)
+              (:e c::tyspecseq-ldouble)
+              c::tyspecseq-sint-requirements)
+    :use (:instance c::tyspecseq-sint-requirements (x tyspecs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -234,7 +310,14 @@
   (c::scspecseq-case
    scspecs
    :none nil
-   :extern (list (stor-spec-extern))))
+   :extern (list (stor-spec-extern)))
+
+  ///
+
+  (defrule ldm-stor-spec-list-of-ildm-scspecseq
+    (equal (ldm-stor-spec-list (ildm-scspecseq scspecs))
+           (mv nil (c::scspecseq-fix scspecs)))
+    :enable (ldm-stor-spec-list)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
