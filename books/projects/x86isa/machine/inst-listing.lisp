@@ -11923,7 +11923,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PMULHW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
     (INST "PMULHW"
           (OP :OP #xFE5 :PFX :66 :FEAT '(:SSE2))
