@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "DATA")
 
 (include-book "std/util/defrule" :dir :system)
 
@@ -85,7 +85,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Unused
 (defruled assoc-equal-of-revappend-when-not-assoc-equal-of-cdr
   (implies (and (alistp alist0)
                 (not (assoc-equal key (cdr alist0))))

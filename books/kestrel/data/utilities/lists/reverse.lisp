@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "DATA")
 
 (include-book "std/util/defrule" :dir :system)
 
@@ -14,7 +14,6 @@
 (local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
-(local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

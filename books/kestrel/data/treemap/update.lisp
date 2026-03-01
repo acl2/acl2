@@ -40,7 +40,10 @@
 (local (include-book "kestrel/data/treeset/union" :dir :system))
 ;; TODO: Necessary?
 (local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
+
+(local (include-book "kestrel/data/utilities/alist" :dir :system))
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
+(local (include-book "kestrel/data/utilities/lists/reverse" :dir :system))
 
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -68,11 +71,6 @@
 (local (include-book "lookup"))
 (local (include-book "submap"))
 (local (include-book "extensionality"))
-
-;; TODO: decide what to do with these books
-;; - Either move to ./internal or ../utilities
-(local (include-book "alist-support"))
-(local (include-book "reverse-support"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

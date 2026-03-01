@@ -8,11 +8,13 @@
 
 (in-package "DATA")
 
+(include-book "alist")
 (include-book "bit-vectors/bitops")
 (include-book "fixed-size-words/fixnum")
 (include-book "fixed-size-words/u32")
 (include-book "lists/defs")
 (include-book "lists/equiv")
+(include-book "lists/reverse")
 (include-book "oset")
 (include-book "total-order/max")
 (include-book "total-order/min")
