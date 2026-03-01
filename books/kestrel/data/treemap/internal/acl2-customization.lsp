@@ -6,9 +6,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "DATA")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+(ld "../package.lsp")
 
-(include-book "hash/top")
-(include-book "treeset/top")
-(include-book "treemap/top")
-(include-book "utilities/top")
+(reset-prehistory)
+
+(in-package "TREEMAP")

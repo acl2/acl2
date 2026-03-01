@@ -1,4 +1,4 @@
-; Copyright (C) 2026 by Kestrel Institute
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -6,16 +6,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "DATA")
+(in-package "TREEMAP")
 
-(include-book "hash/top")
-(include-book "treeset/doc")
-(include-book "treemap/doc")
+(include-book "tree-defs")
+
+(local (include-book "std/util/defredundant" :dir :system))
+(local (include-book "min-max"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc data-lib
-  :parents (acl2::kestrel-books)
-  :short
-  (xdoc::topstring
-    "A library for efficient data structures."))
+(std::defredundant
+  :names (tree-leftmost
+          tree-rightmost
+          ))

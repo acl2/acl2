@@ -6,9 +6,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "DATA")
+(in-package "TREEMAP")
 
-(include-book "hash/top")
-(include-book "treeset/top")
-(include-book "treemap/top")
-(include-book "utilities/top")
+(include-book "kestrel/data/hash/portcullis" :dir :system)

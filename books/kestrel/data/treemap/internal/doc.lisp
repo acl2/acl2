@@ -1,4 +1,4 @@
-; Copyright (C) 2026 by Kestrel Institute
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -6,9 +6,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "DATA")
-
-(include-book "hash/top")
-(include-book "treeset/top")
-(include-book "treemap/top")
-(include-book "utilities/top")
+(in-package "TREEMAP")

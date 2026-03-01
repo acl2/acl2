@@ -1,4 +1,4 @@
-; Copyright (C) 2026 by Kestrel Institute
+; Copyright (C) 2025 by Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -6,9 +6,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "DATA")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+(ld "package.lsp")
 
-(include-book "hash/top")
-(include-book "treeset/top")
-(include-book "treemap/top")
-(include-book "utilities/top")
+(reset-prehistory)
+
+(in-package "TREEMAP")
