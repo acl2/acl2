@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map funcall-fun-rename-fn
-  :parents (rename-fn)
+  :parents (abstract-syntax-rename-fn)
   :types (c$::exprs/decls/stmts)
   :extra-args ((uid c$::uidp) (new-fn identp))
   :short "Rename a function within a @('funcall') function expression."
