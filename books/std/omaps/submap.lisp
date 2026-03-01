@@ -21,8 +21,8 @@
 (local (acl2::controlled-configuration :hooks nil))
 
 (include-book "core")
-(include-book "with-fixing-theorems")
-(include-book "assoc")
+(local (include-book "with-fixing-theorems"))
+(local (include-book "assoc"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -195,6 +195,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define mequiv ((x mapp) (y mapp))
+  :short "Equivalence of omaps."
+  :long
+  (xdoc::topstring-p
+   "This is a typical equality of fixers.")
+  (equal (mfix x) (mfix y))
+  :enabled t
+  :inline t
+
+  ///
+
+  (defequiv mequiv)
+
+  (defcong mequiv equal (mfix x) 1)
+
+  (defrule mfix-under-mequiv
+    (mequiv (mfix x)
+            x)
+    :rule-classes (:rewrite :rewrite-quoted-constant))
+
+  (defrule equal-of-mfix-1-forward-to-mequiv
+    (implies (equal (mfix x) y)
+             (mequiv x y))
+    :rule-classes :forward-chaining)
+
+  (defrule equal-of-mfix-2-forward-to-mequiv
+    (implies (equal x (mfix y))
+             (mequiv x y))
+    :rule-classes :forward-chaining)
+
+  (defrule mequiv-of-mfix-1-forward
+    (implies (mequiv (mfix x) y)
+             (mequiv x y))
+    :rule-classes :forward-chaining)
+
+  (defrule mequiv-of-mfix-2-forward
+    (implies (mequiv x (mfix y))
+             (mequiv x y))
+    :rule-classes :forward-chaining))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define emptyp ((map mapp))
   :returns (yes/no booleanp)
   :short "Check if an omap is empty."

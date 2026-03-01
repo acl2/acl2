@@ -12,117 +12,186 @@
 
 (include-book "core")
 
-(include-book "kestrel/fty/map" :dir :system)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection emptyp-fix
   :extension emptyp
-  (fty::deffixequiv emptyp))
+  (defcong mequiv equal (emptyp map) 1
+    :hints (("Goal" :in-theory (enable emptyp)))))
 
 (defsection head-fix
   :extension head
-  (fty::deffixequiv head))
+  (defcong mequiv equal (head map) 1
+    :hints (("Goal" :in-theory (enable head)))))
 
 (defsection tail-fix
   :extension tail
-  (fty::deffixequiv tail))
+  (defcong mequiv equal (tail map) 1
+    :hints (("Goal" :in-theory (enable tail)))))
 
 (defsection update-fix
   :extension update
-  (fty::deffixequiv update
-    :hints (("Goal" :in-theory (enable update)))))
+  (defcong mequiv equal (update key val map) 3
+    :hints (("Goal" :induct t
+                    :in-theory (enable update)))))
 
 (defsection update*-fix
   :extension update*
-  (fty::deffixequiv update*
-    :hints (("Goal" :in-theory (enable update*)))))
+  (defcong mequiv equal (update* new old) 1
+    :hints (("Goal" :induct t
+                    :in-theory (enable update*))))
+
+  (defcong mequiv equal (update* new old) 2
+    :hints (("Goal" :induct t
+                    :in-theory (enable update*)))))
 
 (defsection delete-fix
   :extension delete
-  (fty::deffixequiv delete
-    :hints (("Goal" :in-theory (enable delete)))))
+  (defcong mequiv equal (delete key map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (enable delete)))))
 
 (defsection delete*-fix
   :extension delete*
-  (fty::deffixequiv delete*
-    :hints (("Goal" :in-theory (enable delete*)))))
+  (defcong mequiv equal (delete* keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (enable delete*)))))
 
 (defsection assoc-fix
   :extension assoc
-  (fty::deffixequiv assoc
-    :hints (("Goal" :in-theory (enable assoc)))))
+  (defcong mequiv equal (assoc key map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (enable assoc)))))
 
 (defsection in*-fix
   :extension in*
-  (fty::deffixequiv in*
-    :hints (("Goal" :in-theory (enable in*)))))
+  (defcong mequiv equal (in* keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (in*) (mequiv))))))
 
 (defsection list-in-fix
   :extension list-in
-  (fty::deffixequiv list-in
-    :hints (("Goal" :in-theory (enable list-in)))))
+  (defruled list-in-of-true-list-fix
+    (equal (list-in (true-list-fix keys) map)
+           (list-in keys map))
+    :induct t
+    :enable (list-in
+             true-list-fix))
+
+  (defcong list-equiv equal (list-in keys map) 1
+    :hints (("Goal" :in-theory (enable list-equiv)
+                    :use ((:instance list-in-of-true-list-fix
+                                     (keys keys))
+                          (:instance list-in-of-true-list-fix
+                                     (keys keys-equiv))))))
+
+  (defcong mequiv equal (list-in keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (list-in) (mequiv))))))
 
 (defsection list-notin-fix
   :extension list-notin
-  (fty::deffixequiv list-notin
-    :hints (("Goal" :in-theory (enable list-notin)))))
+  (defruled list-notin-of-true-list-fix
+    (equal (list-notin (true-list-fix keys) map)
+           (list-notin keys map))
+    :induct t
+    :enable (list-notin
+             true-list-fix))
+
+  (defcong list-equiv equal (list-notin keys map) 1
+    :hints (("Goal" :in-theory (enable list-equiv)
+                    :use ((:instance list-notin-of-true-list-fix
+                                     (keys keys))
+                          (:instance list-notin-of-true-list-fix
+                                     (keys keys-equiv))))))
+
+  (defcong mequiv equal (list-notin keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (list-notin) (mequiv))))))
 
 (defsection lookup-fix
   :extension lookup
-  (fty::deffixequiv lookup))
+  (defcong mequiv equal (lookup key map) 2
+    :hints (("Goal" :in-theory (e/d (lookup) (mequiv))))))
 
 (defsection lookup*-fix
   :extension lookup*
-  (fty::deffixequiv lookup*
-    :hints (("Goal" :in-theory (enable lookup*)))))
+  (defcong mequiv equal (lookup* keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (lookup*) (mequiv))))))
 
 (defsection list-lookup-fix
   :extension list-lookup
-  (fty::deffixequiv list-lookup
-    :hints (("Goal" :in-theory (enable list-lookup)))))
+  (defruled list-lookup-of-true-list-fix
+    (equal (list-lookup (true-list-fix keys) map)
+           (list-lookup keys map))
+    :induct t
+    :enable (list-lookup
+             true-list-fix))
+
+  (defcong list-equiv equal (list-lookup keys map) 1
+    :hints (("Goal" :in-theory (enable list-equiv)
+                    :use ((:instance list-lookup-of-true-list-fix
+                                     (keys keys))
+                          (:instance list-lookup-of-true-list-fix
+                                     (keys keys-equiv))))))
+
+  (defcong mequiv equal (list-lookup keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (list-lookup) (mequiv))))))
 
 (defsection rlookup-fix
   :extension rlookup
-  (fty::deffixequiv rlookup
-    :hints (("Goal" :in-theory (enable rlookup)))))
+  (defcong mequiv equal (rlookup val map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (enable rlookup)))))
 
 (defsection rlookup*-fix
   :extension rlookup*
-  (fty::deffixequiv rlookup*
-    :hints (("Goal" :in-theory (enable rlookup*)))))
+  (defcong mequiv equal (rlookup* vals map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (rlookup*) (mequiv))))))
 
 (defsection restrict-fix
   :extension restrict
-  (fty::deffixequiv restrict
-    :hints (("Goal" :in-theory (enable restrict)))))
+  (defcong mequiv equal (restrict keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (restrict) (mequiv))))))
 
 (defsection keys-fix
   :extension keys
-  (fty::deffixequiv keys
-    :hints (("Goal" :in-theory (enable keys)))))
+  (defcong mequiv equal (keys map) 1
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (keys) (mequiv))))))
 
 (defsection values-fix
   :extension values
-  (fty::deffixequiv values
-    :hints (("Goal" :in-theory (enable values)))))
+  (defcong mequiv equal (values map) 1
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (values) (mequiv))))))
 
 (defsection compatiblep-fix
   :extension compatiblep
-  (fty::deffixequiv compatiblep
-    :hints (("Goal" :in-theory (enable compatiblep)))))
+  (defcong mequiv equal (compatiblep map1 map2) 1
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (compatiblep) (mequiv)))))
+
+  (defcong mequiv equal (compatiblep map1 map2) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (compatiblep) (mequiv))))))
 
 (defsection submap-fix
   :extension submap
-  (fty::deffixequiv submap
-    :hints (("Goal" :in-theory (enable submap)))))
+  (defcong mequiv equal (submap sub sup) 1
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (submap) (mequiv)))))
+
+  (defcong mequiv equal (submap sub sup) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (submap) (mequiv))))))
 
 (defsection size-fix
   :extension size
-  (fty::deffixequiv size
-    :hints (("Goal" :in-theory (enable size)))))
-
-(defsection from-lists
-  :extension from-lists
-  (fty::deffixequiv from-lists
-    :hints (("Goal" :in-theory (enable from-lists)))))
+  (defcong mequiv equal (size map) 1
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (size) (mequiv))))))
