@@ -149,6 +149,14 @@
 
   ///
 
+  (defrule mapp-compound-recognizer
+    (if (omap::mapp map)
+        (true-listp map)
+      (not (equal map nil)))
+    :rule-classes :compound-recognizer
+    :induct t
+    :enable omap::mapp)
+
   (defruled setp-when-mapp
     (implies (mapp x)
              (set::setp x))

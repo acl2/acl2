@@ -29,16 +29,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: how is this not already a rule?
-(defrule omapp-compound-recognizer
-  (implies (omap::mapp map)
-           (true-listp map))
-  :rule-classes :compound-recognizer
-  :induct t
-  :enable omap::mapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule equal-of-omap-assoc-and-cons
   (equal (equal (omap::assoc key1 omap)
                 (cons key2 val))
