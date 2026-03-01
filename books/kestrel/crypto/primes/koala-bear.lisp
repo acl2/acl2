@@ -44,7 +44,7 @@
      (24 1)
      (() ()))
 
-  :parents (crypto::crypto)
+  :parents (primes::primes)
 
   :short "The koala-bear prime."
 
@@ -100,4 +100,3 @@
 (assert-event
  (equal (koala-bear)
         (+ (- (expt 2 31) (expt 2 24)) 1)))
-

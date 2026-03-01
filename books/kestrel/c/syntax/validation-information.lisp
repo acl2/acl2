@@ -252,7 +252,7 @@
      We omit @(':enum'), whose tags are not yet being tracked."))
   (:struct ())
   (:union ())
-  :pred tag-kind)
+  :pred tag-kindp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1383,7 +1383,7 @@
     :guard (and (comp-stmt-unambp cstmt)
                 (comp-stmt-annop cstmt))
     :returns (types type-option-setp)
-    :parents (validation-information stmts/types)
+    :parents (validation-information stmts-types)
     :short "Types of a compound statement, from the validation information."
     (block-item-list-types (comp-stmt->items cstmt))
     :measure (comp-stmt-count cstmt))
