@@ -38,8 +38,6 @@
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/union" :dir :system))
-;; TODO: Necessary?
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
 
 (local (include-book "kestrel/data/utilities/alist" :dir :system))
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
