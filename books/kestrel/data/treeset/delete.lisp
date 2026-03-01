@@ -251,16 +251,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule oset-delete-of-arg1-and-to-oset
-  (equal (set::delete x (to-oset set))
-         (to-oset (delete x set)))
+(defrule to-oset-of-delete
+  (equal (to-oset (delete x set))
+         (set::delete x (to-oset set)))
   :enable (to-oset
            delete
            fix
            setp
            empty))
 
-(add-to-ruleset from-oset-theory '(oset-delete-of-arg1-and-to-oset))
+(add-to-ruleset to-oset-theory '(to-oset-of-delete))
 
 (defrule from-oset-of-oset-delete
   (equal (from-oset (set::delete x oset))
@@ -269,18 +269,18 @@
 
 (add-to-ruleset from-oset-theory '(from-oset-of-oset-delete))
 
+(defruled delete-becomes-oset-delete
+  (equal (delete x set)
+         (from-oset (set::delete x (to-oset set)))))
+
+(add-to-ruleset to-oset-theory '(delete-becomes-oset-delete))
+
 (defruled oset-delete-becomes-delete
   (equal (set::delete x oset)
          (to-oset (delete x (from-oset oset))))
   :enable set::expensive-rules)
 
 (add-to-ruleset from-oset-theory '(oset-delete-becomes-delete))
-
-(defruled delete-becomes-oset-delete
-  (equal (delete x set)
-         (from-oset (set::delete x (to-oset set)))))
-
-(add-to-ruleset to-oset-theory '(delete-becomes-oset-delete))
 
 ;;;;;;;;;;;;;;;;;;;;
 

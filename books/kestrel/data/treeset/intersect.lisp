@@ -475,17 +475,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule oset-intersect-of-to-oset
-  (equal (set::intersect (to-oset x)
-                         (to-oset y))
-         (to-oset (intersect x y)))
+(defrule to-oset-of-intersect
+  (equal (to-oset (intersect x y))
+         (set::intersect (to-oset x)
+                         (to-oset y)))
   :enable (to-oset
            intersect
            fix
            setp
            empty))
 
-(add-to-ruleset from-oset-theory '(oset-intersect-of-to-oset))
+(add-to-ruleset to-oset-theory '(to-oset-of-intersect))
 
 (defrule from-oset-of-oset-intersect
   (equal (from-oset (set::intersect x y))
@@ -495,6 +495,13 @@
 
 (add-to-ruleset from-oset-theory '(from-oset-of-oset-intersect))
 
+(defruled intersect-becomes-oset-intersect
+  (equal (intersect x y)
+         (from-oset (set::intersect (to-oset x)
+                                    (to-oset y)))))
+
+(add-to-ruleset to-oset-theory '(intersect-becomes-oset-intersect))
+
 (defruled oset-intersect-becomes-intersect
   (equal (set::intersect x y)
          (to-oset (intersect (from-oset x)
@@ -502,13 +509,6 @@
   :enable set::expensive-rules)
 
 (add-to-ruleset from-oset-theory '(oset-intersect-becomes-intersect))
-
-(defruled intersect-becomes-oset-intersect
-  (equal (intersect x y)
-         (from-oset (set::intersect (to-oset x)
-                                    (to-oset y)))))
-
-(add-to-ruleset to-oset-theory '(intersect-becomes-oset-intersect))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

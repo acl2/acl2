@@ -98,9 +98,9 @@
 (define-sk set-all-genericp-sk (set)
   :returns (yes/no booleanp)
   (forall (elem)
-          (implies (in elem set)
-                   (genericp elem)))
-  :verify-guards nil)
+    (non-exec
+      (implies (in elem set)
+               (genericp elem)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 

@@ -228,9 +228,9 @@
   :parents (subset)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (elem)
-          (implies (in elem x)
-                   (in elem y)))
-  :verify-guards nil)
+    (non-exec
+      (implies (in elem x)
+               (in elem y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -300,32 +300,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled oset-subset-of-to-oset-when-subset
-  (implies (subset x y)
-           (set::subset (to-oset x) (to-oset y)))
-  :enable set::pick-a-point-subset-strategy)
-
-(defruled subset-when-oset-subset-of-to-oset
-  (implies (set::subset (to-oset x) (to-oset y))
-           (subset x y))
-  :enable (pick-a-point
-           to-oset-theory
-           set::subset-in)
-  :disable from-oset-theory)
-
 (defrule oset-subset-of-to-oset
   (equal (set::subset (to-oset x) (to-oset y))
          (subset x y))
-  :use (oset-subset-of-to-oset-when-subset
-        subset-when-oset-subset-of-to-oset))
+  :use (lemma0 lemma1)
+
+  :prep-lemmas
+  ((defruled lemma0
+     (implies (subset x y)
+              (set::subset (to-oset x) (to-oset y)))
+     :enable set::pick-a-point-subset-strategy)
+
+   (defruled lemma1
+     (implies (set::subset (to-oset x) (to-oset y))
+              (subset x y))
+     :enable (pick-a-point
+              to-oset-theory
+              set::subset-in)
+     :disable from-oset-theory)))
 
 (add-to-ruleset from-oset-theory '(oset-subset-of-to-oset))
 
 (defruled subset-becomes-oset-subset
   (equal (subset x y)
-         (set::subset (to-oset x) (to-oset y)))
-  :use (oset-subset-of-to-oset-when-subset
-        subset-when-oset-subset-of-to-oset))
+         (set::subset (to-oset x) (to-oset y))))
 
 (add-to-ruleset to-oset-theory '(subset-becomes-oset-subset))
 

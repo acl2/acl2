@@ -212,9 +212,9 @@
   :parents (implementation)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (elem)
-          (implies (tree-in elem x)
-                   (tree-in elem y)))
-  :verify-guards nil)
+    (non-exec
+      (implies (tree-in elem x)
+               (tree-in elem y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
