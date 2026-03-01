@@ -98,8 +98,8 @@ acl2
 # make-fancy-manual.sh -- developer file, not distributed
 # make-tags-acl2-doc.sh -- github only (no point in including this in release)
 # new-useless-runes-files.sh -- github only (no point in including this in release)
-# pull.sh -- developer file, not distributed
-# purity.sh -- developer file, not distributed
+# pull-acl2.sh -- developer file, not distributed
+# purity-acl2.sh -- developer file, not distributed
 
 doc:
 acl2.1

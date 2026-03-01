@@ -12,11 +12,6 @@ ACL2 authors, Matt Kaufmann and J Moore.
 
 [ACL2]: http://www.cs.utexas.edu/users/moore/acl2 "ACL2 Home Page"
 
-**WARNING**: On rare occasions development versions of ACL2 may be
-incomplete, fragile, or unable to pass the usual regression tests.  You
-may choose to download an official ACL2 release as described on the
-[ACL2 Home Page][ACL2] or below in this README.
-
 ### ACL2 Books
 
 The `books/` directory of this repository comprises the Community Books,
@@ -36,7 +31,7 @@ download button on the right hand side of the upper toolbar while
 browsing the manual.
 
 [release-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html
-[dev-manual]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html
+[dev-manual]:  https://www.acl2.org/doc/index.html
 
 ### Obtaining the Source Code
 
@@ -67,9 +62,9 @@ executable and certify books in your new directory.
 [installation]:    http://www.cs.utexas.edu/users/moore/acl2/current/HTML/installation/installation.html
 [releases]:        https://github.com/acl2-devel/acl2-devel/releases/
 [git]:             http://git-scm.com
-[community books]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____COMMUNITY-BOOKS
+[community books]: https://www.acl2.org/doc/index.html?topic=ACL2____COMMUNITY-BOOKS
 
-#### Experimental Development Version
+#### Development Version
 
 To check out the latest development version of the repository using
 `git`, you can (for example) do the following in a fresh directory
@@ -83,15 +78,15 @@ git clone https://github.com/acl2/acl2 .
 
 See the documentation for [how to contribute][how-to-contribute].
 
-[how-to-contribute]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____HOW-TO-CONTRIBUTE
+[how-to-contribute]: https://www.acl2.org/doc/index.html?topic=ACL2____HOW-TO-CONTRIBUTE
 
 ### Staying Informed
 
 We encourage users of ACL2 to join our [mailing lists][mailing-lists]
 and take advantage of other [ACL2 Community resources][community].
 
-[mailing-lists]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____MAILING-LISTS
-[community]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____COMMUNITY
+[mailing-lists]: https://www.acl2.org/doc/index.html?topic=ACL2____MAILING-LISTS
+[community]: https://www.acl2.org/doc/index.html?topic=ACL2____COMMUNITY
 
 ### Contributors Wanted!
 
@@ -102,7 +97,7 @@ If you would like to contribute to this repository, see the
 documentation topic [git-quick-start].  Please note the [guidelines for
 book development][books guidelines].
 
-[git-quick-start]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/?topic=ACL2____GIT-QUICK-START
+[git-quick-start]:  https://www.acl2.org/doc/index.html?topic=ACL2____GIT-QUICK-START
 [wiki]:             https://github.com/acl2/acl2/wiki
 [bugtracker]:       https://github.com/acl2/acl2/issues
-[books guidelines]: https://github.com/acl2/acl2/wiki/Committing-code:-guidelines
+[books guidelines]: https://www.acl2.org/doc/index.html?topic=ACL2____BEST-PRACTICES
