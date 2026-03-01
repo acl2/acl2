@@ -11,7 +11,7 @@
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "std/lists/list-defuns" :dir :system))
 
-(local (include-book "list"))
+(local (include-book "equiv"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

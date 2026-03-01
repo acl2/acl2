@@ -13,7 +13,6 @@
 
 (include-book "kestrel/data/treeset/to-oset-defs" :dir :system)
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/utilities/list-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 

@@ -11,7 +11,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/utilities/list-defs" :dir :system)
+(include-book "kestrel/data/utilities/lists/defs" :dir :system)
 (include-book "kestrel/data/utilities/oset-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 
@@ -37,8 +37,8 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
+(local (include-book "kestrel/data/utilities/lists/equiv" :dir :system))
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
-(local (include-book "kestrel/data/utilities/list" :dir :system))
 
 (local (include-book "tree"))
 (local (include-book "bst"))

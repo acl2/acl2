@@ -16,7 +16,6 @@
 (include-book "kestrel/data/treeset/insert-defs" :dir :system)
 (include-book "kestrel/data/treeset/union-defs" :dir :system)
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
-(include-book "kestrel/data/utilities/list-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
 (include-book "internal/update-defs")
