@@ -247,6 +247,9 @@
 
   ///
 
+  (defcong mequiv equal (emptyp map) 1
+    :hints (("Goal" :in-theory (enable emptyp))))
+
   (defrule mapp-when-not-emptyp
     (implies (not (emptyp map))
              (mapp map))
@@ -282,6 +285,9 @@
   :guard-hints (("Goal" :in-theory (enable emptyp mapp)))
 
   ///
+
+  (defcong mequiv equal (head map) 1
+    :hints (("Goal" :in-theory (enable head))))
 
   (defrule head-key-when-emptyp
     (implies (emptyp map)
@@ -380,6 +386,9 @@
 
   ///
 
+  (defcong mequiv equal (tail map) 1
+    :hints (("Goal" :in-theory (enable tail))))
+
   (defrule tail-when-emptyp
     (implies (emptyp map)
              (equal (tail map) nil))
@@ -444,6 +453,10 @@
     (and (consp (update x y z))
          (true-listp (update x y z)))
     :rule-classes :type-prescription)
+
+  (defcong mequiv equal (update key val map) 3
+    :hints (("Goal" :induct t
+                    :in-theory (enable update emptyp))))
 
   (defrule update-of-head-and-tail
     (implies (not (emptyp map))
@@ -609,6 +622,14 @@
 
   ///
 
+  (defcong mequiv equal (update* new old) 1
+    :hints (("Goal" :induct t
+                    :in-theory (enable update*))))
+
+  (defcong mequiv equal (update* new old) 2
+    :hints (("Goal" :induct t
+                    :in-theory (enable update*))))
+
   (defrule update*-when-left-emptyp
     (implies (emptyp new)
              (equal (update* new old)
@@ -638,6 +659,10 @@
 
   ///
 
+  (defcong mequiv equal (delete key map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (enable delete))))
+
   (defrule delete-when-emptyp
     (implies (emptyp map)
              (equal (delete key map) nil))))
@@ -655,6 +680,10 @@
   :verify-guards :after-returns
 
   ///
+
+  (defcong mequiv equal (delete* keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (enable delete*))))
 
   (defrule delete*-when-left-emptyp
     (implies (set::emptyp keys)
@@ -685,6 +714,10 @@
                    (t (assoc key (tail map)))))))
 
   ///
+
+  (defcong mequiv equal (assoc key map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (enable assoc))))
 
   (defrule assoc-of-mfix
     (equal (assoc key (mfix map))
@@ -772,6 +805,10 @@
 
   ///
 
+  (defcong mequiv equal (in* keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (in*) (mequiv)))))
+
   (defrule in*-when-left-emptyp
     (implies (set::emptyp keys)
              (in* keys map)))
@@ -792,7 +829,30 @@
   :short "Check if every key in a list is in an omap."
   (cond ((endp keys) t)
         (t (and (assoc (car keys) map)
-                (list-in (cdr keys) map)))))
+                (list-in (cdr keys) map))))
+
+  ///
+
+  (defruled list-in-of-true-list-fix
+    (equal (list-in (true-list-fix keys) map)
+           (list-in keys map))
+    :induct t
+    :enable (list-in
+             true-list-fix))
+
+  (defrule list-equiv-implies-equal-list-in-1
+    (implies (list-equiv keys keys-equiv)
+             (equal (list-in keys map)
+                    (list-in keys-equiv map)))
+    :rule-classes :congruence
+    :enable list-equiv
+    :use (list-in-of-true-list-fix
+          (:instance list-in-of-true-list-fix
+                     (keys keys-equiv))))
+
+  (defcong mequiv equal (list-in keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (list-in) (mequiv))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -804,6 +864,27 @@
            (list-notin (cdr keys) map)))
 
   ///
+
+  (defruled list-notin-of-true-list-fix
+    (equal (list-notin (true-list-fix keys) map)
+           (list-notin keys map))
+    :induct t
+    :enable (list-notin
+             true-list-fix))
+
+  (defrule list-equiv-implies-equal-list-notin-1
+    (implies (list-equiv keys keys-equiv)
+             (equal (list-notin keys map)
+                    (list-notin keys-equiv map)))
+    :rule-classes :congruence
+    :enable list-equiv
+    :use (list-notin-of-true-list-fix
+          (:instance list-notin-of-true-list-fix
+                     (keys keys-equiv))))
+
+  (defcong mequiv equal (list-notin keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (list-notin) (mequiv)))))
 
   (defruled not-assoc-map-when-member-of-list-notin
     (implies (and (list-notin keys map)
@@ -891,6 +972,9 @@
 
   ///
 
+  (defcong mequiv equal (lookup key map) 2
+    :hints (("Goal" :in-theory (e/d (lookup) (mequiv)))))
+
   (defrule lookup-when-emptyp
     (implies (emptyp map)
              (not (lookup key map)))
@@ -900,8 +984,8 @@
     (implies (not (emptyp map))
              (< (acl2-count (lookup key map))
                 (acl2-count map)))
-    :hints (("Goal" :in-theory (disable acl2-count-assoc-<-map)
-             :use acl2-count-assoc-<-map)))
+    :disable acl2-count-assoc-<-map
+    :use acl2-count-assoc-<-map)
 
   (defruled lookup-of-tail-when-assoc-tail
     (implies (assoc key (tail map))
@@ -945,6 +1029,10 @@
 
   (verify-guards lookup* :hints (("Goal" :in-theory (enable in*))))
 
+  (defcong mequiv equal (lookup* keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (lookup*) (mequiv)))))
+
   (defrule lookup*-when-left-emptyp
     (implies (set::emptyp keys)
              (equal (lookup* keys map)
@@ -968,6 +1056,27 @@
   :guard-hints (("Goal" :in-theory (enable list-in)))
 
   ///
+
+  (defruled list-lookup-of-true-list-fix
+    (equal (list-lookup (true-list-fix keys) map)
+           (list-lookup keys map))
+    :induct t
+    :enable (list-lookup
+             true-list-fix))
+
+  (defrule list-equiv-implies-equal-list-lookup-1
+    (implies (list-equiv keys keys-equiv)
+             (equal (list-lookup keys map)
+                    (list-lookup keys-equiv map)))
+    :rule-classes :congruence
+    :enable list-equiv
+    :use (list-lookup-of-true-list-fix
+          (:instance list-lookup-of-true-list-fix
+                     (keys keys-equiv))))
+
+  (defcong mequiv equal (list-lookup keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (list-lookup) (mequiv)))))
 
   (defruled list-lookup-of-cons
     (equal (list-lookup (cons key keys) map)
@@ -1036,6 +1145,10 @@
 
   ///
 
+  (defcong mequiv equal (rlookup val map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (enable rlookup))))
+
   (defrule rlookup-when-emptyp
     (implies (emptyp map)
              (equal (rlookup val map) nil))
@@ -1055,6 +1168,10 @@
   :verify-guards :after-returns
 
   ///
+
+  (defcong mequiv equal (rlookup* vals map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (rlookup*) (mequiv)))))
 
   (defrule rlookup*-when-left-emptyp
     (implies (set::emptyp vals)
@@ -1084,6 +1201,10 @@
   :verify-guards :after-returns
 
   ///
+
+  (defcong mequiv equal (restrict keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (restrict) (mequiv)))))
 
   (defrule restrict-when-left-emptyp
     (implies (set::emptyp keys)
@@ -1118,6 +1239,10 @@
              (set::insert key (keys (tail map))))))
 
   ///
+
+  (defcong mequiv equal (keys map) 1
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (keys) (mequiv)))))
 
   (defrule keys-of-mfix
     (equal (keys (mfix map))
@@ -1232,6 +1357,10 @@
 
   ///
 
+  (defcong mequiv equal (values map) 1
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (values) (mequiv)))))
+
   (defrule values-when-emptyp
     (implies (emptyp map)
              (equal (values map) nil))
@@ -1271,6 +1400,14 @@
 
   ///
 
+  (defcong mequiv equal (compatiblep map1 map2) 1
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (compatiblep) (mequiv)))))
+
+  (defcong mequiv equal (compatiblep map1 map2) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (compatiblep) (mequiv)))))
+
   (defrule compatiblep-when-left-emptyp
     (implies (emptyp map1)
              (compatiblep map1 map2)))
@@ -1299,6 +1436,14 @@
                   (submap (tail sub) sup)))))
 
   ///
+
+  (defcong mequiv equal (submap sub sup) 1
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (submap) (mequiv)))))
+
+  (defcong mequiv equal (submap sub sup) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (submap) (mequiv)))))
 
   (defrule submap-when-left-emptyp
     (implies (emptyp sub)
@@ -1331,6 +1476,10 @@
         (t (1+ (size (tail map)))))
 
   ///
+
+  (defcong mequiv equal (size map) 1
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (size) (mequiv)))))
 
   (defruled unfold-equal-size-const
     (implies (syntaxp (quotep c))
@@ -1404,6 +1553,40 @@
         (t (update (car keys) (car vals) (from-lists (cdr keys) (cdr vals)))))
 
   ///
+
+  (defruled from-lists-of-true-list-fix-1
+    (equal (from-lists (true-list-fix keys) vals)
+           (from-lists keys vals))
+    :induct t
+    :enable (from-lists
+             true-list-fix))
+
+  (defruled from-lists-of-true-list-fix-2
+    (equal (from-lists (true-list-fix keys) vals)
+           (from-lists keys vals))
+    :induct t
+    :enable (from-lists
+             true-list-fix))
+
+  (defrule list-equiv-implies-equal-from-lists-1
+    (implies (list-equiv keys keys-equiv)
+             (equal (from-lists keys vals)
+                    (from-lists keys-equiv vals)))
+    :rule-classes :congruence
+    :enable list-equiv
+    :use (from-lists-of-true-list-fix-1
+          (:instance from-lists-of-true-list-fix-1
+                     (keys keys-equiv))))
+
+  (defrule list-equiv-implies-equal-from-lists-2
+    (implies (list-equiv vals vals-equiv)
+             (equal (from-lists keys vals)
+                    (from-lists keys vals-equiv)))
+    :rule-classes :congruence
+    :enable list-equiv
+    :use (from-lists-of-true-list-fix-1
+          (:instance from-lists-of-true-list-fix-1
+                     (vals vals-equiv))))
 
   (defruled list-lookup-of-from-lists-of-append-first
     (implies (and (equal (len keys1) (len vals1))
