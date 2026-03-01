@@ -2917,7 +2917,7 @@
       ". For now we only model the older @('__attribute__') syntax.")
      (xdoc::p
       "The documentation lists three kinds of attributes:
-       empty, names, and names with parameters.
+       empty, names only, and names with parameters.
        For now we only model the latter two kinds.
        The documentation lists three kinds of parameters
        (which presumably refer to the whole collection of parameters
@@ -2943,7 +2943,7 @@
        and an attributed that consists of a name and zero parameters:
        in concrete syntax, the latter would include open and closed parentheses,
        without anything in between (except white space or comments)."))
-    (:name ((name attrib-name)))
+    (:name-only ((name attrib-name)))
     (:name-params ((name attrib-name)
                    (params expr-list)))
     :pred attribp
