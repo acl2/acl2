@@ -27,7 +27,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ grammar
-  :parents (language)
+  :parents (concrete-syntax)
   :short "ABNF grammar of the AleoVM language."
   :long
   (xdoc::topstring

@@ -217,7 +217,7 @@
        ;; and thus we obtain the index for later use.
        ;; Since there are only 8 MMX registers, the REX byte is not used.
        ((the (unsigned-byte 4) src1/dst-index) reg)
-       ((the (unsigned-byte 128) src1) (mmx src1/dst-index x86))
+       ((the (unsigned-byte 64) src1) (mmx src1/dst-index x86))
 
        ;; The second source operand (Operand 2 in the Intel manual)
        ;; is the MMX register, or memory operand, specified in Mod and R/M.
@@ -305,7 +305,7 @@
        ;; and thus we obtain the index for later use.
        ;; Since there are only 8 MMX registers, the REX byte is not used.
        ((the (unsigned-byte 4) src1/dst-index) reg)
-       ((the (unsigned-byte 128) src1) (mmx src1/dst-index x86))
+       ((the (unsigned-byte 64) src1) (mmx src1/dst-index x86))
 
        ;; The second source operand (Operand 2 in the Intel manual)
        ;; is the MMX register, or memory operand, specified in Mod and R/M.
@@ -392,7 +392,7 @@
        ;; and thus we obtain the index for later use.
        ;; Since there are only 8 MMX registers, the REX byte is not used.
        ((the (unsigned-byte 4) src1/dst-index) reg)
-       ((the (unsigned-byte 128) src1) (mmx src1/dst-index x86))
+       ((the (unsigned-byte 64) src1) (mmx src1/dst-index x86))
 
        ;; The second source operand (Operand 2 in the Intel manual)
        ;; is the MMX register, or memory operand, specified in Mod and R/M.
