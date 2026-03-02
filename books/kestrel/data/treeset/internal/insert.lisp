@@ -193,7 +193,7 @@
   :enable (<<-all-r
            tree-insert))
 
-(defrule bst-of-tree-insert.tree$-when-bst
+(defrule bstp-of-tree-insert.tree$-when-bstp
   (implies (bstp tree)
            (bstp (mv-nth 1 (tree-insert x hash tree))))
   :induct t

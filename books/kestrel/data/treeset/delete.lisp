@@ -36,7 +36,6 @@
 
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
 
-(local (include-book "to-oset"))
 (local (include-book "internal/tree"))
 (local (include-book "internal/join"))
 (local (include-book "internal/delete"))
@@ -151,7 +150,7 @@
 
 (add-to-ruleset break-abstraction '(delete-type-prescription))
 
-(defrule delete-when-set-equiv-congruence
+(defrule delete-when-equiv-congruence
   (implies (equiv set0 set1)
            (equal (delete x set0)
                   (delete x set1)))
@@ -349,7 +348,7 @@
   ((x acl2-numberp)
    (set acl2-number-setp))
   (mbe :logic (delete x set)
-       :exec (acl2-number-tree-delete x (fix set)))
+       :exec (acl2-number-tree-delete x set))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -362,7 +361,7 @@
   ((x symbolp)
    (set symbol-setp))
   (mbe :logic (delete x set)
-       :exec (symbol-tree-delete x (fix set)))
+       :exec (symbol-tree-delete x set))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -375,7 +374,7 @@
   ((x eqlablep)
    (set eqlable-setp))
   (mbe :logic (delete x set)
-       :exec (eqlable-tree-delete x (fix set)))
+       :exec (eqlable-tree-delete x set))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
