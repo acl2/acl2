@@ -218,8 +218,7 @@ what the instruction. Not sure why they are listed that way.</p>")
 
 (def-sdm-instruction-section "5.4.1 MMX Data Transfer Instructions"
   :mnemonics '(MOVD/Q MOVQ)
-  :features :mmx
-  :doc "<p>Only MOVQ is implemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.2 MMX Conversion Instructions"
   :mnemonics '(PACKSSWB PACKSSDW PACKUSWB PUNPCKHBW PUNPCKHWD PUNPCKHDQ PUNPCKLBW PUNPCKLWD PUNPCKLDQ)
