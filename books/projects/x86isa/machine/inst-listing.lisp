@@ -7835,7 +7835,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P D) :OP2 '(E Y))
-          'NIL
+          '(X86-MOVD/MOVQ-TO-MMX)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVD/Q"
           (OP :OP #xF6E :PFX :66 :FEAT '(:SSE2))

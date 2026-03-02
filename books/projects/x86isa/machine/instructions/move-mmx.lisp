@@ -187,3 +187,83 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; MOVD/MOVQ
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-movd/movq-to-mmx
+
+  :parents (two-byte-opcodes)
+
+  :short "Move doubleword / move quadword
+          from memory or a general-purpose register to an MMX register."
+
+  :long
+  "<code>
+   NP         0F 6E /r    MOVD mm, r/m32
+   NP REX.W + 0F 6E /r    MOVQ mm, r/m64
+   </code>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; The operand size is 32 or 64 bits, based on REX.W.
+       ((the (integer 4 8) operand-size)
+        (if (logbitp #.*w* rex-byte)
+            8
+          4))
+
+       ;; The source operand (Operand 2 in the Intel manual, Op/En A)
+       ;; is the general-purpose register, or memory operans,
+       ;; specified in Mod and R/M.
+       (inst-ac? t)
+       ((mv flg0 src (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*gpr-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ;; Not a memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ;; No immediate operand
+                                               x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Store the value into the destination.
+       ;; The destination operand (Operand 1 in the Intel manual, Op/En A)
+       ;; is the MMX register specified in Reg.
+       ;; If the operand size is 32 bits, then src is 32 bits,
+       ;; and when we store it into the register
+       ;; we implicitly zero-extend it, as required.
+       (x86 (!mmx reg src x86))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86))
