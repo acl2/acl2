@@ -1,7 +1,7 @@
 ; Converting a dag to a term using lets.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -87,7 +87,7 @@
                                            (index (CAR ARGS))
                                            (num-valid-indices (+ 1 (LARGEST-NON-QUOTEP ARGS)))
                                            ))
-           :in-theory (e/d (<-of-car-when-bounded-darg-listp)
+           :in-theory (e/d ()
                            (TYPE-OF-AREF1-WHEN-SUPPORTERS-ARRAYP
                             TYPE-OF-AREF1-WHEN-SUPPORTERS-ARRAYP-special)))))
 
