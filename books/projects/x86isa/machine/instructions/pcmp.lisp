@@ -165,7 +165,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-inst x86-pcmpeqb/pcmpeqw/pcmpeqd-sse
+
   :parents (two-byte-opcodes)
+
+  :short "Compare packed data for equal (MMX variants)."
+
   :long
   "<code>
   PCMPEQB xmm1, xmm2/m128
@@ -176,7 +180,6 @@
   :modr/m t
 
   :returns (x86 x86p :hyp (x86p x86))
-  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))
 
   :body
 
@@ -242,7 +245,9 @@
 
        ;; Update the instruction pointer.
        (x86 (write-*ip proc-mode temp-rip x86)))
-      x86))
+    x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -482,7 +487,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-inst x86-pcmpgtb/pcmpgtw/pcmpgtd-sse
+
   :parents (two-byte-opcodes)
+
+  :short "Compare packed data for greater than (MMX variants)."
+
   :long
   "<code>
   PCMPGTB xmm1, xmm2/m128
@@ -493,7 +502,6 @@
   :modr/m t
 
   :returns (x86 x86p :hyp (x86p x86))
-  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))
 
   :body
 
@@ -559,7 +567,9 @@
 
        ;; Update the instruction pointer.
        (x86 (write-*ip proc-mode temp-rip x86)))
-      x86))
+    x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
