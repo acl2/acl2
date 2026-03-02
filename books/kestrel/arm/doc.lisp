@@ -17,7 +17,7 @@
 
 (acl2::defxdoc arm32
   :short "A formal model of the ARM32 CPU."
-  :parents (software-verification hardware-verification)
+  :parents (acl2::software-verification acl2::hardware-verification)
   :long
   (xdoc::topparas
     "The ARM32 model is an in-progress formal model of a 32-bit ARM CPU.  It
