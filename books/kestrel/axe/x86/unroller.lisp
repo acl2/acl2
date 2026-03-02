@@ -910,6 +910,46 @@
                     ))))
     (mv (erp-nil) result-dag-or-quotep assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
 
+;; todo: use this below!
+(defun print-as-term-or-dag (dag-or-quotep
+                             max-size
+                             maybe-actual-size ; if non-nil, this is the dag-size of  dag-or-quotep
+                             maybe-term ; if non-nil, this is a term equivalent to dag-or-quotep
+                             descriptor ; a string describing the thing being printed (e.g., "Result")
+                             untranslatep
+                             state ; because of untranslate$ (uses magic-ev-fncall)
+                             )
+  (declare (xargs :guard (and (or (pseudo-dagp dag-or-quotep) ; todo: name this disjunction
+                                  (myquotep dag-or-quotep))
+                              (natp max-size) ; allow nil for no limit?
+                              (or (null maybe-actual-size)
+                                  (natp maybe-actual-size))
+                              (or (null maybe-term)
+                                  (pseudo-termp maybe-term))
+                              (stringp descriptor)
+                              (booleanp untranslatep))
+                  :stobjs state))
+  (let ((quotep (quotep dag-or-quotep)))
+    (if (or quotep
+            (and (not (acl2::len-at-least 1152921504606846974 dag-or-quotep)) ; not too big to call dag-size
+                 (if maybe-actual-size
+                     (<= maybe-actual-size max-size)
+                   (<= (dag-size dag-or-quotep) max-size))))
+        ;; Print as a term (preferred if not too big):
+        (let ((term (if quotep
+                        dag-or-quotep
+                      (let ((term (or maybe-term (dag-or-quotep-to-term dag-or-quotep))))
+                        (if untranslatep
+                            (untranslate$ term nil state)
+                          term)))))
+          (progn$ (cw "(~s0:~%" descriptor)
+                  (cw "~X01" term nil)
+                  (cw ")~%")))
+      ;; Print as a DAG because the term would be too big:
+      (progn$ (cw "(~s0:~%" descriptor)
+              (cw "~X01" dag-or-quotep nil)
+              (cw ")~%")))))
+
 ;; Returns (mv erp event state)
 ;; TODO: Consider using the current print-base (:auto value) by default.
 (defun def-unrolled-fn (lifted-name
@@ -1009,7 +1049,7 @@
        ((when (and produce-theorem (not produce-function)))
         (er hard? 'def-unrolled-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
-       ;; Handle filename vs parsed-structure
+       ;; Handle filename vs parsed-structure:
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
@@ -1019,7 +1059,7 @@
        ((when erp)
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
-       ;; We do this here, outside unroll-x86-code-core so that function can be in :logic mode:
+       ;; Translate assumptions. We do this here, outside unroll-x86-code-core, so that function can be in :logic mode:
        (extra-assumptions (translate-terms extra-assumptions 'def-unrolled-fn (w state)))
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag-or-quotep assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
@@ -1029,49 +1069,36 @@
                               step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
-       (result-dag-size (dag-or-quotep-size result-dag-or-quotep))
+       (result-dag-size (dag-or-quotep-size result-dag-or-quotep)) ; this could be somewhat expensive, due to bignums
        (- (cw "Result DAG size: ~x0.~%" result-dag-size))
        (result-dag-fns (dag-or-quotep-fns result-dag-or-quotep))
-       ;; Sometimes the presence of text-offset may indicate that something
+       ;; Vars that may appear: x86, base-address, vars from INPUTS, vars from assumptions, especially equalities.
+       ;; If we introduce vars for the registers, those vars may appear as well.
+       ;; Sometimes the presence of base-address may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
        (result-dag-vars (dag-or-quotep-vars result-dag-or-quotep))
-       ;; Check for incomplete run:
-       ;; Do we want a check like this?
-       ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
-       ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(x86 text-offset))) state))
        ;; TODO: Maybe move some of this to the -core function:
        ;; (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
        ;;            (set-print-base-radix print-base state)
        ;;          state)) ; todo: do this better
+       ;; Check for incomplete run (todo: can this happen without run-until-return throwing an error?):
        ((when (intersection-eq result-dag-fns *incomplete-run-fns*))
-        (if (< result-dag-size 100000) ; todo: make customizable.  since there was an error, we want to print as a term if at all possible
-            (progn$ (cw "(Term:~%")
-                    (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag-or-quotep)))
-                                 (if untranslatep
-                                     (untranslate term nil (w state))
-                                   term))
-                        nil)
-                    (cw ")~%"))
-          (progn$ (cw "(DAG:~%")
-                  (cw "~X01" result-dag-or-quotep nil)
-                  (cw ")~%")))
-        (er hard? 'def-unrolled-fn "Unroller error: The run did not finish.")
+        (print-as-term-or-dag result-dag-or-quotep
+                              100000 ; todo: make customizable.  since there was an error, we want to print as a term if at all possible
+                              result-dag-size nil "Error result" t state)
+        (er hard? 'def-unrolled-fn "Unroller error: The run did not finish.  Note that a :step-limit of ~x0 is active." step-limit)  ; todo: support :step-limit nil and then no message here
         (mv :incomplete-run nil state))
        (termp (<= result-dag-size max-result-term-size))
        ;; Not valid if too big:
        (maybe-result-term (and termp ; avoids exploding
                                (dag-to-term result-dag-or-quotep)))
        ;; Print the result:
-       (- (and print
-               (if (<= result-dag-size max-printed-term-size)
-                   (cw "(Result: ~x0)~%" (if termp
-                                             maybe-result-term ; we re-use this when it's valid
-                                           (dag-to-term result-dag-or-quotep)))
-                 (progn$ (cw "(Result:~%")
-                         (cw "~X01" result-dag-or-quotep nil)
-                         (cw ")~%")))))
-
+       (- (print-as-term-or-dag result-dag-or-quotep max-printed-term-size result-dag-size
+                                maybe-result-term ; we re-use this when it's valid
+                                "Result"
+                                nil ; todo: consider t
+                                state))
        ;; Build the defconst that will contain the result DAG:
        (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag-or-quotep))
 
@@ -1138,12 +1165,6 @@
                           )
                         (list defun))))))
        ((when erp) (mv erp nil state))
-       (produce-theorem (and produce-theorem
-                             (if (not produce-function)
-                                 ;; todo: do something better in this case?
-                                 (prog2$ (cw "NOTE: Suppressing theorem because :produce-function is nil.~%")
-                                         nil)
-                               t)))
        (defthms ; either nil or a singleton list
          (and produce-theorem ; todo: what if we are not producing the function?
               (if stop-pcs
