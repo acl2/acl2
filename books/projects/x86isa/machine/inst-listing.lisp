@@ -8869,7 +8869,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQB"
           (OP :OP #xF74 :PFX :66 :FEAT '(:SSE2))
@@ -8919,7 +8919,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQW"
           (OP :OP #xF75 :PFX :66 :FEAT '(:SSE2))
@@ -8969,7 +8969,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQD"
           (OP :OP #xF76 :PFX :66 :FEAT '(:SSE2))

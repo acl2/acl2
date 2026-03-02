@@ -42,8 +42,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils" :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
@@ -74,6 +73,94 @@
       (logapp el-width (if el-equal? -1 0)
               (pcmpeq (- result-width el-width) el-width
                       (logtail el-width a) (logtail el-width b)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-pcmpeqb/pcmpeqw/pcmpeqd-mmx
+
+  :parents (two-byte-opcodes)
+
+  :short "Compare packed data for equal (MMX variants)."
+
+  :long
+  "<code>
+   NP 0F 74 /r    PCMPEQB mm, mm/m64
+   NP 0F 75 /r    PCMPEQW mm, mm/m64
+   NP 0F 76 /r    PCMPEQD mm, mm/m64
+   </code>"
+
+  :modr/m t
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; The operand size is always 64 bits, i.e. 8 bytes.
+       (operand-size 8)
+
+       ;; The first source operand (Operand 1 in the Intel manual)
+       ;; is the MMX register specified in Reg.
+       ;; This is also the destination operand,
+       ;; and thus we obtain the index for later use.
+       ;; Since there are only 8 MMX registers, the REX byte is not used.
+       ((the (unsigned-byte 4) src1/dst-index) reg)
+       ((the (unsigned-byte 64) src1) (mmx src1/dst-index x86))
+
+       ;; The second source operand (Operand 2 in the Intel manual)
+       ;; is the MMX register, or memory operand, specified in Mod and R/M.
+       (inst-ac? t) ; Intel Manual Volume 2 Table 2-21 (Dec 2023)
+       ((mv flg
+            (the (unsigned-byte 64) src2)
+            (the (integer 0 4) increment-rip-by)
+            ?addr
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*mmx-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not a memory operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Calculate the result.
+       (result (case opcode
+                 (#x74 (pcmpeq (* 8 operand-size) 08 src1 src2))
+                 (#x75 (pcmpeq (* 8 operand-size) 16 src1 src2))
+                 (#x76 (pcmpeq (* 8 operand-size) 32 src1 src2))
+                 (t 0))) ; unreachable
+
+       ;; Store the result into the destination register.
+       (x86 (!mmx src1/dst-index result x86))
+       (x86 (mmx-instruction-updates x86))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
