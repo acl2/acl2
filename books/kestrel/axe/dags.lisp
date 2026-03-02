@@ -1,7 +1,7 @@
 ; DAGs, represented as lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1218,13 +1218,6 @@
                       2
                     0)))
   :hints (("Goal" :in-theory (enable darg-listp nth))))
-
-;; (defthm <-of-car-when-bounded-darg-listp
-;;   (implies (and (bounded-darg-listp items bound)
-;;                 (not (consp (car items)))
-;;                 (consp items))
-;;            (< (car items) bound))
-;;   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 (defthm bounded-natp-alistp-when-pseudo-dagp
   (implies (pseudo-dagp dag)
