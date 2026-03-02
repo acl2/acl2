@@ -306,8 +306,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: can this proof be simplified using tree-join-at?
-;; - (Might need to provide fake definitions of tree-join-at that look like
-;;   tree-join but include the split value (which will always be the same).)
 (encapsulate ()
   (defrulel lemma0
     (implies (and (not (tree-empty-p left))

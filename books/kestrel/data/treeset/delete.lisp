@@ -191,12 +191,38 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by delete-when-not-in)
 
-(defrule delete-of-insert
-  (equal (delete x (insert x set))
-         (delete x set))
+(defrule equal-of-delete-and-arg2
+  (equal (equal (delete x set) set)
+         (and (setp set)
+              (not (in x set)))))
+
+;; TODO: add to expensive-rules
+(defruled delete-of-insert
+  (equal (delete x (insert y set))
+         (if (equal x y)
+             (delete x set)
+           (insert y (delete x set))))
   :enable extensionality)
 
-(defrule insert-of-delete
+(defrule delete-of-insert-same
+  (equal (delete x (insert x set))
+         (delete x set))
+  :enable delete-of-insert)
+
+(defruled delete-of-insert-when-not-equal
+  (implies (not (equal x y))
+           (equal (delete x (insert y set))
+                  (insert y (delete x set))))
+  :by delete-of-insert)
+
+(defrule delete-of-insert-when-not-equal-cheap
+  (implies (not (equal x y))
+           (equal (delete x (insert y set))
+                  (insert y (delete x set))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by delete-of-insert-when-not-equal)
+
+(defrule insert-of-delete-same
   (equal (insert x (delete x set))
          (insert x set))
   :enable extensionality)

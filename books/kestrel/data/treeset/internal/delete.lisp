@@ -194,13 +194,14 @@
                          (tree->right tree)))
              ((data::acl2-number-<< x (tagged-element->elem (tree->head tree)))
               (tree-node (tree->head tree)
-                         (tree-delete x (tree->left tree))
+                         (acl2-number-tree-delete x (tree->left tree))
                          (tree->right tree)))
              (t (tree-node (tree->head tree)
                            (tree->left tree)
-                           (tree-delete x (tree->right tree))))))
+                           (acl2-number-tree-delete x (tree->right tree))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-delete
+                                           acl2-number-tree-delete
                                            tree-all-acl2-numberp
                                            tree-join-at))))
 
@@ -218,13 +219,14 @@
                          (tree->right tree)))
              ((data::symbol-<< x (tagged-element->elem (tree->head tree)))
               (tree-node (tree->head tree)
-                         (tree-delete x (tree->left tree))
+                         (symbol-tree-delete x (tree->left tree))
                          (tree->right tree)))
              (t (tree-node (tree->head tree)
                            (tree->left tree)
-                           (tree-delete x (tree->right tree))))))
+                           (symbol-tree-delete x (tree->right tree))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-delete
+                                           symbol-tree-delete
                                            tree-all-symbolp
                                            tree-join-at))))
 
@@ -242,12 +244,13 @@
                          (tree->right tree)))
              ((data::eqlable-<< x (tagged-element->elem (tree->head tree)))
               (tree-node (tree->head tree)
-                         (tree-delete x (tree->left tree))
+                         (eqlable-tree-delete x (tree->left tree))
                          (tree->right tree)))
              (t (tree-node (tree->head tree)
                            (tree->left tree)
-                           (tree-delete x (tree->right tree))))))
+                           (eqlable-tree-delete x (tree->right tree))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-delete
+                                           eqlable-tree-delete
                                            tree-all-eqlablep
                                            tree-join-at))))

@@ -238,6 +238,11 @@
          (union x y))
   :enable extensionality)
 
+(defrule commutativity-2-of-union
+  (equal (union y x z)
+         (union x y z))
+  :enable extensionality)
+
 (defrule idempotence-of-union
   (equal (union x x)
          (fix x))

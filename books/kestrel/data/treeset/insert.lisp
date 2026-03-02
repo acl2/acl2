@@ -189,7 +189,7 @@
            setp
            empty))
 
-(defrule insert-commutative
+(defrule commutativity-of-insert
   (equal (insert y x set)
          (insert x y set))
   :enable extensionality)

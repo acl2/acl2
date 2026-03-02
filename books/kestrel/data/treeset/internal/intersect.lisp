@@ -194,8 +194,8 @@
               (mv-let (in left right)
                       (acl2-number-tree-split
                         (tagged-element->elem (tree->head y)) x)
-                (let ((left (tree-intersect left (tree->left y)))
-                      (right (tree-intersect right (tree->right y))))
+                (let ((left (acl2-number-tree-intersect left (tree->left y)))
+                      (right (acl2-number-tree-intersect right (tree->right y))))
                   (if in
                       (tree-node (tree->head y) left right)
                     (tree-join left right)))))
@@ -203,15 +203,16 @@
               (mv-let (in left right)
                       (acl2-number-tree-split
                         (tagged-element->elem (tree->head x)) y)
-                (let ((left (tree-intersect (tree->left x) left))
-                      (right (tree-intersect (tree->right x) right)))
+                (let ((left (acl2-number-tree-intersect (tree->left x) left))
+                      (right (acl2-number-tree-intersect (tree->right x) right)))
                   (if in
                       (tree-node (tree->head x) left right)
                     (tree-join left right)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-join-at
-                                           tree-intersect
-                                           tree-all-acl2-numberp))))
+  :guard-hints (("Goal" :in-theory (enable tree-intersect
+                                           acl2-number-tree-intersect
+                                           tree-all-acl2-numberp
+                                           tree-join-at))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -227,8 +228,8 @@
               (mv-let (in left right)
                       (symbol-tree-split
                         (tagged-element->elem (tree->head y)) x)
-                (let ((left (tree-intersect left (tree->left y)))
-                      (right (tree-intersect right (tree->right y))))
+                (let ((left (symbol-tree-intersect left (tree->left y)))
+                      (right (symbol-tree-intersect right (tree->right y))))
                   (if in
                       (tree-node (tree->head y) left right)
                     (tree-join left right)))))
@@ -236,15 +237,16 @@
               (mv-let (in left right)
                       (symbol-tree-split
                         (tagged-element->elem (tree->head x)) y)
-                (let ((left (tree-intersect (tree->left x) left))
-                      (right (tree-intersect (tree->right x) right)))
+                (let ((left (symbol-tree-intersect (tree->left x) left))
+                      (right (symbol-tree-intersect (tree->right x) right)))
                   (if in
                       (tree-node (tree->head x) left right)
                     (tree-join left right)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-join-at
-                                           tree-intersect
-                                           tree-all-symbolp))))
+  :guard-hints (("Goal" :in-theory (enable tree-intersect
+                                           symbol-tree-intersect
+                                           tree-all-symbolp
+                                           tree-join-at))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eqlable-tree-intersect
@@ -259,8 +261,8 @@
               (mv-let (in left right)
                       (eqlable-tree-split
                         (tagged-element->elem (tree->head y)) x)
-                (let ((left (tree-intersect left (tree->left y)))
-                      (right (tree-intersect right (tree->right y))))
+                (let ((left (eqlable-tree-intersect left (tree->left y)))
+                      (right (eqlable-tree-intersect right (tree->right y))))
                   (if in
                       (tree-node (tree->head y) left right)
                     (tree-join left right)))))
@@ -268,12 +270,13 @@
               (mv-let (in left right)
                       (eqlable-tree-split
                         (tagged-element->elem (tree->head x)) y)
-                (let ((left (tree-intersect (tree->left x) left))
-                      (right (tree-intersect (tree->right x) right)))
+                (let ((left (eqlable-tree-intersect (tree->left x) left))
+                      (right (eqlable-tree-intersect (tree->right x) right)))
                   (if in
                       (tree-node (tree->head x) left right)
                     (tree-join left right)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-join-at
-                                           tree-intersect
-                                           tree-all-eqlablep))))
+  :guard-hints (("Goal" :in-theory (enable tree-intersect
+                                           eqlable-tree-intersect
+                                           tree-all-eqlablep
+                                           tree-join-at))))

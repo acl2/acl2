@@ -240,6 +240,11 @@
          (intersect x y))
   :enable extensionality)
 
+(defrule commutativity-2-of-intersect
+  (equal (intersect y x z)
+         (intersect x y z))
+  :enable extensionality)
+
 (defrule idempotence-of-intersect
   (equal (intersect x x)
          (fix x))

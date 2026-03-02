@@ -201,8 +201,8 @@
               (mv-let (in left right)
                       (acl2-number-tree-split
                         (tagged-element->elem (tree->head x)) y)
-                (let ((left (tree-diff (tree->left x) left))
-                      (right (tree-diff (tree->right x) right)))
+                (let ((left (acl2-number-tree-diff (tree->left x) left))
+                      (right (acl2-number-tree-diff (tree->right x) right)))
                   (if in
                       (tree-join left right)
                     (tree-node (tree->head x) left right)))))))
@@ -234,8 +234,8 @@
               (mv-let (in left right)
                       (symbol-tree-split
                         (tagged-element->elem (tree->head x)) y)
-                (let ((left (tree-diff (tree->left x) left))
-                      (right (tree-diff (tree->right x) right)))
+                (let ((left (symbol-tree-diff (tree->left x) left))
+                      (right (symbol-tree-diff (tree->right x) right)))
                   (if in
                       (tree-join left right)
                     (tree-node (tree->head x) left right)))))))
@@ -266,8 +266,8 @@
               (mv-let (in left right)
                       (eqlable-tree-split
                         (tagged-element->elem (tree->head x)) y)
-                (let ((left (tree-diff (tree->left x) left))
-                      (right (tree-diff (tree->right x) right)))
+                (let ((left (eqlable-tree-diff (tree->left x) left))
+                      (right (eqlable-tree-diff (tree->right x) right)))
                   (if in
                       (tree-join left right)
                     (tree-node (tree->head x) left right)))))))
