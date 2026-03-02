@@ -11379,7 +11379,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PAND"
           (OP :OP #xFDB :PFX :66 :FEAT '(:SSE2))
@@ -11594,7 +11594,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PANDN"
           (OP :OP #xFDF :PFX :66 :FEAT '(:SSE2))
@@ -12287,7 +12287,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "POR"
           (OP :OP #xFEB :PFX :66 :FEAT '(:SSE2))
@@ -12502,7 +12502,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PXOR"
           (OP :OP #xFEF :PFX :66 :FEAT '(:SSE2))
