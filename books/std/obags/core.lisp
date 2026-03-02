@@ -348,3 +348,19 @@
         (t (insert (head bag1)
                    (difference (tail bag1) bag2))))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sum ((bag1 bagp) (bag2 bagp))
+  :returns (bag bagp)
+  :short "Sum of two obags."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The number of occurrences of each value in the resulting obag
+     is the sum of the occurrences of that value in the two obags."))
+  (if (emptyp bag1)
+      (bfix bag2)
+    (insert (head bag1)
+            (sum (tail bag1) bag2)))
+  :verify-guards :after-returns)
