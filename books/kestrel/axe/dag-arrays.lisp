@@ -768,7 +768,7 @@
            :cases ((< n (len (dargs (aref1 dag-array-name dag-array nodenum)))))
            ;; :cases ((consp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
            ;; :expand ((PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY 0))
-           :in-theory (e/d (<-of-nth-when-bounded-darg-listp)
+           :in-theory (e/d ()
                            (bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper
                             bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux
                             bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-gen ; todo: clean these up
@@ -1059,7 +1059,7 @@
   :hints (("Goal" :use (:instance bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper (n nodenum))
            ;; :cases ((consp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
            ;; :expand ((PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY 0))
-           :in-theory (e/d (<-of-nth-when-bounded-darg-listp)
+           :in-theory (e/d ()
                            ( bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper
                              bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux
                              DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
@@ -1254,7 +1254,7 @@
   :hints (("Goal" :use (:instance bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper (n nodenum))
            ;; :cases ((consp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
            ;; :expand ((PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY 0))
-           :in-theory (e/d (<-of-nth-when-bounded-darg-listp)
+           :in-theory (e/d ()
                            ( bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper
                              bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux
                              DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX
@@ -1650,8 +1650,7 @@
   :hints (("Goal" :use (:instance bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper (n nodenum))
            ;; :cases ((consp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
            ;; :expand ((PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY 0))
-           :in-theory (e/d (<-of-nth-when-bounded-darg-listp
-                            dargs-when-not-consp-cheap
+           :in-theory (e/d (dargs-when-not-consp-cheap
                             bounded-dag-exprp
                             <-when-bounded-darg-listp-gen)
                            (bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper

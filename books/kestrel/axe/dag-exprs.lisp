@@ -416,9 +416,11 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
+;; true for quoteps and function calls
 (defthm dag-exprp-and-forward-to-true-listp-when-quote
   (implies (and (dag-exprp expr)
-                (eq 'quote (car expr)))
+                (consp expr) ; (eq 'quote (car expr)))
+                )
            (true-listp expr))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable dag-exprp))))

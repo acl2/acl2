@@ -1,7 +1,7 @@
 ; DAG exprs that mention only nodes below some bound
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -63,6 +63,13 @@
                         (bounded-darg-listp (cdr ; can't call dargs here due to its guard
                                              expr) bound)))))))
 
+;; Then the :forward-chaining rules for dag-exprp can fire
+(defthm bounded-dag-exprp-forward-to-dag-exprp
+  (implies (bounded-dag-exprp bound expr)
+           (dag-exprp expr))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
+
 (defthm bounded-dag-exprp-when-not-consp-cheap
   (implies (not (consp expr))
            (equal (bounded-dag-exprp bound expr)
@@ -80,15 +87,15 @@
                 (bounded-darg-listp args bound))))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
-(defthm bounded-darg-listp-when-bounded-dag-exprp
+(defthm bounded-darg-listp-of-dargs-when-bounded-dag-exprp
   (implies (and (bounded-dag-exprp bound expr)
                 ;; (consp expr)
-                (not (eq 'quote (car expr))))
+                (not (equal 'quote (car expr))))
            (bounded-darg-listp (dargs expr) bound))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp
                                      dargs-when-not-consp-cheap))))
 
-(defthm bounded-darg-listp-when-bounded-dag-exprp-gen
+(defthm bounded-darg-listp-of-dargs-when-bounded-dag-exprp-free
   (implies (and (bounded-dag-exprp free expr)
                 ;; (consp expr)
                 (not (eq 'quote (car expr)))
@@ -100,15 +107,6 @@
   (implies (and (bounded-dag-exprp bound expr)
                 (consp expr))
            (true-listp (dargs expr)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp
-                                     ;dargs ;todo: this theorem happens to be true for quoteps too
-                                     ))))
-
-(defthm bounded-dag-exprp-and-equal-of-quote-and-car-forward-to-true-listp
-  (implies (and (bounded-dag-exprp bound expr)
-                (eq 'quote (car expr)))
-           (true-listp expr))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-dag-exprp
                                      ;dargs ;todo: this theorem happens to be true for quoteps too
@@ -132,13 +130,6 @@
   (implies (and (bounded-dag-exprp bound expr)
                 (consp expr))
            (symbolp (car expr)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
-
-(defthm bounded-dag-exprp-and-not-consp-forward-to-symbolp
-  (implies (and (bounded-dag-exprp bound expr)
-                (not (consp expr)))
-           (symbolp expr))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
@@ -170,7 +161,7 @@
                 (not (consp (nth n (dargs expr)))) ;rules out a quotep
                 )
            (< (nth n (dargs expr)) bound))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp <-OF-NTH-WHEN-BOUNDED-DARG-LISTP))))
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
 ;; Not tight.
 ;; Disabled since hung on <
@@ -215,14 +206,6 @@
                   (equal 'quote (car expr))))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp
                                      dag-exprp))))
-
-(defthm bounded-darg-listp-of-dargs-when-bounded-dag-exprp
-  (implies (and (bounded-dag-exprp bound expr)
-                ;; (consp expr)
-                (not (equal 'quote (car expr))))
-           (bounded-darg-listp (dargs expr) bound))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp
-                                     dargs-when-not-consp-cheap))))
 
 ;; We use consp as the normal form
 (defthm symbolp-when-bounded-dag-exprp

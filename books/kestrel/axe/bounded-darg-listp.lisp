@@ -94,7 +94,7 @@
            (darg-listp dargs))
   :hints (("Goal" :in-theory (enable bounded-darg-listp darg-listp dargp-less-than))))
 
-(defthm <-of-0-when-bounded-darg-listp
+(defthmd <-of-0-when-bounded-darg-listp
   (implies (and (bounded-darg-listp dargs bound)
                 ;;(not (consp (nth 0 dargs)))
                 )
