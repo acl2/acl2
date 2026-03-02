@@ -219,7 +219,7 @@ what the instruction. Not sure why they are listed that way.</p>")
 (def-sdm-instruction-section "5.4.1 MMX Data Transfer Instructions"
   :mnemonics '(MOVD/Q MOVQ)
   :features :mmx
-  :doc "<p>MMX versions of these instructions are not implemented</p>")
+  :doc "<p>Only MOVQ is implemented.</p>")
 
 (def-sdm-instruction-section "5.4.2 MMX Conversion Instructions"
   :mnemonics '(PACKSSWB PACKSSDW PACKUSWB PUNPCKHBW PUNPCKHWD PUNPCKHDQ PUNPCKLBW PUNPCKLWD PUNPCKLDQ)
@@ -229,9 +229,7 @@ what the instruction. Not sure why they are listed that way.</p>")
 (def-sdm-instruction-section "5.4.3 MMX Packed Arithmetic Instructions"
   :mnemonics '(PADDB PADDW PADDD PADDSB PADDSW PADDUSB PADDUSW PSUBB PSUBW
                      PSUBD PSUBSB PSUBSW PSUBUSB PSUBUSW PMULHW PMULLW PMADDWD)
-  :features '(or :mmx (and :sse "PMULHW"))
-  :doc "<p>MMX versions are all unimplemented except for PADDB, PADDW, and PADDD.
-        A few have SSE versions implemented.</p>")
+  :features '(or :mmx (and :sse "PMULHW")))
 
 (def-sdm-instruction-section "5.4.4 MMX Comparison Instructions"
   :mnemonics '(PCMPEQB PCMPEQW PCMPEQD PCMPGTB PCMPGTW PCMPGTD)

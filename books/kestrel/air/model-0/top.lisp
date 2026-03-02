@@ -85,7 +85,7 @@
   :order-subtopics (abstract-syntax
                     static-semantics
                     dynamic-semantics
-                    input-output-semantics
+                    input/output-semantics
                     field
                     traces
                     field-encoding

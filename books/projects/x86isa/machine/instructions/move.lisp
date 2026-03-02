@@ -1046,6 +1046,7 @@
                                                     (+ -1 size)))
                             (m 256)
                             (n (* 8 (1- size)))))))
+  :parents (instruction-semantic-functions)
   :short "Reverse the bytes in an operand of a given byte size."
   (cond ((zp size) 0)
         (t (logapp (* 8 (1- size))

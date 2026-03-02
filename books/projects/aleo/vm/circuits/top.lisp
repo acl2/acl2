@@ -50,5 +50,5 @@
     (xdoc::ahref "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22023.9"
                  "ACL2-2023 Workshop paper")
     "."))
-  :order-subtopics (pfcs
-                    r1cs))
+  :order-subtopics (circuits-pfcs
+                    circuits-r1cs))
