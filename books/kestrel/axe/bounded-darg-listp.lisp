@@ -62,6 +62,7 @@
            (bounded-darg-listp (cdr dargs) bound))
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
+;; Usually we use nth to extract particular dargs, but sometimes we walk through the list of dargs
 (defthm dargp-less-than-of-car-when-bounded-darg-listp
   (implies (bounded-darg-listp dargs bound)
            (equal (dargp-less-than (car dargs) bound)
@@ -120,7 +121,7 @@
                   (consp (nth n args))))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
-(defthm true-listp-of-car-when-bounded-darg-listp
+(defthmd true-listp-of-car-when-bounded-darg-listp
   (implies (and (bounded-darg-listp args bound)
                 (natp n)
                 (< 0 (len args)))
@@ -144,7 +145,7 @@
            (< (car vals) bound))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
-(defthm not-<-of-car-when-bounded-darg-listp-2
+(defthmd not-<-of-car-when-bounded-darg-listp-2
   (implies (and (syntaxp (quotep k))
                 (<= k 0)
                 (bounded-darg-listp vals bound)
@@ -165,7 +166,7 @@
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
 ;we use consp as the normal form
-(defthm integerp-of-car-when-bounded-darg-listp
+(defthmd integerp-of-car-when-bounded-darg-listp
   (implies (bounded-darg-listp args len)
            (equal (integerp (car args))
                   (if (consp args)
@@ -261,6 +262,7 @@
            (dargp (nth n args)))
   :hints (("Goal" :in-theory (enable darg-listp))))
 
+;drop?
 (defthm bounded-darg-listp-when-bounded-darg-listp-of-cdr-cheap
   (implies (bounded-darg-listp (cdr items) bound)
            (equal (bounded-darg-listp items bound)
