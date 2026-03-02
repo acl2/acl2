@@ -234,6 +234,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define occs (x (bag bagp))
+  :returns (occs natp)
+  :short "Number of occurrences of a value in an obag."
+  (cond ((emptyp bag) 0)
+        ((equal x (head bag)) (1+ (occs x (tail bag))))
+        (t (occs x (tail bag)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define in (x (bag bagp))
+  :returns (yes/no booleanp)
+  :short "Check if a values occurs in an obag."
+  (and (not (emptyp bag))
+       (or (equal x (head bag))
+           (in x (tail bag)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define cardinality ((bag bagp))
+  :returns (card natp)
+  :short "Number of (occurrences of) elements in an obag."
+  (if (emptyp bag)
+      0
+    (1+ (cardinality (tail bag)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define insert (x (bag bagp))
   :returns (bag1 bagp
                  :hints (("Goal"
@@ -255,33 +282,6 @@
         ((equal x (head bag)) (tail bag))
         (t (insert (head bag) (delete x (tail bag)))))
   :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define in (x (bag bagp))
-  :returns (yes/no booleanp)
-  :short "Check if a values occurs in an obag."
-  (and (not (emptyp bag))
-       (or (equal x (head bag))
-           (in x (tail bag)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define occs (x (bag bagp))
-  :returns (occs natp)
-  :short "Number of occurrences of a value in an obag."
-  (cond ((emptyp bag) 0)
-        ((equal x (head bag)) (1+ (occs x (tail bag))))
-        (t (occs x (tail bag)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define cardinality ((bag bagp))
-  :returns (card natp)
-  :short "Number of (occurrences of) elements in an obag."
-  (if (emptyp bag)
-      0
-    (1+ (cardinality (tail bag)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
