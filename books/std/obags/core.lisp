@@ -239,7 +239,24 @@
   :short "Number of occurrences of a value in an obag."
   (cond ((emptyp bag) 0)
         ((equal x (head bag)) (1+ (occs x (tail bag))))
-        (t (occs x (tail bag)))))
+        (t (occs x (tail bag))))
+
+  ///
+
+  (defruled occs-when-emptyp
+    (implies (emptyp bag)
+             (equal (occs x bag) 0)))
+
+  (defruled occs-of-head-not-0
+    (implies (not (emptyp bag))
+             (not (equal (occs (head bag) bag) 0))))
+
+  (defruled occs-of-tail
+    (equal (occs x (tail bag))
+           (if (and (not (emptyp bag))
+                    (equal x (head bag)))
+               (1- (occs x bag))
+             (occs x bag)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,7 +265,18 @@
   :short "Check if a values occurs in an obag."
   (and (not (emptyp bag))
        (or (equal x (head bag))
-           (in x (tail bag)))))
+           (in x (tail bag))))
+
+  ///
+
+  (defruled in-alt-def
+    (iff (in x bag)
+         (not (equal (occs x bag) 0)))
+    :enable occs)
+
+  (defruled in-of-head-when-not-emptyp
+    (implies (not (emptyp bag))
+             (in (head bag) bag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -257,7 +285,15 @@
   :short "Number of (occurrences of) elements in an obag."
   (if (emptyp bag)
       0
-    (1+ (cardinality (tail bag)))))
+    (1+ (cardinality (tail bag))))
+
+  ///
+
+  (defruled occs-leq-cardinality
+    (<= (occs x bag)
+        (cardinality bag))
+    :rule-classes :linear
+    :enable occs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -269,7 +305,16 @@
   (cond ((emptyp bag) (list x))
         ((equal x (head bag)) (cons x bag))
         ((<< x (head bag)) (cons x bag))
-        (t (cons (head bag) (insert x (tail bag))))))
+        (t (cons (head bag) (insert x (tail bag)))))
+
+  ///
+
+  (defruled occs-of-insert
+    (equal (occs x (insert y bag))
+           (if (equal x y)
+               (1+ (occs x bag))
+             (occs x bag)))
+    :enable (head tail emptyp bfix bagp occs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -281,7 +326,17 @@
   (cond ((emptyp bag) nil)
         ((equal x (head bag)) (tail bag))
         (t (insert (head bag) (delete x (tail bag)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled occs-of-delete
+    (equal (occs x (delete y bag))
+           (if (and (equal x y)
+                    (in x bag))
+               (1- (occs x bag))
+             (occs x bag)))
+    :enable (occs in-alt-def occs-of-insert)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -292,7 +347,16 @@
   (or (emptyp sub)
       (and (in (head sub) sup)
            (subbag (tail sub)
-                   (delete (head sub) sup)))))
+                   (delete (head sub) sup))))
+
+  ///
+
+  (defruled occs-mono-subbag
+    (implies (subbag bag1 bag2)
+             (<= (occs x bag1)
+                 (occs x bag2)))
+    :rule-classes :linear
+    :enable (occs occs-of-delete)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -309,7 +373,20 @@
     (insert (head bag1)
             (union (tail bag1)
                    (delete (head bag1) bag2))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled occs-of-union
+    (equal (occs x (union bag1 bag2))
+           (max (occs x bag1) (occs x bag2)))
+    :enable (occs-of-delete
+             occs-of-insert
+             occs-of-tail
+             in-alt-def
+             occs-of-head-not-0
+             occs-when-emptyp
+             bfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,7 +404,18 @@
                  (intersect (tail bag1)
                             (delete (head bag1) bag2))))
         (t (intersect (tail bag1) bag2)))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled occs-of-intersect
+    (equal (occs x (intersect bag1 bag2))
+           (min (occs x bag1) (occs x bag2)))
+    :enable (occs
+             occs-of-tail
+             in-alt-def
+             occs-of-delete
+             occs-of-insert)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -347,7 +435,17 @@
                      (delete (head bag1) bag2)))
         (t (insert (head bag1)
                    (difference (tail bag1) bag2))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled occs-of-difference
+    (equal (occs x (difference bag1 bag2))
+           (nfix (- (occs x bag1) (occs x bag2))))
+    :enable (occs-of-insert
+             occs-of-delete
+             in-alt-def
+             occs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -363,4 +461,11 @@
       (bfix bag2)
     (insert (head bag1)
             (sum (tail bag1) bag2)))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled occs-of-sum
+    (equal (occs x (sum bag1 bag2))
+           (+ (occs x bag1) (occs x bag2)))
+    :enable (occs-of-insert occs bfix)))
