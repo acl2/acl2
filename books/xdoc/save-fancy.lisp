@@ -481,8 +481,7 @@
                  (makunbound-global 'xdoc-get-event-table state))))
 
     (or (not orphans)
-        (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~
-             topics may only show up in the index pages.~%~%" orphans))
+        (er hard? 'save-json-files "Found topics with non-existent parents:~%~x0" orphans))
 
     (fast-alist-free topics-fal)
     (fast-alist-free uid-map)
