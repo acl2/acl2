@@ -29,6 +29,7 @@
               treeset::heap<-rules
               treeset::heap<-with-hashes
               treeset::symbol-hash
+              treeset::heap<-trichotomy
               )
             (set-difference-eq *std-pkg-symbols*
                                ;; TODO: prune some of these

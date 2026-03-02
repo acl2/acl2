@@ -8,18 +8,19 @@
 
 (in-package "TREEMAP")
 
-(include-book "map-defs")
-(include-book "to-omap-defs")
-(include-book "keys-defs")
-(include-book "in-defs")
-(include-book "size-defs")
-(include-book "lookup-defs")
-(include-book "submap-defs")
-(include-book "min-max-defs")
-(include-book "update-defs")
-(include-book "delete-defs")
+(include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+
+(include-book "tree-defs")
+(include-book "join-defs")
+
+(local (include-book "std/util/defredundant" :dir :system))
+(local (include-book "delete"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This books contains all the relevant treemap definitions without the
-;; theorems.
+(std::defredundant
+  :names (tree-delete
+          acl2-number-tree-delete
+          symbol-tree-delete
+          eqlable-tree-delete
+          ))

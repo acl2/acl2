@@ -181,7 +181,7 @@
   :enable (<<-all-r
            tree-update))
 
-(defrule bst-of-tree-update-when-bst
+(defrule bstp-of-tree-update-when-bstp
   (implies (bstp tree)
            (bstp (tree-update key hash val tree)))
   :induct t

@@ -8,18 +8,22 @@
 
 (in-package "TREEMAP")
 
+(include-book "internal/join-defs")
+(include-book "internal/delete-defs")
 (include-book "map-defs")
-(include-book "to-omap-defs")
-(include-book "keys-defs")
-(include-book "in-defs")
-(include-book "size-defs")
-(include-book "lookup-defs")
-(include-book "submap-defs")
-(include-book "min-max-defs")
-(include-book "update-defs")
-(include-book "delete-defs")
+
+(local (include-book "std/util/defredundant" :dir :system))
+(local (include-book "delete"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This books contains all the relevant treemap definitions without the
-;; theorems.
+(std::defredundant
+  :names (delete-macro-loop
+          delete-macro-fn
+          delete
+          delete$inline
+          delete-=
+          delete-eq
+          delete-eql
+          ;; tail
+          ))

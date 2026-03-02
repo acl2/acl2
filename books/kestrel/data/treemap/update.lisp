@@ -209,7 +209,7 @@
            empty))
 
 ;; TODO: disable and introduce cheap rules?
-(defrule update-commutative-when
+(defrule commutativity-of-update-when
   (implies (or (not (equal key0 key1))
                (equal val0 val1))
            (equal (update key1 val1 key0 val0 map)
@@ -860,7 +860,7 @@
        :exec (acl2-number-tree-update key
                                       (acl2-number-hash key)
                                       val
-                                      (fix map)))
+                                      map))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -875,7 +875,7 @@
        :exec (symbol-tree-update key
                                  (symbol-hash key)
                                  val
-                                 (fix map)))
+                                 map))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -889,7 +889,7 @@
        :exec (eqlable-tree-update key
                                  (eqlable-hash key)
                                  val
-                                 (fix map)))
+                                 map))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction

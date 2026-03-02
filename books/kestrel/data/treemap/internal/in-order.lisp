@@ -23,13 +23,19 @@
 (include-book "min-max-defs")
 (include-book "count-defs")
 (include-book "update-defs")
+(include-book "delete-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
+(local (include-book "kestrel/data/utilities/omap" :dir :system))
+(local (include-book "std/omaps/extensionality" :dir :system))
+(local (include-book "std/omaps/delete" :dir :system))
+
 (local (include-book "kestrel/data/treeset/to-oset" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/delete" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
@@ -41,10 +47,7 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
-(local (include-book "std/omaps/extensionality" :dir :system))
-
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
-(local (include-book "kestrel/data/utilities/omap" :dir :system))
 
 (local (include-book "tree"))
 (local (include-book "bst"))
@@ -53,6 +56,7 @@
 (local (include-book "min-max"))
 (local (include-book "count"))
 (local (include-book "update"))
+(local (include-book "delete"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,6 +305,12 @@
   :enable (omap::equal-becomes-ext-equal-when-mapp
            omap::ext-equal))
 
+(defrule tree-in-order-of-tree-delete
+  (implies (bstp tree)
+           (equal (tree-in-order (tree-delete key tree))
+                  (omap::delete key (tree-in-order tree))))
+  :enable (omap::equal-becomes-ext-equal-when-mapp
+           omap::ext-equal))
+
 ;; TODO
-;; tree-in-order-of-tree-delete
 ;; tree-in-order-of-tree-update*

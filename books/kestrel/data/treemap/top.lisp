@@ -19,6 +19,7 @@
 (include-book "extensionality")
 (include-book "min-max")
 (include-book "update")
+(include-book "delete")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
