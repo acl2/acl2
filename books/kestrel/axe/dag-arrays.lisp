@@ -962,10 +962,10 @@
                 )
            (not (cddr (nth n (dargs (aref1 dag-array-name dag-array nodenum))))))
   :hints (("Goal" :in-theory (enable len-of-nth-when-darg-listp)
-           :use (:instance not-cddr-when-bounded-darg-listp
-                           (item (NTH N (dargs (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))))
+           :use (:instance not-cddr-of-nth-when-bounded-darg-listp
+                           ;(item (NTH N (dargs (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))))
                            (bound nodenum)
-                           (items (dargs (aref1 dag-array-name dag-array nodenum)))
+                           (args (dargs (aref1 dag-array-name dag-array nodenum)))
                            )
            :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)))))
 
