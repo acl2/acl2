@@ -1,6 +1,6 @@
 ; Ordered Bags (Obags) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -97,23 +97,7 @@
      (A similar issue applies to "
     (xdoc::seetopic "omap::omaps" "the library of omaps")
     " and the @('coi/maps') library,
-     which defines a @('\"MAP\"') package.)")
-
-   (xdoc::p
-    "This obag library is in the same @('SET') package as osets
-     because obags are related to osets.
-     Furthermore, a @('BAG') package already exists in @('coi/bags/').")
-   (xdoc::p
-    "This obag library could become a new @('std/obags') library,
-     part of @(csee std), parallel to @(tsee set::std/osets).")
-   (xdoc::p
-    "Compared to using the built-in @(see acl2::lists) to represent bags,
-     obags are closer to the mathematical notion of bags,
-     at the cost of maintaining their non-strict order.
-     These tradeoffs are analogous to the ones between using osets
-     and using the built-in @(see acl2::lists) to represent sets.
-     The bag library in @('coi/bags/')
-     operates on possibly unordered lists."))
+     which defines a @('\"MAP\"') package.)"))
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,9 +108,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar to the definition of @(tsee setp),
-     but each element of the list is checked to be
-     either equal or smaller than the next.")
+    "An obag is a list of zero or more elements,
+     such that any two contiguous elements in the list
+     are either equal or in order.")
    (xdoc::p
     "Since a strictly ordered list is also non-strictly ordered,
      an oset is an obag."))
@@ -137,6 +121,7 @@
              (or (equal (car x) (cadr x))
                  (fast-<< (car x) (cadr x)))
              (bagp (cdr x)))))
+
   ///
 
   (defrule bagp-when-setp
@@ -151,10 +136,12 @@
   :returns (fixed-x bagp)
   :short "Fixing function for obags."
   :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee set::sfix) for osets.")
+  (xdoc::topstring
+   (xdoc::p
+    "Non-obags are fixed to the empty obag."))
   (mbe :logic (if (bagp x) x nil)
        :exec x)
+
   ///
 
   (defrule bfix-when-bagp
@@ -166,10 +153,8 @@
 (define emptyp ((bag bagp))
   :returns (yes/no booleanp)
   :short "Check if an obag is empty."
-  :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee set::emptyp) for osets.")
   (null (bfix bag))
+
   ///
 
   (defrule bagp-when-not-emptyp
@@ -187,8 +172,9 @@
   :guard (not (emptyp bag))
   :short "Smallest element of a non-empty obag."
   :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee head) for osets.")
+  (xdoc::topstring
+   (xdoc::p
+    "This is the smallest value with at least one occurrence in the bag."))
   (mbe :logic (car (bfix bag))
        :exec (car bag))
   :guard-hints (("Goal" :in-theory (enable bagp emptyp)))
@@ -221,9 +207,6 @@
   :returns (bag1 bagp :hints (("Goal" :in-theory (enable bfix bagp))))
   :short "Rest of a non-empty obag after removing
           an occurrence of its smallest element."
-  :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee set::tail) on osets.")
   (mbe :logic (cdr (bfix bag))
        :exec (cdr bag))
   :guard-hints (("Goal" :in-theory (enable bagp emptyp)))
@@ -256,9 +239,6 @@
                  :hints (("Goal"
                           :in-theory (enable bagp bfix emptyp head tail))))
   :short "Add (an occurrence of) a value to an obag."
-  :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee set::insert) on osets.")
   (cond ((emptyp bag) (list x))
         ((equal x (head bag)) (cons x bag))
         ((<< x (head bag)) (cons x bag))
@@ -271,21 +251,16 @@
                  :hints (("Goal"
                           :in-theory (enable bagp bfix emptyp head tail))))
   :short "Remove (an occurrence of) a value from an obag."
-  :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee set::delete) for osets.")
   (cond ((emptyp bag) nil)
         ((equal x (head bag)) (tail bag))
-        (t (cons (head bag) (delete x (tail bag))))))
+        (t (insert (head bag) (delete x (tail bag)))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define in (x (bag bagp))
   :returns (yes/no booleanp)
   :short "Check if a values occurs in an obag."
-  :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee set::in) on osets.")
   (and (not (emptyp bag))
        (or (equal x (head bag))
            (in x (tail bag)))))
@@ -304,9 +279,6 @@
 (define cardinality ((bag bagp))
   :returns (card natp)
   :short "Number of (occurrences of) elements in an obag."
-  :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee set::cardinality) on osets.")
   (if (emptyp bag)
       0
     (1+ (cardinality (tail bag)))))
@@ -317,9 +289,6 @@
   :returns (yes/no booleanp)
   :short "Check if (every occurrence of) every value in the first obag
           is also (an occurrence of) a value in the second obag."
-  :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee set::subset) for osets.")
   (or (emptyp sub)
       (and (in (head sub) sup)
            (subbag (tail sub)
@@ -329,29 +298,34 @@
 
 (define union ((bag1 bagp) (bag2 bagp))
   :returns (bag bagp)
-  :short "Union of all (the occurrences of) all the elements of two obags."
+  :short "Union of two obags."
   :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee set::union) for osets.")
+  (xdoc::topstring
+   (xdoc::p
+    "The number of occurrences of each value in the resulting obag
+     is the maximum of the occurrences of that value in the two obags."))
   (if (emptyp bag1)
       (bfix bag2)
     (insert (head bag1)
-            (union (tail bag1) bag2)))
+            (union (tail bag1)
+                   (delete (head bag1) bag2))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define intersect ((bag1 bagp) (bag2 bagp))
   :returns (bag bagp)
-  :short "Intersection of
-          all (the occurrences of) all the elements of two obags."
+  :short "Intersection of two obags."
   :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee set::intersect) for osets.")
+  (xdoc::topstring
+   (xdoc::p
+    "The number of occurrences of each value in the resulting obag
+     is the minimum of the occurrences of that value in the two obags."))
   (cond ((emptyp bag1) nil)
         ((in (head bag1) bag2)
          (insert (head bag1)
-                 (intersect (tail bag1) bag2)))
+                 (intersect (tail bag1)
+                            (delete (head bag1) bag2))))
         (t (intersect (tail bag1) bag2)))
   :verify-guards :after-returns)
 
@@ -359,11 +333,18 @@
 
 (define difference ((bag1 bagp) (bag2 bagp))
   :returns (bag bagp)
-  :short "Remove from the first obag
-          all (the occurrences of) the elements of the second obag."
+  :short "Difference between two obags."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The number of occurrences of each value in the resulting obag
+     is the saturated difference between the occurrences in the two obags,
+     where `saturated' means that if the second obag has more occurrences,
+     the resulting obag has no occurrences."))
   (cond ((emptyp bag1) nil)
         ((in (head bag1) bag2)
-         (difference (tail bag1) bag2))
+         (difference (tail bag1)
+                     (delete (head bag1) bag2)))
         (t (insert (head bag1)
                    (difference (tail bag1) bag2))))
   :verify-guards :after-returns)
