@@ -59,6 +59,8 @@
               :ttags (:undef-flg))
 (include-book "jump-and-loop"
               :ttags (:undef-flg))
+(include-book "logical"
+              :ttags (:undef-flg))
 (include-book "move"
               :ttags (:undef-flg))
 (include-book "move-mmx"
