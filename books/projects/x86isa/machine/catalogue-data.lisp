@@ -232,8 +232,7 @@ what the instruction. Not sure why they are listed that way.</p>")
 
 (def-sdm-instruction-section "5.4.4 MMX Comparison Instructions"
   :mnemonics '(PCMPEQB PCMPEQW PCMPEQD PCMPGTB PCMPGTW PCMPGTD)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.5 MMX Logical Instructions"
   :mnemonics '(PAND PANDN POR PXOR)
