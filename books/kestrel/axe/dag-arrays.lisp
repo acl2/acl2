@@ -90,7 +90,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm <-when-bounded-darg-listp-gen
+;used once below
+(defthmd <-when-bounded-darg-listp-gen
   (implies (and (bounded-darg-listp dargs bound)
                 (member-equal darg dargs)
                 (not (consp darg)) ;not a quotep
@@ -98,9 +99,10 @@
            (< darg bound))
   :hints (("Goal" :in-theory (enable bounded-darg-listp memberp))))
 
+;move
 ;; we'll use consp or "not consp" as the normal form for reasoning about
 ;; whether dag args are nodenums or quoteps.
-(defthm natp-when-bounded-darg-listp-gen
+(defthmd natp-when-bounded-darg-listp-gen
   (implies (and (bounded-darg-listp dargs bound)
                 (member-equal darg dargs))
            (equal (natp darg)
@@ -116,7 +118,7 @@
                        )))
   :hints (("Goal" :in-theory (enable bounded-darg-listp memberp))))
 
-(defthm quote-lemma-for-bounded-darg-listp-gen
+(defthmd quote-lemma-for-bounded-darg-listp-gen
   (implies (and (bounded-darg-listp dargs bound)
                 (member-equal darg dargs)
 ;                (not (consp darg)) ;not a quotep
@@ -125,7 +127,7 @@
                   (consp darg)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp memberp))))
 
-(defthm quote-lemma-for-bounded-darg-listp-gen-alt
+(defthmd quote-lemma-for-bounded-darg-listp-gen-alt
   (implies (and (bounded-darg-listp dargs bound)
                 (member-equal darg dargs)
 ;                (not (consp darg)) ;not a quotep
@@ -657,23 +659,28 @@
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp-list))))
 
 (defthm pseudo-dag-arrayp-list-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp lst nodenum)
+  (implies (and (bounded-darg-listp dargs nodenum)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (natp nodenum)
                 (< nodenum dag-len))
-           (pseudo-dag-arrayp-list lst dag-array-name dag-array))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable pseudo-dag-arrayp-list bounded-darg-listp))))
+           (pseudo-dag-arrayp-list dargs dag-array-name dag-array))
+  :hints (("Goal" :in-theory (enable pseudo-dag-arrayp-list bounded-darg-listp dargp-less-than))))
 
 (defthm pseudo-dag-arrayp-list-when-bounded-darg-listp-special
-  (implies (and (bounded-darg-listp lst nodenum)
+  (implies (and (bounded-darg-listp dargs nodenum)
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                 (natp nodenum)
                 ;;(< dag-len nodenum)
                 )
+           (pseudo-dag-arrayp-list dargs dag-array-name dag-array))
+  :hints (("Goal" :in-theory (enable BOUNDED-DARG-LISTP))))
+
+(defthm pseudo-dag-arrayp-list-when-bounded-darg-listp-special-alt
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (bounded-darg-listp lst dag-len)
+                (natp nodenum))
            (pseudo-dag-arrayp-list lst dag-array-name dag-array))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable BOUNDED-DARG-LISTP))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp pseudo-dag-arrayp-list dargp-less-than))))
 
 (defthm pseudo-dag-arrayp-list-of-dargs-of-aref1
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
@@ -1162,34 +1169,34 @@
 ;;            :in-theory (e/d (len)
 ;;                            (len-of-cdr NONNEG-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX)))))
 
-(defthmd len-bound-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound)
-                (memberp item args)
-                (not (natp item))
-                )
-           (<= 2 (len item)))
-  :hints (("Goal" :in-theory (e/d (bounded-darg-listp
-                                   MEMBERP
-                                   ;CAR-BECOMES-NTH-OF-0 CONSP-FROM-LEN consp-to-len-bound  LIST::LEN-OF-CDR-BETTER
-                                   )
-                                  (;LIST::NTH-WITH-LARGE-INDEX len LIST::LEN-POS-REWRITE LIST::LEN-WHEN-AT-MOST-1
-                                   len
-                                   )))))
+;; (defthmd len-bound-when-bounded-darg-listp
+;;   (implies (and (bounded-darg-listp args bound)
+;;                 (memberp item args)
+;;                 (not (natp item))
+;;                 )
+;;            (<= 2 (len item)))
+;;   :hints (("Goal" :in-theory (e/d (bounded-darg-listp
+;;                                    MEMBERP
+;;                                    ;CAR-BECOMES-NTH-OF-0 CONSP-FROM-LEN consp-to-len-bound  LIST::LEN-OF-CDR-BETTER
+;;                                    )
+;;                                   (;LIST::NTH-WITH-LARGE-INDEX len LIST::LEN-POS-REWRITE LIST::LEN-WHEN-AT-MOST-1
+;;                                    len
+;;                                    )))))
 
-(defthmd len-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound)
-                (memberp item args)
-                (consp item)
-                )
-           (equal (len item)
-                  2))
-  :hints (("Goal" :in-theory (e/d (bounded-darg-listp
-                                   MEMBERP
-                                   ;CAR-BECOMES-NTH-OF-0 CONSP-FROM-LEN consp-to-len-bound  LIST::LEN-OF-CDR-BETTER
-                                   )
-                                  (;LIST::NTH-WITH-LARGE-INDEX len LIST::LEN-POS-REWRITE LIST::LEN-WHEN-AT-MOST-1
-                                   len
-                                   )))))
+;; (defthmd len-when-bounded-darg-listp
+;;   (implies (and (bounded-darg-listp args bound)
+;;                 (memberp item args)
+;;                 (consp item)
+;;                 )
+;;            (equal (len item)
+;;                   2))
+;;   :hints (("Goal" :in-theory (e/d (bounded-darg-listp
+;;                                    MEMBERP
+;;                                    ;CAR-BECOMES-NTH-OF-0 CONSP-FROM-LEN consp-to-len-bound  LIST::LEN-OF-CDR-BETTER
+;;                                    )
+;;                                   (;LIST::NTH-WITH-LARGE-INDEX len LIST::LEN-POS-REWRITE LIST::LEN-WHEN-AT-MOST-1
+;;                                    len
+;;                                    )))))
 
 ;; (defthm len-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp-aux
 ;;   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
@@ -1208,16 +1215,16 @@
 ;;                            (bound nodenum)))))
 
 
-(defthmd len-of-nth-when-bounded-darg-listp-of-dargs
-  (implies (and (bounded-darg-listp (dargs expr) bound)
-                (natp n)
-                (< n (len (dargs expr)))
-                (not (natp (nth n (dargs expr)))))
-           (<= 2 (len (nth n (dargs expr)))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :use (:instance len-bound-when-bounded-darg-listp
-                                  (args (dargs expr))
-                                  (item (nth n (dargs expr)))))))
+;; (defthmd len-of-nth-when-bounded-darg-listp-of-dargs
+;;   (implies (and (bounded-darg-listp (dargs expr) bound)
+;;                 (natp n)
+;;                 (< n (len (dargs expr)))
+;;                 (not (natp (nth n (dargs expr)))))
+;;            (<= 2 (len (nth n (dargs expr)))))
+;;   :rule-classes (:rewrite :linear)
+;;   :hints (("Goal" :use (:instance len-bound-when-bounded-darg-listp
+;;                                   (args (dargs expr))
+;;                                   (item (nth n (dargs expr)))))))
 
 ;; ;drop?
 ;; (defthmd integerp-of-nth-when-bounded-darg-listp-of-cdr-weaken
@@ -1631,6 +1638,7 @@
   (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
            (not (< (alen1 dag-array-name dag-array) dag-len))))
 
+; used once
 (defthmd <-when-member-equal-of-dargs-of-aref1
   (implies (and (member-equal darg (dargs (aref1 dag-array-name dag-array nodenum)))
                 (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
@@ -1644,7 +1652,8 @@
            ;; :expand ((PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY 0))
            :in-theory (e/d (<-of-nth-when-bounded-darg-listp
                             dargs-when-not-consp-cheap
-                            bounded-dag-exprp)
+                            bounded-dag-exprp
+                            <-when-bounded-darg-listp-gen)
                            (bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper
                             bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux
                             bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-gen
@@ -2124,16 +2133,7 @@
            (bounded-dag-exprp n (aref1 dag-array-name dag-array n)))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
-(defthm pseudo-dag-arrayp-list-when-bounded-darg-listp-special-alt
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (bounded-darg-listp lst dag-len)
-                (natp nodenum))
-           (pseudo-dag-arrayp-list lst dag-array-name dag-array))
-  :hints
-  (("Goal"
-    :do-not '(generalize eliminate-destructors)
-    :in-theory (enable bounded-darg-listp
-                       pseudo-dag-arrayp-list))))
+
 
 (defthm not-<-of-nth-of-dargs-of-aref1-and-constant-when-pseudo-dag-arrayp
   (implies (and (syntaxp (quotep k))
