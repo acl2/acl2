@@ -911,11 +911,11 @@
     (mv (erp-nil) result-dag-or-quotep assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
 
 ;; todo: use this below!
-(defun print-as-term-or-dag (dag-or-quotep
+(defund print-as-term-or-dag (dag-or-quotep
                              max-size
-                             maybe-actual-size ; if non-nil, this is the dag-size of  dag-or-quotep
-                             maybe-term ; if non-nil, this is a term equivalent to dag-or-quotep
-                             descriptor ; a string describing the thing being printed (e.g., "Result")
+                             maybe-actual-size ; if non-nil, this is the dag-size of DAG-OR-QUOTEP
+                             maybe-term ; if non-nil, this is a term equivalent to DAG-OR-QUOTEP
+                             descriptor ; a string describing DAG-OR-QUOTEP (e.g., "Result")
                              untranslatep
                              state ; because of untranslate$ (uses magic-ev-fncall)
                              )
