@@ -1,7 +1,7 @@
 ; Lists of DAG function args ("dargs") whose nodenum elemements are bounded
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,7 @@
 (include-book "darg-listp")
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
+;; BOUND is often a nodenum whose expression is call of a function on DARGS.
 (defund bounded-darg-listp (dargs bound)
   (declare (xargs :guard (natp bound)
                   :split-types t)
@@ -50,6 +51,12 @@
               (bounded-darg-listp dargs2 bound)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp revappend))))
 
+(defthm bounded-darg-listp-of-reverse-list
+  (equal (bounded-darg-listp (reverse-list items) bound)
+         (bounded-darg-listp (true-list-fix items) bound))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp
+                                     reverse-list))))
+
 (defthm bounded-darg-listp-of-cdr
   (implies (bounded-darg-listp dargs bound)
            (bounded-darg-listp (cdr dargs) bound))
@@ -61,9 +68,9 @@
                   (consp dargs)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
-(defthm bounded-darg-listp-forward-to-true-listp
+(defthm bounded-darg-listp-forward-to-darg-listp
   (implies (bounded-darg-listp dargs bound)
-           (true-listp dargs))
+           (darg-listp dargs))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
@@ -74,20 +81,16 @@
                        (true-listp items))))
   :hints (("Goal" :in-theory (enable bounded-darg-listp all-myquotep))))
 
-(defthm bounded-darg-listp-of-reverse-list
-  (equal (bounded-darg-listp (reverse-list items) bound)
-         (bounded-darg-listp (true-list-fix items) bound))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp
-                                     reverse-list))))
-
-(defthm darg-listp-when-bounded-darg-listp
+;; drop since we have the forward-chaining rule?
+(defthmd darg-listp-when-bounded-darg-listp
   (implies (bounded-darg-listp items free)
            (darg-listp items))
   :hints (("Goal" :in-theory (enable bounded-darg-listp darg-listp dargp-less-than))))
 
 (defthm <-of-0-when-bounded-darg-listp
   (implies (and (bounded-darg-listp args bound)
-                (not (consp (nth 0 args))))
+                ;;(not (consp (nth 0 args)))
+                )
            (not (< (nth 0 args) 0)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
@@ -99,14 +102,15 @@
            (integerp (nth n args)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
-(defthm integerp-of-nth-when-bounded-darg-listp-special
-  (implies (and (bounded-darg-listp (cdr expr) bound)
-                (not (consp (nth n expr)))
-                (posp n)
-                (< n (len expr)))
-           (integerp (nth n expr)))
-  :hints (("Goal" :in-theory (e/d (bounded-darg-listp nth) (;NTH-OF-CDR
-                                                            )))))
+;; ;drop?  should use nth of dargs as the normal form
+;; (defthmd integerp-of-nth-when-bounded-darg-listp-speciala
+;;   (implies (and (bounded-darg-listp (cdr expr) bound)
+;;                 (not (consp (nth n expr)))
+;;                 (posp n)
+;;                 (< n (len expr)))
+;;            (integerp (nth n expr)))
+;;   :hints (("Goal" :in-theory (e/d (bounded-darg-listp nth) (;NTH-OF-CDR
+;;                                                             )))))
 
 (defthm true-listp-of-nth-when-bounded-darg-listp
   (implies (and (bounded-darg-listp args bound)
@@ -132,6 +136,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
+;; todo: almost the same as the above
 (defthmd <-of-car-when-bounded-darg-listp
   (implies (and (bounded-darg-listp vals bound)
                 (consp vals)
@@ -202,6 +207,7 @@
   :hints (("Goal" :in-theory (enable bounded-darg-listp
                                      all-myquotep))))
 
+;drop?
 (defthm bounded-darg-listp-of-0
   (equal (bounded-darg-listp items 0)
          (and (all-myquotep items)
@@ -233,13 +239,13 @@
   :hints
   (("Goal" :in-theory (enable bounded-darg-listp))))
 
-;true whether it's a quotep or nodenum
-(defthmd not-cddr-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp items bound)
-         ;       (consp item)
-                (member-equal item items))
-           (not (cddr item)))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
+;; ;true whether it's a quotep or nodenum
+;; (defthmd not-cddr-when-bounded-darg-listp
+;;   (implies (and (bounded-darg-listp items bound)
+;;          ;       (consp item)
+;;                 (member-equal item items))
+;;            (not (cddr item)))
+;;   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 (defthm not-cddr-of-nth-when-bounded-darg-listp
   (implies (and (bounded-darg-listp args bound) ;bound is a free var
