@@ -1,6 +1,6 @@
 ; Ordered Bags (Obags) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -280,6 +280,9 @@
 (assert-equal (obag::union '(a b) '(c c d))
               '(a b c c d))
 
+(assert-equal (obag::union '(a a b) '(a b b))
+              '(a a b b))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-equal (obag::intersect nil '(a b))
@@ -294,6 +297,9 @@
 (assert-equal (obag::intersect '(a b) '(b b c c d))
               '(b))
 
+(assert-equal (obag::intersect '(a a b) '(a b b))
+              '(a b))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-equal (obag::difference nil '(a b))
@@ -306,4 +312,7 @@
               '(a b))
 
 (assert-equal (obag::difference '(a b) '(b b c c d))
+              '(a))
+
+(assert-equal (obag::difference '(a a b) '(a b b b b))
               '(a))
