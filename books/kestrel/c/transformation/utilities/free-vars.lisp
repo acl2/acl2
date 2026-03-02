@@ -744,7 +744,7 @@
     :returns (free-vars ident-setp)
     (c$::attrib-case
      attrib
-     :name nil
+     :name-only nil
      :name-params (free-vars-expr-list attrib.params bound-vars))
     :measure (c$::attrib-count attrib))
 

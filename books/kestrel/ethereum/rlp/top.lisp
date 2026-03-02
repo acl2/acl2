@@ -35,7 +35,7 @@
     which we reference as `[Wiki:RLP]';
     but see @(see ethereum) about [Wiki].")
   :order-subtopics (rlp-big-endian-representations
-                    rlp-trees
+                    rlp-tree
                     rlp-encoding
                     rlp-decodability
                     rlp-decoding-declarative

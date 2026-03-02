@@ -1,6 +1,6 @@
 ; Tests of defstobj+
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -980,3 +980,12 @@
   (memory :type (array (unsigned-byte 8) (4294967296)) ; 2^32 bytes
           :initially 0)
   :non-executable t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A test in some other package:
+(include-book "kestrel/prime-fields/portcullis" :dir :system)
+
+(defstobj+ pfield::mystobj
+  (field1 :type atom :initially nil)
+  (field2 :type (integer 200 300) :initially 250))
