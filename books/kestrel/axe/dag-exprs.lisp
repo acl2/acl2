@@ -156,6 +156,16 @@
            (darg-listp (dargs expr)))
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
+;; This happens to be true for all 3 kinds of dag-expr.
+(defthm dag-exprp-forward-to-true-listp-of-dargs
+  (implies (and (dag-exprp expr)
+                ;; (consp expr)
+                )
+           (true-listp (dargs expr)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable dag-exprp dargs))))
+
+;; This happens to be true for all 3 kinds of expr.
 (defthm true-listp-of-dargs-when-dag-exprp
   (implies (and (dag-exprp expr)
                 ;; (consp expr)
@@ -193,11 +203,9 @@
   :hints (("Goal" :in-theory (enable dag-function-call-exprp dag-exprp))))
 
 ;drop?
-(local (in-theory (enable consp-of-cdr-of-nth-when-darg-listp)))
-
-(local (in-theory (enable equal-of-quote-and-car-of-nth-when-darg-listp)))
-
-(local (in-theory (enable equal-of-quote-and-nth-0-of-nth-when-darg-listp)))
+(local (in-theory (enable consp-of-cdr-of-nth-when-darg-listp
+                          equal-of-quote-and-car-of-nth-when-darg-listp
+                          equal-of-quote-and-nth-0-of-nth-when-darg-listp)))
 
 ;; We normalize claims about dag-args to consp.
 (defthm consp-of-cdr-of-nth-of-dargs
@@ -375,10 +383,18 @@
                     0)))
   :hints (("Goal" :in-theory (enable <-of-1-and-len-of-nth-when-darg-listp))))
 
+;; Happens to be true for all 3 kinds of dag-expr.
 ;; too expensive to leave enabled
 (defthmd symbolp-of-car-when-dag-exprp
   (implies (dag-exprp expr)
            (symbolp (car expr)))
+  :hints (("Goal" :in-theory (enable dag-exprp))))
+
+;; Happens to be true for all 3 kinds of dag-expr.
+(defthm dag-exprp-forward-to-symbolp-of-car
+  (implies (dag-exprp expr)
+           (symbolp (car expr)))
+  :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
 ;; too expensive to leave enabled
@@ -399,15 +415,6 @@
            (equal (cddr expr)
                   nil))
   :hints (("Goal" :in-theory (enable dag-exprp))))
-
-(defthm dag-exprp-and-consp-forward-to-true-listp-of-dargs
-  (implies (and (dag-exprp expr)
-                (consp expr))
-           (true-listp (dargs expr)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable dag-exprp
-                                     dargs ;todo: this theorem happens to be true for quoteps too
-                                     ))))
 
 (defthm dag-exprp-and-not-consp-forward-to-symbolp
   (implies (and (dag-exprp expr)

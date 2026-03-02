@@ -103,34 +103,41 @@
            (bounded-darg-listp (dargs expr) bound))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
-(defthm bounded-dag-exprp-and-consp-forward-to-true-listp-of-dargs
-  (implies (and (bounded-dag-exprp bound expr)
-                (consp expr))
-           (true-listp (dargs expr)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp
-                                     ;dargs ;todo: this theorem happens to be true for quoteps too
-                                     ))))
+;; (defthm bounded-dag-exprp-and-consp-forward-to-true-listp-of-dargs
+;;   (implies (and (bounded-dag-exprp bound expr)
+;;                 (consp expr))
+;;            (true-listp (dargs expr)))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable bounded-dag-exprp
+;;                                      ;dargs ;todo: this theorem happens to be true for quoteps too
+;;                                      ))))
 
-(defthm true-listp-of-dargs-when-bounded-dag-exprp-and-consp
-  (implies (and (bounded-dag-exprp bound expr)
-                (not (symbolp expr)) ;or say (consp expr)
-                )
-           (true-listp (dargs expr)))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp dargs))))
+;; (defthm true-listp-of-dargs-when-bounded-dag-exprp-and-consp
+;;   (implies (and (bounded-dag-exprp bound expr)
+;;                 (not (symbolp expr)) ;or say (consp expr)
+;;                 )
+;;            (true-listp (dargs expr)))
+;;   :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp dargs))))
 
-(defthm true-listp-of-dargs-better
-  (implies (and (bounded-dag-exprp bound expr)
+;; This happens to be true for all 3 kinds of expr.
+(defthm true-listp-of-dargs-when-bounded-dag-exprp
+  (implies (and (bounded-dag-exprp bound expr) ; bound is a free var
+                ;; (consp expr)
                 ;; (not (equal 'quote (car expr)))
                 )
            (true-listp (dargs expr)))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp dag-exprp dargs))))
 
-(defthm bounded-dag-exprp-and-consp-forward-to-symbolp-of-car
-  (implies (and (bounded-dag-exprp bound expr)
-                (consp expr))
+;; (defthm bounded-dag-exprp-and-consp-forward-to-symbolp-of-car
+;;   (implies (and (bounded-dag-exprp bound expr)
+;;                 (consp expr))
+;;            (symbolp (car expr)))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
+
+(defthmd symbolp-of-car-when-bounded-dag-exprp
+  (implies (bounded-dag-exprp bound expr) ;bound is a free var
            (symbolp (car expr)))
-  :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
 (defthm bounded-dag-exprp-forward-to-darg-listp-of-dargs
@@ -175,10 +182,7 @@
   :hints (("Goal" :use <-of-nth-of-dargs
            :in-theory (disable <-of-nth-of-dargs))))
 
-(defthm symbolp-of-car-when-bounded-dag-exprp
-  (implies (bounded-dag-exprp bound expr) ;bound is a free var
-           (symbolp (car expr)))
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
+
 
 (defthm bounded-dag-exprp-when-symbolp-cheap
   (implies (symbolp var)
