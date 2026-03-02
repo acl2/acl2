@@ -1,7 +1,7 @@
 ; Expressions that can appear in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -101,6 +101,7 @@
                            (nth 3 (dargs expr)))
            :in-theory (enable nth))))
 
+;; todo: should these go to nth?
 (defun-inline darg1 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 1 (len (dargs x)))))) (first (dargs x)))
 (defun-inline darg2 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 2 (len (dargs x)))))) (second (dargs x)))
 (defun-inline darg3 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 3 (len (dargs x)))))) (third (dargs x)))
