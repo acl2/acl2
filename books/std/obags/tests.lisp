@@ -316,3 +316,14 @@
 
 (assert-equal (obag::difference '(a a b) '(a b b b b))
               '(a))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (obag::sum nil '(a b))
+              '(a b))
+
+(assert-equal (obag::sum '(a b) nil)
+              '(a b))
+
+(assert-equal (obag::sum '(a a b) '(a b b b))
+              '(a a a b b b b))
