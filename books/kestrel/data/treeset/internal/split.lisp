@@ -628,31 +628,19 @@
              ((data::acl2-number-<< x (tagged-element->elem (tree->head tree)))
               (mv-let (in left$ right$)
                       (acl2-number-tree-split x (tree->left tree))
-                (mbe :logic (let ((tree$
-                                    (rotate-right
-                                      (tree-node (tree->head tree)
-                                                 (tree-node x left$ right$)
-                                                 (tree->right tree)))))
-                              (mv in (tree->left tree$) (tree->right tree$)))
-                     :exec (mv in
-                               left$
-                               (tree-node (tree->head tree)
-                                          right$
-                                          (tree->right tree))))))
+                (mv in
+                    left$
+                    (tree-node (tree->head tree)
+                               right$
+                               (tree->right tree)))))
              (t
               (mv-let (in left$ right$)
                       (acl2-number-tree-split x (tree->right tree))
-                (mbe :logic (let ((tree$
-                                    (rotate-left
-                                      (tree-node (tree->head tree)
-                                                 (tree->left tree)
-                                                 (tree-node x left$ right$)))))
-                              (mv in (tree->left tree$) (tree->right tree$)))
-                     :exec (mv in
-                               (tree-node (tree->head tree)
-                                          (tree->left tree)
-                                          left$)
-                               right$))))))
+                (mv in
+                    (tree-node (tree->head tree)
+                               (tree->left tree)
+                               left$)
+                    right$)))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-split
                                            acl2-number-tree-split
@@ -672,31 +660,19 @@
              ((data::symbol-<< x (tagged-element->elem (tree->head tree)))
               (mv-let (in left$ right$)
                       (symbol-tree-split x (tree->left tree))
-                (mbe :logic (let ((tree$
-                                    (rotate-right
-                                      (tree-node (tree->head tree)
-                                                 (tree-node x left$ right$)
-                                                 (tree->right tree)))))
-                              (mv in (tree->left tree$) (tree->right tree$)))
-                     :exec (mv in
-                               left$
-                               (tree-node (tree->head tree)
-                                          right$
-                                          (tree->right tree))))))
+                (mv in
+                    left$
+                    (tree-node (tree->head tree)
+                               right$
+                               (tree->right tree)))))
              (t
               (mv-let (in left$ right$)
                       (symbol-tree-split x (tree->right tree))
-                (mbe :logic (let ((tree$
-                                    (rotate-left
-                                      (tree-node (tree->head tree)
-                                                 (tree->left tree)
-                                                 (tree-node x left$ right$)))))
-                              (mv in (tree->left tree$) (tree->right tree$)))
-                     :exec (mv in
-                               (tree-node (tree->head tree)
-                                          (tree->left tree)
-                                          left$)
-                               right$))))))
+                (mv in
+                    (tree-node (tree->head tree)
+                               (tree->left tree)
+                               left$)
+                    right$)))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-split
                                            symbol-tree-split
@@ -716,31 +692,19 @@
              ((data::eqlable-<< x (tagged-element->elem (tree->head tree)))
               (mv-let (in left$ right$)
                       (eqlable-tree-split x (tree->left tree))
-                (mbe :logic (let ((tree$
-                                    (rotate-right
-                                      (tree-node (tree->head tree)
-                                                 (tree-node x left$ right$)
-                                                 (tree->right tree)))))
-                              (mv in (tree->left tree$) (tree->right tree$)))
-                     :exec (mv in
-                               left$
-                               (tree-node (tree->head tree)
-                                          right$
-                                          (tree->right tree))))))
+                (mv in
+                    left$
+                    (tree-node (tree->head tree)
+                               right$
+                               (tree->right tree)))))
              (t
               (mv-let (in left$ right$)
                       (eqlable-tree-split x (tree->right tree))
-                (mbe :logic (let ((tree$
-                                    (rotate-left
-                                      (tree-node (tree->head tree)
-                                                 (tree->left tree)
-                                                 (tree-node x left$ right$)))))
-                              (mv in (tree->left tree$) (tree->right tree$)))
-                     :exec (mv in
-                               (tree-node (tree->head tree)
-                                          (tree->left tree)
-                                          left$)
-                               right$))))))
+                (mv in
+                    (tree-node (tree->head tree)
+                               (tree->left tree)
+                               left$)
+                    right$)))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-split
                                            eqlable-tree-split
