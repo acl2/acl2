@@ -20,6 +20,7 @@
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/union" :dir :system))
 (local (include-book "std/system/w" :dir :system))
@@ -27,10 +28,7 @@
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration :no-function nil :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,6 +72,7 @@
         (raise "Internal error: current package ~x0 is not a string." package)
         "."))
     package)
+
   ///
 
   (defret current-package+-not-empty
@@ -295,8 +294,7 @@
    :mul `(mul ,(lift-expression expr.arg1 prime state)
               ,(lift-expression expr.arg2 prime state)
               ,prime))
-  :measure (expression-count expr)
-  :hints (("Goal" :in-theory (enable o< o-finp))))
+  :measure (expression-count expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1079,7 +1077,10 @@
        ,event-constr-sat
        ,@events-constr-to-def-sat
        ,event-thm
-       ,event-table)))
+       ,event-table))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
