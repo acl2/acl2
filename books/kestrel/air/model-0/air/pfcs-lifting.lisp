@@ -103,7 +103,7 @@
   ;; so we lift manually below.
   ;; (pfcs::lift (pfcs-byte)
   ;;             :pred pfcs-byte-pred
-  ;;             :prime prime))
+  ;;             :prime prime)
 
   (defund-sk pfcs-byte-pred (x prime)
     (declare (ignorable x prime))
