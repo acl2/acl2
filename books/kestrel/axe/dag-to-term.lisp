@@ -140,6 +140,11 @@
       x ; already a term
     (dag-to-term x)))
 
+(defthm pseudo-termp-of-dag-or-quotep-to-term
+  (implies (pseudo-dagp dag)
+           (pseudo-termp (dag-or-quotep-to-term dag)))
+  :hints (("Goal" :in-theory (enable dag-or-quotep-to-term))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;)
 
 ;; (defun dags-to-terms (dags)
