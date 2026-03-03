@@ -402,6 +402,7 @@ call can be used to check for unsatisfiability of the path condition within
 <p>The (regular, non-binder) function @(see assume) has similar functionality,
 but can only be used under the @('unequiv') equivalence context, i.e. when
 there is no soundness requirements on the correctness of the evaluation.</p>"
+  :parents (fgl-rewrite-rules)
   :ignore-ok t
   :irrelevant-formals-ok t
   (if cond x ans)
