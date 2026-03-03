@@ -35,15 +35,18 @@
 
 ; Original Author(s):
 ; Yahya Sohail        <yahya@yahyasohail.com>
+; Contributing Author(s):
+; Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "X86ISA")
 
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils" :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
-;; For now, we only implement the SSE2 variants of these instructions.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define punpckl ((result-width natp)
                  (el-width posp)
@@ -54,22 +57,31 @@
   :returns (result (unsigned-byte-p result-width result)
                    :hyp (and (natp result-width)
                              (<= (* 2 (pos-fix el-width)) result-width)
-                             (equal (mod result-width (* 2 (pos-fix el-width))) 0))
-                   :hints (("Goal" :in-theory (disable unsigned-byte-p
-                                                       acl2::prefer-positive-addends-<))))
+                             (equal (mod result-width
+                                         (* 2 (pos-fix el-width))) 0))
+                   :hints
+                   (("Goal"
+                     :in-theory (disable unsigned-byte-p
+                                         acl2::prefer-positive-addends-<))))
   :measure (nfix result-width)
   (b* ((result-width (nfix result-width))
        (el-width (pos-fix el-width))
        (a (nfix a))
        (b (nfix b))
        ((when (zp result-width)) 0))
-      (logapp el-width a
-              (logapp el-width b
-                      (punpckl (- result-width (* 2 el-width)) el-width
-                               (logtail el-width a) (logtail el-width b))))))
+    (logapp el-width a
+            (logapp el-width b
+                    (punpckl (- result-width (* 2 el-width)) el-width
+                             (logtail el-width a) (logtail el-width b))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-inst x86-punpckl-sse
+
   :parents (two-byte-opcodes)
+
+  :short "Unpack low data (SSE variants)."
+
   :long
   "<code>
   PUNPCKLBW xmm1, xmm2/m128
@@ -81,7 +93,6 @@
   :modr/m t
 
   :returns (x86 x86p :hyp (x86p x86))
-  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))
 
   :body
 
@@ -148,10 +159,18 @@
 
        ;; Update the instruction pointer.
        (x86 (write-*ip proc-mode temp-rip x86)))
-      x86))
+      x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-inst x86-punpckh-sse
+
   :parents (two-byte-opcodes)
+
+  :short "Unpack high data (SSE variants)."
+
   :long
   "<code>
   PUNPCKHBW xmm1, xmm2/m128
@@ -163,7 +182,6 @@
   :modr/m t
 
   :returns (x86 x86p :hyp (x86p x86))
-  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))
 
   :body
 
@@ -234,4 +252,6 @@
 
        ;; Update the instruction pointer.
        (x86 (write-*ip proc-mode temp-rip x86)))
-      x86))
+      x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
