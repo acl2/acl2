@@ -59,6 +59,8 @@
               :ttags (:undef-flg))
 (include-book "jump-and-loop"
               :ttags (:undef-flg))
+(include-book "logical"
+              :ttags (:undef-flg))
 (include-book "move"
               :ttags (:undef-flg))
 (include-book "move-mmx"
@@ -76,6 +78,8 @@
 (include-book "pmul"
               :ttags (:undef-flg))
 (include-book "psub"
+              :ttags (:undef-flg))
+(include-book "pshift"
               :ttags (:undef-flg))
 (include-book "push-and-pop"
               :ttags (:undef-flg))
