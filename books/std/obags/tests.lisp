@@ -1,6 +1,6 @@
 ; Ordered Bags (Obags) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -109,6 +109,90 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert-equal (obag::occs '(7 3) nil)
+              0)
+
+(assert-equal (obag::occs '(7 3) '(4/5))
+              0)
+
+(assert-equal (obag::occs 4/5 '(4/5))
+              1)
+
+(assert-equal (obag::occs 33 '(5 68))
+              0)
+
+(assert-equal (obag::occs 5 '(5 68))
+              1)
+
+(assert-equal (obag::occs 68 '(5 68))
+              1)
+
+(assert-equal (obag::occs 'y '(x x))
+              0)
+
+(assert-equal (obag::occs 'x '(x x))
+              2)
+
+(assert-equal (obag::occs 6 '(5 5 5 68))
+              0)
+
+(assert-equal (obag::occs 5 '(5 5 5 68))
+              3)
+
+(assert-equal (obag::occs 68 '(5 5 5 68))
+              1)
+
+(assert-equal (obag::occs "c" '("a" "bb" "c" "c"))
+              2)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (not (obag::in '(7 3) nil)))
+
+(assert! (not (obag::in '(7 3) '(4/5))))
+
+(assert! (obag::in 4/5 '(4/5)))
+
+(assert! (not (obag::in 33 '(5 68))))
+
+(assert! (obag::in 5 '(5 68)))
+
+(assert! (obag::in 68 '(5 68)))
+
+(assert! (not (obag::in 'y '(x x))))
+
+(assert! (obag::in 'x '(x x)))
+
+(assert! (not (obag::in 6 '(5 5 5 68))))
+
+(assert! (obag::in 5 '(5 5 5 68)))
+
+(assert! (obag::in 68 '(5 5 5 68)))
+
+(assert! (obag::in "c" '("a" "bb" "c" "c")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (obag::cardinality nil)
+              0)
+
+(assert-equal (obag::cardinality '(4/5))
+              1)
+
+(assert-equal (obag::cardinality '(5 68))
+              2)
+
+(assert-equal (obag::cardinality '(x x))
+              2)
+
+(assert-equal (obag::cardinality '(5 5 5 68))
+              4)
+
+(assert-equal (obag::cardinality '("a" "bb" "c" "c"))
+              4)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-equal (obag::insert #\a nil)
               '(#\a))
 
@@ -173,90 +257,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (not (obag::in '(7 3) nil)))
-
-(assert! (not (obag::in '(7 3) '(4/5))))
-
-(assert! (obag::in 4/5 '(4/5)))
-
-(assert! (not (obag::in 33 '(5 68))))
-
-(assert! (obag::in 5 '(5 68)))
-
-(assert! (obag::in 68 '(5 68)))
-
-(assert! (not (obag::in 'y '(x x))))
-
-(assert! (obag::in 'x '(x x)))
-
-(assert! (not (obag::in 6 '(5 5 5 68))))
-
-(assert! (obag::in 5 '(5 5 5 68)))
-
-(assert! (obag::in 68 '(5 5 5 68)))
-
-(assert! (obag::in "c" '("a" "bb" "c" "c")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (obag::occs '(7 3) nil)
-              0)
-
-(assert-equal (obag::occs '(7 3) '(4/5))
-              0)
-
-(assert-equal (obag::occs 4/5 '(4/5))
-              1)
-
-(assert-equal (obag::occs 33 '(5 68))
-              0)
-
-(assert-equal (obag::occs 5 '(5 68))
-              1)
-
-(assert-equal (obag::occs 68 '(5 68))
-              1)
-
-(assert-equal (obag::occs 'y '(x x))
-              0)
-
-(assert-equal (obag::occs 'x '(x x))
-              2)
-
-(assert-equal (obag::occs 6 '(5 5 5 68))
-              0)
-
-(assert-equal (obag::occs 5 '(5 5 5 68))
-              3)
-
-(assert-equal (obag::occs 68 '(5 5 5 68))
-              1)
-
-(assert-equal (obag::occs "c" '("a" "bb" "c" "c"))
-              2)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert-equal (obag::cardinality nil)
-              0)
-
-(assert-equal (obag::cardinality '(4/5))
-              1)
-
-(assert-equal (obag::cardinality '(5 68))
-              2)
-
-(assert-equal (obag::cardinality '(x x))
-              2)
-
-(assert-equal (obag::cardinality '(5 5 5 68))
-              4)
-
-(assert-equal (obag::cardinality '("a" "bb" "c" "c"))
-              4)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (obag::subbag nil nil))
 
 (assert! (obag::subbag nil '(4/5)))
@@ -280,6 +280,9 @@
 (assert-equal (obag::union '(a b) '(c c d))
               '(a b c c d))
 
+(assert-equal (obag::union '(a a b) '(a b b))
+              '(a a b b))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-equal (obag::intersect nil '(a b))
@@ -294,6 +297,9 @@
 (assert-equal (obag::intersect '(a b) '(b b c c d))
               '(b))
 
+(assert-equal (obag::intersect '(a a b) '(a b b))
+              '(a b))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-equal (obag::difference nil '(a b))
@@ -307,3 +313,17 @@
 
 (assert-equal (obag::difference '(a b) '(b b c c d))
               '(a))
+
+(assert-equal (obag::difference '(a a b) '(a b b b b))
+              '(a))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (obag::sum nil '(a b))
+              '(a b))
+
+(assert-equal (obag::sum '(a b) nil)
+              '(a b))
+
+(assert-equal (obag::sum '(a a b) '(a b b b))
+              '(a a a b b b b))
