@@ -61,6 +61,7 @@
 (include-book "../prune-dag-approximately")
 (include-book "../arithmetic-rules-axe")
 (include-book "../convert-to-bv-rules-axe")
+(include-book "../dag-printing")
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
 (include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
 (include-book "../evaluator-support") ; for *axe-evaluator-functions* and to support making defuns
@@ -910,45 +911,7 @@
                     ))))
     (mv (erp-nil) result-dag-or-quotep assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
 
-;; todo: use this below!
-(defund print-as-term-or-dag (dag-or-quotep
-                             max-size
-                             maybe-actual-size ; if non-nil, this is the dag-size of DAG-OR-QUOTEP
-                             maybe-term ; if non-nil, this is a term equivalent to DAG-OR-QUOTEP
-                             descriptor ; a string describing DAG-OR-QUOTEP (e.g., "Result")
-                             untranslatep
-                             state ; because of untranslate$ (uses magic-ev-fncall)
-                             )
-  (declare (xargs :guard (and (or (pseudo-dagp dag-or-quotep) ; todo: name this disjunction
-                                  (myquotep dag-or-quotep))
-                              (natp max-size) ; allow nil for no limit?
-                              (or (null maybe-actual-size)
-                                  (natp maybe-actual-size))
-                              (or (null maybe-term)
-                                  (pseudo-termp maybe-term))
-                              (stringp descriptor)
-                              (booleanp untranslatep))
-                  :stobjs state))
-  (let ((quotep (quotep dag-or-quotep)))
-    (if (or quotep
-            (and (not (acl2::len-at-least 1152921504606846974 dag-or-quotep)) ; not too big to call dag-size
-                 (if maybe-actual-size
-                     (<= maybe-actual-size max-size)
-                   (<= (dag-size dag-or-quotep) max-size))))
-        ;; Print as a term (preferred if not too big):
-        (let ((term (if quotep
-                        dag-or-quotep
-                      (let ((term (or maybe-term (dag-or-quotep-to-term dag-or-quotep))))
-                        (if untranslatep
-                            (untranslate$ term nil state)
-                          term)))))
-          (progn$ (cw "(~s0:~%" descriptor)
-                  (cw "~X01" term nil)
-                  (cw ")~%")))
-      ;; Print as a DAG because the term would be too big:
-      (progn$ (cw "(~s0:~%" descriptor)
-              (cw "~X01" dag-or-quotep nil)
-              (cw ")~%")))))
+
 
 ;; Returns (mv erp event state)
 ;; TODO: Consider using the current print-base (:auto value) by default.
@@ -1049,6 +1012,12 @@
        ((when (and produce-theorem (not produce-function)))
         (er hard? 'def-unrolled-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
+       ;; When :inputs are given, the entry point should be the start of a function:
+       (- (and (not (eq :skip inputs))
+               (not (stringp target))
+               (if (eq :entry-point target)
+                   (cw "WARNING: The :inputs argument was used, but :target is :entry-point.  If the entry-point is not the start of a function, the use of :inputs may cause problems.")
+                 (cw "WARNING: The :inputs argument was used, but :target is ~x0.  If this address is not the start of a function, the use of :inputs may cause problems." target))))
        ;; Handle filename vs parsed-structure:
        ((mv erp parsed-executable state)
         (if (stringp executable)
@@ -1102,12 +1071,11 @@
        ;; Build the defconst that will contain the result DAG:
        (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag-or-quotep))
 
-       ;; Possibly produce a defun:
+       ;; Possibly produce a defun to represent the result of lifting:
 
        ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
        (executable-type (parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
-       ;; Build the defun that will contain the result of lifting:
        ;; Create the list of formals for the function:
        ;; todo: move some of this to after we check produce-function below
        (param-names (if (and 64-bitp
@@ -1119,7 +1087,10 @@
        (common-formals (append param-names '(x86))) ; todo: handle 32-bit calling convention
        ;; these will be ordered like common-formals:
        (expected-formals (intersection-eq common-formals result-dag-vars))
-       (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
+       (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed? ; todo: any ordering for these? ; todo: look at the extra-assumptions for vars introduced
+       ;; ((when unexpected-formals)
+       ;;  (er hard? 'def-unrolled-fn "Unexpected formals: ~x0." unexpected-formals)
+       ;;  (mv t nil state))
        (fn-formals (append expected-formals unexpected-formals))
        ((mv erp events-for-defun)
         (if (not produce-function)
@@ -1185,7 +1156,7 @@
                                `(skip-proofs ,defthm))))
                 (list defthm))))
        (events (cons defconst-form (append events-for-defun defthms)))
-       (event-names (strip-cadrs events))
+       (event-names (strip-cadrs events)) ; todo: consider the include-book above
        (event `(progn ,@events))
        (event (extend-progn event (redundancy-table-event whole-form event)))
        (event (extend-progn event `(value-triple '(,@event-names))))
