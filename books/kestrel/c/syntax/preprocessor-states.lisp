@@ -215,6 +215,25 @@
       This is always an index into the position array,
       which is one element longer than the character array as noted above.")
     (xdoc::li
+     "An integer offset for the line number.
+      This is the difference between
+      the presumed line number and the actual line number.
+      The actual line number is the one in the current position,
+      i.e. the element of the positions arrays
+      at the index of the current character.
+      A @('#line') directive [C17:6.10.4] may set the presumed line number,
+      i.e. ``pretend'' that the number of the line following the directive
+      is the one specified by the directive.
+      When this happens, we set the integer offset for line number
+      to the difference between the number specified by the directive
+      and the actual line number recorded in the positions array.
+      The offset can be positive or negative
+      (or null, in which case the directive has no effect).
+      This way, as we proceed through the file,
+      and as the current position according to the positions array changes,
+      we always have an offset with which we can compute
+      the presumed line number.")
+    (xdoc::li
      "A list of lexmarks to be read next,
       before lexing lexemes from the character array.
       Conceptually, this list is in front of the remaining characters,
@@ -260,6 +279,8 @@
                  :resizable t)
       (char-index :type (integer 0 *)
                   :initially 0)
+      (line-offset :type integer
+                   :initially 0)
       (lexmarks :type (satisfies lexmark-listp)
                 :initially nil)
       (size :type (integer 0 *)
@@ -274,6 +295,7 @@
                  (charsp raw-ppstate->chars-p)
                  (positionsp raw-ppstate->positions-p)
                  (char-indexp raw-ppstate->char-index-p)
+                 (line-offsetp raw-ppstate->line-offset-p)
                  (lexmarksp raw-ppstate->lexmarks-p)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
@@ -285,6 +307,7 @@
                  (positions-length raw-ppstate->positions-length)
                  (positionsi raw-ppstate->position)
                  (char-index raw-ppstate->char-index)
+                 (line-offset raw-ppstate->line-offset)
                  (lexmarks raw-ppstate->lexmarks)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
@@ -296,6 +319,7 @@
                  (resize-positions raw-update-ppstate->positions-length)
                  (update-positionsi raw-update-ppstate->position)
                  (update-char-index raw-update-ppstate->char-index)
+                 (update-line-offset raw-update-ppstate->line-offset)
                  (update-lexmarks raw-update-ppstate->lexmarks)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
@@ -340,7 +364,7 @@
 
   ;; needed for subsequent proofs:
 
-  (local (in-theory (enable ppstate-fix nfix)))
+  (local (in-theory (enable ppstate-fix nfix ifix)))
 
   ;; readers:
 
@@ -390,6 +414,12 @@
     :returns (char-index natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->char-index (ppstate-fix ppstate)))
          :exec (raw-ppstate->char-index ppstate))
+    :inline t)
+
+  (define ppstate->line-offset (ppstate)
+    :returns (line-offset integerp :rule-classes (:rewrite :type-prescription))
+    (mbe :logic (non-exec (raw-ppstate->line-offset (ppstate-fix ppstate)))
+         :exec (raw-ppstate->line-offset ppstate))
     :inline t)
 
   (define ppstate->lexmarks (ppstate)
@@ -479,6 +509,13 @@
     (mbe :logic (non-exec (raw-update-ppstate->char-index
                            (nfix char-index) (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->char-index char-index ppstate))
+    :inline t)
+
+  (define update-ppstate->line-offset ((line-offset integerp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->line-offset
+                           (ifix line-offset) (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->line-offset line-offset ppstate))
     :inline t)
 
   (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
@@ -692,6 +729,32 @@
     (ppstate->position index ppstate))
   :no-function nil)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define ppstate->presumed-position ((ppstate ppstatep))
+  :returns (pos positionp)
+  :short "Presumed position in the preprocesor state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is explained in @(tsee ppstate).
+     We add the offset to the line of the current position.
+     We throw a hard error if the result is not a positive integer;
+     this should never happen,
+     because the @('#line') directive must always specify a positive integer
+     [C17:6.10.4],
+     and thus adding the offset would never result in
+     a non-positive integer."))
+  (b* ((pos (ppstate->current-position ppstate))
+       (line (position->line pos))
+       (offset (ppstate->line-offset ppstate))
+       (presumed-line (+ line offset))
+       ((unless (posp presumed-line))
+        (raise "Internal error: presumed line is ~x0." presumed-line)
+        (irr-position)))
+    (change-position pos :line (+ line offset)))
+  :no-function nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-ppstate ((chars uchar-listp)
@@ -719,12 +782,14 @@
      which are related as expressed in the guard,
      and as explained in @(tsee ppstate).
      The character index is set to 0, i.e. the beginning.
+     The line offset is 0.
      The size is set to the number of unread characters (all)."))
   (b* ((ppstate (update-ppstate->chars-length (len chars) ppstate))
        (ppstate (init-ppstate-chars-loop chars 0 ppstate))
        (ppstate (update-ppstate->positions-length (len poss) ppstate))
        (ppstate (init-ppstate-positions-loop poss 0 ppstate))
        (ppstate (update-ppstate->char-index 0 ppstate))
+       (ppstate (update-ppstate->line-offset 0 ppstate))
        (ppstate (update-ppstate->size (len chars) ppstate))
        (ppstate (update-ppstate->macros macros ppstate))
        (ppstate (update-ppstate->options options ppstate))
