@@ -79,6 +79,8 @@
               :ttags (:undef-flg))
 (include-book "psub"
               :ttags (:undef-flg))
+(include-book "pshift"
+              :ttags (:undef-flg))
 (include-book "push-and-pop"
               :ttags (:undef-flg))
 (include-book "rand"
