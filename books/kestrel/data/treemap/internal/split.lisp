@@ -55,8 +55,8 @@
      "When @('tree') is a @('map'), @('(tree-split key tree)') yields
       @('(mv in left right)') where:")
    (xdoc::ul
-     (xdoc::li "@('in') is a boolean representing
-                @('(treeset::in key (tree-key-set tree))').")
+     (xdoc::li "@('assoc') is an optional pair representing
+                @('(tree-search-assoc key tree)').")
      (xdoc::li "@('left') is a @('map') containing all keys of @('tree') less
                 than @('key') (with respect to @('<<')).")
      (xdoc::li "@('right') is a @('map') containing all keys of @('tree')
@@ -64,38 +64,40 @@
    (xdoc::p
      "The implementation is comparable to @('tree-update') if we were to
       pretend @('key') is maximal with respect to @('heap<')."))
-  :returns (mv (in booleanp :rule-classes :type-prescription)
+  :returns (mv assoc
                (left treep)
                (right treep))
   (cond ((tree-empty-p tree)
          (mv nil nil nil))
         ((equal key (tree-element->key (tree->head tree)))
-         (mv t (tree->left tree) (tree->right tree)))
+         (mv (tree-element->key+val (tree->head tree))
+             (tree->left tree)
+             (tree->right tree)))
         ((<< key (tree-element->key (tree->head tree)))
-         (mv-let (in left$ right$)
+         (mv-let (assoc left$ right$)
                  (tree-split key (tree->left tree))
            (mbe :logic (let ((tree$ (rotate-right
                                       (tree-node (tree->head tree)
                                                  (tree-node key left$ right$)
                                                  (tree->right tree)))))
-                         (mv in (tree->left tree$) (tree->right tree$)))
+                         (mv assoc (tree->left tree$) (tree->right tree$)))
                 ;; TODO: not clear this isn't simpler than the :logic branch
                 ;; Also not clear whether the compiler couldn't just make this
                 ;;   simplification (since rotate is inlined).
-                :exec (mv in
+                :exec (mv assoc
                           left$
                           (tree-node (tree->head tree)
                                      right$
                                      (tree->right tree))))))
         (t
-         (mv-let (in left$ right$)
+         (mv-let (assoc left$ right$)
                  (tree-split key (tree->right tree))
            (mbe :logic (let ((tree$ (rotate-left
                                       (tree-node (tree->head tree)
                                                  (tree->left tree)
                                                  (tree-node key left$ right$)))))
-                         (mv in (tree->left tree$) (tree->right tree$)))
-                :exec (mv in
+                         (mv assoc (tree->left tree$) (tree->right tree$)))
+                :exec (mv assoc
                           (tree-node (tree->head tree)
                                      (tree->left tree)
                                      left$)
@@ -103,6 +105,13 @@
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
+
+(defrule tree-split.assoc-when-type-prescription
+  (or (consp (mv-nth 0 (tree-split key tree)))
+      (equal (mv-nth 0 (tree-split key tree)) nil))
+  :rule-classes :type-prescription
+  :induct t
+  :enable tree-split)
 
 (defrule tree-split.left-when-type-prescription
   (or (consp (mv-nth 1 (tree-split key tree)))
@@ -167,13 +176,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule tree-split.in-when-bstp
-  (implies (bstp tree)
-           (equal (mv-nth 0 (tree-split key tree))
-                  (treeset::in key (tree-key-set tree))))
+(defrule tree-split.assoc-when-bstp
+  (equal (mv-nth 0 (tree-split key tree))
+         (tree-search-assoc key tree))
   :induct t
   :enable (tree-split
-           tree-key-set))
+           tree-search-assoc))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -417,6 +425,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defrule tree-lookup-of-tree-split.left
+  (implies (bstp tree)
+           (equal (tree-lookup x (mv-nth 1 (tree-split y tree)))
+                  (if (<< x y)
+                      (tree-lookup x tree)
+                    nil)))
+  :induct t
+  :enable (tree-split
+           data::<<-rules))
+
+(defrule tree-lookup-of-tree-split.right
+  (implies (bstp tree)
+           (equal (tree-lookup x (mv-nth 2 (tree-split y tree)))
+                  (if (<< y x)
+                      (tree-lookup x tree)
+                    nil)))
+  :induct t
+  :enable (tree-split
+           data::<<-expensive-rules))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (defruled <<-all-r-when-tree-empty-p-of-tree-split.left
   (implies (and (bstp tree)
                 (<< x y)
@@ -501,7 +531,9 @@
 
 (defrule tree-split-of-tree->head
   (equal (tree-split (tree-element->key (tree->head tree)) tree)
-         (mv (not (tree-empty-p tree))
+         (mv (if (tree-empty-p tree)
+                 nil
+               (tree-element->key+val (tree->head tree)))
              (tree->left tree)
              (tree->right tree)))
   :enable tree-split)
@@ -509,7 +541,9 @@
 (defrule tree-split-of-bind-tree->head-cheap
   (implies (equal x (tree-element->key (tree->head tree)))
            (equal (tree-split x tree)
-                  (mv (not (tree-empty-p tree))
+                  (mv (if (tree-empty-p tree)
+                          nil
+                        (tree-element->key+val (tree->head tree)))
                       (tree->left tree)
                       (tree->right tree))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
@@ -576,19 +610,21 @@
        (cond ((tree-empty-p tree)
               (mv nil nil nil))
              ((= key (tree-element->key (tree->head tree)))
-              (mv t (tree->left tree) (tree->right tree)))
+              (mv (tree-element->key+val (tree->head tree))
+                  (tree->left tree)
+                  (tree->right tree)))
              ((data::acl2-number-<< key (tree-element->key (tree->head tree)))
-              (mv-let (in left$ right$)
+              (mv-let (assoc left$ right$)
                       (acl2-number-tree-split key (tree->left tree))
-                (mv in
+                (mv assoc
                     left$
                     (tree-node (tree->head tree)
                                right$
                                (tree->right tree)))))
              (t
-              (mv-let (in left$ right$)
+              (mv-let (assoc left$ right$)
                       (acl2-number-tree-split key (tree->right tree))
-                (mv in
+                (mv assoc
                     (tree-node (tree->head tree)
                                (tree->left tree)
                                left$)
@@ -608,19 +644,21 @@
        (cond ((tree-empty-p tree)
               (mv nil nil nil))
              ((eq key (tree-element->key (tree->head tree)))
-              (mv t (tree->left tree) (tree->right tree)))
+              (mv (tree-element->key+val (tree->head tree))
+                  (tree->left tree)
+                  (tree->right tree)))
              ((data::symbol-<< key (tree-element->key (tree->head tree)))
-              (mv-let (in left$ right$)
+              (mv-let (assoc left$ right$)
                       (symbol-tree-split key (tree->left tree))
-                (mv in
+                (mv assoc
                     left$
                     (tree-node (tree->head tree)
                                right$
                                (tree->right tree)))))
              (t
-              (mv-let (in left$ right$)
+              (mv-let (assoc left$ right$)
                       (symbol-tree-split key (tree->right tree))
-                (mv in
+                (mv assoc
                     (tree-node (tree->head tree)
                                (tree->left tree)
                                left$)
@@ -640,19 +678,21 @@
        (cond ((tree-empty-p tree)
               (mv nil nil nil))
              ((eql key (tree-element->key (tree->head tree)))
-              (mv t (tree->left tree) (tree->right tree)))
+              (mv (tree-element->key+val (tree->head tree))
+                  (tree->left tree)
+                  (tree->right tree)))
              ((data::eqlable-<< key (tree-element->key (tree->head tree)))
-              (mv-let (in left$ right$)
+              (mv-let (assoc left$ right$)
                       (eqlable-tree-split key (tree->left tree))
-                (mv in
+                (mv assoc
                     left$
                     (tree-node (tree->head tree)
                                right$
                                (tree->right tree)))))
              (t
-              (mv-let (in left$ right$)
+              (mv-let (assoc left$ right$)
                       (eqlable-tree-split key (tree->right tree))
-                (mv in
+                (mv assoc
                     (tree-node (tree->head tree)
                                (tree->left tree)
                                left$)
