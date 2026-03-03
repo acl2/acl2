@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -141,7 +141,7 @@
 
   ///
 
-  (defrule natp-of-cdr-of-in-when-assignmentp-type
+  (defrule natp-of-cdr-of-assoc-when-assignmentp-type
     (implies (and (assignmentp asg)
                   (omap::assoc str asg))
              (natp (cdr (omap::assoc str asg))))
@@ -185,7 +185,7 @@
 
   ///
 
-  (defruled fep-of-cdr-of-in-when-assignment-wfp
+  (defruled fep-of-cdr-of-assoc-when-assignment-wfp
     (implies (and (assignmentp asg)
                   (assignment-wfp asg p)
                   (consp (omap::assoc var asg)))
@@ -250,7 +250,7 @@
                   (omap::assoc var asg))
              (pfield::fep (omap::lookup var asg) prime))
     :enable (omap::lookup
-             fep-of-cdr-of-in-when-assignment-wfp))
+             fep-of-cdr-of-assoc-when-assignment-wfp))
 
   (defruled fe-listp-of-list-lookup-when-assignment-wfp
     (implies (and (assignmentp asg)
@@ -319,7 +319,7 @@
                   (assignment-wfp asg p)
                   (not (reserrp (eval-expr expr asg p))))
              (fep (eval-expr expr asg p) p))
-    :enable fep-of-cdr-of-in-when-assignment-wfp)
+    :enable fep-of-cdr-of-assoc-when-assignment-wfp)
 
   (verify-guards eval-expr)
 

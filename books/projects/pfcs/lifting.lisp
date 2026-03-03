@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -939,8 +939,8 @@
                         fty::reserrp-of-reserr
                         lift-rule-omap-consp-of-assoc-iff-assoc
                         (:e set::in)
-                        natp-of-cdr-of-in-when-assignmentp-type
-                        fep-of-cdr-of-in-when-assignment-wfp
+                        natp-of-cdr-of-assoc-when-assignmentp-type
+                        fep-of-cdr-of-assoc-when-assignment-wfp
                         (:e no-duplicatesp-equal)
                         (:e namep)
                         ,@type-presc-rules)
