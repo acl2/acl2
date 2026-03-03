@@ -48,43 +48,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Left logical, right logical, and right arithmetic shifts.
+
+(defmacro shift-spec-gen (name operator)
+  (declare (xargs :guard (member-eq name '(psll psrl psra))))
+  ;; OPERATOR specifies how to compute the shift for a single element
+  ;; given the element A and the count CNT.
+  (b* ((fn (mk-name name '-spec)))
+    `(define ,fn ((result-width natp)
+                  (el-width posp)
+                  (a natp)
+                  (cnt natp))
+       :guard (equal (mod result-width el-width) 0)
+       :returns (result (unsigned-byte-p result-width result)
+                        :hyp (and (natp result-width)
+                                  (<= (pos-fix el-width) result-width)
+                                  (equal (mod result-width (pos-fix el-width))
+                                         0))
+                        :hints (("Goal" :in-theory (disable unsigned-byte-p))))
+       (b* ((result-width (nfix result-width))
+            (el-width (pos-fix el-width))
+            (a (nfix a))
+            (cnt (nfix cnt))
+            ((when (zp result-width)) 0))
+         (logapp el-width (,operator (loghead el-width a)
+                                     cnt)
+                 (,fn (- result-width el-width)
+                      el-width
+                      (logtail el-width a)
+                      cnt)))
+       :measure (nfix result-width)
+       :prepwork ((local (include-book "arithmetic-5/top" :dir :system))))))
+
+(shift-spec-gen psll (lambda (a cnt) (ash a cnt)))
+
+(shift-spec-gen psrl (lambda (a cnt) (ash a (- cnt))))
+
+(shift-spec-gen psra (lambda (a cnt) (ash (logext el-width a) (- cnt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; PSLLW/PSSLD/PSSLQ, PSRLW/PSRLD/PSRLQ, PSRAW/PSRAD (SSE variants)
 
 ;; Used to define `PSLL`, `PSRL`, and `PSRA`:
-;; - operator specifies how to compute the shift for a single element
-;;   given the element and count
-;; - width-opcode-alist is an alist mapping the el-width to
-;;   the opcode for the XMM version of the instruction
-(defmacro def-packed-shift-sse-inst (name
-                                     operator
-                                     width-opcode-alist)
+;; WIDTH-OPCODE-ALIST is an alist mapping the EL-WIDTH to
+;; the opcode for the XMM version of the instruction.
+(defmacro def-packed-shift-sse-inst (name width-opcode-alist)
   (b* ((xmm-inst-name (acl2::packn (list 'x86- name '-xmm-sse)))
-       (imm-inst-name (acl2::packn (list 'x86- name '-imm-sse))))
+       (imm-inst-name (acl2::packn (list 'x86- name '-imm-sse)))
+       (spec-fn (mk-name name '-spec)))
     `(progn
-       (define ,name ((result-width natp)
-                      (el-width posp)
-                      (a natp)
-                      (cnt natp))
-         :prepwork ((local (include-book "arithmetic-5/top" :dir :system)))
-         :guard (equal (mod result-width el-width) 0)
-         :returns (result (unsigned-byte-p result-width result)
-                          :hyp (and (natp result-width)
-                                    (<= (pos-fix el-width) result-width)
-                                    (equal (mod result-width (pos-fix el-width)) 0))
-                          :hints (("Goal" :in-theory (disable unsigned-byte-p))))
-         :measure (nfix result-width)
-         (b* ((result-width (nfix result-width))
-              (el-width (pos-fix el-width))
-              (a (nfix a))
-              (cnt (nfix cnt))
-              ((when (zp result-width)) 0))
-           (logapp el-width (,operator (loghead el-width a)
-                                       cnt)
-                   (,name (- result-width el-width) el-width
-                          (logtail el-width a) cnt))))
 
        (def-inst ,xmm-inst-name
+
          :parents (two-byte-opcodes)
+
          :long
          ,(xdoc::topstring
            (xdoc::code
@@ -92,14 +110,15 @@
             (symbol-name name) "D xmm1, xmm2/m128" (string #\Newline)
             ;; Since PSRA has no 64-bit variant
             (if (assoc 64 width-opcode-alist)
-                (xdoc::&& (symbol-name name) "Q xmm1, xmm2/m128" (string #\Newline))
+                (xdoc::&&
+                 (symbol-name name) "Q xmm1, xmm2/m128" (string #\Newline))
               "")))
+
+         :guard (member opcode ',(strip-cdrs width-opcode-alist))
 
          :modr/m t
 
          :returns (x86 x86p :hyp (x86p x86))
-         :guard (member opcode ',(strip-cdrs width-opcode-alist))
-         :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))
 
          :body
 
@@ -168,17 +187,22 @@
               (src2 (if (> src2 el-width)
                         el-width
                       src2))
-              (result (,name (* 8 operand-size) el-width src1 src2))
+              (result (,spec-fn (* 8 operand-size) el-width src1 src2))
 
               ;; Store the result into the destination register.
               (x86 (!xmmi-size operand-size src1/dst-index result x86))
 
               ;; Update the instruction pointer.
               (x86 (write-*ip proc-mode temp-rip x86)))
-           x86))
+
+           x86)
+
+         :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
 
        (def-inst ,imm-inst-name
+
          :parents (two-byte-opcodes)
+
          :long
          ,(xdoc::topstring
            (xdoc::code
@@ -189,12 +213,11 @@
                 (xdoc::&& (symbol-name name) "Q xmm1, imm8" (string #\Newline))
               "")))
 
+         :guard (member opcode '(#x71 #x72 #x73))
+
          :modr/m t
 
          :returns (x86 x86p :hyp (x86p x86))
-         :guard (member opcode '(#x71 #x72 #x73))
-         :guard-hints (("Goal" :in-theory (e/d (rme-size-of-1-to-rme08)
-                                               (unsigned-byte-p))))
 
          :body
 
@@ -235,29 +258,30 @@
                           (#x71 16)
                           (#x72 32)
                           (#x73 64)))
-              (result (,name (* 8 operand-size) el-width src1 imm))
+              (result (,spec-fn (* 8 operand-size) el-width src1 imm))
 
               ;; Store the result into the destination register.
               (x86 (!xmmi-size operand-size src1/dst-index result x86))
 
               ;; Update the instruction pointer.
               (x86 (write-*ip proc-mode temp-rip x86)))
-           x86)))))
+
+           x86)
+
+         :guard-hints (("Goal" :in-theory (e/d (rme-size-of-1-to-rme08)
+                                               (unsigned-byte-p))))))))
 
 (def-packed-shift-sse-inst psll
-  (lambda (a cnt) (ash a cnt))
   ((16 . #xF1)
    (32 . #xF2)
    (64 . #xF3)))
 
 (def-packed-shift-sse-inst psrl
-  (lambda (a cnt) (ash a (- cnt)))
   ((16 . #xD1)
    (32 . #xD2)
    (64 . #xD3)))
 
 (def-packed-shift-sse-inst psra
-  (lambda (a cnt) (ash (logext el-width a) (- cnt)))
   ((16 . #xE1)
    (32 . #xE2)))
 
