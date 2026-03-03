@@ -7363,7 +7363,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPGTB"
           (OP :OP #xF64 :PFX :66 :FEAT '(:SSE2))
@@ -7413,7 +7413,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPGTW"
           (OP :OP #xF65 :PFX :66 :FEAT '(:SSE2))
@@ -7463,7 +7463,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPGTD"
           (OP :OP #xF66 :PFX :66 :FEAT '(:SSE2))
@@ -7835,7 +7835,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P D) :OP2 '(E Y))
-          'NIL
+          '(X86-MOVD/MOVQ-TO-MMX)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVD/Q"
           (OP :OP #xF6E :PFX :66 :FEAT '(:SSE2))
@@ -8869,7 +8869,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQB"
           (OP :OP #xF74 :PFX :66 :FEAT '(:SSE2))
@@ -8919,7 +8919,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQW"
           (OP :OP #xF75 :PFX :66 :FEAT '(:SSE2))
@@ -8969,7 +8969,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQD"
           (OP :OP #xF76 :PFX :66 :FEAT '(:SSE2))
@@ -9495,7 +9495,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(E Y) :OP2 '(P D))
-          'NIL
+          '(X86-MOVD/MOVQ-FROM-MMX)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVD/Q"
           (OP :OP #xF7E :PFX :66 :FEAT '(:SSE2))
