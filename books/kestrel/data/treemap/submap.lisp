@@ -199,10 +199,20 @@
 (defrule lookup-when-in-of-keys-and-submap-forward-chaining
   (implies (and (treeset::in key (keys x))
                 (submap x y))
+           (equal (lookup key y :default default)
+                  (lookup key x :default default)))
+  :rule-classes
+  ((:forward-chaining :trigger-terms ((lookup key y :default default)
+                                      (lookup key x :default default))))
+  :by lookup-when-in-of-keys-and-submap)
+
+(defrule lookup-no-default-when-in-of-keys-and-submap-forward-chaining
+  (implies (and (treeset::in key (keys x))
+                (submap x y))
            (equal (lookup key y)
                   (lookup key x)))
-  :rule-classes ((:forward-chaining :trigger-terms ((treeset::in key (keys x))
-                                                    (submap x y))))
+  :rule-classes
+  ((:forward-chaining :trigger-terms ((treeset::in key (keys x)))))
   :by lookup-when-in-of-keys-and-submap)
 
 ;;;;;;;;;;;;;;;;;;;;

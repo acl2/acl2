@@ -20,6 +20,7 @@
 (include-book "min-max")
 (include-book "update")
 (include-book "delete")
+(include-book "update-star")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

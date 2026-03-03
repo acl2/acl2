@@ -274,6 +274,14 @@
   :induct t
   :enable tree-search-assoc)
 
+(defrule equal-of-tree-search-assoc-and-cons
+  (equal (equal (tree-search-assoc key tree) (cons x y))
+         (and (tree-search-assoc key tree)
+              (equal x key)
+              (equal (cdr (tree-search-assoc key tree)) y)))
+  :induct t
+  :enable tree-search-assoc)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: equality variant versions

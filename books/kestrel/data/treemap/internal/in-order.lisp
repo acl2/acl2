@@ -24,6 +24,7 @@
 (include-book "count-defs")
 (include-book "update-defs")
 (include-book "delete-defs")
+(include-book "update-star-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -36,6 +37,7 @@
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/treeset/union" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
@@ -57,6 +59,7 @@
 (local (include-book "count"))
 (local (include-book "update"))
 (local (include-book "delete"))
+(local (include-book "update-star"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -312,5 +315,11 @@
   :enable (omap::equal-becomes-ext-equal-when-mapp
            omap::ext-equal))
 
-;; TODO
-;; tree-in-order-of-tree-update*
+(defrule tree-in-order-of-tree-update*
+  (implies (and (bstp x)
+                (bstp y))
+           (equal (tree-in-order (tree-update* x y))
+                  (omap::update* (tree-in-order x)
+                                 (tree-in-order y))))
+  :enable (omap::equal-becomes-ext-equal-when-mapp
+           omap::ext-equal))

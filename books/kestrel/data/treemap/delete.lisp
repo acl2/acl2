@@ -67,7 +67,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc delete
-  :parents (treeset)
+  :parents (treemap)
   :short "Remove a value (or multiple values) from a @(see treemap)."
   :long
   (xdoc::topstring
@@ -76,7 +76,7 @@
     (xdoc::section
       "General form"
       (xdoc::codeblock
-        "(delete x-0 x-1 ... x-n set :test test)")
+        "(delete x-0 x-1 ... x-n map :test test)")
       (xdoc::desc
         "@(':test') &mdash; optional"
         (xdoc::p
@@ -264,13 +264,6 @@
   (implies (submap map0 map1)
            (submap (delete key map0)
                    (delete key map1)))
-  :use ((:instance lookup-when-in-of-keys-and-submap
-                   (x map0)
-                   (y map1)
-                   (key (mv-nth 0 (submap-sk-witness (delete key map0)
-                                                     (delete key map1))))
-                   (default (mv-nth 1 (submap-sk-witness (delete key map0)
-                                                         (delete key map1))))))
   :enable pick-a-point-polar)
 
 ;;;;;;;;;;;;;;;;;;;;
