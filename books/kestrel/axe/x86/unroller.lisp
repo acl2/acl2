@@ -1012,6 +1012,12 @@
        ((when (and produce-theorem (not produce-function)))
         (er hard? 'def-unrolled-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
+       ;; When :inputs are given, the entry point should be the start of a function:
+       (- (and (not (eq :skip inputs))
+               (not (stringp target))
+               (if (eq :entry-point target)
+                   (cw "WARNING: The :inputs argument was used, but :target is :entry-point.  If the entry-point is not the start of a function, the use of :inputs may cause problems.")
+                 (cw "WARNING: The :inputs argument was used, but :target is ~x0.  If this address is not the start of a function, the use of :inputs may cause problems." target))))
        ;; Handle filename vs parsed-structure:
        ((mv erp parsed-executable state)
         (if (stringp executable)
@@ -1065,12 +1071,11 @@
        ;; Build the defconst that will contain the result DAG:
        (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag-or-quotep))
 
-       ;; Possibly produce a defun:
+       ;; Possibly produce a defun to represent the result of lifting:
 
        ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
        (executable-type (parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
-       ;; Build the defun that will contain the result of lifting:
        ;; Create the list of formals for the function:
        ;; todo: move some of this to after we check produce-function below
        (param-names (if (and 64-bitp
@@ -1082,7 +1087,10 @@
        (common-formals (append param-names '(x86))) ; todo: handle 32-bit calling convention
        ;; these will be ordered like common-formals:
        (expected-formals (intersection-eq common-formals result-dag-vars))
-       (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
+       (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed? ; todo: any ordering for these? ; todo: look at the extra-assumptions for vars introduced
+       ;; ((when unexpected-formals)
+       ;;  (er hard? 'def-unrolled-fn "Unexpected formals: ~x0." unexpected-formals)
+       ;;  (mv t nil state))
        (fn-formals (append expected-formals unexpected-formals))
        ((mv erp events-for-defun)
         (if (not produce-function)
@@ -1148,7 +1156,7 @@
                                `(skip-proofs ,defthm))))
                 (list defthm))))
        (events (cons defconst-form (append events-for-defun defthms)))
-       (event-names (strip-cadrs events))
+       (event-names (strip-cadrs events)) ; todo: consider the include-book above
        (event `(progn ,@events))
        (event (extend-progn event (redundancy-table-event whole-form event)))
        (event (extend-progn event `(value-triple '(,@event-names))))
