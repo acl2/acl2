@@ -1383,7 +1383,11 @@
     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
 
     acl2::bvmod-of-power-of-2 ; replaces bvmod with bvchop
-    ))
+
+    acl2::bvminus-cancel-axe ; build these 4 in deeper? ; this is because we are not rewriting bvminus away
+    acl2::cancel-bvplus-arg-of-nil ; must have these if we have bvminus-cancel-axe
+    acl2::cancel-bvplus-arg-left
+    acl2::cancel-bvplus-arg-right))
 
 ;; ;not used?
 ;; (defund canonical-address-rules ()
@@ -1871,8 +1875,8 @@
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
 
-;; Do this late, to give the bitp rules a chance to fire first:
-(set-axe-rule-priority acl2::bitp-becomes-unsigned-byte-p 1)
+;; Do this first, since we'll use unsigned-byte-p as the normal form
+(set-axe-rule-priority acl2::bitp-becomes-unsigned-byte-p -1)
 
 ;; Fire very early to remove bvchop from things like (+ 4 (ESP X86)), at least for now:
 (set-axe-rule-priority bvchop-of-+-of-esp-becomes-+-of-esp -2)

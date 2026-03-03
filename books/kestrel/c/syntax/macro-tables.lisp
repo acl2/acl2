@@ -182,16 +182,9 @@
     "It may seem strange to handle macro undefinition
      by adding an entry with @('nil') to the dynamic alist,
      instead of just removing the entry from the alist.
-     The reason is to facilitate the handling of
-     @('#include') directives that we do not expand.
-     When one such directive is encountered,
-     although it is not expanded in place,
-     we need to preprocess the rest of the including file
-     as if the included file were expanded,
-     and in particular its @('#define') and @('#undef').
-     Thus, we can simply append the macros contributed by the included file
-     to the front of the (dynamic) alist of the including file:
-     see @(tsee macro-extend).")
+     But this approach makes it faster
+     both to undefine a macro,
+     and to find out if a macro was undefined in a lookup.")
    (xdoc::p
     "The dynamic alist of macros does not necessarily have unique keys.
      This is intentional,
@@ -232,9 +225,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more."))
+    "We start with just a few macros from [C17:6.10.8].
+     We should add all of them."))
   (list (cons (ident "__STDC__")
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\1)))))
@@ -264,9 +256,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more."))
+    "These are similar to @(tsee predefined-macros-c17).
+     See [C23:6.10.10]."))
   (list (cons (ident "__STDC__")
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\1)))))
@@ -290,100 +281,156 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define predefined-macros-c17+gcc ()
+(define predefined-macros-gcc ()
   :returns (macros ident-macro-info-alistp)
-  :short "Predefined macros for C17 with GCC extensions."
+  :short "Predefined macros for GCC extensions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more."))
-  (predefined-macros-c17)
+    "These are in addition to the standard ones.
+     We have none for now,
+     because we have only tested standard and Clang code for now.
+     But we should add them, in a systematic way."))
+  nil
 
   ///
 
-  (defret no-duplicatesp-equal-of-predefined-macros-c17+gcc
+  (defret no-duplicatesp-equal-of-predefined-macros-gcc
     (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define predefined-macros-c23+gcc ()
+(define predefined-macros-clang ()
   :returns (macros ident-macro-info-alistp)
-  :short "Predefined macros for C23 with GCC extensions."
+  :short "Predefined macros for Clang extensions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more."))
-  (predefined-macros-c23)
-
-  ///
-
-  (defret no-duplicatesp-equal-of-predefined-macros-c23+gcc
-    (no-duplicatesp-equal (strip-cars macros))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define predefined-macros-c17+clang ()
-  :returns (macros ident-macro-info-alistp)
-  :short "Predefined macros for C17 with Clang extensions."
-  :long
-  (xdoc::topstring
+    "These are in addition to the standard ones.
+     We start with just a few macros that come up in tests.
+     Without some of these,
+     we cannot successfully preprocess Clang's system headers.
+     We should add more, in a systematic way.")
    (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more.")
-   (xdoc::p
-    "The @('__arm64__') is more specific than Clang,
+    "The @('__arm64__') macro is more specific than Clang,
      so we may want to introduce and use further parameterization;
-     but this should work fine on (relatively) new Mac machines."))
-  (append (predefined-macros-c17)
-          (list (cons (ident "__arm64__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\1)))))
-                (cons (ident "__GNUC__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\4)))))
-                (cons (ident "__GNUC_MINOR__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\2)))))))
+     but this should work fine on sufficiently new Mac machines.
+     Without this, or one of a few other alternatives,
+     @('sys/cdefs.h') fails with an error
+     indicating an unsupported architecture.")
+   (xdoc::p
+    "Without a definition for the @('__GNUC__') macro,
+     we get an error when preprocessing the Clang system files.
+     We also add the @('__GNUC_MINOR__') macro, since it is related.")
+   (xdoc::p
+    "The
+     @('__has_attribute'),
+     @('__has_builtin'),
+     @('__has_c_attribute'),
+     @('__has_cpp_attribute'),
+     @('__has_extension'),
+     @('__has_feature'),
+     @('__has_include'), and
+     @('__has_include_next')
+     macros
+     are actually function-like macros,
+     documented in "
+    (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html" "[CLE]")
+    ", for which we need to add proper support.
+     For now we define it to be just @('0'),
+     consistently with code like the following in @('sys/cdefs.h'):")
+   (xdoc::codeblock
+    "#ifndef __has_feature"
+    "#define __has_feature(x) 0"
+    "#endif")
+   (xdoc::p
+    "If these macros are not defined at all,
+     code like the following, found in some system headers, fails:")
+   (xdoc::codeblock
+    "#if defined(__has_feature) && __has_feature(modules)")
+   (xdoc::p
+    "Although the test looks sensible,
+     before it is evaluated,
+     it has to be macro-expanded and parsed.
+     After the @('&&'), if @('__has_feature') is not defined,
+     it gets replaced with @('0') [C17:6.10.1/4],
+     which then leaves an extra @('(modules)') after the @('0'),
+     which does not form an expression.
+     Indeed, both Clang and GCC fail on a line of the form")
+   (xdoc::codeblock
+    "#if defined(F) && F(...)")
+   (xdoc::p
+    "when @('F') is not defined.
+     The error that both Clang and GCC give is that
+     the function-like macro F has no definition,
+     which is not unreasonable,
+     although [C17] may actually require that,
+     if @('F') is not a function-like macro,
+     it is left as is, even when an open parenthesis follows.
+     Our preprocessor does that, but fails when parsing the expression,
+     because of the extra tokens after the @('F'),
+     or after the @('__has_feature') before we predefine it here."))
+  (list (cons (ident "__arm64__")
+              (macro-info-object
+               (list (plexeme-number (pnumber-digit #\1)))))
+        (cons (ident "__GNUC__")
+              (macro-info-object
+               (list (plexeme-number (pnumber-digit #\4)))))
+        (cons (ident "__GNUC_MINOR__")
+              (macro-info-object
+               (list (plexeme-number (pnumber-digit #\2)))))
+        (cons (ident "__has_attribute")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_builtin")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_c_attribute")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_cpp_attribute")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_extension")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_feature")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_include")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_include_next")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil)))
 
   ///
 
-  (defret no-duplicatesp-equal-of-predefined-macros-c17+clang
-    (no-duplicatesp-equal (strip-cars macros))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define predefined-macros-c23+clang ()
-  :returns (macros ident-macro-info-alistp)
-  :short "Predefined macros for C23 with Clang extensions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more.")
-   (xdoc::p
-    "The @('__arm64__') is more specific than Clang,
-     so we may want to introduce and use further parameterization;
-     but this should work fine on (relatively) new Mac machines."))
-  (append (predefined-macros-c23)
-          (list (cons (ident "__arm64__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\1)))))
-                (cons (ident "__GNUC__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\4)))))
-                (cons (ident "__GNUC_MINOR__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\2)))))))
-
-  ///
-
-  (defret no-duplicatesp-equal-of-predefined-macros-c23+clang
+  (defret no-duplicatesp-equal-of-predefined-macros-clang
     (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -394,17 +441,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress.
-     We start with some initial macros,
-     but we need to systematically add more."))
+    "We compose the macros according to the version."))
   (c::version-case
    version
    :c17 (predefined-macros-c17)
    :c23 (predefined-macros-c23)
-   :c17+gcc (predefined-macros-c17+gcc)
-   :c23+gcc (predefined-macros-c23+gcc)
-   :c17+clang (predefined-macros-c17+clang)
-   :c23+clang (predefined-macros-c23+clang))
+   :c17+gcc (append (predefined-macros-c17)
+                    (predefined-macros-gcc))
+   :c23+gcc (append (predefined-macros-c23)
+                    (predefined-macros-gcc))
+   :c17+clang (append (predefined-macros-c17)
+                      (predefined-macros-clang))
+   :c23+clang (append (predefined-macros-c23)
+                      (predefined-macros-clang)))
 
   ///
 
@@ -547,25 +596,3 @@
   (("Goal" :in-theory (enable alistp-when-ident-macro-info-alistp-rewrite
                               alistp-when-ident-macro-info-option-alistp-rewrite
                               acons))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define macro-extend ((macros ident-macro-info-option-alistp)
-                      (table macro-tablep))
-  :returns (new-table macro-tablep)
-  :short "Extend the macro table with some macro definitions and undefinitions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used to incorporate,
-     into the macro table of a file being preprocessed,
-     the macros contributed by a included file
-     whose @('#include') directive is not expanded in place.
-     Although the included file is not expanded in place,
-     we need to preprocess the rest of the including file
-     as if the included file were expanded in place:
-     in particular, we must add the macro definitions and undefinitions that
-     the expanded included file would contribute."))
-  (b* (((macro-table table) table)
-       (new-dynamic (append macros table.dynamic)))
-    (change-macro-table table :dynamic new-dynamic)))

@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1563,9 +1563,9 @@
   :rule-classes nil
 
   :hints (("Goal"
-           :use logext-of-+-of-bvchop
+           :use (:instance logext-of-+-of-bvchop-arg2 (y k) (size 32))
            :in-theory (disable
-                       logext-of-+-of-bvchop
+                       logext-of-+-of-bvchop-arg2
                        anti-slice))))
 
 (defthm cancel-from-logext-equality

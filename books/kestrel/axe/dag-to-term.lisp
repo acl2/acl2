@@ -95,7 +95,7 @@
                                           (n nodenum-or-quotep)
                                           )
            :in-theory (disable dag-exprp-of-lookup-equal-when-pseudo-dagp
-                               dag-exprp-of-lookup-equal-when-weak-dagp-aux
+                               ;; dag-exprp-of-lookup-equal-when-weak-dagp-aux
                                dag-exprp-of-lookup-equal-when-weak-dagp
                                dag-exprp-of-lookup-equal-when-pseudo-dagp))
           ("Goal" :in-theory (e/d (symbolp-when-dag-exprp) (weak-dagp-aux
@@ -139,6 +139,11 @@
   (if (quotep x)
       x ; already a term
     (dag-to-term x)))
+
+(defthm pseudo-termp-of-dag-or-quotep-to-term
+  (implies (pseudo-dagp dag)
+           (pseudo-termp (dag-or-quotep-to-term dag)))
+  :hints (("Goal" :in-theory (enable dag-or-quotep-to-term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;)
 

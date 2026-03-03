@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2024, Kestrel Technology, LLC
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -59,7 +59,11 @@
               :ttags (:undef-flg))
 (include-book "jump-and-loop"
               :ttags (:undef-flg))
+(include-book "logical"
+              :ttags (:undef-flg))
 (include-book "move"
+              :ttags (:undef-flg))
+(include-book "move-mmx"
               :ttags (:undef-flg))
 (include-book "move-sse"
               :ttags (:undef-flg))
@@ -69,7 +73,13 @@
               :ttags (:undef-flg))
 (include-book "padd"
               :ttags (:undef-flg))
+(include-book "pmadd"
+              :ttags (:undef-flg))
+(include-book "pmul"
+              :ttags (:undef-flg))
 (include-book "psub"
+              :ttags (:undef-flg))
+(include-book "pshift"
               :ttags (:undef-flg))
 (include-book "push-and-pop"
               :ttags (:undef-flg))

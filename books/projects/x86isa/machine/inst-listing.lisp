@@ -7363,7 +7363,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPGTB"
           (OP :OP #xF64 :PFX :66 :FEAT '(:SSE2))
@@ -7413,7 +7413,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPGTW"
           (OP :OP #xF65 :PFX :66 :FEAT '(:SSE2))
@@ -7463,7 +7463,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPGTD"
           (OP :OP #xF66 :PFX :66 :FEAT '(:SSE2))
@@ -7835,7 +7835,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P D) :OP2 '(E Y))
-          'NIL
+          '(X86-MOVD/MOVQ-TO-MMX)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVD/Q"
           (OP :OP #xF6E :PFX :66 :FEAT '(:SSE2))
@@ -7871,7 +7871,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-MOVQ-FROM-MMX/MEM)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVDQA"
           (OP :OP #xF6F :PFX :66 :FEAT '(:SSE2))
@@ -8869,7 +8869,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQB"
           (OP :OP #xF74 :PFX :66 :FEAT '(:SSE2))
@@ -8919,7 +8919,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQW"
           (OP :OP #xF75 :PFX :66 :FEAT '(:SSE2))
@@ -8969,7 +8969,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQD"
           (OP :OP #xF76 :PFX :66 :FEAT '(:SSE2))
@@ -9495,7 +9495,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(E Y) :OP2 '(P D))
-          'NIL
+          '(X86-MOVD/MOVQ-FROM-MMX)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVD/Q"
           (OP :OP #xF7E :PFX :66 :FEAT '(:SSE2))
@@ -9548,7 +9548,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(Q Q) :OP2 '(P Q))
-          'NIL
+          '(X86-MOVQ-TO-MMX/MEM)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVDQA"
           (OP :OP #xF7F :PFX :66 :FEAT '(:SSE2))
@@ -11130,7 +11130,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PMULLW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PMULLW"
           (OP :OP #xFD5 :PFX :66 :FEAT '(:SSE2))
@@ -11235,7 +11235,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSUBUSB/PSUBUSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSUBUSB"
           (OP :OP #xFD8 :PFX :66 :FEAT '(:SSE2))
@@ -11283,7 +11283,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSUBUSB/PSUBUSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSUBUSW"
           (OP :OP #xFD9 :PFX :66 :FEAT '(:SSE2))
@@ -11379,7 +11379,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PAND"
           (OP :OP #xFDB :PFX :66 :FEAT '(:SSE2))
@@ -11450,7 +11450,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDUSB/PADDUSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDUSB"
           (OP :OP #xFDC :PFX :66 :FEAT '(:SSE2))
@@ -11498,7 +11498,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDUSB/PADDUSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDUSW"
           (OP :OP #xFDD :PFX :66 :FEAT '(:SSE2))
@@ -11594,7 +11594,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PANDN"
           (OP :OP #xFDF :PFX :66 :FEAT '(:SSE2))
@@ -11923,7 +11923,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PMULHW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
     (INST "PMULHW"
           (OP :OP #xFE5 :PFX :66 :FEAT '(:SSE2))
@@ -12140,7 +12140,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSUBSB/PSUBSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSUBSB"
           (OP :OP #xFE8 :PFX :66 :FEAT '(:SSE2))
@@ -12188,7 +12188,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSUBSB/PSUBSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSUBSW"
           (OP :OP #xFE9 :PFX :66 :FEAT '(:SSE2))
@@ -12287,7 +12287,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "POR"
           (OP :OP #xFEB :PFX :66 :FEAT '(:SSE2))
@@ -12358,7 +12358,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDSB/PADDSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDSB"
           (OP :OP #xFEC :PFX :66 :FEAT '(:SSE2))
@@ -12406,7 +12406,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDSB/PADDSW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDSW"
           (OP :OP #xFED :PFX :66 :FEAT '(:SSE2))
@@ -12502,7 +12502,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PXOR"
           (OP :OP #xFEF :PFX :66 :FEAT '(:SSE2))
@@ -12785,7 +12785,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PMADDWD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PMADDWD"
           (OP :OP #xFF5 :PFX :66 :FEAT '(:SSE2))
@@ -12899,7 +12899,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSUBB/PSUBW/PSUBD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSUBB"
           (OP :OP #xFF8 :PFX :66 :FEAT '(:SSE2))
@@ -12949,7 +12949,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSUBB/PSUBW/PSUBD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSUBW"
           (OP :OP #xFF9 :PFX :66 :FEAT '(:SSE2))
@@ -12999,7 +12999,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSUBB/PSUBW/PSUBD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSUBD"
           (OP :OP #xFFA :PFX :66 :FEAT '(:SSE2))

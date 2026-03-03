@@ -133,6 +133,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "air::air" "AIR"))
+
+   (xdoc::p
+    "A preliminary library about AIR (Algebraic Intermediate Representation),
+     which is used to express computations in zero-knowledge proofs.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "aleo::aleo" "Aleo Library"))
 
    (xdoc::p
@@ -144,12 +152,6 @@
     "The existing "
     (xdoc::seetopic "aleobft::aleobft" "AleoBFT library")
     " is now a sub-library of this broader Aleo library.")
-
-   (xdoc::p
-    "We have added an ABNF grammar of the "
-    (xdoc::ahref "https://www.leo-lang.org" "Leo language")
-    ", along with ACL2 code to parse the grammar into an ACL2 representation
-     and prove some properties of the grammar.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -175,12 +177,13 @@
    (xdoc::h4 (xdoc::seetopic "riscv::riscv" "RISC-V ISA Model"))
 
    (xdoc::p
-    "A preliminary model of RISC-V ISA has been added,
-     which covers unprivileged RV32IM and RV64IM
-     (except for @('FENCE'), @('HINT'), @('ECALL'), and @('EBREAK')),
-     little endian memory access,
+    "A model of RISC-V ISA has been added, which covers
+     unprivileged RV32IM, RV64IM, RV32EM, and RV64EM,
+     (except for
+     the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
      fully readable and writable address space,
-     and no alignment checks.")
+     and no alignment checks for data in memory
+     (but there are alignment checks for instructions).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -220,7 +223,20 @@
    (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
 
    (xdoc::p
-    "We have added a disambiguator and a validator.")
+    "We have made several extensions and improvements.
+     Most notably, we have added
+     a disambiguator,
+     a validator,
+     and a preprocessor that preserves inclusions under suitable conditions.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5
+    (xdoc::seetopic "c2c::transformation-tools" "C Transformation Tools"))
+
+   (xdoc::p
+    "We have added several transformations,
+     along with proof generation capabilities for some of the transformations.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -304,6 +320,19 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
+
+   (xdoc::p
+    "A macro @('controlled-configuration') has been added,
+     in @('[books]/std/basic/controlled-configuration'),
+     to go into a ``controlled configuration'',
+     i.e. one where many built-ins are disabled (including tau),
+     there is no implicit induction,
+     and certain options of @(tsee define) (if present)
+     are set to certain values.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
                              "Standard Typed Alists Library"))
 
@@ -383,15 +412,15 @@
 
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
 
-   (xdoc::p
-    "A new set of documentation pages, rooted at
-    @(see x86isa::sdm-instruction-set-summary), lists implemented and unimplemented
-    instructions organized into categories as in the Intel Software Developer Manual.")
+   (xdoc::p "Support for several instructions has been added.
+     Currently supported instructions can be seen at
+     @(see x86isa::sdm-instruction-set-summary),
+     organized according to some sections of the Intel manuals.")
 
    (xdoc::p
     "Added a new framework @(see x86isa::asmtest) for testing instruction
      implementations against assembly snippets.")
-   
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL Library"))

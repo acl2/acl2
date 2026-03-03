@@ -1,7 +1,7 @@
 ; Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -2009,3 +2009,52 @@
                   (bvchop size k)))
   :hints (("Goal" :use (:instance bvchop-subst-constant (free free) (size size))
            :in-theory (disable bvchop-subst-constant))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Cancel X from the BVPLUS nest rooted at Y
+(defund cancel-bvplus-arg (path size x y)
+  (declare (ignore path))
+  (bvminus size y x))
+
+(defthmd cancel-bvplus-arg-of-nil
+  (equal (cancel-bvplus-arg nil size x x)
+         0)
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+(defthmd cancel-bvplus-arg-left
+  (implies (and (consp path)
+                (equal :l (car path)))
+           (equal (cancel-bvplus-arg path size x (bvplus size y z))
+                  (bvplus size (cancel-bvplus-arg (cdr path) size x y) z)))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+(defthmd cancel-bvplus-arg-right
+  (implies (and (consp path)
+                (equal :r (car path)))
+           (equal (cancel-bvplus-arg path size x (bvplus size y z))
+                  (bvplus size y (cancel-bvplus-arg (cdr path) size x z))))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+;; Searches for Y in the nest rooted at X.
+(defthmd bvminus-cancel-axe
+  (implies (and (syntaxp (quotep size))
+                ;; finds the path where Y occurs in X:
+                (axe-bind-free (bind-path-in-bvplus-nest y size x dag-array) '(path)))
+           (equal (bvminus size x y)
+                  (cancel-bvplus-arg path size y x)))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd equal-of-constant-and-bvnot
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)
+                              (not (quotep x)) ; prevents loops
+                              ))
+                (natp size))
+           (equal (equal k (bvnot size x))
+                  (and (unsigned-byte-p size k)
+                       (equal (bvchop size x) (bvnot size k)))))
+  :hints (("Goal" :use equal-of-bvnot-and-constant
+                  :in-theory (disable equal-of-bvnot-and-constant))))

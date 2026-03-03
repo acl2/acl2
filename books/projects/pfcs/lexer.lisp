@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -17,10 +17,7 @@
 (include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
 (include-book "unicode/read-utf8" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,7 +236,6 @@
         (lex-*-digit input-after-thing1)))
     (mv (cons tree-thing1 trees)
         input-after-trees))
-  :hooks (:fix)
 
   ///
   (defret len-of-lex-1*-digit-<=
@@ -351,7 +347,8 @@
        ;; if not valid utf8, codepoints will be the symbol ACL2::FAIL
        ((unless (nat-listp codepoints))
         (reserrf (cons :invalid-utf-8 pfcs-bytes))))
-    (lexemize-pfcs codepoints)))
+    (lexemize-pfcs codepoints))
+  :hooks nil)
 
 (define lexemize-pfcs-from-string ((pfcs-string stringp))
   :returns (pfcs-lexemes abnf::tree-list-resultp)
@@ -371,4 +368,5 @@
   (b* (((unless (stringp pfcs-string))
         (reserrf (cons :not-a-string pfcs-string)))
        (octets (string=>nats pfcs-string)))
-    (lexemize-pfcs-from-bytes octets)))
+    (lexemize-pfcs-from-bytes octets))
+  :hooks nil)

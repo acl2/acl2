@@ -87,7 +87,10 @@
      furthermore, GCC relaxes that requirement "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Initial-processing.html"
                  "[CPPM:1.2]")
-    ", and we may conditionally do that as well at some point.")
+    ", so we do that as well, when GCC extensions are enabled,
+     or also when Clang extensions are enabled,
+     since Clang expressly aims at being compatible with GCC
+     (and running Clang confirms that).")
    (xdoc::p
     "Phase 6 in [C23:5.2.1.2] requires that
      adjacent string literals are concatenated.

@@ -13,12 +13,10 @@
 (include-book "preprocessor-states")
 (include-book "preprocessor-messages")
 
-(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))
-(local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -52,6 +50,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled cdr-of-byte-list-fix
+  (equal (cdr (byte-list-fix x))
+         (byte-list-fix (cdr x)))
+  :induct t
+  :enable byte-list-fix)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption byte-option
   acl2::byte
   :pred byte-optionp)
@@ -64,372 +70,288 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to the parser's @(see reader),
-     but for the preprocessor.")
+    "This realizes translation phases 1 and 2 [C17:5.1.1.2/1] [C23:5.2.1.2],
+     i.e. how files, which consist of bytes (see @(see files)),
+     are read into the source character set, which for us is Unicode,
+     and how lines ending in backslash are spliced.
+     The mapping of bytes to characters is UTF-8 decoding,
+     but if the C version is C17,
+     we also map trigraph sequences to the single characters they represent;
+     although our tools aim at preserving concrete syntax information,
+     trigraph sequences are a legacy feature that no longer seems useful
+     (in fact, it is no longer present in [C23]).
+     Line splicing also loses some of the original layout information,
+     but we favor simplicity for now (we may revisit this later).")
    (xdoc::p
-    "An additional complication here is that
-     @(tsee ppstate), unlike @(tsee parstate),
-     has the input bytes organized as an array of lists,
-     instead of just a list.
-     So it is convenient to wrap the reading of a byte
-     into an abstraction, namely @(tsee read-byte);
-     its name has no @('p') (unlike @(tsee read-pchar) and others,
-     because there is no counterpart in the parser.")
+    "Since UTF-8 decoding is context-free,
+     given all the bytes of a file,
+     we can map them to a sequence of Unicode characters:
+     this is how we initialize the character array in @(tsee ppstate).
+     Trigraph sequences, if applicable, are handled as part of this.
+     As we obtain the characters, we also obtain their positions in the file:
+     thus, we can also initialize the array of positions in @(tsee ppstate).")
    (xdoc::p
-    "Instead of reading characters from bytes on the fly,
-     we could consider reading all the characters from each file first,
-     and then operating directly on lists of characters.
-     Essentially, we would replace bytes with characters in @(tsee ppstate),
-     and maybe also revise the array and indices for read and unread characters;
-     but this is future work."))
+    "Besides the code to map bytes to characters and positions,
+     we provide code to initialize the preprocessor state from a file,
+     and code to read and unread characters from the preprocessor state."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-byte ((ppstate ppstatep))
+(define read-next-char ((pos positionp) (bytes byte-listp) (ienv ienvp))
   :returns (mv erp
-               (byte? byte-optionp)
-               (new-ppstate ppstatep))
-  :short "Read the next data byte from the preprocessing state."
+               (char? uchar-optionp
+                      :hints (("Goal"
+                               :induct t
+                               :in-theory (e/d (uchar-optionp)
+                                               (acl2::commutativity-of-logand
+                                                acl2::commutativity-2-of-+
+                                                commutativity-of-+)))))
+               (char-pos positionp)
+               (next-pos positionp)
+               (new-bytes byte-listp))
+  :short "Read the next character from the remaining bytes,
+          and calculate its position and the next position."
   :long
   (xdoc::topstring
    (xdoc::p
-    "It is an invariant that the current index into the array is in range
-     (we should enforce this statically, probably via an abstract stobj),
-     which we double-check here, throwing a hard error if the check fails.
-     If the current list of bytes has at least one byte,
-     we remove it from the list, updating the stobj,
-     and we return the byte.
-     Otherwise, we move to the previous list of bytes in the array,
-     by decrementing the index and recursively calling this function.
-     But if the index is 0, we cannot decrement it,
-     and so we return @('nil'), signaling the end of input.")
+    "This is repeatedly used to read characters
+     by UTF-8-decoding the bytes of a file,
+     at the same time calculating the position of each character in the file.
+     The input position is the one at which
+     the remaining bytes of the file are at.
+     The output @('char-pos') is often the same as @('pos'),
+     but not when the next character is a backslash followed by new line,
+     because in that case the next character
+     is not found at the position of the backslash,
+     which is eliminated along with the new line to splice the line.
+     The output @('next-pos') is the next position just after @('char?'),
+     i.e. the position where the next character may be.
+     If there is not character at @('pos'),
+     we are at the end of the file:
+     we return @('nil') as the character,
+     and both @('char-pos') and @('next-pos') are equal to @('pos').
+     If we read a character, we also return the remaining bytes;
+     if there is no character, we retun @('nil') as the @('new-bytes') output.")
    (xdoc::p
-    "If we find a byte to return,
-     we also decrement the preprocessing state size by one."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       ((reterr) nil ppstate)
-       (bytes (ppstate->bytes ppstate)))
-    (if (consp bytes)
-        (b* ((psize (ppstate->size ppstate))
-             ((unless (> psize 0))
-              (raise "Internal error: ~
-                      there is a byte but the preprocessor state size is 0.")
-              (reterr t))
-             (byte (car bytes))
-             (ppstate (update-ppstate->bytes (cdr bytes) ppstate))
-             (ppstate (update-ppstate->size (1- psize) ppstate)))
-          (retok byte ppstate))
-      (retok nil ppstate)))
-  :no-function nil
-
-  ///
-
-  (defret read-byte-geq-0
-    (>= byte? 0)
-    :rule-classes :linear
-    :hints (("Goal"
-             :in-theory (e/d (byte-optionp)
-                             (byte-optionp-of-read-byte.byte?
-                              read-byte))
-             :use byte-optionp-of-read-byte.byte?)))
-
-  (defret ppstate->chars-length-of-read-byte
-    (equal (ppstate->chars-length new-ppstate)
-           (ppstate->chars-length ppstate)))
-
-  (defret ppstate->chars-read-of-read-byte
-    (equal (ppstate->chars-read new-ppstate)
-           (ppstate->chars-read ppstate)))
-
-  (defret ppstate->lexmarks-of-read-byte
-    (equal (ppstate->lexmarks new-ppstate)
-           (ppstate->lexmarks ppstate)))
-
-  (defret ppstate->size-of-read-byte-uncond
-    (<= (ppstate->size new-ppstate)
-        (ppstate->size ppstate))
-    :rule-classes :linear)
-
-  (defret ppstat->size-of-read-byte-cond
-    (implies (and (not erp)
-                  byte?)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define peek-byte ((ppstate ppstatep))
-  :returns (byte? byte-optionp)
-  :short "Peek the next data byte from the preprocessing state,
-          without removing it from the state."
-  (b* ((bytes (ppstate->bytes ppstate)))
-    (if (consp bytes)
-        (car bytes)
-      nil))
-
-  ///
-
-  (defret peek-byte-geq-0
-    (>= byte? 0)
-    :rule-classes :linear
-    :hints (("Goal"
-             :in-theory (e/d (byte-optionp)
-                             (byte-optionp-of-peek-byte
-                              peek-byte))
-             :use byte-optionp-of-peek-byte))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define peek2-byte ((ppstate ppstatep))
-  :returns (byte? byte-optionp)
-  :short "Peek the second next data byte from the preprocessing state,
-          without removing any byte from the state."
-  (b* ((bytes (ppstate->bytes ppstate)))
-    (if (and (consp bytes)
-             (consp (cdr bytes)))
-        (cadr bytes)
-      nil))
-
-  ///
-
-  (defret peek2-byte-geq-0
-    (>= byte? 0)
-    :rule-classes :linear
-    :hints (("Goal"
-             :in-theory (e/d (byte-optionp)
-                             (byte-optionp-of-peek2-byte
-                              peek2-byte))
-             :use byte-optionp-of-peek2-byte))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define update-ppstate-for-char ((char natp)
-                                 (new-position positionp)
-                                 (ppstate ppstatep))
-  :guard (< (ppstate->chars-read ppstate)
-            (ppstate->chars-length ppstate))
-  :returns (new-ppstate ppstatep)
-  :short "Update the preprocessor state for a character."
-  :long
-  (xdoc::topstring
+    "A character can take one, two, three, or four bytes,
+     according to the UTF8-decoding.
+     Additionally, if the C version is C17,
+     we turn three bytes that form three ASCII characters
+     that form a trigraph sequence [C17:5.2.1.1]
+     into the single ASCII character that they represent.
+     This is not done if the C version is C23.")
    (xdoc::p
-    "This is used when @(tsee read-pchar)
-     reads a character from the data bytes (not from the unread characters).
-     The @('new-position') input consists of the next position,
-     which is normally one column more than the current one,
-     except when dealing with new-line characters."))
-  (b* ((position (ppstate->position ppstate))
-       (chars-read (ppstate->chars-read ppstate))
-       (char+pos (make-char+position :char char :position position))
-       (ppstate (update-ppstate->char chars-read char+pos ppstate))
-       (ppstate (update-ppstate->chars-read (1+ chars-read) ppstate))
-       (ppstate (update-ppstate->position new-position ppstate)))
-    ppstate)
-
-  ///
-
-  (defret ppstate->lexmarks-of-update-ppstate-for-char
-    (equal (ppstate->lexmarks new-ppstate)
-           (ppstate->lexmarks ppstate)))
-
-  (defret ppstate->size-of-update-ppstate-for-char
-    (equal (ppstate->size new-ppstate)
-           (ppstate->size ppstate))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define read-pchar ((ppstate ppstatep))
-  :returns (mv erp
-               (char? nat-optionp
-                      :hints (("Goal" :induct t :in-theory (enable natp))))
-               (pos positionp)
-               (new-ppstate ppstatep))
-  :short "Read a character during preprocessing."
-  :long
-  (xdoc::topstring
+    "For most characters, the position is incremented by one column.
+     For trigraph sequences, by three columns,
+     because positions refer to the original file.
+     For new lines, the line number is incremented
+     and the column is reset to 0;
+     if a new line consists of both a carriage return and a line feed,
+     we do not change the position at the carriage return,
+     but we do that at the line feed,
+     as if carriage return and line feed were at the same position,
+     which makes sense from a point of view.
+     Currently a horizontal tab increments the column by one,
+     but we should probably increment it to the next tab column,
+     based on some additional information passed to this function;
+     this would be consistent with the position information
+     provided by Emacs and VS Code, for example.
+     Currently a vertical tab or a form feed just increment the column by one,
+     as if they were regular character;
+     we could consider changing that
+     (presumably based on additional information passed to this function),
+     but the current behavior is consistent
+     with Emacs and VS Code, for example
+     (more precisely, Emacs increments the column by two,
+     displaying vertical tab a @('^K') and form feed as @('^L'),
+     each of which looks like formed by two regular characters.
+     We treat all the non-ASCII Unicode characters
+     as incrementing the column by one,
+     which we might need to revise in some cases,
+     but those seem unlikely to occur in practical C code.")
    (xdoc::p
-    "This is almost identical to @(tsee read-char)
-     (see its documentation first),
-     but with some differences.")
+    "When encountering a backslash followed by a new line,
+     we skip both and we attempt to read a character after them.
+     Since another backslash and new line may follow,
+     this function is recursive, because there is no bound.
+     Although the backslah and new line are not preserved,
+     we increment the line number, and reset the column number,
+     every time we find one,
+     because the positions refer to the original file.
+     Note that the backslash could derive from a trigraph sequence:
+     trigraph sequences are processed in phase 1,
+     while line splicing is processed in phase 2.")
    (xdoc::p
-    "One difference is that we use @(tsee read-byte) and @(tsee peek-byte)
-     instead of directly operating on
-     the single list of bytes in the parser state,
-     since the preprocessor state has an array of lists.")
+    "Looking at the rules in the ABNF grammar for basic and extended characters,
+     we see that the codes of the three ASCII non-new-line extended characters
+     (namely dollar, at sign, and backquote)
+     fill gaps in the ASCII codes of the basic characters,
+     so that the codes 9, 11, 12, and 32-126 are all valid ASCII characters.
+     Note that, by the time we reach the case of normal ASCII characters,
+     we have skipped the case for carriage return (13) and line feed (10).")
    (xdoc::p
-    "Here we perform phases 1 and 2 of [C17:5.1.1.2].")
+    "We exclude most ASCII control characters,
+     except for the basic ones and for the new-line ones,
+     since there should be little need to use those in C code.
+     Furthermore, some are dangerous, particularly backspace,
+     since it may make the code look different from what it is,
+     similarly to "
+    (xdoc::ahref "https://en.wikipedia.org/wiki/Trojan_Source" "Trojan Source")
+    " in Unicode.
+     See our ABNF @(see grammar).")
    (xdoc::p
-    "Here the implementation-defined mapping
-     from physical source file multibyte characters to the source character set
-     amounts to UTF-8 decoding.")
+    "If the first byte we read is 128 or more,
+     it must start a non-ASCII Unicode character.
+     There are three cases to consider.
+     It is easy to find references to UTF-8 encoding/decoding, for instance "
+    (xdoc::ahref "https://en.wikipedia.org/wiki/UTF-8" "this Wikipedia page")
+    ".")
    (xdoc::p
-    "Unlike @(tsee read-char),
-     here we do not normalize the three kinds of new lines to LF,
-     because we want to preserve line endings.
-     However, we need to be careful about how we increment the current position.
-     If we read a CR, we check whether it is followed by LF.
-     If that is the case, the line ending is the combination of CR and LF,
-     and thus we do not change the position upon reading the CR
-     (as if the CR took no visual space);
-     when this function is called again next,
-     it will read the LF, which always changes the position to the next line.
-     If instead the CR is not followed by LF,
-     then the CR is the whole line ending,
-     and we change the position to the next line.
-     Reading an LF always changes the position to the next line,
-     whether it is preceded by CR (see above) or not;
-     in the latter case, the LF is the whole line ending.")
+    "<b>First case</b>:
+     If the first byte has the form @('110xxxyy'),
+     it must be followed by a second byte of the form @('10yyzzzz'),
+     which together encode @('xxxyyyyzzzz'),
+     which covers the range from 0 to 7FFh.
+     We return an error if there is no second byte.
+     We return an error if the encoded value is below 80h.
+     If all these checks pass,
+     the code covers the character range from @('U+80') to @('U+7FF').")
    (xdoc::p
-    "If the next character is a question mark,
-     we check the subsequent characters (if any)
-     to see whether we have a trigraph sequence,
-     which we turn into the single character it denotes [C17:5.2.1.1].")
+    "<b>Second case</b>:
+     If the first byte has the form @('1110xxxx'),
+     it must be followed by a second byte of the form @('10yyyyzz')
+     and by a third byte of the form @('10zzwwww'),
+     which together encode @('xxxxyyyyzzzzwwww'),
+     which covers the range from 0 to FFFFh.
+     We return an error if there is no second or third byte.
+     We return an error if the encoded value is below 800h.
+     If all these checks pass,
+     the code covers the character range from @('U+800') to @('U+FFFF'),
+     but we return an error if the character
+     is between @('U+202A') and @('U+202E')
+     or between @('U+2066') and @('U+2069');
+     see the @('safe-nonascii') rule in our ABNF grammar.
+     We also return an error if the character is a surrogate,
+     i.e. from @('U+D800') to @('U+DFFF');
+     note that this cannot happen
+     in the first case above and in the third case below,
+     because of their ranges and other checks.")
    (xdoc::p
-    "If the next character is a backslash,
-     we check whether it is followed by new-line characters,
-     namely CR (not followed by LF), LF, or CR LF.
-     If that is the case,
-     the backslash and the new-line character(s) are skipped,
-     and we recursively try to read another character.
-     We also ensure that the backslash-new-line being deleted
-     is not at the end of the file [C17:5.1.1.2/2]."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       ((reterr) nil (irr-position) ppstate)
-       (ppstate.position (ppstate->position ppstate))
-       (ppstate.chars-read (ppstate->chars-read ppstate))
-       (ppstate.chars-unread (ppstate->chars-unread ppstate))
-       (ppstate.size (ppstate->size ppstate))
-       ((when (> ppstate.chars-unread 0))
-        (b* (((unless (> ppstate.size 0))
-              (raise "Internal error: ~
-                      there are ~x0 unread characters ~
-                      but the size of the preprocessing state is 0."
-                     ppstate.chars-unread)
-              (reterr t))
-             ((unless (< ppstate.chars-read (ppstate->chars-length ppstate)))
-              (raise "Internal error: index ~x0 out of bound ~x1."
-                     ppstate.chars-read
-                     (ppstate->chars-length ppstate))
-              (reterr t))
-             (char+pos (ppstate->char ppstate.chars-read ppstate))
-             (ppstate (update-ppstate->chars-unread (1- ppstate.chars-unread)
-                                                    ppstate))
-             (ppstate (update-ppstate->chars-read (1+ ppstate.chars-read)
-                                                  ppstate))
-             (ppstate (update-ppstate->size (1- ppstate.size) ppstate)))
-          (retok (char+position->char char+pos)
-                 (char+position->position char+pos)
-                 ppstate)))
-       ((erp byte ppstate) (read-byte ppstate))
-       ((unless byte) (retok nil ppstate.position ppstate))
-       ((unless (< ppstate.chars-read (ppstate->chars-length ppstate)))
-        (raise "Internal error: index ~x0 out of bound ~x1."
-               ppstate.chars-read
-               (ppstate->chars-length ppstate))
-        (reterr t))
+    "<b>Third case</b>:
+     If the first byte has the form @('11110xyy'),
+     it must be followed by a second byte of the form @('10yyzzzz')
+     and by a third byte of the form @('10wwwwuu')
+     and by a fourth byte of the form @('10uuvvvv'),
+     which together encode @('xyyyyzzzzwwwwuuuuvvvv'),
+     which covers the range from 0 to 1FFFFFh.
+     We return an error if there is no second or third or fourth byte.
+     We return an error if the encoded value is below 10000h or above 10FFFFh.
+     If all these checks pass,
+     the code covers the character range from @('U+10000') to @('U+1FFFFF').")
+   (xdoc::p
+    "If the first byte read has any other value,
+     either it is an invalid UTF-8 encoding (e.g. @('111...'))
+     or it is an ASCII character that we do not accept (e.g. @('00000000')).
+     We return an error in this case."))
+  (b* (((reterr) nil (irr-position) (irr-position) nil)
+       (bytes (byte-list-fix bytes))
+       (pos (position-fix pos))
+       ((when (endp bytes)) (retok nil pos pos nil))
+       ((cons byte bytes) bytes)
+       (pos+1 (position-inc-column 1 pos))
        ;; new lines:
        ((when (utf8-= byte 13)) ; CR
-        (b* ((byte2 (peek-byte ppstate))
-             (lf-follows-cr-p (and byte2 (utf8-= byte2 10)))
-             (new-position (if lf-follows-cr-p
-                               ppstate.position
-                             (position-inc-line 1 ppstate.position)))
-             (ppstate (update-ppstate-for-char 13 new-position ppstate)))
-          (retok 13 ppstate.position ppstate)))
+        (if (and (consp bytes)
+                 (utf8-= (car bytes) 10)) ; CR LF
+            (retok 13 pos pos bytes)
+          (retok 13 pos (position-inc-line 1 pos) bytes)))
        ((when (utf8-= byte 10)) ; LF
-        (b* ((new-position (position-inc-line 1 ppstate.position))
-             (ppstate (update-ppstate-for-char 10 new-position ppstate)))
-          (retok 10 ppstate.position ppstate)))
-       ;; trigraph sequences (or just '?'):
+        (retok 10 pos (position-inc-line 1 pos) bytes))
+       ;; trigraph sequences, or just '?':
        ((when (utf8-= byte (char-code #\?))) ; ?
-        (b* (((mv char trigraphp)
-              (b* ((byte2 (peek-byte ppstate)))
-                (if (and byte2
-                         (utf8-= byte2 (char-code #\?))) ; ? ?
-                    (b* ((byte3 (peek2-byte ppstate)))
-                      (cond ((not byte3) (mv byte nil)) ; ? ? EOF
-                            ((utf8-= byte3 (char-code #\=)) ; ? ? =
-                             (mv (char-code #\#) t))
-                            ((utf8-= byte3 (char-code #\()) ; ? ? (
-                             (mv (char-code #\[) t))
-                            ((utf8-= byte3 (char-code #\/)) ; ? ? /
-                             (mv (char-code #\\) t))
-                            ((utf8-= byte3 (char-code #\))) ; ? ? )
-                             (mv (char-code #\]) t))
-                            ((utf8-= byte3 (char-code #\')) ; ? ? '
-                             (mv (char-code #\^) t))
-                            ((utf8-= byte3 (char-code #\<)) ; ? ? <
-                             (mv (char-code #\{) t))
-                            ((utf8-= byte3 (char-code #\!)) ; ? ? !
-                             (mv (char-code #\|) t))
-                            ((utf8-= byte3 (char-code #\>)) ; ? ? >
-                             (mv (char-code #\}) t))
-                            ((utf8-= byte3 (char-code #\-)) ; ? ? -
-                             (mv (char-code #\~) t))
-                            (t (mv byte nil)))) ; ? ? other, not a trigraph
-                  (mv byte nil)))) ; ? other, not a tripgraph
-             ((erp ppstate) (b* (((reterr) ppstate))
-                              (if trigraphp ; consume BYTE2 and BYTE3
-                                  (b* (((erp & ppstate) (read-byte ppstate))
-                                       ((erp & ppstate) (read-byte ppstate)))
-                                    (retok ppstate))
-                                (retok ppstate))))
-             (num-columns (if trigraphp 3 1))
-             (new-position (position-inc-column num-columns ppstate.position))
-             (ppstate (update-ppstate-for-char char new-position ppstate)))
-          (retok char ppstate.position ppstate)))
-       ;; line splicing (or just '\'):
+        (if (c::version-std-c23p (ienv->version ienv)) ; C23
+            (retok (char-code #\?) pos pos+1 bytes) ; ?
+          ;; consider trigraph sequences:
+          (if (and (consp bytes)
+                   (utf8-= (car bytes) (char-code #\?)) ; ? ?
+                   (consp (cdr bytes)))
+              (b* ((byte3 (cadr bytes)) ; ? ? byte3
+                   (pos+3 (position-inc-column 3 pos)))
+                (cond
+                 ((utf8-= byte3 (char-code #\=)) ; ? ? =
+                  (retok (char-code #\#) pos pos+3 (cddr bytes))) ; #
+                 ((utf8-= byte3 (char-code #\()) ; ? ? (
+                  (retok (char-code #\[) pos pos+3 (cddr bytes))) ; [
+                 ((utf8-= byte3 (char-code #\/)) ; ? ? /
+                  ;; line splicing, or just '\':
+                  (b* ((bytes (cddr bytes)) ; consume ? /
+                       ((unless (consp bytes)) ; \ EOF
+                        (retok (char-code #\\) pos pos+3 bytes)) ; \
+                       (byte (car bytes)) ; \ byte
+                       ((when (utf8-= byte 13)) ; \ CR
+                        (cond
+                         ((and (consp (cdr bytes))
+                               (utf8-= (cadr bytes) 10)) ; \ CR LF
+                          (read-next-char (position-inc-line 1 pos+3)
+                                          (cddr bytes) ; consume CR LF
+                                          ienv))
+                         (t ; \ CR other
+                          (read-next-char (position-inc-line 1 pos+3)
+                                          (cdr bytes) ; consume CR
+                                          ienv))))
+                       ((when (utf8-= byte 10)) ; \ LF
+                        (read-next-char (position-inc-line 1 pos+3)
+                                        (cdr bytes) ; consume LF
+                                        ienv)))
+                    (retok (char-code #\\) pos pos+3 bytes))) ; \
+                 ((utf8-= byte3 (char-code #\))) ; ? ? )
+                  (retok (char-code #\]) pos pos+3 (cddr bytes))) ; ]
+                 ((utf8-= byte3 (char-code #\')) ; ? ? '
+                  (retok (char-code #\^) pos pos+3 (cddr bytes))) ; ^
+                 ((utf8-= byte3 (char-code #\<)) ; ? ? <
+                  (retok (char-code #\{) pos pos+3 (cddr bytes))) ; {
+                 ((utf8-= byte3 (char-code #\!)) ; ? ? !
+                  (retok (char-code #\|) pos pos+3 (cddr bytes))) ; |
+                 ((utf8-= byte3 (char-code #\>)) ; ? ? >
+                  (retok (char-code #\}) pos pos+3 (cddr bytes))) ; }
+                 ((utf8-= byte3 (char-code #\-)) ; ? ? -
+                  (retok (char-code #\~) pos pos+3 (cddr bytes))) ; ~
+                 (t ; ? ? other
+                  (retok (char-code #\?) pos pos+1 bytes))))
+            (retok (char-code #\?) pos pos+1 bytes)))) ; ? other
+       ;; line splicing, or just '\':
        ((when (utf8-= byte (char-code #\\))) ; \
-        (b* ((byte2 (peek-byte ppstate))
-             ((unless byte2) ; \ EOF
-              (reterr (msg "File ends with backslash.")))
-             ((when (utf8-= byte2 10)) ; \ LF
-              (b* (((erp & ppstate) (read-byte ppstate)) ; consume LF
-                   ((unless (> (ppstate->size ppstate) 0)) ; \ LF EOF
-                    (reterr (msg "File ends with backslash and new line.")))
-                   ;; \ LF other
-                   (new-position (position-inc-line 1 ppstate.position))
-                   (ppstate (update-ppstate->position new-position ppstate)))
-                (read-pchar ppstate)))
-             ((when (utf8-= byte2 13)) ; \ CR
-              (b* (((erp & ppstate) (read-byte ppstate)) ; consume CR
-                   (byte3 (peek-byte ppstate))
-                   ((unless byte3) ; \ CR EOF
-                    (reterr (msg "File ends with backslash and new line.")))
-                   ((when (utf8-= byte3 10)) ; \ CR LF
-                    (b* (((erp & ppstate) (read-byte ppstate)) ; consume LF
-                         ((unless (> (ppstate->size ppstate) 0)) ; \ CR LF EOF
-                          (reterr
-                           (msg "File ends with backslash and new line.")))
-                         ;; \ CR LF other
-                         (new-position (position-inc-line 1 ppstate.position))
-                         (ppstate
-                          (update-ppstate->position new-position ppstate)))
-                      (read-pchar ppstate)))
-                   ;; \ CR other
-                   (new-position (position-inc-line 1 ppstate.position))
-                   (ppstate (update-ppstate->position new-position ppstate)))
-                (read-pchar ppstate)))
-             ;; \ other
-             (new-position (position-inc-column 1 ppstate.position))
-             (ppstate (update-ppstate-for-char byte new-position ppstate)))
-          (retok byte ppstate.position ppstate)))
+        (b* (((unless (consp bytes)) ; \ EOF
+              (retok (char-code #\\) pos pos+1 bytes))
+             (byte (car bytes))
+             ((when (utf8-= byte 13)) ; \ CR
+              (cond
+               ((and (consp (cdr bytes))
+                     (utf8-= (cadr bytes) 10)) ; \ CR LF
+                (read-next-char (position-inc-line 1 pos+1)
+                                (cddr bytes) ; consume CR LF
+                                ienv))
+               (t ; \ CR other
+                (read-next-char (position-inc-line 1 pos+1)
+                                (cdr bytes) ; consume CR
+                                ienv))))
+             ((when (utf8-= byte 10)) ; \ LF
+              (read-next-char (position-inc-line 1 pos+1)
+                              (cdr bytes) ; consume LF
+                              ienv)))
+          (retok (char-code #\\) pos pos+1 bytes))) ; \
        ;; other ASCII:
        ((when (or (utf8-= byte 9) ; HT
                   (utf8-= byte 11) ; VT
                   (utf8-= byte 12) ; FF
                   (and (utf8-<= 32 byte) (utf8-<= byte 126))))
-        (b* ((new-position (position-inc-column 1 ppstate.position))
-             (ppstate (update-ppstate-for-char byte new-position ppstate)))
-          (retok byte ppstate.position ppstate)))
+        (retok byte pos pos+1 bytes))
        ;; 2-byte UTF-8:
        ((when (utf8-= (logand byte #b11100000) #b11000000)) ; 110xxxyy
-        (b* (((erp byte2 ppstate) (read-byte ppstate))
-             ((unless byte2)
-              (reterr-msg :where (position-to-msg ppstate.position)
+        (b* (((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 110... ~
@@ -437,8 +359,9 @@
                                           of a two-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
+             ((cons byte2 bytes) bytes)
              ((unless (utf8-= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
-              (reterr-msg :where (position-to-msg ppstate.position)
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -447,23 +370,20 @@
                                           of a two-byte UTF-8 encoding"
                                          byte)
                           :found (msg "the byte ~x0" byte2)))
-             (code (+ (ash (logand byte #b00011111) 6)
+             (char (+ (ash (logand byte #b00011111) 6)
                       (logand byte2 #b00111111)))
-             ((when (< code #x80))
-              (reterr-msg :where (position-to-msg ppstate.position)
+             ((when (< char #x80))
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "a value between 80h and 7FFh ~
                                           UTF-8-encoded in the two bytes ~
                                           (~x0 ~x1)"
                                          byte byte2)
-                          :found (msg "the value ~x0" code)))
-             (new-position (position-inc-column 1 ppstate.position))
-             (ppstate (update-ppstate-for-char code new-position ppstate)))
-          (retok code ppstate.position ppstate)))
+                          :found (msg "the value ~x0" char))))
+          (retok char pos pos+1 bytes)))
        ;; 3-byte UTF-8:
        ((when (utf8-= (logand byte #b11110000) #b11100000)) ; 1110xxxx
-        (b* (((erp byte2 ppstate) (read-byte ppstate))
-             ((unless byte2)
-              (reterr-msg :where (position-to-msg ppstate.position)
+        (b* (((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
@@ -471,8 +391,9 @@
                                           of a three-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
+             ((cons byte2 bytes) bytes)
              ((unless (utf8-= (logand byte2 #b11000000) #b10000000)) ; 10yyyyzz
-              (reterr-msg :where (position-to-msg ppstate.position)
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -481,9 +402,8 @@
                                           of a three-byte UTF-8 encoding"
                                          byte)
                           :found (msg "the byte ~x0" byte2)))
-             ((erp byte3 ppstate) (read-byte ppstate))
-             ((unless byte3)
-              (reterr-msg :where (position-to-msg ppstate.position)
+             ((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
@@ -494,8 +414,9 @@
                                           of a three-byte UTF-8 encoding"
                                          byte byte2)
                           :found "end of file"))
+             ((cons byte3 bytes) bytes)
              ((unless (utf8-= (logand byte3 #b11000000) #b10000000)) ; 10zzwwww
-              (reterr-msg :where (position-to-msg ppstate.position)
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -507,34 +428,33 @@
                                           of a three-byte UTF-8 encoding"
                                          byte byte2)
                           :found (msg "the byte ~x0" byte3)))
-             (code (+ (ash (logand byte #b00001111) 12)
+             (char (+ (ash (logand byte #b00001111) 12)
                       (ash (logand byte2 #b00111111) 6)
                       (logand byte3 #b00111111)))
-             ((when (< code #x800))
-              (reterr-msg :where (position-to-msg ppstate.position)
+             ((when (< char #x800))
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "a value between 800h and FFFFh ~
                                           UTF-8-encoded in the three bytes ~
                                           (~x0 ~x1 ~x2)"
                                          byte byte2 byte3)
-                          :found (msg "the value ~x0" code)))
-             ((when (or (and (utf8-<= #x202a code)
-                             (utf8-<= code #x202e))
-                        (and (utf8-<= #x2066 code)
-                             (utf8-<= code #x2069))))
-              (reterr-msg :where (position-to-msg ppstate.position)
+                          :found (msg "the value ~x0" char)))
+             ((when (or (and (utf8-<= #x202a char)
+                             (utf8-<= char #x202e))
+                        (and (utf8-<= #x2066 char)
+                             (utf8-<= char #x2069))
+                        (and (utf8-<= #xd800 char)
+                             (utf8-<= char #xdfff))))
+              (reterr-msg :where (position-to-msg pos)
                           :expected "a Unicode character with code ~
                                      in the range 9-13 or 32-126 ~
                                      or 128-8233 or 8239-8293 or ~
                                      or 8298-55295 or 57344-1114111"
-                          :found (char-to-msg code)))
-             (new-position (position-inc-column 1 ppstate.position))
-             (ppstate (update-ppstate-for-char code new-position ppstate)))
-          (retok code ppstate.position ppstate)))
+                          :found (char-to-msg char))))
+          (retok char pos pos+1 bytes)))
        ;; 4-byte UTF-8:
        ((when (utf8-= (logand #b11111000 byte) #b11110000)) ; 11110xyy
-        (b* (((erp byte2 ppstate) (read-byte ppstate))
-             ((unless byte2)
-              (reterr-msg :where (position-to-msg ppstate.position)
+        (b* (((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
@@ -542,8 +462,9 @@
                                           of a four-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
+             ((cons byte2 bytes) bytes)
              ((unless (utf8-= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
-              (reterr-msg :where (position-to-msg ppstate.position)
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -552,9 +473,8 @@
                                           of a four-byte UTF-8 encoding"
                                          byte)
                           :found (msg "the byte ~x0" byte2)))
-             ((erp byte3 ppstate) (read-byte ppstate))
-             ((unless byte3)
-              (reterr-msg :where (position-to-msg ppstate.position)
+             ((unless bytes)
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
@@ -565,8 +485,9 @@
                                           of a four-byte UTF-8 encoding"
                                          byte byte2)
                           :found "end of file"))
+             ((cons byte3 bytes) bytes)
              ((unless (utf8-= (logand byte3 #b11000000) #b10000000)) ; 10wwwwuu
-              (reterr-msg :where (position-to-msg ppstate.position)
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -578,9 +499,8 @@
                                           of a four-byte UTF-8 encoding"
                                          byte byte2)
                           :found (msg "the byte ~x0" byte3)))
-             ((erp byte4 ppstate) (read-byte ppstate))
-             ((unless byte4)
-              (reterr-msg :where (position-to-msg ppstate.position)
+             ((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
@@ -594,8 +514,9 @@
                                           of a four-byte UTF-8 encoding"
                                          byte byte2 byte3)
                           :found "end of file"))
+             ((cons byte4 bytes) bytes)
              ((unless (utf8-= (logand byte4 #b11000000) #b10000000)) ; 10uuvvvv
-              (reterr-msg :where (position-to-msg ppstate.position)
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -610,60 +531,238 @@
                                           of a four-byte UTF-8 encoding"
                                          byte byte2 byte3)
                           :found (msg "the byte ~x0" byte4)))
-             (code (+ (ash (logand byte #b00000111) 18)
+             (char (+ (ash (logand byte #b00000111) 18)
                       (ash (logand byte2 #b00111111) 12)
                       (ash (logand byte3 #b00111111) 6)
                       (logand byte4 #b00111111)))
-             ((when (or (< code #x10000)
-                        (> code #x10ffff)))
-              (reterr-msg :where (position-to-msg ppstate.position)
+             ((when (or (< char #x10000)
+                        (> char #x10ffff)))
+              (reterr-msg :where (position-to-msg pos)
                           :expected (msg "a value between 10000h and 10FFFFh ~
                                           UTF-8-encoded in the four bytes ~
                                           (~x0 ~x1 ~x2 ~x3)"
                                          byte byte2 byte3 byte4)
-                          :found (msg "the value ~x0" code)))
-             (new-position (position-inc-column 1 ppstate.position))
-             (ppstate (update-ppstate-for-char code new-position ppstate)))
-          (retok code ppstate.position ppstate))))
-    (reterr-msg :where (position-to-msg ppstate.position)
+                          :found (msg "the value ~x0" char))))
+          (retok char pos pos+1 bytes))))
+    (reterr-msg :where (position-to-msg pos)
                 :expected "a byte in the range 9-13 or 32-126 or 192-223"
                 :found (msg "the byte ~x0" byte)))
-  :measure (ppstate->size ppstate)
-  :prepwork ((local (in-theory (enable acl2-numberp-when-bytep
-                                       rationalp-when-bytep
-                                       integerp-when-bytep))))
+  :no-function nil
+  :measure (len bytes)
+  :hints (("Goal" :in-theory (enable cdr-of-byte-list-fix)))
+
+  :prepwork
+
+  ((defrulel returns-lemma1 ; ASCII
+     (implies (and (bytep byte)
+                   (or (utf8-= byte 9) ; HT
+                       (utf8-= byte 11) ; VT
+                       (utf8-= byte 12) ; FF
+                       (and (utf8-<= 32 byte) (utf8-<= byte 126))))
+              (ucharp byte))
+     :enable (ucharp the-check))
+
+   (defrulel returns-lemma2 ; 2-byte UTF-8
+     (implies (and (bytep byte)
+                   (bytep byte2)
+                   (utf8-= (logand byte #b11100000) #b11000000)
+                   (utf8-= (logand byte2 #b11000000) #b10000000))
+              (ucharp (+ (ash (logand byte #b00011111) 6)
+                         (logand byte2 #b00111111))))
+     :enable ucharp
+     :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+   (defrulel returns-lemma3 ; 3-byte UTF-8
+     (implies (and (bytep byte)
+                   (bytep byte2)
+                   (bytep byte3)
+                   (utf8-= (logand byte #b11110000) #b11100000)
+                   (utf8-= (logand byte2 #b11000000) #b10000000)
+                   (utf8-= (logand byte3 #b11000000) #b10000000))
+              (b* ((char (+ (ash (logand byte #b00001111) 12)
+                            (ash (logand byte2 #b00111111) 6)
+                            (logand byte3 #b00111111))))
+                (implies (not (and (utf8-<= #xd800 char)
+                                   (utf8-<= char #xdfff)))
+                         (ucharp char))))
+     :enable (ucharp the-check)
+     :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+   (defrulel returns-lemma4 ; 4-byte UTF-8
+     (implies (and (bytep byte)
+                   (bytep byte2)
+                   (bytep byte3)
+                   (bytep byte4)
+                   (utf8-= (logand #b11111000 byte) #b11110000)
+                   (utf8-= (logand byte2 #b11000000) #b10000000)
+                   (utf8-= (logand byte3 #b11000000) #b10000000)
+                   (utf8-= (logand byte4 #b11000000) #b10000000))
+              (b* ((char (+ (ash (logand byte #b00000111) 18)
+                            (ash (logand byte2 #b00111111) 12)
+                            (ash (logand byte3 #b00111111) 6)
+                            (logand byte4 #b00111111))))
+                (implies (not (or (< char #x10000)
+                                  (> char #x10ffff)))
+                         (ucharp char))))
+     :enable ucharp))
+
+  ///
+
+  (defret len-of-read-next-char-uncond
+    (<= (len new-bytes)
+        (len bytes))
+    :rule-classes :linear
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable cdr-of-byte-list-fix))))
+
+  (defret len-of-read-next-char-cond
+    (implies (and (not erp)
+                  char?)
+             (<= (len new-bytes)
+                 (1- (len bytes))))
+    :rule-classes :linear
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable len endp fix cdr-of-byte-list-fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-chars+positions ((bytes byte-listp) (ienv ienvp))
+  :returns (mv erp (chars uchar-listp) (poss position-listp))
+  :short "Read all the characters from a list of bytes,
+          obtaining the list of characters and the corresponding positions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We repeatedly call @(tsee read-next-char)
+     so long as it returns characters.
+     We start with the initial position.
+     The final position is the one just past the end of the file.
+     There is one more position than characters."))
+  (read-chars+positions-loop (position-init) bytes ienv)
+
+  :prepwork
+  ((define read-chars+positions-loop ((pos positionp)
+                                      (bytes byte-listp)
+                                      (ienv ienvp))
+     :returns (mv erp (chars uchar-listp) (poss position-listp))
+     :parents nil
+     (b* (((reterr) nil (list (irr-position)))
+          ((erp char? pos pos-next bytes) (read-next-char pos bytes ienv))
+          ((unless char?) (retok nil (list pos)))
+          ((erp chars poss) (read-chars+positions-loop pos-next bytes ienv)))
+       (retok (cons char? chars) (cons pos poss)))
+     :measure (len bytes)
+
+     ///
+
+     (defret len-of-read-chars+positions-loop-1+
+       (equal (len poss) (1+ (len chars)))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret len-of-read-chars+positions-1+
+    (equal (len poss) (1+ (len chars))))
+
+  (in-theory (disable len-of-read-chars+positions-1+
+                      len-of-read-chars+positions-loop-1+)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ppstate-for-file ((bytes byte-listp)
+                          (macros macro-tablep)
+                          (options ppoptionsp)
+                          (ienv ienvp)
+                          (ppstate ppstatep))
+  :returns (mv erp (new-ppstate ppstatep))
+  :short "Initialize a preprocessor for a file with given bytes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This operation is in a way a wrapper of @(tsee init-ppstate)
+     that takes the bytes as input,
+     turns them into a list of characters and a list of positions,
+     and uses those to initialize the stobj with @(tsee init-ppstate)."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) ppstate)
+       ((erp chars poss) (read-chars+positions bytes ienv))
+       (ppstate (init-ppstate chars poss macros options ienv ppstate)))
+    (retok ppstate))
+  :guard-hints (("Goal" :in-theory (enable len-of-read-chars+positions-1+))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-pchar ((ppstate ppstatep))
+  :returns (mv erp
+               (char? uchar-optionp)
+               (pos positionp)
+               (new-ppstate ppstatep))
+  :short "Read a character during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since all the characters and their positions are already in the stobj,
+     this function reads and returns the current character and position,
+     advances the index by one,
+     and updates the size component of the stobj.
+     If the index is already one past the end of the characters array,
+     @('nil') is returned as character,
+     the index is not incremented,
+     and the last position in the position array is returned,
+     which indicates the position just past the end of the file.")
+   (xdoc::p
+    "We should avoid the checks and the internal errors
+     by explicating and verifying some invariants,
+     via an abstract stobj and/or guards."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil (irr-position) ppstate)
+       (index (ppstate->char-index ppstate))
+       ((unless (< index (ppstate->positions-length ppstate)))
+        (raise "Internal error: ~
+                the index ~x0 is not below ~
+                the length ~x1 of the positions array."
+               index
+               (ppstate->positions-length ppstate))
+        (reterr :should-not-happen))
+       (pos (ppstate->position index ppstate)))
+    (if (< index (ppstate->chars-length ppstate))
+        (b* ((char (ppstate->char index ppstate))
+             (ppstate (update-ppstate->char-index (1+ index) ppstate))
+             (size (ppstate->size ppstate))
+             ((unless (> size 0))
+              (raise "Internal error: ~
+                      there is a character at index ~x0 but the size is 0."
+                     index)
+              (reterr :should-not-happen))
+             (ppstate (update-ppstate->size (1- size) ppstate)))
+          (retok char pos ppstate))
+      (retok nil pos ppstate)))
   :no-function nil
 
   ///
 
-  (more-returns
-   (char? (or (equal char? nil)
-              (natp char?))
-          :rule-classes :type-prescription
-          :name read-pchar.char?-type-prescription))
-
-  (defret ppstate->lexmarks-of-read-pchar
-    (equal (ppstate->lexmarks new-ppstate)
-           (ppstate->lexmarks ppstate))
-    :hints (("Goal" :induct t)))
+  (defret read-pchar-natp-or-null
+    (or (natp char?)
+        (not char?))
+   :rule-classes :type-prescription)
 
   (defret ppstate->size-of-read-pchar-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
-    :rule-classes :linear
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable nfix))))
+    :rule-classes :linear)
 
   (defret ppstate->size-of-read-pchar-cond
     (implies (and (not erp)
                   char?)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
-    :rule-classes :linear
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable nfix)))))
+             (equal (ppstate->size new-ppstate)
+                    (1- (ppstate->size ppstate))))
+    :rule-classes (:rewrite :linear))
+
+  (defret ppstate->lexmarks-of-read-pchar
+    (equal (ppstate->lexmarks new-ppstate)
+           (ppstate->lexmarks ppstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -673,44 +772,43 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We move the character from the sequence of read characters
-     to the sequence of unread characters,
-     by incrementing @('chars-unread') and decrementing @('chars-read').")
+    "We decrement the character index and increment the size, both by one.")
    (xdoc::p
-    "It is an internal error if @('chars-read') is 0.
-     It means that the calling code is wrong.
-     In this case, after raising the hard error,
-     logically we return a preprocessing state
-     where we still increment @('chars-unread')
-     so that the theorem about @(tsee ppstate->size) holds unconditionally."))
-  (b* ((ppstate.chars-read (ppstate->chars-read ppstate))
-       (ppstate.chars-unread (ppstate->chars-unread ppstate))
-       (ppstate.size (ppstate->size ppstate))
-       ((unless (> ppstate.chars-read 0))
+    "We should avoid the checks and the internal errors
+     by explicating and verifying some invariants,
+     via an abstract stobj and/or guards.
+     Note that, in case of error, we increment the size anyways,
+     so that we can have an unconditional theorem about the size."))
+  (b* ((size (ppstate->size ppstate))
+       (ppstate (update-ppstate->size (1+ size) ppstate))
+       (index (ppstate->char-index ppstate))
+       ((unless (> index 0))
         (raise "Internal error: no character to unread.")
-        (b* ((ppstate (update-ppstate->chars-unread (1+ ppstate.chars-unread)
-                                                    ppstate))
-             (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
-          ppstate))
-       (ppstate (update-ppstate->chars-read (1- ppstate.chars-read)
-                                            ppstate))
-       (ppstate (update-ppstate->chars-unread (1+ ppstate.chars-unread)
-                                              ppstate))
-       (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
+        ppstate)
+       (ppstate (update-ppstate->char-index (1- index) ppstate)))
     ppstate)
-  :guard-hints (("Goal" :in-theory (enable natp)))
   :no-function nil
 
   ///
+
+  (defret ppstate->size-of-unread-pchar
+    (equal (ppstate->size new-ppstate)
+           (1+ (ppstate->size ppstate))))
 
   (defret ppstate->lexmarks-of-unread-pchar
     (equal (ppstate->lexmarks new-ppstate)
            (ppstate->lexmarks ppstate)))
 
-  (defret ppstate->size-of-unread-pchar
-    (equal (ppstate->size new-ppstate)
-           (1+ (ppstate->size ppstate)))
-    :hints (("Goal" :in-theory (enable len nfix)))))
+  (defrule unread-pchar-of-read-pchar
+    (b* (((mv erp char? & new-ppstate) (read-pchar ppstate)))
+      (implies (and (not erp)
+                    char?)
+               (equal (unread-pchar new-ppstate)
+                      (ppstate-fix ppstate))))
+    :enable (read-pchar
+             nfix
+             fix
+             update-ppstate->size-of-update-ppstate->char-index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -720,45 +818,30 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We move characters
-     from the sequence of read characters
-     to the sequence of unread characters
-     by incrementing the number of unread characters by @('n')
-     and decrementing the number of read characters by @('n').")
+    "We decrement the character index and increment the size, both by @('n').")
    (xdoc::p
-    "It is an internal error if @('n') exceeds
-     the number of character read so far.
-     In this case, after raising the hard error,
-     logically we return a preprocessing state
-     where we still increment @('chars-unread')
-     so that the theorem about @(tsee ppstate->size) holds unconditionally."))
+    "We should avoid the checks and the internal errors
+     by explicating and verifying some invariants,
+     via an abstract stobj and/or guards.
+     Note that, in case of error, we increment the size anyways,
+     so that we can have an unconditional theorem about the size."))
   (b* ((n (nfix n))
-       (chars-read (ppstate->chars-read ppstate))
-       (chars-unread (ppstate->chars-unread ppstate))
        (size (ppstate->size ppstate))
-       ((unless (<= n chars-read))
+       (ppstate (update-ppstate->size (+ n size) ppstate))
+       (index (ppstate->char-index ppstate))
+       ((unless (> index n))
         (raise "Internal error: ~
-                attempting to unread ~x0 characters ~
-                from ~x1 read characters."
-               n chars-read)
-        (b* ((ppstate
-              (update-ppstate->chars-unread (+ chars-unread n) ppstate))
-             (ppstate
-              (update-ppstate->size (+ size n) ppstate)))
-          ppstate))
-       (new-chars-read (- chars-read n))
-       (new-chars-unread (+ chars-unread n))
-       (new-size (+ size n))
-       (ppstate (update-ppstate->chars-read new-chars-read ppstate))
-       (ppstate (update-ppstate->chars-unread new-chars-unread ppstate))
-       (ppstate (update-ppstate->size new-size ppstate)))
+                cannot unread ~x0 characters, ~
+                because only ~x1 have been read so far."
+               n index)
+        ppstate)
+       (ppstate (update-ppstate->char-index (- index n) ppstate)))
     ppstate)
-  :guard-hints (("Goal" :in-theory (enable natp)))
   :no-function nil
+  :guard-hints (("Goal" :in-theory (enable natp)))
 
   ///
 
   (defret ppstate->size-of-unread-pchars
     (equal (ppstate->size new-ppstate)
-           (+ (ppstate->size ppstate) (nfix n)))
-    :hints (("Goal" :in-theory (enable nfix fix)))))
+           (+ (ppstate->size ppstate) (nfix n)))))

@@ -10,6 +10,7 @@
 
 (in-package "C$")
 
+(include-book "unicode-characters")
 (include-book "preprocessor-options")
 (include-book "preprocessor-lexemes")
 (include-book "macro-tables")
@@ -26,6 +27,7 @@
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
+(local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -174,91 +176,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum hg-state
-  :short "Fixtype of header guard states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Header guards are a common technique to avoid
-     including the same header (or file, in general) multiple times.
-     The file, call it @('FILE'), has a form like")
-   (xdoc::codeblock
-    "#ifndef FILE_H"
-    "#define FILE_H"
-    "..."
-    "#endif")
-   (xdoc::p
-    "When we preprocess a file, we check whether it has that form.
-     To recognize that form, we use a sort of finite state machine
-     that we make part of @(tsee ppstate).
-     Here we define the states of the state machine:")
-   (xdoc::ul
-    (xdoc::li
-     "The @(':initial') state is the one as we start preprocessing a file.
-      We stay in this state so long as we do not find any token
-      (i.e. just comments and white space).
-      In this state, we are waiting for a @('#ifndef').")
-    (xdoc::li
-     "If we encounter a @('#ifndef') in the @(':initial') state,
-      we transition to the @(':ifndef') state,
-      where we keep track of the identifier following the @('#ifndef').
-      Is we encounter anything else,
-      we transition to the @(':not') state,
-      meaning that the file does not have the header guard form.")
-    (xdoc::li
-     "If we encounter a @('#define') in the @(':ifndef') state,
-      with the same identifier (@('FILE_H') in the example above),
-      we transition to the @(':define') state.
-      If we encounter anything else, we transition to @(':not').")
-    (xdoc::li
-     "We stay in the @(':define') state
-      until we find the @('#endif') that matches the initial @('#ifndef'),
-      at which point we move to the @(':endif') state,
-      where we still keep track of the name.")
-    (xdoc::li
-     "If we find no other tokens (only comments and white space),
-      and we reach the end of the file,
-      we transition to the @(':eof') state.
-      This is a final state, in which we have established that
-      the file has the header guard form,
-      and we know the name of the header guard.
-      If instead there are more tokens,
-      we transition to the other final state,
-      namely the @(':not') state."))
-   (xdoc::p
-    "Here is a depiction of the states (except @(':not'))
-     with respect to the content of the file:")
-   (xdoc::codeblock
-    "... (no tokens)     :initial"
-    "#ifndef FILE_H      :ifndef(FILE_H)"
-    "#define FILE_H      :define(FILE_H)"
-    "...                 :define(FILE_H)"
-    "#endif              :endif(FILE_H)"
-    "... (no tokens)     :endif(FILE_H)"
-    "EOF                 :eof(FILE_H)")
-   (xdoc::p
-    "In the future, we may add support for equivalent forms like")
-   (xdoc::codeblock
-    "#if !defined(FILE_H)"
-    "#define FILE_H"
-    "..."
-    "#endif"))
-  (:initial ())
-  (:ifndef ((name ident)))
-  (:define ((name ident)))
-  (:endif ((name ident)))
-  (:eof ((name ident)))
-  (:not ())
-  :pred hg-statep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection ppstate
   :short "Fixtype of preprocessor states."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar to @(tsee parstate), but for the preprocessor.")
+    "This is analogous to @(tsee parstate), but for the preprocessor.")
    (xdoc::p
     "Our preprocessing functions take and return preprocessor states.")
    (xdoc::p
@@ -269,27 +192,37 @@
      conceptually,
      the preprocessor state could be defined as a @(tsee fty::defprod).")
    (xdoc::p
-    "Most of the components of the preprocessor state
-     are analogous to the ones of the parser state
-     (see the documentation of @(tsee parstate) first),
-     but there are differences:")
+    "The preprocessor state consists of the following components:")
    (xdoc::ul
     (xdoc::li
-     "Instead of just a C version as in the parser state,
-      the preprocessor state has a full implementation environment.
-      Probably parser states should have that too.")
+     "An array of Unicode characters.
+      The array is initialized from the Unicode characters obtained
+      by UTF-8-decoding the bytes of the file to be preprocessed.
+      Once initialized, this array never changes. ")
     (xdoc::li
-     "Instead of an array and two indices that represent
-      a sequence of read and unread tokens,
-      we have a single list of pending lexmarks.
-      This is used like the sequence of unread tokens in the parser state,
-      in the sense that the next lexeme is read from the list if non-empty,
-      and otherwise it is lexed from the input characters.
-      However, lexmarks are added to the pending list
-      not only when unreading lexemes,
-      which actually happens rarely in our preprocessor,
+     "An array of the positions of the characters in the array above,
+      in the same order, i.e. the position at index @('i') is
+      the one of the character at index @('i').
+      This array is exactly one element longer than the array of characters:
+      the last position is the one just past the end of file,
+      which does not correspond to any character.
+      Once initialized, this array never changes.")
+    (xdoc::li
+     "The index of the current character.
+      This is initially 0, and is incremented as we read the characters.
+      This is always an index into the character array,
+      or equal to the length of that array when we reach the end of the file.
+      This is always an index into the position array,
+      which is one element longer than the character array as noted above.")
+    (xdoc::li
+     "A list of lexmarks to be read next,
+      before lexing lexemes from the character array.
+      Conceptually, this list is in front of the remaining characters,
+      i.e. the ones starting at the current character index.
+      The list of lexmarks is initially empty,
+      and gets extended when unreading lexemes,
       but also when expanding macros.
-      When a macro is expanded, the expansion is added to the pending list,
+      When a macro is expanded, the expansion is added to this list,
       so that preprocessing continues with the expansion,
       thus realizing rescanning and further replacement [C17:6.10.3.4].
       The @(':start') and @(':end') markers are added around that expansion,
@@ -297,25 +230,19 @@
       so that we can prevent recursive expansion,
       as explained in more detail elsewhere.")
     (xdoc::li
-     "The preprocessor state also contains
-      a macro table that consists of all the macros in scope.")
+     "The current size of the input,
+      defined as the sum of the remaining characters to be read
+      and the lexmarks in the pending list.
+      This is derivable from other components,
+      but it is cached for efficiency.")
     (xdoc::li
-     "The preprocessor state also contains a header guard state:
-      see @(tsee hg-state).")
+     "The macro table that consists of all the macros in scope.")
     (xdoc::li
-     "The preprocessor state also contains a list of the lexemes
-      that are being produced as the output of preprocessing.
-      These are in reverse order, for more efficient extension.
-      These lexemes are split into four chunks,
-      as explained in @(tsee add-rev-lexeme).")
+     "The options supplied to the preprocessor.
+      This is set when the stobj is initialized, and never changes.")
     (xdoc::li
-     "The preprocessor state also contains a flag saying whether
-      @('#error') and @('#warning') directives should be ignored,
-      i.e. treated as no-ops.
-      This flag is set when files are re-preprocessed
-      in a fresh context as explained in @(see preservable-inclusions).")
-    (xdoc::li
-     "The preprocessor state also contains the preprocessor options.")))
+     "The implementation environment,
+      which affects certain aspects of preprocessing.")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -325,86 +252,53 @@
 
   (make-event
    `(defstobj ppstate
-      (bytes :type (satisfies byte-listp)
-             :initially nil)
-      (position :type (satisfies positionp)
-                :initially ,(irr-position))
-      (chars :type (array (satisfies char+position-p) (1))
-             :initially ,(make-char+position :char 0
-                                             :position (irr-position))
+      (chars :type (array (satisfies ucharp) (0))
+             :initially 0
              :resizable t)
-      (chars-read :type (integer 0 *)
+      (positions :type (array (satisfies positionp) (1))
+                 :initially ,(irr-position)
+                 :resizable t)
+      (char-index :type (integer 0 *)
                   :initially 0)
-      (chars-unread :type (integer 0 *)
-                    :initially 0)
       (lexmarks :type (satisfies lexmark-listp)
                 :initially nil)
       (size :type (integer 0 *)
             :initially 0)
       (macros :type (satisfies macro-tablep)
               :initially ,(macro-table nil nil))
-      (hg :type (satisfies hg-statep)
-          :initially ,(hg-state-initial))
-      (rev-lexemes1 :type (satisfies plexeme-listp)
-                    :initially nil)
-      (rev-lexemes2 :type (satisfies plexeme-listp)
-                    :initially nil)
-      (rev-lexemes3 :type (satisfies plexeme-listp)
-                    :initially nil)
-      (rev-lexemes4 :type (satisfies plexeme-listp)
-                    :initially nil)
       (options :type (satisfies ppoptionsp)
                :initially ,(irr-ppoptions))
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       :renaming (;; field recognizers:
-                 (bytesp raw-ppstate->bytes-p)
-                 (positionp raw-ppstate->position-p)
                  (charsp raw-ppstate->chars-p)
-                 (chars-readp raw-ppstate->chars-read-p)
-                 (chars-unreadp raw-ppstate->chars-unread-p)
+                 (positionsp raw-ppstate->positions-p)
+                 (char-indexp raw-ppstate->char-index-p)
                  (lexmarksp raw-ppstate->lexmarks-p)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
-                 (hgp raw-ppstate->hg-p)
-                 (rev-lexemes1p raw-ppstate->rev-lexemes1-p)
-                 (rev-lexemes2p raw-ppstate->rev-lexemes2-p)
-                 (rev-lexemes3p raw-ppstate->rev-lexemes3-p)
-                 (rev-lexemes4p raw-ppstate->rev-lexemes4-p)
                  (optionsp raw-ppstate->options-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
-                 (bytes raw-ppstate->bytes)
-                 (position raw-ppstate->position)
                  (chars-length raw-ppstate->chars-length)
                  (charsi raw-ppstate->char)
-                 (chars-read raw-ppstate->chars-read)
-                 (chars-unread raw-ppstate->chars-unread)
+                 (positions-length raw-ppstate->positions-length)
+                 (positionsi raw-ppstate->position)
+                 (char-index raw-ppstate->char-index)
                  (lexmarks raw-ppstate->lexmarks)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
-                 (hg raw-ppstate->hg)
-                 (rev-lexemes1 raw-ppstate->rev-lexemes1)
-                 (rev-lexemes2 raw-ppstate->rev-lexemes2)
-                 (rev-lexemes3 raw-ppstate->rev-lexemes3)
-                 (rev-lexemes4 raw-ppstate->rev-lexemes4)
                  (options raw-ppstate->options)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
-                 (update-bytes raw-update-ppstate->bytes)
-                 (update-position raw-update-ppstate->position)
                  (resize-chars raw-update-ppstate->chars-length)
                  (update-charsi raw-update-ppstate->char)
-                 (update-chars-read raw-update-ppstate->chars-read)
-                 (update-chars-unread raw-update-ppstate->chars-unread)
+                 (resize-positions raw-update-ppstate->positions-length)
+                 (update-positionsi raw-update-ppstate->position)
+                 (update-char-index raw-update-ppstate->char-index)
                  (update-lexmarks raw-update-ppstate->lexmarks)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
-                 (update-hg raw-update-ppstate->hg)
-                 (update-rev-lexemes1 raw-update-ppstate->rev-lexemes1)
-                 (update-rev-lexemes2 raw-update-ppstate->rev-lexemes2)
-                 (update-rev-lexemes3 raw-update-ppstate->rev-lexemes3)
-                 (update-rev-lexemes4 raw-update-ppstate->rev-lexemes4)
                  (update-options raw-update-ppstate->options)
                  (update-ienv raw-update-ppstate->ienv))))
 
@@ -434,43 +328,21 @@
 
   ;; normalize recognizers:
 
-  (defrule raw-ppstate->chars-p-becomes-char+position-listp
+  (defrule raw-ppstate->chars-p-to-uchar-listp
     (equal (raw-ppstate->chars-p x)
-           (char+position-listp x))
-    :induct t
-    :enable (raw-ppstate->chars-p
-             char+position-listp))
+           (uchar-listp x))
+    :induct t)
 
-  (defrule raw-ppstate->lexmarks-p-becomes-lexmark-listp
-    (equal (raw-ppstate->lexmarks-p x)
-           (lexmark-listp x))
-    :induct t
-    :enable (raw-ppstate->lexmarks-p
-             lexmark-listp))
+  (defrule raw-ppstate->positions-p-to-position-listp
+    (equal (raw-ppstate->positions-p x)
+           (position-listp x))
+    :induct t)
 
   ;; needed for subsequent proofs:
 
-  (local (in-theory (enable ppstate-fix
-                            nfix
-                            update-nth-array
-                            byte-list-listp-of-resize-list
-                            char+position-listp-of-resize-list
-                            byte-list-listp-of-update-nth-strong
-                            char+position-listp-of-update-nth-strong)))
+  (local (in-theory (enable ppstate-fix nfix)))
 
   ;; readers:
-
-  (define ppstate->bytes (ppstate)
-    :returns (bytes byte-listp)
-    (mbe :logic (non-exec (raw-ppstate->bytes (ppstate-fix ppstate)))
-         :exec (raw-ppstate->bytes ppstate))
-    :inline t)
-
-  (define ppstate->position (ppstate)
-    :returns (position positionp)
-    (mbe :logic (non-exec (raw-ppstate->position (ppstate-fix ppstate)))
-         :exec (raw-ppstate->position ppstate))
-    :inline t)
 
   (define ppstate->chars-length (ppstate)
     :returns (length natp)
@@ -480,23 +352,44 @@
 
   (define ppstate->char ((i natp) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
-    :returns (char+pos char+position-p)
-    (char+position-fix
-     (mbe :logic (non-exec (raw-ppstate->char (nfix i) (ppstate-fix ppstate)))
-          :exec (raw-ppstate->char i ppstate)))
+    :returns (char ucharp)
+    (mbe :logic (non-exec
+                 (uchar-fix
+                  (raw-ppstate->char (nfix i) (ppstate-fix ppstate))))
+         :exec (raw-ppstate->char i ppstate))
     :inline t
-    :prepwork ((local (in-theory (enable ppstate->chars-length)))))
+    :prepwork ((local (in-theory (enable ppstate->chars-length))))
+    :guard-hints
+    (("Goal" :in-theory (enable raw-ppstate->chars-p-to-uchar-listp)))
 
-  (define ppstate->chars-read (ppstate)
-    :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (non-exec (raw-ppstate->chars-read (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-read ppstate))
+    ///
+
+    (more-returns
+     (char natp :rule-classes :type-prescription
+           :hints (("Goal" :in-theory (enable natp-when-ucharp))))))
+
+  (define ppstate->positions-length (ppstate)
+    :returns (length natp)
+    (mbe :logic (non-exec (raw-ppstate->positions-length (ppstate-fix ppstate)))
+         :exec (raw-ppstate->positions-length ppstate))
     :inline t)
 
-  (define ppstate->chars-unread (ppstate)
-    :returns (chars-unread natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (non-exec (raw-ppstate->chars-unread (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-unread ppstate))
+  (define ppstate->position ((i natp) ppstate)
+    :guard (< i (ppstate->positions-length ppstate))
+    :returns (pos positionp)
+    (mbe :logic (non-exec
+                 (position-fix
+                  (raw-ppstate->position (nfix i) (ppstate-fix ppstate))))
+         :exec (raw-ppstate->position i ppstate))
+    :inline t
+    :prepwork ((local (in-theory (enable ppstate->positions-length))))
+    :guard-hints
+    (("Goal" :in-theory (enable raw-ppstate->positions-p-to-position-listp))))
+
+  (define ppstate->char-index (ppstate)
+    :returns (char-index natp :rule-classes (:rewrite :type-prescription))
+    (mbe :logic (non-exec (raw-ppstate->char-index (ppstate-fix ppstate)))
+         :exec (raw-ppstate->char-index ppstate))
     :inline t)
 
   (define ppstate->lexmarks (ppstate)
@@ -517,36 +410,6 @@
          :exec (raw-ppstate->macros ppstate))
     :inline t)
 
-  (define ppstate->hg (ppstate)
-    :returns (hg hg-statep)
-    (mbe :logic (non-exec (raw-ppstate->hg (ppstate-fix ppstate)))
-         :exec (raw-ppstate->hg ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes1 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes1 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes1 ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes2 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes2 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes2 ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes3 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes3 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes3 ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes4 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes4 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes4 ppstate))
-    :inline t)
-
   (define ppstate->options (ppstate)
     :returns (options ppoptionsp)
     (mbe :logic (non-exec (raw-ppstate->options (ppstate-fix ppstate)))
@@ -559,58 +422,63 @@
          :exec (raw-ppstate->ienv ppstate))
     :inline t)
 
+  ;; needed for subsequent proofs:
+
+  (local (in-theory (enable update-nth-array)))
+
   ;; writers:
 
-  (define update-ppstate->bytes ((bytes byte-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->bytes (byte-list-fix bytes)
-                                                     (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->bytes bytes ppstate))
-    :inline t)
-
-  (define update-ppstate->position ((position positionp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec
-                 (raw-update-ppstate->position (position-fix position)
-                                               (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->position position ppstate))
-    :inline t)
-
   (define update-ppstate->chars-length ((length natp) ppstate)
-    :returns (ppstate ppstatep)
+    :returns (ppstate ppstatep
+                      :hints
+                      (("Goal"
+                        :in-theory (enable uchar-listp-of-resize-list))))
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-length (nfix length)
                                                    (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->chars-length length ppstate))
     :inline t)
 
-  (define update-ppstate->char ((i natp) (char+pos char+position-p) ppstate)
+  (define update-ppstate->char ((i natp) (char ucharp) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (if (< (nfix i) (ppstate->chars-length ppstate))
-                     (raw-update-ppstate->char (nfix i)
-                                               (char+position-fix char+pos)
-                                               (ppstate-fix ppstate))
+                     (raw-update-ppstate->char
+                      (nfix i) (uchar-fix char) (ppstate-fix ppstate))
                    (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->char i char+pos ppstate))
+         :exec (raw-update-ppstate->char i char ppstate))
     :inline t
     :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
-  (define update-ppstate->chars-read ((chars-read natp) ppstate)
-    :returns (ppstate ppstatep)
+  (define update-ppstate->positions-length ((length natp) ppstate)
+    :returns (ppstate ppstatep
+                      :hints
+                      (("Goal"
+                        :in-theory (enable position-listp-of-resize-list))))
     (mbe :logic (non-exec
-                 (raw-update-ppstate->chars-read (nfix chars-read)
-                                                 (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-read chars-read ppstate))
+                 (raw-update-ppstate->positions-length (nfix length)
+                                                       (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->positions-length length ppstate))
     :inline t)
 
-  (define update-ppstate->chars-unread ((chars-unread natp) ppstate)
+  (define update-ppstate->position ((i natp) (pos positionp) ppstate)
+    :guard (< i (ppstate->positions-length ppstate))
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
-                 (raw-update-ppstate->chars-unread (nfix chars-unread)
-                                                   (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-unread chars-unread ppstate))
+                 (if (< (nfix i) (ppstate->positions-length ppstate))
+                     (raw-update-ppstate->position
+                      (nfix i) (position-fix pos) (ppstate-fix ppstate))
+                   (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->position i pos ppstate))
+    :inline t
+    :prepwork ((local (in-theory (enable ppstate->positions-length)))))
+
+  (define update-ppstate->char-index ((char-index natp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->char-index
+                           (nfix char-index) (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->char-index char-index ppstate))
     :inline t)
 
   (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
@@ -635,45 +503,6 @@
          :exec (raw-update-ppstate->macros macros ppstate))
     :inline t)
 
-  (define update-ppstate->hg ((hg hg-statep) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->hg (hg-state-fix hg)
-                                                  (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->hg hg ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes1 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes1
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes1 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes2 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes2
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes2 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes3 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes3
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes3 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes4 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes4
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes4 rev-lexemes ppstate))
-    :inline t)
-
   (define update-ppstate->options ((options ppoptionsp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
@@ -692,11 +521,20 @@
 
   ;; readers over writers:
 
-  (defrule ppstate->chars-length-of-update-ppstate->bytes
-    (equal (ppstate->chars-length (update-ppstate->bytes bytes ppstate))
+  (defrule ppstate->chars-length-of-update-ppstate->chars-length
+    (equal (ppstate->chars-length (update-ppstate->chars-length length ppstate))
+           (nfix length))
+    :enable (ppstate->chars-length
+             update-ppstate->chars-length
+             uchar-listp-of-resize-list))
+
+  (defrule ppstate->chars-length-of-update-ppstate->char
+    (equal (ppstate->chars-length (update-ppstate->char i char ppstate))
            (ppstate->chars-length ppstate))
     :enable (ppstate->chars-length
-             update-ppstate->bytes))
+             update-ppstate->char
+             max
+             len))
 
   (defrule ppstate->chars-length-of-update-ppstate->size
     (equal (ppstate->chars-length (update-ppstate->size size ppstate))
@@ -704,51 +542,52 @@
     :enable (ppstate->chars-length
              update-ppstate->size))
 
-  (defrule ppstate->chars-read-of-update-ppstate->bytes
-    (equal (ppstate->chars-read (update-ppstate->bytes bytes ppstate))
-           (ppstate->chars-read ppstate))
-    :enable (ppstate->chars-read
-             update-ppstate->bytes))
+  (defrule ppstate->positions-length-of-update-ppstate->positions-length
+    (equal (ppstate->positions-length
+            (update-ppstate->positions-length length ppstate))
+           (nfix length))
+    :enable (ppstate->positions-length
+             update-ppstate->positions-length
+             position-listp-of-resize-list))
 
-  (defrule ppstate->chars-read-of-update-ppstate->size
-    (equal (ppstate->chars-read (update-ppstate->size size ppstate))
-           (ppstate->chars-read ppstate))
-    :enable (ppstate->chars-read
+  (defrule ppstate->positions-length-of-update-ppstate->position
+    (equal (ppstate->positions-length (update-ppstate->position i pos ppstate))
+           (ppstate->positions-length ppstate))
+    :enable (ppstate->positions-length
+             update-ppstate->position
+             max
+             len))
+
+  (defrule ppstate->positions-length-of-update-ppstate->char-index
+    (equal (ppstate->positions-length
+            (update-ppstate->char-index char-index ppstate))
+           (ppstate->positions-length ppstate))
+    :enable (ppstate->positions-length
+             update-ppstate->char-index))
+
+  (defrule ppstate->positions-length-of-update-ppstate->size
+    (equal (ppstate->positions-length (update-ppstate->size size ppstate))
+           (ppstate->positions-length ppstate))
+    :enable (ppstate->positions-length
              update-ppstate->size))
 
-  (defrule ppstate->lexmarks-of-update-ppstate->bytes
-    (equal (ppstate->lexmarks (update-ppstate->bytes bytes ppstate))
-           (ppstate->lexmarks ppstate))
-    :enable (ppstate->lexmarks
-             update-ppstate->bytes))
+  (defrule ppstate->char-index-of-update-ppstate->char-index
+    (equal (ppstate->char-index (update-ppstate->char-index char-index ppstate))
+           (nfix char-index))
+    :enable (ppstate->char-index
+             update-ppstate->char-index))
 
-  (defrule ppstate->lexmarks-of-update-ppstate->position
-    (equal (ppstate->lexmarks
-            (update-ppstate->position position ppstate))
-           (ppstate->lexmarks ppstate))
-    :enable (ppstate->lexmarks
-             update-ppstate->position))
+  (defrule ppstate->char-index-of-update-ppstate->size
+    (equal (ppstate->char-index (update-ppstate->size size ppstate))
+           (ppstate->char-index ppstate))
+    :enable (ppstate->char-index
+             update-ppstate->size))
 
-  (defrule ppstate->lexmarks-of-update-ppstate->char
-    (equal (ppstate->lexmarks (update-ppstate->char i char ppstate))
+  (defrule ppstate->lexmarks-of-update-ppstate->char-index
+    (equal (ppstate->lexmarks (update-ppstate->char-index char-index ppstate))
            (ppstate->lexmarks ppstate))
     :enable (ppstate->lexmarks
-             update-ppstate->char
-             ppstate->chars-length))
-
-  (defrule ppstate->lexmarks-of-update-ppstate->chars-read
-    (equal (ppstate->lexmarks
-            (update-ppstate->chars-read chars-read ppstate))
-           (ppstate->lexmarks ppstate))
-    :enable (ppstate->lexmarks
-             update-ppstate->chars-read))
-
-  (defrule ppstate->lexmarks-of-update-ppstate->chars-unread
-    (equal (ppstate->lexmarks
-            (update-ppstate->chars-unread chars-unread ppstate))
-           (ppstate->lexmarks ppstate))
-    :enable (ppstate->lexmarks
-             update-ppstate->chars-unread))
+             update-ppstate->char-index))
 
   (defrule ppstate->lexmarks-of-update-ppstate->size
     (equal (ppstate->lexmarks (update-ppstate->size size ppstate))
@@ -756,36 +595,11 @@
     :enable (ppstate->lexmarks
              update-ppstate->size))
 
-  (defrule ppstate->size-of-update-ppstate->bytes
-    (equal (ppstate->size (update-ppstate->bytes bytes ppstate))
+  (defrule ppstate->size-of-update-ppstate->char-index
+    (equal (ppstate->size (update-ppstate->char-index char-index ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->bytes))
-
-  (defrule ppstate->size-of-update-ppstate->position
-    (equal (ppstate->size (update-ppstate->position position ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->position))
-
-  (defrule ppstate->size-of-update-ppstate->char
-    (equal (ppstate->size (update-ppstate->char i char+pos ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->char
-             ppstate->chars-length))
-
-  (defrule ppstate->size-of-update-ppstate->chars-read
-    (equal (ppstate->size (update-ppstate->chars-read chars-read ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->chars-read))
-
-  (defrule ppstate->size-of-update-ppstate->chars-unread
-    (equal (ppstate->size (update-ppstate->chars-unread chars-unread ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->chars-unread))
+             update-ppstate->char-index))
 
   (defrule ppstate->size-of-update-ppstate->lexmarks
     (equal (ppstate->size (update-ppstate->lexmarks lexmarks ppstate))
@@ -807,19 +621,44 @@
 
   ;; writers over readers:
 
-  (defrule update-ppstate->chars-read-of-ppstate->chars-read
-    (equal (update-ppstate->chars-read
-            (ppstate->chars-read ppstate) ppstate)
+  (defrule update-ppstate->chars-index-of-ppstate->chars-index
+    (equal (update-ppstate->char-index (ppstate->char-index ppstate)
+                                       ppstate)
            (ppstate-fix ppstate))
-    :enable (update-ppstate->chars-read
-             ppstate->chars-read))
+    :enable (update-ppstate->char-index
+             ppstate->char-index
+             nfix))
 
-  (defrule update-ppstate->chars-read-of-ppstate->chars-unread
-    (equal (update-ppstate->chars-unread
-            (ppstate->chars-unread ppstate) ppstate)
+  (defrule update-ppstate->size-of-ppstate->size
+    (equal (update-ppstate->size (ppstate->size ppstate) ppstate)
            (ppstate-fix ppstate))
-    :enable (update-ppstate->chars-unread
-             ppstate->chars-unread))
+    :enable (update-ppstate->size
+             ppstate->size
+             nfix))
+
+  ;; writers over writers:
+
+  (defrule update-ppstate->char-index-of-update-ppstate->char-index
+    (equal (update-ppstate->char-index char-index
+                                       (update-ppstate->char-index char-index2
+                                                                   ppstate))
+           (update-ppstate->char-index char-index ppstate))
+    :enable update-ppstate->char-index)
+
+  (defrule update-ppstate->size-of-update-ppstate->size
+    (equal (update-ppstate->size size (update-ppstate->size size2 ppstate))
+           (update-ppstate->size size ppstate))
+    :enable update-ppstate->size)
+
+  (defruled update-ppstate->size-of-update-ppstate->char-index
+    (equal (update-ppstate->size size
+                                 (update-ppstate->char-index char-index
+                                                             ppstate))
+           (update-ppstate->char-index char-index
+                                       (update-ppstate->size size
+                                                             ppstate)))
+    :enable (update-ppstate->char-index
+             update-ppstate->size))
 
   ;; keep recognizer disabled:
 
@@ -834,50 +673,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-ppstate ((data byte-listp)
+(define ppstate->current-position ((ppstate ppstatep))
+  :returns (pos positionp)
+  :short "Current position in the preprocessor state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the position of the current character,
+     or one past the end of the file."))
+  (b* ((index (ppstate->char-index ppstate))
+       ((unless (< index (ppstate->positions-length ppstate)))
+        (raise "Internal error: ~
+                the index ~x0 is not below ~
+                the length ~x1 of the positions array."
+               index
+               (ppstate->positions-length ppstate))
+        (irr-position)))
+    (ppstate->position index ppstate))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-ppstate ((chars uchar-listp)
+                      (poss position-listp)
                       (macros macro-tablep)
                       (options ppoptionsp)
                       (ienv ienvp)
-                      ppstate)
-  :returns (ppstate ppstatep)
+                      (ppstate ppstatep))
+  :guard (equal (len poss) (1+ (len chars)))
+  :returns (new-ppstate ppstatep)
   :short "Initialize the preprocessor state."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the state when we start preprocessing a file.
      It is built from
-     (the data of) a file to preprocess,
+     the characters read from the file,
+     their positions,
      the current table of macros in scope,
      the preprocessor options,
-     and an implementation environment.")
+     and the implementation environment.")
    (xdoc::p
-    "The array of byte lists is resized to the file recursion limit,
-     which is set by the caller of this function.
-     The bytes of the file are stored into the first element of the array,
-     to which the current byte list index is set to point.
-     The position is the initial one.
-     There are no read or unread characters,
-     and no lexmarks pending.
-     We resize the arrays of characters to the number of bytes,
-     which suffices because there are never more characters than bytes.
-     We set the header guard state to be the initial one.
-     We set the list of output reversed lexemes to empty."))
-  (b* ((ppstate (update-ppstate->bytes data ppstate))
-       (ppstate (update-ppstate->position (position-init) ppstate))
-       (ppstate (update-ppstate->chars-length (len data) ppstate))
-       (ppstate (update-ppstate->chars-read 0 ppstate))
-       (ppstate (update-ppstate->chars-unread 0 ppstate))
-       (ppstate (update-ppstate->lexmarks nil ppstate))
-       (ppstate (update-ppstate->size (len data) ppstate))
+    "We resize the character and position arrays
+     to the lengths of the lists,
+     which are related as expressed in the guard,
+     and as explained in @(tsee ppstate).
+     The character index is set to 0, i.e. the beginning.
+     The size is set to the number of unread characters (all)."))
+  (b* ((ppstate (update-ppstate->chars-length (len chars) ppstate))
+       (ppstate (init-ppstate-chars-loop chars 0 ppstate))
+       (ppstate (update-ppstate->positions-length (len poss) ppstate))
+       (ppstate (init-ppstate-positions-loop poss 0 ppstate))
+       (ppstate (update-ppstate->char-index 0 ppstate))
+       (ppstate (update-ppstate->size (len chars) ppstate))
        (ppstate (update-ppstate->macros macros ppstate))
-       (ppstate (update-ppstate->hg (hg-state-initial) ppstate))
-       (ppstate (update-ppstate->rev-lexemes1 nil ppstate))
-       (ppstate (update-ppstate->rev-lexemes2 nil ppstate))
-       (ppstate (update-ppstate->rev-lexemes3 nil ppstate))
-       (ppstate (update-ppstate->rev-lexemes4 nil ppstate))
        (ppstate (update-ppstate->options options ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate)))
-    ppstate))
+    ppstate)
+
+  :prepwork
+
+  ((define init-ppstate-chars-loop ((chars uchar-listp)
+                                    (i natp)
+                                    (ppstate ppstatep))
+     :guard (<= (+ i (len chars))
+                (ppstate->chars-length ppstate))
+     :returns (new-ppstate ppstatep)
+     :parents nil
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((when (endp chars)) ppstate)
+          (ppstate (update-ppstate->char i (car chars) ppstate)))
+       (init-ppstate-chars-loop (cdr chars) (1+ (lnfix i)) ppstate)))
+
+   (define init-ppstate-positions-loop ((poss position-listp)
+                                        (i natp)
+                                        (ppstate ppstatep))
+     :guard (<= (+ i (len poss))
+                (ppstate->positions-length ppstate))
+     :returns (new-ppstate ppstatep)
+     :parents nil
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((when (endp poss)) ppstate)
+          (ppstate (update-ppstate->position i (car poss) ppstate)))
+       (init-ppstate-positions-loop (cdr poss) (1+ (lnfix i)) ppstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -923,387 +801,3 @@
        (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
        (ppstate (update-ppstate->size new-size ppstate)))
     ppstate))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-ifndef ((name identp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a header guard transition when encountering
-          a @('#ifndef') directive."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If we are in the initial state,
-     we move to the @(':ifndef') state.
-     If we are in the @(':define') state,
-     i.e. in the main content of the file,
-     we stay in that state.
-     If we are in the @(':not') state,
-     we stay in that state (it is a final state).
-     In all other states, we transition to @(':not'):
-     if we were in @(':ifndef'),
-     it means that we are not encountering @('#define');
-     if we were in @(':endif'),
-     it means that there is extra stuff after the @('#endif')."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (hg-state-case
-     hg
-     :initial (update-ppstate->hg (hg-state-ifndef name) ppstate)
-     :ifndef (update-ppstate->hg (hg-state-not) ppstate)
-     :define ppstate
-     :endif (update-ppstate->hg (hg-state-not) ppstate)
-     :eof (prog2$ (raise "Internal error: header guard state ~x0." hg)
-                  ppstate)
-     :not ppstate))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-elif/else ((cond-level natp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a heaader guard transition when encountering
-          a @('#elif') or @('#else') directive."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This should not happen at conditional nesting level 0.
-     If we are at the conditional nesting level 1,
-     and the header guard state is @(':ifndef') or @(':define'),
-     it means that we are inside the top-level @('#ifndef'),
-     but it contains a @('#elif') or @('#else');
-     thus, we move to the @(':not') state.
-     If we are at the conditional nesting level 1,
-     and the header guard state is not @(':ifndef') or @(':define'),
-     we must be in the @(':not') state, and the state does not change.
-     If we are at a conditional nesting level 2 or more,
-     we must be in either the @(':define') or @(':not') state,
-     and the state does not change."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (cond ((zp cond-level)
-           (prog2$ (raise "Internal error: conditional level 0.")
-                   ppstate))
-          ((= cond-level 1)
-           (case (hg-state-kind hg)
-             ((:ifndef :define) (update-ppstate->hg (hg-state-not) ppstate))
-             (:not ppstate)
-             (t (prog2$ (raise "Internal error: ~
-                                header guard state ~x0 at conditional level 1."
-                               hg)
-                        ppstate))))
-          (t ; cond-level >= 2
-           (if (member-eq (hg-state-kind hg) '(:define :not))
-               ppstate
-             (prog2$ (raise "Internal error: ~
-                             header guard state ~x0 at conditional level ~x1."
-                            hg cond-level)
-                     ppstate)))))
-  :no-function nil
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-endif ((cond-level natp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a header guard transition when encountering a @('#endif')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This should not happen at conditional nesting level 0.
-     If we are at the conditional nesting level 1,
-     and the header guard state is @(':define'),
-     it means that we are inside the top-level @('#ifndef'),
-     and it does not contain a @('#elif') or @('#else')
-     (otherwise we would be in the @(':not') state);
-     thus, we move to the @(':endif') state.
-     If we are at the conditional nesting level 1,
-     and the header guard state is @(':ifndef'),
-     it means that we are missing the @('#define'),
-     so we move to the @(':not') state.
-     If the conditional level is 1
-     and the header guard state is not @(':define') or @(':ifndef'),
-     we must be in the @(':not') state, and the state does not change.
-     If we are at a conditional nesting level 2 or more,
-     we must be in either the @(':define') or @(':not') state,
-     and the state does not change."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (cond ((zp cond-level)
-           (prog2$ (raise "Internal error: conditional level 0.")
-                   ppstate))
-          ((= cond-level 1)
-           (case (hg-state-kind hg)
-             (:define (b* ((name (hg-state-define->name hg))
-                           (new-hg (hg-state-endif name)))
-                        (update-ppstate->hg new-hg ppstate)))
-             (:ifndef (update-ppstate->hg (hg-state-not) ppstate))
-             (:not ppstate)
-             (t (prog2$ (raise "Internal error: ~
-                                header guard state ~x0 at conditional level 1."
-                               hg)
-                        ppstate))))
-          (t ; cond-level >= 2
-           (if (member-eq (hg-state-kind hg) '(:define :not))
-               ppstate
-             (prog2$ (raise "Internal error: ~
-                             header guard state ~x0 at conditional level ~x1."
-                            hg cond-level)
-                     ppstate)))))
-  :no-function nil
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-define ((name identp)
-                         (obj-empty-p booleanp)
-                         (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a header guard transition when encountering
-          a @('#define') directive."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('obj-empty-p') flag says whether the @('#define') is for
-     an object-like macro with an empty replacement list.")
-   (xdoc::p
-    "If we are in the @(':ifndef') state,
-     the @('obj-empty-p') flag is @('t'),
-     and the names match,
-     we move to the @(':define') state;
-     if the names do not match, we move to @(':not'),
-     because we have not encountered the right @('#define').
-     If we are in the @(':define') state,
-     i.e. in the main content of the file,
-     we stay in that state.
-     If we are in the @(':not') state,
-     we stay in that state (it is a final state).
-     In all other states, we transition to @(':not'):
-     if we were in @(':initial'),
-     it means that we are not encountering @('#ifndef');
-     if we were in @(':endif'),
-     it means that there is extra stuff after the @('#endif')."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (hg-state-case
-     hg
-     :initial (update-ppstate->hg (hg-state-not) ppstate)
-     :ifndef (if (and obj-empty-p
-                      (equal (ident-fix name) hg.name))
-                 (update-ppstate->hg (hg-state-define name) ppstate)
-               (update-ppstate->hg (hg-state-not) ppstate))
-     :define ppstate
-     :endif (update-ppstate->hg (hg-state-not) ppstate)
-     :eof (prog2$ (raise "Internal error: header guard state ~x0." hg)
-                  ppstate)
-     :not ppstate))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-non-ifndef/elif/else/define ((ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a header guard transition when encountering something
-          other than a @('#ifndef'), @('#elif'), @('#else'), or @('#define')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "By `something other' we man another kind of directive,
-     or a text line with at least one token
-     (i.e. not just comments and white space).")
-   (xdoc::p
-    "If we are in the @(':define') state,
-     i.e. in the main content of the file,
-     we stay in that state.
-     If we are in the @(':not') state,
-     we stay in that state (it is a final state).
-     In all other states, we transition to @(':not'):
-     if we were in @(':initial'),
-     it means that we are not encountering @('#ifndef');
-     if we were in @(':ifndef'),
-     it means that we are not encountering @('#define');
-     if we were in @(':endif'),
-     it means that there is extra stuff after the @('#endif')."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (hg-state-case
-     hg
-     :initial (update-ppstate->hg (hg-state-not) ppstate)
-     :ifndef (update-ppstate->hg (hg-state-not) ppstate)
-     :define ppstate
-     :endif (update-ppstate->hg (hg-state-not) ppstate)
-     :eof (prog2$ (raise "Internal error: header guard state ~x0." hg)
-                  ppstate)
-     :not ppstate))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-eof ((ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a header guard transition when encountering end of file."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If we are in the @(':endif') state,
-     we transition to the @(':eof') state:
-     the file has the header guard form.
-     If we are in the @(':initial') state,
-     we transition to the @(':not') state;
-     the file does not have the required @('#ifndef').
-     Otherwise, we must be in the @(':not') state, where we stay.."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (case (hg-state-kind hg)
-      (:endif (b* ((name (hg-state-endif->name hg))
-                   (new-hg (hg-state-eof name)))
-                (update-ppstate->hg new-hg ppstate)))
-      (:initial (update-ppstate->hg (hg-state-not) ppstate))
-      (:not ppstate)
-      (t (prog2$ (raise "Internal error: header guard state ~x0." hg)
-                 ppstate))))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define add-rev-lexeme ((lexeme plexemep) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Add a lexeme to the output reverse list."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The lexeme is skipped (i.e. not added)
-     if it is a comment and
-     the preprocessor options say that comments should be discarded.")
-   (xdoc::p
-    "The reason for having four separate lists of reversed output lexemes
-     is the handling of the header guard structure,
-     explained in @(tsee hg-state).
-     If the file has the header guard structure,
-     we need to add the @('#ifndef'), @('#define'), and @('#endif') lines
-     to the output,
-     but only if the file has that structure;
-     so we accumulate the file content in chunks:
-     the first list for the content before @('#ifndef');
-     the second list for the content between @('#ifdef') and @('#define')
-     (which would have to consist of only comments and white space);
-     the third list for the content between @('#define') and @('#endif');
-     and the fourth list for the content after @('#endif')
-     (which would have to consist of only comments and white space).
-     If at any point we may discover that the file
-     does not have the header guard structure,
-     we accumulate the rest of the content into the fourth list.
-     At the end, if the file has the header guard structure,
-     we assemble the chunks and interpose
-     the @('#ifndef'), @('#define') and @('#endif');
-     if the file does not the header guard strucrure,
-     we assemble the chunks without interpositions.")
-   (xdoc::p
-    "This (i.e. the four lists and the interposition)
-     is admittedly a bit complicated.
-     Eventually we plan to obviate the need for this,
-     by integrating the preprocessor with the parser."))
-  (if (and (plexeme-commentp lexeme)
-           (not (ppoptions->keep-comments (ppstate->options ppstate))))
-      (ppstate-fix ppstate)
-    (case (hg-state-kind (ppstate->hg ppstate))
-      (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                     (new-rev-lexemes (cons lexeme rev-lexemes)))
-                  (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-      (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                    (new-rev-lexemes (cons lexeme rev-lexemes)))
-                 (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-      (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                    (new-rev-lexemes (cons lexeme rev-lexemes)))
-                 (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-      ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                          (new-rev-lexemes (cons lexeme rev-lexemes)))
-                       (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-      (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                           (ppstate->hg ppstate))
-                    (ppstate-fix ppstate)))
-      (t (prog2$ (impossible) ppstate))))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define add-rev-lexemes ((lexemes plexeme-listp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Add a list of lexemes to the output reverse list."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We discard the comments if the preprocessor options require that.")
-   (xdoc::p
-    "The lexemes to add are passed in direct (i.e. not reverse) order,
-     so we need to append them in reverse.")
-   (xdoc::p
-    "The list is chosen as explained in @(tsee add-rev-lexeme)."))
-  (b* ((lexemes (if (ppoptions->keep-comments (ppstate->options ppstate))
-                    lexemes
-                  (plexemes-without-comments lexemes))))
-    (case (hg-state-kind (ppstate->hg ppstate))
-      (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                     (new-rev-lexemes
-                      (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-                  (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-      (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                    (new-rev-lexemes
-                     (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-                 (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-      (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                    (new-rev-lexemes
-                     (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-                 (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-      ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                          (new-rev-lexemes
-                           (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-                       (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-      (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                           (ppstate->hg ppstate))
-                    (ppstate-fix ppstate)))
-      (t (prog2$ (impossible) ppstate))))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define add-rev-rev-lexemes ((rev-lexemes-to-add plexeme-listp)
-                             (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Add a list of reversed lexemes to the output reverse list."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We discard the comments if the preprocessor options require that.")
-   (xdoc::p
-    "The difference with @(tsee add-rev-lexemes) is that
-     the lexemes to add are already reversed,
-     so we just append them.")
-   (xdoc::p
-    "The list is chosen as explained in @(tsee add-rev-lexeme)."))
-  (b* ((rev-lexemes-to-add
-        (if (ppoptions->keep-comments (ppstate->options ppstate))
-            rev-lexemes-to-add
-          (plexemes-without-comments rev-lexemes-to-add))))
-    (case (hg-state-kind (ppstate->hg ppstate))
-      (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                     (new-rev-lexemes
-                      (append rev-lexemes-to-add rev-lexemes)))
-                  (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-      (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                    (new-rev-lexemes
-                     (append rev-lexemes-to-add rev-lexemes)))
-                 (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-      (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                    (new-rev-lexemes
-                     (append rev-lexemes-to-add rev-lexemes)))
-                 (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-      ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                          (new-rev-lexemes
-                           (append rev-lexemes-to-add rev-lexemes)))
-                       (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-      (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                           (ppstate->hg ppstate))
-                    (ppstate-fix ppstate)))
-      (t (prog2$ (impossible) ppstate))))
-  :no-function nil)

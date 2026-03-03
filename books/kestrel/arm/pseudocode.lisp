@@ -18,12 +18,15 @@
 (include-book "kestrel/bv/repeatbit" :dir :system)
 (include-book "kestrel/bv/bvcount" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
+(include-book "kestrel/bv/overflow-and-underflow" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (in-theory (disable mv-nth))
 
@@ -31,6 +34,18 @@
   (defthm integerp-when-unsigned-byte-p-32
     (implies (unsigned-byte-p 32 x)
              (integerp x))))
+
+(local
+ (defthm equal-of-+-of-bvchop-same-31-32-linear
+   (implies (and (unsigned-byte-p 32 x)
+                 (integerp y))
+            (equal x (+ (bvchop 31 x) (* (expt 2 31) (getbit 31 x)))))
+   :rule-classes :linear
+   :hints (("Goal" :use (:instance acl2::split-bv
+                                   (x x)
+                                   (n 32)
+                                   (m 31))
+                   :in-theory (enable bvcat acl2::logapp getbit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,6 +263,12 @@
                   1))
   :hints (("Goal" :in-theory (enable decodeimmshift))))
 
+(defthm unsigned-byte-p-32-of-mv-nth-1-of-DecodeImmShift
+  (implies (and (unsigned-byte-p 2 type)
+                (unsigned-byte-p 5 imm5))
+           (unsigned-byte-p 32 (mv-nth 1 (DecodeImmShift type imm5))))
+  :hints (("Goal" :in-theory (enable DecodeImmShift))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -375,8 +396,7 @@
                 (SRTypep type)
                 (integerp amount) ; restrict?
                 (<= 0 amount) ; for the guard of lsl_c
-                (bitp carry_in)
-        )
+                (bitp carry_in))
            (unsigned-byte-p n (mv-nth 0 (shift_c n value type amount carry_in))))
   :hints (("Goal" :in-theory (enable shift_c srtypep))))
 
@@ -420,22 +440,50 @@
            (unsigned-byte-p n (shift n value type amount carry_in)))
   :hints (("Goal" :in-theory (enable shift))))
 
-;; returns (mv result carry_out overflow)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund sint (n x)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x))))
+  (logext n x))
+
+;; for us, a bitstring is already an unsigned integer, but we chop to make an
+;; unconditional return type.
+(defund uint (n x)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x))))
+  (bvchop n x))
+
+(local (in-theory (enable uint sint)))
+
+(defthm uint-bound-linear
+  (implies (natp n)
+           (<= (uint n x) (+ -1 (expt 2 n))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable uint))))
+
+(defund int (n x unsigned)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x)
+                              (booleanp unsigned))))
+  (if unsigned (uint n x) (sint n x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv result carry_out overflow).
 (defund AddWithCarry (n x y carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (unsigned-byte-p n y)
                               (posp n) ; so there is a sign bit
                               (bitp carry_in))))
-  (let* ((unsigned_sum (+ x y carry_in))
-         (signed_sum (+ (logext n x)
-                        (logext n y)
-                        carry_in))
+  (let* ((unsigned_sum (+ (uint n x) (uint n y) (uint n carry_in)))
+         (signed_sum (+ (sint n x) (sint n y) (uint n carry_in)))
          (result (slice (- n 1) 0 unsigned_sum))
-         (carry_out (if (== result unsigned_sum) 0 1))
-         (overflow (if (== (logext n result) signed_sum) 0 1)))
+         (carry_out (if (== (uint n result) unsigned_sum) 0 1))
+         (overflow (if (== (sint n result) signed_sum) 0 1)))
     (mv result carry_out overflow)))
 
-;; todo: other rvs
+;; Output 0 is just the sum of x and y and carry_in.
 (defthm mv-nth-0-of-AddWithCarry
   (implies (and (posp n)
                 (integerp x)
@@ -445,29 +493,206 @@
                   (bvplus n x (bvplus n y carry_in))))
   :hints (("Goal" :in-theory (enable AddWithCarry bvplus))))
 
-(defthm unsigned-byte-p-of-mv-nth-0-of-AddWithCarry
-  (implies (and (unsigned-byte-p n x)
+(local (include-book "kestrel/bv/getbit" :dir :system))
+(local (include-book "kestrel/bv/rules" :dir :system)) ; for acl2::unsigned-byte-p-when-top-bit-0
+;; This expresses the carry_out in using BV operations.
+(defthm mv-nth-1-of-AddWithCarry
+  (implies (and (posp n)
+                (unsigned-byte-p n x)
                 (unsigned-byte-p n y)
-                (posp n) ; so there is a sign bit
                 (bitp carry_in))
+           (equal (mv-nth 1 (AddWithCarry n x y carry_in))
+                  ;; we use one extra bit of width for the sum, so no chopping or overflow happens:
+                  (getbit n (bvplus (+ 1 n) x (bvplus (+ 1 n) y carry_in)))))
+  :hints (("Goal" :cases ((unsigned-byte-p (+ 1 n) (+ carry_in x y)))
+                  :use (:instance acl2::unsigned-byte-p-of-+-with-carry
+                                  (size (+ 1 n)) (bit carry_in) (x x) (y y))
+                  :in-theory (e/d (AddWithCarry bvplus)
+                                  (acl2::unsigned-byte-p-of-+-with-carry
+                                   acl2::unsigned-byte-p-from-bounds
+                                   acl2::usb-plus-from-bounds
+                                   ;;acl2::unsigned-byte-p-false-when-not-longer
+                                   )))))
+
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+
+;; ;gen
+;; (local
+;;  (defthm equal-of-+-of-bvchop-same-7-8
+;;    (implies (and (unsigned-byte-p 8 x)
+;;                  (integerp y))
+;;             (equal (equal x (+ (bvchop 7 x) y))
+;;                    (equal y (* 128 (getbit 7 x)))))
+;;    :hints (("Goal" :use (:instance acl2::split-bv
+;;                                    (x x)
+;;                                    (n 9)
+;;                                    (m 7))
+;;                    :in-theory (enable bvcat acl2::logapp getbit)))))
+
+;; ;gen
+;; (local
+;;  (defthm equal-of-+-of-bvchop-same-7-8-linear
+;;    (implies (and (unsigned-byte-p 8 x)
+;;                  (integerp y))
+;;             (equal x (+ (bvchop 7 x) (* 128 (getbit 7 x)))))
+;;    :rule-classes :linear
+;;    :hints (("Goal" :use (:instance acl2::split-bv
+;;                                    (x x)
+;;                                    (n 8)
+;;                                    (m 7))
+;;                    :in-theory (enable bvcat acl2::logapp getbit)))))
+
+(local
+ (defthmd mv-nth-2-of-AddWithCarry-carry-0
+   (implies (and (posp n)
+                 (unsigned-byte-p n x)
+                 (unsigned-byte-p n y)
+                 (equal n 32) ; todo!
+                 (bitp carry_in)
+                 (equal carry_in 0) ; this case
+                 )
+            (equal (mv-nth 2 (AddWithCarry n x y carry_in))
+                   ;; see signed-addition-overflowsp:
+                   (bool-to-bit (or (and (sbvlt n 0 x)
+                                         ;; if x is positive, the addition might overflow:
+                                         (sbvlt n (bvminus n (- (expt 2 (- n 1)) 1) x) y))
+                                    ;; see signed-addition-underflowsp:
+                                    (and (sbvlt n x 0)
+                                         ;; if x is negative, the addition might underflow:
+                                         (sbvlt n y (bvminus n (- (expt 2 (- n 1))) x)))))))
+   :hints (("Goal" :in-theory (e/d (AddWithCarry
+                                    bvplus
+                                    acl2::bvchop-of-sum-cases sbvlt bvlt
+                                    acl2::logext-cases
+                                    bvminus bvuminus
+                                    acl2::BVCHOP-WHEN-TOP-BIT-1
+                                    acl2::getbit-of-+)
+                                   (acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                    acl2::bvchop-when-top-bit-1 ; for speed
+                                    ))))))
+
+(local
+ (defthmd mv-nth-2-of-AddWithCarry-carry-1
+   (implies (and (posp n)
+                 (unsigned-byte-p n x)
+                 (unsigned-byte-p n y)
+                 (equal n 32) ; todo!
+                 (bitp carry_in)
+                 (equal carry_in 1) ; this case
+                 )
+            (equal (mv-nth 2 (AddWithCarry n x y carry_in))
+                   ;; see signed-addition-overflowsp:
+                   (bool-to-bit (or (and (sbvle n 0 x)
+                                         ;; if x is positive, the addition might overflow:
+                                         (sbvle n (bvminus n (- (expt 2 (- n 1)) 1) x) y) ; sbvle here since carry_in makes overflow more likely
+                                         )
+                                    ;; see signed-addition-underflowsp:
+                                    (and (sbvlt n x 0)
+                                         ;; if x is negative, the addition might underflow:
+                                         (sbvlt n y (bvminus n (bvminus n (- (expt 2 (- n 1))) x) 1)))))))
+   :hints (("Goal" :in-theory (e/d (AddWithCarry
+                                    bvplus
+                                    acl2::bvchop-of-sum-cases sbvlt bvlt
+                                    acl2::logext-cases
+                                    bvminus bvuminus
+                                    acl2::BVCHOP-WHEN-TOP-BIT-1
+                                    acl2::getbit-of-+)
+                                   (acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                    acl2::bvchop-when-top-bit-1 ; for speed
+                                    ))))))
+
+;gen!
+(local
+ (defthm not-sbvlt-of-1-when-sbvlt-of-0
+   (implies (sbvlt 8 0 x)
+            (not (sbvlt 8 x 1)))
+   :hints (("Goal" :in-theory (enable acl2::sbvlt-rewrite)))
+   ))
+
+;; todo: can this be simplified?
+;; This uses BV ops.
+(defund addwithcarry-overflow (n x y carry_in)
+  (declare (xargs :guard (and (unsigned-byte-p n x)
+                              (unsigned-byte-p n y)
+                              (posp n) ; so there is a sign bit
+                              (bitp carry_in))))
+  (bool-to-bit (or ;; see signed-addition-overflowsp:
+                (and (sbvle n (bvminus n 1 carry_in) x)
+                     (sbvlt n (bvminus n (bvminus n (- (expt 2 (- n 1)) 1) x) carry_in) y))
+                ;; see signed-addition-underflowsp:
+                (and (sbvlt n x 0)
+                     (sbvlt n y (bvminus n (bvminus n (- (expt 2 (- n 1))) x) carry_in))))))
+
+(defthm unsigned-byte-p-of-addwithcarry-overflow
+  (implies (posp size)
+           (unsigned-byte-p size (addwithcarry-overflow n x y carry_in)))
+  :hints (("Goal" :in-theory (enable addwithcarry-overflow))))
+
+;; Expresses the signed overflow bit in terms of addwithcarry-overflow, which uses BV ops.
+;; TODO: Is there a nicer way to do this?
+;; If carry_in=0, this reduces to mv-nth-2-of-AddWithCarry-carry-0.
+;; If carry_in=1, this reduces to mv-nth-2-of-AddWithCarry-carry-1.
+(defthm mv-nth-2-of-AddWithCarry
+  (implies (and (posp n)
+                (unsigned-byte-p n x)
+                (unsigned-byte-p n y)
+                (equal n 32) ; todo!
+                (bitp carry_in)
+                )
+           (equal (mv-nth 2 (AddWithCarry n x y carry_in))
+                  (addwithcarry-overflow n x y carry_in)))
+  :hints (("Goal" :in-theory (e/d (AddWithCarry
+                                   addwithcarry-overflow
+                                   bvplus
+                                   acl2::bvchop-of-sum-cases sbvlt bvlt
+                                   acl2::logext-cases
+                                   bvminus bvuminus
+                                   acl2::BVCHOP-WHEN-TOP-BIT-1
+                                   acl2::getbit-of-+)
+                                  (acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   acl2::bvchop-when-top-bit-1 ; for speed
+                                   ))))
+  ;; todo: get this to work, but need some sbvlt rules
+  ;; :hints (("Goal" :cases ((equal 0 carry_in)
+  ;;                        (equal 1 carry_in))
+  ;;                :use (mv-nth-2-of-AddWithCarry-carry-0
+  ;;                      mv-nth-2-of-AddWithCarry-carry-1)
+  ;;                ;; :in-theory '(bitp (:e binary-+) (:e expt) (:e <) (:e natp)
+  ;;                ;;              acl2::bvminus-of-0-arg3
+  ;;                ;;              acl2::bvchop-of-bvminus
+  ;;                ;;              )
+  ;;                ))
+  )
+
+(defthm unsigned-byte-p-of-mv-nth-0-of-AddWithCarry
+  (implies (and ;(unsigned-byte-p n x)
+                ;(unsigned-byte-p n y)
+                (posp n) ; so there is a sign bit
+                ;(bitp carry_in)
+                )
            (unsigned-byte-p n (mv-nth 0 (AddWithCarry n x y carry_in))))
   :hints (("Goal" :in-theory (enable AddWithCarry))))
 
 (defthm unsigned-byte-p-of-mv-nth-1-of-AddWithCarry
-  (implies (and (unsigned-byte-p n x)
-                (unsigned-byte-p n y)
-                (posp n) ; so there is a sign bit
-                (bitp carry_in))
-           (unsigned-byte-p 1 (mv-nth 1 (AddWithCarry n x y carry_in))))
+  (implies (posp size)
+           (unsigned-byte-p size (mv-nth 1 (AddWithCarry n x y carry_in))))
   :hints (("Goal" :in-theory (enable AddWithCarry))))
 
 (defthm unsigned-byte-p-of-mv-nth-2-of-AddWithCarry
-  (implies (and (unsigned-byte-p n x)
-                (unsigned-byte-p n y)
-                (posp n) ; so there is a sign bit
-                (bitp carry_in))
-           (unsigned-byte-p 1 (mv-nth 2 (AddWithCarry n x y carry_in))))
+  (implies (posp size)
+           (unsigned-byte-p size (mv-nth 2 (AddWithCarry n x y carry_in))))
   :hints (("Goal" :in-theory (enable AddWithCarry))))
+
+;; (thm
+;;  (implies (unsigned-byte-p 32 y)
+;;           (equal (addwithcarry 32 x (bvnot 32 y) 1)
+;;                  (addwithcarry 32 x (bvuminus 32 y) 0)))
+;;  :hints (("Goal" :in-theory (enable addwithcarry uint bvuminus-becomes-bvplus-of-bvnot-and-1
+;;                                     acl2::bvchop-of-sum-cases
+;;                                     bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund BitCount (n x)
   (declare (xargs :guard (unsigned-byte-p n x)))
@@ -631,32 +856,6 @@
   (implies (armp arm)
            (armp (advance-pc arm)))
   :hints (("Goal" :in-theory (enable advance-pc))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund sint (n x)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x))))
-  (logext n x))
-
-;; for us, a bitstring is already an unsigned integer, but we chop to make an
-;; unconditional return type.
-(defund uint (n x)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x))))
-  (bvchop n x))
-
-(defthm uint-bound-linear
-  (implies (natp n)
-           (<= (uint n x) (+ -1 (expt 2 n))))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable uint))))
-
-(defund int (n x unsigned)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x)
-                              (booleanp unsigned))))
-  (if unsigned (uint n x) (sint n x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

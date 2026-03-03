@@ -27,13 +27,6 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-;; quotep gets converted to this when inside an axe-syntaxp
-;; todo: rename darg-quotep?
-(defund-inline axe-quotep (darg)
-  (declare (xargs :guard (dargp darg)))
-  (consp darg) ;; means that it is a quotep, not a nodenum
-  )
-
 ;;TODO: Change these to never compare nodenums (can cause simplification to loop if things keep getting commuted due to different nodenums?)
 
 ; Check whether x is 'lighter' than y.  Helps us decide when to reorder terms

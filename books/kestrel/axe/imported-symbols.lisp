@@ -67,6 +67,7 @@
     dag-size
 
     ensure-rules-known
+    ensure-rules-known-fn
     widen-margins
     unwiden-margins
 
@@ -264,6 +265,7 @@
     dag-or-quotep-size
     dag-or-quotep-fns
     dag-or-quotep-vars
+    print-as-term-or-dag
 
     remove-assumptions-about
 ;;    *non-stp-assumption-functions*

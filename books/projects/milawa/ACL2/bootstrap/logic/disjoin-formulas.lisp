@@ -74,6 +74,9 @@
             (%logic.disjoin-formulas-induction x)
             (%enable default logic.formulap-of-logic.por-expensive))
 
+; Matt K. mod: Avoid error noticed in preparation for Version 8.7 release when
+; attempting to make bootstrap/logic/substitute-formula.mpcert.
+#+skip
 (%autoprove logic.formula-atblp-of-logic.por-expensive
             (%restrict default logic.formula-atblp (equal x '(logic.por x y))))
 

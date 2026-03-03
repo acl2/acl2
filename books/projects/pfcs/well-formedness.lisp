@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -17,6 +17,8 @@
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
+
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,8 +60,7 @@
    :relation (b* ((def? (lookup-definition constr.name defs)))
                (and (definitionp def?)
                     (= (len constr.args)
-                       (len (definition->para def?))))))
-  :hooks (:fix))
+                       (len (definition->para def?)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,8 +75,7 @@
      all the constraints are well-formed."))
   (or (endp constrs)
       (and (constraint-wfp (car constrs) defs)
-           (constraint-list-wfp (cdr constrs) defs)))
-  :hooks (:fix))
+           (constraint-list-wfp (cdr constrs) defs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,8 +99,7 @@
   (b* (((definition def) def))
     (and (not (lookup-definition def.name defs))
          (no-duplicatesp-equal def.para)
-         (constraint-list-wfp def.body defs)))
-  :hooks (:fix))
+         (constraint-list-wfp def.body defs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -122,11 +121,8 @@
      :parents nil
      (or (endp rev-defs)
          (and (definition-list-wfp-aux (cdr rev-defs))
-              (definition-wfp (car rev-defs) (cdr rev-defs))))
-     :hooks (:fix)))
-  ///
-  (fty::deffixequiv definition-list-wfp
-    :hints (("Goal" :in-theory (enable rev-of-definition-list-fix)))))
+              (definition-wfp (car rev-defs) (cdr rev-defs)))))
+   (local (in-theory (enable rev-of-definition-list-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,5 +137,4 @@
      with respect to the list of definitions."))
   (b* (((system sys) sys))
     (and (definition-list-wfp sys.definitions)
-         (constraint-list-wfp sys.constraints sys.definitions)))
-  :hooks (:fix))
+         (constraint-list-wfp sys.constraints sys.definitions))))

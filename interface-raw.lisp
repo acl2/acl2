@@ -3176,13 +3176,20 @@
               (format nil "; argument(s) ~s" (access gframe frame :bkptr)))
              (t
               (format nil "|~s" (access gframe frame :bkptr)))))
-      ((rewrite-with-lemma add-linear-lemma rewrite-quoted-constant-with-lemma)
+      (add-linear-lemma
        (format
         nil
         "~a~s. Applying ~s~%"
         (dmr-prefix)
         i
         (get-rule-field (cdr (access gframe frame :args)) :rune)))
+      ((rewrite-with-lemma rewrite-quoted-constant-with-lemma)
+       (format
+        nil
+        "~a~s. Applying ~s~%"
+        (dmr-prefix)
+        i
+        (get-rule-field (cadr (access gframe frame :args)) :rune)))
       (add-terms-and-lemmas
        (let ((len (length (car (access gframe frame :args))))
              (obj (cdr (access gframe frame :args))))
@@ -7165,10 +7172,8 @@
 
   (cond
    #+sbcl
-   ((string>= (lisp-implementation-version) "2.5.6")
-; Work around SBCL Bug #2115955.  When the bug is fixed, we should add a
-; conjunct to the test,
-; (string< (lisp-implementation-version) "<fixed_version>").
+   ((string= (lisp-implementation-version) "2.5.6")
+; Work around SBCL Bug #2115955.
     nil)
    ((member-eq fn *stobjs-out-invalid*)
     nil)

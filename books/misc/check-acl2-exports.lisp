@@ -210,7 +210,6 @@
     VARIABLEP
 
 ; Symbols below should probably be added to *acl2-exports*.
-; When that is done, also remove GET-WORMHOLE-STATUS from *acl2-exports*.
 
   ))
 

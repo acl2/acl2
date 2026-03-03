@@ -23,6 +23,7 @@
 (include-book "prove-acl2p")
 (include-book "schroeder-bernstein")
 (include-book "set-algebra")
+(include-book "skolem")
 (include-book "tc")
 (include-book "zify")
 ; (include-book "zify-motivation") ; incompatible with "zify"

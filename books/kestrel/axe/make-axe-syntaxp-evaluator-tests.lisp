@@ -1,7 +1,7 @@
 ; Tests of make-axe-syntaxp-evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,6 +18,10 @@
 (make-axe-syntaxp-evaluator 'foo '())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; WARNING: Do not move this form upward (we want to ensure the first call to
+;; make-axe-syntaxp-evaluator above works even without this include-book):
+(include-book "axe-syntax-functions") ; for syntactic-variablep, etc.
 
 (make-axe-syntaxp-evaluator 'bar '(syntactic-variablep))
 

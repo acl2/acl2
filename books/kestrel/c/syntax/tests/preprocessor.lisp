@@ -835,3 +835,31 @@ int n = 10;
 
 (test-preproc-fullexp '("defguard.c")
                       :base-dir "preproc-example6")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example7/f.c")
+; (depends-on "preproc-example7/g.c")
+
+(test-preproc '("g.c")
+              :expected (fileset-of "f.c"
+                                    "#ifdef C
+#else
+y
+#endif
+"
+                                    "g.c"
+                                    "#define C C
+// #include \"f.c\" >>>>>>>>>>
+#ifdef C
+x
+#else
+#endif
+// <<<<<<<<<< #include \"f.c\"
+")
+              :base-dir "preproc-example7")
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("g.c")
+                      :base-dir "preproc-example7")
