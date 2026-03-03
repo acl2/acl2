@@ -48,7 +48,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; PSLLW/PSSLD/PSSLQ (SSE variants)
+; PSLLW/PSSLD/PSSLQ, PSRLW/PSRLD/PSRLQ, PSRAW/PSRAD (SSE variants)
 
 ;; Used to define `PSLL`, `PSRL`, and `PSRA`:
 ;; - operator specifies how to compute the shift for a single element
