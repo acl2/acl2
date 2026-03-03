@@ -240,8 +240,7 @@ what the instruction. Not sure why they are listed that way.</p>")
 
 (def-sdm-instruction-section "5.4.6 MMX Shift and Rotate Instructions"
   :mnemonics '(PSLLW PSLLD PSLLQ PSRLW PSRLD PSRLQ PSRAW PSRAD)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.7 MMX State Management Instructions"
   :mnemonics '(EMMS)
