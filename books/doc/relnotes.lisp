@@ -426,7 +426,7 @@
    (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL Library"))
 
    (xdoc::p
-    "Add @(see fgl::annotazte) mechanism, a way of preventing of trivial rewrite
+    "Add @(see fgl::annotate) mechanism, a way of preventing of trivial rewrite
      loops by setting and detecting annotations on subterms.")
 
    (xdoc::p
@@ -434,7 +434,7 @@
      @(see fgl::unconditional), @(see fgl::left-to-right), @(see fgl::conditionalize).")
 
    (xdoc::p
-    "Add so-called identity congruences (see @(see add-fgl-id-congruence)), which indicate
+    "Add so-called identity congruences (see @(see fgl::add-fgl-id-congruence)), which indicate
      that a certain argument of a function can be rewritten under any equivalence that
      is applied to the function call.")
 
