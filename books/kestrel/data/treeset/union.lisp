@@ -161,8 +161,8 @@
 
 (defrule union-when-equiv-of-arg1-congruence
   (implies (equiv x0 x1)
-           (equal (union x0 z)
-                  (union x1 z)))
+           (equal (union x0 y)
+                  (union x1 y)))
   :rule-classes :congruence
   :enable union)
 
