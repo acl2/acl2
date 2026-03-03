@@ -41,8 +41,7 @@
 
 ;; ======================================================================
 
-(include-book "../decoding-and-spec-utils"
-              :ttags ())
+(include-book "../decoding-and-spec-utils")
 
 ;; ======================================================================
 ;; INSTRUCTION: CMC/CLC/STC/CLD/STD

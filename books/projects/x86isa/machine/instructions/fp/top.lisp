@@ -45,22 +45,14 @@
 ;; clear, the following versions of the floating-point instructions
 ;; are unimplemented: MMX, AVX, AVX2, and AVX512.
 
-(include-book "bitscan"
-              :ttags ())
-(include-book "arithmetic"
-              :ttags ())
-(include-book "logical"
-              :ttags ())
-(include-book "shuffle-and-unpack"
-              :ttags ())
-(include-book "mxcsr"
-              :ttags ())
-(include-book "simd-integer"
-              :ttags ())
-(include-book "convert"
-              :ttags ())
-(include-book "non-arith"
-              :ttags ())
+(include-book "bitscan")
+(include-book "arithmetic")
+(include-book "logical")
+(include-book "shuffle-and-unpack")
+(include-book "mxcsr")
+(include-book "simd-integer")
+(include-book "convert")
+(include-book "non-arith")
 
 ;; Exception Types and Alignment Checking: A Quick Reference
 ;; (TO-DO: make this into a doc topic or a function later...)

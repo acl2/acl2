@@ -41,84 +41,46 @@
 
 ;; ======================================================================
 
-(include-book "arith-and-logic"
-              :ttags ())
-(include-book "bit"
-              :ttags ())
-(include-book "conditional"
-              :ttags ())
-(include-book "divide"
-              :ttags ())
-(include-book "endbranch"
-              :ttags ())
-(include-book "exchange"
-              :ttags ())
-(include-book "flags"
-              :ttags ())
-(include-book "halt"
-              :ttags ())
-(include-book "jump-and-loop"
-              :ttags ())
-(include-book "logical"
-              :ttags ())
-(include-book "move"
-              :ttags ())
-(include-book "move-mmx"
-              :ttags ())
-(include-book "move-sse"
-              :ttags ())
-(include-book "move-vex"
-              :ttags ())
-(include-book "multiply"
-              :ttags ())
-(include-book "padd"
-              :ttags ())
-(include-book "pmadd"
-              :ttags ())
-(include-book "pmul"
-              :ttags ())
-(include-book "psub"
-              :ttags ())
-(include-book "pshift"
-              :ttags ())
-(include-book "push-and-pop"
-              :ttags ())
-(include-book "rand"
-              :ttags ( ))
-(include-book "rotate-and-shift"
-              :ttags ())
-(include-book "segmentation"
-              :ttags ())
-(include-book "signextend"
-              :ttags ())
-(include-book "string"
-              :ttags ())
+(include-book "arith-and-logic")
+(include-book "bit")
+(include-book "conditional")
+(include-book "divide")
+(include-book "endbranch")
+(include-book "exchange")
+(include-book "flags")
+(include-book "halt")
+(include-book "jump-and-loop")
+(include-book "logical")
+(include-book "move")
+(include-book "move-mmx")
+(include-book "move-sse")
+(include-book "move-vex")
+(include-book "multiply")
+(include-book "padd")
+(include-book "pmadd")
+(include-book "pmul")
+(include-book "psub")
+(include-book "pshift")
+(include-book "push-and-pop")
+(include-book "rand")
+(include-book "rotate-and-shift")
+(include-book "segmentation")
+(include-book "signextend")
+(include-book "string")
 (include-book "syscall"
               :ttags (:syscall-exec))
-(include-book "subroutine"
-              :ttags ())
-(include-book "fp/top"
-              :ttags ())
-(include-book "interrupts"
-              :ttags ())
-(include-book "cpuid"
-              :ttags ())
-(include-book "msrs"
-              :ttags ())
-(include-book "x87"
-              :ttags ())
-(include-book "time"
-              :ttags ())
-(include-book "pio"
-              :ttags ())
-(include-book "cache"
-              :ttags ())
-(include-book "punpck"
-              :ttags ())
-(include-book "pcmp"
-              :ttags ())
-(include-book "pshuf"
-              :ttags ())
+(include-book "subroutine")
+(include-book "fp/top")
+(include-book "interrupts")
+(include-book "cpuid")
+(include-book "msrs")
+(include-book "x87")
+(include-book "time")
+(include-book "pio")
+(include-book "cache")
+(include-book "punpck")
+(include-book "pcmp")
+(include-book "pshuf")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

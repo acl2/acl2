@@ -43,12 +43,9 @@
 
 ;; ======================================================================
 
-(include-book "../../decoding-and-spec-utils"
-              :ttags ())
-(include-book "arith-spec"
-              :ttags ())
-(include-book "sqrt-spec"
-              :ttags ())
+(include-book "../../decoding-and-spec-utils")
+(include-book "arith-spec")
+(include-book "sqrt-spec")
 (include-book "centaur/bitops/merge" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))

@@ -43,8 +43,7 @@
 
 ;; ======================================================================
 
-(include-book "../decoding-and-spec-utils"
-              :ttags ())
+(include-book "../decoding-and-spec-utils")
 ;(local (include-book "../guard-helpers"))
 
 ;; No alignment check is done for these instructions because they are

@@ -43,7 +43,7 @@
 ; Eric Smith (eric.smith@kestrel.edu)
 
 (in-package "X86ISA")
-(include-book "paging" :ttags ())
+(include-book "paging")
 (include-book "centaur/bitops/merge" :dir :system)
 
 ;; ======================================================================

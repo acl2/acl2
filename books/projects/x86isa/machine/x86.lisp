@@ -50,10 +50,8 @@
               :ttags (:syscall-exec))
 (include-book "three-byte-opcodes-dispatch"
               :ttags (:syscall-exec))
-(include-book "vex-opcodes-dispatch"
-              :ttags ())
-(include-book "evex-opcodes-dispatch"
-              :ttags ())
+(include-book "vex-opcodes-dispatch")
+(include-book "evex-opcodes-dispatch")
 (include-book "cpuid")
 (include-book "dispatch-macros")
 (include-book "get-prefixes")

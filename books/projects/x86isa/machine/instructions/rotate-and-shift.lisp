@@ -43,12 +43,9 @@
 
 ;; ======================================================================
 
-(include-book "shifts-spec"
-              :ttags ())
-(include-book "rotates-spec"
-              :ttags ())
-(include-book "../decoding-and-spec-utils"
-              :ttags ())
+(include-book "shifts-spec")
+(include-book "rotates-spec")
+(include-book "../decoding-and-spec-utils")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================

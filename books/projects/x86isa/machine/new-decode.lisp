@@ -42,8 +42,7 @@
 ;; declarative style of instruction specification.
 
 (in-package "X86ISA")
-(include-book "decoding-and-spec-utils"
-              :ttags ())
+(include-book "decoding-and-spec-utils")
 (include-book "std/util/defenum" :dir :system)
 (include-book "inst-structs")
 

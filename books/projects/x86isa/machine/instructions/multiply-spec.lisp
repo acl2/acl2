@@ -41,8 +41,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../rflags-spec"
-              :ttags ())
+(include-book "../rflags-spec")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

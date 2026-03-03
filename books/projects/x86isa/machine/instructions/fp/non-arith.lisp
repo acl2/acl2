@@ -40,10 +40,8 @@
 
 ;; ======================================================================
 
-(include-book "../../decoding-and-spec-utils"
-              :ttags ())
-(include-book "base"
-              :ttags ())
+(include-book "../../decoding-and-spec-utils")
+(include-book "base")
 
 ; =============================================================================
 ; INSTRUCTION: AVX Non-Arithmetic Instructions
