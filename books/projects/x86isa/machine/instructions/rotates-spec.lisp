@@ -43,7 +43,7 @@
 
 (include-book "structures" :dir :utils)
 (include-book "../rflags-spec"
-              :ttags (:undef-flg))
+              :ttags ())
 
 (include-book "centaur/bitops/fast-rotate" :dir :system)
 

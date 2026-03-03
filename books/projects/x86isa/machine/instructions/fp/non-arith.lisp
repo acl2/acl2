@@ -41,9 +41,9 @@
 ;; ======================================================================
 
 (include-book "../../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "base"
-              :ttags (:undef-flg))
+              :ttags ())
 
 ; =============================================================================
 ; INSTRUCTION: AVX Non-Arithmetic Instructions

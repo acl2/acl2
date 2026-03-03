@@ -42,83 +42,83 @@
 ;; ======================================================================
 
 (include-book "arith-and-logic"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "bit"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "conditional"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "divide"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "endbranch"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "exchange"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "flags"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "halt"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "jump-and-loop"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "logical"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "move"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "move-mmx"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "move-sse"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "move-vex"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "multiply"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "padd"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "pmadd"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "pmul"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "psub"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "pshift"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "push-and-pop"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "rand"
-              :ttags (:other-non-det :undef-flg))
+              :ttags ( ))
 (include-book "rotate-and-shift"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "segmentation"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "signextend"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "string"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "syscall"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:syscall-exec))
 (include-book "subroutine"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "fp/top"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "interrupts"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "cpuid"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "msrs"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "x87"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "time"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "pio"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "cache"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "punpck"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "pcmp"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "pshuf"
-              :ttags (:undef-flg))
+              :ttags ())
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

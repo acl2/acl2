@@ -44,9 +44,9 @@
 ;; ======================================================================
 
 (include-book "arith-and-logic-spec"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+              :ttags ())
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))

@@ -44,11 +44,11 @@
 ;; ======================================================================
 
 (include-book "../../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "arith-spec"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "sqrt-spec"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "centaur/bitops/merge" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))

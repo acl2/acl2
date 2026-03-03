@@ -46,21 +46,21 @@
 ;; are unimplemented: MMX, AVX, AVX2, and AVX512.
 
 (include-book "bitscan"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "arithmetic"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "logical"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "shuffle-and-unpack"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "mxcsr"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "simd-integer"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "convert"
-              :ttags (:undef-flg))
+              :ttags ())
 (include-book "non-arith"
-              :ttags (:undef-flg))
+              :ttags ())
 
 ;; Exception Types and Alignment Checking: A Quick Reference
 ;; (TO-DO: make this into a doc topic or a function later...)

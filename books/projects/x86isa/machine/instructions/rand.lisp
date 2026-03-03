@@ -42,10 +42,10 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+              :ttags ())
 
 (include-book "../other-non-det"
-              :ttags (:undef-flg :other-non-det))
+              :ttags ())
 
 ;; ======================================================================
 ;; INSTRUCTION: RDRAND
