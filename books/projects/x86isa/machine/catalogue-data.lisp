@@ -223,7 +223,7 @@ what the instruction. Not sure why they are listed that way.</p>")
 (def-sdm-instruction-section "5.4.2 MMX Conversion Instructions"
   :mnemonics '(PACKSSWB PACKSSDW PACKUSWB PUNPCKHBW PUNPCKHWD PUNPCKHDQ PUNPCKLBW PUNPCKLWD PUNPCKLDQ)
   :features :mmx
-  :doc "<p>All unimplemented</p>")
+  :doc "<p>Some are still unimplemented.</p>")
 
 (def-sdm-instruction-section "5.4.3 MMX Packed Arithmetic Instructions"
   :mnemonics '(PADDB PADDW PADDD PADDSB PADDSW PADDUSB PADDUSW PSUBB PSUBW

@@ -76,6 +76,114 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst x86-punpckl-mmx
+
+  :parents (two-byte-opcodes)
+
+  :short "Unpack low data (MMX variants)."
+
+  :long
+  "<code>
+  NP 0F 60 /r    PUNPCKLBW mm, mm/m32
+  NP 0F 61 /r    PUNPCKLWD mm, mm/m32
+  NP 0F 62 /r    PUNPCKLDQ mm, mm/m32
+  </code>"
+
+  :modr/m t
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; The operand size is always 64 bits, i.e. 8 bytes.
+       (operand-size 8)
+
+       ;; The first source operand (Operand 1 in the Intel manual, Op/En A)
+       ;; is the MMX register specified in Reg.
+       ;; This is also the destination operand,
+       ;; and thus we obtain the index for later use.
+       ;; Since there are only 8 MMX registers, the REX byte is not used.
+       ;; We only keep the low 32 bits.
+       ((the (unsigned-byte 4) src1/dst-index) reg)
+       ((the (unsigned-byte 64) src1) (mmx src1/dst-index x86))
+       ((the (unsigned-byte 32) src1) (loghead 32 src1))
+
+       ;; The second source operand (Operand 2 in the Intel manual, Op/En A)
+       ;; is the MMX register, or memory operand, specified in Mod and R/M.
+       ;; But for a memory operand we must only read 32 bits (see Intel manual),
+       ;; so we case-split based on Mod;
+       ;; note that x86-operand-from-modr/m-and-sib-bytes is called
+       ;; only for a memory operand, which justifies the operand size.
+
+       (inst-ac? t) ; Intel Manual Volume 2 Table 2-21 (Dec 2023)
+       ((mv flg
+            (the (unsigned-byte 32) src2)
+            (the (integer 0 4) increment-rip-by)
+            ?addr
+            x86)
+        (if (= mod #b11) ; register
+            (b* (((the (unsigned-byte 64) src2) (mmx r/m x86)))
+              (mv nil
+                  (the (unsigned-byte 32) (loghead 32 src2))
+                  0 ; increment-rip-by
+                  0 ; addr
+                  x86))
+          ;; The following call is performed only if Mod is not 11,
+          ;; and thus the exact register access parameter is irrelevant,
+          ;; as noted in the comment below.
+          ;; We use *gpr-access* instead of *mmx-access*
+          ;; so we can use (in the guard proof) the theorem saying that
+          ;; this function returns a value of the given operand size.
+          (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                                 #.*gpr-access* ; irrelevant
+                                                 4 ; operand-size
+                                                 inst-ac?
+                                                 nil ; not a memory operand
+                                                 seg-reg
+                                                 p4?
+                                                 temp-rip
+                                                 rex-byte
+                                                 r/m
+                                                 mod
+                                                 sib
+                                                 0 ; no immediate operand
+                                                 x86)))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Calculate the result.
+       (result (case opcode
+                 (#x60 (punpckl (* 8 operand-size) 08 src1 src2))
+                 (#x61 (punpckl (* 8 operand-size) 16 src1 src2))
+                 (#x62 (punpckl (* 8 operand-size) 32 src1 src2))
+                 (t 0))) ; unreachable
+
+       ;; Store the result into the destination register.
+       (x86 (!mmx src1/dst-index result x86))
+       (x86 (mmx-instruction-updates x86))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst x86-punpckl-sse
 
   :parents (two-byte-opcodes)

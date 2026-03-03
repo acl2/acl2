@@ -7171,7 +7171,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PUNPCKL-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PUNPCKLBW"
           (OP :OP #xF60 :PFX :66 :FEAT '(:SSE2))
@@ -7219,7 +7219,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PUNPCKL-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PUNPCKLWD"
           (OP :OP #xF61 :PFX :66 :FEAT '(:SSE2))
@@ -7267,7 +7267,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PUNPCKL-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PUNPCKLDQ"
           (OP :OP #xF62 :PFX :66 :FEAT '(:SSE2))
