@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -14,6 +14,14 @@
 
 (include-book "concrete-syntax")
 (include-book "syntax-abstraction")
+
+(acl2::controlled-configuration :no-function nil :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (in-theory (enable abnf::treep-when-tree-resultp-and-not-reserrp
+                    abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,4 +142,6 @@
        (constraints (system->constraints ast))
        ((unless (and (consp defs) (null constraints)))
         (reserrf (cons :wrong-number-of-system-components cst))))
-    (first defs)))
+    (first defs))
+  :guard-hints
+  (("Goal" :in-theory (enable systemp-when-system-resultp-and-not-reserrp))))
