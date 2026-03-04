@@ -9,7 +9,7 @@ if [ "$ACL2" = "" ] ; then
     pushd "${ACL2_SYSTEM_BOOKS}/.." > /dev/null ; export ACL2=`pwd`/saved_acl2 ; popd > /dev/null ;\
 fi
 
-if [ ! `which acl2` ] ; then \
+if [ ! -x "$ACL2" ] ; then \
     echo "ERROR: Need to define ACL2 to invoke books/projects/acl2-in-hol/tests/doit," ;\
     echo "       because $ACL2 does not invoke an acl2 executable." ;\
     exit 1 ;\
