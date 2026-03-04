@@ -4,7 +4,7 @@ if [ "$ACL2_SYSTEM_BOOKS" = "" ] ; then \
     exit 1 ;\
 fi
 
-# Note: ACL2 is needed for lisp/book-essence.csh.
+# Note: ACL2 is needed for lisp/book-essence.bash.
 if [ "$ACL2" = "" ] ; then
     pushd "${ACL2_SYSTEM_BOOKS}/.." > /dev/null ; export ACL2=`pwd`/saved_acl2 ; popd > /dev/null ;\
 fi
