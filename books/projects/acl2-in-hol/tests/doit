@@ -64,6 +64,7 @@ if [ -s diffout ] ; then \
     my_status=1 ; \
 else \
     echo 'Success for main tests (skipping round-trip testing)!' ; \
+    touch success.txt
 fi
 
 exit $my_status
