@@ -328,7 +328,7 @@
 
   ;; fixer:
 
-  (define ppstate-fix (ppstate)
+  (define ppstate-fix ((ppstate ppstatep))
     :returns (new-ppstate ppstatep)
     (mbe :logic (if (ppstatep ppstate)
                     ppstate
@@ -368,13 +368,13 @@
 
   ;; readers:
 
-  (define ppstate->chars-length (ppstate)
+  (define ppstate->chars-length ((ppstate ppstatep))
     :returns (length natp)
     (mbe :logic (non-exec (raw-ppstate->chars-length (ppstate-fix ppstate)))
          :exec (raw-ppstate->chars-length ppstate))
     :inline t)
 
-  (define ppstate->char ((i natp) ppstate)
+  (define ppstate->char ((i natp) (ppstate ppstatep))
     :guard (< i (ppstate->chars-length ppstate))
     :returns (char ucharp)
     (mbe :logic (non-exec
@@ -392,13 +392,13 @@
      (char natp :rule-classes :type-prescription
            :hints (("Goal" :in-theory (enable natp-when-ucharp))))))
 
-  (define ppstate->positions-length (ppstate)
+  (define ppstate->positions-length ((ppstate ppstatep))
     :returns (length natp)
     (mbe :logic (non-exec (raw-ppstate->positions-length (ppstate-fix ppstate)))
          :exec (raw-ppstate->positions-length ppstate))
     :inline t)
 
-  (define ppstate->position ((i natp) ppstate)
+  (define ppstate->position ((i natp) (ppstate ppstatep))
     :guard (< i (ppstate->positions-length ppstate))
     :returns (pos positionp)
     (mbe :logic (non-exec
@@ -410,43 +410,43 @@
     :guard-hints
     (("Goal" :in-theory (enable raw-ppstate->positions-p-to-position-listp))))
 
-  (define ppstate->char-index (ppstate)
+  (define ppstate->char-index ((ppstate ppstatep))
     :returns (char-index natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->char-index (ppstate-fix ppstate)))
          :exec (raw-ppstate->char-index ppstate))
     :inline t)
 
-  (define ppstate->line-offset (ppstate)
+  (define ppstate->line-offset ((ppstate ppstatep))
     :returns (line-offset integerp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->line-offset (ppstate-fix ppstate)))
          :exec (raw-ppstate->line-offset ppstate))
     :inline t)
 
-  (define ppstate->lexmarks (ppstate)
+  (define ppstate->lexmarks ((ppstate ppstatep))
     :returns (lexmarks lexmark-listp)
     (mbe :logic (non-exec (raw-ppstate->lexmarks (ppstate-fix ppstate)))
          :exec (raw-ppstate->lexmarks ppstate))
     :inline t)
 
-  (define ppstate->size (ppstate)
+  (define ppstate->size ((ppstate ppstatep))
     :returns (size natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->size (ppstate-fix ppstate)))
          :exec (raw-ppstate->size ppstate))
     :inline t)
 
-  (define ppstate->macros (ppstate)
+  (define ppstate->macros ((ppstate ppstatep))
     :returns (macros macro-tablep)
     (mbe :logic (non-exec (raw-ppstate->macros (ppstate-fix ppstate)))
          :exec (raw-ppstate->macros ppstate))
     :inline t)
 
-  (define ppstate->options (ppstate)
+  (define ppstate->options ((ppstate ppstatep))
     :returns (options ppoptionsp)
     (mbe :logic (non-exec (raw-ppstate->options (ppstate-fix ppstate)))
          :exec (raw-ppstate->options ppstate))
     :inline t)
 
-  (define ppstate->ienv (ppstate)
+  (define ppstate->ienv ((ppstate ppstatep))
     :returns (ienv ienvp)
     (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
          :exec (raw-ppstate->ienv ppstate))
@@ -458,7 +458,7 @@
 
   ;; writers:
 
-  (define update-ppstate->chars-length ((length natp) ppstate)
+  (define update-ppstate->chars-length ((length natp) (ppstate ppstatep))
     :returns (new-ppstate ppstatep
                           :hints
                           (("Goal"
@@ -469,7 +469,7 @@
          :exec (raw-update-ppstate->chars-length length ppstate))
     :inline t)
 
-  (define update-ppstate->char ((i natp) (char ucharp) ppstate)
+  (define update-ppstate->char ((i natp) (char ucharp) (ppstate ppstatep))
     :guard (< i (ppstate->chars-length ppstate))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
@@ -481,7 +481,7 @@
     :inline t
     :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
-  (define update-ppstate->positions-length ((length natp) ppstate)
+  (define update-ppstate->positions-length ((length natp) (ppstate ppstatep))
     :returns (new-ppstate ppstatep
                           :hints
                           (("Goal"
@@ -492,7 +492,7 @@
          :exec (raw-update-ppstate->positions-length length ppstate))
     :inline t)
 
-  (define update-ppstate->position ((i natp) (pos positionp) ppstate)
+  (define update-ppstate->position ((i natp) (pos positionp) (ppstate ppstatep))
     :guard (< i (ppstate->positions-length ppstate))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
@@ -504,21 +504,22 @@
     :inline t
     :prepwork ((local (in-theory (enable ppstate->positions-length)))))
 
-  (define update-ppstate->char-index ((char-index natp) ppstate)
+  (define update-ppstate->char-index ((char-index natp) (ppstate ppstatep))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec (raw-update-ppstate->char-index
                            (nfix char-index) (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->char-index char-index ppstate))
     :inline t)
 
-  (define update-ppstate->line-offset ((line-offset integerp) ppstate)
+  (define update-ppstate->line-offset ((line-offset integerp)
+                                       (ppstate ppstatep))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec (raw-update-ppstate->line-offset
                            (ifix line-offset) (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->line-offset line-offset ppstate))
     :inline t)
 
-  (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
+  (define update-ppstate->lexmarks ((lexmarks lexmark-listp) (ppstate ppstatep))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->lexmarks (lexmark-list-fix lexmarks)
@@ -526,21 +527,21 @@
          :exec (raw-update-ppstate->lexmarks lexmarks ppstate))
     :inline t)
 
-  (define update-ppstate->size ((size natp) ppstate)
+  (define update-ppstate->size ((size natp) (ppstate ppstatep))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->size (nfix size) (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->size size ppstate))
     :inline t)
 
-  (define update-ppstate->macros ((macros macro-tablep) ppstate)
+  (define update-ppstate->macros ((macros macro-tablep) (ppstate ppstatep))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec (raw-update-ppstate->macros (macro-table-fix macros)
                                                       (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->macros macros ppstate))
     :inline t)
 
-  (define update-ppstate->options ((options ppoptionsp) ppstate)
+  (define update-ppstate->options ((options ppoptionsp) (ppstate ppstatep))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->options (ppoptions-fix options)
@@ -548,7 +549,7 @@
          :exec (raw-update-ppstate->options options ppstate))
     :inline t)
 
-  (define update-ppstate->ienv ((ienv ienvp) ppstate)
+  (define update-ppstate->ienv ((ienv ienvp) (ppstate ppstatep))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->ienv (ienv-fix ienv)
