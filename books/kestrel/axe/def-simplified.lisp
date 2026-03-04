@@ -1,7 +1,7 @@
 ; A tool to simplify a term and store the resulting DAG in a constant
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -43,6 +43,7 @@
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
 (include-book "kestrel/bv/rules3" :dir :system) ; for max-constants-lemma
+(include-book "kestrel/bv/rules4" :dir :system) ; for bvlt-of-bvcat-arg2-constant-arg4-arg3, etc.
 (include-book "kestrel/arithmetic-light/ifix" :dir :system) ; for ifix-when-integerp
 (include-book "kestrel/bv/adder" :dir :system) ; for RIPPLE-CARRY-ADDER-RECURSIVE -- drop?
 (include-book "kestrel/bv/bvif2" :dir :system) ; for BVLT-OF-BVIF-ARG2-SAFE
