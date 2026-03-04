@@ -780,12 +780,13 @@ ACL2_CUSTOM_TARGETS := \
   system/toothbrush/success.txt \
   clause-processors/SULFA/target.cert \
   projects/translators/l3-to-acl2/target.cert \
-  projects/acl2-in-hol/tests/success.txt \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
   workshops/2003/kaufmann/support/rtl/package-defs.cert \
   workshops/2004/sumners-ray/support/success.txt
+# To be added after l3-to-acl2 above:
+# projects/acl2-in-hol/tests/success.txt \
 
 # Currently, apply-model and (probably) apply-model-2 don't work for
 # ACL2(r).
