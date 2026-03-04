@@ -7839,6 +7839,7 @@
                             bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;alternate phrasing for the bvcat
+;;rename this series!
 (defthm bvlt-of-bvcat-arg2-lemma
   (implies (and (equal size (+ lowsize highsize))
                 (natp lowsize)
