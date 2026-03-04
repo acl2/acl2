@@ -45,15 +45,13 @@
 ;; ----------------------------------------------------------------------
 
 (include-book "instructions/top"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec))
 (include-book "two-byte-opcodes-dispatch"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec))
 (include-book "three-byte-opcodes-dispatch"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
-(include-book "vex-opcodes-dispatch"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
-(include-book "evex-opcodes-dispatch"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec))
+(include-book "vex-opcodes-dispatch")
+(include-book "evex-opcodes-dispatch")
 (include-book "cpuid")
 (include-book "dispatch-macros")
 (include-book "get-prefixes")

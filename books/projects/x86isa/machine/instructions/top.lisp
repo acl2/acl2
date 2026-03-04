@@ -41,84 +41,46 @@
 
 ;; ======================================================================
 
-(include-book "arith-and-logic"
-              :ttags (:undef-flg))
-(include-book "bit"
-              :ttags (:undef-flg))
-(include-book "conditional"
-              :ttags (:undef-flg))
-(include-book "divide"
-              :ttags (:undef-flg))
-(include-book "endbranch"
-              :ttags (:undef-flg))
-(include-book "exchange"
-              :ttags (:undef-flg))
-(include-book "flags"
-              :ttags (:undef-flg))
-(include-book "halt"
-              :ttags (:undef-flg))
-(include-book "jump-and-loop"
-              :ttags (:undef-flg))
-(include-book "logical"
-              :ttags (:undef-flg))
-(include-book "move"
-              :ttags (:undef-flg))
-(include-book "move-mmx"
-              :ttags (:undef-flg))
-(include-book "move-sse"
-              :ttags (:undef-flg))
-(include-book "move-vex"
-              :ttags (:undef-flg))
-(include-book "multiply"
-              :ttags (:undef-flg))
-(include-book "padd"
-              :ttags (:undef-flg))
-(include-book "pmadd"
-              :ttags (:undef-flg))
-(include-book "pmul"
-              :ttags (:undef-flg))
-(include-book "psub"
-              :ttags (:undef-flg))
-(include-book "pshift"
-              :ttags (:undef-flg))
-(include-book "push-and-pop"
-              :ttags (:undef-flg))
-(include-book "rand"
-              :ttags (:other-non-det :undef-flg))
-(include-book "rotate-and-shift"
-              :ttags (:undef-flg))
-(include-book "segmentation"
-              :ttags (:undef-flg))
-(include-book "signextend"
-              :ttags (:undef-flg))
-(include-book "string"
-              :ttags (:undef-flg))
+(include-book "arith-and-logic")
+(include-book "bit")
+(include-book "conditional")
+(include-book "divide")
+(include-book "endbranch")
+(include-book "exchange")
+(include-book "flags")
+(include-book "halt")
+(include-book "jump-and-loop")
+(include-book "logical")
+(include-book "move")
+(include-book "move-mmx")
+(include-book "move-sse")
+(include-book "move-vex")
+(include-book "multiply")
+(include-book "padd")
+(include-book "pmadd")
+(include-book "pmul")
+(include-book "psub")
+(include-book "pshift")
+(include-book "push-and-pop")
+(include-book "rand")
+(include-book "rotate-and-shift")
+(include-book "segmentation")
+(include-book "signextend")
+(include-book "string")
 (include-book "syscall"
-              :ttags (:syscall-exec :undef-flg))
-(include-book "subroutine"
-              :ttags (:undef-flg))
-(include-book "fp/top"
-              :ttags (:undef-flg))
-(include-book "interrupts"
-              :ttags (:undef-flg))
-(include-book "cpuid"
-              :ttags (:undef-flg))
-(include-book "msrs"
-              :ttags (:undef-flg))
-(include-book "x87"
-              :ttags (:undef-flg))
-(include-book "time"
-              :ttags (:undef-flg))
-(include-book "pio"
-              :ttags (:undef-flg))
-(include-book "cache"
-              :ttags (:undef-flg))
-(include-book "punpck"
-              :ttags (:undef-flg))
-(include-book "pcmp"
-              :ttags (:undef-flg))
-(include-book "pshuf"
-              :ttags (:undef-flg))
+              :ttags (:syscall-exec))
+(include-book "subroutine")
+(include-book "fp/top")
+(include-book "interrupts")
+(include-book "cpuid")
+(include-book "msrs")
+(include-book "x87")
+(include-book "time")
+(include-book "pio")
+(include-book "cache")
+(include-book "punpck")
+(include-book "pcmp")
+(include-book "pshuf")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

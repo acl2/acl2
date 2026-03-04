@@ -38,8 +38,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils")
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
