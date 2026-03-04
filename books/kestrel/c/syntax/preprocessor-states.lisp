@@ -329,7 +329,7 @@
   ;; fixer:
 
   (define ppstate-fix (ppstate)
-    :returns (ppstate ppstatep)
+    :returns (new-ppstate ppstatep)
     (mbe :logic (if (ppstatep ppstate)
                     ppstate
                   (non-exec (create-ppstate)))
@@ -459,10 +459,10 @@
   ;; writers:
 
   (define update-ppstate->chars-length ((length natp) ppstate)
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory (enable uchar-listp-of-resize-list))))
+    :returns (new-ppstate ppstatep
+                          :hints
+                          (("Goal"
+                            :in-theory (enable uchar-listp-of-resize-list))))
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-length (nfix length)
                                                    (ppstate-fix ppstate)))
@@ -471,7 +471,7 @@
 
   (define update-ppstate->char ((i natp) (char ucharp) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
-    :returns (ppstate ppstatep)
+    :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (if (< (nfix i) (ppstate->chars-length ppstate))
                      (raw-update-ppstate->char
@@ -482,10 +482,10 @@
     :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define update-ppstate->positions-length ((length natp) ppstate)
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory (enable position-listp-of-resize-list))))
+    :returns (new-ppstate ppstatep
+                          :hints
+                          (("Goal"
+                            :in-theory (enable position-listp-of-resize-list))))
     (mbe :logic (non-exec
                  (raw-update-ppstate->positions-length (nfix length)
                                                        (ppstate-fix ppstate)))
@@ -494,7 +494,7 @@
 
   (define update-ppstate->position ((i natp) (pos positionp) ppstate)
     :guard (< i (ppstate->positions-length ppstate))
-    :returns (ppstate ppstatep)
+    :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (if (< (nfix i) (ppstate->positions-length ppstate))
                      (raw-update-ppstate->position
@@ -505,21 +505,21 @@
     :prepwork ((local (in-theory (enable ppstate->positions-length)))))
 
   (define update-ppstate->char-index ((char-index natp) ppstate)
-    :returns (ppstate ppstatep)
+    :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec (raw-update-ppstate->char-index
                            (nfix char-index) (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->char-index char-index ppstate))
     :inline t)
 
   (define update-ppstate->line-offset ((line-offset integerp) ppstate)
-    :returns (ppstate ppstatep)
+    :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec (raw-update-ppstate->line-offset
                            (ifix line-offset) (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->line-offset line-offset ppstate))
     :inline t)
 
   (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
-    :returns (ppstate ppstatep)
+    :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->lexmarks (lexmark-list-fix lexmarks)
                                                (ppstate-fix ppstate)))
@@ -527,21 +527,21 @@
     :inline t)
 
   (define update-ppstate->size ((size natp) ppstate)
-    :returns (ppstate ppstatep)
+    :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->size (nfix size) (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->size size ppstate))
     :inline t)
 
   (define update-ppstate->macros ((macros macro-tablep) ppstate)
-    :returns (ppstate ppstatep)
+    :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec (raw-update-ppstate->macros (macro-table-fix macros)
                                                       (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->macros macros ppstate))
     :inline t)
 
   (define update-ppstate->options ((options ppoptionsp) ppstate)
-    :returns (ppstate ppstatep)
+    :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->options (ppoptions-fix options)
                                               (ppstate-fix ppstate)))
@@ -549,7 +549,7 @@
     :inline t)
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
-    :returns (ppstate ppstatep)
+    :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->ienv (ienv-fix ienv)
                                            (ppstate-fix ppstate)))
