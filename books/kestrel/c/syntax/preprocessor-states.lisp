@@ -234,6 +234,9 @@
       we always have an offset with which we can compute
       the presumed line number.")
     (xdoc::li
+     "The name of the ffile being preprocessed.
+      This may be modified via a @('#line') directive [C17:6.10.4].")
+    (xdoc::li
      "A list of lexmarks to be read next,
       before lexing lexemes from the character array.
       Conceptually, this list is in front of the remaining characters,
@@ -281,6 +284,8 @@
                   :initially 0)
       (line-offset :type integer
                    :initially 0)
+      (file-name :type string
+                 :initially "")
       (lexmarks :type (satisfies lexmark-listp)
                 :initially nil)
       (size :type (integer 0 *)
@@ -296,6 +301,7 @@
                  (positionsp raw-ppstate->positions-p)
                  (char-indexp raw-ppstate->char-index-p)
                  (line-offsetp raw-ppstate->line-offset-p)
+                 (file-namep raw-ppstate->file-name-p)
                  (lexmarksp raw-ppstate->lexmarks-p)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
@@ -308,6 +314,7 @@
                  (positionsi raw-ppstate->position)
                  (char-index raw-ppstate->char-index)
                  (line-offset raw-ppstate->line-offset)
+                 (file-name raw-ppstate->file-name)
                  (lexmarks raw-ppstate->lexmarks)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
@@ -320,6 +327,7 @@
                  (update-positionsi raw-update-ppstate->position)
                  (update-char-index raw-update-ppstate->char-index)
                  (update-line-offset raw-update-ppstate->line-offset)
+                 (update-file-name raw-update-ppstate->file-name)
                  (update-lexmarks raw-update-ppstate->lexmarks)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
@@ -422,6 +430,12 @@
          :exec (raw-ppstate->line-offset ppstate))
     :inline t)
 
+  (define ppstate->file-name ((ppstate ppstatep))
+    :returns (file-name stringp)
+    (mbe :logic (non-exec (raw-ppstate->file-name (ppstate-fix ppstate)))
+         :exec (raw-ppstate->file-name ppstate))
+    :inline t)
+
   (define ppstate->lexmarks ((ppstate ppstatep))
     :returns (lexmarks lexmark-listp)
     (mbe :logic (non-exec (raw-ppstate->lexmarks (ppstate-fix ppstate)))
@@ -517,6 +531,13 @@
     (mbe :logic (non-exec (raw-update-ppstate->line-offset
                            (ifix line-offset) (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->line-offset line-offset ppstate))
+    :inline t)
+
+  (define update-ppstate->file-name ((file-name stringp) (ppstate ppstatep))
+    :returns (new-ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->file-name
+                           (str-fix file-name) (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->file-name file-name ppstate))
     :inline t)
 
   (define update-ppstate->lexmarks ((lexmarks lexmark-listp) (ppstate ppstatep))
@@ -758,7 +779,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-ppstate ((chars uchar-listp)
+(define init-ppstate ((file-name stringp)
+                      (chars uchar-listp)
                       (poss position-listp)
                       (macros macro-tablep)
                       (options ppoptionsp)
@@ -772,6 +794,7 @@
    (xdoc::p
     "This is the state when we start preprocessing a file.
      It is built from
+     the name of the file,
      the characters read from the file,
      their positions,
      the current table of macros in scope,
@@ -791,6 +814,7 @@
        (ppstate (init-ppstate-positions-loop poss 0 ppstate))
        (ppstate (update-ppstate->char-index 0 ppstate))
        (ppstate (update-ppstate->line-offset 0 ppstate))
+       (ppstate (update-ppstate->file-name file-name ppstate))
        (ppstate (update-ppstate->size (len chars) ppstate))
        (ppstate (update-ppstate->macros macros ppstate))
        (ppstate (update-ppstate->options options ppstate))
