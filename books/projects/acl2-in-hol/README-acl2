@@ -18,7 +18,8 @@ README-acl2, is new here.)
 ----------
 
 The script .acl2holrc.bash has been modified appropriately, and
-scripts have been converted from csh to bash.
+scripts have been converted from csh to bash.  The csh scripts
+are now in lisp/obsolete-csh/.
 
 ----------
 
