@@ -40,18 +40,18 @@
                 (<<-all-r x right))
            (or (tree-empty-p left)
                (tree-empty-p right)
-               (not (equal (tagged-element->elem (tree->head left))
-                           (tagged-element->elem (tree->head right))))))
+               (not (equal (tree-element->val (tree->head left))
+                           (tree-element->val (tree->head right))))))
   :use ((:instance tree-in-right-when-disjoint-and-tree-in-left
-                   (y (tagged-element->elem (tree->head left))))))
+                   (y (tree-element->val (tree->head left))))))
 
 (defrule equal-of-tree->heads-when-<<-all-l-and-<<-all-r-forward-chaining
   (implies (and (<<-all-l left x)
                 (<<-all-r x right))
            (or (tree-empty-p left)
                (tree-empty-p right)
-               (not (equal (tagged-element->elem (tree->head left))
-                           (tagged-element->elem (tree->head right))))))
+               (not (equal (tree-element->val (tree->head left))
+                           (tree-element->val (tree->head right))))))
   :rule-classes :forward-chaining
   :use equal-of-tree->heads-when-<<-all-l-and-<<-all-r)
 
@@ -75,7 +75,7 @@
          (tree-fix right))
         ((tree-empty-p right)
          (tree-fix left))
-        ((heap<-with-tagged-element (tree->head left) (tree->head right))
+        ((heap<-with-tree-element (tree->head left) (tree->head right))
          (tree-node (tree->head right)
                     (tree-join left (tree->left right))
                     (tree->right right)))
@@ -309,18 +309,18 @@
 (encapsulate ()
   (defrulel lemma0
     (implies (and (not (tree-empty-p left))
-                  (not (heap< (tagged-element->elem (tree->head left))
-                              (tagged-element->elem (tree->head right))))
+                  (not (heap< (tree-element->val (tree->head left))
+                              (tree-element->val (tree->head right))))
                   (heap<-all-l (tree->left right)
-                               (tagged-element->elem (tree->head right)))
+                               (tree-element->val (tree->head right)))
                   (<<-all-l left x)
                   (<<-all-r x right)
                   (heap<-all-l (tree->right right)
-                               (tagged-element->elem (tree->head right)))
+                               (tree-element->val (tree->head right)))
                   (heap<-all-l (tree->right left)
-                               (tagged-element->elem (tree->head left))))
+                               (tree-element->val (tree->head left))))
              (heap<-all-l (tree-join (tree->right left) right)
-                          (tagged-element->elem (tree->head left))))
+                          (tree-element->val (tree->head left))))
     :enable (heap<-all-l-extra-rules
              heap<-rules)
     :disable equal-of-tree->heads-when-<<-all-l-and-<<-all-r-forward-chaining
@@ -329,33 +329,33 @@
   (defrulel lemma1
     (implies (and (heapp (tree->left right))
                   (heap<-all-l (tree-join left (tree->left right))
-                               (tagged-element->elem (tree->head right)))
+                               (tree-element->val (tree->head right)))
                   (not (heap<-all-l (tree->left right)
-                                    (tagged-element->elem (tree->head right)))))
+                                    (tree-element->val (tree->head right)))))
              (not (heap<-all-l (tree->right right)
-                               (tagged-element->elem (tree->head right)))))
+                               (tree-element->val (tree->head right)))))
     :enable (tree-join
              heapp-extra-rules
              heap<-all-l-extra-rules
              heap<-rules)
     :disable heap<-trichotomy
     :use ((:instance heap<-trichotomy
-                     (x (tagged-element->elem (tree->head (tree->left right))))
-                     (y (tagged-element->elem (tree->head left))))))
+                     (x (tree-element->val (tree->head (tree->left right))))
+                     (y (tree-element->val (tree->head left))))))
 
   (defrulel lemma2
-    (implies (and (heap< (tagged-element->elem (tree->head left))
-                         (tagged-element->elem (tree->head right)))
+    (implies (and (heap< (tree-element->val (tree->head left))
+                         (tree-element->val (tree->head right)))
                   (heap<-all-l (tree->left left)
-                               (tagged-element->elem (tree->head left)))
+                               (tree-element->val (tree->head left)))
                   (heap<-all-l (tree->right left)
-                               (tagged-element->elem (tree->head left)))
+                               (tree-element->val (tree->head left)))
                   (not (heap<-all-l (tree-join left (tree->left right))
-                                    (tagged-element->elem (tree->head right))))
+                                    (tree-element->val (tree->head right))))
                   (heap<-all-l (tree->left right)
-                               (tagged-element->elem (tree->head right))))
+                               (tree-element->val (tree->head right))))
              (not (heap<-all-l (tree->right right)
-                               (tagged-element->elem (tree->head right)))))
+                               (tree-element->val (tree->head right)))))
     :enable heap<-all-l-weaken)
 
   (defrule heapp-of-tree-join

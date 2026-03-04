@@ -447,7 +447,7 @@
   :returns (key-tree treeset::treep)
   (if (tree-empty-p tree)
       nil
-    (treeset::tree-node (treeset::tagged-element
+    (treeset::tree-node (treeset::tree-element
                           (tree-element->hash (tree->head tree))
                           (tree-element->key (tree->head tree)))
                         (tree-key-tree (tree->left tree))

@@ -48,22 +48,22 @@
   (cond ((or (tree-empty-p x)
              (tree-empty-p y))
          (tree-fix x))
-        ((heap<-with-tagged-element (tree->head x) (tree->head y))
+        ((heap<-with-tree-element (tree->head x) (tree->head y))
          (mv-let (in left right)
-                 (tree-split (tagged-element->elem (tree->head y)) x)
+                 (tree-split (tree-element->val (tree->head y)) x)
            (declare (ignore in))
            (let ((left (tree-diff left (tree->left y)))
                  (right (tree-diff right (tree->right y))))
-             (mbe :logic (tree-join-at (tagged-element->elem (tree->head y))
+             (mbe :logic (tree-join-at (tree-element->val (tree->head y))
                                        left right)
                   :exec (tree-join left right)))))
         (t
          (mv-let (in left right)
-                 (tree-split (tagged-element->elem (tree->head x)) y)
+                 (tree-split (tree-element->val (tree->head x)) y)
            (let ((left (tree-diff (tree->left x) left))
                  (right (tree-diff (tree->right x) right)))
              (if in
-                 (mbe :logic (tree-join-at (tagged-element->elem (tree->head x))
+                 (mbe :logic (tree-join-at (tree-element->val (tree->head x))
                                            left right)
                       :exec (tree-join left right))
                (tree-node (tree->head x) left right))))))
@@ -189,10 +189,10 @@
        (cond ((or (tree-empty-p x)
                   (tree-empty-p y))
               x)
-             ((heap<-with-tagged-element (tree->head x) (tree->head y))
+             ((heap<-with-tree-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (acl2-number-tree-split
-                        (tagged-element->elem (tree->head y)) x)
+                        (tree-element->val (tree->head y)) x)
                 (declare (ignore in))
                 (let ((left (acl2-number-tree-diff left (tree->left y)))
                       (right (acl2-number-tree-diff right (tree->right y))))
@@ -200,7 +200,7 @@
              (t
               (mv-let (in left right)
                       (acl2-number-tree-split
-                        (tagged-element->elem (tree->head x)) y)
+                        (tree-element->val (tree->head x)) y)
                 (let ((left (acl2-number-tree-diff (tree->left x) left))
                       (right (acl2-number-tree-diff (tree->right x) right)))
                   (if in
@@ -222,10 +222,10 @@
        (cond ((or (tree-empty-p x)
                   (tree-empty-p y))
               x)
-             ((heap<-with-tagged-element (tree->head x) (tree->head y))
+             ((heap<-with-tree-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (symbol-tree-split
-                        (tagged-element->elem (tree->head y)) x)
+                        (tree-element->val (tree->head y)) x)
                 (declare (ignore in))
                 (let ((left (symbol-tree-diff left (tree->left y)))
                       (right (symbol-tree-diff right (tree->right y))))
@@ -233,7 +233,7 @@
              (t
               (mv-let (in left right)
                       (symbol-tree-split
-                        (tagged-element->elem (tree->head x)) y)
+                        (tree-element->val (tree->head x)) y)
                 (let ((left (symbol-tree-diff (tree->left x) left))
                       (right (symbol-tree-diff (tree->right x) right)))
                   (if in
@@ -254,10 +254,10 @@
        (cond ((or (tree-empty-p x)
                   (tree-empty-p y))
               x)
-             ((heap<-with-tagged-element (tree->head x) (tree->head y))
+             ((heap<-with-tree-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (eqlable-tree-split
-                        (tagged-element->elem (tree->head y)) x)
+                        (tree-element->val (tree->head y)) x)
                 (declare (ignore in))
                 (let ((left (eqlable-tree-diff left (tree->left y)))
                       (right (eqlable-tree-diff right (tree->right y))))
@@ -265,7 +265,7 @@
              (t
               (mv-let (in left right)
                       (eqlable-tree-split
-                        (tagged-element->elem (tree->head x)) y)
+                        (tree-element->val (tree->head x)) y)
                 (let ((left (eqlable-tree-diff (tree->left x) left))
                       (right (eqlable-tree-diff (tree->right x) right)))
                   (if in

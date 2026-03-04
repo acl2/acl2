@@ -159,7 +159,7 @@
 
 (define tree-all-genericp ((tree treep))
   (or (tree-empty-p tree)
-      (and (genericp (tagged-element->elem (tree->head tree)))
+      (and (genericp (tree-element->val (tree->head tree)))
            (tree-all-genericp (tree->left tree))
            (tree-all-genericp (tree->right tree)))))
 
@@ -203,7 +203,7 @@
            (tree-all-genericp set))
   :induct t
   :hints ('(:use (:instance set-all-genericp-sk-necc
-                            (elem (tagged-element->elem (tree->head set))))))
+                            (elem (tree-element->val (tree->head set))))))
   :enable (tree-all-genericp
            break-abstraction
            in))

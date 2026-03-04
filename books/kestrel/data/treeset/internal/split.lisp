@@ -60,9 +60,9 @@
                (right treep))
   (cond ((tree-empty-p tree)
          (mv nil nil nil))
-        ((equal x (tagged-element->elem (tree->head tree)))
+        ((equal x (tree-element->val (tree->head tree)))
          (mv t (tree->left tree) (tree->right tree)))
-        ((<< x (tagged-element->elem (tree->head tree)))
+        ((<< x (tree-element->val (tree->head tree)))
          ;; Interpret as a tree-node (use x instead of in)
          ;; (may violate heapp)
          (mv-let (in left$ right$)
@@ -429,7 +429,7 @@
            <<-all-extra-rules)
   :prep-lemmas
   ((defrule lemma0
-     (implies (and (not (<< y (tagged-element->elem (tree->head tree))))
+     (implies (and (not (<< y (tree-element->val (tree->head tree))))
                    (<<-all-l (tree->right tree) x)
                    (bstp tree)
                    (<< y x))
@@ -550,14 +550,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-split-of-tree->head
-  (equal (tree-split (tagged-element->elem (tree->head tree)) tree)
+  (equal (tree-split (tree-element->val (tree->head tree)) tree)
          (mv (not (tree-empty-p tree))
              (tree->left tree)
              (tree->right tree)))
   :enable tree-split)
 
 (defrule tree-split-of-bind-tree->head-cheap
-  (implies (equal x (tagged-element->elem (tree->head tree)))
+  (implies (equal x (tree-element->val (tree->head tree)))
            (equal (tree-split x tree)
                   (mv (not (tree-empty-p tree))
                       (tree->left tree)
@@ -623,9 +623,9 @@
        :exec
        (cond ((tree-empty-p tree)
               (mv nil nil nil))
-             ((= x (tagged-element->elem (tree->head tree)))
+             ((= x (tree-element->val (tree->head tree)))
               (mv t (tree->left tree) (tree->right tree)))
-             ((data::acl2-number-<< x (tagged-element->elem (tree->head tree)))
+             ((data::acl2-number-<< x (tree-element->val (tree->head tree)))
               (mv-let (in left$ right$)
                       (acl2-number-tree-split x (tree->left tree))
                 (mv in
@@ -655,9 +655,9 @@
        :exec
        (cond ((tree-empty-p tree)
               (mv nil nil nil))
-             ((eq x (tagged-element->elem (tree->head tree)))
+             ((eq x (tree-element->val (tree->head tree)))
               (mv t (tree->left tree) (tree->right tree)))
-             ((data::symbol-<< x (tagged-element->elem (tree->head tree)))
+             ((data::symbol-<< x (tree-element->val (tree->head tree)))
               (mv-let (in left$ right$)
                       (symbol-tree-split x (tree->left tree))
                 (mv in
@@ -687,9 +687,9 @@
        :exec
        (cond ((tree-empty-p tree)
               (mv nil nil nil))
-             ((eql x (tagged-element->elem (tree->head tree)))
+             ((eql x (tree-element->val (tree->head tree)))
               (mv t (tree->left tree) (tree->right tree)))
-             ((data::eqlable-<< x (tagged-element->elem (tree->head tree)))
+             ((data::eqlable-<< x (tree-element->val (tree->head tree)))
               (mv-let (in left$ right$)
                       (eqlable-tree-split x (tree->left tree))
                 (mv in

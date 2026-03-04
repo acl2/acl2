@@ -44,8 +44,8 @@
   :guard (bstp y)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p x)
-      (and (mbe :logic (tree-in (tagged-element->elem (tree->head x)) y)
-                :exec (tree-search-in (tagged-element->elem (tree->head x)) y))
+      (and (mbe :logic (tree-in (tree-element->val (tree->head x)) y)
+                :exec (tree-search-in (tree-element->val (tree->head x)) y))
            (tree-subset-p (tree->left x) y)
            (tree-subset-p (tree->right x) y))))
 
@@ -193,14 +193,14 @@
 
 (defruled tree-subset-p-when-not-tree-in-of-tree->head
   (implies (and (not (tree-empty-p x))
-                (not (tree-in (tagged-element->elem (tree->head x)) y)))
+                (not (tree-in (tree-element->val (tree->head x)) y)))
            (not (tree-subset-p x y)))
   :disable tree-in-when-tree-in-and-tree-subset-p
   :use ((:instance tree-in-when-tree-in-and-tree-subset-p
-                   (a (tagged-element->elem (tree->head x))))))
+                   (a (tree-element->val (tree->head x))))))
 
 (defrule tree-subset-p-when-not-tree-in-of-tree->head-cheap
-  (implies (and (not (tree-in (tagged-element->elem (tree->head x)) y))
+  (implies (and (not (tree-in (tree-element->val (tree->head x)) y))
                 (not (tree-empty-p x)))
            (not (tree-subset-p x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
@@ -252,7 +252,7 @@
               (tree-subset-p x y))
      :induct t
      :hints ('(:use (:instance tree-subset-p-sk-necc
-                               (elem (tagged-element->elem (tree->head x))))))
+                               (elem (tree-element->val (tree->head x))))))
      :enable (tree-subset-p
               tree-subset-p-sk-of-tree->left
               tree-subset-p-sk-of-tree->right))))
@@ -304,9 +304,9 @@
   (mbe :logic (tree-subset-p x y)
        :exec
        (or (tree-empty-p x)
-           (and (mbe :logic (tree-in (tagged-element->elem (tree->head x)) y)
+           (and (mbe :logic (tree-in (tree-element->val (tree->head x)) y)
                      :exec (acl2-number-tree-search-in
-                             (tagged-element->elem (tree->head x)) y))
+                             (tree-element->val (tree->head x)) y))
                 (acl2-number-tree-subset-p (tree->left x) y)
                 (acl2-number-tree-subset-p (tree->right x) y))))
   :enabled t
@@ -323,9 +323,9 @@
   (mbe :logic (tree-subset-p x y)
        :exec
        (or (tree-empty-p x)
-           (and (mbe :logic (tree-in (tagged-element->elem (tree->head x)) y)
+           (and (mbe :logic (tree-in (tree-element->val (tree->head x)) y)
                      :exec (symbol-tree-search-in
-                             (tagged-element->elem (tree->head x)) y))
+                             (tree-element->val (tree->head x)) y))
                 (symbol-tree-subset-p (tree->left x) y)
                 (symbol-tree-subset-p (tree->right x) y))))
   :enabled t
@@ -342,9 +342,9 @@
   (mbe :logic (tree-subset-p x y)
        :exec
        (or (tree-empty-p x)
-           (and (mbe :logic (tree-in (tagged-element->elem (tree->head x)) y)
+           (and (mbe :logic (tree-in (tree-element->val (tree->head x)) y)
                      :exec (eqlable-tree-search-in
-                             (tagged-element->elem (tree->head x)) y))
+                             (tree-element->val (tree->head x)) y))
                 (eqlable-tree-subset-p (tree->left x) y)
                 (eqlable-tree-subset-p (tree->right x) y))))
   :enabled t

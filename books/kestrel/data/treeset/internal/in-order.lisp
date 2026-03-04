@@ -60,7 +60,7 @@
   (if (tree-empty-p tree)
       (llist-fix acc)
     (tree-in-order-acc (tree->left tree)
-                       (cons (tagged-element->elem (tree->head tree))
+                       (cons (tree-element->val (tree->head tree))
                              (tree-in-order-acc (tree->right tree)
                                                 acc)))))
 
@@ -118,7 +118,7 @@
   (mbe :logic (if (tree-empty-p tree)
                   nil
                 (append (tree-in-order (tree->left tree))
-                        (cons (tagged-element->elem (tree->head tree))
+                        (cons (tree-element->val (tree->head tree))
                               (tree-in-order (tree->right tree)))))
        :exec (tree-in-order-acc tree nil))
   ;; Verified below
@@ -164,7 +164,7 @@
   :induct t
   :expand ((tree-in-order tree))
   :enable (tree-leftmost
-           irr-tagged-element))
+           irr-tree-element))
 
 (defrule car-of-last-of-tree-in-order
   (equal (car (last (tree-in-order tree)))
@@ -172,7 +172,7 @@
   :induct t
   :expand ((tree-in-order tree))
   :enable (tree-rightmost
-           irr-tagged-element))
+           irr-tree-element))
 
 (defruled tree-in-order-when-tree-empty-p
   (implies (tree-empty-p tree)
