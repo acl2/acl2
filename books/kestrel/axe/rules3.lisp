@@ -7794,14 +7794,6 @@
                             plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus)))))
 
-(defthm lg-of-expt-gen
-  (implies (integerp n)
-           (equal (lg (expt 2 n))
-                  (if (natp n)
-                      n
-                    -1)))
-  :hints (("Goal" :in-theory (enable lg))))
-
 (defthm bvchop-of-lg
   (implies (and (POWER-OF-2P K)
                 (posp k))
