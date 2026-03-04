@@ -443,31 +443,3 @@
                   (and (heapp (tree->left tree))
                        (heapp (tree->right tree)))))
   :enable tree-join-at)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; TODO: unused? (Same with treeset version)
-
-(defrule tree-keys-acl2-numberp-of-tree-join
-  (implies (and (tree-keys-acl2-numberp left)
-                (tree-keys-acl2-numberp right))
-           (tree-keys-acl2-numberp (tree-join left right)))
-  :induct (tree-join left right)
-  :enable (tree-join
-           tree-keys-acl2-numberp))
-
-(defrule tree-keys-symbolp-of-tree-join
-  (implies (and (tree-keys-symbolp left)
-                (tree-keys-symbolp right))
-           (tree-keys-symbolp (tree-join left right)))
-  :induct (tree-join left right)
-  :enable (tree-join
-           tree-keys-symbolp))
-
-(defrule tree-keys-eqlablep-of-tree-join
-  (implies (and (tree-keys-eqlablep left)
-                (tree-keys-eqlablep right))
-           (tree-keys-eqlablep (tree-join left right)))
-  :induct (tree-join left right)
-  :enable (tree-join
-           tree-keys-eqlablep))

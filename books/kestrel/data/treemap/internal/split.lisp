@@ -552,8 +552,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: unused?
-
 (defrule tree-keys-acl2-numberp-of-tree-split.left
   (implies (tree-keys-acl2-numberp tree)
            (tree-keys-acl2-numberp (mv-nth 1 (tree-split x tree))))

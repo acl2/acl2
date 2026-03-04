@@ -410,29 +410,3 @@
                   (and (heapp (tree->left tree))
                        (heapp (tree->right tree)))))
   :enable tree-join-at)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule tree-all-acl2-numberp-of-tree-join
-  (implies (and (tree-all-acl2-numberp left)
-                (tree-all-acl2-numberp right))
-           (tree-all-acl2-numberp (tree-join left right)))
-  :induct (tree-join left right)
-  :enable (tree-join
-           tree-all-acl2-numberp))
-
-(defrule tree-all-symbolp-of-tree-join
-  (implies (and (tree-all-symbolp left)
-                (tree-all-symbolp right))
-           (tree-all-symbolp (tree-join left right)))
-  :induct (tree-join left right)
-  :enable (tree-join
-           tree-all-symbolp))
-
-(defrule tree-all-eqlablep-of-tree-join
-  (implies (and (tree-all-eqlablep left)
-                (tree-all-eqlablep right))
-           (tree-all-eqlablep (tree-join left right)))
-  :induct (tree-join left right)
-  :enable (tree-join
-           tree-all-eqlablep))
