@@ -48,6 +48,7 @@
   ((acl2::mextract-ev glcp-generic-geval-ev)
    (acl2::mextract-ev-lst glcp-generic-geval-ev-lst)
    (acl2::mextract-ev-falsify glcp-generic-geval-ev-falsify)
+   (acl2::mextract-ev-theoremp glcp-generic-geval-ev-theoremp)
    (acl2::mextract-global-badguy glcp-generic-geval-ev-meta-extract-global-badguy)
    (mextract-good-rewrite-rulesp good-rewrite-rulesp))
   :hints((and stable-under-simplificationp
@@ -60,6 +61,7 @@
   ((acl2::mextract-ev glcp-generic-geval-ev)
    (acl2::mextract-ev-lst glcp-generic-geval-ev-lst)
    (acl2::mextract-ev-falsify glcp-generic-geval-ev-falsify)
+   (acl2::mextract-ev-theoremp glcp-generic-geval-ev-theoremp)
    (acl2::mextract-global-badguy glcp-generic-geval-ev-meta-extract-global-badguy)
    (mextract-good-rewrite-rulesp good-rewrite-rulesp))
   :hints((and stable-under-simplificationp

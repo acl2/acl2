@@ -115,23 +115,28 @@
          cmr::equiv-rel-term-implies-reflexive
          ((cmr::equiv-ev rules-ev)
           (cmr::equiv-ev-list rules-ev-list)
-          (cmr::equiv-ev-falsify rules-ev-falsify))
+          (cmr::equiv-ev-falsify rules-ev-falsify)
+          (cmr::equiv-ev-theoremp rules-ev-theoremp))
          :hints(("Goal" :in-theory (enable rules-ev-when-theoremp
-                                           rules-ev-of-fncall-args)))))
+                                           rules-ev-of-fncall-args))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable rules-ev-theoremp))))))
 
 (local (acl2::def-functional-instance
          rules-ev-equiv-rel-term-implies-symmetric
          cmr::equiv-rel-term-implies-symmetric
          ((cmr::equiv-ev rules-ev)
           (cmr::equiv-ev-list rules-ev-list)
-          (cmr::equiv-ev-falsify rules-ev-falsify))))
+          (cmr::equiv-ev-falsify rules-ev-falsify)
+          (cmr::equiv-ev-theoremp rules-ev-theoremp))))
 
 (local (acl2::def-functional-instance
          rules-ev-equiv-rel-term-implies-transitive
          cmr::equiv-rel-term-implies-transitive
          ((cmr::equiv-ev rules-ev)
           (cmr::equiv-ev-list rules-ev-list)
-          (cmr::equiv-ev-falsify rules-ev-falsify))))
+          (cmr::equiv-ev-falsify rules-ev-falsify)
+          (cmr::equiv-ev-theoremp rules-ev-theoremp))))
 
 
 (define rules-ev-good-fgl-binder-rule-p ((x fgl-binder-rule-p))
@@ -176,6 +181,7 @@
            ((cmr::equiv-ev rules-ev)
             (cmr::equiv-ev-list rules-ev-list)
             (cmr::equiv-ev-falsify rules-ev-falsify)
+            (cmr::equiv-ev-theoremp rules-ev-theoremp)
             (cmr::equiv-ev-meta-extract-global-badguy rules-ev-meta-extract-global-badguy))
            :hints((and stable-under-simplificationp
                        '(:use rules-ev-meta-extract-global-badguy)))))
@@ -200,7 +206,9 @@
     :hints (("goal" :use ((:instance fgl-equivp-correct
                            (a (rules-ev-falsify (cmr::equiv-rel-term fn)))))
              :in-theory (disable fgl-equivp-correct
-                                 fgl-equivp))))
+                                 fgl-equivp))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable rules-ev-theoremp)))))
 
 
   (defthm fgl-equivp-correct2
@@ -212,7 +220,9 @@
                   (implies (and (rules-ev (pseudo-term-fncall fn (list x y)) a)
                                 (rules-ev (pseudo-term-fncall fn (list y z)) a))
                            (rules-ev (pseudo-term-fncall fn (list x z)) a))))
-    :hints(("Goal" :in-theory (disable fgl-equivp))))
+    :hints(("Goal" :in-theory (disable fgl-equivp))
+           (and stable-under-simplificationp
+                '(:in-theory (enable rules-ev-theoremp)))))
 
   ;; Note: Ran into a case where cmr::ensure-equiv-relationp turned out to be
   ;; very expensive.  There was a rule with a hyp (fgl::check-consp freevar x),
@@ -494,7 +504,10 @@
              (rules-ev-good-fgl-binder-rule-p rule))
     :hints (("goal" :in-theory (e/d (rules-ev-good-fgl-binder-rule-p
                                      rules-ev-when-theoremp)
-                                    (<fn>))))))
+                                    (<fn>)))
+            (and stable-under-simplificationp
+                 (let ((lit (assoc 'rules-ev-theoremp clause)))
+                   (and lit `(:expand (,lit))))))))
 
 
 (local (defthm pseudo-fnsym-p-by-symbolp
@@ -502,6 +515,11 @@
                        (not (equal x 'quote)))
                   (pseudo-fnsym-p x))
          :hints(("Goal" :in-theory (enable pseudo-fnsym-p)))))
+
+(local (defthm rules-ev-theoremp-when-falsify
+         (implies (rules-ev x (rules-ev-falsify x))
+                  (rules-ev-theoremp x))
+         :hints(("Goal" :in-theory (enable rules-ev-theoremp)))))
 
 (define fgl-binder-rule-from-lemma ((fgl-rune fgl-binder-rune-p) x (w plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
@@ -520,6 +538,7 @@
              (rules-ev-good-fgl-binder-rule-p rule))
     :hints(("Goal" :in-theory (e/d (rules-ev-when-theoremp)
                                    (acl2::rewrite-rule-term))))))
+
 
 
 (define fgl-binder-rules-from-lemmas ((fgl-rune fgl-binder-rune-p) lemmas (w plist-worldp))
