@@ -38,8 +38,7 @@
 
 (in-package "X86ISA")
 
-(include-book "three-byte-opcodes-dispatch"
-              :ttags (:syscall-exec))
+(include-book "three-byte-opcodes-dispatch" :ttags (:syscall-exec))
 
 (local (include-book "dispatch-creator"))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))

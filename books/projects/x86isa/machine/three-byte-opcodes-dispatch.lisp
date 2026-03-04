@@ -38,8 +38,7 @@
 
 (in-package "X86ISA")
 
-(include-book "instructions/top"
-              :ttags (:syscall-exec))
+(include-book "instructions/top" :ttags (:syscall-exec))
 (include-book "prefix-modrm-sib-decoding")
 (include-book "dispatch-macros")
 (include-book "cpuid")
