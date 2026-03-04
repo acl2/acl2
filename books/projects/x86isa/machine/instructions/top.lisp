@@ -115,6 +115,8 @@
               :ttags (:undef-flg))
 (include-book "punpck"
               :ttags (:undef-flg))
+(include-book "pack"
+              :ttags (:undef-flg))
 (include-book "pcmp"
               :ttags (:undef-flg))
 (include-book "pshuf"
