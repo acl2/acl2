@@ -41,7 +41,7 @@
 (in-package "X86ISA")
 
 (include-book "syscall-numbers")
-(include-book "environment" :ttags (:undef-flg))
+(include-book "environment")
 (include-book "tools/include-raw" :dir :system) ; needed when X86ISA_EXEC is t
 
 (local (include-book "std/lists/nthcdr" :dir :system))
