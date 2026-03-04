@@ -38,7 +38,11 @@
 
 (in-package "X86ISA")
 
-(include-book "instructions/top" :ttags (:syscall-exec))
+;; (include-book "instructions/top" :ttags (:syscall-exec))
+;; Other instruction books may be needed here eventually:
+(include-book "instructions/arith-and-logic")
+(include-book "instructions/move")
+(include-book "decoding-and-spec-utils")
 (include-book "prefix-modrm-sib-decoding")
 (include-book "dispatch-macros")
 (include-book "cpuid")

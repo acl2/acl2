@@ -38,6 +38,7 @@
 
 (in-package "X86ISA")
 
+(include-book "instructions/top" :ttags (:syscall-exec))
 (include-book "three-byte-opcodes-dispatch" :ttags (:syscall-exec))
 
 (local (include-book "dispatch-creator"))
