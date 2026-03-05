@@ -7315,7 +7315,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PACKSSWB-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKSSWB"
           (OP :OP #xF63 :PFX :66 :FEAT '(:SSE2))
@@ -7513,7 +7513,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PACKUSWB-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKUSWB"
           (OP :OP #xF67 :PFX :66 :FEAT '(:SSE2))
@@ -7705,7 +7705,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PACKSSDW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKSSDW"
           (OP :OP #xF6B :PFX :66 :FEAT '(:SSE2))
@@ -9015,9 +9015,11 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
     (INST "EMMS" (OP :OP #xF77 :PFX :NO-PREFIX)
-          NIL 'NIL
+          NIL
+          '(X86-EMMS)
           '((:UD (UD-LOCK-USED)
-                 (EQUAL (CR0BITS->EM (CR0)) #x1))))
+                 (EQUAL (CR0BITS->EM (CR0)) #x1))
+            (:NM (NM-CR0-TS-IS-1))))
     (INST "VZEROALL"
           (OP :OP #xF77
               :VEX '(:0F :256 :WIG)
