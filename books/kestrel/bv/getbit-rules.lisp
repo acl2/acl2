@@ -157,3 +157,30 @@
                     (bitxor (getbit size x) (getbit size y)))))
   :hints (("Goal" :use getbit-of-+-new
                   :in-theory (e/d (bvplus) (getbit-of-+-new)))))
+
+(defthm getbit-of-+-of-expt-same-arg1
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ (expt 2 n) x))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit slice bitnot))))
+
+(defthm getbit-of-+-of-expt-same-arg2
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ x (expt 2 n)))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit slice bitnot))))
+
+(defthm getbit-of-+-of-expt-same-when-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep n)))
+                (equal k (expt 2 n))
+                (natp n)
+                (integerp x)
+                ;(integerp k)
+                )
+           (equal (getbit n (+ k x))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :use (getbit-of-+-of-expt-same-arg1)
+           :in-theory (disable getbit-of-+-of-expt-same-arg1))))

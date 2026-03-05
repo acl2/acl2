@@ -4397,32 +4397,9 @@
                   (integerp (* 1/2 x))))
   :hints (("Goal" :in-theory (enable (:i expt) expt))))
 
-;; Disabled by default since this is pretty aggressive and splits into cases.
-(defthmd logext-of-plus
-  (implies (and (integerp x)
-                (posp size)
-                (integerp y))
-           (equal (logext size (+ x y))
-                  (if (>= (+ (logext size x) (logext size y))
-                          (expt 2 (+ -1 size)))
-                      (- (+ (logext size x) (logext size y))
-                         (expt 2 size))
-                    (if (< (+ (logext size x) (logext size y))
-                           (- (expt 2 (+ -1 size))))
-                        (+ (+ (logext size x) (logext size y))
-                           (expt 2 size))
-                      (+ (logext size x) (logext size y))))))
-  :hints (("Goal"
-           :use bvchop-plus-bvchop-bound
-           :in-theory (e/d (logapp logext LOGAPP-0 bvplus BVCHOP-OF-SUM-CASES getbit-of-+ bvchop mod-sum-cases)
-                           (TIMES-4-BECOMES-LOGAPP  bvchop-plus-bvchop-bound expt
-                                                    MOD-EXPT-SPLIT ;bad rule!
-                                                    )))))
-
 ;todo: prove a getbit-of-sum-cases rule?  does it already exist?  see getbit-of-+
 ;; (thm
 ;;  (equal (GETBIT 31 (+ x y))
-
 
 ;gen the 0 to any constant!
 (defthm sbvlt-of-bvplus-of-constant-and-0
@@ -4436,6 +4413,7 @@
   :hints (("Goal" :in-theory (e/d (sbvlt bvplus LOGEXT-CASES BVUMINUS bvminus logext-of-plus)
                                   (<-of-logext-and-0-alt BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
+;subsumed?
 (defthm getbit-of+-of-4294967296
  (implies (integerp x)
           (equal (GETBIT 31 (+ 4294967296 x))

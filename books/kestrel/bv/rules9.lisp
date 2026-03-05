@@ -669,35 +669,6 @@
                   (bvplus 32 x y)))
   :hints (("Goal" :in-theory (enable bvplus bvchop))))
 
-(defthm getbit-of-+-of-expt-same-arg1
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ (expt 2 n) x))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  ()))))
-
-(defthm getbit-of-+-of-expt-same-arg2
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ x (expt 2 n)))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  ()))))
-
-(defthm getbit-of-+-of-expt-same-when-constant
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep n)))
-                (equal k (expt 2 n))
-                (natp n)
-                (integerp x)
-                ;(integerp k)
-                )
-           (equal (getbit n (+ k x))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :use (getbit-of-+-of-expt-same-arg1)
-           :in-theory (disable getbit-of-+-of-expt-same-arg1))))
-
 (defthm bvxor-of-+-of-expt-of-one-less-arg2
   (implies (and (integerp x)
                 (posp n))
