@@ -412,12 +412,37 @@
 
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
 
-   (xdoc::p
-    "Support for several instructions has been added.
+   (xdoc::p "Support for several instructions has been added.
      Currently supported instructions can be seen at
      @(see x86isa::sdm-instruction-set-summary),
      organized according to some sections of the Intel manuals.")
 
+   (xdoc::p
+    "Added a new framework @(see x86isa::asmtest) for testing instruction
+     implementations against assembly snippets.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL Library"))
+
+   (xdoc::p
+    "Add @(see fgl::annotate) mechanism, a way of preventing of trivial rewrite
+     loops by setting and detecting annotations on subterms.")
+
+   (xdoc::p
+    "Add various rewriter features: @(see fgl::fgl-hide), @(see fgl::trigger-constraints),
+     @(see fgl::unconditional), @(see fgl::left-to-right), @(see fgl::conditionalize).")
+
+   (xdoc::p
+    "Add so-called identity congruences (see @(see fgl::add-fgl-id-congruence)), which indicate
+     that a certain argument of a function can be rewritten under any equivalence that
+     is applied to the function call.")
+
+   (xdoc::p
+    "Improved user interface for tracing applications of rewrite rules:
+     see @(see fgl::fgl-rewrite-tracing), @(see fgl::fgl-trace), and
+     @(see fgl::fgl-advanced-tracing).")
+   
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))

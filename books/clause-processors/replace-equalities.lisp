@@ -206,7 +206,7 @@
                     (repl-ev lit a))
                (equal (repl-ev lhs a)
                       (repl-ev rhs a))))
-    :hints (("goal" :use ((:instance repl-ev-falsify
+    :hints (("goal" :use ((:instance repl-ev-theoremp-implies
                            (x rule)
                            (a (repl-ev-alist
                                (mv-nth 1 (simple-one-way-unify
@@ -247,7 +247,8 @@
                   (repl-ev lit a)
                   (pseudo-termp lit))
              (repl-ev-equality-alist-p
-              (lit-get-equality-rules lit rules (w st)) a))))
+              (lit-get-equality-rules lit rules (w st)) a))
+    :hints(("Goal" :in-theory (enable repl-ev-meta-extract-formula-theoremp)))))
 
 (defthm repl-ev-of-disjoin-revappend
   (iff (repl-ev (disjoin (revappend x y)) a)

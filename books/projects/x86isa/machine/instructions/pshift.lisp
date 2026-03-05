@@ -88,6 +88,202 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; PSLLW/PSSLD/PSSLQ, PSRLW/PSRLD/PSRLQ, PSRAW/PSRAD (MMX variants)
+
+;; Used to define `PSLL`, `PSRL`, and `PSRA`:
+;; WIDTH-OPCODE-ALIST is an alist mapping the EL-WIDTH to
+;; the opcode for the mm/m64 version of the instruction.
+(defmacro def-packed-shift-mmx-inst (name width-opcode-alist)
+  (b* ((mm/m64-inst-name (acl2::packn (list 'x86- name '-mm/m64-mmx)))
+       (imm-inst-name (acl2::packn (list 'x86- name '-imm-mmx)))
+       (spec-fn (mk-name name '-spec)))
+    `(progn
+
+       (def-inst ,mm/m64-inst-name
+
+         :parents (two-byte-opcodes)
+
+         :long
+         ,(xdoc::topstring
+           (xdoc::code
+            (symbol-name name) "W mm, mm/m64" (string #\Newline)
+            (symbol-name name) "D mm, mm/m64" (string #\Newline)
+            ;; Since PSRA has no 64-bit variant
+            (if (assoc 64 width-opcode-alist)
+                (xdoc::&&
+                 (symbol-name name) "Q mm, mm/m64" (string #\Newline))
+              "")))
+
+         :guard (member opcode ',(strip-cdrs width-opcode-alist))
+
+         :modr/m t
+
+         :returns (x86 x86p :hyp (x86p x86))
+
+         :body
+
+         (b* ((p2 (prefixes->seg prefixes))
+              (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+              (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+              ;; The operand size is always 64 bits, i.e. 8 bytes.
+              (operand-size 8)
+
+              ;; The first source operand
+              ;; (Operand 1 in the Intel manual, Op/En A)
+              ;; is the MMX register specified in Reg.
+              ;; This is also the destination operand,
+              ;; and thus we obtain the index for later use.
+              ;; Since there are only 8 MMX registers, the REX byte is not used.
+              ((the (unsigned-byte 4) src1/dst-index) reg)
+              ((the (unsigned-byte 64) src1) (mmx src1/dst-index x86))
+
+              ;; The second source operand
+              ;; (Operand 2 in the Intel manual, Op/En A)
+              ;; is the MMX register, or memory operand,
+              ;; specified in Mod and R/M.
+              (inst-ac? t) ; Intel Manual Volume 2 Table 2-21 (Dec 2023)
+              ((mv flg
+                   (the (unsigned-byte 64) src2)
+                   (the (integer 0 4) increment-rip-by)
+                   ?addr
+                   x86)
+               (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                                      #.*mmx-access*
+                                                      operand-size
+                                                      inst-ac?
+                                                      nil ; not a memory operand
+                                                      seg-reg
+                                                      p4?
+                                                      temp-rip
+                                                      rex-byte
+                                                      r/m
+                                                      mod
+                                                      sib
+                                                      0 ; no immediate operand
+                                                      x86))
+              ((when flg)
+               (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+              ;; Increment the instruction pointer in the temp-rip variable.
+              ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+               (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+              ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+              ;; Ensure the instruction is not too long.
+              (badlength? (check-instruction-length start-rip temp-rip 0))
+              ((when badlength?)
+               (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+              ;; Calculate the result.
+              (el-width (car (rassoc opcode ',width-opcode-alist)))
+              ;; Clamp to el-width because src2 may be up to 64 bits long.
+              (src2 (if (> src2 el-width)
+                        el-width
+                      src2))
+              (result (,spec-fn (* 8 operand-size) el-width src1 src2))
+
+              ;; Store the result into the destination register.
+              (x86 (!mmx src1/dst-index result x86))
+              (x86 (mmx-instruction-updates x86))
+
+              ;; Update the instruction pointer.
+              (x86 (write-*ip proc-mode temp-rip x86)))
+
+           x86)
+
+         :guard-hints (("Goal" :in-theory (disable unsigned-byte-p))))
+
+       (def-inst ,imm-inst-name
+
+         :parents (two-byte-opcodes)
+
+         :long
+         ,(xdoc::topstring
+           (xdoc::code
+            (symbol-name name) "W mm, imm8" (string #\Newline)
+            (symbol-name name) "D mm, imm8" (string #\Newline)
+            ;; Since PSRA has no 64-bit variant
+            (if (assoc 64 width-opcode-alist)
+                (xdoc::&& (symbol-name name) "Q mm, imm8" (string #\Newline))
+              "")))
+
+         :guard (member opcode '(#x71 #x72 #x73))
+
+         :modr/m t
+
+         :returns (x86 x86p :hyp (x86p x86))
+
+         :body
+
+         (b* (;; The operand size is always 64 bits, i.e. 8 bytes.
+              (operand-size 8)
+
+              ;; The first source operand
+              ;; (Operand 1 in the Intel manual, Op/En B)
+              ;; is the MMX register specified in R/M.
+              ;; This is also the destination operand,
+              ;; and thus we obtain the index for later use.
+              ((the (unsigned-byte 4) src1/dst-index) r/m)
+              ((the (unsigned-byte 64) src1) (mmx src1/dst-index x86))
+
+              ;; The second source operand
+              ;; (Operand 2 in the Intel manual, Op/En B)
+              ;; is the immediate imm8.
+              ((mv flg1 (the (unsigned-byte 8) imm) x86)
+               (rme-size-opt proc-mode 1
+                             (the (signed-byte #.*max-linear-address-size*)
+                                  temp-rip)
+                             #.*cs* :x nil x86 :mem-ptr? nil))
+              ((when flg1) (!!ms-fresh :imm-rme-size-error flg1))
+
+              ;; Increment the instruction pointer in the temp-rip variable.
+              ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+               (add-to-*ip proc-mode temp-rip 1 x86))
+              ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+              ;; Ensure the instruction is not too long.
+              (badlength? (check-instruction-length start-rip temp-rip 0))
+              ((when badlength?)
+               (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+              ;; Calculate the result.
+              ;; Note: these opcodes are always the same; the reg field specifies
+              ;; which type of shift and that's handled at decode time.
+              (el-width (case opcode
+                          (#x71 16)
+                          (#x72 32)
+                          (#x73 64)))
+              (result (,spec-fn (* 8 operand-size) el-width src1 imm))
+
+              ;; Store the result into the destination register.
+              (x86 (!mmx src1/dst-index result x86))
+              (x86 (mmx-instruction-updates x86))
+
+              ;; Update the instruction pointer.
+              (x86 (write-*ip proc-mode temp-rip x86)))
+
+           x86)
+
+         :guard-hints (("Goal" :in-theory (e/d (rme-size-of-1-to-rme08)
+                                               (unsigned-byte-p))))))))
+
+(def-packed-shift-mmx-inst psll
+  ((16 . #xF1)
+   (32 . #xF2)
+   (64 . #xF3)))
+
+(def-packed-shift-mmx-inst psrl
+  ((16 . #xD1)
+   (32 . #xD2)
+   (64 . #xD3)))
+
+(def-packed-shift-mmx-inst psra
+  ((16 . #xE1)
+   (32 . #xE2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; PSLLW/PSSLD/PSSLQ, PSRLW/PSRLD/PSRLQ, PSRAW/PSRAD (SSE variants)
 
 ;; Used to define `PSLL`, `PSRL`, and `PSRA`:
@@ -253,7 +449,7 @@
 
               ;; Calculate the result.
               ;; Note: these opcodes are always the same; the reg field specifies
-              ;; which type of shift and that's handled at decode time
+              ;; which type of shift and that's handled at decode time.
               (el-width (case opcode
                           (#x71 16)
                           (#x72 32)
@@ -285,7 +481,7 @@
   ((16 . #xE1)
    (32 . #xE2)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; PSLLDQ/PSRLDQ (SSE variants)
 
@@ -332,23 +528,13 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       ;; According to Intel Manual (Dec 2023) Volume 2 Section 3.1.1.3,
-       ;; imm8 indicates an 8-bit signed immediate operand,
-       ;; i.e. an integer between -128 and +127.
-       ;; However, the Intel Manual describes PSRLDQ
-       ;; as if the count were unsigned:
-       ;; it says what happens if it is greater than 15,
-       ;; but it does not say what happens if it is negative.
-       ;; We interpret this as if the imm8 is actually signed in this case;
-       ;; thus, a negative value (if signed) is treated as
-       ;; an unsigned value larger than 15.
-       ;; If the count is larger than 15, the result is just 0.
-       ;; If instead the count is between 0 and 15,
-       ;; the operand is shifted by that number of bytes to the left or right,
-       ;; and in the case of a left shift we only keep the low 128 bits.
-       ;; We automatically get 0 as result if the count is larger than 15.
+       ;; Calculate the result.
        ;; The left (PSLLDQ) vs. right (PSRLDQ)
        ;; is determined by the Reg byte, which is an opcode extension.
+       ;; Note that the count is in bytes, not bits.
+       (count (if (>= count 16) ; = 128 bits
+                  0
+                count))
        ((the (unsigned-byte 128) result)
         (case reg
           (7 (logand (1- (expt 2 128)) (ash operand (* 8 count))))

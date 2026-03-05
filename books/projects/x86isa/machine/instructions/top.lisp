@@ -68,6 +68,7 @@
 (include-book "signextend")
 (include-book "string")
 (include-book "syscall" :ttags (:syscall-exec))
+(include-book "pack")
 (include-book "subroutine")
 (include-book "fp/top")
 (include-book "interrupts")
