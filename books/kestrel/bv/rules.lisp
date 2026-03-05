@@ -4333,26 +4333,6 @@
   :hints (("Goal" :in-theory (enable bvplus bvlt sbvlt-rewrite
                                      getbit-when-bvlt-of-small-helper))))
 
-
-
-;gen!
-(defthm getbit-of-+-of-expt-2
-  (implies (integerp x)
-           (equal (GETBIT 31 (+ 2147483648 x))
-                  (if (equal 0 (GETBIT 31 x))
-                      1
-                    0)))
-  :hints (("Goal" :in-theory (enable getbit SLICE-OF-SUM-CASES))))
-
-;gen
-(defthm slice-of-minus-of-expt
-  (implies (posp size)
-           (equal (SLICE (+ -1 SIZE) 1 (- (EXPT 2 SIZE)))
-                  0))
-  :hints (("Goal" :in-theory (enable slice LOGTAIL bvchop
-                                     expt-of-+ ;;EXPONENTS-ADD-unrestricted
-                                     ))))
-
 (defthm bvchop-of-times-of-expt-and-/-of-expt
   (implies (and (natp low)
                 (natp high))
@@ -4395,9 +4375,12 @@
                            (EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
                             BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT)))))
 
+;true for any bvs?
 (defthm bvchop-plus-bvchop-bound
   (implies (integerp size)
-           (< (+ (bvchop (+ -1 size) x) (bvchop (+ -1 size) y)) (expt 2 size)))
+           (< (+ (bvchop (+ -1 size) x)
+                 (bvchop (+ -1 size) y))
+              (expt 2 size)))
   :hints (("Goal" :in-theory (e/d (expt-of-+) (bvchop-upper-bound))
            :use ((:instance bvchop-upper-bound (n (+ -1 size)) (x x))
                  (:instance bvchop-upper-bound (n (+ -1 size)) (x y))))))

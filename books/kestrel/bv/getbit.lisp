@@ -813,3 +813,12 @@
   (equal (getbit n (ifix x))
          (getbit n x))
   :hints (("Goal" :in-theory (enable ifix))))
+
+;gen!
+(defthm getbit-of-+-of-expt-2
+  (implies (integerp x)
+           (equal (GETBIT 31 (+ 2147483648 x))
+                  (if (equal 0 (GETBIT 31 x))
+                      1
+                    0)))
+  :hints (("Goal" :in-theory (enable getbit slice))))

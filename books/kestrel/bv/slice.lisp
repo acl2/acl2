@@ -729,3 +729,12 @@
          (if test
              (slice high low v1)
            (slice high low v2))))
+
+;gen
+(defthm slice-of-minus-of-expt
+  (implies (posp size)
+           (equal (SLICE (+ -1 SIZE) 1 (- (EXPT 2 SIZE)))
+                  0))
+  :hints (("Goal" :in-theory (enable slice LOGTAIL bvchop
+                                     expt-of-+ ;;EXPONENTS-ADD-unrestricted
+                                     ))))
