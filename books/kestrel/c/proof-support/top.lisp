@@ -11,9 +11,9 @@
 
 (in-package "C")
 
-(include-book "../portcullis")
+(include-book "exec-stmt-while")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "../portcullis")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
