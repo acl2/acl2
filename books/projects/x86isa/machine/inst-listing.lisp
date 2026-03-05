@@ -9015,9 +9015,11 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
     (INST "EMMS" (OP :OP #xF77 :PFX :NO-PREFIX)
-          NIL 'NIL
+          NIL
+          '(X86-EMMS)
           '((:UD (UD-LOCK-USED)
-                 (EQUAL (CR0BITS->EM (CR0)) #x1))))
+                 (EQUAL (CR0BITS->EM (CR0)) #x1))
+            (:NM (NM-CR0-TS-IS-1))))
     (INST "VZEROALL"
           (OP :OP #xF77
               :VEX '(:0F :256 :WIG)

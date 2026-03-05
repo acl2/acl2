@@ -242,8 +242,7 @@ what the instruction. Not sure why they are listed that way.</p>")
   :features :mmx)
 
 (def-sdm-instruction-section "5.4.7 MMX State Management Instructions"
-  :mnemonics '(EMMS)
-  :doc "<p>Unimplemented</p>")
+  :mnemonics '(EMMS))
 
 (def-sdm-instruction-section "5.5 Intel(R) SSE Instructions")
 
