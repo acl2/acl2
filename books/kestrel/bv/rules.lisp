@@ -4385,27 +4385,7 @@
            :use ((:instance bvchop-upper-bound (n (+ -1 size)) (x x))
                  (:instance bvchop-upper-bound (n (+ -1 size)) (x y))))))
 
-;rename
-;i don't like the bvplus here
-;trying disabled.
-;just go to getbit of bvplus?
-(defthmd getbit-of-+
-  (implies (and (integerp x)
-                (natp size)
-                (integerp y)
-                )
-           (equal (getbit size (+ x y))
-                  (if (>= (bvplus (+ 1 size) (bvchop size x) (bvchop size y))
-                          (expt 2 size))
-                      (bitnot (bitxor (getbit size x) (getbit size y)))
-                    (bitxor (getbit size x) (getbit size y)))))
-  :hints (("Goal"
-           :use ((:instance usb1-cases (x (LOGTAIL size (BVCHOP (+ 1 size) Y))))
-                 (:instance usb1-cases (x (LOGTAIL size (BVCHOP (+ 1 size) x)))))
-           :in-theory (e/d (bitnot getbit slice BVCHOP-OF-SUM-CASES bvplus logtail-of-bvchop
-                                   logtail-of-plus)
-                           (anti-slice bvchop-of-logtail
-                                       bitp-of-bvchop-of-1-type)))))
+
 
 
 ;;only the lowest bit is of interest
