@@ -7513,7 +7513,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PACKUSWB-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKUSWB"
           (OP :OP #xF67 :PFX :66 :FEAT '(:SSE2))
