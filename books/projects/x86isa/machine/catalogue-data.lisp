@@ -222,8 +222,7 @@ what the instruction. Not sure why they are listed that way.</p>")
 
 (def-sdm-instruction-section "5.4.2 MMX Conversion Instructions"
   :mnemonics '(PACKSSWB PACKSSDW PACKUSWB PUNPCKHBW PUNPCKHWD PUNPCKHDQ PUNPCKLBW PUNPCKLWD PUNPCKLDQ)
-  :features :mmx
-  :doc "<p>The PACK* instructions are unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.3 MMX Packed Arithmetic Instructions"
   :mnemonics '(PADDB PADDW PADDD PADDSB PADDSW PADDUSB PADDUSW PSUBB PSUBW
@@ -243,8 +242,7 @@ what the instruction. Not sure why they are listed that way.</p>")
   :features :mmx)
 
 (def-sdm-instruction-section "5.4.7 MMX State Management Instructions"
-  :mnemonics '(EMMS)
-  :doc "<p>Unimplemented</p>")
+  :mnemonics '(EMMS))
 
 (def-sdm-instruction-section "5.5 Intel(R) SSE Instructions")
 
