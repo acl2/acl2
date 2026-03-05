@@ -45,8 +45,9 @@
   (cond
    ((atom type)
     (and (keywordp type)
-         (assoc-hta type hta)
-         t))
+         (let ((pair (assoc-hta type hta)))
+           (and pair
+                (not (equal (cdr pair) 0))))))
    ((true-listp type)
     (case (car type)
       ((:arrow :hash)
@@ -76,10 +77,7 @@
    ((not (mbt (hol-typep type hta)))
     0)
    ((atom type) ; (keywordp type)
-    (let ((pair (assoc-hta type hta)))
-      (if (consp pair)
-          (cdr pair)
-        0)))
+    (cdr (assoc-hta type hta)))
    (t
     (case (car type)
       (:arrow
@@ -537,8 +535,7 @@
                 (force (natp (domain (hp-value y)))))
            (equal (hp-list-car (hp-cons x y))
                   x))
-  :hints (("Goal" :in-theory (e/d (n+1-as-union2-reversed)
-                                  (ordinal-proper-subset-is-element))))
+  :hints (("Goal" :in-theory (enable n+1-as-union2-reversed)))
   :props (zfc domain$prop))
 
 (defthmz hp-list-cdr-hp-cons
@@ -704,3 +701,55 @@
 
 ; We leave hp-comma-p enabled to support proofs in ../examples/.
 (in-theory (disable hp-comma hp-hash-car hp-hash-cdr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Picking an element of a type
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun pick (type hta)
+  (declare (xargs :guard (hol-typep type hta)))
+  (cond
+   ((keywordp type) ; then choose a member of the type
+    (let ((pair (assoc-hta type hta)))
+      (min-in (cdr pair))))
+   ((mbt (true-listp type))
+    (case (car type)
+      (:arrow (prod2 (hol-type-eval (nth 1 type) hta)
+                     (singleton (pick (nth 2 type) hta))))
+      (:hash (cons (pick (nth 1 type) hta)
+                   (pick (nth 2 type) hta)))
+      (:list 0) ; see hp-ni
+      (:option :none)
+      (otherwise ; impossible
+       0)))
+   (t ; impossible
+    0)))
+
+(defthmz funp-prod2-singleton
+  (funp (prod2 s (pair x x)))
+  :hints (("Goal" :in-theory (enable funp)))
+  :props (zfc prod2$prop))
+
+(defthmz pick-picks
+  (implies (force (hol-typep type hta))
+           (in (pick type hta)
+               (hol-type-eval type hta)))
+  :hints (("Goal" :in-theory (enable hol-type-eval)))
+  :props (zfc finseqs$prop fun-space$prop domain$prop prod2$prop inverse$prop))
+
+; Two trivial corollaries of pick-picks:
+
+(defthmz pick-picks-hol-valuep
+  (implies (force (hol-typep type hta))
+           (hol-valuep (pick type hta) type hta))
+  :props (zfc finseqs$prop fun-space$prop domain$prop prod2$prop inverse$prop))
+
+(defthmz pick-picks-hpp
+  (implies (and (force (hol-typep type1 hta))
+                (force (equal type1 type2)))
+           (hpp (make-hp (pick type1 hta)
+                         type2)
+                hta))
+  :props (zfc finseqs$prop fun-space$prop domain$prop prod2$prop inverse$prop))
+
+(in-theory (disable pick))

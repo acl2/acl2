@@ -52,9 +52,9 @@ if [ -e diffout ]; then mv diffout diffout.old ; fi
 
 for test in $tests ; do \
     test=${test##*/} ; \
-    (${ACL2_HOL_LISP}/book-essence.csh $inputs_dir/$test $results_dir/$test) > $logs_dir/$test.out 2> $logs_dir/$test.err ; \
+    (${ACL2_HOL_LISP}/book-essence.bash $inputs_dir/$test $results_dir/$test) > $logs_dir/$test.out 2> $logs_dir/$test.err ; \
     testr=${test%.*} ; \
-    (${ACL2_HOL_LISP}/a2ml.csh $results_dir/$test $results_dir/$testr.sml $inputs_dir) > $logs_dir/$test.sml.out 2> $logs_dir/$test.sml.err ; \
+    (${ACL2_HOL_LISP}/a2ml.bash $results_dir/$test $results_dir/$testr.sml $inputs_dir) > $logs_dir/$test.sml.out 2> $logs_dir/$test.sml.err ; \
 done
 
 (diff -x .svn $results_dir $gold_dir 2>&1) > diffout
@@ -64,6 +64,7 @@ if [ -s diffout ] ; then \
     my_status=1 ; \
 else \
     echo 'Success for main tests (skipping round-trip testing)!' ; \
+    touch success.txt
 fi
 
 exit $my_status

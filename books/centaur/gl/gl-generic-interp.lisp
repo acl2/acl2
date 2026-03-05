@@ -926,19 +926,23 @@
     ((acl2::ifl-ev glcp-generic-geval-ev)
      (acl2::ifl-ev-lst glcp-generic-geval-ev-lst)
      (acl2::ifl-ev-falsify glcp-generic-geval-ev-falsify)
+     (acl2::ifl-ev-theoremp glcp-generic-geval-ev-theoremp)
      (acl2::ifl-ev-meta-extract-global-badguy
       glcp-generic-geval-ev-meta-extract-global-badguy))
     :hints ((and stable-under-simplificationp
                  '(:use (glcp-generic-geval-ev-of-fncall-args
                          glcp-generic-geval-ev-falsify
-                         glcp-generic-geval-ev-meta-extract-global-badguy)))))
+                         glcp-generic-geval-ev-meta-extract-global-badguy)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable glcp-generic-geval-ev-theoremp)))))
 
    (acl2::def-functional-instance
     glcp-generic-interp-function-lookup-theoremp-defs-history
     acl2::interp-function-lookup-theoremp-defs-history
     ((acl2::ifl-ev glcp-generic-geval-ev)
      (acl2::ifl-ev-lst glcp-generic-geval-ev-lst)
-     (acl2::ifl-ev-falsify glcp-generic-geval-ev-falsify)))
+     (acl2::ifl-ev-falsify glcp-generic-geval-ev-falsify)
+     (acl2::ifl-ev-theoremp glcp-generic-geval-ev-theoremp)))
 
 
 
@@ -1141,7 +1145,8 @@
                                 acl2::rewrite-rule->lhs
                                 acl2::rewrite-rule->hyps
                                 acl2::rewrite-rule->equiv
-                                acl2::rewrite-rule->subclass)))))
+                                acl2::rewrite-rule->subclass
+                                glcp-generic-geval-ev-theoremp)))))
 
 
 (local (defthm true-listp-cdr-when-pseudo-termp
@@ -1569,14 +1574,15 @@
           (and stable-under-simplificationp
                '(:use ((:instance glcp-generic-geval-ev-falsify
                         (x (acl2::rewrite-rule-term rule))))
-             :in-theory (e/d ( ;; acl2::rewrite-rule->rhs
-                                ;; acl2::rewrite-rule->lhs
-                                ;; acl2::rewrite-rule->hyps
-                                ;; acl2::rewrite-rule->equiv
-                                ;; acl2::rewrite-rule->subclass
-                                rewrite-rule-term-alt-def
-                                glcp-generic-geval-ev-of-fncall-args)
-                             (acl2::rewrite-rule-term))))))
+                 :in-theory (e/d (;; acl2::rewrite-rule->rhs
+                                  ;; acl2::rewrite-rule->lhs
+                                  ;; acl2::rewrite-rule->hyps
+                                  ;; acl2::rewrite-rule->equiv
+                                  ;; acl2::rewrite-rule->subclass
+                                  rewrite-rule-term-alt-def
+                                  glcp-generic-geval-ev-theoremp
+                                  glcp-generic-geval-ev-of-fncall-args)
+                                 (acl2::rewrite-rule-term))))))
 
 (defsection glcp-generic-eval-context-equiv*-of-rewrites
   (defthmd glcp-generic-eval-context-equiv*-when-equiv

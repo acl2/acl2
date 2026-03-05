@@ -159,7 +159,7 @@
   :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval)))
   :rule-classes :forward-chaining)
 
-(defthmz hpp-natp
+(defthmz hpp-natp ; relies on omega-is-not-natp
   (implies (and (alist-subsetp (hta0) hta)
                 (force (natp x)))
            (hpp (cons x :num)

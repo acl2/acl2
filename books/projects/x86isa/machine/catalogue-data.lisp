@@ -218,13 +218,11 @@ what the instruction. Not sure why they are listed that way.</p>")
 
 (def-sdm-instruction-section "5.4.1 MMX Data Transfer Instructions"
   :mnemonics '(MOVD/Q MOVQ)
-  :features :mmx
-  :doc "<p>Only MOVQ is implemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.2 MMX Conversion Instructions"
   :mnemonics '(PACKSSWB PACKSSDW PACKUSWB PUNPCKHBW PUNPCKHWD PUNPCKHDQ PUNPCKLBW PUNPCKLWD PUNPCKLDQ)
-  :features :mmx
-  :doc "<p>All unimplemented</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.3 MMX Packed Arithmetic Instructions"
   :mnemonics '(PADDB PADDW PADDD PADDSB PADDSW PADDUSB PADDUSW PSUBB PSUBW
@@ -233,22 +231,18 @@ what the instruction. Not sure why they are listed that way.</p>")
 
 (def-sdm-instruction-section "5.4.4 MMX Comparison Instructions"
   :mnemonics '(PCMPEQB PCMPEQW PCMPEQD PCMPGTB PCMPGTW PCMPGTD)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.5 MMX Logical Instructions"
   :mnemonics '(PAND PANDN POR PXOR)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.6 MMX Shift and Rotate Instructions"
   :mnemonics '(PSLLW PSLLD PSLLQ PSRLW PSRLD PSRLQ PSRAW PSRAD)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.7 MMX State Management Instructions"
-  :mnemonics '(EMMS)
-  :doc "<p>Unimplemented</p>")
+  :mnemonics '(EMMS))
 
 (def-sdm-instruction-section "5.5 Intel(R) SSE Instructions")
 

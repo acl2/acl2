@@ -780,6 +780,7 @@ ACL2_CUSTOM_TARGETS := \
   system/toothbrush/success.txt \
   clause-processors/SULFA/target.cert \
   projects/translators/l3-to-acl2/target.cert \
+  projects/acl2-in-hol/tests/success.txt \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
@@ -860,6 +861,9 @@ workshops/2003/kaufmann/support/rtl/package-defs.cert: \
 # The following has no dependencies, so doesn't need a "deps" file.
 workshops/2004/sumners-ray/support/success.txt:
 	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+
+projects/acl2-in-hol/tests/success.txt:
+	@cd $(@D)/.. ; $(STARTJOB) -c "$(MAKE)"
 
 .PHONY: projects/apply-model/phony
 projects/apply-model/phony: projects/apply-model-deps.cert
@@ -1248,6 +1252,12 @@ BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top-slow.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out projects/pdf-parser/pdf-parser.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out projects/python/embedding/enumerators/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2023/kumar-etal/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2023/walter-etal/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2025/kumar-manolios/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2025/medley-manolios/%, $(BOOKS_BKCHK_OUT))
 # Uses redefinition:
 BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/redef.bkchk.out, $(BOOKS_BKCHK_OUT))
 # Includes the redef book just above:

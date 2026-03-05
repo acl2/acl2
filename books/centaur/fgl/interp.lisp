@@ -1923,9 +1923,11 @@
                            (rules-ev-meta-extract-global-badguy fgl-ev-meta-extract-global-badguy)
                            (rules-ev-good-fgl-rules-p fgl-good-fgl-rules-p)
                            (rules-ev-good-fgl-rule-p fgl-good-fgl-rule-p)
-                           (rules-ev-falsify fgl-ev-falsify)))
+                           (rules-ev-falsify fgl-ev-falsify)
+                           (rules-ev-theoremp fgl-ev-theoremp)))
              :in-theory (enable fgl-good-fgl-rules-p
                                 fgl-ev-when-theoremp
+                                fgl-ev-theoremp
                                 fgl-ev-of-nonsymbol-atom
                                 fgl-ev-of-bad-fncall
                                 fgl-ev-of-fncall-args))
@@ -1934,7 +1936,9 @@
                    ((('equal (fn . &) &))
                     (and (symbolp fn)
                          `(:in-theory (enable ,fn))))
-                   (& '(:use fgl-ev-meta-extract-global-badguy)))))))
+                   (& '(:use fgl-ev-meta-extract-global-badguy))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable fgl-ev-theoremp))))))
 
 
 (define interp-st-branch-merge-fn-rules ((fn pseudo-fnsym-p) interp-st state)
@@ -1985,7 +1989,8 @@
                            (rules-ev-meta-extract-global-badguy fgl-ev-meta-extract-global-badguy)
                            (rules-ev-good-fgl-rules-p fgl-good-fgl-rules-p)
                            (rules-ev-good-fgl-rule-p fgl-good-fgl-rule-p)
-                           (rules-ev-falsify fgl-ev-falsify)))
+                           (rules-ev-falsify fgl-ev-falsify)
+                           (rules-ev-theoremp fgl-ev-theoremp)))
              :in-theory (enable fgl-good-fgl-rules-p
                                 fgl-ev-when-theoremp
                                 fgl-ev-of-nonsymbol-atom
@@ -2150,7 +2155,8 @@
                            (rules-ev-meta-extract-global-badguy fgl-ev-meta-extract-global-badguy)
                            (rules-ev-good-fgl-binder-rules-p fgl-good-fgl-binder-rules-p)
                            (rules-ev-good-fgl-binder-rule-p fgl-good-fgl-binder-rule-p)
-                           (rules-ev-falsify fgl-ev-falsify)))
+                           (rules-ev-falsify fgl-ev-falsify)
+                           (rules-ev-theoremp fgl-ev-theoremp)))
              :in-theory (enable fgl-good-fgl-binder-rules-p
                                 fgl-good-fgl-binder-rule-p
                                 fgl-ev-when-theoremp
@@ -3212,7 +3218,13 @@
                     (fgl-ev-theoremp
                      (meta-extract-global-fact+ obj st state)))
            :hints (("goal" :use ((:instance fgl-ev-meta-extract-global-badguy
-                                  (obj obj) (st st)))))))
+                                  (obj obj) (st st)))
+                    :in-theory (enable fgl-ev-theoremp)))))
+
+  (local (defthm fgl-ev-when-falsify
+           (implies (fgl-ev x (fgl-ev-falsify x))
+                    (fgl-ev x a))
+           :hints (("goal" :use fgl-ev-falsify))))
 
   (local
      (defthm fgl-ev-meta-extract-global-facts-when-world-equiv
@@ -5663,6 +5675,7 @@
               (fgl-interp-error
                :msg (fgl-msg "The recursion limit ran out.")))
              (interp-st (interp-st-push-scratch-fgl-obj xobj interp-st))
+             (interp-st (interp-st-push-scratch-fnsym xobj.fn interp-st))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit)
                (equiv-contexts '(iff)))
@@ -5672,7 +5685,7 @@
                                          fn-mode.dont-rewrite-under-if-test
                                          (interp-flags->hide (interp-st->flags interp-st)))
                                    interp-st state)))
-             
+             (interp-st (interp-st-pop-scratch interp-st))
              ((mv xobj interp-st) (interp-st-pop-scratch-fgl-obj interp-st))
              ;; ((when err)
              ;;  (mv nil interp-st state))
@@ -8289,8 +8302,9 @@
                           nil))
              (equal (fgl-ev-context-fix contexts lhs)
                     (fgl-ev-context-fix contexts rhs)))
-    :hints(("Goal" :in-theory (enable fgl-interp-equiv-refinementp
-                                      fgl-ev-context-fix-equal-by-eval))))))
+    :hints(("Goal" :in-theory (e/d (fgl-interp-equiv-refinementp
+                                    fgl-ev-context-fix-equal-by-eval)
+                                   (cmr::pseudo-fnsym-p-when-member-equal-of-equiv-contextsp)))))))
 
 
 (local (acl2::use-trivial-ancestors-check))
@@ -8630,7 +8644,8 @@
     :hints (("goal" :use ((:instance iff-equiv-forall-extensions-equiv-binding-hyp
                            (var (mv-nth 0 (check-equivbind-hyp hyp interp-st state)))
                            (term (mv-nth 1 (check-equivbind-hyp hyp interp-st state)))
-                           (equiv (mv-nth 2 (check-equivbind-hyp hyp interp-st state))))))))
+                           (equiv (mv-nth 2 (check-equivbind-hyp hyp interp-st state)))))
+             :in-theory (enable fgl-ev-theoremp))))
 
   (defthm iff-forall-extensions-of-pseudo-term-fix
     (equal (iff-forall-extensions val (pseudo-term-fix x) alist)
@@ -10092,6 +10107,7 @@
                       '(:expand ((fgl-binder-rule-term rule)
                                  (fgl-binder-rule-equiv-term rule))
                         :in-theory (enable fgl-ev-of-fncall-args
+                                           fgl-ev-theoremp
                                            fgl-ev-context-equiv-of-equiv-rel))))))
 
 (local (defthmd pseudo-term-kind-of-cons

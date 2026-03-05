@@ -203,7 +203,13 @@
   (%autoprove forcing-rw.eqset->iffp-of-rw.eqset-extend)
   (%autoprove choices-for-rw.eqset->head-of-rw.eqset-extend))
 
-
+; Matt K. mod: Copied from eqdatabasep.lisp, where it is now local (see comment
+; there).
+(local
+(%autoprove all-equalp-removal
+            (%cdr-induction x)
+            (%restrict default repeat (equal n '(+ '1 (len (cdr x))))))
+)
 
 (defsection rw.eqsets-extend
 
