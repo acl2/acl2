@@ -4420,48 +4420,6 @@
                  (GETBIT 31 x)))
  :hints (("Goal" :in-theory (enable getbit))))
 
-;drop since we have the gen version?
-;many cases
-(defthm sbvlt-of-bvuminus-and-constant
-  (implies (and (syntaxp (quotep k))
-                (integerp k))
-           (equal (sbvlt 32 (bvuminus 32 x) k)
-                  (if (equal 2147483648 (bvchop 32 k))
-                      nil
-                    (if (equal 2147483648 (bvchop 32 x))
-                        t
-                      (sbvlt 32
-                             (bvuminus 32 k) ;gets computed
-                             x)))))
-  :hints (("Goal" :in-theory (enable sbvlt ;-rewrite
-                                     bvuminus
-                                     bvminus
-                                     bvlt bvplus bvchop-of-sum-cases
-                                     logext-of-plus))))
-
-;rename or drop?
-(defthm sbvlt-of-bvuminus
-  (implies (unsigned-byte-p 32 x) ; move to rhs?
-           (equal (SBVLT 32 (BVUMINUS 32 x) 0)
-                  (if (equal x (expt 2 31))
-                      t
-                    (SBVLT 32 0 x))))
-  :hints (("Goal"
-           :use ((:instance integerp-squeeze
-                            (x (* x 1/2147483648)))
-                 (:instance SPLIT-BV
-                            (x x)
-                            (n 32)
-                            (m 31)))
-           :in-theory (e/d (sbvlt logext logapp
-                            logtail
-                            BVUMINUS BVMINUS bvlt getbit slice SBVLT-rewrite
-                            ;;INTEGERP-OF-*-OF-/-BECOMES-EQUAL-OF-0-AND-MOD ;looped
-                            bvcat)
-                           (<-OF-*-AND-*-SAME-LINEAR ;why?
-                            BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                            <-OF-LOGEXT-AND-0-ALT)))))
-
 ;move
 ; not safe, can loop when rewriting the binding hyp
 (defthmd getbit-when-equal-of-bvchop-safe
@@ -4510,14 +4468,57 @@
                                      getbit-when-equal-of-bvchop-safe
                                      bvchop-when-equal-of-bvchop-safe))))
 
+;drop since we have the gen version?
+;many cases
+(defthmd sbvlt-of-bvuminus-and-constant
+  (implies (and (syntaxp (quotep k))
+                (integerp k))
+           (equal (sbvlt 32 (bvuminus 32 x) k)
+                  (if (equal 2147483648 (bvchop 32 k))
+                      nil
+                    (if (equal 2147483648 (bvchop 32 x))
+                        t
+                      (sbvlt 32
+                             (bvuminus 32 k) ;gets computed
+                             x)))))
+  :hints (("Goal" :in-theory (enable sbvlt ;-rewrite
+                                     bvuminus
+                                     bvminus
+                                     bvlt bvplus bvchop-of-sum-cases
+                                     logext-of-plus))))
+
+;rename or drop?
+(defthmd sbvlt-of-bvuminus
+  (implies (unsigned-byte-p 32 x) ; move to rhs?
+           (equal (SBVLT 32 (BVUMINUS 32 x) 0)
+                  (if (equal x (expt 2 31))
+                      t
+                    (SBVLT 32 0 x))))
+  :hints (("Goal"
+           :use ((:instance integerp-squeeze
+                            (x (* x 1/2147483648)))
+                 (:instance SPLIT-BV
+                            (x x)
+                            (n 32)
+                            (m 31)))
+           :in-theory (e/d (sbvlt logext logapp
+                            logtail
+                            BVUMINUS BVMINUS bvlt getbit slice SBVLT-rewrite
+                            ;;INTEGERP-OF-*-OF-/-BECOMES-EQUAL-OF-0-AND-MOD ;looped
+                            bvcat)
+                           (<-OF-*-AND-*-SAME-LINEAR ;why?
+                            BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                            <-OF-LOGEXT-AND-0-ALT)))))
+
+
+;; Simplifies -x < k
 ;todo: make a safe version for when we can exclude the weird case
 (defthm sbvlt-of-bvuminus-and-constant-gen
-  (implies (and (syntaxp (quotep k))
-;                (integerp k)
-                (posp size)
-                )
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (posp size))
            (equal (sbvlt size (bvuminus size x) k)
-                  (if (equal (expt 2 (+ -1 size)) (bvchop size k))
+                  (if (equal (expt 2 (+ -1 size)) (bvchop size k)) ; gets computed
                       nil
                     (if (equal (expt 2 (+ -1 size)) (bvchop size x))
                         t
