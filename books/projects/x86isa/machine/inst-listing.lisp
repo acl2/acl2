@@ -7705,7 +7705,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PACKSSDW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKSSDW"
           (OP :OP #xF6B :PFX :66 :FEAT '(:SSE2))
