@@ -176,16 +176,16 @@ command, along the following lines:</p>
            (cons :from "xdoc/save-classic.lisp :DIR :SYSTEM"))
      all-topics)))
 
-(defun find-roots (x)
+;; (defun find-roots (x)
 
-; Gather names of all doc topics which have no parents.
+;; ; Gather names of all doc topics which have no parents.
 
-  (if (atom x)
-      nil
-    (if (not (cdr  (assoc :parents (car x))))
-        (cons (cdr (assoc :name (car x)))
-              (find-roots (cdr x)))
-      (find-roots (cdr x)))))
+;;   (if (atom x)
+;;       nil
+;;     (if (not (cdr  (assoc :parents (car x))))
+;;         (cons (cdr (assoc :name (car x)))
+;;               (find-roots (cdr x)))
+;;       (find-roots (cdr x)))))
 
 (defun find-orphaned-topics-1 (child parents topics-fal acc)
   ;; Returns an alist of (CHILD . MISSING-PARENT)
@@ -455,4 +455,3 @@ command, along the following lines:</p>
 ;;         (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~
 ;;              topics may only show up in the index pages.~%~%" orphans))
 ;;     state))
-
