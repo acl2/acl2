@@ -44,12 +44,9 @@
 
 ;; ----------------------------------------------------------------------
 
-(include-book "instructions/top"
-              :ttags (:syscall-exec))
-(include-book "two-byte-opcodes-dispatch"
-              :ttags (:syscall-exec))
-(include-book "three-byte-opcodes-dispatch"
-              :ttags (:syscall-exec))
+(include-book "instructions/top" :ttags (:syscall-exec))
+(include-book "two-byte-opcodes-dispatch" :ttags (:syscall-exec))
+(include-book "three-byte-opcodes-dispatch" :ttags (:syscall-exec))
 (include-book "vex-opcodes-dispatch")
 (include-book "evex-opcodes-dispatch")
 (include-book "cpuid")
