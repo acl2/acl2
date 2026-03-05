@@ -611,7 +611,7 @@
        (extra-assumptions (translate-terms extra-assumptions 'def-unrolled-fn (w state)))
 
        ;; Lift the function to obtain the DAG:
-       ((mv erp result-dag ;assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate
+       ((mv erp result-dag-or-quotep ;assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate
             state)
         (unroll-arm-code-core target parsed-executable
                                  extra-assumptions ;;suppress-assumptions
@@ -625,9 +625,9 @@
                                  stop-pcs
                                  memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
-       ;; Extract info from the result-dag:
-       (result-dag-size (dag-or-quotep-size result-dag))
-       (result-dag-fns (dag-or-quotep-fns result-dag))
+       ;; Extract info from the result:
+       (result-size (dag-or-quotep-size result-dag-or-quotep))
+       (result-fns (dag-or-quotep-fns result-dag-or-quotep))
        ;; Sometimes the presence of text-offset may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
@@ -640,35 +640,37 @@
        ;; (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
        ;;            (set-print-base-radix print-base state)
        ;;          state)) ; todo: do this better
-       ((when (intersection-eq result-dag-fns *incomplete-run-fns*))
-        (if (< result-dag-size 100000) ; todo: make customizable
+       ((when (intersection-eq result-fns *incomplete-run-fns*))
+        (if (< result-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
-                    (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag)))
+                    (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag-or-quotep)))
                                  (if untranslatep
                                      (untranslate term nil (w state))
                                    term))
                         nil)
                     (cw ")~%"))
           (progn$ (cw "(DAG:~%")
-                  (cw "~X01" result-dag nil)
+                  (cw "~X01" result-dag-or-quotep nil)
                   (cw ")~%")))
         (mv t (er hard 'lifter "Lifter error: The run did not finish.") state))
-       ;; Not valid if (not (< result-dag-size 10000)):
-       (maybe-result-term (and (< result-dag-size 10000) ; avoids exploding
-                               (dag-to-term result-dag)))
+       ;; Not valid if (not (< result-size 10000)):
+       (maybe-result-term (and (< result-size 10000) ; avoids exploding
+                               (dag-to-term result-dag-or-quotep)))
        ;; Print the result:
        (- (and print
-               (if (< result-dag-size 10000)
+               (if (< result-size 10000)
                    (cw "(Result: ~x0)~%" maybe-result-term)
                  (progn$ (cw "(Result:~%")
-                         (cw "~X01" result-dag nil)
+                         (cw "~X01" result-dag-or-quotep nil)
                          (cw ")~%")))))
 
        ;; Build the defconst that will contain the result DAG:
-       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag))
+       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag-or-quotep))
 
        ;; ;; Possibly produce a defun:
 
+       ;;       (result-vars (dag-or-quotep-vars result-dag-or-quotep))
+       ;;       (fn-formals (acl2::merge-sort-symbol< result-vars)) ; todo: use a smarter sort, also use a suggested ordering for common formals
        ;; ;; (fn-formals result-dag-vars) ; we could include arm here, even if the dag is a constant
        ;; (executable-type (parsed-executable-type parsed-executable))
        ;; (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
