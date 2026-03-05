@@ -363,6 +363,7 @@
                        :redef-okp t
                        :logo-image "./acl2-big.png"
                        :error t
+                       :error-on-non-existent-parents t
                        :broken-links-limit 1)
            (value `(value-triple :manual))))
 
