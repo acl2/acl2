@@ -4333,26 +4333,6 @@
   :hints (("Goal" :in-theory (enable bvplus bvlt sbvlt-rewrite
                                      getbit-when-bvlt-of-small-helper))))
 
-
-
-;gen!
-(defthm getbit-of-+-of-expt-2
-  (implies (integerp x)
-           (equal (GETBIT 31 (+ 2147483648 x))
-                  (if (equal 0 (GETBIT 31 x))
-                      1
-                    0)))
-  :hints (("Goal" :in-theory (enable getbit SLICE-OF-SUM-CASES))))
-
-;gen
-(defthm slice-of-minus-of-expt
-  (implies (posp size)
-           (equal (SLICE (+ -1 SIZE) 1 (- (EXPT 2 SIZE)))
-                  0))
-  :hints (("Goal" :in-theory (enable slice LOGTAIL bvchop
-                                     expt-of-+ ;;EXPONENTS-ADD-unrestricted
-                                     ))))
-
 (defthm bvchop-of-times-of-expt-and-/-of-expt
   (implies (and (natp low)
                 (natp high))
@@ -4395,34 +4375,17 @@
                            (EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
                             BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT)))))
 
+;true for any bvs?
 (defthm bvchop-plus-bvchop-bound
   (implies (integerp size)
-           (< (+ (bvchop (+ -1 size) x) (bvchop (+ -1 size) y)) (expt 2 size)))
+           (< (+ (bvchop (+ -1 size) x)
+                 (bvchop (+ -1 size) y))
+              (expt 2 size)))
   :hints (("Goal" :in-theory (e/d (expt-of-+) (bvchop-upper-bound))
            :use ((:instance bvchop-upper-bound (n (+ -1 size)) (x x))
                  (:instance bvchop-upper-bound (n (+ -1 size)) (x y))))))
 
-;rename
-;i don't like the bvplus here
-;trying disabled.
-;just go to getbit of bvplus?
-(defthmd getbit-of-+
-  (implies (and (integerp x)
-                (natp size)
-                (integerp y)
-                )
-           (equal (getbit size (+ x y))
-                  (if (>= (bvplus (+ 1 size) (bvchop size x) (bvchop size y))
-                          (expt 2 size))
-                      (bitnot (bitxor (getbit size x) (getbit size y)))
-                    (bitxor (getbit size x) (getbit size y)))))
-  :hints (("Goal"
-           :use ((:instance usb1-cases (x (LOGTAIL size (BVCHOP (+ 1 size) Y))))
-                 (:instance usb1-cases (x (LOGTAIL size (BVCHOP (+ 1 size) x)))))
-           :in-theory (e/d (bitnot getbit slice BVCHOP-OF-SUM-CASES bvplus logtail-of-bvchop
-                                   logtail-of-plus)
-                           (anti-slice bvchop-of-logtail
-                                       bitp-of-bvchop-of-1-type)))))
+
 
 
 ;;only the lowest bit is of interest
@@ -4434,32 +4397,9 @@
                   (integerp (* 1/2 x))))
   :hints (("Goal" :in-theory (enable (:i expt) expt))))
 
-;; Disabled by default since this is pretty aggressive and splits into cases.
-(defthmd logext-of-plus
-  (implies (and (integerp x)
-                (posp size)
-                (integerp y))
-           (equal (logext size (+ x y))
-                  (if (>= (+ (logext size x) (logext size y))
-                          (expt 2 (+ -1 size)))
-                      (- (+ (logext size x) (logext size y))
-                         (expt 2 size))
-                    (if (< (+ (logext size x) (logext size y))
-                           (- (expt 2 (+ -1 size))))
-                        (+ (+ (logext size x) (logext size y))
-                           (expt 2 size))
-                      (+ (logext size x) (logext size y))))))
-  :hints (("Goal"
-           :use bvchop-plus-bvchop-bound
-           :in-theory (e/d (logapp logext LOGAPP-0 bvplus BVCHOP-OF-SUM-CASES getbit-of-+ bvchop mod-sum-cases)
-                           (TIMES-4-BECOMES-LOGAPP  bvchop-plus-bvchop-bound expt
-                                                    MOD-EXPT-SPLIT ;bad rule!
-                                                    )))))
-
 ;todo: prove a getbit-of-sum-cases rule?  does it already exist?  see getbit-of-+
 ;; (thm
 ;;  (equal (GETBIT 31 (+ x y))
-
 
 ;gen the 0 to any constant!
 (defthm sbvlt-of-bvplus-of-constant-and-0
@@ -4473,53 +4413,12 @@
   :hints (("Goal" :in-theory (e/d (sbvlt bvplus LOGEXT-CASES BVUMINUS bvminus logext-of-plus)
                                   (<-of-logext-and-0-alt BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
+;subsumed?
 (defthm getbit-of+-of-4294967296
  (implies (integerp x)
           (equal (GETBIT 31 (+ 4294967296 x))
                  (GETBIT 31 x)))
  :hints (("Goal" :in-theory (enable getbit))))
-
-;drop since we have the gen version?
-;many cases
-(defthm sbvlt-of-bvuminus-and-constant
-  (implies (and (syntaxp (quotep k))
-                (integerp k))
-           (equal (sbvlt 32 (bvuminus 32 x) k)
-                  (if (equal 2147483648 (bvchop 32 k))
-                      nil
-                    (if (equal 2147483648 (bvchop 32 x))
-                        t
-                      (sbvlt 32
-                             (bvuminus 32 k) ;gets computed
-                             x)))))
-  :hints (("Goal" :in-theory (enable sbvlt ;-rewrite
-                                     bvuminus
-                                     bvminus
-                                     bvlt bvplus bvchop-of-sum-cases
-                                     logext-of-plus))))
-
-;rename or drop?
-(defthm sbvlt-of-bvuminus
-  (implies (unsigned-byte-p 32 x) ; move to rhs?
-           (equal (SBVLT 32 (BVUMINUS 32 x) 0)
-                  (if (equal x (expt 2 31))
-                      t
-                    (SBVLT 32 0 x))))
-  :hints (("Goal"
-           :use ((:instance integerp-squeeze
-                            (x (* x 1/2147483648)))
-                 (:instance SPLIT-BV
-                            (x x)
-                            (n 32)
-                            (m 31)))
-           :in-theory (e/d (sbvlt logext logapp
-                            logtail
-                            BVUMINUS BVMINUS bvlt getbit slice SBVLT-rewrite
-                            ;;INTEGERP-OF-*-OF-/-BECOMES-EQUAL-OF-0-AND-MOD ;looped
-                            bvcat)
-                           (<-OF-*-AND-*-SAME-LINEAR ;why?
-                            BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                            <-OF-LOGEXT-AND-0-ALT)))))
 
 ;move
 ; not safe, can loop when rewriting the binding hyp
@@ -4569,14 +4468,57 @@
                                      getbit-when-equal-of-bvchop-safe
                                      bvchop-when-equal-of-bvchop-safe))))
 
+;drop since we have the gen version?
+;many cases
+(defthmd sbvlt-of-bvuminus-and-constant
+  (implies (and (syntaxp (quotep k))
+                (integerp k))
+           (equal (sbvlt 32 (bvuminus 32 x) k)
+                  (if (equal 2147483648 (bvchop 32 k))
+                      nil
+                    (if (equal 2147483648 (bvchop 32 x))
+                        t
+                      (sbvlt 32
+                             (bvuminus 32 k) ;gets computed
+                             x)))))
+  :hints (("Goal" :in-theory (enable sbvlt ;-rewrite
+                                     bvuminus
+                                     bvminus
+                                     bvlt bvplus bvchop-of-sum-cases
+                                     logext-of-plus))))
+
+;rename or drop?
+(defthmd sbvlt-of-bvuminus
+  (implies (unsigned-byte-p 32 x) ; move to rhs?
+           (equal (SBVLT 32 (BVUMINUS 32 x) 0)
+                  (if (equal x (expt 2 31))
+                      t
+                    (SBVLT 32 0 x))))
+  :hints (("Goal"
+           :use ((:instance integerp-squeeze
+                            (x (* x 1/2147483648)))
+                 (:instance SPLIT-BV
+                            (x x)
+                            (n 32)
+                            (m 31)))
+           :in-theory (e/d (sbvlt logext logapp
+                            logtail
+                            BVUMINUS BVMINUS bvlt getbit slice SBVLT-rewrite
+                            ;;INTEGERP-OF-*-OF-/-BECOMES-EQUAL-OF-0-AND-MOD ;looped
+                            bvcat)
+                           (<-OF-*-AND-*-SAME-LINEAR ;why?
+                            BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                            <-OF-LOGEXT-AND-0-ALT)))))
+
+
+;; Simplifies -x < k
 ;todo: make a safe version for when we can exclude the weird case
 (defthm sbvlt-of-bvuminus-and-constant-gen
-  (implies (and (syntaxp (quotep k))
-;                (integerp k)
-                (posp size)
-                )
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (posp size))
            (equal (sbvlt size (bvuminus size x) k)
-                  (if (equal (expt 2 (+ -1 size)) (bvchop size k))
+                  (if (equal (expt 2 (+ -1 size)) (bvchop size k)) ; gets computed
                       nil
                     (if (equal (expt 2 (+ -1 size)) (bvchop size x))
                         t
