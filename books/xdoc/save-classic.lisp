@@ -188,7 +188,7 @@ command, along the following lines:</p>
 ;;       (find-roots (cdr x)))))
 
 (defun find-orphaned-topics-1 (child parents topics-fal acc)
-  ;; Returns an alist of (CHILD . MISSING-PARENT)
+  ;; Returns a list of (CHILD . MISSING-PARENT) entries.
   (cond ((atom parents)
          acc)
         ((hons-get (car parents) topics-fal)
@@ -198,13 +198,14 @@ command, along the following lines:</p>
                                  (cons (cons child (car parents))
                                        acc)))))
 
-(defun find-orphaned-topics (x topics-fal acc)
-  (b* (((when (atom x))
+(defun find-orphaned-topics (topics topics-fal acc)
+  ;; Returns a list of (CHILD . MISSING-PARENT) entries.
+  (b* (((when (atom topics))
         acc)
-       (child   (cdr (assoc :name (car x))))
-       (parents (cdr (assoc :parents (car x))))
+       (child   (cdr (assoc :name (car topics))))
+       (parents (cdr (assoc :parents (car topics))))
        (acc     (find-orphaned-topics-1 child parents topics-fal acc)))
-    (find-orphaned-topics (cdr x) topics-fal acc)))
+    (find-orphaned-topics (cdr topics) topics-fal acc)))
 
 
 ;; (mutual-recursion
