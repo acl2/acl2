@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, May - August 2023, Regents of the University of Texas
-; Copyright (C) 2025, Kestrel Technology, LLC
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; Copyright (C) August 2023 - May 2024, Yahya Sohail
 ; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
@@ -1250,6 +1250,58 @@
        (x86 (!xmmi-size 8 xmm-index high-qword x86))
 
        (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; MOVLHPS
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-movlhps-sse
+
+  :parents (two-byte-opcodes fp-opcodes)
+
+  :short "Move packed single precision floating-point values low to high."
+
+  :long
+  "<code>
+   NP 0F 16 /r    MOVLHPS xmm1, xmm2
+   </code>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* ((operand-size 16) ; 128 bits
+
+       ;; Operand 1 (destination) is in Reg.
+       ((the (unsigned-byte 4) xmm1-index) (reg-index reg rex-byte #.*r*))
+       ((the (unsigned-byte 128) xmm1) (xmmi-size operand-size xmm1-index x86))
+
+       ;; Operand 2 (source) is in R/M.
+       ((the (unsigned-byte 4) xmm2-index) (reg-index r/m rex-byte #.*b*))
+       ((the (unsigned-byte 128) xmm2) (xmmi-size operand-size xmm2-index x86))
+
+       ;; Low quadword of xmm2.
+       ((the (unsigned-byte 64) low-qword)
+        (mbe :logic (part-select xmm2 :low 0 :high 63)
+             :exec  (the (unsigned-byte 64)
+                         (logand #uxFFFF_FFFF_FFFF_FFFF
+                                 xmm2))))
+
+       ;; New value for xmm1.
+       ((the (unsigned-byte 128) new-xmm1)
+        (part-install low-qword xmm1 :low 64 :high 127))
+
+       ;; Update xmm1.
+       (x86 (!xmmi-size operand-size xmm1-index new-xmm1 x86))
+
+       ;; Update instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
     x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
