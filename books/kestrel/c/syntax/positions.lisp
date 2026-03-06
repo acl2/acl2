@@ -29,7 +29,7 @@
   (xdoc::topstring
    (xdoc::p
     "We introduce data structures that describe
-     positions of character in files."))
+     positions of characters in files."))
   :order-subtopics t
   :default-parent t)
 
