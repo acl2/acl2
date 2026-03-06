@@ -157,14 +157,14 @@
 
 (add-to-ruleset break-abstraction '(intersect-type-prescription))
 
-(defrule intersect-when-set-equiv-of-arg1-congruence
+(defrule intersect-when-equiv-of-arg1-congruence
   (implies (equiv x0 x1)
-           (equal (intersect x0 z)
-                  (intersect x1 z)))
+           (equal (intersect x0 y)
+                  (intersect x1 y)))
   :rule-classes :congruence
   :enable intersect)
 
-(defrule intersect-when-set-equiv-of-arg2-congruence
+(defrule intersect-when-equiv-of-arg2-congruence
   (implies (equiv y0 y1)
            (equal (intersect x y0)
                   (intersect x y1)))
