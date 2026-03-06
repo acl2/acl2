@@ -11,8 +11,8 @@
 
 (in-package "C")
 
+(include-book "../../proof-support/test-star")
 (include-book "../../proof-support/pure-expression-execution")
-(include-book "../test-star")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 

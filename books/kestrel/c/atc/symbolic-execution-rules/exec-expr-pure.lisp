@@ -11,11 +11,10 @@
 
 (in-package "C")
 
+(include-book "../../proof-support/test-star")
 (include-book "../../proof-support/pure-expression-execution")
 
 (include-book "../../representation/integer-operations")
-
-(include-book "../test-star")
 
 (include-book "syntaxp")
 

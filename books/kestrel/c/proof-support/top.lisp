@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "test-star")
 (include-book "pure-expression-execution")
 (include-book "exec-stmt-while")
 
