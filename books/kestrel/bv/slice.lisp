@@ -1,7 +1,7 @@
 ; BV Library: slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -729,3 +729,24 @@
          (if test
              (slice high low v1)
            (slice high low v2))))
+
+;gen
+(defthm slice-of-minus-of-expt
+  (implies (posp size)
+           (equal (SLICE (+ -1 SIZE) 1 (- (EXPT 2 SIZE)))
+                  0))
+  :hints (("Goal" :in-theory (enable slice LOGTAIL bvchop
+                                     expt-of-+ ;;EXPONENTS-ADD-unrestricted
+                                     ))))
+
+(defthm slice-of-+-of-constant-irrel
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep low)))
+                (equal 0 (bvchop (+ 1 high) k))
+                (natp low)
+                (natp high)
+                (integerp x)
+                (integerp k))
+           (equal (slice high low (+ k x))
+                  (slice high low x)))
+  :hints (("Goal" :in-theory (enable slice bvchop-of-logtail))))
