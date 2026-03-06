@@ -1192,7 +1192,7 @@
   :long
   "<code>
    NP 0F 12 /r    MOVHLPS xmm1, xmm2
-   <code>"
+   </code>"
 
   :returns (x86 x86p :hyp (x86p x86))
 
