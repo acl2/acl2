@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../atc/pure-expression-execution")
+(include-book "pure-expression-execution")
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 

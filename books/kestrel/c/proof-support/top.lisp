@@ -11,9 +11,8 @@
 
 (in-package "C")
 
+(include-book "pure-expression-execution")
 (include-book "exec-stmt-while")
-
-(include-book "../portcullis")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,10 +22,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We provide theorems to reason about C code
+    "We provide functions and theorems to reason about C code
      as formalized in our "
     (xdoc::seetopic "language" "model")
-    ". These rules can be used for
+    ". These functions and theorems can be used for
      synthesis, verification, and transformation of C code.")
    (xdoc::p
     "This is just an initial placeholder,
