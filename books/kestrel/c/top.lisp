@@ -13,6 +13,7 @@
 
 (include-book "language/top")
 (include-book "representation/top")
+(include-book "proof-support/top")
 (include-book "atc/top")
 (include-book "syntax/top")
 (include-book "transformation/top")
@@ -133,6 +134,7 @@
      we take care to reference both."))
   :order-subtopics (language
                     representation
+                    proof-support
                     atc
                     c$::syntax-for-tools
                     c2c::transformation-tools
