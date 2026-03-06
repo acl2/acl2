@@ -29,6 +29,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule omap-restrict-of-sfix
+  (equal (omap::restrict (sfix keys) map)
+         (omap::restrict keys map))
+  :induct t
+  :enable omap::restrict)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule equal-of-omap-assoc-and-cons
   (equal (equal (omap::assoc key1 omap)
                 (cons key2 val))
