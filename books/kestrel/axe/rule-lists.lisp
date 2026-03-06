@@ -295,6 +295,8 @@
     bvif-of-bvcat-low-arg4
     bvcat-of-bvcat-tighten-arg2
     bvcat-of-bvcat-tighten-arg4
+    bvlt-of-bvcat-low-arg2
+    bvlt-of-bvcat-low-arg3
     ;; bvsx rules:
     bitand-of-bvsx-low-arg1
     bitand-of-bvsx-low-arg2
@@ -315,6 +317,8 @@
     bvminus-of-bvsx-low-arg2
     bvminus-of-bvsx-low-arg3
     bvuminus-of-bvsx-low
+    bvlt-of-bvsx-low-arg2
+    bvlt-of-bvsx-low-arg3
     ;; todo: what about rules like bvand-of-bvcat-tighten-arg2 here?
 
     ;;these also seem safe (perhaps trimming constants is always safe?):
