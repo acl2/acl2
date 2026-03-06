@@ -23,7 +23,7 @@
           fix
           equiv
           emptyp
-          ;; head
+          head-key
           map-keys-acl2-numberp
           map-keys-symbolp
           map-keys-eqlablep

@@ -27,4 +27,7 @@
           symbol-tree-search-assoc
           eqlable-tree-search-assoc
           tree-search-lookup!
+          acl2-number-tree-search-lookup!
+          symbol-tree-search-lookup!
+          eqlable-tree-search-lookup!
           ))

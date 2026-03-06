@@ -21,17 +21,19 @@
 (std::defredundant
   :names (lookup
           lookup$inline
-          ;; lookup-=
-          ;; lookup-eq
-          ;; lookup-eql
+          head-val
+          head
           lookup?
           lookup?$inline
-          ;; lookup?-=
-          ;; lookup?-eq
-          ;; lookup?-eql
           lookup!
           lookup!$inline
-          ;; lookup!-=
-          ;; lookup!-eq
-          ;; lookup!-eql
+          lookup-=
+          lookup-eq
+          lookup-eql
+          lookup?-=
+          lookup?-eq
+          lookup?-eql
+          lookup!-=
+          lookup!-eq
+          lookup!-eql
           ))

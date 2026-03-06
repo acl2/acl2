@@ -138,27 +138,6 @@
            (equal (tree-lookup key tree)
                   nil)))
 
-;; (defrule tree-lookup-when-not-in-of-tree-key-set-type-prescription
-;;   (implies (equal (treeset::in key (tree-key-set tree)) nil)
-;;            (equal (tree-lookup key tree)
-;;                   nil))
-;;   :rule-classes :type-prescription
-;;   :use tree-lookup-when-not-in-of-tree-key-set)
-;;
-;; (defrule tree-lookup-when-not-in-of-tree-key-set-forward-chaining
-;;   (implies (not (treeset::in key (tree-key-set tree)))
-;;            (equal (tree-lookup key tree)
-;;                   nil))
-;;   :rule-classes :forward-chaining
-;;   :by tree-lookup-when-not-in-of-tree-key-set)
-
-;; (defrule tree-lookup-when-not-in-of-tree-key-set-cheap
-;;   (implies (not (treeset::in key (tree-key-set tree)))
-;;            (equal (tree-lookup key tree)
-;;                   nil))
-;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-;;   :by tree-lookup-when-not-in-of-tree-key-set)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-lookup-when-<<-of-tree->head
@@ -284,7 +263,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: equality variant versions
 (define tree-search-lookup!
   (key
    (tree treep))
@@ -304,27 +282,10 @@
                       (tree-search-lookup! key (tree->left tree)))
                      (t
                       (tree-search-lookup! key (tree->right tree))))))
-  ;; Verified below
-  :verify-guards nil)
+  :guard-hints (("Goal" :in-theory (enable tree-search-assoc
+                                           tree-search-lookup!))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defruled tree-search-lookup!-becomes-exec
-  (implies (tree-search-assoc key tree)
-           (equal (tree-search-lookup! key tree)
-                  (cond ((equal key (tree-element->key (tree->head tree)))
-                         (tree-element->val (tree->head tree)))
-                        ((<< key (tree-element->key (tree->head tree)))
-                         (tree-search-lookup! key (tree->left tree)))
-                        (t
-                         (tree-search-lookup! key (tree->right tree))))))
-  :enable (tree-search-lookup!
-           tree-search-assoc))
-
-(verify-guards tree-search-lookup!
-  :hints (("Goal" :in-theory (enable tree-search-assoc
-                                     tree-search-lookup!)
-                  :use tree-search-lookup!-becomes-exec)))
 
 (defrule tree-search-lookup!-becomes-tree-lookup-when-bstp
   (implies (bstp tree)
@@ -409,6 +370,69 @@
                                            tree->head
                                            tree-element-p
                                            treep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define acl2-number-tree-search-lookup!
+  ((key acl2-numberp)
+   (tree acl2-number-treep))
+  :guard (tree-search-assoc key tree)
+  (mbe :logic (tree-search-lookup! key tree)
+       :exec
+       (let ((head-key (tree-element->key (tree->head tree))))
+         (cond ((= key head-key)
+                (tree-element->val (tree->head tree)))
+               ((data::acl2-number-<< key head-key)
+                (acl2-number-tree-search-lookup! key (tree->left tree)))
+               (t
+                (acl2-number-tree-search-lookup! key (tree->right tree))))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable tree-search-lookup!
+                                           tree-search-assoc
+                                           acl2-number-tree-search-lookup!
+                                           tree-keys-acl2-numberp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define symbol-tree-search-lookup!
+  ((key symbolp)
+   (tree symbol-treep))
+  :guard (tree-search-assoc key tree)
+  (mbe :logic (tree-search-lookup! key tree)
+       :exec
+       (let ((head-key (tree-element->key (tree->head tree))))
+         (cond ((eq key head-key)
+                (tree-element->val (tree->head tree)))
+               ((data::symbol-<< key head-key)
+                (symbol-tree-search-lookup! key (tree->left tree)))
+               (t
+                (symbol-tree-search-lookup! key (tree->right tree))))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable tree-search-lookup!
+                                           tree-search-assoc
+                                           symbol-tree-search-lookup!
+                                           tree-keys-symbolp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eqlable-tree-search-lookup!
+  ((key eqlablep)
+   (tree eqlable-treep))
+  :guard (tree-search-assoc key tree)
+  (mbe :logic (tree-search-lookup! key tree)
+       :exec
+       (let ((head-key (tree-element->key (tree->head tree))))
+         (cond ((eql key head-key)
+                (tree-element->val (tree->head tree)))
+               ((data::eqlable-<< key head-key)
+                (eqlable-tree-search-lookup! key (tree->left tree)))
+               (t
+                (eqlable-tree-search-lookup! key (tree->right tree))))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable tree-search-lookup!
+                                           tree-search-assoc
+                                           eqlable-tree-search-lookup!
+                                           tree-keys-eqlablep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

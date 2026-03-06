@@ -325,50 +325,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Should there be a notion of "head"? I suppose so. But the normal forms
-;; should be head-key and head-val; head should just be an exec form.
-#|
-(define head ((map mapp))
+(define head-key ((map mapp))
   :guard (not (emptyp map))
   :parents (treemap)
-  :short "Get an element of the nonempty @(see treemap)."
+  :short "Get a key from the nonempty @(see treemap)."
   :long
   (xdoc::topstring
    (xdoc::p
      "For empty trees, the logical result is @('nil').")
    (xdoc::p
-     "From a user perspective, this should be viewed as an arbitrary element of
-      the map. For a description of which element this actually provides, see
-      @(tsee tree->head)."))
-  (tagged-element->elem (tree->head (fix map)))
+     "From a user perspective, this should be viewed as the key of an arbitrary
+      element of the map. For a description of which element this actually
+      provides, see @(tsee tree->head)."))
+  (tree-element->key (tree->head (fix map)))
   :inline t
-  :guard-hints (("Goal" :in-theory (enable mapp
-                                           emptyp))))
+  :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule head-when-equiv-congruence
+(defrule head-key-when-equiv-congruence
   (implies (equiv map0 map1)
-           (equal (head map0)
-                  (head map1)))
+           (equal (head-key map0)
+                  (head-key map1)))
   :rule-classes :congruence
-  :enable head)
+  :enable head-key)
 
-(defruled head-when-emptyp
+(defruled head-key-when-emptyp
   (implies (emptyp map)
-           (equal (head map)
+           (equal (head-key map)
                   nil))
-  :enable (head
+  :enable (head-key
            emptyp
-           irr-tagged-element))
+           irr-tree-element))
 
-(defrule head-when-emptyp-cheap
+(defrule head-key-when-emptyp-cheap
   (implies (emptyp map)
-           (equal (head map)
+           (equal (head-key map)
                   nil))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable head-when-emptyp)
-|#
+  :enable head-key-when-emptyp)
+
+(defrule head-key-of-empty
+  (implies (emptyp map)
+           (equal (head-key (empty))
+                  nil))
+  :enable head-key-when-emptyp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Variants matching the equality primitives
@@ -386,6 +388,18 @@
   (booleanp (map-keys-acl2-numberp map))
   :rule-classes ((:type-prescription :typed-term (map-keys-acl2-numberp map))))
 
+(defrule acl2-numberp-of-head-key
+  (implies (map-keys-acl2-numberp map)
+           (equal (acl2-numberp (head-key map))
+                  (not (emptyp map))))
+  :enable (head-key
+           map-keys-acl2-numberp
+           emptyp
+           fix
+           tree-keys-acl2-numberp
+           irr-tree-element
+           break-abstraction))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-keys-symbolp ((map mapp))
@@ -401,6 +415,17 @@
   (booleanp (map-keys-symbolp map))
   :rule-classes ((:type-prescription :typed-term (map-keys-symbolp map))))
 
+(defrule symbolp-of-head-key
+  (implies (map-keys-symbolp map)
+           (symbolp (head-key map)))
+  :enable (head-key
+           map-keys-symbolp
+           emptyp
+           fix
+           tree-keys-symbolp
+           irr-tree-element
+           break-abstraction))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-keys-eqlablep ((map mapp))
@@ -415,6 +440,17 @@
 (defrule map-keys-eqlablep-type-prescription
   (booleanp (map-keys-eqlablep map))
   :rule-classes ((:type-prescription :typed-term (map-keys-eqlablep map))))
+
+(defrule eqlablep-of-head-key
+  (implies (map-keys-eqlablep map)
+           (eqlablep (head-key map)))
+  :enable (head-key
+           map-keys-eqlablep
+           emptyp
+           fix
+           tree-keys-eqlablep
+           irr-tree-element
+           break-abstraction))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -450,5 +486,5 @@
 (defthy map-extra-rules
   '(fix-when-not-mapp
     fix-when-emptyp
-    ;; head-when-emptyp
+    head-key-when-emptyp
     ))

@@ -208,6 +208,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define head-val ((map mapp))
+  :guard (not (emptyp map))
+  :parents (treemap)
+  :short "Get a value from the nonempty @(see treemap)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "For empty trees, the logical result is @('nil').")
+   (xdoc::p
+     "This is the value associated with the key returned by the @(tsee
+     head-key)."))
+  (mbe :logic (lookup (head-key map) map)
+       :exec (tree-element->val (tree->head map)))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* lookup
+                                            head-key
+                                            keys
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define head ((map mapp))
+  :guard (not (emptyp map))
+  :parents (treemap)
+  :short "Get an element of the nonempty @(see treemap)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "For empty trees, the logical result is @('nil').")
+   (xdoc::p
+     "From a user perspective, this should be viewed as an arbitrary element of
+      the map. For a description of which element this actually provides, see
+      @(tsee tree->head)."))
+  (mbe :logic (mv (head-key map)
+                  (head-val map))
+       :exec (let ((head (tree->head (fix map))))
+               (mv (tree-element->key head)
+                   (tree-element->val head))))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* head-key
+                                            lookup
+                                            keys
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc lookup?
   :parents (treemap)
   :short "Get the results of @(tsee in) and @(tsee lookup) simultaneously."
@@ -312,4 +360,138 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: all the equality variants
+(define lookup-=
+  ((key acl2-numberp)
+   (map acl2-number-mapp)
+   default)
+  (mbe :logic (lookup key map :default default)
+       :exec (let ((assoc (acl2-number-tree-search-assoc key map)))
+               (if (consp (the (or cons null) assoc))
+                   (cdr assoc)
+                 default)))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* lookup
+                                            keys
+                                            map-keys-acl2-numberp
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lookup-eq
+  ((key symbolp)
+   (map symbol-mapp)
+   default)
+  (mbe :logic (lookup key map :default default)
+       :exec (let ((assoc (symbol-tree-search-assoc key map)))
+               (if (consp (the (or cons null) assoc))
+                   (cdr assoc)
+                 default)))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* lookup
+                                            keys
+                                            map-keys-symbolp
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lookup-eql
+  ((key eqlablep)
+   (map eqlable-mapp)
+   default)
+  (mbe :logic (lookup key map :default default)
+       :exec (let ((assoc (eqlable-tree-search-assoc key map)))
+               (if (consp (the (or cons null) assoc))
+                   (cdr assoc)
+                 default)))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* lookup
+                                            keys
+                                            map-keys-eqlablep
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lookup?-=
+  ((key acl2-numberp)
+   (map acl2-number-mapp))
+  (mbe :logic (lookup? key map)
+       :exec (let ((assoc (acl2-number-tree-search-assoc key map)))
+               (mv (consp (the (or cons null) assoc))
+                   (cdr (the (or cons null) assoc)))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* lookup
+                                            keys
+                                            map-keys-acl2-numberp
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lookup?-eq
+  ((key symbolp)
+   (map symbol-mapp))
+  (mbe :logic (lookup? key map)
+       :exec (let ((assoc (symbol-tree-search-assoc key map)))
+               (mv (consp (the (or cons null) assoc))
+                   (cdr (the (or cons null) assoc)))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* lookup
+                                            keys
+                                            map-keys-symbolp
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lookup?-eql
+  ((key eqlablep)
+   (map eqlable-mapp))
+  (mbe :logic (lookup? key map)
+       :exec (let ((assoc (eqlable-tree-search-assoc key map)))
+               (mv (consp (the (or cons null) assoc))
+                   (cdr (the (or cons null) assoc)))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* lookup
+                                            keys
+                                            map-keys-eqlablep
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lookup!-=
+  ((key acl2-numberp)
+   (map acl2-number-mapp))
+  :guard (in key map)
+  (mbe :logic (lookup! key map)
+       :exec (acl2-number-tree-search-lookup! key map))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* lookup
+                                            keys
+                                            map-keys-acl2-numberp
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lookup!-eq
+  ((key symbolp)
+   (map symbol-mapp))
+  :guard (in key map)
+  (mbe :logic (lookup! key map)
+       :exec (symbol-tree-search-lookup! key map))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* lookup
+                                            keys
+                                            map-keys-symbolp
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lookup!-eql
+  ((key eqlablep)
+   (map eqlable-mapp))
+  :guard (in key map)
+  (mbe :logic (lookup! key map)
+       :exec (eqlable-tree-search-lookup! key map))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* lookup
+                                            keys
+                                            map-keys-eqlablep
+                                            break-abstraction))))
