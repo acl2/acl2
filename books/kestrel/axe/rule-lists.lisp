@@ -678,7 +678,10 @@
     ;; bvif-trim-arg3-axe-all ; use instead?
     ;; bvif-trim-arg4-axe-all ; use instead?
     leftrotate32-trim-arg1-axe-all
-    bvsx-trim-axe-all))
+    bvsx-trim-axe-all
+
+    bvlt-trim-arg1-axe-all
+    bvlt-trim-arg2-axe-all))
 
 ;; WARNING: Keep in sync with *trimmable-operators*
 (defun trim-helper-rules ()
@@ -2324,8 +2327,8 @@
     mod-becomes-bvchop-when-power-of-2p
     bvlt-of-bvmult-6-5-20 ;which one of these helps?
     bvlt-of-bvmult-6-5-20-alt
-    bvlt-trim-arg1-axe-all
-    bvlt-trim-arg2-axe-all
+    bvlt-trim-arg1-axe-all ; drop?
+    bvlt-trim-arg2-axe-all ; drop?
     equal-of-bvplus-constant-and-constant
     equal-of-bvplus-constant-and-constant-alt
     bvlt-of-bvplus-of-bvcat-of-slice-sha1
