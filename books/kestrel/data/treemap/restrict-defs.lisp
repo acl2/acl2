@@ -8,20 +8,20 @@
 
 (in-package "TREEMAP")
 
+(include-book "kestrel/data/treeset/set-defs" :dir :system)
+
+(include-book "internal/restrict-defs")
 (include-book "map-defs")
-(include-book "to-omap-defs")
-(include-book "keys-defs")
-(include-book "in-defs")
-(include-book "size-defs")
-(include-book "lookup-defs")
-(include-book "submap-defs")
-(include-book "min-max-defs")
-(include-book "update-defs")
-(include-book "delete-defs")
-(include-book "update-star-defs")
-(include-book "restrict-defs")
+
+(local (include-book "std/util/defredundant" :dir :system))
+(local (include-book "restrict"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This books contains all the relevant treemap definitions without the
-;; theorems.
+(std::defredundant
+  :names (restrict
+          restrict$inline
+          restrict-=
+          restrict-eq
+          restrict-eql
+          ))

@@ -21,6 +21,7 @@
 (include-book "update")
 (include-book "delete")
 (include-book "update-star")
+(include-book "restrict")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

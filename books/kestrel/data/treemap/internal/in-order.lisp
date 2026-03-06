@@ -11,6 +11,8 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(include-book "kestrel/data/treeset/internal/in-order-defs" :dir :system)
+(include-book "kestrel/data/treeset/internal/bst-defs" :dir :system)
 (include-book "kestrel/data/treeset/to-oset-defs" :dir :system)
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
@@ -25,6 +27,7 @@
 (include-book "update-defs")
 (include-book "delete-defs")
 (include-book "update-star-defs")
+(include-book "restrict-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -33,6 +36,8 @@
 (local (include-book "std/omaps/extensionality" :dir :system))
 (local (include-book "std/omaps/delete" :dir :system))
 
+(local (include-book "kestrel/data/treeset/internal/in-order" :dir :system))
+(local (include-book "kestrel/data/treeset/internal/bst" :dir :system))
 (local (include-book "kestrel/data/treeset/to-oset" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
@@ -60,6 +65,7 @@
 (local (include-book "update"))
 (local (include-book "delete"))
 (local (include-book "update-star"))
+(local (include-book "restrict"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -323,3 +329,13 @@
                                  (tree-in-order y))))
   :enable (omap::equal-becomes-ext-equal-when-mapp
            omap::ext-equal))
+
+(defrule tree-in-order-of-tree-restrict
+  (implies (and (treeset::bstp keys)
+                (bstp tree))
+           (equal (tree-in-order (tree-restrict keys tree))
+                  (omap::restrict (treeset::tree-in-order keys)
+                                  (tree-in-order tree))))
+  :enable (omap::equal-becomes-ext-equal-when-mapp
+           omap::ext-equal
+           omap::assoc-of-restrict))
