@@ -4063,7 +4063,7 @@
           (ARG :OP1 '(V DQ)
                :OP2 '(H Q)
                :OP3 '(U Q))
-          'NIL
+          '(X86-MOVLHPS-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
     (INST "MOVHPD"
           (OP :OP #xF16
