@@ -19,6 +19,8 @@
 (include-book "kestrel/bv/bvcount" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
+(include-book "kestrel/bv/bvshl-def" :dir :system)
+(include-book "kestrel/bv/rightrotate" :dir :system)
 (include-book "kestrel/bv/overflow-and-underflow" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -108,7 +110,7 @@
 
 ;; Returns (mv bits bit)
 ;;todo: do we want N or X first (here and elsewhere)?
-(defun lsl_c (n x shift)
+(defund lsl_c (n x shift)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (integerp shift)
                               ;; the assert:
@@ -118,8 +120,26 @@
          (carry_out (getbit n extended_x)))
     (mv result carry_out)))
 
+(defthm mv-nth-0-of-lsl_c-becomes-bvshl
+  (equal (mv-nth 0 (lsl_c n x shift))
+         (bvshl n x shift))
+  :hints (("Goal" :in-theory (enable lsl_c bvshl))))
+
+(defthm mv-nth-1-of-lsl_c-becomes-getbit
+  (implies (and (<= shift n)
+                (natp n)
+                (unsigned-byte-p n x)
+                (integerp shift)
+                ;(< 0 shift)
+                )
+           (equal (mv-nth 1 (lsl_c n x shift))
+                  (getbit (- n shift) x)))
+  :hints (("Goal" :in-theory (enable lsl_c))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns the new bits.
-(defun lsl (n x shift)
+(defund lsl (n x shift)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (integerp shift)
                               ;; the assert:
@@ -130,9 +150,17 @@
           (lsl_c n x shift))))
     result))
 
+(defthm lsl-becomes-bvshl
+  (implies (and (unsigned-byte-p n x)
+                (natp shift))
+           (equal (lsl n x shift)
+                  (bvshl n x shift)))
+  :hints (("Goal" :in-theory (enable lsl))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv bits bit)
-(defun lsr_c (n x shift)
+(defund lsr_c (n x shift)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (integerp shift)
                               ;; the assert:
@@ -142,10 +170,32 @@
          (carry_out (getbit (- shift 1) extended_x)))
     (mv result carry_out)))
 
+(defthm mv-nth-0-of-lsr_c-becomes-bvshr
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift)
+                (> shift 0) ; todo drop
+                (natp shift)
+                )
+           (equal (mv-nth 0 (lsr_c n x shift))
+                  (bvshr n x shift)))
+  :hints (("Goal" :in-theory (enable lsr_c bvshr))))
+
+(defthm mv-nth-1-of-lsr_c-becomes-getbit
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift)
+                (> shift 0) ; todo drop
+                (natp shift)
+                )
+           (equal (mv-nth 1 (lsr_c n x shift))
+                  (getbit (- shift 1) x)))
+  :hints (("Goal" :in-theory (enable lsr_c))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns new bits
 (defund lsr (n x shift)
   (declare (xargs :guard (and (unsigned-byte-p n x)
-                             (integerp shift)
+                              (integerp shift)
                               ;; the assert:
                               (>= shift 0))))
   (b* (((mv result &)
@@ -154,14 +204,23 @@
           (lsr_c n x shift))))
     result))
 
+;drop?
 (defthm integerp-of-lsr
   (implies (and (unsigned-byte-p n x)
                  (integerp shift)
                  ;; the assert:
                  (>= shift 0))
             (integerp (lsr n x hift)))
+  :hints (("Goal" :in-theory (enable lsr lsr_c))))
+
+(defthm lsr-becomes-bvshr
+  (implies (and (unsigned-byte-p n x)
+                (natp shift))
+           (equal (lsr n x shift)
+                  (bvshr n x shift)))
   :hints (("Goal" :in-theory (enable lsr))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv bits bit)
 (defun asr_c (n x shift)
@@ -315,17 +374,18 @@
 
 
 ;; For mod, we can just use the ACL2 mod.  This theorem shows that the ACL2 mod
-;; satisfies the definiting equation used for mod in the spec:
+;; satisfies the defining equation used for mod in the spec:
 (defthmd mod-correct
   (equal (mod x y)
          (- x (* y (div x y))))
   :hints (("Goal" :in-theory (enable mod))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv bits bit)
-(defun ROR_C (n x shift)
+(defund ROR_C (n x shift)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (< 0 n) ; todo: require this elsewhere
-
                               (integerp shift)
                               ;; the assert:
                               (not (equal shift 0)))))
@@ -334,7 +394,24 @@
          (carry_out (getbit (- n 1) result)))
     (mv result carry_out)))
 
-(defun ROR (n x shift)
+(defthm mv-nth-0-of-ror_c-becomes-rightrotate
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift))
+           (equal (mv-nth 0 (ror_c n x shift))
+                  (acl2::rightrotate n shift x)))
+  :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
+
+;; could try to complify the RHS but that would involve a case split
+(defthm mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift))
+           (equal (mv-nth 1 (ror_c n x shift))
+                  (getbit (+ -1 n) (acl2::rightrotate n shift x))))
+  :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund ROR (n x shift)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (< 0 n) ; todo: require this elsewhere
                               (integerp shift))))
@@ -344,6 +421,15 @@
         (ROR_C n x shift)
       (declare (ignore bit))
       result)))
+
+(defthm ror-becomes-rightrotate
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift))
+           (equal (ror n x shift)
+                  (acl2::rightrotate n shift x)))
+  :hints (("Goal" :in-theory (enable ror acl2::rightrotate bvshl bvshr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv bits bit)
 (defun RRX_C (n x carry_in)
@@ -394,22 +480,21 @@
   (implies (and (unsigned-byte-p n value)
                 (< 0 n)
                 (SRTypep type)
-                (integerp amount) ; restrict?
-                (<= 0 amount) ; for the guard of lsl_c
+                (integerp amount)
+                (<= 0 amount)
                 (bitp carry_in))
            (unsigned-byte-p n (mv-nth 0 (shift_c n value type amount carry_in))))
-  :hints (("Goal" :in-theory (enable shift_c srtypep))))
+  :hints (("Goal" :in-theory (enable shift_c srtypep lsl_c))))
 
 (defthm unsigned-byte-p-of-mv-nth-1-of-shift_c
   (implies (and (unsigned-byte-p n value)
                 (< 0 n)
                 (SRTypep type)
-                (integerp amount)           ; restrict?
-                (<= 0 amount)               ; for the guard of lsl_c
-                (bitp carry_in)
-)
+                (integerp amount)
+                (<= 0 amount)
+                (bitp carry_in))
            (unsigned-byte-p 1 (mv-nth 1 (shift_c n value type amount carry_in))))
-  :hints (("Goal" :in-theory (enable shift_c srtypep))))
+  :hints (("Goal" :in-theory (enable shift_c srtypep lsl_c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -419,7 +504,7 @@
                               (< 0 n)
                               (SRTypep type)
                               (integerp amount) ; restrict?
-                              (<= 0 amount) ; for the guard of lsl_c
+                              (<= 0 amount) ; for the guard of shift_c
                               ;; the assert in shift_c:
                               (not (and (eq type :SRType_RRX)
                                         (not (equal amount 1))))
@@ -431,8 +516,8 @@
   (implies (and (unsigned-byte-p n value)
                 (< 0 n)
                 (SRTypep type)
-                (integerp amount) ; restrict?
-                (<= 0 amount) ; for the guard of lsl_c
+                (integerp amount)
+                (<= 0 amount)
                 ;; the assert in shift_c:
                 (not (and (eq type :SRType_RRX)
                           (not (equal amount 1))))
