@@ -6792,7 +6792,7 @@
              (mv (erp-nil)
                  (if (quotep dag)
                      dag
-                   (dag-to-term dag))
+                   (dag2term dag))
                  hits
                  ,@maybe-state)))
 

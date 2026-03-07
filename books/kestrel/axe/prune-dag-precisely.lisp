@@ -44,7 +44,7 @@
     (if (not prunep)
         (mv (erp-nil) dag state)
       (b* ( ;; TODO: Consider first doing a pruning as a DAG, using only approximate contexts (or would that not do anything that rewriting doesn't already do?)
-           (term (dag-to-term dag)) ; can explode!
+           (term (dag2term dag)) ; can explode!
            ((mv erp changep term state)
             (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp
                        no-warn-ground-functions print state)) ; todo: call something here that returns a dag, not a term!

@@ -649,7 +649,7 @@
         (mv t (er hard 'lifter "Lifter error: The run did not finish.") state))
        ;; Not valid if (not (< result-dag-size 10000)):
        (maybe-result-term (and (< result-dag-size 10000) ; avoids exploding
-                               (dag-to-term result-dag)))
+                               (dag2term result-dag)))
        ;; Print the result:
        (- (and print
                (if (< result-dag-size 10000)

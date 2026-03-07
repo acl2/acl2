@@ -260,6 +260,7 @@
     wrap-term-around-dag
     make-term-into-dag-basic
     dag-to-term
+    dag2term ; for now
     dag-node-to-term
     dag-or-quotep-to-term
     dag-or-quotep-size

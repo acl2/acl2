@@ -336,7 +336,7 @@
        (- (and print (cw "(Applying the Axe rewriter with precise contexts~%")))
        ;; Converting to a term ensures that precise contexts are used.
        ;; WARNING: This can blow up:
-       (term (dag-to-term dag))
+       (term (dag2term dag))
        ;; Call the rewriter:
        ((mv erp dag-or-quotep &) ; use the hits?
         (simplify-term-basic term
@@ -411,7 +411,7 @@
         (mv *error* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Pruning branches without rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
-       (term (dag-to-term dag))
+       (term (dag2term dag))
        ((mv erp changep term state)
         (prune-term term ; todo: consider calling prune-dag-precisely-with-rule-alist here
                     assumptions
@@ -461,7 +461,7 @@
         (mv *error* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Pruning branches with rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
-       (term (dag-to-term dag))
+       (term (dag2term dag))
        ((mv erp changep term state) ; todo: consider calling prune-dag-precisely-with-rule-alist here
         (prune-term term assumptions rule-alist interpreted-function-alist
                     monitor
@@ -494,7 +494,7 @@
                   ))
   (b* ((dag (first problem))
        (assumptions (second problem))
-       (term (dag-to-term dag))
+       (term (dag2term dag))
        (- (and print (cw "(Calling ACL2 on term ~x0.~%" term)))
        ((mv & provedp state)
         (prove$ ;TODO: Add support for hints
@@ -628,7 +628,7 @@
        (dag dag-or-quotep) ; it is in fact a dag
        ;; Prepare to call STP:
        (dag-size (dag-size dag))
-       (- (and print (cw "(Applying STP tactic to prove: ~X01.~%" (if (< dag-size 100) (dag-to-term dag) dag) nil)))
+       (- (and print (cw "(Applying STP tactic to prove: ~X01.~%" (if (< dag-size 100) (dag2term dag) dag) nil)))
        (- (and print (cw "(Using ~x0 assumptions: ~X12.)~%" (len assumptions) assumptions nil)))
        ;; todo: pull out some of this machinery (given a dag and assumptions, set up a disjunction in a dag-array):
        (dag-array-name 'dag-array)
@@ -876,7 +876,7 @@
                  (cw "The DAG is:~%")
                  (print-dag-or-quotep dag)
                  (if (< (dag-or-quotep-size dag) 10000)
-                     (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
+                     (cw "~%(Term: ~X01)~%" (dag2term dag) nil)
                    nil)
                  (mv *unknown* info-acc state)))
      (b* ((tactic (first tactics))
@@ -1134,7 +1134,7 @@
              (maybe-theorem
                (and produce-theoremp
                     (b* ((theorem-conclusion (if (< (dag-or-quotep-size dag-or-constant) 1000)
-                                                 (if (quotep dag-or-constant) dag-or-constant (dag-to-term dag-or-constant))
+                                                 (if (quotep dag-or-constant) dag-or-constant (dag2term dag-or-constant))
                                                (embed-dag-in-term dag-or-constant (w state))))
                          (defthm-name (or name (fresh-name-in-world-with-$s 'prove-with-tactics nil (w state))))
                          (disablep (if rule-classes t nil)) ;can't disable if :rule-classes nil ;todo: make this an option

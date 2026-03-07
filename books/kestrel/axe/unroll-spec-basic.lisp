@@ -275,7 +275,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                         function-type))
        (function-body (and produce-function
                            (if (eq :term function-type)
-                               (dag-to-term dag)
+                               (dag2term dag)
                              (if (eq :embedded-dag function-type)
                                  `(dag-val-with-axe-evaluator ,defconst-name
                                                               ,(make-acons-nest dag-vars)
@@ -286,7 +286,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                (dag-to-term-with-lets dag)))))
        (evaluator-neededp (and produce-function
                                (eq :embedded-dag function-type)))
-       (new-term (and produce-theorem (dag-to-term dag)))
+       (new-term (and produce-theorem (dag2term dag)))
        (defconst-name-string (symbol-name defconst-name))
        (theorem-name (and produce-theorem (pack$ (subseq defconst-name-string 1 (- (length defconst-name-string) 1)) '-unroll-spec-basic-theorem)))
        (theorem (and produce-theorem

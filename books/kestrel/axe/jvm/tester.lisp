@@ -366,7 +366,7 @@
 ;;todo: Avoid going to a term
 (defun convert-assert-branches (dag)
   (declare (xargs :guard (pseudo-dagp dag)))
-  (let* ((term (dag-to-term dag))
+  (let* ((term (dag2term dag))
          (term (convert-assert-branches-in-term term))
          )
     (dagify-term term)))
@@ -567,7 +567,7 @@
        ;;  (prune-dag dag nil (formal-unit-testing-extra-simplification-rules-no-boolif) nil nil state))
        ;; ((when erp) (mv erp t state))
        ;; (- (cw "Result of pruning again: ~X01)~%"
-       ;;        (dag-to-term dag) ;todo: limit
+       ;;        (dag2term dag) ;todo: limit
        ;;        nil))
        ;; put boolifs back:
        ((mv erp dag state)
@@ -619,7 +619,7 @@
        (- (cw "(DAG to prove for ~s0 has size ~x1.)~%" method-designator-string dag-size))
        (- (and (< dag-size 1000)
                (progn$ (cw "(DAG is:~%")
-                       (cw "~X01" (dag-to-term-unguarded dag) nil)
+                       (cw "~X01" (dag2term-unguarded dag) nil)
                        (cw ")~%"))))
        (- (cw "(Applying tactic prover:~%"))
        (type-assumptions-for-fields (type-assumptions-for-get-field-nodes dag (top-nodenum dag) nil))

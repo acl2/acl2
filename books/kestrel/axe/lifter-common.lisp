@@ -26,7 +26,7 @@
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (natp max-term-size))))
   (if (dag-or-quotep-size-less-than dag max-term-size)
-      (cw "~X01" (dag-to-term dag) nil) ; todo: untranslate (see below)
+      (cw "~X01" (dag2term dag) nil) ; todo: untranslate (see below)
     (cw "~X01" dag nil)))
 
 ;; Returns state.
@@ -43,7 +43,7 @@
            (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
                       (set-print-base-radix print-base state)
                     state))
-           (term (dag-to-term dag))
+           (term (dag2term dag))
            (term (if untranslatep (untranslate$ term nil state) term))
            (- (cw "~X01" term nil))
            (state (set-print-base-radix 10 state)) ;make-event sets it to 10

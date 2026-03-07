@@ -60,7 +60,7 @@
                   *a-3-3-1-alt-constraints* ; not the usual constraints
                   ))
 
-;; (acl2::get-conjuncts-of-term2 (acl2::dag-to-term *A-3-3-1-SIMP-LIFTED*)))
+;; (acl2::get-conjuncts-of-term2 (acl2::dag2term *A-3-3-1-SIMP-LIFTED*)))
 
 (DEFTHM PFIELD::EQUAL-OF-ADD-OF-NEG-alt
   (IMPLIES
