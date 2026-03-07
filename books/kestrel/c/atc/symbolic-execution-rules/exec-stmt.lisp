@@ -218,12 +218,4 @@
                   (equal val (expr-value->value eval1)))
              (equal (exec-stmt s compst fenv limit)
                     (mv (stmt-value-return val) compst1)))
-    :enable exec-stmt)
-
-  (defval *atc-exec-stmt-rules*
-    '(exec-stmt-when-compound
-      exec-stmt-when-expr
-      exec-stmt-when-if
-      exec-stmt-when-ifelse
-      exec-stmt-when-while
-      exec-stmt-when-return)))
+    :enable exec-stmt))
