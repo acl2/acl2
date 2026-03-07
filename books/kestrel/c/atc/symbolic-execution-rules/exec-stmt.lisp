@@ -226,15 +226,4 @@
       exec-stmt-when-if
       exec-stmt-when-ifelse
       exec-stmt-when-while
-      exec-stmt-when-return
-      (:e stmt-kind)
-      (:e stmt-compound->items)
-      (:e stmt-expr->get)
-      (:e stmt-if->test)
-      (:e stmt-if->then)
-      (:e stmt-ifelse->test)
-      (:e stmt-ifelse->then)
-      (:e stmt-ifelse->else)
-      (:e stmt-while->test)
-      (:e stmt-while->body)
-      (:e stmt-return->value))))
+      exec-stmt-when-return)))
