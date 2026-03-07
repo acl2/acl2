@@ -157,8 +157,9 @@
     ))
 
 (defthm pseudo-termp-of-dag-or-constant-to-term
-  (implies (pseudo-dagp dag)
-           (pseudo-termp (dag-or-constant-to-term dag)))
+  (implies (or (pseudo-dagp x)
+               (myquotep x))
+           (pseudo-termp (dag-or-constant-to-term x)))
   :hints (("Goal" :in-theory (enable dag-or-constant-to-term))))
 
 ;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
