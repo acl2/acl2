@@ -117,7 +117,13 @@
 
 (defval *exec-stmt-while-opener-rules*
   :parents (exec-stmt-while-opener-rules)
-  :short "List of opener rules for for @(tsee exec-stmt-while)."
+  :short "List of opener rules for @(tsee exec-stmt-while)."
   '(exec-stmt-while-when-false
     exec-stmt-while-when-true-return
     exec-stmt-while-when-true-noreturn))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(def-ruleset exec-stmt-while-opener-rules
+    ',*exec-stmt-while-opener-rules*))

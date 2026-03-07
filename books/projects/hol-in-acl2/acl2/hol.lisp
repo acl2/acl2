@@ -209,6 +209,28 @@
   (and (consp x)
        (weak-hol-typep (cdr x))))
 
+; Some lemmas that may be useful when hpp and weak-hpp are disabled.
+
+(defthm hpp-forward-to-weak-hpp
+  (implies (hpp x hta)
+           (weak-hpp x))
+  :rule-classes :forward-chaining)
+
+(defthm hpp-forward
+  (implies (hpp x hta)
+           (and (consp x)
+                (hol-typep (cdr x) hta)
+                (hol-valuep (car x) (cdr x) hta)))
+  :rule-classes :forward-chaining)
+
+(defthm weak-hpp-forward
+  (implies (weak-hpp x)
+           (and (consp x)
+                (weak-hol-typep (cdr x))))
+  :rule-classes :forward-chaining)
+
+; value and type
+
 (defun hp-value (p)
 ; Hp-value is a function instead of macro so that it can be disabled.
   (declare (xargs :guard (weak-hpp p)))
@@ -731,17 +753,18 @@
   :props (zfc prod2$prop))
 
 (defthmz pick-picks
-  (implies (force (hol-typep type hta))
-           (in (pick type hta)
-               (hol-type-eval type hta)))
-  :hints (("Goal" :in-theory (enable hol-type-eval)))
+  (implies (and (force (hol-typep type hta))
+                (equal s (hol-type-eval type hta)))
+           (in (pick type hta) s))
+         :hints (("Goal" :in-theory (enable hol-type-eval)))
   :props (zfc finseqs$prop fun-space$prop domain$prop prod2$prop inverse$prop))
 
 ; Two trivial corollaries of pick-picks:
 
 (defthmz pick-picks-hol-valuep
-  (implies (force (hol-typep type hta))
-           (hol-valuep (pick type hta) type hta))
+  (implies (and (force (hol-typep type1 hta))
+                (equal type1 type2))
+           (hol-valuep (pick type1 hta) type2 hta))
   :props (zfc finseqs$prop fun-space$prop domain$prop prod2$prop inverse$prop))
 
 (defthmz pick-picks-hpp
