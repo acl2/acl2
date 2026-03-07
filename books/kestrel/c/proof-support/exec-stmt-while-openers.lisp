@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection exec-stmt-while-opener-rules
+(defsection exec-stmt-while-openers
   :parents (proof-support)
   :short "Opener rules for @(tsee exec-stmt-while)."
   :long
@@ -115,8 +115,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *exec-stmt-while-opener-rules*
-  :parents (exec-stmt-while-opener-rules)
+(defval *exec-stmt-while-openers*
+  :parents (exec-stmt-while-openers)
   :short "List of opener rules for @(tsee exec-stmt-while)."
   '(exec-stmt-while-when-false
     exec-stmt-while-when-true-return
@@ -125,5 +125,5 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(def-ruleset exec-stmt-while-opener-rules
-    ',*exec-stmt-while-opener-rules*))
+ `(def-ruleset exec-stmt-while-openers
+    ',*exec-stmt-while-openers*))
