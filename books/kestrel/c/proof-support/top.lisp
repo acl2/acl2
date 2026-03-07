@@ -14,6 +14,7 @@
 (include-book "test-star")
 (include-book "pure-expression-execution")
 (include-book "exec-stmt-while")
+(include-book "const-ast-accessors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
