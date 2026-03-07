@@ -121,3 +121,9 @@
   '(exec-stmt-while-when-false
     exec-stmt-while-when-true-return
     exec-stmt-while-when-true-noreturn))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(def-ruleset exec-stmt-while-opener-rules
+    ',*exec-stmt-while-opener-rules*))
