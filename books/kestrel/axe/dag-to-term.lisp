@@ -109,6 +109,14 @@
   (declare (xargs :guard (weak-dagp dag)))
   (dag-to-term-aux (top-nodenum dag) dag))
 
+(defthm pseudo-termp-of-dag-to-term
+  (implies (pseudo-dagp dag)
+           (pseudo-termp (dag-to-term dag)))
+  :hints (("Goal" :in-theory (enable dag-to-term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 ;; Convert DAG to an equivalent term. Of course, this can blow up exponentially
 ;; if there is a lot of sharing in DAG. Another option to convert a dag to a
 ;; term would be to quote the dag and pass it to the Axe evaluator.
