@@ -55,7 +55,8 @@
    (xdoc::p
      "Time complexity: @($O(m\\log(n))$) (Note: the current implementation is
       inefficient. This should eventually be @($O(m\\log(n/m))$), where
-      @($m < n$). This may be implemented similar to @(tsee diff).)"))
+      @($m < n$). This may be implemented similar to
+      @(tsee treeset::diff).)"))
   :guard (bstp y)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p x)

@@ -7,3 +7,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "TREEMAP")
+
+(include-book "tree")
+(include-book "bst")
+(include-book "heap")
+(include-book "keys")
+(include-book "lookup")
+(include-book "count")
+(include-book "submap")
+(include-book "antisymmetry")
+(include-book "min-max")
+(include-book "rotate")
+(include-book "update")
+(include-book "join")
+(include-book "delete")
+(include-book "split")
+(include-book "update-star")
+(include-book "restrict")

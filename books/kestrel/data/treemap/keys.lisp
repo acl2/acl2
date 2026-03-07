@@ -45,7 +45,7 @@
 (define keys ((map mapp))
   :returns (keys treeset::setp)
   :parents (treemap)
-  :short "Get the keys @(see treeset) from a @(see treemap)."
+  :short "Get the keys @(see treeset::treeset) from a @(see treemap)."
   :long
   (xdoc::topstring
    (xdoc::p

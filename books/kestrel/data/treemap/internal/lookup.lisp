@@ -53,7 +53,7 @@
   (xdoc::topstring
    (xdoc::p
      "This function is defined to be as logically convenient as possible. For
-     execution, @(tsee tree-search-lookup) is used instead."))
+      execution, @(tsee tree-search-assoc) is used instead."))
   (cond ((tree-empty-p tree)
          nil)
         ((equal key (tree-element->key (tree->head tree)))

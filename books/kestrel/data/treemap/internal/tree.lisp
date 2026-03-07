@@ -475,10 +475,8 @@
    (xdoc::p
      "For empty trees, this is logically @(tsee irr-tree-element).")
    (xdoc::p
-     "For a tree recognized by @(tsee heapp) (including @(see treeset)s), this
-      is the largest element with respect to the @(tsee heap<) ordering. More
-      precisely, it is the pair of the element along with its hash.
-      @(tsee head) will project out just the element."))
+     "For a tree recognized by @(tsee heapp) (including @(see treemap)s), this
+      is the largest element with respect to the @(tsee heap<) ordering."))
   :guard (not (tree-empty-p tree))
   :returns (elem tree-element-p
                  :hints (("Goal" :in-theory (enable tree-empty-p
