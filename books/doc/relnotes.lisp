@@ -164,6 +164,18 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
+
+   (xdoc::p
+    "Data-lib is a library for efficient data structures. Currently, it only
+     includes "
+    (xdoc::seetopic "treeset::treeset" "treesets")
+    ", a tree-based implementation of finite sets, and the supporting "
+    (xdoc::seetopic "hash::hashes" "hash")
+    " function.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "HOL4 to ACL2 Translator")
 
    (xdoc::p
@@ -184,15 +196,6 @@
      fully readable and writable address space,
      and no alignment checks for data in memory
      (but there are alignment checks for instructions).")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "treeset::treeset" "Treesets"))
-
-   (xdoc::p
-    "A tree-based implementation of finite sets. This library offers a similar
-     interface to @(see std/osets), but with improved performance
-     (generally scaling logarithmically instead of linearly).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
