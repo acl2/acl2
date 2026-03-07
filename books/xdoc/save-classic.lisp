@@ -187,25 +187,25 @@ command, along the following lines:</p>
 ;;               (find-roots (cdr x)))
 ;;       (find-roots (cdr x)))))
 
-(defun find-orphaned-topics-1 (child parents topics-fal acc)
-  ;; Returns a list of (CHILD . MISSING-PARENT) entries.
+(defun undefined-parent-info-1 (child parents topics-fal acc)
+  ;; Returns a list of (CHILD . UNDEFINED-PARENT) entries.
   (cond ((atom parents)
          acc)
         ((hons-get (car parents) topics-fal)
-         (find-orphaned-topics-1 child (cdr parents) topics-fal acc))
+         (undefined-parent-info-1 child (cdr parents) topics-fal acc))
         (t
-         (find-orphaned-topics-1 child (cdr parents) topics-fal
-                                 (cons (cons child (car parents))
-                                       acc)))))
+         (undefined-parent-info-1 child (cdr parents) topics-fal
+                                    (cons (cons child (car parents))
+                                          acc)))))
 
-(defun find-orphaned-topics (topics topics-fal acc)
-  ;; Returns a list of (CHILD . MISSING-PARENT) entries.
+(defun undefined-parent-info (topics topics-fal acc)
+  ;; Returns a list of (CHILD . UNDEFINED-PARENT) entries.
   (b* (((when (atom topics))
         acc)
        (child   (cdr (assoc :name (car topics))))
        (parents (cdr (assoc :parents (car topics))))
-       (acc     (find-orphaned-topics-1 child parents topics-fal acc)))
-    (find-orphaned-topics (cdr topics) topics-fal acc)))
+       (acc     (undefined-parent-info-1 child parents topics-fal acc)))
+    (undefined-parent-info (cdr topics) topics-fal acc)))
 
 
 ;; (mutual-recursion
@@ -449,10 +449,10 @@ command, along the following lines:</p>
 ;;                       :mintime 1/2))
 ;;        (state  (time$ (save-hierarchy x dir topics-fal index-pkg expand-level state)
 ;;                       :msg "; Saving hierarchical index: ~st sec, ~sa bytes~%"))
-;;        (orphans (find-orphaned-topics x topics-fal nil))
+;;        (undefined-parent-info (undefined-parent-info x topics-fal nil))
 ;;        (-       (fast-alist-free topics-fal))
 ;;        (state   (save-success-file (len x) dir state)))
-;;     (or (not orphans)
-;;         (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~
-;;              topics may only show up in the index pages.~%~%" orphans))
+;;     (or (not undefined-parent-info)
+;;         (cw "~|~%WARNING: found topics with undefined parents:~%~x0~%These ~
+;;              topics may only show up in the index pages.~%~%" undefined-parent-info))
 ;;     state))

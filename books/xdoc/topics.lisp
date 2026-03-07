@@ -862,7 +862,7 @@ manual with others, you should read about @(see deploying-manuals).</li>
           [:zip-p      bool]               ;; default is t
           [:logo-image path]               ;; default is nil
           [:error      bool]               ;; default is nil
-          [:error-on-non-existent-parents bool] ;; default is nil
+          [:error-on-undefined-parents bool] ;; default is nil
           [:broken-links-limit nil-or-nat] ;; default is nil
           )
 })
@@ -916,10 +916,10 @@ command.</dd>
 to cause an error upon encountering a syntax error in xdoc source (marked with
 \"xdoc error\").</dd>
 
-<dt>@(':error-on-non-existent-parents')</dt>
+<dt>@(':error-on-undefined-parents')</dt>
 
-<dd>The value is @('t') or @('nil'), to indicate whether to cause an error if a
-non-existent topic is declared to be a parent of some topic.</dd>
+<dd>The value is @('t') or @('nil'), to indicate whether to cause an error if
+a declared parent of some topic does not exist in the xdoc database.</dd>
 
 <dt>@(':broken-links-limit')</dt>
 
