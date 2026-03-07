@@ -295,6 +295,7 @@
     lookup-safe
 
     translate-term
+    term-listp
 
     _ ;; used to print non-pure patterns
 
@@ -392,7 +393,10 @@
     empty-hits
 
     command-is-redundantp
-    redundancy-table-event))
+    redundancy-table-event
+    lifter-event-names
+    print-missing-rules
+    merge-sort-symbol<))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
