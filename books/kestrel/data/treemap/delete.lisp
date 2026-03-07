@@ -336,26 +336,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (define tail
-;;   ((map mapp))
-;;   :parents (delete)
-;;   :short "Remove the @(see head) from a nonempty @(see treemap)."
-;;   :long
-;;   (xdoc::topstring
-;;    (xdoc::p
-;;      "This is slightly faster than calling @(tsee delete) on the head.")
-;;    (xdoc::p
-;;      "Note: it is <emph>not</emph> recommended to iterate over a @(see treemap)
-;;       using @(tsee tail) (unless you need to maintain a map of the remaining
-;;       key-value pairs)."))
-;;   :guard (not (emptyp map))
-;;   (mbe :logic (delete (head map) map)
-;;        :exec (tree-join (tree->left map)
-;;                         (tree->right map)))
-;;   :enabled t
-;;   :inline t
-;;   :guard-hints (("Goal" :in-theory (enable* break-abstraction
-;;                                             delete
-;;                                             head
-;;                                             tree-delete
-;;                                             tree-join-at))))
+(define tail
+  ((map mapp))
+  :guard (not (emptyp map))
+  :parents (delete)
+  :short "Remove the @(see head) from a nonempty @(see treemap)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "This is slightly faster than calling @(tsee delete) on the head.")
+   (xdoc::p
+     "Note: it is <emph>not</emph> recommended to iterate over a @(see treemap)
+      using @(tsee tail) (unless you need to maintain a map of the remaining
+      key-value pairs)."))
+  (mbe :logic (delete (head-key map) map)
+       :exec (tree-join (tree->left map)
+                        (tree->right map)))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* break-abstraction
+                                            delete
+                                            head-key
+                                            tree-delete
+                                            tree-join-at))))

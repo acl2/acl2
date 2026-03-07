@@ -26,5 +26,5 @@
           delete-=
           delete-eq
           delete-eql
-          ;; tail
+          tail
           ))
