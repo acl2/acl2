@@ -16,6 +16,7 @@
 
 (include-book "std/omaps/core" :dir :system)
 
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -167,3 +168,24 @@
            omap::emptyp
            omap::tail
            omap::mapp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled in-of-omap-values-becomes-member-equal-of-strip-cdrs
+  (equal (in val (omap::values map))
+         (and (member-equal val (strip-cdrs (omap::mfix map)))
+              t))
+  :induct t
+  :enable (omap::values
+           member-equal
+           omap::mfix
+           omap::mapp
+           omap::emptyp
+           omap::head
+           omap::tail))
+
+(defruled omap-values-becomes-strip-cdrs
+  (equal (omap::values map)
+         (mergesort (strip-cdrs (omap::mfix map))))
+  :enable (set::expensive-rules
+           in-of-omap-values-becomes-member-equal-of-strip-cdrs))

@@ -49,7 +49,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "Time complexity: @($O(log(n))$)."))
+     "Time complexity: @($O(n))$)."))
   (mbe :logic (tree-key-set (fix map))
        :exec (tree-key-tree map))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))

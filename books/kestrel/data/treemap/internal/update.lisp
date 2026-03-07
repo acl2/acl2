@@ -24,7 +24,6 @@
 (include-book "count-defs")
 (include-book "keys-defs")
 (include-book "lookup-defs")
-;; (include-book "min-max-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -50,7 +49,6 @@
 (local (include-book "rotate"))
 (local (include-book "keys"))
 (local (include-book "lookup"))
-;; (local (include-book "min-max"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,15 +288,6 @@
   ;; TODO: disable this rule by default?
   ;; Or, I think preferably, make non-definition.
   :disable tree-node-count-when-bstp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-;; (defruled tree-min-of-tree-update-when-<<-all-r
-;;   (implies (<<-all-r x tree)
-;;            (equal (tree-min (tree-update x hash tree))
-;;                   x))
-;;   :induct t
-;;   :enable tree-update)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

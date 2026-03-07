@@ -54,5 +54,6 @@
                                  union-eq
                                  union-eql
                                  value
+                                 values
                                  zip
                                  ))))

@@ -24,6 +24,7 @@
 (include-book "kestrel/data/treeset/insert-defs" :dir :system)
 (include-book "kestrel/data/treeset/generic-typed-defs" :dir :system)
 (include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/treeset/intersect-defs" :dir :system)
 (include-book "kestrel/data/treeset/min-max-defs" :dir :system)
 
 (include-book "kestrel/data/utilities/total-order/max-defs" :dir :system)
@@ -49,12 +50,13 @@
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
+(local (include-book "kestrel/data/treeset/min-max" :dir :system))
+(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/delete" :dir :system))
 (local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
 (local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
+(local (include-book "kestrel/data/treeset/intersect" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/max" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/min" :dir :system))
@@ -416,6 +418,15 @@
            (not (treeset::in y (tree-key-set left))))
   :rule-classes :forward-chaining
   :enable in-of-tree-key-set-left-when-disjoint-and-in-of-tree-key-set-right)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule intersect-of-tree-key-set-left-and-right
+  (implies (bstp tree)
+           (equal (treeset::intersect (tree-key-set (tree->left tree))
+                                      (tree-key-set (tree->right tree)))
+                  (treeset::empty)))
+  :enable treeset::extensionality)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

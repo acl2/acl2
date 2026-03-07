@@ -209,6 +209,3 @@
                         (tree-lookup (treeset::max (tree-key-set tree)) tree))))
   :enable (car-of-tree-rightmost-becomes-max
            cdr-of-tree-rightmost))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

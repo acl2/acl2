@@ -21,6 +21,7 @@
 (include-book "tree-defs")
 (include-book "bst-defs")
 (include-book "keys-defs")
+(include-book "values-defs")
 (include-book "lookup-defs")
 (include-book "min-max-defs")
 (include-book "count-defs")
@@ -47,6 +48,7 @@
 
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
@@ -59,6 +61,7 @@
 (local (include-book "tree"))
 (local (include-book "bst"))
 (local (include-book "keys"))
+(local (include-book "values"))
 (local (include-book "lookup"))
 (local (include-book "min-max"))
 (local (include-book "count"))
@@ -298,7 +301,7 @@
                   (tree-nodes-count tree)))
   :enable data::size-becomes-len-when-omapp)
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule keys-of-tree-in-order
   (implies (bstp tree)
@@ -306,6 +309,21 @@
                   (treeset::to-oset (tree-key-set tree))))
   :enable (set::expensive-rules
            omap::in-of-keys-to-assoc))
+
+(defrule values-of-tree-in-order
+  (implies (bstp tree)
+           (equal (omap::values (tree-in-order tree))
+                  (treeset::to-oset (tree-val-set tree))))
+  :enable (set::expensive-rules
+           data::omap-values-becomes-strip-cdrs)
+  :prep-lemmas
+  ((defrule member-equal-of-strip-cdrs-tree-in-order-under-iff
+     (iff (member-equal val (strip-cdrs (tree-in-order tree)))
+          (treeset::in val (tree-val-set tree)))
+     :induct t
+     :enable (tree-val-set
+              tree-in-order
+              member-equal))))
 
 (defrule tree-in-order-of-tree-update
   (implies (bstp tree)
