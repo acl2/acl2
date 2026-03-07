@@ -310,6 +310,10 @@
      arm::bxwritepc
      arm::branchwritepc
 
+     arm::and32 ; exposes bvand
+     arm::or32 ; exposes bvor
+     arm::eor32 ; exposes bvxor
+
      arm::armexpandimm
      arm::armexpandimm_c
      arm::shift
