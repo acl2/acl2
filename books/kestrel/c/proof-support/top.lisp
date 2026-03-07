@@ -13,7 +13,8 @@
 
 (include-book "test-star")
 (include-book "pure-expression-execution")
-(include-book "exec-stmt-while")
+(include-book "exec-stmt-openers")
+(include-book "exec-stmt-while-openers")
 (include-book "const-ast-accessors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -24,16 +25,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We provide functions and theorems to reason about C code
-     as formalized in our "
+    "We provide functions, theorems, and rulesets
+     to reason about C code as formalized in our "
     (xdoc::seetopic "language" "model")
     ". These functions and theorems can be used for
      synthesis, verification, and transformation of C code.")
    (xdoc::p
-    "This is just an initial placeholder,
+    "Currently this does not have a lot of content,
      but we plan to move all the "
     (xdoc::seetopic "atc-symbolic-execution-rules"
                     "ATC symbolic execution rules")
-    " here, along with possibly others."))
+    " here, along with possibly other material."))
   :order-subtopics t
   :default-parent t)
