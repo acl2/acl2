@@ -76,6 +76,29 @@
     (eq    `(lookup-eq     ,key ,map ,default))
     (eql   `(lookup-eql    ,key ,map ,default))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defun untranslate-preproc-for-lookup (term wrld)
+  (declare (xargs :mode :program))
+  (declare (ignore wrld))
+  (and (consp term)
+       (eq (car term) 'lookup$inline)
+       (if (equal (fourth term) ''nil)
+           `(lookup ,(second term) ,(third term))
+         `(lookup ,(second term) ,(third term) :default ,(fourth term)))))
+
+(make-event
+  (let* ((alist (table-alist 'acl2::user-defined-functions-table (w state)))
+         (untranslate-preproc (cdr (assoc 'acl2::untranslate-preprocess alist))))
+    `(defund lookup-extended-untranslate-preproc (term wrld)
+       (declare (xargs :mode :program))
+       (or (,untranslate-preproc term wrld)
+           (untranslate-preproc-for-lookup term wrld)))))
+
+(table acl2::user-defined-functions-table
+       'acl2::untranslate-preprocess
+       'lookup-extended-untranslate-preproc)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lookup$inline
@@ -93,8 +116,7 @@
                                             break-abstraction)))
 
   ///
-  ;; TODO: this does print properly (default nil is printed (lookup key map nil)
-  (add-macro-fn lookup lookup$inline))
+  (add-macro-alias lookup lookup$inline))
 
 ;;;;;;;;;;;;;;;;;;;;
 
