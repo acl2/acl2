@@ -11,8 +11,9 @@
 
 (in-package "C")
 
-(include-book "test-star")
 (include-book "limits")
+
+(include-book "../proof-support/test-star")
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
