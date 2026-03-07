@@ -58,7 +58,9 @@
               fundef
               fundef-option
               ext-declon
-              ext-declon-list)
+              ext-declon-list
+              trans-item
+              trans-item-list)
   :extra-args ((uid c$::uidp) (new-fn identp))
   :override
   ((c$::expr

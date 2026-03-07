@@ -790,6 +790,8 @@
             fundef
             ext-declon
             ext-declon-list
+            trans-item
+            trans-item-list
             transunit
             filepath-transunit-map
             transunit-ensemble
@@ -870,12 +872,13 @@
                   (declon-list-annop (fundef->declons fundef))
                   (comp-stmt-annop (fundef->body fundef))
                   (fundef-infop (fundef->info fundef))))
-     (transunit (and (ext-declon-list-annop (transunit->declons transunit))
+     (transunit (and (trans-item-list-annop (transunit->items transunit))
                      (transunit-infop (transunit->info transunit))))
      (transunit-ensemble (and (filepath-transunit-map-annop
-                                (transunit-ensemble->units transunit-ensemble))
+                               (transunit-ensemble->units transunit-ensemble))
                               (transunit-ensemble-infop
-                                (transunit-ensemble->info transunit-ensemble)))))))
+                               (transunit-ensemble->info
+                                transunit-ensemble)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -984,10 +987,10 @@
     :enable identity)
 
   (defruled transunit-annop-of-transunit
-    (equal (transunit-annop (transunit comment includes declons info))
-           (and (ext-declon-list-annop declons)
+    (equal (transunit-annop (transunit items info))
+           (and (trans-item-list-annop items)
                 (transunit-infop info)))
-    :expand (transunit-annop (transunit comment includes declons info))
+    :expand (transunit-annop (transunit items info))
     :enable identity)
 
   (defruled transunit-ensemble-annop-of-transunit-ensemble
@@ -1162,9 +1165,9 @@
              (fundef-infop (fundef->info fundef)))
     :enable fundef-annop)
 
-  (defruled ext-declon-list-annop-of-transunit->declons
+  (defruled trans-item-list-annop-of-transunit->items
     (implies (transunit-annop transunit)
-             (ext-declon-list-annop (transunit->declons transunit)))
+             (trans-item-list-annop (transunit->items transunit)))
     :enable transunit-annop)
 
   (defruled transunit-annop-of-cdr-assoc
@@ -1238,7 +1241,7 @@
      declon-list-annop-of-fundef->declons
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
-     ext-declon-list-annop-of-transunit->declons
+     trans-item-list-annop-of-transunit->items
      transunit-annop-of-cdr-assoc
      transunit-infop-of-transunit->info
      filepath-transunit-map-annop-of-transunit-ensemble->units

@@ -4439,28 +4439,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-ext-declon-list ((extdecls ext-declon-listp) (pstate pristatep))
-  :guard (and (ext-declon-list-unambp extdecls)
-              (ext-declon-list-aidentp extdecls (pristate->version pstate)))
-  :returns (new-pstate pristatep)
-  :short "Print a list of zero or more external declarations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We separate them with blank lines."))
-  (b* (((when (endp extdecls)) (pristate-fix pstate))
-       (pstate (print-ext-declon (car extdecls) pstate))
-       ((when (endp (cdr extdecls))) pstate)
-       (pstate (print-new-line pstate)))
-    (print-ext-declon-list (cdr extdecls) pstate))
-  :hooks (:fix)
-
-  ///
-
-  (defret-rec-same-version print-ext-declon-list))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define print-include-directive ((hname header-namep) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a @('#include') directive."
@@ -4486,25 +4464,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-include-directive-list ((hnames header-name-listp)
-                                      (pstate pristatep))
+(define print-line-comment ((content nat-listp) (pstate pristatep))
   :returns (new-pstate pristatep)
-  :short "Print a list of zero of more @('#include') directives."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As discussed in @(tsee print-include-directive),
-     currently we do not have AST for @('#include') directives,
-     which we represent as header names.
-     So this function takes as input a list of header names."))
-  (b* (((when (endp hnames)) (pristate-fix pstate))
-       (pstate (print-include-directive (car hnames) pstate)))
-    (print-include-directive-list (cdr hnames) pstate))
+  :short "Print a line comment."
+  (b* ((content (nat-list-fix content)))
+    (if (grammar-character-listp content)
+        (b* ((pstate (print-astring "// " pstate))
+             (pstate (print-chars content pstate))
+             (pstate (print-new-line pstate)))
+          pstate)
+      (prog2$
+       (raise "Internal error: non-grammatical line comment ~x0." content)
+       (pristate-fix pstate))))
   :hooks (:fix)
 
   ///
 
-  (defret-rec-same-version print-include-directive-list))
+  (defret-same-version print-line-comment))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-trans-item ((item trans-itemp) (pstate pristatep))
+  :guard (and (trans-item-unambp item)
+              (trans-item-aidentp item (pristate->version pstate)))
+  :returns (new-pstate pristatep)
+  :short "Print a translation item."
+  (trans-item-case
+   item
+   :declon (print-ext-declon item.declon pstate)
+   :include (print-include-directive item.header pstate)
+   :line-comment (print-line-comment item.content pstate))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-version print-trans-item))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-trans-item-list ((items trans-item-listp) (pstate pristatep))
+  :guard (and (trans-item-list-unambp items)
+              (trans-item-list-aidentp items (pristate->version pstate)))
+  :returns (new-pstate pristatep)
+  :short "Print a list of zero or more translation items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We separate them with blank lines."))
+  (b* (((when (endp items)) (pristate-fix pstate))
+       (pstate (print-trans-item (car items) pstate))
+       ((when (endp (cdr items))) pstate)
+       (pstate (print-new-line pstate)))
+    (print-trans-item-list (cdr items) pstate))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-version print-trans-item-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4522,32 +4538,9 @@
      If there are @('#include') directives,
      they are printed in contiguous lines,
      followed by a blank line if there are external declarations."))
-  (b* (((transunit tunit) tunit)
-       (pstate
-        (if tunit.comment
-            (if (grammar-character-listp tunit.comment)
-                (b* ((pstate (print-astring "// " pstate))
-                     (pstate (print-chars tunit.comment pstate))
-                     (pstate (print-new-line pstate))
-                     (pstate (if (or tunit.includes
-                                     tunit.declons)
-                                 (print-new-line pstate) ; blank line
-                               pstate)))
-                  pstate)
-              (prog2$
-               (raise "Internal error: ~
-                       non-grammatical line comment ~x0."
-                      tunit.comment)
-               (pristate-fix pstate)))
-          pstate))
-       (pstate (print-include-directive-list tunit.includes pstate))
-       (pstate (if (and tunit.includes
-                        tunit.declons)
-                   (print-new-line pstate) ; blank line
-                 pstate)))
-    (print-ext-declon-list tunit.declons pstate))
+  (print-trans-item-list (transunit->items tunit) pstate)
   :hooks (:fix)
-  :no-function nil
+
   ///
 
   (defret-same-version print-transunit))
