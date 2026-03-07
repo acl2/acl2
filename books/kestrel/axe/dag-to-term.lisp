@@ -105,9 +105,9 @@
                                                              )))))
 
 ;; ;; todo: eventually remove dag2term below (once all of its calls have been turned into calls of either this or dag-or-quotep-to-term)
-;; (defund dag-to-term (dag)
-;;   (declare (xargs :guard (weak-dagp dag)))
-;;   (dag-to-term-aux (top-nodenum dag) dag))
+(defund dag-to-term (dag)
+  (declare (xargs :guard (weak-dagp dag)))
+  (dag-to-term-aux (top-nodenum dag) dag))
 
 ;; Convert DAG to an equivalent term. Of course, this can blow up exponentially
 ;; if there is a lot of sharing in DAG. Another option to convert a dag to a
