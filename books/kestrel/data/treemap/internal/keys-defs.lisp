@@ -23,4 +23,10 @@
 (std::defredundant
   :names (tree-key-set
           tree-key-tree
+          tree-keys-acl2-numberp
+          tree-keys-symbolp
+          tree-keys-eqlablep
+          acl2-number-treep
+          symbol-treep
+          eqlable-treep
           ))

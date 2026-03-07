@@ -30,6 +30,7 @@
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -551,6 +552,8 @@
   :disable tree-split-of-tree->head)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO GJ: rewrite to tree-key-set?
 
 (defrule tree-keys-acl2-numberp-of-tree-split.left
   (implies (tree-keys-acl2-numberp tree)

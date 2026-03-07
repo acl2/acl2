@@ -30,13 +30,10 @@
 (include-book "update-defs")
 (include-book "delete-defs")
 (include-book "update-star-defs")
-;; TODO
-;; (include-book "generic-typed-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-;; (local (include-book "std/osets/top" :dir :system))
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
 
 (local (include-book "kestrel/data/treeset/internal/in" :dir :system))
@@ -67,8 +64,6 @@
 (local (include-book "update"))
 (local (include-book "delete"))
 (local (include-book "update-star"))
-;; TODO
-;; (local (include-book "generic-typed"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -347,69 +342,6 @@
   :enable extensionality)
 
 ;;;;;;;;;;;;;;;;;;;;
-#| ;; TODO
-(defrule set-all-genericp-of-restrict-when-set-all-genericp-of-arg1
-  (implies (set-all-genericp x)
-           (set-all-genericp (restrict x y)))
-  :enable set-all-genericp-pick-a-point-polar)
-
-(defrule set-all-genericp-of-restrict-when-set-all-genericp-of-arg2
-  (implies (set-all-genericp y)
-           (set-all-genericp (restrict x y)))
-  :enable set-all-genericp-pick-a-point-polar)
-
-(defrule set-all-acl2-numberp-of-restrict-when-set-all-acl2-numberp-of-arg1
-  (implies (set-all-acl2-numberp x)
-           (set-all-acl2-numberp (restrict x y)))
-  :use (:functional-instance
-         set-all-genericp-of-restrict-when-set-all-genericp-of-arg1
-         (genericp acl2-numberp)
-         (set-all-genericp set-all-acl2-numberp))
-  :enable set-all-acl2-numberp-alt-definition)
-
-(defrule set-all-acl2-numberp-of-restrict-when-set-all-acl2-numberp-of-arg2
-  (implies (set-all-acl2-numberp y)
-           (set-all-acl2-numberp (restrict x y)))
-  :use (:functional-instance
-         set-all-genericp-of-restrict-when-set-all-genericp-of-arg2
-         (genericp acl2-numberp)
-         (set-all-genericp set-all-acl2-numberp)))
-
-(defrule set-all-symbolp-of-restrict-when-set-all-symbolp-of-arg1
-  (implies (set-all-symbolp x)
-           (set-all-symbolp (restrict x y)))
-  :use (:functional-instance
-         set-all-genericp-of-restrict-when-set-all-genericp-of-arg1
-         (genericp symbolp)
-         (set-all-genericp set-all-symbolp))
-  :enable set-all-symbolp-alt-definition)
-
-(defrule set-all-symbolp-of-restrict-when-set-all-symbolp-of-arg2
-  (implies (set-all-symbolp y)
-           (set-all-symbolp (restrict x y)))
-  :use (:functional-instance
-         set-all-genericp-of-restrict-when-set-all-genericp-of-arg2
-         (genericp symbolp)
-         (set-all-genericp set-all-symbolp)))
-
-(defrule set-all-eqlablep-of-restrict-when-set-all-eqlablep-of-arg1
-  (implies (set-all-eqlablep x)
-           (set-all-eqlablep (restrict x y)))
-  :use (:functional-instance
-         set-all-genericp-of-restrict-when-set-all-genericp-of-arg1
-         (genericp eqlablep)
-         (set-all-genericp set-all-eqlablep))
-  :enable set-all-eqlablep-alt-definition)
-
-(defrule set-all-eqlablep-of-restrict-when-set-all-eqlablep-of-arg2
-  (implies (set-all-eqlablep y)
-           (set-all-eqlablep (restrict x y)))
-  :use (:functional-instance
-         set-all-genericp-of-restrict-when-set-all-genericp-of-arg2
-         (genericp eqlablep)
-         (set-all-genericp set-all-eqlablep)))
-|#
-;;;;;;;;;;;;;;;;;;;;
 
 (defrule to-omap-of-restrict
   (equal (to-omap (restrict keys map))
@@ -458,7 +390,7 @@
   :inline t
   :guard-hints (("Goal" :in-theory (enable* restrict
                                             treeset::set-all-acl2-numberp
-                                            map-keys-acl2-numberp
+                                            keys
                                             treeset::break-abstraction
                                             break-abstraction))))
 
@@ -473,7 +405,7 @@
   :inline t
   :guard-hints (("Goal" :in-theory (enable* restrict
                                             treeset::set-all-symbolp
-                                            map-keys-symbolp
+                                            keys
                                             treeset::break-abstraction
                                             break-abstraction))))
 
@@ -488,6 +420,6 @@
   :inline t
   :guard-hints (("Goal" :in-theory (enable* restrict
                                             treeset::set-all-eqlablep
-                                            map-keys-eqlablep
+                                            keys
                                             treeset::break-abstraction
                                             break-abstraction))))

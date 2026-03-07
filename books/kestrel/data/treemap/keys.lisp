@@ -119,5 +119,93 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Variants matching the equality primitives
+
+(define map-keys-acl2-numberp ((map mapp))
+  :returns (yes/no booleanp)
+  (mbe :logic (treeset::set-all-acl2-numberp (keys map))
+       :exec (tree-keys-acl2-numberp map))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* keys
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t map-keys-acl2-numberp)))
+
+(defrule map-keys-acl2-numberp-type-prescription
+  (booleanp (map-keys-acl2-numberp map))
+  :rule-classes ((:type-prescription :typed-term (map-keys-acl2-numberp map))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define map-keys-symbolp ((map mapp))
+  :returns (yes/no booleanp)
+  (mbe :logic (treeset::set-all-symbolp (keys map))
+       :exec (tree-keys-symbolp map))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* keys
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t map-keys-symbolp)))
+
+(defrule map-keys-symbolp-type-prescription
+  (booleanp (map-keys-symbolp map))
+  :rule-classes ((:type-prescription :typed-term (map-keys-symbolp map))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define map-keys-eqlablep ((map mapp))
+  :returns (yes/no booleanp)
+  (mbe :logic (treeset::set-all-eqlablep (keys map))
+       :exec (tree-keys-eqlablep map))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* keys
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t map-keys-eqlablep)))
+
+(defrule map-keys-eqlablep-type-prescription
+  (booleanp (map-keys-eqlablep map))
+  :rule-classes ((:type-prescription :typed-term (map-keys-eqlablep map))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: more efficient implementations (check mapp and contents
+;; simultaneously).
+
+(define acl2-number-mapp (x)
+  :parents (mapp)
+  :short "Refinement of @(tsee mapp) to maps whose elements are recognized by
+          @(tsee acl2-numberp)."
+  (and (mapp x)
+       (map-keys-acl2-numberp x))
+  :enabled t)
+
+(define symbol-mapp (x)
+  :parents (mapp)
+  :short "Refinement of @(tsee mapp) to maps whose elements are recognized by
+          @(tsee symbolp)."
+  (and (mapp x)
+       (map-keys-symbolp x))
+  :enabled t)
+
+(define eqlable-mapp (x)
+  :parents (mapp)
+  :short "Refinement of @(tsee mapp) to maps whose elements are recognized by
+          @(tsee eqlablep)."
+  (and (mapp x)
+       (map-keys-eqlablep x))
+  :enabled t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthy keys-extra-rules
   '(keys-when-emptyp))

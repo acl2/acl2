@@ -32,6 +32,7 @@
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
 (local (include-book "kestrel/data/treeset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))

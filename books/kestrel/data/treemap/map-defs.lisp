@@ -24,12 +24,6 @@
           equiv
           emptyp
           head-key
-          map-keys-acl2-numberp
-          map-keys-symbolp
-          map-keys-eqlablep
-          acl2-number-mapp
-          symbol-mapp
-          eqlable-mapp
           ))
 
 (defequiv equiv)

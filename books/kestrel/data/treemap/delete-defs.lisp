@@ -11,6 +11,7 @@
 (include-book "internal/join-defs")
 (include-book "internal/delete-defs")
 (include-book "map-defs")
+(include-book "keys-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "delete"))

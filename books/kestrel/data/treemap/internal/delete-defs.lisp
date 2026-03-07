@@ -11,6 +11,7 @@
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 
 (include-book "tree-defs")
+(include-book "keys-defs")
 (include-book "join-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))

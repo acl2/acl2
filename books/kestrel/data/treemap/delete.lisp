@@ -47,13 +47,11 @@
 (local (include-book "internal/tree"))
 (local (include-book "internal/join"))
 (local (include-book "internal/delete"))
-;; (local (include-book "internal/count"))
 (local (include-book "internal/keys"))
 (local (include-book "internal/lookup"))
 (local (include-book "internal/in-order"))
 (local (include-book "map"))
 (local (include-book "to-omap"))
-;; (local (include-book "cardinality"))
 (local (include-book "keys"))
 (local (include-book "lookup"))
 (local (include-book "submap"))
@@ -308,7 +306,7 @@
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
                                             delete
-                                            map-keys-acl2-numberp))))
+                                            keys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -321,7 +319,7 @@
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
                                             delete
-                                            map-keys-symbolp))))
+                                            keys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,7 +332,7 @@
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
                                             delete
-                                            map-keys-eqlablep))))
+                                            keys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

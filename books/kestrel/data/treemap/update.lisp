@@ -864,8 +864,8 @@
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
-                                            map-keys-acl2-numberp
-                                            update))))
+                                            update
+                                            keys))))
 
 (define update-eq
   ((key symbolp)
@@ -879,8 +879,8 @@
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
-                                            map-keys-symbolp
-                                            update))))
+                                            update
+                                            keys))))
 (define update-eql
   ((key eqlablep)
    val
@@ -893,8 +893,8 @@
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
-                                            map-keys-eqlablep
-                                            update))))
+                                            update
+                                            keys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

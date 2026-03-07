@@ -36,12 +36,6 @@
           tree-node
           tree-listp
           tree-list-fix
-          tree-keys-acl2-numberp
-          tree-keys-symbolp
-          tree-keys-eqlablep
-          acl2-number-treep
-          symbol-treep
-          eqlable-treep
           ))
 
 (defequiv tree-element-equiv)

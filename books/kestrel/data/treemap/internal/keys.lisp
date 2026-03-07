@@ -22,6 +22,7 @@
 (include-book "kestrel/data/treeset/subset-defs" :dir :system)
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
 (include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/treeset/generic-typed-defs" :dir :system)
 (include-book "kestrel/data/treeset/union-defs" :dir :system)
 (include-book "kestrel/data/treeset/min-max-defs" :dir :system)
 
@@ -45,11 +46,12 @@
 (local (include-book "kestrel/data/treeset/internal/min-max" :dir :system))
 (local (include-book "kestrel/data/treeset/internal/in" :dir :system))
 (local (include-book "kestrel/data/treeset/hash" :dir :system))
-;; TODO: all this still needed?
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
 (local (include-book "kestrel/data/treeset/union" :dir :system))
 (local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 (local (include-book "kestrel/data/treeset/min-max" :dir :system))
@@ -381,32 +383,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule acl2-numberp-when-in-of-tree-key-set-and-tree-keys-acl2-numberp
-  (implies (and (treeset::in key (tree-key-set tree))
-                (tree-keys-acl2-numberp tree))
-           (acl2-numberp key))
-  :induct t
-  :enable (tree-key-set
-           tree-keys-acl2-numberp))
-
-(defrule symbolp-when-in-of-tree-key-set-and-tree-keys-symbolp
-  (implies (and (treeset::in key (tree-key-set tree))
-                (tree-keys-symbolp tree))
-           (symbolp key))
-  :induct t
-  :enable (tree-key-set
-           tree-keys-symbolp))
-
-(defrule eqlablep-when-in-of-tree-key-set-and-tree-keys-acl2-numberp
-  (implies (and (treeset::in key (tree-key-set tree))
-                (tree-keys-eqlablep tree))
-           (eqlablep key))
-  :induct t
-  :enable (tree-key-set
-           tree-keys-eqlablep))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (defruled in-of-tree-key-set-right-when-disjoint-and-in-of-tree-key-set-left
   (implies (and (<<-all-l left x)
                 (<<-all-r x right)
@@ -674,6 +650,129 @@
                   (treeset::max (tree-key-set (tree->right tree)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :by tree-max-of-tree-key-set-when-not-tree-empty-p-tree->right)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-keys-acl2-numberp ((tree treep))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  (mbe :logic (treeset::set-all-acl2-numberp (tree-key-set tree))
+       :exec (or (tree-empty-p tree)
+                 (and (acl2-numberp (tree-element->key (tree->head tree)))
+                      (tree-keys-acl2-numberp (tree->left tree))
+                      (tree-keys-acl2-numberp (tree->right tree)))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable tree-keys-acl2-numberp))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t tree-keys-acl2-numberp)))
+
+(defrule tree-keys-acl2-numberp-when-tree-equiv-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (tree-keys-acl2-numberp tree0)
+                  (tree-keys-acl2-numberp tree1)))
+  :rule-classes :congruence)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-keys-symbolp ((tree treep))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  (mbe :logic (treeset::set-all-symbolp (tree-key-set tree))
+       :exec (or (tree-empty-p tree)
+                 (and (symbolp (tree-element->key (tree->head tree)))
+                      (tree-keys-symbolp (tree->left tree))
+                      (tree-keys-symbolp (tree->right tree)))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable tree-keys-symbolp))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t tree-keys-symbolp)))
+
+(defrule tree-keys-symbolp-when-tree-equiv-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (tree-keys-symbolp tree0)
+                  (tree-keys-symbolp tree1)))
+  :rule-classes :congruence)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-keys-eqlablep ((tree treep))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  (mbe :logic (treeset::set-all-eqlablep (tree-key-set tree))
+       :exec (or (tree-empty-p tree)
+                 (and (eqlablep (tree-element->key (tree->head tree)))
+                      (tree-keys-eqlablep (tree->left tree))
+                      (tree-keys-eqlablep (tree->right tree)))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable tree-keys-eqlablep))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t tree-keys-eqlablep)))
+
+(defrule tree-keys-eqlablep-when-tree-equiv-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (tree-keys-eqlablep tree0)
+                  (tree-keys-eqlablep tree1)))
+  :rule-classes :congruence)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule genericp-of-tree->head-when-set-all-genericp
+  (implies (and (treeset::set-all-genericp (tree-key-set tree))
+                (not (tree-empty-p tree)))
+           (treeset::genericp (tree-element->key (tree->head tree)))))
+
+(defrule acl2-numberp-of-tree->head-when-set-all-acl2-numberp
+  (implies (and (treeset::set-all-acl2-numberp (tree-key-set tree))
+                (not (tree-empty-p tree)))
+           (acl2-numberp (tree-element->key (tree->head tree))))
+  :use (:functional-instance
+         genericp-of-tree->head-when-set-all-genericp
+         (treeset::genericp acl2-numberp)
+         (treeset::set-all-genericp treeset::set-all-acl2-numberp))
+  :enable treeset::set-all-acl2-numberp-alt-definition)
+
+(defrule symbolp-of-tree->head-when-set-all-symbolp
+  (implies (and (treeset::set-all-symbolp (tree-key-set tree))
+                (not (tree-empty-p tree)))
+           (symbolp (tree-element->key (tree->head tree))))
+  :use (:functional-instance
+         genericp-of-tree->head-when-set-all-genericp
+         (treeset::genericp symbolp)
+         (treeset::set-all-genericp treeset::set-all-symbolp))
+  :enable treeset::set-all-symbolp-alt-definition)
+
+(defrule eqlablep-of-tree->head-when-set-all-eqlablep
+  (implies (and (treeset::set-all-eqlablep (tree-key-set tree))
+                (not (tree-empty-p tree)))
+           (eqlablep (tree-element->key (tree->head tree))))
+  :use (:functional-instance
+         genericp-of-tree->head-when-set-all-genericp
+         (treeset::genericp eqlablep)
+         (treeset::set-all-genericp treeset::set-all-eqlablep))
+  :enable treeset::set-all-eqlablep-alt-definition)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: mbe-in some slightly more efficient functions which does the treep and
+;; tree-keys checks simultaneously.
+
+(define acl2-number-treep (x)
+  (and (treep x)
+       (tree-keys-acl2-numberp x))
+  :enabled t)
+
+(define symbol-treep (x)
+  (and (treep x)
+       (tree-keys-symbolp x))
+  :enabled t)
+
+(define eqlable-treep (x)
+  (and (treep x)
+       (tree-keys-eqlablep x))
+  :enabled t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

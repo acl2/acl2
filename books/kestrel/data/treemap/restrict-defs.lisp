@@ -12,6 +12,7 @@
 
 (include-book "internal/restrict-defs")
 (include-book "map-defs")
+(include-book "keys-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "restrict"))

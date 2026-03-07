@@ -34,6 +34,7 @@
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
 (local (include-book "kestrel/data/treeset/union" :dir :system))
 
 (local (include-book "tree"))
@@ -313,7 +314,6 @@
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-search-assoc
                                            acl2-number-tree-search-assoc
-                                           tree-keys-acl2-numberp
                                            tree-element->key
                                            tree-element->val))))
 
@@ -334,15 +334,18 @@
                  (t
                   (symbol-tree-search-assoc key (tree->right tree)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-search-assoc
-                                           symbol-tree-search-assoc
-                                           tree-keys-symbolp
-                                           tree-element->key
-                                           tree-element->val
-                                           tree-empty-p
-                                           tree->head
-                                           tree-element-p
-                                           treep))))
+  ;; TODO: Why is the proof more complicated than that for
+  ;;   acl2-number-tree-search-assoc?
+  :guard-hints
+  (("Goal" :in-theory (e/d (tree-search-assoc
+                            symbol-tree-search-assoc
+                            tree-element->key
+                            tree-element->val
+                            tree->head
+                            tree-element-p
+                            treep)
+                           (symbolp-of-tree->head-when-set-all-symbolp))
+           :use symbolp-of-tree->head-when-set-all-symbolp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -361,15 +364,18 @@
                  (t
                   (eqlable-tree-search-assoc key (tree->right tree)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-search-assoc
-                                           eqlable-tree-search-assoc
-                                           tree-keys-eqlablep
-                                           tree-element->key
-                                           tree-element->val
-                                           tree-empty-p
-                                           tree->head
-                                           tree-element-p
-                                           treep))))
+  ;; TODO: Why is the proof more complicated than that for
+  ;;   acl2-number-tree-search-assoc?
+  :guard-hints
+  (("Goal" :in-theory (e/d (tree-search-assoc
+                            eqlable-tree-search-assoc
+                            tree-element->key
+                            tree-element->val
+                            tree->head
+                            tree-element-p
+                            treep)
+                           (eqlablep-of-tree->head-when-set-all-eqlablep))
+           :use eqlablep-of-tree->head-when-set-all-eqlablep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -26,6 +26,9 @@
 
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
+(local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
 
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))

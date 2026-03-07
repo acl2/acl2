@@ -28,6 +28,7 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (local (include-book "internal/tree"))
@@ -39,6 +40,10 @@
 (local (include-book "subset"))
 (local (include-book "insert"))
 (local (include-book "delete"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (disable acl2::equal-of-booleans-cheap)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -252,10 +257,11 @@
   :enable set-all-genericp-pick-a-point-polar)
 
 (defrule set-all-genericp-of-insert
-  (implies (set-all-genericp set)
-           (equal (set-all-genericp (insert x set))
-                  (and (genericp x) t)))
-  :enable set-all-genericp-pick-a-point-polar)
+  (equal (set-all-genericp (insert x set))
+         (and (genericp x)
+              (set-all-genericp set)))
+  :enable (set-all-genericp-pick-a-point-polar
+           acl2::equal-of-booleans-cheap))
 
 (defrule set-all-genericp-of-delete
   (implies (set-all-genericp set)
@@ -358,9 +364,9 @@
                              (set-all-genericp set-all-acl2-numberp)))
 
 (defrule set-all-acl2-numberp-of-insert
-  (implies (set-all-acl2-numberp set)
-           (equal (set-all-acl2-numberp (insert x set))
-                  (and (acl2-numberp x) t)))
+  (equal (set-all-acl2-numberp (insert x set))
+         (and (acl2-numberp x)
+              (set-all-acl2-numberp set)))
   :use (:functional-instance set-all-genericp-of-insert
                              (genericp acl2-numberp)
                              (set-all-genericp set-all-acl2-numberp)))
@@ -468,9 +474,9 @@
                              (set-all-genericp set-all-symbolp)))
 
 (defrule set-all-symbolp-of-insert
-  (implies (set-all-symbolp set)
-           (equal (set-all-symbolp (insert x set))
-                  (and (symbolp x) t)))
+  (equal (set-all-symbolp (insert x set))
+         (and (symbolp x)
+              (set-all-symbolp set)))
   :use (:functional-instance set-all-genericp-of-insert
                              (genericp symbolp)
                              (set-all-genericp set-all-symbolp)))
@@ -578,9 +584,9 @@
                              (set-all-genericp set-all-eqlablep)))
 
 (defrule set-all-eqlablep-of-insert
-  (implies (set-all-eqlablep set)
-           (equal (set-all-eqlablep (insert x set))
-                  (and (eqlablep x) t)))
+  (equal (set-all-eqlablep (insert x set))
+         (and (eqlablep x)
+              (set-all-eqlablep set)))
   :use (:functional-instance set-all-genericp-of-insert
                              (genericp eqlablep)
                              (set-all-genericp set-all-eqlablep)))

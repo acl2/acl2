@@ -28,8 +28,6 @@
 (include-book "submap-defs")
 (include-book "update-defs")
 (include-book "delete-defs")
-;; TODO
-;; (include-book "generic-typed-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -65,8 +63,6 @@
 (local (include-book "delete"))
 (local (include-book "submap"))
 (local (include-book "extensionality"))
-;; TODO
-;; (local (include-book "generic-typed"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -446,42 +442,6 @@
 |#
 
 ;;;;;;;;;;;;;;;;;;;;
-#|
-(defrule map-keys-genericp-of-update*
-  (equal (map-keys-genericp (update* x y))
-         (and (map-keys-genericp x)
-              (map-keys-genericp y)))
-  :enable (acl2::equal-of-booleans-cheap
-           map-keys-genericp-pick-a-point-polar))
-
-(defrule map-keys-acl2-numberp-of-update*
-  (equal (map-keys-acl2-numberp (update* x y))
-         (and (map-keys-acl2-numberp x)
-              (map-keys-acl2-numberp y)))
-  :use (:functional-instance map-keys-genericp-of-update*
-                             (genericp acl2-numberp)
-                             (map-keys-genericp map-keys-acl2-numberp))
-  :enable map-keys-acl2-numberp-alt-definition)
-
-(defrule map-keys-symbolp-of-update*
-  (equal (map-keys-symbolp (update* x y))
-         (and (map-keys-symbolp x)
-              (map-keys-symbolp y)))
-  :use (:functional-instance map-keys-genericp-of-update*
-                             (genericp symbolp)
-                             (map-keys-genericp map-keys-symbolp))
-  :enable map-keys-symbolp-alt-definition)
-
-(defrule map-keys-eqlablep-of-update*
-  (equal (map-keys-eqlablep (update* x y))
-         (and (map-keys-eqlablep x)
-              (map-keys-eqlablep y)))
-  :use (:functional-instance map-keys-genericp-of-update*
-                             (genericp eqlablep)
-                             (map-keys-genericp map-keys-eqlablep))
-  :enable map-keys-eqlablep-alt-definition)
-|#
-;;;;;;;;;;;;;;;;;;;;
 
 (defrule to-omap-of-update*
   (equal (to-omap (update* x y))
@@ -527,8 +487,8 @@
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
-                                            map-keys-acl2-numberp
-                                            update*))))
+                                            update*
+                                            keys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -540,8 +500,8 @@
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
-                                            map-keys-symbolp
-                                            update*))))
+                                            update*
+                                            keys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -553,5 +513,5 @@
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
-                                            map-keys-eqlablep
-                                            update*))))
+                                            update*
+                                            keys))))

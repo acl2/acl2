@@ -11,6 +11,7 @@
 (include-book "internal/tree-defs")
 (include-book "internal/update-star-defs")
 (include-book "map-defs")
+(include-book "keys-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "update-star"))

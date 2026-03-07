@@ -34,8 +34,8 @@
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
 (local (include-book "kestrel/data/treeset/union" :dir :system))
-;; (local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/min" :dir :system))
