@@ -1096,8 +1096,7 @@
        ((mv erp events-for-defun)
         (if (not produce-function)
             (mv (erp-nil) nil)
-          (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
-               (function-body (if termp
+          (b* ((function-body (if termp
                                   maybe-result-term
                                 `(dag-val-with-axe-evaluator ',result-dag-or-quotep ; can't be a constant since termp is nil
                                                              ,(make-acons-nest result-dag-vars)
