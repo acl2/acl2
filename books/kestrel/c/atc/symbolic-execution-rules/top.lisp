@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,8 @@
 
 (include-book "../symbolic-computation-states")
 (include-book "../shallow-embedding")
+
+(include-book "../../proof-support/const-ast-accessors")
 
 (include-book "types")
 (include-book "values")
@@ -206,7 +208,8 @@
           *atc-flexible-array-member-rules*
           *atc-pointed-integer-rules*
           *atc-apconvert-rules*
-          *atc-object-designator-rules*))
+          *atc-object-designator-rules*
+          *const-ast-accessors*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
