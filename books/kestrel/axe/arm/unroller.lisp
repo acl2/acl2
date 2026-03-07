@@ -43,6 +43,9 @@
 (include-book "kestrel/axe/rules1" :dir :system)
 (include-book "rewriter")
 (include-book "support")
+(include-book "../make-evaluator")
+(include-book "../evaluator-support")
+(include-book "../supporting-functions")
 (include-book "../step-increments")
 (include-book "../rule-limits")
 (include-book "../prune-dag-precisely")
@@ -537,10 +540,11 @@
                         print-base
                         max-printed-term-size
                         untranslatep
-                        ;;produce-function
-                        ;;non-executable
+                        produce-function
+                        non-executable
                         ;;produce-theorem
                         ;;prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
+                        max-result-term-size
                         ;; restrict-theory
                         whole-form
                         state)
@@ -579,10 +583,11 @@
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
                               (booleanp untranslatep)
-                              ;; (booleanp produce-function)
-                              ;; (member-eq non-executable '(t nil :auto))
+                              (booleanp produce-function)
+                              (member-eq non-executable '(t nil :auto))
                               ;; (booleanp produce-theorem)
                               ;; (booleanp prove-theorem)
+                              (natp max-result-term-size)
                               ;; (booleanp restrict-theory)
                               )
                   :stobjs state
@@ -654,8 +659,10 @@
                   (cw ")~%")))
         (mv t (er hard 'lifter "Lifter error: The run did not finish.") state))
        ;; Not valid if (not (< result-size 10000)):
-       (maybe-result-term (and (< result-size 10000) ; avoids exploding
-                               (dag-to-term result-dag-or-quotep)))
+       (termp (or (quotep result-dag-or-quotep)
+                  (<= result-size max-result-term-size)))
+       (maybe-result-term (and termp ; avoids exploding
+                               (dag-or-quotep-to-term result-dag-or-quotep)))
        ;; Print the result:
        (- (and print
                (if (< result-size 10000)
@@ -669,8 +676,9 @@
 
        ;; ;; Possibly produce a defun:
 
-       ;;       (result-vars (dag-or-quotep-vars result-dag-or-quotep))
-       ;;       (fn-formals (acl2::merge-sort-symbol< result-vars)) ; todo: use a smarter sort, also use a suggested ordering for common formals
+       (result-vars (dag-or-quotep-vars result-dag-or-quotep))
+       (fn-formals (acl2::merge-sort-symbol< result-vars)) ; todo: use a smarter sort, also use a suggested ordering for common formals
+
        ;; ;; (fn-formals result-dag-vars) ; we could include arm here, even if the dag is a constant
        ;; (executable-type (parsed-executable-type parsed-executable))
        ;; (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
@@ -688,44 +696,49 @@
        ;; (expected-formals (intersection-eq common-formals result-dag-vars))
        ;; (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe stat will sometimes be needed?
        ;; (fn-formals (append expected-formals unexpected-formals))
-       ;; ((mv erp defuns) ; defuns is nil or a singleton list
-       ;;  (if (not produce-function)
-       ;;      (mv (erp-nil) nil)
-       ;;    (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
-       ;;         (function-body (if (< result-dag-size 1000)
-       ;;                            maybe-result-term
-       ;;                          `(acl2::dag-val-with-axe-evaluator ',result-dag ; can't be a constant (the size would be < 1000)
-       ;;                                                             ,(acl2::make-acons-nest result-dag-vars)
-       ;;                                                             ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns acl2::*axe-evaluator-functions* (w state)) (w state))
-       ;;                                                             '0 ;array depth (not very important)
-       ;;                                                             )))
-       ;;         (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
-       ;;         (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn (w state)))
-       ;;         ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
-       ;;         ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
-       ;;          (er hard? 'lifter "Problem with function body.  Untranslating and then re-translating did not give original body.  Body was ~X01.  Re-translated body was ~X23" function-body nil function-body-retranslated nil)
-       ;;          (mv :problem-with-function-body nil))
-       ;;         ;;(- (cw "Runes used: ~x0" runes)) ;TODO: Have Axe return these?
-       ;;         ;;use defun-nx by default because stobj updates are not all let-bound to x86
-       ;;         (non-executable (if (eq :auto non-executable)
-       ;;                             (if (member-eq 'x86 fn-formals) ; there may be writes to the stobj (perhaps with unresolved reads around them), so we use defun-nx (todo: do a more precise check)
-       ;;                                 ;; (eq :all output-indicator) ; we use defun-nx since there is almost certainly a stobj update (and updates are not properly let-bound)
-       ;;                                 t
-       ;;                               nil)
-       ;;                           non-executable))
-       ;;         (defun-variant (if non-executable 'defun-nx 'defun))
-       ;;         (defun `(,defun-variant ,lifted-name (,@fn-formals)
-       ;;                   (declare (xargs ,@(if (member-eq 'x86 fn-formals)
-       ;;                                         `(:stobjs x86)
-       ;;                                       nil)
-       ;;                                   :verify-guards nil ;TODO
-       ;;                                   )
-       ;;                            ,@(let ((ignored-vars (set-difference-eq fn-formals result-dag-vars)))
-       ;;                                (and ignored-vars
-       ;;                                     `((ignore ,@ignored-vars)))))
-       ;;                   ,function-body-untranslated)))
-       ;;      (mv (erp-nil) (list defun)))))
-       ;; ((when erp) (mv erp nil state))
+       ((mv erp events-for-defun)
+        (if (not produce-function)
+            (mv (erp-nil) nil)
+          (b* ((function-body (if termp
+                                  maybe-result-term
+                                `(acl2::dag-val-with-axe-evaluator ',result-dag-or-quotep ; can't be a constant since termp is nil
+                                                                   ,(acl2::make-acons-nest result-vars)
+                                                                   ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-fns acl2::*axe-evaluator-functions* (w state)) (w state))
+                                                                   '0 ;array depth (not very important)
+                                                                   )))
+               (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
+               (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn (w state)))
+               ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
+               ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
+                (er hard? 'lifter "Problem with function body.  Untranslating and then re-translating did not give original body.  Body was ~X01.  Re-translated body was ~X23" function-body nil function-body-retranslated nil)
+                (mv :problem-with-function-body nil))
+               ;;(- (cw "Runes used: ~x0" runes)) ;TODO: Have Axe return these?
+               ;;use defun-nx by default because stobj updates are not all let-bound to arm
+               (non-executable (if (eq :auto non-executable)
+                                   (if (member-eq 'arm fn-formals) ; there may be writes to the stobj (perhaps with unresolved reads around them), so we use defun-nx (todo: do a more precise check)
+                                       ;; (eq :all output-indicator) ; we use defun-nx since there is almost certainly a stobj update (and updates are not properly let-bound)
+                                       t
+                                     nil)
+                                 non-executable))
+               (defun-variant (if non-executable 'defun-nx 'defun))
+               (defun `(,defun-variant ,lifted-name (,@fn-formals)
+                         (declare (xargs ,@(if (member-eq 'arm fn-formals)
+                                               `(:stobjs arm)
+                                             nil)
+                                         :verify-guards nil ;TODO
+                                         )
+                                  ,@(let ((ignored-vars (set-difference-eq fn-formals result-vars)))
+                                      (and ignored-vars
+                                           `((ignore ,@ignored-vars)))))
+                         ,function-body-untranslated)))
+            (mv (erp-nil)
+                (append (if termp
+                            nil
+                          ;; We bring in the evaluator only if needed to embed a dag in the defun:
+                          '((include-book "kestrel/axe/evaluator" :dir :system)) ; note that this has skip-proofs (currently)
+                          )
+                        (list defun))))))
+       ((when erp) (mv erp nil state))
        ;; (produce-theorem (and produce-theorem
        ;;                       (if (not produce-function)
        ;;                           ;; todo: do something better in this case?
@@ -752,9 +765,10 @@
        ;;                         `(skip-proofs ,defthm))))
        ;;          (list defthm))))
        (events (cons defconst-form
-                     nil ; (append defuns defthms)
+                     (append events-for-defun ; defthms
+                             )
                      ))
-       (event-names (strip-cadrs events))
+       (event-names (lifter-event-names events nil))
        (event `(progn ,@events))
        (event (extend-progn event (redundancy-table-event whole-form event)))
        (event (extend-progn event `(value-triple '(,@event-names))))
@@ -798,10 +812,11 @@
                                   (print-base '10)
                                   (max-printed-term-size '10000)
                                   (untranslatep 't)
-                                  ;;(produce-function 't)
-                                  ;;(non-executable ':auto)
+                                  (produce-function 't)
+                                  (non-executable ':auto)
                                   ;;(produce-theorem 'nil)
                                   ;;(prove-theorem 'nil)
+                                  (max-result-term-size '10000)
                                   ;;(restrict-theory 't)       ;todo: deprecate
                                   )
   `(,(if (print-level-at-least-tp print) 'make-event 'make-event-quiet)
@@ -837,10 +852,11 @@
         ',print-base
         ',max-printed-term-size
         ',untranslatep
-        ;; ',produce-function
-        ;; ',non-executable
+        ',produce-function
+        ',non-executable
         ;; ',produce-theorem
         ;; ',prove-theorem
+        ',max-result-term-size
         ;; ',restrict-theory
         ',whole-form
         state)
@@ -885,11 +901,12 @@
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
          (max-printed-term-size "Max term-size of a DAG that is allowed to be printed as a term.  Larger DAGs will be printed as DAGs, not terms.")
          (untranslatep "Whether to untranslate terms when printing.")
-;;         (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
-;;         (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
+         (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
+         (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
 ;;         (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
 ;;         (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
          ;;         (restrict-theory "To be deprecated...")
+         (max-result-term-size "Max term-size of a result if it is to be represented as a term (when printing it, and in the generated function).  A larger result will be represented as a DAG, embedded in the function using an evaluator.")
          )
   :description ("Lift some arm binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
                 "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(tsee defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."
