@@ -15,6 +15,7 @@
 (include-book "../shallow-embedding")
 
 (include-book "../../proof-support/const-ast-accessors")
+(include-book "../../proof-support/exec-stmt-openers")
 
 (include-book "types")
 (include-book "values")
@@ -31,7 +32,6 @@
 (include-book "exec-expr-when-asg")
 (include-book "exec-expr-when-pure")
 (include-book "exec-fun")
-(include-book "exec-stmt")
 (include-book "exec-initer")
 (include-book "exec-obj-declon")
 (include-book "exec-block-item")

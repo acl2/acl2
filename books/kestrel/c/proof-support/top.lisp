@@ -13,6 +13,7 @@
 
 (include-book "test-star")
 (include-book "pure-expression-execution")
+(include-book "exec-stmt-openers")
 (include-book "exec-stmt-while-openers")
 (include-book "const-ast-accessors")
 
