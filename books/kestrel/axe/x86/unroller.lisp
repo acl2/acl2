@@ -1058,10 +1058,11 @@
                               result-dag-size nil "Error result" t state)
         (er hard? 'def-unrolled-fn "Unroller error: The run did not finish.  Note that a :step-limit of ~x0 is active." step-limit)  ; todo: support :step-limit nil and then no message here
         (mv :incomplete-run nil state))
-       (termp (<= result-dag-size max-result-term-size))
+       (termp (or (quotep result-dag-or-quotep)
+                  (<= result-dag-size max-result-term-size)))
        ;; Not valid if too big:
        (maybe-result-term (and termp ; avoids exploding
-                               (dag-to-term result-dag-or-quotep)))
+                               (dag-or-quotep-to-term result-dag-or-quotep)))
        ;; Print the result:
        (- (print-as-term-or-dag result-dag-or-quotep max-printed-term-size result-dag-size
                                 maybe-result-term ; we re-use this when it's valid
@@ -1098,7 +1099,7 @@
           (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
                (function-body (if termp
                                   maybe-result-term
-                                `(dag-val-with-axe-evaluator ',result-dag-or-quotep ; can't be a constant (the size would be < max-result-term-size)
+                                `(dag-val-with-axe-evaluator ',result-dag-or-quotep ; can't be a constant since termp is nil
                                                              ,(make-acons-nest result-dag-vars)
                                                              ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list result-dag-fns *axe-evaluator-functions* (w state)) (w state))
                                                              '0 ;array depth (not very important)
@@ -1156,7 +1157,7 @@
                                `(skip-proofs ,defthm))))
                 (list defthm))))
        (events (cons defconst-form (append events-for-defun defthms)))
-       (event-names (strip-cadrs events)) ; todo: consider the include-book above
+       (event-names (lifter-event-names events nil))
        (event `(progn ,@events))
        (event (extend-progn event (redundancy-table-event whole-form event)))
        (event (extend-progn event `(value-triple '(,@event-names))))
