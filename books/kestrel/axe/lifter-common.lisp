@@ -440,3 +440,30 @@
 
 (defmacro make-repeatedly-run-function (name simplify-dag-name)
   `(make-event (make-repeatedly-run-function-fn ',name ',simplify-dag-name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; maybe extends acc
+(defund add-lifter-event-name (event acc)
+  (declare (xargs :guard (true-listp acc)))
+  (if (not (and (consp event)
+                (true-listp event)))
+      (er hard? 'lifter-event-name "Bad event encountered: ~x0." event)
+    (case (car event)
+      ;; These events don't have names:
+      ((include-book) acc)
+      ((skip-proofs) (add-lifter-event-name (cadr event) acc))
+      ;; probably anything local should be ignored?
+      ((defconst defun defun-nx defund defund-nx defthm defthmd)
+       (cons (cadr event) acc))
+      (otherwise (er hard? 'lifter-event-name "Unhandled event type: ~x0." event)))))
+
+;; These are passed to value-triple for printing as the 'return value' of the lifter.
+(defund lifter-event-names (events acc)
+  (declare (xargs :guard (and (true-listp events)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable add-lifter-event-name)))))
+  (if (endp events)
+      (reverse acc)
+    (lifter-event-names (rest events)
+                        (add-lifter-event-name (first events) acc))))
