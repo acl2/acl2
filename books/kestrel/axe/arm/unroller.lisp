@@ -267,34 +267,34 @@
 ;;                state).
 ;; This will also be called by the formal unit tester.
 (defun unroll-arm-code-core (target
-                                parsed-executable
-                                extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
-                                ;;suppress-assumptions
-                                ;;inputs-disjoint-from
-                                stack-slots
-                                existing-stack-slots
-                                position-independent
-                                ;;inputs
-                                ;;type-assumptions-for-array-varsp
-                                output-indicator
-                                prune-precise
-                                prune-approx
-                                extra-rules
-                                remove-rules
-                                ;; extra-assumption-rules ; todo: why "extra"?
-                                ;; remove-assumption-rules
-                                step-limit
-                                step-increment
-                                stop-pcs
-                                memoizep
-                                monitor
-                                normalize-xors
-                                count-hits
-                                print
-                                print-base
-                                max-printed-term-size
-                                untranslatep
-                                state)
+                             parsed-executable
+                             extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
+                             ;;suppress-assumptions
+                             ;;inputs-disjoint-from
+                             stack-slots
+                             existing-stack-slots
+                             position-independent
+                             ;;inputs
+                             ;;type-assumptions-for-array-varsp
+                             output-indicator
+                             prune-precise
+                             prune-approx
+                             extra-rules
+                             remove-rules
+                             ;; extra-assumption-rules ; todo: why "extra"?
+                             ;; remove-assumption-rules
+                             step-limit
+                             step-increment
+                             stop-pcs
+                             memoizep
+                             monitor
+                             normalize-xors
+                             count-hits
+                             print
+                             print-base
+                             max-printed-term-size
+                             untranslatep
+                             state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
                               (true-listp extra-assumptions) ; untranslated terms
