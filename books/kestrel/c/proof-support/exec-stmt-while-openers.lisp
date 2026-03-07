@@ -60,7 +60,7 @@
              exec-expr-to-exec-expr-pure-when-expr-pure-limit
              not-errorp-when-expr-valuep))
 
-  (defruled exec-stmt-while-when-true-return
+  (defruled exec-stmt-while-when-true-and-return
     (implies (and (syntaxp (and (quotep test)
                                 (quotep body)))
                   (expr-purep test)
@@ -86,7 +86,7 @@
              exec-expr-to-exec-expr-pure-when-expr-pure-limit
              not-errorp-when-expr-valuep))
 
-  (defruled exec-stmt-while-when-true-noreturn
+  (defruled exec-stmt-while-when-true-and-noreturn
     (implies (and (syntaxp (and (quotep test)
                                 (quotep body)))
                   (expr-purep test)
@@ -119,8 +119,8 @@
   :parents (exec-stmt-while-openers)
   :short "List of opener rules for @(tsee exec-stmt-while)."
   '(exec-stmt-while-when-false
-    exec-stmt-while-when-true-return
-    exec-stmt-while-when-true-noreturn))
+    exec-stmt-while-when-true-and-return
+    exec-stmt-while-when-true-and-noreturn))
 
 ;;;;;;;;;;;;;;;;;;;;
 
