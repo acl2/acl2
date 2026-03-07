@@ -304,20 +304,32 @@
      arm::set-apsr.v-of-write
      arm::set-apsr.q-of-write
 
-
      arm::branchto
      arm::pcstorevalue
      arm::loadwritepc
      arm::bxwritepc
      arm::branchwritepc
 
-     arm::armexpandimm_c
      arm::armexpandimm
+     arm::armexpandimm_c
+     arm::shift
      arm::shift_c
-     arm::ror_c
-     arm::lsr
-     arm::lsr_c
-     arm::lsl
+
+     ;; left shifts:
+     arm::mv-nth-0-of-lsl_c-becomes-bvshl ; arm::lsl_c
+     arm::mv-nth-1-of-lsl_c-becomes-getbit
+     arm::lsl-becomes-bvshl ; arm::lsl
+
+     ;; right shifts;
+     arm::mv-nth-0-of-lsr_c-becomes-bvshr ; arm::lsr_c
+     arm::mv-nth-1-of-lsr_c-becomes-getbit
+     arm::lsr-becomes-bvshr ; arm::lsr
+
+     ;; right rotation:
+     arm::mv-nth-0-of-ror_c-becomes-rightrotate ; arm::ror_c
+     arm::mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
+     arm::ror-becomes-rightrotate ; arm::ror
+
      arm::bitcount
      arm::write_memu
      arm::write_mema
@@ -339,8 +351,6 @@
      arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
      arm::mv-nth-1-of-AddWithCarry ;;     arm::addwithcarry
      arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
-     arm::shift
-     arm::lsl_c
      arm::iszerobit
      arm::iszero
      )
