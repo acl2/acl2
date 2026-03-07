@@ -637,7 +637,7 @@
        ((when (intersection-eq result-dag-fns *incomplete-run-fns*))
         (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
-                    (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag)))
+                    (cw "~X01" (let ((term (dag-or-constant-to-term result-dag)))
                                  (if untranslatep
                                      (untranslate term nil (w state))
                                    term))

@@ -262,7 +262,7 @@
     dag-to-term
     dag2term ; for now
     dag-node-to-term
-    dag-or-quotep-to-term
+    dag-or-constant-to-term
     dag-or-quotep-size
     dag-or-quotep-fns
     dag-or-quotep-vars

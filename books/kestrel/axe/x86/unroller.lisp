@@ -1062,7 +1062,7 @@
                   (<= result-dag-size max-result-term-size)))
        ;; Not valid if too big:
        (maybe-result-term (and termp ; avoids exploding
-                               (dag-or-quotep-to-term result-dag-or-quotep)))
+                               (dag-or-constant-to-term result-dag-or-quotep)))
        ;; Print the result:
        (- (print-as-term-or-dag result-dag-or-quotep max-printed-term-size result-dag-size
                                 maybe-result-term ; we re-use this when it's valid

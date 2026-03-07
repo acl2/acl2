@@ -43,7 +43,7 @@
         ;; Print as a term (preferred if not too big):
         (let ((term (if quotep
                         dag-or-quotep
-                      (let ((term (or maybe-term (dag-or-quotep-to-term dag-or-quotep))))
+                      (let ((term (or maybe-term (dag-or-constant-to-term dag-or-quotep))))
                         (if untranslatep
                             (untranslate$ term nil state)
                           term)))))
