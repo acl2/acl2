@@ -330,23 +330,6 @@
     :rule-classes :forward-chaining
     :enable block-item-unambp)
 
-  ;; These were found necessary at some point,
-  ;; but they should be re-assessed.
-
-  (defruled expr-unambp-of-type-spec-typeof-expr->expr
-    (implies (and (type-spec-unambp tyspec)
-                  (equal (type-spec-kind tyspec) :typeof-expr))
-             (expr-unambp (type-spec-typeof-expr->expr tyspec)))
-    :rule-classes :forward-chaining
-    :enable type-spec-unambp)
-
-  (defruled tyname-unambp-of-type-spec-typeof-type->type
-    (implies (and (type-spec-unambp tyspec)
-                  (equal (type-spec-kind tyspec) :typeof-type))
-             (tyname-unambp (type-spec-typeof-type->type tyspec)))
-    :rule-classes :forward-chaining
-    :enable type-spec-unambp)
-
   ;; Add the above theorems to the rule set.
 
   (add-to-ruleset abstract-syntax-unambp-rules
@@ -384,9 +367,7 @@
                     param-declor-not-ambig-when-unambp
                     dirabsdeclor-not-dummy-base-when-unambp
                     stmt-not-for-ambig-when-unambp
-                    block-item-not-ambig-when-unambp
-                    expr-unambp-of-type-spec-typeof-expr->expr
-                    tyname-unambp-of-type-spec-typeof-type->type)))
+                    block-item-not-ambig-when-unambp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
