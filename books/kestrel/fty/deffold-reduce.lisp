@@ -497,7 +497,7 @@
        (fn-term `(,field-type-suffix (,accessor ,type) ,@extra-args-names))
        (thm-term `(,field-type-suffix ,name ,@extra-args-names))
        (field-type-suffix-of-accessor
-        (acl2::packn-pos (list field-type suffix '-of- accessor) suffix))
+        (acl2::packn-pos (list field-type-suffix '-of- accessor) suffix))
        (thm-events
         (and (eq combine 'and)
              (eq default t)
