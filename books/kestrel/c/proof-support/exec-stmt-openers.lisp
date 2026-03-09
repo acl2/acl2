@@ -11,29 +11,39 @@
 
 (in-package "C")
 
-(include-book "../../proof-support/test-star")
-(include-book "../../proof-support/pure-expression-execution")
+(include-book "test-star")
+(include-book "pure-expression-execution")
 
-(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-stmt-rules
-  :short "Rules for @(tsee exec-stmt)."
+(defsection exec-stmt-openers
+  :short "Opener rules for @(tsee exec-stmt)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Besides the rules for the large symbolic execution,
-     whose names we put into the constant defined at the end,
-     we also prove rules used in the new modular proofs.
-     The latter rules avoid @(tsee if) in the right side,
-     to avoid unwanted case splits;
-     furthermore, they wrap the @(tsee if) tests into @(tsee test*)
-     to prevent unwanted rewrites (see @(tsee atc-contextualize))."))
+    "We provide rules for different kinds of statements.
+     For @('if') and @('if')-@('else'),
+     we provide both splitting rules (i.e. which produce @(tsee if)s)
+     and non-splitting rules.
+     The non-splitting rules use the @(tsee test*) wrapper for the tests,
+     which can be enabled if desired;
+     see @(tsee test*) for its rationale.
+     Perhaps the splitting rules should use that as well.")
+   (xdoc::p
+    "All the rules have @(tsee syntaxp) hypotheses saying that
+     the ASTs (for test and body) being executed are quoted constants.
+     Thus, the rules are suitable for symbolic execution of concrete code.")
+   (xdoc::p
+    "We provide a ruleset with all the rules,
+     and two rulesets for splitting vs. non-splitting rules.")
+   (xdoc::p
+    "Currently the rules for @('if') and @('if')-@('else')
+     are limited to tests that are pure expressions.
+     Also, some kinds of statements have no rules yet."))
 
   (defruled exec-stmt-when-compound
     (implies (and (syntaxp (quotep s))
@@ -49,7 +59,8 @@
                   (stmt-valuep sval))
              (equal (exec-stmt s compst fenv limit)
                     (mv sval (exit-scope compst1))))
-    :enable exec-stmt)
+    :enable (exec-stmt
+             not-errorp-when-expr-value-optionp))
 
   (defruled exec-stmt-when-expr
     (implies (and (syntaxp (quotep s))
@@ -62,7 +73,8 @@
                   (expr-value-optionp eval?))
              (equal (exec-stmt s compst fenv limit)
                     (mv (stmt-value-none) compst1)))
-    :enable exec-stmt)
+    :enable (exec-stmt
+             not-errorp-when-expr-value-optionp))
 
   (defruled exec-stmt-when-if
     (implies (and (syntaxp (quotep s))
@@ -83,7 +95,7 @@
                       (mv (stmt-value-none) compst))))
     :enable (exec-stmt
              exec-expr-to-exec-expr-pure-when-expr-pure-limit
-             nfix))
+             not-errorp-when-expr-value-optionp))
 
   (defruled exec-stmt-when-if-and-true
     (implies (and (syntaxp (quotep s))
@@ -103,7 +115,7 @@
                     (exec-stmt (stmt-if->then s) compst fenv (1- limit))))
     :enable (exec-stmt
              exec-expr-to-exec-expr-pure-when-expr-pure-limit
-             nfix
+             not-errorp-when-expr-value-optionp
              test*))
 
   (defruled exec-stmt-when-if-and-false
@@ -124,7 +136,7 @@
                     (mv (stmt-value-none) compst)))
     :enable (exec-stmt
              exec-expr-to-exec-expr-pure-when-expr-pure-limit
-             nfix
+             not-errorp-when-expr-value-optionp
              test*))
 
   (defruled exec-stmt-when-ifelse
@@ -147,7 +159,7 @@
                        (stmt-ifelse->else s) compst fenv (1- limit)))))
     :expand (exec-stmt s compst fenv limit)
     :enable (exec-expr-to-exec-expr-pure-when-expr-pure-limit
-             nfix))
+             not-errorp-when-expr-value-optionp))
 
   (defruled exec-stmt-when-ifelse-and-true
     (implies (and (syntaxp (quotep s))
@@ -166,7 +178,7 @@
                     (exec-stmt (stmt-ifelse->then s) compst fenv (1- limit))))
     :expand (exec-stmt s compst fenv limit)
     :enable (exec-expr-to-exec-expr-pure-when-expr-pure-limit
-             nfix
+             not-errorp-when-expr-value-optionp
              test*))
 
   (defruled exec-stmt-when-ifelse-and-false
@@ -187,7 +199,7 @@
     :expand (exec-stmt s compst fenv limit)
     :enable (exec-stmt
              exec-expr-to-exec-expr-pure-when-expr-pure-limit
-             nfix
+             not-errorp-when-expr-value-optionp
              test*))
 
   (defruled exec-stmt-when-while
@@ -218,23 +230,59 @@
                   (equal val (expr-value->value eval1)))
              (equal (exec-stmt s compst fenv limit)
                     (mv (stmt-value-return val) compst1)))
-    :enable exec-stmt)
+    :enable (exec-stmt
+             not-errorp-when-expr-value-optionp)))
 
-  (defval *atc-exec-stmt-rules*
-    '(exec-stmt-when-compound
-      exec-stmt-when-expr
-      exec-stmt-when-if
-      exec-stmt-when-ifelse
-      exec-stmt-when-while
-      exec-stmt-when-return
-      (:e stmt-kind)
-      (:e stmt-compound->items)
-      (:e stmt-expr->get)
-      (:e stmt-if->test)
-      (:e stmt-if->then)
-      (:e stmt-ifelse->test)
-      (:e stmt-ifelse->then)
-      (:e stmt-ifelse->else)
-      (:e stmt-while->test)
-      (:e stmt-while->body)
-      (:e stmt-return->value))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *exec-stmt-openers*
+  :parents (exec-stmt-openers)
+  :short "List of opener rules for @(tsee exec-stmt)."
+  '(exec-stmt-when-compound
+    exec-stmt-when-expr
+    exec-stmt-when-if
+    exec-stmt-when-if-and-true
+    exec-stmt-when-if-and-false
+    exec-stmt-when-ifelse
+    exec-stmt-when-ifelse-and-true
+    exec-stmt-when-ifelse-and-false
+    exec-stmt-when-while
+    exec-stmt-when-return))
+
+(defval *exec-stmt-openers-split*
+  :parents (exec-stmt-openers)
+  :short "List of opener rules for @(tsee exec-stmt)
+          that cause splits at conditionals."
+  '(exec-stmt-when-compound
+    exec-stmt-when-expr
+    exec-stmt-when-if
+    exec-stmt-when-ifelse
+    exec-stmt-when-while
+    exec-stmt-when-return))
+
+(defval *exec-stmt-openers-nosplit*
+  :parents (exec-stmt-openers)
+  :short "List of opener rules for @(tsee exec-stmt)
+          that do not cause splits at conditionals."
+  '(exec-stmt-when-compound
+    exec-stmt-when-expr
+    exec-stmt-when-if-and-true
+    exec-stmt-when-if-and-false
+    exec-stmt-when-ifelse-and-true
+    exec-stmt-when-ifelse-and-false
+    exec-stmt-when-while
+    exec-stmt-when-return))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(def-ruleset exec-stmt-openers
+    ',*exec-stmt-openers*))
+
+(make-event
+ `(def-ruleset exec-stmt-openers-split
+    ',*exec-stmt-openers-split*))
+
+(make-event
+ `(def-ruleset exec-stmt-openers-nosplit
+    ',*exec-stmt-openers-nosplit*))

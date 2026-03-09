@@ -4086,7 +4086,7 @@
                      ppstate
                      state)
                 (b* (((mv erp ppstate)
-                      (ppstate-for-file bytes macros options ienv ppstate))
+                      (ppstate-for-file file bytes macros options ienv ppstate))
                      ((when erp)
                       (mv erp
                           (irr-pfile)

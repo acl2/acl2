@@ -1,7 +1,7 @@
 ; Converting DAGs to terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -104,17 +104,10 @@
                                                              ;;quotep
                                                              )))))
 
-;; Convert DAG to an equivalent term. Of course, this can blow up exponentially
-;; if there is a lot of sharing in DAG. Another option to convert a dag to a
-;; term would be to quote the dag and pass it to the Axe evaluator.
-;; todo: remove handing of quoteps here (use dag-or-quotep-to-term below)
+;; ;; todo: eventually remove dag2term below (once all of its calls have been turned into calls of either this or dag-or-constant-to-term)
 (defund dag-to-term (dag)
-  (declare (xargs :guard (or (weak-dagp dag)
-                             (quotep dag))
-                  :guard-hints (("Goal" :in-theory (enable WEAK-DAGP-AUX)))))
-  (if (quotep dag)
-      dag
-    (dag-to-term-aux (top-nodenum dag) dag)))
+  (declare (xargs :guard (weak-dagp dag)))
+  (dag-to-term-aux (top-nodenum dag) dag))
 
 (defthm pseudo-termp-of-dag-to-term
   (implies (pseudo-dagp dag)
@@ -123,34 +116,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
-(defund dag-to-term-unguarded (dag)
-  (declare (xargs :guard t))
-  (if (or (weak-dagp dag)
-          (quotep dag))
-      (dag-to-term dag)
-    (er hard? 'dag-to-term-unguarded "Bad input: ~x0" dag)))
+
+;; Convert DAG to an equivalent term. Of course, this can blow up exponentially
+;; if there is a lot of sharing in DAG. Another option to convert a dag to a
+;; term would be to quote the dag and pass it to the Axe evaluator.
+;; todo: convert all calls of this to dag-to-term or dag-or-constant-to-term
+(defund dag2term (dag)
+  (declare (xargs :guard (or (weak-dagp dag)
+                             (quotep dag))
+                  :guard-hints (("Goal" :in-theory (enable WEAK-DAGP-AUX)))))
+  (if (quotep dag)
+      dag
+    (dag-to-term-aux (top-nodenum dag) dag)))
+
+(defthm pseudo-termp-of-dag2term
+  (implies (pseudo-dagp dag)
+           (pseudo-termp (dag2term dag)))
+  :hints (("Goal" :in-theory (enable dag2term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund dag-or-quotep-to-term (x)
+;; ;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
+;; ;; todo: uncomment
+;; (defund dag-to-term-unguarded (dag)
+;;   (declare (xargs :guard t))
+;;   (if (weak-dagp dag)
+;;       (dag-to-term dag)
+;;     (er hard? 'dag-to-term-unguarded "Bad input: ~x0" dag)))
+
+
+;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
+;; todo: replace with versions that clearly do/don't allow a quotep
+(defund dag2term-unguarded (dag)
+  (declare (xargs :guard t))
+  (if (or (weak-dagp dag)
+          (quotep dag))
+      (dag2term dag)
+    (er hard? 'dag2term-unguarded "Bad input: ~x0" dag)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund dag-or-constant-to-term (x)
   (declare (xargs :guard (or (weak-dagp x)
                              (quotep x))))
   (if (quotep x)
       x ; already a term
-    (dag-to-term x)))
+    (dag2term x) ; todo: call dag-to-term once that is defined
+    ))
 
-(defthm pseudo-termp-of-dag-or-quotep-to-term
-  (implies (pseudo-dagp dag)
-           (pseudo-termp (dag-or-quotep-to-term dag)))
-  :hints (("Goal" :in-theory (enable dag-or-quotep-to-term))))
+(defthm pseudo-termp-of-dag-or-constant-to-term
+  (implies (or (pseudo-dagp x)
+               (myquotep x))
+           (pseudo-termp (dag-or-constant-to-term x)))
+  :hints (("Goal" :in-theory (enable dag-or-constant-to-term))))
+
+;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
+;; ;; todo: uncomment
+;; (defund dag-or-constant-to-term-unguarded (dag)
+;;   (declare (xargs :guard t))
+;;   (if (or (weak-dagp dag) (quotep dag)
+;;       (dag-or-constant-to-term dag)
+;;     (er hard? 'dag-or-constant-to-term-unguarded "Bad input: ~x0" dag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;)
 
 ;; (defun dags-to-terms (dags)
 ;;   (if (endp dags)
 ;;       nil
-;;     (cons (dag-to-term (first dags))
+;;     (cons (dag2term (first dags))
 ;;           (dags-to-terms (rest dags)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -202,4 +235,4 @@
       (if (not (and (consp dag)
                     (= nodenum (car (first dag)))))
           (er hard? 'dag-node-to-term "Node not found in DAG: ~x0." nodenum)
-        (dag-to-term dag)))))
+        (dag2term dag)))))

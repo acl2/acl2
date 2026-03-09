@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection exec-stmt-while-opener-rules
+(defsection exec-stmt-while-openers
   :parents (proof-support)
   :short "Opener rules for @(tsee exec-stmt-while)."
   :long
@@ -60,7 +60,7 @@
              exec-expr-to-exec-expr-pure-when-expr-pure-limit
              not-errorp-when-expr-valuep))
 
-  (defruled exec-stmt-while-when-true-return
+  (defruled exec-stmt-while-when-true-and-return
     (implies (and (syntaxp (and (quotep test)
                                 (quotep body)))
                   (expr-purep test)
@@ -86,7 +86,7 @@
              exec-expr-to-exec-expr-pure-when-expr-pure-limit
              not-errorp-when-expr-valuep))
 
-  (defruled exec-stmt-while-when-true-noreturn
+  (defruled exec-stmt-while-when-true-and-noreturn
     (implies (and (syntaxp (and (quotep test)
                                 (quotep body)))
                   (expr-purep test)
@@ -115,15 +115,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *exec-stmt-while-opener-rules*
-  :parents (exec-stmt-while-opener-rules)
+(defval *exec-stmt-while-openers*
+  :parents (exec-stmt-while-openers)
   :short "List of opener rules for @(tsee exec-stmt-while)."
   '(exec-stmt-while-when-false
-    exec-stmt-while-when-true-return
-    exec-stmt-while-when-true-noreturn))
+    exec-stmt-while-when-true-and-return
+    exec-stmt-while-when-true-and-noreturn))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(def-ruleset exec-stmt-while-opener-rules
-    ',*exec-stmt-while-opener-rules*))
+ `(def-ruleset exec-stmt-while-openers
+    ',*exec-stmt-while-openers*))

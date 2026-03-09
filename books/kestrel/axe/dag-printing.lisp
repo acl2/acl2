@@ -17,13 +17,13 @@
 (include-book "kestrel/lists-light/len-at-least" :dir :system)
 
 (defund print-as-term-or-dag (dag-or-quotep
-                             max-size
-                             maybe-actual-size ; if non-nil, this is the dag-size of DAG-OR-QUOTEP
-                             maybe-term ; if non-nil, this is a term equivalent to DAG-OR-QUOTEP
-                             descriptor ; a string describing DAG-OR-QUOTEP (e.g., "Result")
-                             untranslatep
-                             state ; because of untranslate$ (uses magic-ev-fncall)
-                             )
+                              max-size
+                              maybe-actual-size ; if non-nil, this is the dag-size of DAG-OR-QUOTEP
+                              maybe-term ; if non-nil, this is a term equivalent to DAG-OR-QUOTEP
+                              descriptor ; a string describing DAG-OR-QUOTEP (e.g., "Result")
+                              untranslatep
+                              state ; because of untranslate$ (uses magic-ev-fncall)
+                              )
   (declare (xargs :guard (and (or (pseudo-dagp dag-or-quotep) ; todo: name this disjunction
                                   (myquotep dag-or-quotep))
                               (natp max-size) ; allow nil for no limit?
@@ -43,7 +43,7 @@
         ;; Print as a term (preferred if not too big):
         (let ((term (if quotep
                         dag-or-quotep
-                      (let ((term (or maybe-term (dag-or-quotep-to-term dag-or-quotep))))
+                      (let ((term (or maybe-term (dag-or-constant-to-term dag-or-quotep))))
                         (if untranslatep
                             (untranslate$ term nil state)
                           term)))))

@@ -905,12 +905,13 @@
      an implicit @('#include') in the translation unit
      for a header with that name, to which we add the @('.h') extension.
      See @(tsee ildm-transunit-ensemble)."))
-  (make-transunit
-   :comment nil
-   :includes (and file-name
-                  (list (string-to-q-header-name (str::cat file-name ".h"))))
-   :declons (ildm-ext-declon-list (c::transunit->declons tunit))
-   :info nil))
+  (b* ((includes
+        (and file-name
+             (list (string-to-q-header-name (str::cat file-name ".h")))))
+       (declons (ildm-ext-declon-list (c::transunit->declons tunit)))
+       (items (append (trans-item-include-list includes)
+                      (trans-item-declon-list declons))))
+    (make-transunit :items items :info nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

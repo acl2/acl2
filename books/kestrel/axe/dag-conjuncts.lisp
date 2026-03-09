@@ -16,4 +16,4 @@
 ;; Extracts the conjuncts of DAG, as a list of terms.  May explode if there is
 ;; a lot of shared structure.
 (defun dag-conjuncts (dag)
-  (get-conjuncts-of-term2 (dag-to-term dag)))
+  (get-conjuncts-of-term2 (dag2term dag)))

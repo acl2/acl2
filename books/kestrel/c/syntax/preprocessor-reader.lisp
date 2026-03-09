@@ -671,13 +671,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ppstate-for-file ((bytes byte-listp)
+(define ppstate-for-file ((file-name stringp)
+                          (bytes byte-listp)
                           (macros macro-tablep)
                           (options ppoptionsp)
                           (ienv ienvp)
                           (ppstate ppstatep))
   :returns (mv erp (new-ppstate ppstatep))
-  :short "Initialize a preprocessor for a file with given bytes."
+  :short "Initialize a preprocessor for a file with given name and bytes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -688,7 +689,8 @@
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
        ((erp chars poss) (read-chars+positions bytes ienv))
-       (ppstate (init-ppstate chars poss macros options ienv ppstate)))
+       (ppstate
+        (init-ppstate file-name chars poss macros options ienv ppstate)))
     (retok ppstate))
   :guard-hints (("Goal" :in-theory (enable len-of-read-chars+positions-1+))))
 
