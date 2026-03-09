@@ -133,10 +133,29 @@
      arm::r14
      arm::r15
 
+     arm::conditionpassed-of-0 ;; FIXME: Need to add rules to handle all combinations of the resulting condition functions with things like cmp-zero/cmn-zero
+     arm::conditionpassed-of-1
+     arm::conditionpassed-of-2
+     arm::conditionpassed-of-3
+     arm::conditionpassed-of-4
+     arm::conditionpassed-of-5
+     arm::conditionpassed-of-6
+     arm::conditionpassed-of-7
+     arm::conditionpassed-of-8
+     arm::conditionpassed-of-9
+     arm::conditionpassed-of-10
+     arm::conditionpassed-of-11
+     arm::conditionpassed-of-12
+     arm::conditionpassed-of-13
+     arm::conditionpassed-of-14
+     arm::conditionpassed-of-15
+     ;; arm::conditionpassed-of-set-reg ; these are not needed if we always can open conditionpassed
+     ;; arm::conditionpassed-of-write
+
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
      arm::ldr-literal-core
-     arm::conditionpassed
+
      arm::uint
      arm::zeroextend
      arm::nullcheckifthumbee
@@ -357,6 +376,17 @@
      arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
      arm::iszerobit
      arm::iszero
+
+     arm::unsigned-byte-p-of-cmn-sign
+     arm::unsigned-byte-p-of-cmn-zero
+     arm::unsigned-byte-p-of-cmn-carry
+     arm::unsigned-byte-p-of-cmn-overflow
+
+     arm::unsigned-byte-p-of-cmp-sign
+     arm::unsigned-byte-p-of-cmp-zero
+     arm::unsigned-byte-p-of-cmp-carry
+     arm::unsigned-byte-p-of-cmp-overflow
+
      )
 ;   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
