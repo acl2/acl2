@@ -2835,7 +2835,7 @@
                  ;; so we just return the initial parser state.
                  ;; This is just logical: execution stops at the RAISE above.
                  (b* ((parstate
-                       (init-parstate nil (c::version-c17) nil parstate)))
+                       (init-parstate "" nil (c::version-c17) nil parstate)))
                    (reterr t)))
                 (parstate (unread-token parstate))) ;
              (parse-postfix-expression parstate))
@@ -3031,8 +3031,9 @@
                          ;; so we just return the empty parser state.
                          ;; This is just logical:
                          ;; execution stops at the RAISE above.
-                         (b* ((parstate (init-parstate
-                                         nil (c::version-c17) nil parstate)))
+                         (b* ((parstate
+                               (init-parstate
+                                "" nil (c::version-c17) nil parstate)))
                            (reterr t)))
                         (parstate (unread-token parstate))) ;
                      (parse-postfix-expression parstate))))))
@@ -3096,7 +3097,8 @@
                      ;; This is just logical:
                      ;; execution stops at the RAISE above.
                      (b* ((parstate
-                           (init-parstate nil (c::version-c17) nil parstate)))
+                           (init-parstate
+                            "" nil (c::version-c17) nil parstate)))
                        (reterr t)))
                     (parstate (unread-token parstate))) ;
                  (parse-postfix-expression parstate))))))))
@@ -7277,7 +7279,7 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical: execution stops at the RAISE above.
                     (b* ((parstate
-                          (init-parstate nil (c::version-c17) nil parstate)))
+                          (init-parstate "" nil (c::version-c17) nil parstate)))
                       (reterr t)))
                    ((erp tyname span parstate) (parse-type-name parstate))
                    ;; Ensure there is a closed parenthesis,
@@ -7313,8 +7315,9 @@
                         ;; so we just return the empty parser state.
                         ;; This is just logical:
                         ;; execution stops at the RAISE above.
-                        (b* ((parstate (init-parstate
-                                        nil (c::version-c17) nil parstate)))
+                        (b* ((parstate
+                              (init-parstate
+                               "" nil (c::version-c17) nil parstate)))
                           (reterr t)))
                        ((mv erp tyname span-tyname parstate)
                         (parse-type-name parstate)))
@@ -7355,8 +7358,9 @@
                               ;; so we just return the empty parser state.
                               ;; This is just logical:
                               ;; execution stops at the RAISE above.
-                              (b* ((parstate (init-parstate nil (c::version-c17)
-                                                            nil parstate)))
+                              (b* ((parstate
+                                    (init-parstate
+                                     "" nil (c::version-c17) nil parstate)))
                                 (reterr t)))
                              ;; Put back the closing parenthesis,
                              ;; which is not part of the expression.
@@ -7426,10 +7430,8 @@
                                 ;; This is just logical:
                                 ;; execution stops at the RAISE above.
                                 (b* ((parstate
-                                      (init-parstate nil
-                                                     (c::version-c17)
-                                                     nil
-                                                     parstate)))
+                                      (init-parstate
+                                       "" nil (c::version-c17) nil parstate)))
                                   (reterr t)))
                                ;; Put back the closing parenthesis,
                                ;; which is not part of the expression.
@@ -7458,7 +7460,8 @@
                       ;; so we just return the empty parser state.
                       ;; This is just logical: execution stops at the RAISE above.
                       (b* ((parstate
-                            (init-parstate nil (c::version-c17) nil parstate)))
+                            (init-parstate
+                             "" nil (c::version-c17) nil parstate)))
                         (reterr t)))
                      ((erp tyname span parstate) (parse-type-name parstate))
                      ;; Ensure there is a closed parenthesis,
@@ -7556,7 +7559,7 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t)))
                ((erp first-span parstate) ; (
                 (read-punctuator "(" parstate))
@@ -7587,7 +7590,7 @@
           ;; so we just return the empty parser state.
           ;; This is just logical:
           ;; execution stops at the RAISE above.
-          (b* ((parstate (init-parstate nil (c::version-c17) nil parstate)))
+          (b* ((parstate (init-parstate "" nil (c::version-c17) nil parstate)))
             (reterr t)))
          ;; If the parsing of any part of the parenthesized type name fails,
          ;; we have an unambiguous expression, already parsed.
@@ -7626,7 +7629,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ((mv erp-tyname tyname & parstate) ; ( tyname
@@ -7651,7 +7654,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ((mv erp-close-paren & parstate) ; ( tyname )
@@ -7676,7 +7679,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ;; If the parsing of the parenthesized type name succeeds,
@@ -7707,7 +7710,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate))))
       ;; If the expression is a parenthesized one,
@@ -7782,7 +7785,7 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t)))
                ((erp absdeclor span parstate)
                 (parse-abstract-declarator parstate)))
@@ -7807,7 +7810,8 @@
               ;; so we just return the empty parser state.
               ;; This is just logical:
               ;; execution stops at the RAISE above.
-              (b* ((parstate (init-parstate nil (c::version-c17) nil parstate)))
+              (b* ((parstate
+                    (init-parstate "" nil (c::version-c17) nil parstate)))
                 (reterr t)))
              ((mv erp absdeclor span-absdeclor parstate)
               (parse-abstract-declarator parstate)))
@@ -7846,7 +7850,7 @@
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
                     (b* ((parstate
-                          (init-parstate nil (c::version-c17) nil parstate)))
+                          (init-parstate "" nil (c::version-c17) nil parstate)))
                       (reterr t))))
                 (retok (amb?-declor/absdeclor-declor declor)
                        span-declor
@@ -7908,7 +7912,8 @@
                       ;; This is just logical:
                       ;; execution stops at the RAISE above.
                       (b* ((parstate
-                            (init-parstate nil (c::version-c17) nil parstate)))
+                            (init-parstate
+                             "" nil (c::version-c17) nil parstate)))
                         (reterr t))))
                   (retok (amb?-declor/absdeclor-declor declor)
                          span-declor
@@ -8375,7 +8380,7 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t)))
                ((erp decl span parstate) (parse-declaration parstate)))
             (retok (amb?-declon/stmt-declon decl) span parstate))
@@ -8410,7 +8415,7 @@
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
                     (b* ((parstate
-                          (init-parstate nil (c::version-c17) nil parstate)))
+                          (init-parstate "" nil (c::version-c17) nil parstate)))
                       (reterr t)))
                    ((mv erp decl span-decl parstate)
                     (parse-declaration parstate)))
@@ -8448,8 +8453,9 @@
                           ;; so we just return the empty parser state.
                           ;; This is just logical:
                           ;; execution stops at the RAISE above.
-                          (b* ((parstate (init-parstate nil (c::version-c17)
-                                                        nil parstate)))
+                          (b* ((parstate
+                                (init-parstate
+                                 "" nil (c::version-c17) nil parstate)))
                             (reterr t))))
                       (retok (amb?-declon/stmt-stmt expr)
                              (span-join span-expr span-semicolon)
@@ -8486,7 +8492,7 @@
                   ;; This is just logical:
                   ;; execution stops at the RAISE above.
                   (b* ((parstate
-                        (init-parstate nil (c::version-c17) nil parstate)))
+                        (init-parstate "" nil (c::version-c17) nil parstate)))
                     (reterr t)))
                  ((erp decl span parstate) (parse-declaration parstate)))
               (retok (amb?-declon/stmt-declon decl) span parstate))))))
@@ -9929,7 +9935,7 @@
                   ;; so we just return the initial parser state.
                   ;; This is just logical: execution stops at the RAISE above.
                   (b* ((parstate
-                        (init-parstate nil (c::version-c17) nil parstate)))
+                        (init-parstate "" nil (c::version-c17) nil parstate)))
                     (reterr t)))
                  (parstate (unread-token parstate)) ;
                  ((erp declon span parstate) ; declon
@@ -12019,7 +12025,13 @@
   (with-local-stobj
     parstate
     (mv-let (erp tunit parstate)
-        (b* ((parstate (init-parstate data version skip-control-lines parstate))
+        (b* ((file (filepath->unwrap path))
+             ((unless (stringp file))
+              (raise "Internal error: malformed file path ~x0."
+                     (filepath-fix path))
+              (mv t (irr-transunit) parstate))
+             (parstate
+              (init-parstate file data version skip-control-lines parstate))
              ((mv erp tunit parstate) (parse-translation-unit parstate)))
           (if erp
               (if (msgp erp)

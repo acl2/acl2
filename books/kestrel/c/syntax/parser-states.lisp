@@ -1043,7 +1043,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp)
+(define init-parstate ((file stringp)
+                       (data byte-listp)
                        (version c::versionp)
                        (skip-control-lines booleanp)
                        parstate)
@@ -1053,7 +1054,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the state when we start parsing a file.
-     Given (the data of) a file to parse,
+     Given the name/path and the data of a file to parse,
      a C version,
      and a flag for skipping control lines or not,
      the initial parsing state consists of
@@ -1070,7 +1071,7 @@
      but then we may need to resize the array as needed
      while lexing and parsing."))
   (b* ((parstate (update-parstate->bytes data parstate))
-       (parstate (update-parstate->position (position-init) parstate))
+       (parstate (update-parstate->position (position-init file) parstate))
        (parstate (update-parstate->chars-length (len data) parstate))
        (parstate (update-parstate->chars-read 0 parstate))
        (parstate (update-parstate->chars-unread 0 parstate))
@@ -1102,7 +1103,8 @@
   ///
 
   (defrule parsize-of-initparstate
-    (equal (parsize (init-parstate nil version skip-control-lines parstate))
+    (equal (parsize
+            (init-parstate file nil version skip-control-lines parstate))
            0)
     :enable init-parstate))
 

@@ -628,19 +628,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-chars+positions ((bytes byte-listp) (ienv ienvp))
+(define read-chars+positions ((file stringp) (bytes byte-listp) (ienv ienvp))
   :returns (mv erp (chars uchar-listp) (poss position-listp))
   :short "Read all the characters from a list of bytes,
           obtaining the list of characters and the corresponding positions."
   :long
   (xdoc::topstring
    (xdoc::p
+    "We also pass the path of the file, to put into the positions.")
+   (xdoc::p
     "We repeatedly call @(tsee read-next-char)
      so long as it returns characters.
      We start with the initial position.
      The final position is the one just past the end of the file.
      There is one more position than characters."))
-  (read-chars+positions-loop (position-init) bytes ienv)
+  (read-chars+positions-loop (position-init file) bytes ienv)
 
   :prepwork
   ((define read-chars+positions-loop ((pos positionp)
@@ -688,7 +690,7 @@
      and uses those to initialize the stobj with @(tsee init-ppstate)."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
-       ((erp chars poss) (read-chars+positions bytes ienv))
+       ((erp chars poss) (read-chars+positions file-name bytes ienv))
        (ppstate
         (init-ppstate file-name chars poss macros options ienv ppstate)))
     (retok ppstate))

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -33,7 +33,8 @@
     (b* ((version (if (eql ,std 23)
                       (if ,gcc (c::version-c23+gcc) (c::version-c23))
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (acl2::string=>nats ,input)
+         (parstate (init-parstate ""
+                                  (acl2::string=>nats ,input)
                                   version
                                   t
                                   parstate))
@@ -62,7 +63,8 @@
     (b* ((version (if (eql ,std 23)
                       (if ,gcc (c::version-c23+gcc) (c::version-c23))
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (acl2::string=>nats ,input)
+         (parstate (init-parstate ""
+                                  (acl2::string=>nats ,input)
                                   version
                                   t
                                   parstate))
@@ -449,16 +451,16 @@
 (test-parse
  parse-struct-or-union-specifier
  "empty {}"
- :pos (position 1 7)
- :more-inputs (t (span (position 1 0) (position 1 6)))
+ :pos (position "" 1 7)
+ :more-inputs (t (span (position "" 1 0) (position "" 1 6)))
  :gcc t
  :cond (type-spec-case ast :struct-empty))
 
 (test-parse
  parse-struct-or-union-specifier
  "{}"
- :pos (position 1 7)
- :more-inputs (t (span (position 1 0) (position 1 6)))
+ :pos (position "" 1 7)
+ :more-inputs (t (span (position "" 1 0) (position "" 1 6)))
  :gcc t
  :cond (type-spec-case ast :struct-empty))
 

@@ -96,7 +96,7 @@
              :fail ,fail))
 
 (defmacro pos (line column)
-  `(position ,line ,column))
+  `(position "" ,line ,column))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -657,7 +657,7 @@
  :cond (and (equal ast (list (c-char-char (char-code #\A))
                              (c-char-char (char-code #\B))
                              (c-char-char (char-code #\C))))
-            (equal pos/span (position 1 3))))
+            (equal pos/span (pos 1 3))))
 
 (test-lex
  plex-*-c-char
@@ -665,7 +665,7 @@
  :cond (and (equal ast (list (c-char-char (char-code #\d))
                              (c-char-char (char-code #\"))
                              (c-char-char (char-code #\q))))
-            (equal pos/span (position 1 3))))
+            (equal pos/span (pos 1 3))))
 
 (test-lex
  plex-*-c-char

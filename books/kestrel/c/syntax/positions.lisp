@@ -50,8 +50,21 @@
      We number columns from 0,
      but we could change that to 1.
      Numbering lines from 1 and columns from 0
-     is also consistent with Emacs."))
-  ((line pos)
+     is also consistent with Emacs.")
+   (xdoc::p
+    "We also include an indication of the file that the position refers to,
+     for now represented as a string, which we use for a file path.
+     Although generally each file is (pre)procesed individually
+     (so that the file in question is contextually known),
+     the preprocessing directive @('#line') [C17:6.10.4]
+     can change the `presumed' line number and file name.
+     We could consider more ``sparse'' representations of the `presumed' file,
+     compared to adding it to every position,
+     but in memory it is just a pointer, repeated in every position,
+     and it supports better execution speed,
+     at the cost of a little extra memory usage."))
+  ((file string)
+   (line pos)
    (column nat))
   :pred positionp
   :layout :fulltree)
@@ -61,7 +74,7 @@
 (defirrelevant irr-position
   :short "An irrelevant position."
   :type positionp
-  :body (make-position :line 1 :column 0))
+  :body (make-position :file "" :line 1 :column 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,14 +104,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define position-init ()
+(define position-init ((file stringp))
   :returns (pos positionp)
   :short "Initial position in a file."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is at line 1 and column 0."))
-  (make-position :line 1 :column 0)
+    "This is at line 1 and column 0.")
+   (xdoc::p
+    "The file information is passed as input."))
+  (make-position :file file :line 1 :column 0)
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -129,9 +144,10 @@
   (xdoc::topstring
    (xdoc::p
     "The column is reset to 0."))
-  (make-position :line (+ (the (integer 1 *) (position->line pos))
-                          (the (integer 1 *) lines))
-                 :column 0)
+  (change-position pos
+                   :line (+ (the (integer 1 *) (position->line pos))
+                            (the (integer 1 *) lines))
+                   :column 0)
   :inline t
   :hooks nil
 
