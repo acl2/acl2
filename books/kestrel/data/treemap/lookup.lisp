@@ -43,7 +43,7 @@
 
 (defxdoc lookup
   :parents (treemap)
-  :short "Lookup the value associated to the key in a @(see treemap)."
+  :short "Lookup the value associated with a key under a @(see treemap)."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -240,7 +240,7 @@
      "For empty trees, the logical result is @('nil').")
    (xdoc::p
      "This is the value associated with the key returned by the @(tsee
-     head-key)."))
+      head-key)."))
   (mbe :logic (lookup (head-key map) map)
        :exec (tree-element->val (tree->head map)))
   :enabled t
@@ -254,6 +254,7 @@
 
 (define head ((map mapp))
   :guard (not (emptyp map))
+  :returns (mv key value)
   :parents (treemap)
   :short "Get an element of the nonempty @(see treemap)."
   :long
@@ -261,12 +262,12 @@
    (xdoc::p
      "For empty trees, the logical result is @('nil').")
    (xdoc::p
-     "From a user perspective, this should be viewed as an arbitrary element of
-      the map. For a description of which element this actually provides, see
-      @(tsee tree->head)."))
+     "From a user perspective, this should be viewed as an arbitrary key-value
+      pair from the map. For a description of which element this actually
+      provides, see @(tsee tree->head)."))
   (mbe :logic (mv (head-key map)
                   (head-val map))
-       :exec (let ((head (tree->head (fix map))))
+       :exec (let ((head (tree->head map)))
                (mv (tree-element->key head)
                    (tree-element->val head))))
   :enabled t

@@ -78,6 +78,9 @@
     (xdoc::p
       "Time complexity: @($O(m\\log(n/m))$) (for binary update*, where
        @($m < n$)).")
+    (xdoc::p
+      "This union is left-biased. When a key is present in both the left and
+       right maps, the value of the left map is used.")
     (xdoc::section
       "General form"
       (xdoc::codeblock

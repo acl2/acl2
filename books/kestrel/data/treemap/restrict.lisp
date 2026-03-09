@@ -88,8 +88,8 @@
           "One of: @('equal'), @('='), @('eq'), or @('eql'). If no value is
            provided, the default is @('equal'). Specifying an alternative test
            allows for a more performant implementation, at the cost of a
-           stronger guard. The guard asserts that the key set and the map keys
-           consist of elements suitable for comparison with the specified
+           stronger guard. The guard asserts that both the key set and the map
+           keys consist of elements suitable for comparison with the specified
            equality variant.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

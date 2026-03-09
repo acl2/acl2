@@ -39,7 +39,7 @@
 
 (define to-omap ((map mapp))
   :parents (treemap)
-  :short "Build an omap from a @(see treemap)"
+  :short "Build an omap from a @(see treemap)."
   :long
   (xdoc::topstring
    (xdoc::p

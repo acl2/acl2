@@ -49,7 +49,7 @@
     (xdoc::p
       "Time complexity: @($O(m\\log(n))$) (Note: the current implementation is
        slightly inefficient. This should eventually be @($O(m\\log(n/m))$),
-       where @($n < m$). This may be implemented similar to @(tsee diff).)")
+       where @($m < n$). This may be implemented similar to @(tsee diff).)")
     (xdoc::section
       "General form"
       (xdoc::codeblock

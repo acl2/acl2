@@ -334,9 +334,9 @@
    (xdoc::p
      "For empty trees, the logical result is @('nil').")
    (xdoc::p
-     "From a user perspective, this should be viewed as the key of an arbitrary
-      element of the map. For a description of which element this actually
-      provides, see @(tsee tree->head)."))
+     "From a user perspective, this should be viewed as an arbitrary key in the
+      the map. For a description of which element this actually provides, see
+      @(tsee tree->head)."))
   (tree-element->key (tree->head (fix map)))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))

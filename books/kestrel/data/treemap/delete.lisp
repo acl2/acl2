@@ -66,7 +66,7 @@
 
 (defxdoc delete
   :parents (treemap)
-  :short "Remove a value (or multiple values) from a @(see treemap)."
+  :short "Remove a key (or multiple keys) from a @(see treemap)."
   :long
   (xdoc::topstring
     (xdoc::p

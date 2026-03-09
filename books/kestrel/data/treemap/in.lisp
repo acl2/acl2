@@ -51,7 +51,7 @@
     (xdoc::section
       "General form"
       (xdoc::codeblock
-        "(in x map :test test)")
+        "(in key map :test test)")
       (xdoc::desc
         "@(':test') &mdash; optional"
         (xdoc::p

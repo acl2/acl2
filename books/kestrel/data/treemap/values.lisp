@@ -50,7 +50,7 @@
 (define values ((map mapp))
   :returns (values treeset::setp)
   :parents (treemap)
-  :short "Get the values @(see treeset::treeset) from a @(see treemap)."
+  :short "Get the value @(see treeset::treeset) from a @(see treemap)."
   :long
   (xdoc::topstring
    (xdoc::p
