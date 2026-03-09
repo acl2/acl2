@@ -65,21 +65,6 @@
   (declare (xargs :stobjs arm))
   (update-error :unsupported-unconditional-instruction arm))
 
-(defun and32 (x y)
-  (declare (xargs :guard (and (unsigned-byte-p 32 x)
-                              (unsigned-byte-p 32 y))))
-  (bvand 32 x y))
-
-(defun eor32 (x y)
-  (declare (xargs :guard (and (unsigned-byte-p 32 x)
-                              (unsigned-byte-p 32 y))))
-  (bvxor 32 x y))
-
-(defun or32 (x y)
-  (declare (xargs :guard (and (unsigned-byte-p 32 x)
-                              (unsigned-byte-p 32 y))))
-  (bvor 32 x y))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-inst :adc-immediate

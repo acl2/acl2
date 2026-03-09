@@ -89,7 +89,7 @@
                   (natp y))
              (equal (< x (+ 1 y)) (<= x y)))))
 
-(in-theory (disable dag-to-term
+(in-theory (disable
                     top-nodenum
                     w
                     CAR-BECOMES-NTH-OF-0 ;move up
@@ -164,10 +164,10 @@
             (prog2$ (cw "Converting DAG to a term (without an embedded DAG) since max-term-size is nil.  Using lets for compactness.~%")
                     (dag-to-term-with-lets dag))
           (prog2$ (cw "Converting DAG to a term (without an embedded DAG) since max-term-size is nil.  Term size will be ~x0.~%" (dag-size-fast dag))
-                  (dag-to-term dag)))
+                  (dag2term dag)))
       ;; Max term size is a natural number:
       (if (dag-or-quotep-size-less-thanp dag max-term-size)
-          (dag-to-term dag) ;todo: respect use-lets-in-terms here as well?
+          (dag2term dag) ;todo: respect use-lets-in-terms here as well?
         ;; term would be too big, so use an embedded dag:
         (let ((dag-vars (dag-vars-unsorted dag)))
           `(dag-val-with-axe-evaluator ',dag
@@ -967,7 +967,7 @@
 ;;                                           first-loop-top-dag
 ;;                                           (+ 1 param-count) ;we're making a param for this local
 ;;                                           (acons param-count new-local-dag param-new-val-alist)
-;;                                           (acons param-count ;(dag-to-term
+;;                                           (acons param-count ;(dag2term
 ;;                                                  initial-value-of-local
 ;;                                                  ;;)
 ;;                                                  param-initial-val-alist)
@@ -985,10 +985,10 @@
 ;;       (mv state-update-dag param-new-val-alist param-initial-val-alist replacement-equalities param-count)
 ;;     (let* ((triple (car heap-update-triples))
 ;;            (ad-dag (first triple))
-;;            (ad-term (dag-to-term ad-dag))
+;;            (ad-term (dag2term ad-dag))
 ;;            (class-name-field-name-pair (second triple)) ;already quoted?
 ;;            (value-dag (third triple))
-;; ;           (value-term (dag-to-term value-dag))
+;; ;           (value-term (dag2term value-dag))
 ;;            (getfield-term `(get-field ,ad-term ,class-name-field-name-pair (jvm::heap ,state-var)))
 ;;            (dummy (cw "Param ~x0 is for ~X12.~%" param-count getfield-term nil))
 ;;            )
@@ -1010,7 +1010,7 @@
 ;;                     (+ 1 param-count)
 ;;                     (acons param-count value-dag param-new-val-alist) ;or simplify the get-field expression applied to the arbitrary state?
 ;;                     (acons param-count
-;;                            ;(dag-to-term
+;;                            ;(dag2term
 ;;                             (simplify-dag5 (wrap-term-around-dag getfield-term state-var first-loop-top-dag)
 ;;                                                          (append (get-local-rules)
 ;;                                                                                '(LIST::APPEND-ASSOCIATIVE))
@@ -1049,7 +1049,7 @@
 ;;                                     ;;or simplify the get-field expression applied to the arbitrary state???
 ;;                                     (acons param-count value-dag param-new-val-alist)
 ;;                                     (acons param-count
-;;                                            ;(dag-to-term
+;;                                            ;(dag2term
 ;;                                             (simplify-dag (wrap-term-around-dag get-static-field-term
 ;;                                                                                                 's
 ;;                                                                                                 first-loop-top-dag)
@@ -1179,7 +1179,7 @@
 ;;            (let* ((si-dag (get-subdag nodenum dag))
 ;;                   (dummy nil ;(cw "Si-expr dag:~% ~X01~%" si-dag nil)
 ;;                          )
-;;                   (si-term (dag-to-term si-dag)) ;would be nice to be able to give assumptions which mention part of the dag
+;;                   (si-term (dag2term si-dag)) ;would be nice to be able to give assumptions which mention part of the dag
 ;;                   ;;see if this term has already been given a param number
 ;;                   (match (lookup-equal si-term replacement-alist)) ;do less if there is a match?
 ;;                   (dummy2 (if (not match) (cw "Param ~x0 is ~X12.~%" param-count si-term nil) nil))
@@ -1362,7 +1362,7 @@
 ;;              (expr (cdr entry)))
 ;;         (if (and (consp expr)
 ;;                  (eq 'bv-array-write (ffn-symb expr)))
-;;             (let ((len (dag-to-term (get-subdag (second (fargs expr)) dag))))
+;;             (let ((len (dag2term (get-subdag (second (fargs expr)) dag))))
 ;;               (make-axe-rule-safe `(len (nth ',param-number (,(mypackn (list tag)) params)))
 ;;                              ;;we used to require this to be a quote...
 ;;                              len
@@ -1373,7 +1373,7 @@
 ;;                              nil))
 ;;           (if (and (consp expr)
 ;;                    (eq 'bvplus (ffn-symb expr))) ;ffixme gen to any bv op
-;;               (let ((width (dag-to-term (get-subdag (first (fargs expr)) dag))))
+;;               (let ((width (dag2term (get-subdag (first (fargs expr)) dag))))
 ;;                 (make-axe-rule-safe `(unsigned-byte-p ,width (nth ',param-number (,(mypackn (list tag)) params)))
 ;;                                *t*
 ;;                                `(:rewrite ,(mypackn (list 'generated- tag '-type-theorem (nat-to-string param-number))))
@@ -1427,7 +1427,7 @@
 ;;                              ))
 ;;            (let*  ((dummy (cw "Need to make an assertion about the class of node ~x0.~%" nodenum-whose-class-is-needed))
 ;;                    (subdag-for-node (check-dag-vars '(s) (get-subdag nodenum-whose-class-is-needed arbitrary-iteration-dag)))
-;;                    (term-for-node (dag-to-term subdag-for-node))
+;;                    (term-for-node (dag2term subdag-for-node))
 ;;                    (class-of-node (check-quotep (simplify-dag
 ;;                                                  (wrap-term-around-dag `(get-class ,term-for-node (jvm::heap s)) 's state-dag-at-loop-header)
 ;;                                                  (make-axe-rules (get-local-rules) (w state)) ;fixme, these get rid of error states!
@@ -1496,7 +1496,7 @@
 ;; (defun simplify-terms-using-assumptions (terms assumptions)
 ;;   (if (endp terms)
 ;;       nil
-;;     (cons (dag-to-term (simplify-term (car terms)
+;;     (cons (dag2term (simplify-term (car terms)
 ;;                                       nil ;no rules
 ;;                                       :assumptions assumptions
 ;;                                       :priorities nil))
@@ -1600,8 +1600,8 @@
 ;;                     (let*
 ;;                         ((test-dag (get-subdag test-nodenum arbitrary-iteration-no-exceptions-dag))
 ;;                          (continuation-assumption (if (eql (unquote then-part-pc) loop-pc)
-;;                                                       `(equal ,(dag-to-term test-dag) 't)
-;;                                                     `(equal ,(dag-to-term test-dag) 'nil)))
+;;                                                       `(equal ,(dag2term test-dag) 't)
+;;                                                     `(equal ,(dag2term test-dag) 'nil)))
 ;;                          (exit-pc (if (eql (unquote then-part-pc) loop-pc) else-part-pc then-part-pc))
 ;;                          ;;this does include the error states (I guess so we can generate invariants about the tests of ifs that
 ;;                          ;;have error state branches):
@@ -1665,8 +1665,8 @@
 ;; ;can the test-dag ever be huge?
 ;;                               (continuation-assumption
 ;;                                (if (eql (unquote then-part-pc) loop-pc)
-;;                                    `(equal ,(dag-to-term test-dag) 't)
-;;                                  `(equal ,(dag-to-term test-dag) 'nil)))
+;;                                    `(equal ,(dag2term test-dag) 't)
+;;                                  `(equal ,(dag2term test-dag) 'nil)))
 ;;                               (dummy3 (cw "Continuation assumption: ~x0.~%" continuation-assumption))
 
 ;;                               ;;first we use the invariant:
@@ -1855,7 +1855,7 @@
 ;;                                                     ,(make-cons-nest defining-terms))
 
 ;;                                                   (defun ,(mypackn (list tag '-exit-test)) (params)
-;;                                                     ,(dag-to-term termination-test-dag))
+;;                                                     ,(dag2term termination-test-dag))
 
 ;;                                                   ;; (defun loop-measure (params)
 ;;                                                   ;;   ..)
@@ -1887,7 +1887,7 @@
 ;;                                                (append (list
 ;;                                                         ;;opener for the exit test:
 ;;                                                         (make-axe-rule-safe `(,(mypackn (list tag '-exit-test)) params)
-;;                                                                        (dag-to-term termination-test-dag)
+;;                                                                        (dag2term termination-test-dag)
 ;;                                                                        `(:definition ,(mypackn (list tag '-exit-test)))
 ;;                                                                        nil nil)
 
@@ -2505,7 +2505,7 @@
            (expr (cdr entry)))
       (if (and (consp expr)
                (member-eq (ffn-symb expr) '(get-field set-field)))
-          (let ((ad-term (dag-to-term (get-subdag (farg1 expr) dag))))
+          (let ((ad-term (dag2term (get-subdag (farg1 expr) dag))))
             (if (bad-array-row-termp ad-term)  ;don't include any terms that represent rows of multi-dim arrays (since these often change during the body of a loop)
                 (progn$ (cw "NOTE: get-addresses-from-dag is excluding a problematic 2-d array term.")
                         (get-addresses-from-dag (cdr dag)))
@@ -2543,7 +2543,7 @@
           (make-unchangedness-invariants-for-exprs (rest exprs)
                                                    state-var initial-state-dag
                                                    (cons `(equal ,expr
-                                                                 ,(dag-to-term result))
+                                                                 ,(dag2term result))
                                                          acc)
                                                    extra-vars
                                                    state))))))
@@ -2567,7 +2567,7 @@
           (simplify-all-terms-with-assumption (rest terms) assumption-term state))
          ((when erp) (mv erp nil state)))
       (mv (erp-nil)
-          (cons (dag-to-term result)
+          (cons (dag2term result)
                 rest-result)
           state))))
 
@@ -2665,7 +2665,7 @@
                                    interpreted-function-alist print monitored-symbols use-prover-for-invars this-loop-number failed-candidate-invars-acc state))
         (b* ((- (cw "  (Rewriting alone could not prove it:~%"))
              (- (cw "   (Simplified form: ~x0)~%" (if (dag-or-quotep-size-less-thanp simplified-conjunct-after-one-rep 1000)
-                                                      (dag-to-term simplified-conjunct-after-one-rep)
+                                                      (dag2term simplified-conjunct-after-one-rep)
                                                     simplified-conjunct-after-one-rep)))
              (- (cw "   (Assumptions: ~x0))~%" (if print assumptions :elided)))
              ((mv erp result state)
@@ -2747,7 +2747,7 @@
         ;;fffixme call the prover?!
         (b* ((- (cw "~%Failed to prove that invar holds initially: (Simplified form: ~x0)~%(Assumptions: ~x1))~%"
                     (if (dag-or-quotep-size-less-thanp simplified-candidate-invar-at-loop-top 1000)
-                        (dag-to-term simplified-candidate-invar-at-loop-top)
+                        (dag2term simplified-candidate-invar-at-loop-top)
                       simplified-candidate-invar-at-loop-top)
                     assumptions ;(if print assumptions :elided)
                     ))
@@ -2814,7 +2814,7 @@
 ;;                                        nil  ;use-internal-contextsp
 ;;                                        nil nil nil nil t
 ;;                                        state)
-;; ;             (new-term (dag-to-term dag))
+;; ;             (new-term (dag2term dag))
 ;;                       (mv-let (result state)
 ;;                               (compose-cdr-dags (cdr alist) state-var state-dag state)
 ;;                               (mv (cons (cons key dag) result
@@ -3263,7 +3263,7 @@
       (mv (erp-nil) updated-state-term paramnum-update-alist paramnum-extractor-alist next-param-num paramnum-name-alist)
     (b* ((triple (first heap-update-triples))
          (ad-dag (first triple))
-         (ad-term (dag-to-term ad-dag))               ;can we skip this?
+         (ad-term (dag2term ad-dag))               ;can we skip this?
          (class-name-field-id-pair (second triple))   ;already quoted?
          (value-dag (third triple))
 ;fixme consider adding a take with the old length if
@@ -3371,11 +3371,11 @@
           (mv (erp-nil) dag dag-paramnum-alist next-param-number paramnum-name-alist state)
         (b* ((si-dag (get-subdag nodenum dag))
              ;;(dummy(cw "Si-expr dag:~% ~X01~%" si-dag nil))
-             ;;              (si-term (dag-to-term si-dag))
+             ;;              (si-term (dag2term si-dag))
              ;;see if this term has already been given a param number
              (match (lookup-equivalent-dag si-dag dag-paramnum-alist)) ;match will be a paramnum or nil
              (si-term-or-dag (if (dag-or-quotep-size-less-thanp si-dag 1000)
-                                 (dag-to-term si-dag)
+                                 (dag2term si-dag)
                                si-dag))
              (- (and (not match) (cw "Param ~x0 is ~X12.~%" next-param-number si-term-or-dag nil)))
              (paramnum-name-alist (if (not match)
@@ -3791,7 +3791,7 @@
                                          ;; the local is stored into (by some instruction), so it is not unchanged:
                                          acc
                                        (cons `(equal (jvm::nth-local ',local-slot-num (jvm::locals (jvm::thread-top-frame (th) ,state-var)))
-                                                     ;;,(dag-to-term initial-value-of-local-dag)
+                                                     ;;,(dag2term initial-value-of-local-dag)
                                                      ,(wrap-dag-in-dag-val initial-value-of-local-dag interpreted-function-alist))
                                              acc))
                                      state)))))
@@ -3867,7 +3867,7 @@
                      :check-inputs nil))
          ((when erp)
           (mv erp nil nil state))
-         (result (dag-to-term result-dag-lst)) ;fixme could this ever blow up?
+         (result (dag2term result-dag-lst)) ;fixme could this ever blow up?
          )
       (if (equal result fact)
           ;;no change, so move fact to acc:
@@ -3958,7 +3958,7 @@
           (progn$ (cw "(Not adding non-negative invar for local ~x0 (failed to prove that it holds initially).~%" local-num)
                   (and print (prog2$ (cw "Simplified form:")
                                      (if (dag-or-quotep-size-less-thanp result-dag 1000)
-                                         (cw " ~x0" (dag-to-term result-dag))
+                                         (cw " ~x0" (dag2term result-dag))
                                        (print-list result-dag))))
                   (cw ")~%")
                   (mv (erp-nil)
@@ -4019,7 +4019,7 @@
                 (mv (erp-nil) nil state)))
        ;; ((mv heap-dag state) (extract-heap loop-top-state-dag hyps state))
        ;; ;;TODO: What if the heap term is big?!
-       ;; (heap-term (dag-to-term heap-dag))
+       ;; (heap-term (dag2term heap-dag))
        (invar `(ARRAY-REFP (jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var)))
                                ,dimensions-result-dag
                                ',(jvm::get-array-element-type class) ;,element-type-result-dag
@@ -4913,7 +4913,7 @@
         (- (and print (cw "(Exit DAG for loop ~x0:~%~x1)~%" this-loop-number exit-dag)))
         (- (and print (cw "(Exit test DAG for loop ~x0:~%~x1)~%" this-loop-number termination-test-dag)))
         ;; (- (and print (cw "(Options: ~x0)~%" options)))
-        (termination-test (dag-to-term termination-test-dag))
+        (termination-test (dag2term termination-test-dag))
         (continuation-test (negate-term termination-test))
         ;; Here we must establish that the candidate-invars really are invariants:
         ;; fixme can we assume the negation of the exit test when proving the invars? that would be captured in the myif tests right?
@@ -5136,7 +5136,7 @@
                        (mv erp nil state)
                      (mv (erp-nil)
                          (list `(equal (jvm::NTH-local '0 (JVM::LOCALS (JVM::thread-top-frame (th) ,state-var)))
-                                       ,(dag-to-term local-0-dag)))
+                                       ,(dag2term local-0-dag)))
                          state)))))
               ((when erp) (mv erp nil nil nil nil nil nil nil state))
               (- (progn$ (cw "(invars about this:~%") (print-list invars-about-this) (cw ")~%")))
@@ -5479,7 +5479,7 @@
               (param-count next-param-number)
               (max-param-number (+ -1 param-count))
               (termination-test-dag (car param-new-val-dags-and-termination-test-dag))
-              (termination-test-term (dag-to-term termination-test-dag))
+              (termination-test-term (dag2term termination-test-dag))
               ;;these are in order:
               ;;check that these only depend on params and input vars..ffixme
               (param-new-val-dags (cdr param-new-val-dags-and-termination-test-dag))
@@ -5850,7 +5850,7 @@
                 (else-part (third (fargs expr)))
                 (test-dag (get-subdag test state-dag)) ;todo: more direct way to get the size of one node in a dag? call size-of-node?
                 (test-term (if (dag-or-quotep-size-less-thanp test-dag 1000)
-                               (dag-to-term test-dag)
+                               (dag2term test-dag)
                              nil)) ;nil means it's too big (TODO: find a way to pass in this assumption as a dag node)
                 (- (cw "(Test: ~x0)~%" test-term)))
              (mv-let (erp then-state-dag generated-events-acc generated-rules-acc then-flg next-loop-number interpreted-function-alist-alist interpreted-function-alist state)
@@ -6153,7 +6153,7 @@
         ((mv erp state-dag generated-events-acc generated-rules-acc next-loop-number interpreted-function-alist-alist interpreted-function-alist state)
          (decompile-code-segment-aux state-dag
                                      hyps
-                                     (dag-to-term stack-height-dag)
+                                     (dag2term stack-height-dag)
                                      segment-pcs
                                      tag
                                      loop-depth
@@ -6265,7 +6265,7 @@
                   :check-inputs nil))
        ((when erp) (mv erp nil nil nil nil nil state))
        ;;fixme i hope this is not too big:
-       (heap (dag-to-term heap-dag))
+       (heap (dag2term heap-dag))
        ;; Extract the static-field-map after class initialization: (can we do this better somehow?)
        ((mv erp sfm-dag)
         (wrap-term-around-dag `(jvm::static-field-map replace-me)
@@ -6280,7 +6280,7 @@
          :check-inputs nil))
        ((when erp) (mv erp nil nil nil nil nil state))
        ;;fixme i hope this is not too big:
-       (static-field-map (dag-to-term static-field-map))
+       (static-field-map (dag2term static-field-map))
        (- (cw "The following classes were initialized: ~x0~%Done Initializing classes.)~%" initialized-class-names))
        (loop-alist (get-loops-from-classes class-alist))
        ((mv erp make-state-dag)

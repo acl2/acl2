@@ -1038,42 +1038,44 @@
                               step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
-       (result-dag-size (dag-or-quotep-size result-dag-or-quotep)) ; this could be somewhat expensive, due to bignums
-       (- (cw "Result DAG size: ~x0.~%" result-dag-size))
-       (result-dag-fns (dag-or-quotep-fns result-dag-or-quotep))
+       (result-size (dag-or-quotep-size result-dag-or-quotep)) ; this could be somewhat expensive, due to bignums
+       (- (cw "Result DAG size: ~x0.~%" result-size))
+       (result-fns (dag-or-quotep-fns result-dag-or-quotep))
        ;; Vars that may appear: x86, base-address, vars from INPUTS, vars from assumptions, especially equalities.
        ;; If we introduce vars for the registers, those vars may appear as well.
        ;; Sometimes the presence of base-address may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
-       (result-dag-vars (dag-or-quotep-vars result-dag-or-quotep))
+       (result-vars (dag-or-quotep-vars result-dag-or-quotep))
        ;; TODO: Maybe move some of this to the -core function:
        ;; (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
        ;;            (set-print-base-radix print-base state)
        ;;          state)) ; todo: do this better
        ;; Check for incomplete run (todo: can this happen without run-until-return throwing an error?):
-       ((when (intersection-eq result-dag-fns *incomplete-run-fns*))
+       ((when (intersection-eq result-fns *incomplete-run-fns*))
         (print-as-term-or-dag result-dag-or-quotep
                               100000 ; todo: make customizable.  since there was an error, we want to print as a term if at all possible
-                              result-dag-size nil "Error result" t state)
+                              result-size nil "Error result" t state)
         (er hard? 'def-unrolled-fn "Unroller error: The run did not finish.  Note that a :step-limit of ~x0 is active." step-limit)  ; todo: support :step-limit nil and then no message here
         (mv :incomplete-run nil state))
-       (termp (<= result-dag-size max-result-term-size))
+       (termp (or (quotep result-dag-or-quotep)
+                  (<= result-size max-result-term-size)))
        ;; Not valid if too big:
        (maybe-result-term (and termp ; avoids exploding
-                               (dag-to-term result-dag-or-quotep)))
+                               (dag-or-constant-to-term result-dag-or-quotep)))
        ;; Print the result:
-       (- (print-as-term-or-dag result-dag-or-quotep max-printed-term-size result-dag-size
-                                maybe-result-term ; we re-use this when it's valid
-                                "Result"
-                                nil ; todo: consider t
-                                state))
+       (- (and print
+               (print-as-term-or-dag result-dag-or-quotep max-printed-term-size result-size
+                                     maybe-result-term ; we re-use this when it's valid
+                                     "Result"
+                                     nil ; todo: consider t
+                                     state)))
        ;; Build the defconst that will contain the result DAG:
        (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag-or-quotep))
 
        ;; Possibly produce a defun to represent the result of lifting:
 
-       ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
+       ;; (fn-formals result-vars) ; we could include x86 here, even if the dag is a constant
        (executable-type (parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        ;; Create the list of formals for the function:
@@ -1086,8 +1088,8 @@
                       '(rdi rsi rdx rcx r8 r9))) ; todo: handle 32-bit calling convention
        (common-formals (append param-names '(x86))) ; todo: handle 32-bit calling convention
        ;; these will be ordered like common-formals:
-       (expected-formals (intersection-eq common-formals result-dag-vars))
-       (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed? ; todo: any ordering for these? ; todo: look at the extra-assumptions for vars introduced
+       (expected-formals (intersection-eq common-formals result-vars))
+       (unexpected-formals (set-difference-eq result-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed? ; todo: any ordering for these? ; todo: look at the extra-assumptions for vars introduced
        ;; ((when unexpected-formals)
        ;;  (er hard? 'def-unrolled-fn "Unexpected formals: ~x0." unexpected-formals)
        ;;  (mv t nil state))
@@ -1095,12 +1097,11 @@
        ((mv erp events-for-defun)
         (if (not produce-function)
             (mv (erp-nil) nil)
-          (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
-               (function-body (if termp
+          (b* ((function-body (if termp
                                   maybe-result-term
-                                `(dag-val-with-axe-evaluator ',result-dag-or-quotep ; can't be a constant (the size would be < max-result-term-size)
-                                                             ,(make-acons-nest result-dag-vars)
-                                                             ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list result-dag-fns *axe-evaluator-functions* (w state)) (w state))
+                                `(dag-val-with-axe-evaluator ',result-dag-or-quotep ; can't be a constant since termp is nil
+                                                             ,(make-acons-nest result-vars)
+                                                             ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list result-fns *axe-evaluator-functions* (w state)) (w state))
                                                              '0 ;array depth (not very important)
                                                              )))
                (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
@@ -1124,7 +1125,7 @@
                                              nil)
                                          :verify-guards nil ;TODO
                                          )
-                                  ,@(let ((ignored-vars (set-difference-eq fn-formals result-dag-vars)))
+                                  ,@(let ((ignored-vars (set-difference-eq fn-formals result-vars)))
                                       (and ignored-vars
                                            `((ignore ,@ignored-vars)))))
                          ,function-body-untranslated)))
@@ -1156,7 +1157,7 @@
                                `(skip-proofs ,defthm))))
                 (list defthm))))
        (events (cons defconst-form (append events-for-defun defthms)))
-       (event-names (strip-cadrs events)) ; todo: consider the include-book above
+       (event-names (lifter-event-names events nil))
        (event `(progn ,@events))
        (event (extend-progn event (redundancy-table-event whole-form event)))
        (event (extend-progn event `(value-triple '(,@event-names))))
@@ -1302,7 +1303,6 @@
            (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
            (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
            (max-result-term-size "Max term-size of a result if it is to be represented as a term (when printing it, and in the generated function).  A larger result will be represented as a DAG, embedded in the function using an evaluator.")
-
            (restrict-theory "To be deprecated..."))
     :description ("Lift some x86 binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
                   "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(tsee defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."

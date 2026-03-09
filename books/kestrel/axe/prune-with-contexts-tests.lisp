@@ -35,7 +35,7 @@
        ((when erp)
         (er hard? 'prunes-to "Error pruning dag.")
         nil)
-       (result-term (dag-to-term dag-or-quotep)))
+       (result-term (dag2term dag-or-quotep)))
     (if (equal result-term expected-result-term)
         t
       (er hard? 'prunes-to "Term ~x0 did not prune to ~x1.  Instead, as we got ~x2." term expected-result-term result-term))))

@@ -251,7 +251,7 @@
              (cw "Failed to resolve test by rewriting and we have been told not to call STP.)"))
         (mv nil :unknown state)) ; give up if we are not allowed to call STP
        ;; TODO: Avoid turning the DAG into a term:
-       (simplified-test-term (dag-to-term simplified-dag-or-quotep)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
+       (simplified-test-term (dag2term simplified-dag-or-quotep)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
        ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test, or getting an indication of which branch we expect to be pruned away).
        (- (and (print-level-at-least-verbosep print)
                (cw "(Attempting to prove test true with STP:~%")))

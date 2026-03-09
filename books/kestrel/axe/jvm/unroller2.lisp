@@ -288,10 +288,10 @@
             (prog2$ (cw "Converting DAG to a term (without an embedded DAG) since max-term-size is nil.  Using lets for compactness.~%")
                     (dag-to-term-with-lets dag))
           (prog2$ (cw "Converting DAG to a term (without an embedded DAG) since max-term-size is nil.  Term size will be ~x0.~%" (dag-size-fast dag))
-                  (dag-to-term dag)))
+                  (dag2term dag)))
       ;; Max term size is a natural number:
       (if (dag-or-quotep-size-less-thanp dag max-term-size)
-          (dag-to-term dag) ;todo: respect use-lets-in-terms here as well?
+          (dag2term dag) ;todo: respect use-lets-in-terms here as well?
         ;; term would be too big, so use an embedded dag:
         (embed-dag-in-term dag wrld)))))
 
@@ -306,7 +306,7 @@
           nil
           nil)
   ;; Result-term should be over the single variable S:
-  (b* ((result-term (dag-to-term result-dag)) ;TODO: watch for explosion -- don't do this conversion
+  (b* ((result-term (dag2term result-dag)) ;TODO: watch for explosion -- don't do this conversion
        ;; Try to extract interesting pieces of this into separate functions.
        ;; For now, we just do the return value. TODO: Add support for fields
        ;; and static fields that get changed. TODO: Suppress the rv abstraction for void functions.
@@ -614,7 +614,7 @@
        ((when (member-eq 'run-until-return-from-stack-height (dag-fns result-dag)))
         (and (dag-or-quotep-size-less-thanp result-dag 10000)
              (progn$ (cw "(Clarified term:~%")
-                     (cw "~x0" (clarify-lifter-branches (dag-to-term result-dag)))
+                     (cw "~x0" (clarify-lifter-branches (dag2term result-dag)))
                      (cw ")~%")))
         (hard-error 'unroll-java-code2 "ERROR: Symbolic simulation did not seem to finish (see DAG above)." nil)
         (mv (erp-t) nil state))
