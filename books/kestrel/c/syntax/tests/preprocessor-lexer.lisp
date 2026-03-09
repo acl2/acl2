@@ -42,7 +42,8 @@
                                   :trace-expansion t
                                   :no-errors/warnings nil))
          ((mv erp ppstate)
-          (ppstate-for-file (if (stringp ,input)
+          (ppstate-for-file ""
+                            (if (stringp ,input)
                                 (acl2::string=>nats ,input)
                               ,input)
                             macros

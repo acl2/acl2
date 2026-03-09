@@ -3740,6 +3740,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum trans-item
+  :short "Fixtype of translation items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This notion has no explicit counterpart in [C17],
+     but it has a meaning in our abstract syntax for tools:
+     it consists of the entities that may appear
+     at the top level of a translation unit.
+     These are external declarations,
+     but also @('#include') directives
+     and some forms of comments;
+     we also plan to add more directives and more forms of comments.")
+   (xdoc::p
+    "An alternative approach is to extend our ASTs for external declarations
+     with such directives and comments.
+     But it seems a bit of a terminological abuse.
+     Furthermore, since we plan to add some forms of preprocessing conditionals,
+     those will make translation items recursive,
+     which definitely does not fit well with the external declaration notion.
+     Thus, it seems best to introduce this new notion.")
+   (xdoc::p
+    "The dash in @('trans-item') is consistent with @(tsee block-item),
+     but not with @(tsee transunit);
+     the latter should be probably renamed to @('trans-unit'),
+     and perhaps @(tsee transunit-ensemble)
+     could be renamed to @('trans-ensemble'),
+     since we do not need to repeat @('unit') there.")
+   (xdoc::p
+    "A @('#include') directive, as a translation item,
+     is represented by the header name.")
+   (xdoc::p
+    "For now the only comments that we allow as translation items
+     are line comments, represented by their content (character codes).
+     The content excludes the initial double slash and the final new line.
+     The line comment is regarded as taking the whole line,
+     i.e. the first slash of the double slash is at column 0."))
+  (:declon ((declon ext-declon)))
+  (:include ((header header-name)))
+  (:line-comment ((content nat-listp)))
+  :pred trans-itemp
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist trans-item-list
+  :short "Fixtype of lists of translation items."
+  :elt-type trans-item
+  :true-listp t
+  :pred trans-item-listp
+  :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod transunit
   :short "Fixtype of translation units [C17:6.9] [C17:A.2.4]."
   :long
@@ -3747,33 +3801,13 @@
    (xdoc::p
     "This corresponds to <i>translation-unit</i> in the grammar in [C17].")
    (xdoc::p
-    "A translation unit consists of a list of external declarations,
-     optionally preceded by a line comment
-     and by zero or more @('#include') directives.
-     The comment comes first, if present;
-     then the @('#include') directives;
-     then the external declarations.")
-   (xdoc::p
-    "The line comment is represented as its content,
-     namely a list of character codes;
-     the comment is absent if the list is empty.
-     This is useful when generating code:
-     the comment can convey information about the generation.
-     We may eventually generalize this to allow
-     both line and block comments at the top level,
-     intermixed with external declarations,
-     also extending our parser to recognize and preserve those comments
-     (now the tokenizer skips over all comments.")
-   (xdoc::p
-    "The @('#include') directives are represented as their header names,
-     in a list of zero or more.
-     Eventually, we may generalize this to allow @('#include') directives
-     in other (top-level) places in the translation unit.")
+    "As discussed in @(tsee trans-item),
+     we allow other entities, besides external declaration.
+     Thus, a translation unit, in our abstract syntax,
+     consists of zero or more translation items.")
    (xdoc::p
     "We also add a slot with additional information, e.g. from validation."))
-  ((comment nat-list)
-   (includes header-name-list)
-   (declons ext-declon-list)
+  ((items trans-item-list)
    (info any))
   :pred transunitp
   :layout :fulltree)

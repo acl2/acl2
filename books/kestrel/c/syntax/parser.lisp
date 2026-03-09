@@ -11942,6 +11942,15 @@
      we reject input with no @('#include') declarations
      and no external declarations.")
    (xdoc::p
+    "This is more limited than our ASTs allow,
+     namely @('#include') directives and external declarations in any order.
+     We plan to extend the ABNF, and the parser,
+     to match the ASTs for translation units.")
+   (xdoc::p
+    "Since our tokenizer filters out all comments,
+     our parser never generates any translation items that are comments.
+     This may change in the future.")
+   (xdoc::p
     "We also ensure that the file ends in new-line,
      as prescribed in [C17:5.1.1.2/1/2].
      We check that the end-of-file position,
@@ -11968,10 +11977,10 @@
                          ""
                        "and no #include directives"))))
        ((unless (= (position->column eof-pos) 0))
-        (reterr (msg "The file does not end in new-line."))))
-    (retok (make-transunit :comment nil
-                           :includes includes
-                           :declons extdecls
+        (reterr (msg "The file does not end in new-line.")))
+       (items (append (trans-item-include-list includes)
+                      (trans-item-declon-list extdecls))))
+    (retok (make-transunit :items items
                            :info nil)
            parstate))
 

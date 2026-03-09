@@ -14,6 +14,7 @@
 (include-book "files")
 (include-book "grammar")
 (include-book "grammar-characters")
+(include-book "positions")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -57,4 +58,5 @@
   :order-subtopics (file-paths
                     files
                     grammar
-                    grammar-characters))
+                    grammar-characters
+                    positions))
