@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "positions")
+(include-book "spans")
 
 (include-book "../language/implementation-environments/versions")
 
@@ -202,50 +203,6 @@
                          (<= (nfix i) (len chars)))))
     :induct t
     :enable (update-nth nfix zp len)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod span
-  :short "Fixtype of spans."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A span consists of two positions,
-     which characterize a contiguous portion of a file.
-     Each parsed construct has a span.
-     The ending position of a span is inclusive."))
-  ((start position)
-   (end position))
-  :pred spanp
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-span
-  :short "An irrelevant span."
-  :type spanp
-  :body (make-span :start (irr-position) :end (irr-position)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption span-option
-  span
-  :short "Fixtype of optional spans."
-  :pred span-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define span-join ((span1 spanp) (span2 spanp))
-  :returns (span spanp)
-  :short "Join two spans."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The first span must come before the second one.
-     We return a new span that goes
-     from the start of the first span to the end of the second span."))
-  (make-span :start (span->start span1)
-             :end (span->end span2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
