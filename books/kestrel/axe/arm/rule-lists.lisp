@@ -152,6 +152,27 @@
      ;; arm::conditionpassed-of-set-reg ; these are not needed if we always can open conditionpassed
      ;; arm::conditionpassed-of-write
 
+     arm::eq-condition-of-cmn-zero ; cmn rules
+     arm::ne-condition-of-cmn-zero
+     arm::eq-condition-of-cmp-zero ; cmp rules
+     arm::ne-condition-of-cmp-zero
+
+     arm::eq-condition-constant-opener
+     arm::ne-condition-constant-opener
+     arm::cs-condition-constant-opener
+     arm::cc-condition-constant-opener
+     arm::mi-condition-constant-opener
+     arm::pl-condition-constant-opener
+     arm::vs-condition-constant-opener
+     arm::vc-condition-constant-opener
+     arm::hi-condition-constant-opener
+     arm::ls-condition-constant-opener
+     arm::ge-condition-constant-opener
+     arm::lt-condition-constant-opener
+     arm::gt-condition-constant-opener
+     arm::le-condition-constant-opener
+
+
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
      arm::ldr-literal-core

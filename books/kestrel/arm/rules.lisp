@@ -11,6 +11,8 @@
 (in-package "ARM")
 
 (include-book "pseudocode")
+(include-book "instructions")
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 
 (defthm conditionpassed-of-set-reg
   (equal (conditionpassed cond (set-reg n val arm))
@@ -70,3 +72,90 @@
 
 (defthm conditionpassed-of-14 (equal (conditionpassed 14 arm) t) :hints (("Goal" :in-theory (enable conditionpassed))))
 (defthm conditionpassed-of-15 (equal (conditionpassed 15 arm) t) :hints (("Goal" :in-theory (enable conditionpassed))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd cmn-zero-elim
+  (implies (and (unsigned-byte-p 32 x)
+                ;; (unsigned-byte-p 32 y)
+                )
+           (equal (cmn-zero x y)
+                  (bool-to-bit (equal x (bvuminus 32 y)))))
+  :hints (("Goal" :in-theory (enable cmn-zero bvplus bvuminus acl2::bvchop-of-sum-cases bool-to-bit))))
+
+(defthmd cmp-zero-elim
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cmp-zero x y)
+                  (bool-to-bit (equal x y))))
+  :hints (("Goal" :in-theory (enable cmp-zero acl2::bvnot-becomes-bvminus-of-bvuminus-and-1 bool-to-bit))))
+
+(defthmd cmn-carry-elim
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cmn-carry x y)
+                  (bool-to-bit (bvle 33 (expt 2 32) (bvplus 33 x y)))))
+  :hints (("Goal" :in-theory (enable cmn-carry
+                                     mv-nth-1-of-addwithcarry
+                                     bvnot bvplus bvlt lognot acl2::getbit-of-+))))
+
+(defthmd cmp-carry-elim
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cmp-carry x y)
+                  (bool-to-bit (not (bvlt 32 x y)))))
+  :hints (("Goal" :in-theory (enable cmp-carry mv-nth-1-of-addwithcarry
+                                     bvnot bvplus bvlt lognot acl2::getbit-of-+))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm eq-condition-of-cmn-zero
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (eq-condition (cmn-zero x y))
+                  (equal x (bvuminus 32 y))))
+  :hints (("Goal" :in-theory (enable eq-condition
+                                     cmn-zero-elim))))
+
+(defthm ne-condition-of-cmn-zero
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (ne-condition (cmn-zero x y))
+                  (not (equal x (bvuminus 32 y)))))
+  :hints (("Goal" :in-theory (enable ne-condition
+                                     cmn-zero-elim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm eq-condition-of-cmp-zero
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (eq-condition (cmp-zero x y))
+                  (equal x y)))
+  :hints (("Goal" :in-theory (enable eq-condition
+                                     cmp-zero-elim))))
+
+(defthm ne-condition-of-cmp-zero
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (ne-condition (cmp-zero x y))
+                  (not (equal x y))))
+  :hints (("Goal" :in-theory (enable ne-condition
+                                     cmp-zero-elim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::def-constant-opener arm::eq-condition)
+(acl2::def-constant-opener arm::ne-condition)
+(acl2::def-constant-opener arm::cs-condition)
+(acl2::def-constant-opener arm::cc-condition)
+(acl2::def-constant-opener arm::mi-condition)
+(acl2::def-constant-opener arm::pl-condition)
+(acl2::def-constant-opener arm::vs-condition)
+(acl2::def-constant-opener arm::vc-condition)
+(acl2::def-constant-opener arm::hi-condition)
+(acl2::def-constant-opener arm::ls-condition)
+(acl2::def-constant-opener arm::ge-condition)
+(acl2::def-constant-opener arm::lt-condition)
+(acl2::def-constant-opener arm::gt-condition)
+(acl2::def-constant-opener arm::le-condition)
