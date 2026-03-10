@@ -224,7 +224,7 @@
           ;; The user supplied one, so use it:
           interpreted-function-alist))
        ;; Call the rewriter:
-       ((mv erp dag &) ; use the hits?
+       ((mv erp dag-or-constant &) ; use the hits?
         (simplify-term-basic term
                              assumptions
                              rule-alist
@@ -240,9 +240,10 @@
                              nil ; fns-to-elide
                              ))
        ((when erp) (mv erp nil state))
-       ((when (quotep dag)) ;; TODO: Should we allow this?
-        (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag)
+       ((when (quotep dag-or-constant)) ;; TODO: Should we allow this?
+        (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag-or-constant)
         (mv :unexpected-quotep nil state))
+       (dag dag-or-constant) ; it is a DAG, not a constant
        ;; Make a theorem if the term is small enough.  We must use skip-proofs
        ;; because Axe does not yet produce an ACL2 proof. TODO: We could
        ;; support adding the theorem even if the DAG is large if we use
@@ -275,7 +276,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                         function-type))
        (function-body (and produce-function
                            (if (eq :term function-type)
-                               (dag2term dag)
+                               (dag-to-term dag)
                              (if (eq :embedded-dag function-type)
                                  `(dag-val-with-axe-evaluator ,defconst-name
                                                               ,(make-acons-nest dag-vars)
