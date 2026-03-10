@@ -67,7 +67,7 @@
   :short "Fixtype of optional spans."
   :pred span-optionp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define span-join ((span1 spanp) (span2 spanp))
   :returns (span spanp)
@@ -80,3 +80,17 @@
      from the start of the first span to the end of the second span."))
   (make-span :start (span->start span1)
              :end (span->end span2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define span-to-msg ((span spanp))
+  :returns (msg msgp
+                :hints (("Goal" :in-theory (enable msgp character-alistp))))
+  :short "Represent a span as a message."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in user-oriented messages."))
+  (msg "[~@0 to ~@1]"
+       (position-to-msg (span->start span))
+       (position-to-msg (span->end span))))

@@ -61,20 +61,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define span-to-msg ((span spanp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a span as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in user-oriented messages."))
-  (msg "[~@0 to ~@1]"
-       (position-to-msg (span->start span))
-       (position-to-msg (span->end span))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define char-to-msg ((char nat-optionp))
   :returns (msg msgp
                 :hints (("Goal" :in-theory (enable msgp
