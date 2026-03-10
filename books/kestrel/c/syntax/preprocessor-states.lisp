@@ -22,6 +22,7 @@
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
@@ -865,3 +866,129 @@
        (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
        (ppstate (update-ppstate->size new-size ppstate)))
     ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define change-presumed-line ((line posp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Change the presumed line at the current position."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is always called when we are at the start of a line;
+     we double-check that, throwing a hard error if the check fails.")
+   (xdoc::p
+    "This is used just after preprocessing a @('#line') directive,
+     so that the current position is the start of the line just after that
+     (which could be past the end of the file
+     if the @('#line') directive ends with the file without a new line).
+     The @('#line') directive [C17:6.10.4] changes the `presumed' line number,
+     starting at the line just after the directive.
+     We implement this by adjusting all the lines in the positions array,
+     by the offset between the presumed line (passed as input to this function)
+     and the line number in the current position:
+     this is because changing the line just after the directive
+     must affect all the subsequent lines as well.")
+   (xdoc::p
+    "Note that this operation could be performed multiple times,
+     for different @('#line') directives in a file,
+     each time adjusting all the line numbers
+     from the position just after the directive to the end of the file.")
+   (xdoc::p
+    "Since the line number passed as input is a positive integer,
+     and since line number do not decrease in the positions array,
+     adding the offset (which may be positive or negative or zero)
+     to all the subsequent positions in the array
+     always results in a positive integer.
+     But we do not the non-decreasing line numbers invariant available,
+     so we coerce each result with @(tsee pos-fix) for now."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       (index (ppstate->char-index ppstate))
+       ((unless (< index (ppstate->positions-length ppstate)))
+        (raise "Internal error: ~
+                the index ~x0 is not below ~
+                the length ~x1 of the positions array."
+               index
+               (ppstate->positions-length ppstate))
+        ppstate)
+       (pos (ppstate->position index ppstate))
+       ((unless (= (position->column pos) 0))
+        (raise "Internal error: current column is ~x0."
+               (position->column pos))
+        ppstate)
+       (offset (- (pos-fix line) (position->line pos))))
+    (change-presumed-line-loop index offset ppstate))
+  :no-function nil
+
+  :prepwork
+  ((define change-presumed-line-loop ((index natp)
+                                      (offset integerp)
+                                      (ppstate ppstatep))
+     :guard (<= (nfix index) (ppstate->positions-length ppstate))
+     :returns (new-ppstate ppstatep)
+     :parents nil
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((when (>= (lnfix index) (ppstate->positions-length ppstate)))
+           ppstate)
+          (pos (ppstate->position index ppstate))
+          (pos-line (position->line pos))
+          (new-pos-line (pos-fix (+ pos-line (lifix offset))))
+          (new-pos (change-position pos :line new-pos-line))
+          (ppstate (update-ppstate->position index new-pos ppstate)))
+       (change-presumed-line-loop (1+ (lnfix index)) offset ppstate))
+     :measure (nfix (- (ppstate->positions-length ppstate) (nfix index)))
+     :hints (("Goal" :in-theory (enable nfix))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define change-presumed-line+file ((line posp)
+                                   (file stringp)
+                                   (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Change the presumed line and file at the current position."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee change-presumed-line),
+     but it also affects the presumed file,
+     which the @('#line') directive can do, in addition to the line
+     [C17:6.10.4]."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       (index (ppstate->char-index ppstate))
+       ((unless (< index (ppstate->positions-length ppstate)))
+        (raise "Internal error: ~
+                the index ~x0 is not below ~
+                the length ~x1 of the positions array."
+               index
+               (ppstate->positions-length ppstate))
+        ppstate)
+       (pos (ppstate->position index ppstate))
+       ((unless (= (position->column pos) 0))
+        (raise "Internal error: current column is ~x0."
+               (position->column pos))
+        ppstate)
+       (offset (- (pos-fix line) (position->line pos))))
+    (change-presumed-line+file-loop index offset file ppstate))
+  :no-function nil
+
+  :prepwork
+  ((define change-presumed-line+file-loop ((index natp)
+                                           (offset integerp)
+                                           (file stringp)
+                                           (ppstate ppstatep))
+     :guard (<= (nfix index) (ppstate->positions-length ppstate))
+     :returns (new-ppstate ppstatep)
+     :parents nil
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((when (>= (lnfix index) (ppstate->positions-length ppstate)))
+           ppstate)
+          (pos (ppstate->position index ppstate))
+          (pos-line (position->line pos))
+          (new-pos-line (pos-fix (+ pos-line (lifix offset))))
+          (new-pos (change-position pos
+                                    :file (str-fix file)
+                                    :line new-pos-line))
+          (ppstate (update-ppstate->position index new-pos ppstate)))
+       (change-presumed-line+file-loop (1+ (lnfix index)) offset file ppstate))
+     :measure (nfix (- (ppstate->positions-length ppstate) (nfix index)))
+     :hints (("Goal" :in-theory (enable nfix))))))
