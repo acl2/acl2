@@ -1,6 +1,6 @@
 ; Rules to introduce BV ops
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,18 +38,18 @@
 ;; We'll keep these disabled as they may conflict with opening up the BV
 ;; functions.
 
+;; todo: more theory invars?
+;; todo: rules for bvchop, slice, and getbit or each thing?
+
 (defthmd bvchop-of-lognot-becomes-bvnot
   (equal (bvchop size (lognot x))
          (bvnot size x))
   :hints (("Goal" :in-theory (enable bvnot))))
 
-;; todo: more theory invars?
-;; todo: rules for bvchop, slice, and getbit or each thing?
-
 (theory-invariant (incompatible (:rewrite bvchop-of-lognot-becomes-bvnot) (:definition bvnot)))
 
-;; or got to getbit of bvnot first?
-(defthm getbit-of-lognot
+;; or go to getbit of bvnot first?
+(defthmd getbit-of-lognot
   (implies (natp m)
            (equal (getbit m (lognot x))
                   (bvnot 1 (getbit m x))))
@@ -60,13 +60,15 @@
                                   (;BITXOR-OF-SLICE-ARG2
                                    )))))
 
-(defthm slice-of-lognot
+(defthmd slice-of-lognot
   (implies (and (natp high) ;drop?
                 (natp low))
            (equal (slice high low (lognot x))
                   (slice high low (bvnot (+ 1 high) x))))
   :hints (("Goal" ;:cases ((natp high))
            :in-theory (enable bvnot))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm getbit-of-logmask
   (implies (and (natp n)
