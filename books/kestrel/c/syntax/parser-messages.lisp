@@ -178,7 +178,7 @@
   `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%~
                  [from function ~x4]~%"
                 ,expected
-                ,where
+                (position-to-msg ,where)
                 ,found
                 ,(if extra
                      `(msg " ~@0" ,extra)

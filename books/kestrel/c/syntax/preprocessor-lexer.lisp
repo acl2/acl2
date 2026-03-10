@@ -397,7 +397,7 @@
        ((reterr) #\0 (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((when (not char))
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "a hexadecimal digit"
                     :found (char-to-msg char)))
        ((unless (or (and (utf8-<= (char-code #\0) char) ; 0
@@ -406,7 +406,7 @@
                          (utf8-<= char (char-code #\F))) ; F
                     (and (utf8-<= (char-code #\a) char) ; a
                          (utf8-<= char (char-code #\f))))) ; f
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "a hexadecimal digit"
                     :found (char-to-msg char))))
     (retok (code-char char) pos ppstate))
@@ -543,7 +543,7 @@
        ((erp char pos ppstate) (read-pchar ppstate)))
     (cond
      ((not char)
-      (reterr-msg :where (position-to-msg pos)
+      (reterr-msg :where pos
                   :expected "a single quote ~
                              or a double quote ~
                              or a question mark ~
@@ -611,7 +611,7 @@
             (plex-*-hexadecimal-digit pos ppstate)))
         (if hexdigs
             (retok (escape-hex hexdigs) last-pos ppstate)
-          (reterr-msg :where (position-to-msg next-pos)
+          (reterr-msg :where next-pos
                       :expected "one or more hexadecimal digits"
                       :found "none"))))
      ((utf8-= char (char-code #\u))
@@ -625,7 +625,7 @@
                pos
                ppstate)))
      (t
-      (reterr-msg :where (position-to-msg pos)
+      (reterr-msg :where pos
                   :expected "a single quote ~
                              or a double quote ~
                              or a question mark ~
@@ -673,7 +673,7 @@
        ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
                                single quote or backslash or new-line"
@@ -681,7 +681,7 @@
        ((when (utf8-= char (char-code #\'))) ; '
         (retok nil pos ppstate))
        ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
                                single quote or backslash or new-line"
@@ -737,7 +737,7 @@
        ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
                                double quote or backslash"
@@ -745,7 +745,7 @@
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
        ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
                                double quote or backslash"
@@ -800,14 +800,14 @@
        ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\>))) ; >
         (retok nil pos ppstate))
        ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
@@ -855,14 +855,14 @@
        ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
        ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
@@ -911,7 +911,7 @@
        ((erp cchars closing-squote-pos ppstate) (plex-*-c-char ppstate))
        (span (make-span :start first-pos :end closing-squote-pos))
        ((unless cchars)
-        (reterr-msg :where (position-to-msg closing-squote-pos)
+        (reterr-msg :where closing-squote-pos
                     :expected "one or more characters and escape sequences"
                     :found "none")))
     (retok (plexeme-char (cconst cprefix? cchars)) span ppstate))
@@ -987,7 +987,7 @@
        ((erp char first-pos ppstate) (read-pchar ppstate)))
     (cond
      ((not char)
-      (reterr-msg :where (position-to-msg first-pos)
+      (reterr-msg :where first-pos
                   :expected "a greater-than ~
                              or a double quote"
                   :found (char-to-msg char)))
@@ -995,7 +995,7 @@
       (b* (((erp hchars closing-angle-pos ppstate) (plex-*-h-char ppstate))
            (span (make-span :start first-pos :end closing-angle-pos))
            ((unless hchars)
-            (reterr-msg :where (position-to-msg closing-angle-pos)
+            (reterr-msg :where closing-angle-pos
                         :expected "one or more characters"
                         :found "none")))
         (retok (plexeme-header (header-name-angles hchars)) span ppstate)))
@@ -1003,12 +1003,12 @@
       (b* (((erp qchars closing-dquote-pos ppstate) (plex-*-q-char ppstate))
            (span (make-span :start first-pos :end closing-dquote-pos))
            ((unless qchars)
-            (reterr-msg :where (position-to-msg closing-dquote-pos)
+            (reterr-msg :where closing-dquote-pos
                         :expected "one or more characters"
                         :found "none")))
         (retok (plexeme-header (header-name-quotes qchars)) span ppstate)))
      (t ; other
-      (reterr-msg :where (position-to-msg first-pos)
+      (reterr-msg :where first-pos
                   :expected "a greater-than ~
                              or a double quote"
                   :found (char-to-msg char)))))
@@ -1077,7 +1077,7 @@
             ((erp char pos ppstate) (read-pchar ppstate)))
          (cond
           ((not char) ; EOF
-           (reterr-msg :where (position-to-msg pos)
+           (reterr-msg :where pos
                        :expected "a character"
                        :found (char-to-msg char)
                        :extra (msg "The block comment starting at ~@1 ~
@@ -1111,7 +1111,7 @@
             ((erp char pos ppstate) (read-pchar ppstate)))
          (cond
           ((not char) ; EOF
-           (reterr-msg :where (position-to-msg pos)
+           (reterr-msg :where pos
                        :expected "a character"
                        :found (char-to-msg char)
                        :extra (msg "The block comment starting at ~@1 ~
