@@ -1309,7 +1309,7 @@
        ((erp & parstate) (read-punctuator "(" parstate)) ; asm (
        ((erp token span parstate) (read-token parstate))
        ((unless (and token (token-case token :string)))
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "a string literal"
                     :found (token-to-msg token)))
        (parstate (unread-token parstate)) ; asm-or-__asm__ (
@@ -1570,7 +1570,7 @@
              span
              parstate))
      (t
-      (reterr-msg :where (position-to-msg (span->start span))
+      (reterr-msg :where (span->start span)
                   :expected "an identifier or keyword"
                   :found (token-to-msg token)))))
 
@@ -2835,7 +2835,7 @@
                  ;; so we just return the initial parser state.
                  ;; This is just logical: execution stops at the RAISE above.
                  (b* ((parstate
-                       (init-parstate nil (c::version-c17) nil parstate)))
+                       (init-parstate "" nil (c::version-c17) nil parstate)))
                    (reterr t)))
                 (parstate (unread-token parstate))) ;
              (parse-postfix-expression parstate))
@@ -3031,8 +3031,9 @@
                          ;; so we just return the empty parser state.
                          ;; This is just logical:
                          ;; execution stops at the RAISE above.
-                         (b* ((parstate (init-parstate
-                                         nil (c::version-c17) nil parstate)))
+                         (b* ((parstate
+                               (init-parstate
+                                "" nil (c::version-c17) nil parstate)))
                            (reterr t)))
                         (parstate (unread-token parstate))) ;
                      (parse-postfix-expression parstate))))))
@@ -3096,7 +3097,8 @@
                      ;; This is just logical:
                      ;; execution stops at the RAISE above.
                      (b* ((parstate
-                           (init-parstate nil (c::version-c17) nil parstate)))
+                           (init-parstate
+                            "" nil (c::version-c17) nil parstate)))
                        (reterr t)))
                     (parstate (unread-token parstate))) ;
                  (parse-postfix-expression parstate))))))))
@@ -3179,7 +3181,7 @@
                    (span-join span last-span)
                    parstate))
            (t ; && other
-            (reterr-msg :where (position-to-msg (span->start last-span))
+            (reterr-msg :where (span->start last-span)
                         :expected "an identifier"
                         :found (token-to-msg token2))))))
        ;; If token is 'sizeof', we need to read another token.
@@ -3315,7 +3317,7 @@
                  parstate)))
        ;; If token is anything else, it is an error.
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a constant ~
                                or a string literal ~
@@ -3979,7 +3981,7 @@
                  (span-join span last-span)
                  parstate)))
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a constant ~
                                or a string literal ~
@@ -4088,7 +4090,7 @@
                  (span-join span last-span)
                  parstate)))
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a keyword in {~
                                _Alignas, ~
@@ -4322,7 +4324,7 @@
                      (span-join span last-span)
                      parstate)))
            (t ; [ cexpr other
-            (reterr-msg :where (position-to-msg (span->start next-span))
+            (reterr-msg :where (span->start next-span)
                         :expected (if (parstate->gcc/clang parstate)
                                       "an ellipsis ~
                                        or a closing square bracket"
@@ -4333,7 +4335,7 @@
               (read-identifier parstate)))
           (retok (designor-dot ident) (span-join span last-span) parstate)))
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an open square bracket ~
                                or a dot"
                     :found (token-to-msg token)))))
@@ -4430,7 +4432,7 @@
                      (span-join span last-span)
                      parstate))))))
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a constant ~
                                or a string literal ~
@@ -4499,7 +4501,7 @@
                  span
                  parstate)))
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a constant ~
                                or a string literal ~
@@ -4585,7 +4587,7 @@
                      (span-join span last-span)
                      parstate)))
            (t ; initializer , other
-            (reterr-msg :where (position-to-msg (span->start span2))
+            (reterr-msg :where (span->start span2)
                         :expected "an identifier ~
                                    or a constant ~
                                    or a string literal ~
@@ -4614,7 +4616,7 @@
                  span
                  parstate)))
        (t ; initializer other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a constant ~
                                or a string literal ~
@@ -4739,7 +4741,7 @@
            ;; The comma after an enumerator must be always followed by
            ;; an identiifer or a closed curly brace.
            (t ; enumer , other
-            (reterr-msg :where (position-to-msg (span->start span2))
+            (reterr-msg :where (span->start span2)
                         :expected "an identifier ~
                                    or a closed curly brace"
                         :found (token-to-msg token2))))))
@@ -4757,7 +4759,7 @@
        ;; it is an error, because an enumerator must be always followed by
        ;; a comma or closed curly brace.
        (t ; enumer other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "a comma ~
                                or a closed curly brace"
                     :found (token-to-msg token)))))
@@ -4933,7 +4935,7 @@
        ;; If token is anything else, it is an error.
        ;; The above cases are all the allowed possibilities for token.
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a keyword in {~
                                _Alignas, ~
@@ -5239,7 +5241,7 @@
        ;; If token is anything else, it is an error.
        ;; The above cases are all the allowed possibilities for token.
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a keyword in {~
                                _Alignas, ~
@@ -5396,7 +5398,7 @@
                  (span-join span last-span)
                  parstate)))
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "a keyword in {~
                                _Atomic, ~
                                const, ~
@@ -5705,7 +5707,7 @@
        ;; If token is neither an identifier nor an open curly brace,
        ;; we cannot have a structure or union specifier here.
        (t
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or an open curly brace"
                     :found (token-to-msg token)))))
@@ -5778,7 +5780,7 @@
        ;; it is an error, because the 'enum' keyword must be alwways followed by
        ;; an identifier or an open curly brace.
        (t
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a closed curly brace"
                     :found (token-to-msg token)))))
@@ -6024,7 +6026,7 @@
        ;; we cannot have either an array or a function abstract declarator.
        ;; So it is an error, because we were expecting one.
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an open parenthesis ~
                                or an open square bracket"
                     :found (token-to-msg token)))))
@@ -6129,7 +6131,7 @@
        ;; If token is anything else,
        ;; we cannot have a direct abstract declarator.
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an open parenthesis ~
                                or an open square bracket"
                     :found (token-to-msg token)))))
@@ -6267,7 +6269,7 @@
        ;; If token is anything else, it is an error,
        ;; because this function is called when we expect an abstract declarator.
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "a star ~
                                or an open parenthesis ~
                                or an open square bracket"
@@ -6399,7 +6401,7 @@
                          parstate)))
                ;; If token3 is anything else, it is an error.
                (t ; [ qualspecs other
-                (reterr-msg :where (position-to-msg (span->start span3))
+                (reterr-msg :where (span->start span3)
                             :expected "an expression ~
                                        or the 'static' keyword ~
                                        or a closed square bracket"
@@ -6498,7 +6500,7 @@
                    parstate))
            ;; If token2 is anything else, it is an error.
            (t ; [ other
-            (reterr-msg :where (position-to-msg (span->start span2))
+            (reterr-msg :where (span->start span2)
                         :expected "a type qualifier ~
                                    or an expression ~
                                    or the 'static' keyword ~
@@ -6587,7 +6589,7 @@
        ;; If token is anything else, it is an error:
        ;; we do not have a direct declarator.
        (t
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or an open parenthesis"
                     :found (token-to-msg token)))))
@@ -6749,7 +6751,7 @@
                  parstate)))
        ;; If token is anything else, it is an error.
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "a declarator or a colon"
                     :found (token-to-msg token)))))
     :measure (two-nats-measure (parsize parstate) 2))
@@ -6907,7 +6909,7 @@
                    parstate))
            ;; If token2 is anything else, it is an error.
            (t ; specquals other
-            (reterr-msg :where (position-to-msg (span->start span2))
+            (reterr-msg :where (span->start span2)
                         :expected "a structure declarator or a semicolon"
                         :found (token-to-msg token2))))))))
     :measure (two-nats-measure (parsize parstate) 2))
@@ -7277,7 +7279,7 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical: execution stops at the RAISE above.
                     (b* ((parstate
-                          (init-parstate nil (c::version-c17) nil parstate)))
+                          (init-parstate "" nil (c::version-c17) nil parstate)))
                       (reterr t)))
                    ((erp tyname span parstate) (parse-type-name parstate))
                    ;; Ensure there is a closed parenthesis,
@@ -7313,8 +7315,9 @@
                         ;; so we just return the empty parser state.
                         ;; This is just logical:
                         ;; execution stops at the RAISE above.
-                        (b* ((parstate (init-parstate
-                                        nil (c::version-c17) nil parstate)))
+                        (b* ((parstate
+                              (init-parstate
+                               "" nil (c::version-c17) nil parstate)))
                           (reterr t)))
                        ((mv erp tyname span-tyname parstate)
                         (parse-type-name parstate)))
@@ -7355,8 +7358,9 @@
                               ;; so we just return the empty parser state.
                               ;; This is just logical:
                               ;; execution stops at the RAISE above.
-                              (b* ((parstate (init-parstate nil (c::version-c17)
-                                                            nil parstate)))
+                              (b* ((parstate
+                                    (init-parstate
+                                     "" nil (c::version-c17) nil parstate)))
                                 (reterr t)))
                              ;; Put back the closing parenthesis,
                              ;; which is not part of the expression.
@@ -7426,10 +7430,8 @@
                                 ;; This is just logical:
                                 ;; execution stops at the RAISE above.
                                 (b* ((parstate
-                                      (init-parstate nil
-                                                     (c::version-c17)
-                                                     nil
-                                                     parstate)))
+                                      (init-parstate
+                                       "" nil (c::version-c17) nil parstate)))
                                   (reterr t)))
                                ;; Put back the closing parenthesis,
                                ;; which is not part of the expression.
@@ -7458,7 +7460,8 @@
                       ;; so we just return the empty parser state.
                       ;; This is just logical: execution stops at the RAISE above.
                       (b* ((parstate
-                            (init-parstate nil (c::version-c17) nil parstate)))
+                            (init-parstate
+                             "" nil (c::version-c17) nil parstate)))
                         (reterr t)))
                      ((erp tyname span parstate) (parse-type-name parstate))
                      ;; Ensure there is a closed parenthesis,
@@ -7486,7 +7489,7 @@
        ;; If token is anything else, including absent, it is an error:
        ;; we have neither an expression nor a type name.
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected (msg "the start of an expression or type name")
                     :found (token-to-msg token)))))
     :measure (two-nats-measure (parsize parstate) 17))
@@ -7556,7 +7559,7 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t)))
                ((erp first-span parstate) ; (
                 (read-punctuator "(" parstate))
@@ -7587,7 +7590,7 @@
           ;; so we just return the empty parser state.
           ;; This is just logical:
           ;; execution stops at the RAISE above.
-          (b* ((parstate (init-parstate nil (c::version-c17) nil parstate)))
+          (b* ((parstate (init-parstate "" nil (c::version-c17) nil parstate)))
             (reterr t)))
          ;; If the parsing of any part of the parenthesized type name fails,
          ;; we have an unambiguous expression, already parsed.
@@ -7626,7 +7629,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ((mv erp-tyname tyname & parstate) ; ( tyname
@@ -7651,7 +7654,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ((mv erp-close-paren & parstate) ; ( tyname )
@@ -7676,7 +7679,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ;; If the parsing of the parenthesized type name succeeds,
@@ -7707,7 +7710,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate))))
       ;; If the expression is a parenthesized one,
@@ -7782,7 +7785,7 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t)))
                ((erp absdeclor span parstate)
                 (parse-abstract-declarator parstate)))
@@ -7807,7 +7810,8 @@
               ;; so we just return the empty parser state.
               ;; This is just logical:
               ;; execution stops at the RAISE above.
-              (b* ((parstate (init-parstate nil (c::version-c17) nil parstate)))
+              (b* ((parstate
+                    (init-parstate "" nil (c::version-c17) nil parstate)))
                 (reterr t)))
              ((mv erp absdeclor span-absdeclor parstate)
               (parse-abstract-declarator parstate)))
@@ -7846,7 +7850,7 @@
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
                     (b* ((parstate
-                          (init-parstate nil (c::version-c17) nil parstate)))
+                          (init-parstate "" nil (c::version-c17) nil parstate)))
                       (reterr t))))
                 (retok (amb?-declor/absdeclor-declor declor)
                        span-declor
@@ -7908,7 +7912,8 @@
                       ;; This is just logical:
                       ;; execution stops at the RAISE above.
                       (b* ((parstate
-                            (init-parstate nil (c::version-c17) nil parstate)))
+                            (init-parstate
+                             "" nil (c::version-c17) nil parstate)))
                         (reterr t))))
                   (retok (amb?-declor/absdeclor-declor declor)
                          span-declor
@@ -8270,7 +8275,7 @@
                    parstate))
            ;; If token2 is anything else, it is an error.
            (t ; [__extension__] declspecs other
-            (reterr-msg :where (position-to-msg (span->start span2))
+            (reterr-msg :where (span->start span2)
                         :expected "a declarator or a semicolon"
                         :found (token-to-msg token2))))))
        ;; If token is the keyword @('_Static_assert'),
@@ -8283,7 +8288,7 @@
                  parstate)))
        ;; If token is anything else, it is an error.
        (t ; other
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "a declaration specifier ~
                              or the _Static_assert keyword"
                     :found (token-to-msg token)))))
@@ -8375,7 +8380,7 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) nil parstate)))
+                      (init-parstate "" nil (c::version-c17) nil parstate)))
                   (reterr t)))
                ((erp decl span parstate) (parse-declaration parstate)))
             (retok (amb?-declon/stmt-declon decl) span parstate))
@@ -8410,7 +8415,7 @@
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
                     (b* ((parstate
-                          (init-parstate nil (c::version-c17) nil parstate)))
+                          (init-parstate "" nil (c::version-c17) nil parstate)))
                       (reterr t)))
                    ((mv erp decl span-decl parstate)
                     (parse-declaration parstate)))
@@ -8448,8 +8453,9 @@
                           ;; so we just return the empty parser state.
                           ;; This is just logical:
                           ;; execution stops at the RAISE above.
-                          (b* ((parstate (init-parstate nil (c::version-c17)
-                                                        nil parstate)))
+                          (b* ((parstate
+                                (init-parstate
+                                 "" nil (c::version-c17) nil parstate)))
                             (reterr t))))
                       (retok (amb?-declon/stmt-stmt expr)
                              (span-join span-expr span-semicolon)
@@ -8486,7 +8492,7 @@
                   ;; This is just logical:
                   ;; execution stops at the RAISE above.
                   (b* ((parstate
-                        (init-parstate nil (c::version-c17) nil parstate)))
+                        (init-parstate "" nil (c::version-c17) nil parstate)))
                     (reterr t)))
                  ((erp decl span parstate) (parse-declaration parstate)))
               (retok (amb?-declon/stmt-declon decl) span parstate))))))
@@ -8512,7 +8518,7 @@
              ((erp & parstate) (read-punctuator "]" parstate)) ; [ name ]
              ((erp token2 span2 parstate) (read-token parstate))
              ((unless (and token2 (token-case token2 :string)))
-              (reterr-msg :where (position-to-msg (span->start span2))
+              (reterr-msg :where (span->start span2)
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; [ name ] string
@@ -8537,7 +8543,7 @@
         (b* ((parstate (if token (unread-token parstate) parstate)) ;
              ((erp token2 span2 parstate) (read-token parstate))
              ((unless (and token2 (token-case token2 :string)))
-              (reterr-msg :where (position-to-msg (span->start span2))
+              (reterr-msg :where (span->start span2)
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; string
@@ -8642,7 +8648,7 @@
              ((erp & parstate) (read-punctuator "]" parstate)) ; [ name ]
              ((erp token2 span2 parstate) (read-token parstate))
              ((unless (and token2 (token-case token2 :string)))
-              (reterr-msg :where (position-to-msg (span->start span2))
+              (reterr-msg :where (span->start span2)
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; [ name ] string
@@ -8667,7 +8673,7 @@
         (b* ((parstate (if token (unread-token parstate) parstate)) ;
              ((erp token2 span2 parstate) (read-token parstate))
              ((unless (and token2 (token-case token2 :string)))
-              (reterr-msg :where (position-to-msg (span->start span2))
+              (reterr-msg :where (span->start span2)
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; string
@@ -8798,7 +8804,7 @@
        ;; it must be a colon, and we continue parsing.
        (t ; asm [asmquals] ( template other
         (b* (((unless (token-punctuatorp token2 ":"))
-              (reterr-msg :where (position-to-msg (span->start span2))
+              (reterr-msg :where (span->start span2)
                           :expected "a colon or a closed parenthesis"
                           :found (token-to-msg token2)))
              (psize (parsize parstate))
@@ -8831,7 +8837,7 @@
            ;; it must be a colon, and we continue parsing.
            (t ; asm [asmquals] ( template : [outputs] other
             (b* (((unless (token-punctuatorp token3 ":"))
-                  (reterr-msg :where (position-to-msg (span->start span3))
+                  (reterr-msg :where (span->start span3)
                               :expected "a colon or a closed parenthesis"
                               :found (token-to-msg token3)))
                  ;; asm [asmquals] ( template : [outputs] :
@@ -8862,7 +8868,7 @@
                (t ; asm [asmquals] ( template : [outputs] : [inputs] other
                 (b* (((unless (token-punctuatorp token4 ":"))
                       (reterr-msg
-                       :where (position-to-msg (span->start span4))
+                       :where (span->start span4)
                        :expected "a colon or a closed parenthesis"
                        :found (token-to-msg token4)))
                      ;; asm [asmquals] ( template : [outputs] : [inputs] :
@@ -8898,7 +8904,7 @@
                     ;; : [outputs] : [inputs] : [clobbers] other
                     (b* (((unless (token-punctuatorp token5 ":"))
                           (reterr-msg
-                           :where (position-to-msg (span->start span5))
+                           :where (span->start span5)
                            :expected "a colon or a closed parenthesis"
                            :found (token-to-msg token5)))
                          ;; asm [asmquals] ( template
@@ -9129,7 +9135,7 @@
                    parstate))
            ;; If token2 is anything else, it is an error.
            (t ; return other
-            (reterr-msg :where (position-to-msg (span->start span2))
+            (reterr-msg :where (span->start span2)
                         :expected "an expression or a semicolon"
                         :found (token-to-msg token2))))))
        ;; If token is the keyword 'if', we have a selection statement.
@@ -9276,7 +9282,7 @@
                              parstate)))
                    ;; If token4 is anything else, it is an error.
                    (t ; for ( ; expr ; other
-                    (reterr-msg :where (position-to-msg (span->start span4))
+                    (reterr-msg :where (span->start span4)
                                 :expected "an expression ~
                                            or a closed parenthesis"
                                 :found (token-to-msg token4))))))
@@ -9318,13 +9324,13 @@
                              parstate)))
                    ;; If token4 is anything else, it is an error.
                    (t ; for ( ; ; other
-                    (reterr-msg :where (position-to-msg (span->start span4))
+                    (reterr-msg :where (span->start span4)
                                 :expected "an expression ~
                                            or a closed parenthesis"
                                 :found (token-to-msg token4))))))
                ;; If token3 is anything else, it is an error.
                (t ; for ( ; other
-                (reterr-msg :where (position-to-msg (span->start span3))
+                (reterr-msg :where (span->start span3)
                             :expected "an expression ~
                                        or a semicolon"
                             :found (token-to-msg token3))))))
@@ -9400,7 +9406,7 @@
                                 parstate)))
                       ;; If token4 is anything else, it is an error.
                       (t ; for ( ; expr ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
+                       (reterr-msg :where (span->start span4)
                                    :expected "an expression ~
                                            or a closed parenthesis"
                                    :found (token-to-msg token4))))))
@@ -9443,13 +9449,13 @@
                                 parstate)))
                       ;; If token4 is anything else, it is an error.
                       (t ; for ( ; ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
+                       (reterr-msg :where (span->start span4)
                                    :expected "an expression ~
                                            or a closed parenthesis"
                                    :found (token-to-msg token4))))))
                   ;; If token3 is anything else, it is an error.
                   (t ; for ( ; other
-                   (reterr-msg :where (position-to-msg (span->start span3))
+                   (reterr-msg :where (span->start span3)
                                :expected "an expression ~
                                        or a semicolon"
                                :found (token-to-msg token3)))))
@@ -9510,7 +9516,7 @@
                                 parstate)))
                       ;; If token4 is anything else, it is an error.
                       (t ; for ( ; expr ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
+                       (reterr-msg :where (span->start span4)
                                    :expected "an expression ~
                                            or a closed parenthesis"
                                    :found (token-to-msg token4))))))
@@ -9553,13 +9559,13 @@
                                 parstate)))
                       ;; If token4 is anything else, it is an error.
                       (t ; for ( ; ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
+                       (reterr-msg :where (span->start span4)
                                    :expected "an expression ~
                                            or a closed parenthesis"
                                    :found (token-to-msg token4))))))
                   ;; If token3 is anything else, it is an error.
                   (t ; for ( ; other
-                   (reterr-msg :where (position-to-msg (span->start span3))
+                   (reterr-msg :where (span->start span3)
                                :expected "an expression ~
                                        or a semicolon"
                                :found (token-to-msg token3)))))
@@ -9620,7 +9626,7 @@
                                 parstate)))
                       ;; If token4 is anything else, it is an error.
                       (t ; for ( ; expr ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
+                       (reterr-msg :where (span->start span4)
                                    :expected "an expression ~
                                            or a closed parenthesis"
                                    :found (token-to-msg token4))))))
@@ -9663,13 +9669,13 @@
                                 parstate)))
                       ;; If token4 is anything else, it is an error.
                       (t ; for ( ; ; other
-                       (reterr-msg :where (position-to-msg (span->start span4))
+                       (reterr-msg :where (span->start span4)
                                    :expected "an expression ~
                                               or a closed parenthesis"
                                    :found (token-to-msg token4))))))
                   ;; If token3 is anything else, it is an error.
                   (t ; for ( ; other
-                   (reterr-msg :where (position-to-msg (span->start span3))
+                   (reterr-msg :where (span->start span3)
                                :expected "an expression ~
                                        or a semicolon"
                                :found (token-to-msg token3)))))))))))
@@ -9710,7 +9716,7 @@
                      (span-join span last-span)
                      parstate)))
            (t ; attrib other
-            (reterr-msg :where (position-to-msg (span->start span2))
+            (reterr-msg :where (span->start span2)
                         :expected "a semicolon or an expression"
                         :found (token-to-msg token2))))))
        ;; If token is the 'asm' (or variant) keyword,
@@ -9728,7 +9734,7 @@
           (retok (stmt-asm asm) span parstate)))
        ;; If token is anything else, it is an error.
        (t
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a keyword in {~
                                break, ~
@@ -9929,7 +9935,7 @@
                   ;; so we just return the initial parser state.
                   ;; This is just logical: execution stops at the RAISE above.
                   (b* ((parstate
-                        (init-parstate nil (c::version-c17) nil parstate)))
+                        (init-parstate "" nil (c::version-c17) nil parstate)))
                     (reterr t)))
                  (parstate (unread-token parstate)) ;
                  ((erp declon span parstate) ; declon
@@ -11715,7 +11721,7 @@
                  (t
                   ;; [__extension__] declspecs declor [asmspec] [attrspecs]
                   ;;   = initer other
-                  (reterr-msg :where (position-to-msg (span->start span4))
+                  (reterr-msg :where (span->start span4)
                               :expected "a semicolon or a comma"
                               :found (token-to-msg token4))))))
              ;; If token3 is a comma,
@@ -11872,7 +11878,7 @@
   (b* (((reterr) (irr-header-name) (irr-span) parstate)
        ((erp ident span parstate) (read-identifier parstate))
        ((unless (equal (ident->unwrap ident) "include"))
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "the 'include' identifier"
                     :found (msg "the '~s0' identifier"
                                 (ident->unwrap ident))))
@@ -12019,7 +12025,13 @@
   (with-local-stobj
     parstate
     (mv-let (erp tunit parstate)
-        (b* ((parstate (init-parstate data version skip-control-lines parstate))
+        (b* ((file (filepath->unwrap path))
+             ((unless (stringp file))
+              (raise "Internal error: malformed file path ~x0."
+                     (filepath-fix path))
+              (mv t (irr-transunit) parstate))
+             (parstate
+              (init-parstate file data version skip-control-lines parstate))
              ((mv erp tunit parstate) (parse-translation-unit parstate)))
           (if erp
               (if (msgp erp)

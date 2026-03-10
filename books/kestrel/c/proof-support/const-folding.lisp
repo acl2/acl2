@@ -42,6 +42,16 @@
     "These work on C integer constants of the form
      @('(<type>-from-integer <c>)'), e.g. @('(sint-from-integer 4)')."))
 
+  (defruled add-sint-sint-okp-const-fold
+    (implies (and (syntaxp (and (quotep c1)
+                                (quotep c2)))
+                  (sint-integerp c1)
+                  (sint-integerp c2)
+                  (sint-integerp (+ c1 c2)))
+             (add-sint-sint-okp (sint-from-integer c1)
+                                (sint-from-integer c2)))
+    :enable add-sint-sint-okp)
+
   (defruled sub-sint-sint-okp-const-fold
     (implies (and (syntaxp (and (quotep c1)
                                 (quotep c2)))
@@ -51,6 +61,17 @@
              (sub-sint-sint-okp (sint-from-integer c1)
                                 (sint-from-integer c2)))
     :enable sub-sint-sint-okp)
+
+  (defruled add-sint-sint-const-fold
+    (implies (and (syntaxp (and (quotep c1)
+                                (quotep c2)))
+                  (sint-integerp c1)
+                  (sint-integerp c2)
+                  (sint-integerp (+ c1 c2)))
+             (equal (add-sint-sint (sint-from-integer c1)
+                                   (sint-from-integer c2))
+                    (sint-from-integer (+ c1 c2))))
+    :enable add-sint-sint)
 
   (defruled sub-sint-sint-const-fold
     (implies (and (syntaxp (and (quotep c1)
@@ -121,7 +142,9 @@
 
 (defval *integer-const-folding*
   :short "List of constant folding rules for integer operations."
-  '(sub-sint-sint-okp-const-fold
+  '(add-sint-sint-okp-const-fold
+    sub-sint-sint-okp-const-fold
+    add-sint-sint-const-fold
     sub-sint-sint-const-fold
     lt-sint-sint-const-fold
     boolean-from-sint-const-fold
