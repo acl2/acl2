@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,7 +34,8 @@
     (b* ((version (if (eql ,std 23)
                       (if ,gcc (c::version-c23+gcc) (c::version-c23))
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (if (stringp ,input)
+         (parstate (init-parstate ""
+                                  (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
                                   version
@@ -65,7 +66,8 @@
     (b* ((version (if (eql ,std 23)
                       (if ,gcc (c::version-c23+gcc) (c::version-c23))
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (if (stringp ,input)
+         (parstate (init-parstate ""
+                                  (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
                                   version
@@ -88,18 +90,18 @@
 (test-lex
  lex-identifier/keyword
  " abc"
- :pos (position 8 4)
- :more-inputs ((char-code #\w) (position 8 3))
+ :pos (position "" 8 4)
+ :more-inputs ((char-code #\w) (position "" 8 3))
  :cond (and (equal ast (lexeme-token (token-ident (ident "w"))))
-            (equal pos/span (span (position 8 3) (position 8 3)))))
+            (equal pos/span (span (position "" 8 3) (position "" 8 3)))))
 
 (test-lex
  lex-identifier/keyword
  "abc456"
- :pos (position 8 4)
- :more-inputs ((char-code #\u) (position 8 3))
+ :pos (position "" 8 4)
+ :more-inputs ((char-code #\u) (position "" 8 3))
  :cond (and (equal ast (lexeme-token (token-ident (ident "uabc456"))))
-            (equal pos/span (span (position 8 3) (position 8 9)))))
+            (equal pos/span (span (position "" 8 3) (position "" 8 9)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -191,38 +193,38 @@
 (test-lex
  lex-*-digit
  ""
- :pos (position 1 1)
- :more-inputs ((position 1 0))
+ :pos (position "" 1 1)
+ :more-inputs ((position "" 1 0))
  :cond (and (equal ast nil)
-            (equal pos/span (position 1 0))
-            (equal pos/span2 (position 1 1))))
+            (equal pos/span (position "" 1 0))
+            (equal pos/span2 (position "" 1 1))))
 
 (test-lex
  lex-*-digit
  "+"
- :pos (position 1 1)
- :more-inputs ((position 1 0))
+ :pos (position "" 1 1)
+ :more-inputs ((position "" 1 0))
  :cond (and (equal ast nil)
-            (equal pos/span (position 1 0))
-            (equal pos/span2 (position 1 1))))
+            (equal pos/span (position "" 1 0))
+            (equal pos/span2 (position "" 1 1))))
 
 (test-lex
  lex-*-digit
  "6"
- :pos (position 10 10)
- :more-inputs ((position 10 9))
+ :pos (position "" 10 10)
+ :more-inputs ((position "" 10 9))
  :cond (and (equal ast '(#\6))
-            (equal pos/span (position 10 10))
-            (equal pos/span2 (position 10 11))))
+            (equal pos/span (position "" 10 10))
+            (equal pos/span2 (position "" 10 11))))
 
 (test-lex
  lex-*-digit
  "183a"
- :pos (position 10 10)
- :more-inputs ((position 10 9))
+ :pos (position "" 10 10)
+ :more-inputs ((position "" 10 9))
  :cond (and (equal ast '(#\1 #\8 #\3))
-            (equal pos/span (position 10 12))
-            (equal pos/span2 (position 10 13))))
+            (equal pos/span (position "" 10 12))
+            (equal pos/span2 (position "" 10 13))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -231,29 +233,29 @@
 (test-lex
  lex-*-hexadecimal-digit
  ""
- :pos (position 20 88)
- :more-inputs ((position 20 87))
+ :pos (position "" 20 88)
+ :more-inputs ((position "" 20 87))
  :cond (and (equal ast nil)
-            (equal pos/span (position 20 87))
-            (equal pos/span2 (position 20 88))))
+            (equal pos/span (position "" 20 87))
+            (equal pos/span2 (position "" 20 88))))
 
 (test-lex
  lex-*-hexadecimal-digit
  "dEadbeFf"
- :pos (position 1 1)
- :more-inputs ((position 1 0))
+ :pos (position "" 1 1)
+ :more-inputs ((position "" 1 0))
  :cond (and (equal ast '(#\d #\E #\a #\d #\b #\e #\F #\f))
-            (equal pos/span (position 1 8))
-            (equal pos/span2 (position 1 9))))
+            (equal pos/span (position "" 1 8))
+            (equal pos/span2 (position "" 1 9))))
 
 (test-lex
  lex-*-hexadecimal-digit
  "1"
- :pos (position 10 10)
- :more-inputs ((position 10 9))
+ :pos (position "" 10 10)
+ :more-inputs ((position "" 10 9))
  :cond (and (equal ast '(#\1))
-            (equal pos/span (position 10 10))
-            (equal pos/span2 (position 10 11))))
+            (equal pos/span (position "" 10 10))
+            (equal pos/span2 (position "" 10 11))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -434,7 +436,7 @@
  :cond (and (equal ast (list (c-char-char (char-code #\A))
                              (c-char-char (char-code #\B))
                              (c-char-char (char-code #\C))))
-            (equal pos/span (position 1 3))))
+            (equal pos/span (position "" 1 3))))
 
 (test-lex
  lex-*-c-char
@@ -442,7 +444,7 @@
  :cond (and (equal ast (list (c-char-char (char-code #\d))
                              (c-char-char (char-code #\"))
                              (c-char-char (char-code #\q))))
-            (equal pos/span (position 1 3))))
+            (equal pos/span (position "" 1 3))))
 
 (test-lex-fail
  lex-*-c-char
@@ -520,8 +522,8 @@
 (test-lex
  lex-character-constant
  "e'"
- :pos (position 1 1)
- :more-inputs (nil (position 1 0))
+ :pos (position "" 1 1)
+ :more-inputs (nil (position "" 1 0))
  :cond (equal ast
               (lexeme-token
                (token-const
@@ -532,8 +534,8 @@
 (test-lex
  lex-character-constant
  "\\aA'"
- :pos (position 1 2)
- :more-inputs ((cprefix-locase-u) (position 1 1))
+ :pos (position "" 1 2)
+ :more-inputs ((cprefix-locase-u) (position "" 1 1))
  :cond (equal ast
               (lexeme-token
                (token-const
@@ -545,14 +547,14 @@
 (test-lex-fail
  lex-character-constant
  "''"
- :pos (position 1 1)
- :more-inputs (nil (position 1 0)))
+ :pos (position "" 1 1)
+ :more-inputs (nil (position "" 1 0)))
 
 (test-lex-fail
  lex-character-constant
  (list 10 (char-code #\'))
- :pos (position 1 1)
- :more-inputs (nil (position 1 0)))
+ :pos (position "" 1 1)
+ :more-inputs (nil (position "" 1 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -561,8 +563,8 @@
 (test-lex
  lex-string-literal
  "\""
- :pos (position 1 1)
- :more-inputs (nil (position 1 0))
+ :pos (position "" 1 1)
+ :more-inputs (nil (position "" 1 0))
  :cond (equal ast
               (lexeme-token
                (token-string
@@ -571,8 +573,8 @@
 (test-lex
  lex-string-literal
  "helo\""
- :pos (position 10 10)
- :more-inputs ((eprefix-upcase-l) (position 10 9))
+ :pos (position "" 10 10)
+ :more-inputs ((eprefix-upcase-l) (position "" 10 9))
  :cond (equal ast
               (lexeme-token
                (token-string
@@ -585,12 +587,12 @@
 (test-lex-fail
  lex-string-literal
  "wrong'"
- :more-inputs (nil (position 1 0)))
+ :more-inputs (nil (position "" 1 0)))
 
 (test-lex-fail
  lex-string-literal
  (list 10 (char-code #\"))
- :more-inputs (nil (position 1 0)))
+ :more-inputs (nil (position "" 1 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

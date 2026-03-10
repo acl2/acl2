@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "positions")
+(include-book "spans")
 
 (include-book "../language/implementation-environments/versions")
 
@@ -202,50 +203,6 @@
                          (<= (nfix i) (len chars)))))
     :induct t
     :enable (update-nth nfix zp len)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod span
-  :short "Fixtype of spans."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A span consists of two positions,
-     which characterize a contiguous portion of a file.
-     Each parsed construct has a span.
-     The ending position of a span is inclusive."))
-  ((start position)
-   (end position))
-  :pred spanp
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-span
-  :short "An irrelevant span."
-  :type spanp
-  :body (make-span :start (irr-position) :end (irr-position)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption span-option
-  span
-  :short "Fixtype of optional spans."
-  :pred span-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define span-join ((span1 spanp) (span2 spanp))
-  :returns (span spanp)
-  :short "Join two spans."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The first span must come before the second one.
-     We return a new span that goes
-     from the start of the first span to the end of the second span."))
-  (make-span :start (span->start span1)
-             :end (span->end span2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1043,7 +1000,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp)
+(define init-parstate ((file stringp)
+                       (data byte-listp)
                        (version c::versionp)
                        (skip-control-lines booleanp)
                        parstate)
@@ -1053,7 +1011,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the state when we start parsing a file.
-     Given (the data of) a file to parse,
+     Given the name/path and the data of a file to parse,
      a C version,
      and a flag for skipping control lines or not,
      the initial parsing state consists of
@@ -1070,7 +1028,7 @@
      but then we may need to resize the array as needed
      while lexing and parsing."))
   (b* ((parstate (update-parstate->bytes data parstate))
-       (parstate (update-parstate->position (position-init) parstate))
+       (parstate (update-parstate->position (position-init file) parstate))
        (parstate (update-parstate->chars-length (len data) parstate))
        (parstate (update-parstate->chars-read 0 parstate))
        (parstate (update-parstate->chars-unread 0 parstate))
@@ -1102,7 +1060,8 @@
   ///
 
   (defrule parsize-of-initparstate
-    (equal (parsize (init-parstate nil version skip-control-lines parstate))
+    (equal (parsize
+            (init-parstate file nil version skip-control-lines parstate))
            0)
     :enable init-parstate))
 
