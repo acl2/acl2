@@ -561,6 +561,8 @@
     bool->bit-becomes-bool-to-bit ; bool->bit is from std
     bit->bool-becomes-bit-to-bool
     logbitp-to-getbit-equal-1 ;rename
+
+    bitp-becomes-unsigned-byte-p ; since our rules use unsigned-byte-p
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
