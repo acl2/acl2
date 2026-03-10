@@ -92,7 +92,16 @@
             arm::execute-cmp-register-shifted-register-alt
             arm::execute-cmn-immediate-alt
             arm::execute-cmn-register-alt
-            arm::execute-cmn-register-shifted-register-alt)
+            arm::execute-cmn-register-shifted-register-alt
+
+            ;; These support relieving hyps of the -alt rules:
+            arm::cmn-immediate-argsp
+            arm::cmn-register-argsp
+            arm::cmn-register-shifted-register-argsp
+            arm::cmp-immediate-argsp
+            arm::cmp-register-argsp
+            arm::cmp-register-shifted-register-argsp
+            )
           '(arm::mov-common
             arm::mov-register-core
             arm::pop-encoding-a2-core
@@ -133,10 +142,55 @@
      arm::r14
      arm::r15
 
+     arm::conditionpassed-of-0 ;; FIXME: Need to add rules to handle all combinations of the resulting condition functions with things like cmp-zero/cmn-zero
+     arm::conditionpassed-of-1
+     arm::conditionpassed-of-2
+     arm::conditionpassed-of-3
+     arm::conditionpassed-of-4
+     arm::conditionpassed-of-5
+     arm::conditionpassed-of-6
+     arm::conditionpassed-of-7
+     arm::conditionpassed-of-8
+     arm::conditionpassed-of-9
+     arm::conditionpassed-of-10
+     arm::conditionpassed-of-11
+     arm::conditionpassed-of-12
+     arm::conditionpassed-of-13
+     arm::conditionpassed-of-14
+     arm::conditionpassed-of-15
+     ;; arm::conditionpassed-of-set-reg ; these are not needed if we always can open conditionpassed
+     ;; arm::conditionpassed-of-write
+
+     ;; cmn rules: ; todo: add the rest!
+     arm::eq-condition-of-cmn-zero
+     arm::ne-condition-of-cmn-zero
+
+     ;; cmp rules: ; todo: add the rest!
+     arm::eq-condition-of-cmp-zero
+     arm::ne-condition-of-cmp-zero
+     arm::hi-condition-of-cmp-carry-and-cmp-zero
+     arm::ls-condition-of-cmp-carry-and-cmp-zero
+
+     arm::eq-condition-constant-opener
+     arm::ne-condition-constant-opener
+     arm::cs-condition-constant-opener
+     arm::cc-condition-constant-opener
+     arm::mi-condition-constant-opener
+     arm::pl-condition-constant-opener
+     arm::vs-condition-constant-opener
+     arm::vc-condition-constant-opener
+     arm::hi-condition-constant-opener
+     arm::ls-condition-constant-opener
+     arm::ge-condition-constant-opener
+     arm::lt-condition-constant-opener
+     arm::gt-condition-constant-opener
+     arm::le-condition-constant-opener
+
+
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
      arm::ldr-literal-core
-     arm::conditionpassed
+
      arm::uint
      arm::zeroextend
      arm::nullcheckifthumbee
@@ -228,6 +282,8 @@
      arm::isetstate-of-set-apsr.v
      arm::isetstate-of-set-apsr.q
      arm::isetstate-of-write
+
+     arm::update-isetstate-when-equal-of-isetstate
 
      ;;;
 
@@ -357,10 +413,25 @@
      arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
      arm::iszerobit
      arm::iszero
+
+     arm::unsigned-byte-p-of-cmn-sign
+     arm::unsigned-byte-p-of-cmn-zero
+     arm::unsigned-byte-p-of-cmn-carry
+     arm::unsigned-byte-p-of-cmn-overflow
+
+     arm::unsigned-byte-p-of-cmp-sign
+     arm::unsigned-byte-p-of-cmp-zero
+     arm::unsigned-byte-p-of-cmp-carry
+     arm::unsigned-byte-p-of-cmp-overflow
+
      )
 ;   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
+   ;; bv rules:
+   '(acl2::bitnot-of-bitxor-of-1 ; move to core-rules-bv
+     acl2::bitxor-of-1-and-bitnot ; move to core-rules-bv
+     )
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)

@@ -2,7 +2,7 @@
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -59,9 +59,13 @@
            :in-theory (e/d (;bitxor
                             ) (bvxor-1-becomes-bitxor)))))
 
-;fixme just choose bitnot or bitxor 1...
+;; for when we are not just choosing a the normal form (either (bitnot x) or (bitxor 1 x)).
 (defthm bitnot-of-bitxor-of-1
   (equal (bitnot (bitxor 1 x))
+         (getbit 0 x)))
+
+(defthm bitxor-of-1-and-bitnot
+  (equal (bitxor 1 (bitnot x))
          (getbit 0 x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -43,6 +43,7 @@
 (include-book "kestrel/axe/rules1" :dir :system)
 (include-book "rewriter")
 (include-book "support")
+(include-book "kestrel/arm/rules" :dir :system)
 (include-book "../make-evaluator")
 (include-book "../evaluator-support")
 (include-book "../supporting-functions")
