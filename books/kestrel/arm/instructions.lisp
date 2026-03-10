@@ -803,7 +803,6 @@
            (unsigned-byte-p size (cmp-overflow x y)))
   :hints (("Goal" :in-theory (enable cmp-overflow))))
 
-;; todo: recharacterize the other CMP instructions
 (def-inst :cmp-immediate
     (b* (;; EncodingSpecificOperations:
          (n (uint 4 rn))
