@@ -36,7 +36,7 @@
                               (,clang (c::version-c23+clang))
                               (t (c::version-c23))))))
          (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp chars poss) (read-chars+positions ,input ienv)))
+         ((mv erp chars poss) (read-chars+positions "" ,input ienv)))
       (if ,fail
           (and erp (not (cw "~@0" erp)))
         (and (not erp)
@@ -44,14 +44,14 @@
              (equal poss ,poss))))))
 
 (defmacro pos (line column)
-  `(position ,line ,column))
+  `(position "" ,line ,column))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-bytes-to-chars+poss
  :input nil ; empty file
  :chars nil
- :poss (list (position 1 0)))
+ :poss (list (pos 1 0)))
 
 (test-bytes-to-chars+poss
  :input '(0) ; disallowed character 0

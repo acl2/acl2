@@ -116,6 +116,7 @@
             arm::ldm-loop-base
             arm::ldm-loop-unroll
             arm::ldm-core
+            arm::ldr-literal-core
             arm::stm-loop-base
             arm::stm-loop-unroll)))
 
@@ -170,6 +171,8 @@
      arm::ne-condition-of-cmp-zero
      arm::hi-condition-of-cmp-carry-and-cmp-zero
      arm::ls-condition-of-cmp-carry-and-cmp-zero
+     arm::le-condition-cmp-idiom
+     arm::gt-condition-cmp-idiom
 
      arm::eq-condition-constant-opener
      arm::ne-condition-constant-opener
@@ -189,8 +192,7 @@
 
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
-     arm::ldr-literal-core
-
+     arm::signextend ; exposes BVSX
      arm::uint
      arm::zeroextend
      arm::nullcheckifthumbee
@@ -198,14 +200,18 @@
      arm::align ; redef?
      arm::div
      arm::memu
+     arm::mema
      arm::advance-pc
-     arm::pc ; should we open this? if so, do it in the assumptions too
+     arm::pc ; exposes the call to REG ; should we open this? if so, do it in the assumptions too
+     arm::sp ; exposes the call to REG
+     arm::lr ; exposes the call to REG
 
      arm::register-numberp
      arm::add-to-address
 
      arm::archversion ; exposes the stobj accessor
      arm::currentinstrset ; exposes the stobj accessor
+     arm::selectinstrset ; restrict?
 
      ;; Read-of-write rules (some commented-out rules are not currently
      ;; needed due to our current choice of normal forms):
@@ -401,6 +407,8 @@
      acl2::bvcount-constant-opener
      arm::integerp-of-reg
      arm::unsigned-byte-p-32-of-reg
+     arm::bvchop-of-reg ; rename?
+     arm::getbit-of-reg-too-high
      ;; arm::write-byte-of-set-reg ; we always use write as the normal form
      arm::write-of-set-reg
      arm::set-reg-of-set-reg-same
@@ -455,8 +463,11 @@
      arm::read-of-bvchop-32 ; todo: say which arg
      arm::read-of-+ ; needed?
 
+     arm::bvchop-of-read-safe
+     ;; arm::bvchop-of-read ; causes issues with SMT not knowing that 2 reads of different sizes from the same address are related
+
      ;; UNCOMMENT:
-     ;; bvchop-of-read
+
      ;; <-of-read ; for an array pattern rule
      ;; not-equal-of-read-and-constant
      ;; not-equal-of-constant-and-read
