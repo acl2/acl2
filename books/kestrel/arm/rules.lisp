@@ -262,14 +262,14 @@
 (defthm equal-of-cmp-sign-and-cmp-overflow-becomes-sbvle
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
-           (equal (equal (arm::cmp-sign x y) (arm::cmp-overflow x y))
+           (equal (equal (cmp-sign x y) (cmp-overflow x y))
                   (sbvle 32 y x)))
   :otf-flg t
   :hints (("Goal"
            :use (:instance acl2::split-bv (x y) (n 32) (m 31))
-           :in-theory (e/d (arm::cmp-sign
-                            arm::cmp-overflow
-                            arm::addwithcarry-overflow
+           :in-theory (e/d (cmp-sign
+                            cmp-overflow
+                            addwithcarry-overflow
                             acl2::sbvlt-rewrite bvminus bvplus
                             acl2::getbit-of-+
                             bvlt
@@ -318,7 +318,7 @@
                 (unsigned-byte-p 32 y)
                 (unsigned-byte-p 32 (bvplus 33 carry_in y))
                 (bitp carry_in))
-           (equal (mv-nth '1 (arm::addwithcarry '32 x y carry_in))
+           (equal (mv-nth '1 (addwithcarry '32 x y carry_in))
                   (if (if (sbvle 32 0 x) ; todo: generalize?
                           (sbvle 32 (- (expt 2 32) (bvplus 32 y carry_in)) x)
                         t)
