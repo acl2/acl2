@@ -107,6 +107,35 @@
   :hints (("Goal" :in-theory (enable cmp-carry mv-nth-1-of-addwithcarry
                                      bvnot bvplus bvlt lognot acl2::getbit-of-+))))
 
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+;move
+;; (local
+;;   (defthm sbvlt-32-of-bvminus-1-and-bvminus-1
+;;     (implies (and (not (equal x (expt 2 31)))
+;;                   (not (equal y (expt 2 31)))
+;;                   (unsigned-byte-p 32 x)
+;;                 (unsigned-byte-p 32 y))
+;;              (equal (sbvlt 32 (bvminus 32 x 1) (bvminus 32 y 1))
+;;                     (sbvlt 32 x y)))
+;;     :otf-flg t
+;;     :hints (("Goal" :in-theory (enable acl2::sbvlt-rewrite bvlt bvplus acl2::bvchop-of-sum-cases)))))
+
+;; todo: improve the rhs? e.g., using sbvlt-32-of-bvminus-1-and-bvminus-1
+(defthmd cmp-overflow-elim
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cmp-overflow x y)
+                  (bool-to-bit (or ;; see signed-addition-overflowsp:
+                                 (and (sbvle 32 0 x)
+                                      (sbvlt 32 (bvminus 32 (bvminus 32 2147483647 x) 1)
+                                             (bvminus 32 (bvuminus 32 y) 1)))
+                                 ;; see signed-addition-underflowsp:
+                                 (and (sbvlt 32 x 0)
+                                      (sbvlt 32 (bvminus 32 (bvuminus 32 y) 1)
+                                             (bvminus 32 (bvminus 32 -2147483648 x) 1)))))))
+  :hints (("Goal" :in-theory (e/d (cmp-overflow addwithcarry-overflow acl2::bvnot-becomes-bvminus-of-bvuminus-and-1)
+                                  (acl2::bvminus-becomes-bvplus-of-bvuminus)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm eq-condition-of-cmn-zero
@@ -143,19 +172,34 @@
   :hints (("Goal" :in-theory (enable ne-condition
                                      cmp-zero-elim))))
 
+;; todo: need more of these!
+(defthm hi-condition-of-cmp-carry-and-cmp-zero
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (hi-condition (cmp-carry x y) (cmp-zero x y))
+                  (not (bvle 32 x y))))
+  :hints (("Goal" :in-theory (enable hi-condition cmp-zero-elim cmp-carry-elim))))
+
+(defthm ls-condition-of-cmp-carry-and-cmp-zero
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (ls-condition (cmp-carry x y) (cmp-zero x y))
+                  (bvle 32 x y)))
+  :hints (("Goal" :in-theory (enable ls-condition cmp-zero-elim cmp-carry-elim))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(acl2::def-constant-opener arm::eq-condition)
-(acl2::def-constant-opener arm::ne-condition)
-(acl2::def-constant-opener arm::cs-condition)
-(acl2::def-constant-opener arm::cc-condition)
-(acl2::def-constant-opener arm::mi-condition)
-(acl2::def-constant-opener arm::pl-condition)
-(acl2::def-constant-opener arm::vs-condition)
-(acl2::def-constant-opener arm::vc-condition)
-(acl2::def-constant-opener arm::hi-condition)
-(acl2::def-constant-opener arm::ls-condition)
-(acl2::def-constant-opener arm::ge-condition)
-(acl2::def-constant-opener arm::lt-condition)
-(acl2::def-constant-opener arm::gt-condition)
-(acl2::def-constant-opener arm::le-condition)
+(acl2::def-constant-opener eq-condition)
+(acl2::def-constant-opener ne-condition)
+(acl2::def-constant-opener cs-condition)
+(acl2::def-constant-opener cc-condition)
+(acl2::def-constant-opener mi-condition)
+(acl2::def-constant-opener pl-condition)
+(acl2::def-constant-opener vs-condition)
+(acl2::def-constant-opener vc-condition)
+(acl2::def-constant-opener hi-condition)
+(acl2::def-constant-opener ls-condition)
+(acl2::def-constant-opener ge-condition)
+(acl2::def-constant-opener lt-condition)
+(acl2::def-constant-opener gt-condition)
+(acl2::def-constant-opener le-condition)
