@@ -26,6 +26,7 @@
 (include-book "files")
 
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
+(include-book "kestrel/fty/string-option" :dir :system)
 (include-book "std/strings/strpos" :dir :system)
 (include-book "std/strings/strrpos" :dir :system)
 
@@ -282,7 +283,7 @@
      We capture these different modes of operations via this fixtype:")
    (xdoc::ul
     (xdoc::li
-     "The @(':text') mode is for text lines (see ABNF grammar),
+     "The @(':line') mode is for text lines (see ABNF grammar),
       as well as for the rest of the lines of certain directives.
       The stopping criterion is the end of the line,
       and macro replacement is the normal one.")
@@ -3625,6 +3626,177 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define find-first-token/newline ((lexemes plexeme-listp))
+  :returns (mv (wsc plexeme-listp)
+               (token/newline? plexeme-optionp)
+               (lexemes-rest plexeme-listp))
+  :short "Find the first token or new line in a list of lexemes, if any."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no token or new line, we return @('nil').
+     If there is a token or new line, we return it,
+     along with any preceding white space and comments,
+     and with the remaining lexemes."))
+  (b* (((when (endp lexemes)) (mv nil nil nil))
+       (lexeme (car lexemes))
+       ((when (or (plexeme-tokenp lexeme)
+                  (plexeme-case lexeme :newline)))
+        (mv nil (plexeme-fix lexeme) (plexeme-list-fix (cdr lexemes))))
+       ((mv wsc token/newline? lexemes)
+        (find-first-token/newline (cdr lexemes))))
+    (mv (cons (plexeme-fix lexeme) wsc) token/newline? lexemes))
+
+  ///
+
+  (defret len-of-find-first-token/newline
+    (implies token/newline?
+             (< (len lexemes-rest)
+                (len lexemes)))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check/eval-pnumber-all-digits ((number pnumberp))
+  :returns (mv (okp booleanp)
+               (val natp :rule-classes (:rewrite :type-prescription)))
+  :short "Check if a preprocessing number consists of all decimal digits,
+          at the same time evaluating it if it does."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the number does not satisfy that condition,
+     the first result is @('nil') and the second (irrelevant) is 0."))
+  (pnumber-case
+   number
+   :digit (mv t (str::dec-digit-char-value number.digit))
+   :number-digit (b* (((mv okp val)
+                       (check/eval-pnumber-all-digits number.number))
+                      ((unless okp) (mv nil 0))
+                      (val (* val 10))
+                      (val (+ val (str::dec-digit-char-value number.digit))))
+                   (mv t val))
+   :otherwise (mv nil 0))
+  :measure (pnumber-count number)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define line-digit-sequence-and-string-literal ((lexemes plexeme-listp))
+  :returns (mv erp
+               (wsc-before plexeme-listp)
+               (line posp)
+               (wsc-between plexeme-listp)
+               (file? string-optionp)
+               (wsc-after plexeme-listp)
+               (newline? plexeme-optionp))
+  :short "Obtain a line number and optionally a string literal
+          from a list of lexemes, if possible."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called on the result of macro-expanding
+     what follows a @('#line') directive:
+     see @(tsee pproc-line).
+     There may be comments and (non-new-line) white space
+     before the line number,
+     between the line and the string (if the string is present),
+     and after the string (if present) or line (if the string is not present):
+     we return these chunks as well;
+     the `between' chunk is @('nil') if there is no string literal.
+     We also return the ending new line, if present.")
+   (xdoc::p
+    "There must be a token that is a preprocessing number,
+     consisting only of decimal digits,
+     whose value must be positive,
+     and no more than 2,147,483,647 (i.e. @($2^{31}-1$))."))
+  (b* (((reterr) nil 1 nil nil nil nil)
+       ((mv wsc-before toknl? lexemes) (find-first-token/newline lexemes))
+       ((unless (and toknl? (plexeme-case toknl? :number))) ; #line <number>
+        (reterr (msg "Expected a sequence of digits after macro expansion; ~
+                      found ~x0 instead."
+                     toknl?)))
+       (number (plexeme-number->number toknl?))
+       ((mv okp line) (check/eval-pnumber-all-digits number))
+       ((unless okp)
+        (reterr (msg "Expected a sequence of digits after macro expansion; ~
+                      found ~x0 instead."
+                     toknl?)))
+       ((unless (and (< 0 line)
+                     (< line (expt 2 31))))
+        (reterr (msg "Expected a sequence of digits after macro expansion ~
+                      with value from 1 to 2,147,483,647 (both inclusive); ~
+                      found one with value ~x0 instead." line)))
+       ((mv wsc-between/after toknl? lexemes) (find-first-token/newline lexemes))
+       ((unless (and toknl? (plexeme-tokenp toknl?))) ; #line <number> EOL/EOF
+        (retok wsc-before line nil nil wsc-between/after toknl?))
+       ((unless (plexeme-case toknl? :string)) ; #line <number> <string>
+        (reterr (msg "Expected a string literal after macro expansion; ~
+                      found ~x0 instead."
+                     toknl?)))
+       ((stringlit stringlit) (plexeme-string->literal toknl?))
+       ((when stringlit.prefix?)
+        (reterr (msg "Expected a string literal without prefix ~
+                      after macro expansion; ~
+                      found ~x0 instead."
+                     stringlit)))
+       (bytes (pprint-s-char-list stringlit.schars nil))
+       (file (acl2::nats=>string bytes))
+       (wsc-between wsc-between/after)
+       ((mv wsc-after newline? &) (find-first-token/newline lexemes))
+       ((unless (or (not newline?) ; #line <number> <string> EOL/EOF
+                    (plexeme-case newline? :newline)))
+        (retok wsc-before line wsc-between file wsc-after newline?)))
+    (reterr (msg "Expected a new line or end of file after macro expansion; ~
+                  found ~x0 instead."
+                 newline?)))
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::unsigned-byte-listp-rewrite-byte-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pproc-line ((ppstate ppstatep))
+  :returns (mv erp (new-ppstate ppstatep))
+  :short "Preprocess a @('#line') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just after the @('line') identifier has been parsed.")
+   (xdoc::p
+    "Since neither digit sequences nor string literals
+     get modified by macro expansion,
+     we always perform macro expansion,
+     and then we check whether the result has one of the two forms
+     required in [C17:6.10.4/3] and [C17:6.10.4/4];
+     the macro expansion, in general, handles the form in [C17:6.10.4/5]."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) ppstate)
+       ((erp rev-lexmarks ppstate)
+        (pproc-lexemes (macrep-mode-line)
+                       nil ; rev-lexmarks
+                       0 ; paren-level
+                       nil ; no-expandp
+                       nil ; disabled
+                       nil ; directivep
+                       ppstate
+                       1000000000)) ; limit
+       ((unless (lexmark-list-case-lexeme-p rev-lexmarks))
+        (raise "Internal error: ~x0 contains markers.")
+        (reterr t))
+       (rev-lexemes (lexmark-list-to-lexeme-list rev-lexmarks))
+       (lexemes (rev rev-lexemes))
+       ((erp & line & file? & &)
+        (line-digit-sequence-and-string-literal lexemes))
+       (ppstate (if file?
+                    (change-presumed-line+file line file? ppstate)
+                  (change-presumed-line line ppstate))))
+    (retok ppstate))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define rebuild-include-directive ((nontoknls-before-hash plexeme-listp)
                                    (nontoknls-after-hash plexeme-listp)
                                    (nontoknls-before-header plexeme-listp)
@@ -4412,7 +4584,12 @@
                          ppstate
                          state)))
                ((equal directive "line") ; # line
-                (reterr (msg "#line directive not yet supported."))) ; TODO
+                (b* (((erp ppstate) (pproc-line ppstate)))
+                  (retok nil ; no group parts
+                         nil ; no group ending
+                         (string-pfile-alist-fix pfiles)
+                         ppstate
+                         state)))
                ((equal directive "error") ; # error
                 (b* (((erp ppstate) (pproc-error ppstate)))
                   (retok nil ; no group parts
@@ -5096,8 +5273,6 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
-
-  :guard-debug t ; TODO: remove
 
   :guard-hints
   (("Goal" :in-theory (enable alistp-when-string-pfile-alistp-rewrite
