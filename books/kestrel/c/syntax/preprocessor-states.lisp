@@ -751,32 +751,6 @@
     (ppstate->position index ppstate))
   :no-function nil)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(define ppstate->presumed-position ((ppstate ppstatep))
-  :returns (pos positionp)
-  :short "Presumed position in the preprocesor state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is explained in @(tsee ppstate).
-     We add the offset to the line of the current position.
-     We throw a hard error if the result is not a positive integer;
-     this should never happen,
-     because the @('#line') directive must always specify a positive integer
-     [C17:6.10.4],
-     and thus adding the offset would never result in
-     a non-positive integer."))
-  (b* ((pos (ppstate->current-position ppstate))
-       (line (position->line pos))
-       (offset (ppstate->line-offset ppstate))
-       (presumed-line (+ line offset))
-       ((unless (posp presumed-line))
-        (raise "Internal error: presumed line is ~x0." presumed-line)
-        (irr-position)))
-    (change-position pos :line (+ line offset)))
-  :no-function nil)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-ppstate ((file-name stringp)
