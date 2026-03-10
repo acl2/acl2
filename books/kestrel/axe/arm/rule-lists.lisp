@@ -516,7 +516,7 @@
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1
-     acl2::bv-array-read-chunk-little-unroll
+     acl2::bv-array-read-chunk-little-unroll ; todo: think about this
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
 
      acl2::bv-list-read-chunk-little-of-cons-irrel
