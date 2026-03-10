@@ -994,6 +994,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption stringlit-option
+  stringlit
+  :short "Fixtype of optional string literals."
+  :pred stringlit-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist stringlit-list
   :short "Fixtype of lists of string literals."
   :long
