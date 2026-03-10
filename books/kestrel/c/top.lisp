@@ -13,6 +13,7 @@
 
 (include-book "language/top")
 (include-book "representation/top")
+(include-book "proof-support/top")
 (include-book "atc/top")
 (include-book "syntax/top")
 (include-book "transformation/top")
@@ -74,6 +75,11 @@
      "The "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cppinternals/"
                   "GNU C Preprocessor Internals")
+     ".")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html"
+                  "Clang Language Extensions")
      "."))
    (xdoc::p
     "In the documentation of this library,
@@ -82,8 +88,9 @@
      `[C17]',
      `[GCCM]',
      `[GCCL]',
-     `[CPPM]', and
-     `[CPPI]';
+     `[CPPM]',
+     `[CPPI]', and
+     `[CLE]';
      sections are referenced
      by appending their designations separated by colon,
      e.g. `[C17:6.2.6]' references Section 6.2.6 of [C17];
@@ -111,6 +118,14 @@
      we always clearly distinguish between
      standard C and GCC extensions.")
    (xdoc::p
+    "Likewise, we provide support for Clang extensions.
+     Clang attempts to support a broad range of GCC extensions,
+     while also providing a few of its own.
+     Since Clang mostly follows GCC, we frequently refer to ``GCC extensions''
+     in the documentation to refer to extensions supported by both systems,
+     and only mention Clang specifically
+     when a particular extension is unsupported by Clang.")
+   (xdoc::p
     "When referencing concepts that are the same in [C23] and [C17],
      we prefer to just reference [C23].
      However, since we started developing this library before [C23],
@@ -119,6 +134,7 @@
      we take care to reference both."))
   :order-subtopics (language
                     representation
+                    proof-support
                     atc
                     c$::syntax-for-tools
                     c2c::transformation-tools

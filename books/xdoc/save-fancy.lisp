@@ -404,7 +404,7 @@
   state)
 ||#
 
-(defun save-json-files (topics dir state)
+(defun save-json-files (topics dir error-on-non-existent-parents state)
   (b* ((topics0 (force-missing-parents
                  (maybe-add-top-topic
                   (normalize-parents-list
@@ -481,8 +481,8 @@
                  (makunbound-global 'xdoc-get-event-table state))))
 
     (or (not orphans)
-        (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~
-             topics may only show up in the index pages.~%~%" orphans))
+        (not error-on-non-existent-parents)
+        (er hard? 'save-json-files "Found topics with non-existent parents:~%~x0" orphans))
 
     (fast-alist-free topics-fal)
     (fast-alist-free uid-map)
@@ -655,12 +655,12 @@
                   (t msg-list))))
            msg-list))))))))
 
-(defun save-fancy (all-topics dir zip-p logo-image broken-links-limit state)
+(defun save-fancy (all-topics dir zip-p logo-image broken-links-limit error-on-non-existent-parents state)
   (prog2$
    (check-xdoc-topics all-topics nil)
    (b* ((state (f-put-global 'broken-links-limit broken-links-limit state))
         (state (prepare-fancy-dir dir logo-image state))
-        (state (save-json-files all-topics dir state))
+        (state (save-json-files all-topics dir error-on-non-existent-parents state))
         (state (if zip-p
                    (run-fancy-zip dir state)
                  state)))

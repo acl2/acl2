@@ -39,7 +39,10 @@
 
 (defund-inline increment-tries (tries)
   (declare (xargs :guard (triesp tries)))
-  (if tries (+ 1 tries) tries))
+  (if tries
+      (+ 1 (the (integer 0 *) tries))
+    ;; not counting tries:
+    tries))
 
 (defthm triesp-of-increment-tries
   (implies (triesp x)

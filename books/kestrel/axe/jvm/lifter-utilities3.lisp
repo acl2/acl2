@@ -87,8 +87,8 @@
   (b* ((- (cw "(Running initializer for ~x0.~%" class-name))
        ((mv erp term-to-run) (dagify-term `(run-until-return-from-stack-height
                                              (binary-+ '1 (stack-height s0))
-                                             ;; The dag-to-term here might be slow:
-                                             (jvm::invoke-static-initializer-for-next-class ',class-name (th) ,(dag-to-term s-dag))
+                                             ;; The dag2term here might be slow:
+                                             (jvm::invoke-static-initializer-for-next-class ',class-name (th) ,(dag2term s-dag))
                                              )))
        ((when erp) (mv erp nil state))
        (- (cw "Term to run: ~x0" term-to-run))
@@ -245,7 +245,7 @@
                                     )
                             state))
        ((when erp) (mv erp nil state)))
-    (mv (erp-nil) (dag-to-term result-dag) state)))
+    (mv (erp-nil) (dag2term result-dag) state)))
 
 ;; Returns (mv erp term state).
 (defmacro initialize-classes-in-arbitrary-state (class-names

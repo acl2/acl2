@@ -9,6 +9,8 @@ def-simplified-basic, and unroll-spec-basic.  See
 [top.lisp/](top.lisp) for more information about the files in this
 directory.
 
+The [arm/](arm) subdirectory contains Axe tools for ARM binary programs.
+
 The [jvm/](jvm) subdirectory contains Axe tools for JVM bytecode programs.
 
 The [x86/](x86) subdirectory contains Axe tools for x86 binary programs.
@@ -18,6 +20,8 @@ The [risc-v/](risc-v) subdirectory contains Axe tools for RISC-V binary programs
 The [r1cs/](r1cs) subdirectory contains Axe tools for Rank-1 Constraint Systems.
 
 See also the examples in:
+
+[arm/examples/](arm/examples)
 
 [jvm/examples/](jvm/examples)
 

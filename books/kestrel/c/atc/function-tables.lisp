@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,6 +10,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "C")
+
+(include-book "limits")
 
 (include-book "../language/types")
 (include-book "../language/abstract-syntax")
@@ -80,24 +82,25 @@
      "The locally generated theorem for
       the unnormalized definition of the guard function."))
    (xdoc::p
-    "The limit is a term that may depend on the function's parameters.
+    "The limit may depend on the function's parameters.
      For a non-recursive function,
-     the term expresses a limit that suffices to execute @(tsee exec-fun)
+     the limit is one that suffices to execute @(tsee exec-fun)
      on the C function generated from the ACL2 function
      when the arguments of the C functions have values
      symbolically expressed by the ACL2 function's formal parameters.
      For a recursive function,
-     the term expresses a limit that suffices to execute @(tsee exec-stmt-while)
+     the limit is one that suffices to execute @(tsee exec-stmt-while)
      on the C loop generated from the ACL2 function
      when the variables read by the C loop have values
      symbolically expressed by the ACL2 function's formal parameters.
      If none of the target ACL2 functions are recursive,
-     all the limit terms are quoted constants;
+     all the limits are constants;
      if there are recursive functions,
      then those, and all their direct and indirect callers,
-     have limit terms that in general depend on each function's parameters.
-     All these limit terms are calculated
-     when the C code is generated from the ACL2 functions."))
+     have limits that in general depend on each function's parameters.
+     All these limits are calculated
+     when the C code is generated from the ACL2 functions.
+     See @(see atc-limits)."))
   ((out-type type-option)
    (in-types type-list)
    (loop? stmt-option)
@@ -108,7 +111,7 @@
    (correct-mod-thm symbol)
    (measure-nat-thm symbol)
    (fun-env-thm symbol)
-   (limit pseudo-term)
+   (limit limit-term)
    (guard symbol)
    (guard-unnorm symbol))
   :pred atc-fn-infop)

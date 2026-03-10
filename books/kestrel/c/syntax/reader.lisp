@@ -306,7 +306,7 @@
        ((when (= (logand byte #b11100000) #b11000000)) ; 110xxxyy
         (b* (((unless (and (consp bytes)
                            (> parstate.size 1)))
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 110... ~
@@ -317,7 +317,7 @@
              (byte2 (car bytes))
              (bytes (cdr bytes))
              ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -329,7 +329,7 @@
              (code (+ (ash (logand byte #b00011111) 6)
                       (logand byte2 #b00111111)))
              ((when (< code #x80))
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "a value between 80h and 7FFh ~
                                           UTF-8-encoded in the two bytes ~
                                           (~x0 ~x1)"
@@ -357,7 +357,7 @@
        ((when (= (logand byte #b11110000) #b11100000)) ; 1110xxxx
         (b* (((unless (and (consp bytes)
                            (> parstate.size 1)))
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
@@ -368,7 +368,7 @@
              (byte2 (car bytes))
              (bytes (cdr bytes))
              ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyyyzz
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -379,7 +379,7 @@
                           :found (msg "the byte ~x0" byte2)))
              ((unless (and (consp bytes)
                            (> parstate.size 2)))
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
@@ -393,7 +393,7 @@
              (byte3 (car bytes))
              (bytes (cdr bytes))
              ((unless (= (logand byte3 #b11000000) #b10000000)) ; 10zzwwww
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -409,7 +409,7 @@
                       (ash (logand byte2 #b00111111) 6)
                       (logand byte3 #b00111111)))
              ((when (< code #x800))
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "a value between 800h and FFFFh ~
                                           UTF-8-encoded in the three bytes ~
                                           (~x0 ~x1 ~x2)"
@@ -419,7 +419,7 @@
                              (<= code #x202e))
                         (and (<= #x2066 code)
                              (<= code #x2069))))
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected "a Unicode character with code ~
                                      in the range 9-13 or 32-126 ~
                                      or 128-8233 or 8239-8293 or ~
@@ -447,7 +447,7 @@
        ((when (= (logand #b11111000 byte) #b11110000)) ; 11110xyy
         (b* (((unless (and (consp bytes)
                            (> parstate.size 1)))
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
@@ -458,7 +458,7 @@
              (byte2 (car bytes))
              (bytes (cdr bytes))
              ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -469,7 +469,7 @@
                           :found (msg "the byte ~x0" byte2)))
              ((unless (and (consp bytes)
                            (> parstate.size 2)))
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
@@ -483,7 +483,7 @@
              (byte3 (car bytes))
              (bytes (cdr bytes))
              ((unless (= (logand byte3 #b11000000) #b10000000)) ; 10wwwwuu
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -497,7 +497,7 @@
                           :found (msg "the byte ~x0" byte3)))
              ((unless (and (consp bytes)
                            (> parstate.size 3)))
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
@@ -514,7 +514,7 @@
              (byte4 (car bytes))
              (bytes (cdr bytes))
              ((unless (= (logand byte4 #b11000000) #b10000000)) ; 10uuvvvv
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -535,7 +535,7 @@
                       (logand byte4 #b00111111)))
              ((when (or (< code #x10000)
                         (> code #x10ffff)))
-              (reterr-msg :where (position-to-msg parstate.position)
+              (reterr-msg :where parstate.position
                           :expected (msg "a value between 10000h and 10FFFFh ~
                                           UTF-8-encoded in the four bytes ~
                                           (~x0 ~x1 ~x2 ~x3)"
@@ -559,7 +559,7 @@
                                                     parstate))
              (parstate (update-parstate->size (- parstate.size 4) parstate)))
           (retok code parstate.position parstate))))
-    (reterr-msg :where (position-to-msg parstate.position)
+    (reterr-msg :where parstate.position
                 :expected "a byte in the range 9-13 or 32-126 or 192-223"
                 :found (msg "the byte ~x0" byte)))
   :guard-hints (("Goal" :in-theory (enable len fix natp)))

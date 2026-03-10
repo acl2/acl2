@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ field-assert-eq
-  :parents (circuits)
+  :parents (circuits-pfcs)
   :short "Formalization and verification of a circuit
           for asserting that two field elements are equal."
   :long

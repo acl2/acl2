@@ -1,6 +1,6 @@
 ; Tests of the advice tool
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -44,3 +44,15 @@
 ;; (advice :models nil ; don't contact the server
 ;;         )
 ;; ;)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;; A simple test with a defrule:
+
+;; (include-book "std/util/defrule" :dir :system)
+;; (defrule defrule-test
+;;   :short "the short text"
+;;   (implies (and (natp x)
+;;                 (< x 256))
+;;            (equal (mod x 256)
+;;                   x)))

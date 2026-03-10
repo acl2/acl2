@@ -1,6 +1,6 @@
 ; Kestrel Books
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,6 +17,7 @@
 (include-book "abstract-domains/top")
 (include-book "acl2pl/top")
 (include-book "algorithm-theories/top")
+(include-book "arm/top")
 (include-book "apt/top")
 (include-book "axe/top")
 (include-book "arithmetic-light/top")
@@ -29,11 +30,14 @@
 (include-book "c/top")
 (merge-io-pairs
  dm::primep
- (include-book "crypto/top"))
+ (include-book "crypto/top")
+ (include-book "air/top"))
 (include-book "csv/parse-csv-file")
+(include-book "data/top")
 (include-book "error-checking/top")
 (include-book "evaluators/top")
 (include-book "event-macros/top")
+(include-book "executable-parsers/top")
 (include-book "hdwallet/top")
 ;; (include-book "helpers/top") ;; TODO: Uncomment when stable
 (include-book "ethereum/top")
@@ -54,7 +58,6 @@
 (include-book "soft/top")
 (include-book "solidity/top")
 (include-book "strings-light/top")
-(include-book "treeset/top")
 ;; (include-book "typed-lists-light/top") ; TODO: Name clash on perm
 (include-book "syntheto/top")
 (include-book "unicode-light/top")

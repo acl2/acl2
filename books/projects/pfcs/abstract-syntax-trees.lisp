@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -19,9 +19,8 @@
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,7 +74,14 @@
   :elt-type name
   :true-listp t
   :elementp-of-nil nil
-  :pred name-listp)
+  :pred name-listp
+
+  ///
+
+  (defruled cdr-of-name-list-fix
+    (equal (cdr (name-list-fix x))
+           (name-list-fix (cdr x)))
+    :enable name-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -138,7 +144,8 @@
   (:sub ((arg1 expression) (arg2 expression)))
   (:mul ((arg1 expression) (arg2 expression)))
   :pred expressionp
-  :prepwork ((local (in-theory (enable ifix)))))
+  :prepwork ((local (in-theory (enable ifix)))
+             (set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -258,6 +265,7 @@
   (defruled rev-of-definition-list-fix
     (equal (rev (definition-list-fix defs))
            (definition-list-fix (rev defs)))
+    :induct t
     :enable definition-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

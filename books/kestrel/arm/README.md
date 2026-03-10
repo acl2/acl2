@@ -7,11 +7,17 @@ Contents:
 
 * package.lsp: The ARM package.
 
+* portcullis.lisp: dummy book for portcullis (see :doc working-with-packages).
+
 * encodings.lisp: Bit encodings of the instructions.
 
 * decoder.lisp: Generation of a decoder from the encodings.
 
+* decoder-tests.lisp: Tests of the generated decoder.
+
 * state.lisp: Model of the ARM32 state (memory, registers, flags, etc.).
+
+* memory32.lisp: Supporting machinery for the 32-bit memory.
 
 * memory.lisp: Functions for manipulating memory.
 
@@ -22,3 +28,7 @@ Contents:
 * instructions.lisp: Semantic functions of the instructions.
 
 * step.lisp: Function to step the ARM32 CPU (fetch, decode, and execute an instruction).
+
+* top.lisp: Top-level file for the model.
+
+* doc.lisp: Documentation for the model.

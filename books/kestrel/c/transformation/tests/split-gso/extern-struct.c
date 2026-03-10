@@ -3,4 +3,4 @@ struct S {
   unsigned int y;
 };
 
-struct S s = { .x = 0 };
+static struct S s = { .x = 0 };

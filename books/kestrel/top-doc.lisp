@@ -1,6 +1,6 @@
 ; Extract and export only Kestrel xdoc material
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,7 @@
    (include-book "abstract-domains/top")
    (include-book "acl2pl/top")
    (include-book "apt/doc")
+   (include-book "arm/doc")
    (include-book "axe/doc")
    (include-book "arithmetic-light/doc")
    (include-book "built-ins/top")
@@ -33,7 +34,9 @@
    (include-book "c/top")
    (merge-io-pairs
     dm::primep
-    (include-book "crypto/top"))
+    (include-book "crypto/top")
+    (include-book "air/top"))
+   (include-book "data/doc")
    (include-book "error-checking/top")
    (include-book "event-macros/top")
    (include-book "hdwallet/top")
@@ -55,7 +58,6 @@
    (include-book "solidity/top")
    (include-book "strings-light/doc")
    (include-book "syntheto/top")
-   (include-book "treeset/top")
    (include-book "typed-lists-light/doc")
    (include-book "utilities/top")
    (include-book "utilities/doc")

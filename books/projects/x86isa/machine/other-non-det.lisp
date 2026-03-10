@@ -38,7 +38,7 @@
 
 (in-package "X86ISA")
 
-(include-book "register-readers-and-writers" :ttags (:undef-flg))
+(include-book "register-readers-and-writers")
 
 ;; ======================================================================
 
@@ -100,27 +100,5 @@ HW_RND_GEN)\).</p>"
                    HW_RND_GEN-logic
                    )
                   t)
-
-;; Exec definitions:
-
-(defsection other-non-deterministic-computations-exec
-  :parents (other-non-deterministic-computations)
-  :short "Definitions of non-deterministic computations to be used for
-  execution"
-  :long "<p>We smash the definition of @(see HW_RND_GEN) to provide
-  random numbers during execution by using Lisp's @('random')
-  function.</p>"
-
-; Instruction to cert.pl for dependency tracking.
-; (depends-on "other-non-det-raw.lsp")
-
-  (defttag :other-non-det)
-  (include-raw "other-non-det-raw.lsp"
-               :on-compile-fail
-               (format t "[other-non-det-raw.lsp] Compilation failed with message ~a~%"
-                       condition)
-               :on-load-fail
-               (cw "[other-non-det-raw.lsp] Load failed; Moving On.~%")
-               :host-readtable t))
 
 ;; ======================================================================

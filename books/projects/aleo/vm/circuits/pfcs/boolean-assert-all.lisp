@@ -32,7 +32,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ boolean-assert-all
-  :parents (circuits)
+  :parents (circuits-pfcs)
   :short "Formalization and verification of a circuit
           for asserting that zero or more field elements are booleans
           (i.e. 0 or 1)."

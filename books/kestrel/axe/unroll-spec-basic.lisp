@@ -146,7 +146,7 @@
                   :mode :program ;; because this calls translate-term, translate-terms, submit-events-quiet, and fresh-name-in-world-with-$s (todo: factor)
                   ))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ((when (and (not produce-function)
                    (not (eq :auto function-params))))
         (er hard? 'unroll-spec-basic-fn ":function-params should not be given if :produce-function is nil.")
@@ -224,7 +224,7 @@
           ;; The user supplied one, so use it:
           interpreted-function-alist))
        ;; Call the rewriter:
-       ((mv erp dag)
+       ((mv erp dag &) ; use the hits?
         (simplify-term-basic term
                              assumptions
                              rule-alist
@@ -275,7 +275,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                         function-type))
        (function-body (and produce-function
                            (if (eq :term function-type)
-                               (dag-to-term dag)
+                               (dag2term dag)
                              (if (eq :embedded-dag function-type)
                                  `(dag-val-with-axe-evaluator ,defconst-name
                                                               ,(make-acons-nest dag-vars)
@@ -286,7 +286,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                (dag-to-term-with-lets dag)))))
        (evaluator-neededp (and produce-function
                                (eq :embedded-dag function-type)))
-       (new-term (and produce-theorem (dag-to-term dag)))
+       (new-term (and produce-theorem (dag2term dag)))
        (defconst-name-string (symbol-name defconst-name))
        (theorem-name (and produce-theorem (pack$ (subseq defconst-name-string 1 (- (length defconst-name-string) 1)) '-unroll-spec-basic-theorem)))
        (theorem (and produce-theorem
@@ -324,10 +324,8 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                 (defconst ,defconst-name ',dag)
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
-                (with-output :off :all (table unroll-spec-basic-table ',whole-form ':fake))
-                (value-triple :invisible)
-                ;; (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
-                )
+                ,(redundancy-table-event whole-form ':fake)
+                (value-triple ',items-created))
         state)))
 
 (defmacrodoc unroll-spec-basic (&whole whole-form

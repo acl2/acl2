@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -281,16 +281,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-file
-  :short "An irrelevant file."
-  :type filep
-  :body (file nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-fileset
-  :short "An irrelevant file set."
-  :type filesetp
-  :body (make-fileset :path-wo-ext ""
-                      :dot-h nil
-                      :dot-c (irr-file)))
+(defirrelevant irr-transunit-ensemble
+  :short "An irrelevant translation unit ensemble."
+  :type transunit-ensemblep
+  :body (make-transunit-ensemble :path-wo-ext ""
+                                 :dot-h nil
+                                 :dot-c (irr-transunit)))

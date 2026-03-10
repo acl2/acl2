@@ -937,7 +937,8 @@
 ; :bye objects in the tag-tree, there is no checking of the load mode, and the
 ; warning above.
 
-  (er-let* ((ttree
+  (er-let* ((otf-flg (chk-otf-flg otf-flg ctx state))
+            (ttree
              (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld
                                        state
                                        (splitter-output)

@@ -1331,9 +1331,10 @@
                 (pseudo-rewrite-quoted-constant-rulesp (cdr x))))))
 
 ;-----------------------------------------------------------------
-; EVALUATOR-CHECK-INPUTS [GLOBAL-VALUE]
+; EVALUATOR-CHECK-INPUTS
 
-(defun pseudo-evaluator-check-inputs-p (val)
+(defun pseudo-evaluator-check-inputs-p (sym val)
+  (declare (ignore sym))
   (true-listp val))
 
 ;-----------------------------------------------------------------
@@ -1866,7 +1867,6 @@
                             (keyword-listp (strip-cars val))
                             (string-listp (strip-cdrs val))))
     (PROJECTS/APPLY/BASE-INCLUDEDP (booleanp val))
-    (EVALUATOR-CHECK-INPUTS (pseudo-evaluator-check-inputs-p val))
     (EXT-GENS (symbol-listp val)) ; inline functions and macro names
     (EXT-GEN-barriers (pseudo-function-symbol-listp val nil))
     (otherwise nil)))
@@ -2902,6 +2902,7 @@
           (DEFCHOOSE-AXIOM (pseudo-defchoose-axiomp sym val))
           (ELIMINATE-DESTRUCTORS-RULES
            (pseudo-eliminate-destructors-rules sym val))
+          (EVALUATOR-CHECK-INPUTS (pseudo-evaluator-check-inputs-p sym val))
           (FORMALS
            (or (eq val *acl2-property-unbound*)
                (pseudo-formalsp sym val)))

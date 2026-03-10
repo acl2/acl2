@@ -392,7 +392,66 @@
   (std::deflist expr-list-formalp (x)
     :guard (expr-listp x)
     (expr-formalp x)
-    :elementp-of-nil nil))
+    :elementp-of-nil nil)
+
+  (defruled expr-formalp-when-ident
+    (implies (expr-case expr :ident)
+             (equal (expr-formalp expr)
+                    (ident-formalp (expr-ident->ident expr)))))
+
+  (defruled expr-formalp-when-const
+    (implies (expr-case expr :const)
+             (equal (expr-formalp expr)
+                    (const-formalp (expr-const->const expr)))))
+
+  (defruled expr-formalp-when-paren
+    (implies (expr-case expr :paren)
+             (equal (expr-formalp expr)
+                    (expr-formalp (expr-paren->inner expr)))))
+
+  (defruled expr-formalp-when-unary
+    (implies (expr-case expr :unary)
+             (equal (expr-formalp expr)
+                    (and (member-equal (unop-kind (expr-unary->op expr))
+                                       '(:address :indir
+                                         :plus :minus
+                                         :bitnot :lognot))
+                         (expr-formalp (expr-unary->arg expr))))))
+
+  (defruled expr-formalp-when-cast
+    (implies (expr-case expr :cast)
+             (equal (expr-formalp expr)
+                    (and (tyname-formalp (expr-cast->type expr))
+                         (expr-formalp (expr-cast->arg expr))))))
+
+  (defruled expr-formalp-when-binary
+    (implies (expr-case expr :binary)
+             (equal (expr-formalp expr)
+                    (or (and (binop-strictp (expr-binary->op expr))
+                             (binop-purep (expr-binary->op expr))
+                             (expr-formalp (expr-binary->arg1 expr))
+                             (expr-formalp (expr-binary->arg2 expr))
+                             (expr-purep (expr-binary->arg1 expr))
+                             (expr-purep (expr-binary->arg2 expr)))
+                        (and (member-equal (binop-kind (expr-binary->op expr))
+                                           '(:logand :logor))
+                             (expr-formalp (expr-binary->arg1 expr))
+                             (expr-formalp (expr-binary->arg2 expr)))
+                        (and (equal (binop-kind (expr-binary->op expr)) :asg)
+                             (expr-formalp (expr-binary->arg1 expr))
+                             (expr-formalp (expr-binary->arg2 expr))
+                             (or (expr-case (expr-binary->arg1 expr) :ident)
+                                 (expr-purep (expr-binary->arg2 expr)))))))
+    :enable (binop-strictp binop-purep))
+
+  (defruled expr-formalp-when-cond
+    (implies (expr-case expr :cond)
+             (equal (expr-formalp expr)
+                    (and (expr-formalp (expr-cond->test expr))
+                         (expr-cond->then expr)
+                         (expr-formalp (expr-cond->then expr))
+                         (expr-formalp (expr-cond->else expr)))))
+    :enable expr-option-some->val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1141,16 +1200,34 @@
    :asm nil)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define trans-item-formalp ((item trans-itemp))
+  :guard (trans-item-unambp item)
+  :returns (yes/no booleanp)
+  :short "Check if a translation item has dynamic formal semantics."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We accept external declarations with formal semantics,
+     but not yet @('#include') directives and comments."))
+  (trans-item-case
+   item
+   :declon (ext-declon-formalp item.declon)
+   :include nil
+   :line-comment nil)
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-declon-list-formalp ((edecls ext-declon-listp))
-  :guard (ext-declon-list-unambp edecls)
+(define trans-item-list-formalp ((items trans-item-listp))
+  :guard (trans-item-list-unambp items)
   :returns (yes/no booleanp)
-  :short "Check if all the external declarations in a list
+  :short "Check if all the translation items in a list
           have formal dynamic semantics."
-  (or (endp edecls)
-      (and (ext-declon-formalp (car edecls))
-           (ext-declon-list-formalp (cdr edecls))))
+  (or (endp items)
+      (and (trans-item-formalp (car items))
+           (trans-item-list-formalp (cdr items))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1162,8 +1239,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "All its external declarations must be supported."))
-  (ext-declon-list-formalp (transunit->declons tunit))
+    "All its translation items must have formal semantics."))
+  (trans-item-list-formalp (transunit->items tunit))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

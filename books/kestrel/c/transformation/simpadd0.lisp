@@ -2058,7 +2058,9 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
-  :verify-guards nil ; done after the unambiguity proofs
+  :verify-guards nil ; done after the unambiguity and annotations proofs
+
+  :flag-local nil
 
   ///
 
@@ -2070,7 +2072,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual exprs/decls-unambp-of-simpadd0-exprs/decls
+  (defret-mutual exprs/decls/stmts-unambp-of-simpadd0-exprs/decls
     (defret expr-unambp-of-simpadd0-expr
       (expr-unambp new-expr)
       :fn simpadd0-expr)
@@ -2277,7 +2279,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual exprs/decls-annop-of-simpadd0-exprs/decls
+  (defret-mutual exprs/decls/stmts-annop-of-simpadd0-exprs/decls
     (defret expr-annop-of-simpadd0-expr
       (expr-annop new-expr)
       :hyp (and (expr-unambp expr)
@@ -2574,7 +2576,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual exprs/decls-aidentp-of-simpadd0-exprs/decls
+  (verify-guards simpadd0-expr)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual exprs/decls/stmts-aidentp-of-simpadd0-exprs/decls
     (defret expr-aidentp-of-simpadd0-expr
       (expr-aidentp new-expr gcc)
       :hyp (and (expr-unambp expr)
@@ -2868,11 +2874,35 @@
                                        simpadd0-stmt
                                        simpadd0-comp-stmt
                                        simpadd0-block-item
-                                       simpadd0-block-item-list))))
+                                       simpadd0-block-item-list)))))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards simpadd0-expr))
+(defsection simpadd0-formalp-when-thm-name
+  :short "Theorems saying that
+          if a transformation function returns a theorem
+          then the old and new constructs are in the formalized subset."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is in progress: more theorems will be added."))
+
+  (defret-mutual simpadd0-expr/decls/stmts-formalp-when-thm-name
+    (defret simpadd0-expr-formalp-when-thm-name
+      (implies (gout->thm-name gout)
+               (and (expr-formalp expr)
+                    (expr-formalp new-expr)))
+      :hyp (or (expr-case expr :ident)
+               (expr-case expr :const))
+      :fn simpadd0-expr
+      :hints ('(:in-theory (enable simpadd0-expr
+                                   c$::expr-formalp-when-ident
+                                   c$::expr-formalp-when-const
+                                   xeq-expr-ident-formalp-when-thm-name
+                                   xeq-expr-const-formalp-when-thm-name))))
+    :skip-others t)
+
+  (in-theory (disable simpadd0-expr-formalp-when-thm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3012,19 +3042,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-ext-declon-list ((extdecls ext-declon-listp) (gin ginp))
-  :guard (and (ext-declon-list-unambp extdecls)
-              (ext-declon-list-annop extdecls))
-  :returns (mv (new-extdecls ext-declon-listp)
+(define simpadd0-trans-item ((item trans-itemp) (gin ginp))
+  :guard (and (trans-item-unambp item)
+              (trans-item-annop item))
+  :returns (mv (new-item trans-itemp)
                (gout goutp))
-  :short "Transform a list of external declarations."
+  :short "Transform a translation item."
+  (b* (((gin gin) gin))
+    (trans-item-case
+     item
+     :declon (b* (((mv new-declon (gout gout-declon))
+                   (simpadd0-ext-declon item.declon gin))
+                  (gin (gin-update gin gout-declon)))
+               (mv (trans-item-declon new-declon)
+                   (change-gout (gout-no-thm gin)
+                                :vartys gout-declon.vartys)))
+     :include (prog2$ (raise "Unsupported #include directive.")
+                      (mv (trans-item-fix item) (irr-gout)))
+     :line-comment (mv (trans-item-fix item) (gout-no-thm gin))))
+  :hooks (:fix)
+
+  ///
+
+  (defret trans-item-unambp-of-simpadd0-trans-item
+    (trans-item-unambp new-item))
+
+  (defret trans-item-annop-of-simpadd0-trans-item
+    (trans-item-annop new-item)
+    :hyp (and (trans-item-unambp item)
+              (trans-item-annop item)))
+
+  (defret trans-item-aidentp-of-simpadd0-trans-item
+    (trans-item-aidentp new-item gcc)
+    :hyp (and (trans-item-unambp item)
+              (trans-item-aidentp item gcc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-trans-item-list ((items trans-item-listp) (gin ginp))
+  :guard (and (trans-item-list-unambp items)
+              (trans-item-list-annop items))
+  :returns (mv (new-items trans-item-listp)
+               (gout goutp))
+  :short "Transform a list of translation items."
   (b* (((gin gin) gin)
-       ((when (endp extdecls)) (mv nil (gout-no-thm gin)))
+       ((when (endp items)) (mv nil (gout-no-thm gin)))
        ((mv new-edecl (gout gout-edecl))
-        (simpadd0-ext-declon (car extdecls) gin))
+        (simpadd0-trans-item (car items) gin))
        (gin (gin-update gin gout-edecl))
        ((mv new-edecls (gout gout-edecls))
-        (simpadd0-ext-declon-list (cdr extdecls)
+        (simpadd0-trans-item-list (cdr items)
                                   (change-gin gin :vartys gout-edecl.vartys)))
        (gin (gin-update gin gout-edecls)))
     (mv (cons new-edecl new-edecls)
@@ -3034,20 +3101,20 @@
 
   ///
 
-  (defret ext-declon-list-unambp-of-simpadd0-ext-declon-list
-    (ext-declon-list-unambp new-extdecls)
+  (defret trans-item-list-unambp-of-simpadd0-trans-item-list
+    (trans-item-list-unambp new-items)
     :hints (("Goal" :induct t)))
 
-  (defret ext-declon-list-annop-of-simpadd0-ext-declon-list
-    (ext-declon-list-annop new-extdecls)
-    :hyp (and (ext-declon-list-unambp extdecls)
-              (ext-declon-list-annop extdecls))
+  (defret trans-item-list-annop-of-simpadd0-trans-item-list
+    (trans-item-list-annop new-items)
+    :hyp (and (trans-item-list-unambp items)
+              (trans-item-list-annop items))
     :hints (("Goal" :induct t)))
 
-  (defret ext-declon-list-aidentp-of-simpadd0-ext-declon-list
-    (ext-declon-list-aidentp new-extdecls gcc)
-    :hyp (and (ext-declon-list-unambp extdecls)
-              (ext-declon-list-aidentp extdecls gcc))
+  (defret trans-item-list-aidentp-of-simpadd0-trans-item-list
+    (trans-item-list-aidentp new-items gcc)
+    :hyp (and (trans-item-list-unambp items)
+              (trans-item-list-aidentp items gcc))
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3070,12 +3137,12 @@
      that says that the file was generated by this transformation."))
   (b* (((gin gin) gin)
        ((transunit tunit) tunit)
-       ((mv new-declons (gout gout-decls))
-        (simpadd0-ext-declon-list tunit.declons gin))
+       ((mv new-items (gout gout-decls))
+        (simpadd0-trans-item-list tunit.items gin))
        (gin (gin-update gin gout-decls))
-       (comment (acl2::string=>nats "This file is generated by 'simpadd0'.")))
-    (mv  (make-transunit :comment comment
-                         :declons new-declons
+       (comment (acl2::string=>nats "This file is generated by 'simpadd0'."))
+       (items (cons (trans-item-line-comment comment) new-items)))
+    (mv  (make-transunit :items items
                          :info tunit.info)
          (gout-no-thm gin)))
   :hooks (:fix)
@@ -3093,7 +3160,8 @@
   (defret transunit-aidentp-of-simpadd0-transunit
     (transunit-aidentp new-tunit gcc)
     :hyp (and (transunit-unambp tunit)
-              (transunit-aidentp tunit gcc))))
+              (transunit-aidentp tunit gcc))
+    :hints (("Goal" :in-theory (enable trans-item-aidentp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3168,7 +3236,9 @@
        ((mv new-map (gout gout-map))
         (simpadd0-filepath-transunit-map tunits.units gin))
        (gin (gin-update gin gout-map)))
-    (mv (transunit-ensemble new-map)
+    (mv (c$::change-transunit-ensemble
+          tunits
+          :units new-map)
         (gout-no-thm gin)))
   :hooks (:fix)
 

@@ -13,5 +13,14 @@
 (defpkg "HELP" (append '(b*
                          when ; the b* binder
                          *t*
-                         *nil*)
+                         *nil*
+                         rule
+                         defrule defruled defrulel defruledl
+                         ;; functions used in the implementation:
+                         pseudo-term-list-listp
+                         string-list-listp
+                         make-event-quiet
+                         wrap-all
+                         widen-margins
+                         unwiden-margins)
                        *acl2-exports*))

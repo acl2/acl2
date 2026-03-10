@@ -101,6 +101,8 @@
 (include-book "with-supporters")
 (include-book "elide-event-doc")
 (include-book "elide-event")
+(include-book "eval-events-from-file")
+(include-book "eval-events-from-file-doc")
 ;(include-book "with-supporters-test-sub")
 ;(include-book "with-supporters-test-top")
 

@@ -1,0 +1,10 @@
+{"command": "add-section-attr",
+ "arguments":
+ {"old-dir" : "input-files",
+  "new-dir" : "add-section-attr.output",
+  "files": ["file11.c"],
+  "attrs": [{"target": {"filepath": "file11.c", "ident": "bar"},
+             "section": "__TEXT,my_section"}
+           ]
+ }
+}

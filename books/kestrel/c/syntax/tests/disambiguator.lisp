@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,7 +26,8 @@
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
-                                    version))
+                                    version
+                                    t))
          (- (cw "~%Input:~%~x0~|" ast))
          ((mv erp2 ast) (dimb-transunit ast ,gcc)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
@@ -44,7 +45,8 @@
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
-                                    version))
+                                    version
+                                    t))
          (- (cw "~%Input:~%~x0~|" ast))
          ((mv erp2 ?ast) (dimb-transunit ast ,gcc)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
@@ -294,8 +296,9 @@
  return (char *) (a) - b;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (transunit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -310,8 +313,9 @@
  return a + (b) + c;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (transunit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -341,8 +345,9 @@
   return (a) + (b) + c;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (transunit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -374,8 +379,9 @@
   return a + (b) + (c) + d;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (transunit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -413,8 +419,9 @@
   return ~ (a) + b;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (transunit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))

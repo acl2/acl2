@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -2716,17 +2716,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define preprocess ((fileset filesetp))
+(define preprocess ((tunits transunit-ensemblep))
   :returns (tunit transunit-resultp)
-  :short "Preprocess a file set [C17:5.1.1.2/4]."
+  :short "Preprocess a translation unit ensemble [C17:5.1.1.2/4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a very simplified model of C preprocessing [C17:6.10].
      If there is no header, this is essentially a no-op:
-     the external declarations are unwrapped from the source file
-     and re-wrapped into a translation unit.
-     If there is a header, as explained in @(tsee fileset),
+     we return the translation unit for the source file.
+     If there is a header, as explained in @(tsee transunit-ensemble),
      it is implicitly included in the source file
      (without an explicit representation of the @('#include') directive):
      we concatenate the external declarations from the header
@@ -2735,25 +2734,27 @@
      This amounts to replacing the (implicit) @('#include')
      with the included header,
      which is assumed to be at the beginning of the source file.
-     The path without extension component of the file set
+     The path without extension component of the translation unit ensemble
      is currently ignored, because the @('#include') is implicit."))
-  (b* ((h-extdecls (and (fileset->dot-h fileset)
-                        (file->declons (fileset->dot-h fileset))))
-       (c-extdecls (file->declons (fileset->dot-c fileset))))
+  (b* ((h-extdecls (and (transunit-ensemble->dot-h tunits)
+                        (transunit->declons
+                         (transunit-ensemble->dot-h tunits))))
+       (c-extdecls (transunit->declons
+                    (transunit-ensemble->dot-c tunits))))
     (make-transunit :declons (append h-extdecls c-extdecls))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-fileset ((fileset filesetp))
+(define check-transunit-ensemble ((tunits transunit-ensemblep))
   :returns (wf wellformed-resultp)
-  :short "Check a file set."
+  :short "Check a translation unit ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
-    "First we preprocess the file set.
+    "First we preprocess the translation unit ensemble.
      If preprocessing is successful,
      we check the translation unit."))
-  (b* (((okf tunit) (preprocess fileset)))
+  (b* (((okf tunit) (preprocess tunits)))
     (check-transunit tunit))
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :no-function nil)

@@ -1,6 +1,6 @@
 ; Utilities for generating xdoc documentation
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -356,7 +356,7 @@
        (description-strings (lookup-eq name-to-lookup arg-descriptions))
        ;; add the brackets, since this is an optional arg:
        (name (n-string-append "[" (string-downcase-gen (symbol-name name)) "]"))
-       (default-form `(string-downcase-gen (object-to-string ,default ,package))))
+       (default-form `(string-downcase-gen (object-to-string ',default ,package))))
     `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>
 
 "
@@ -385,7 +385,7 @@
        (description-strings (lookup-eq name-to-lookup arg-descriptions))
        ;; add the colon, since this is a keyword arg:
        (name (string-append ":" (string-downcase-gen (symbol-name name))))
-       (default-form `(string-downcase-gen (object-to-string ,default ,package))))
+       (default-form `(string-downcase-gen (object-to-string ',default ,package))))
     `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>
 
 "

@@ -24,8 +24,8 @@
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
-(include-book "rewriter") ;TODO: brings in JVM stuff...
-(include-book "rewriter-alt") ;TODO: brings in JVM stuff...
+(include-book "rewriter") ;TODO: brings in JVM stuff and skip-proofs ; use rewriter-basic instead?
+;(include-book "rewriter-alt") ;TODO: brings in JVM stuff...
 (include-book "identical-xor-nests")
 (include-book "kestrel/utilities/check-boolean" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
@@ -39,7 +39,7 @@
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
-(include-book "kestrel/typed-lists-light/integer-listp" :dir :system)
+(local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 (include-book "kestrel/typed-lists-light/integer-list-listp" :dir :system)
 (include-book "kestrel/typed-lists-light/minelem" :dir :system)
 (include-book "kestrel/typed-lists-light/map-strip-cars" :dir :system)
@@ -62,7 +62,7 @@
 ;; mentions of axe-rules, amazing-rules-spec-and-dag, etc. in this file):
 (include-book "kestrel/bv-lists/packbv-theorems" :dir :system)
 (include-book "kestrel/bv-lists/bvplus-list" :dir :system)
-(include-book "kestrel/bv/arith" :dir :system)
+(local (include-book "kestrel/bv/arith" :dir :system))
 (include-book "kestrel/bv-lists/packing" :dir :system) ;bring in some stuff in axe-runes
 (include-book "unify-term-and-dag-with-name")
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
@@ -1681,12 +1681,15 @@
 
 ;;returns (mv term-or-nil difference) where if TERM-OR-NIL is non-nil, we found a match and DIFFERENCE is (nth i seq)-(nth i <seq-for-term>), for all i
 (defun find-term-with-constant-difference (seq term-seq-alist)
-;;  (declare (xargs :guard (alistp term-seq-alist)))
+  (declare (xargs :guard (and (integer-listp seq)
+                              (consp seq) ; ok?
+                              (alistp term-seq-alist))))
   (if (endp term-seq-alist)
       (mv nil nil)
     (let* ((entry (car term-seq-alist))
            (seq2 (cdr entry)))
-      (if (not (acl2-number-listp seq2)) ;restrict to integers? ;fixme maybe term-seq-alist only contains integer sequences?
+      (if (or (not (integer-listp seq2)) ;restrict to integers? ;fixme maybe term-seq-alist only contains integer sequences?
+              (not (equal (len seq) (len seq2))))
           (find-term-with-constant-difference seq (cdr term-seq-alist))
         (let ((first-diff (- (car seq) (car seq2))))
           ;;do we already have a function that computes something like this?:
@@ -1694,8 +1697,6 @@
               (mv (car entry) ;the term found
                   first-diff)
             (find-term-with-constant-difference seq (cdr term-seq-alist))))))))
-
-(skip-proofs (verify-guards find-term-with-constant-difference))
 
 ;use this more?
 (defun make-bvplus-term (size constant term)
@@ -9755,8 +9756,8 @@
            (new-update-dags-in-order (lookup-eq-lst new-formals full-formals-update-dag-alist))
            (new-fn (packnew fn '-with-duplicated-numcdrs-param-for-consumer))
            ;;fffixme can these calls to dag-to-term blow up?
-           (new-exit-test-expr (embed-dag-as-term new-exit-test-dag interpreted-function-alist)) ;(dag-to-term new-exit-test-dag)
-           (new-base-case-expr (embed-dag-as-term new-base-case-dag interpreted-function-alist)) ;(dag-to-term new-base-case-dag)
+           (new-exit-test-expr (embed-dag-as-term new-exit-test-dag interpreted-function-alist)) ;(dag2term new-exit-test-dag)
+           (new-base-case-expr (embed-dag-as-term new-base-case-dag interpreted-function-alist)) ;(dag2term new-base-case-dag)
            (new-update-exprs (embed-dags-as-terms new-update-dags-in-order interpreted-function-alist)) ;(dags-to-terms new-update-dags-in-order)
            (defthm-name (packnew fn '--becomes-- new-fn))
            (exit-test-dags-agree-defthm-name (packnew defthm-name '-dags-agree-for-exit-test))
@@ -9999,7 +10000,7 @@
            ((mv erp dag-for-base-case-expr state)
             (get-dag-for-expr-no-theorem base-case-expr interpreted-function-alist state))
            ((when erp) (mv erp nil state))
-           (base-case-term (dag-to-term dag-for-base-case-expr)))
+           (base-case-term (dag2term dag-for-base-case-expr)))
         (if (not (member-eq base-case-term formals)) ;a producer must return a single formal (fixme relax this restriction?)
             (mv (erp-nil) nil state)
           (b* ((formal-update-expr-alist (pairlis$-fast formals update-expr-list))
@@ -10271,7 +10272,7 @@
                  :check-inputs nil)
       (if erp
           (mv erp nil nil state)
-        (let* ((simplified-conclusion (dag-to-term simplified-dag))
+        (let* ((simplified-conclusion (dag2term simplified-dag))
                (defthm-name (packnew rule-base conclusion-number))
                (state (submit-event-brief `(defthm ,defthm-name
                                        (implies ,(make-conjunction-from-list hyps)
@@ -10439,7 +10440,7 @@
                              (equal 1 (len dag))                 ;slow?
                              (equal 0 (car (car dag)))           ;just to check
                              (symbolp (cdr (car dag))))
-                            (dag-to-term dag)
+                            (dag2term dag)
                           `(dag-val-with-axe-evaluator ',dag
                                                        ,(make-acons-nest (dag-vars-unsorted dag))
                                                        ',(supporting-interpreted-function-alist
@@ -10683,7 +10684,7 @@
                    :check-inputs nil))
        ((when erp)
         (mv erp nil nil nil nil nil state))
-       (simplified-expanded-new-exit-test-expr (dag-to-term simplified-expanded-new-exit-test-expr-dag)) ;do the equivalence proof of this sooner? make a simplify-and-prove function?
+       (simplified-expanded-new-exit-test-expr (dag2term simplified-expanded-new-exit-test-expr-dag)) ;do the equivalence proof of this sooner? make a simplify-and-prove function?
        ;;new-formals is a slightly deceptive name, since it doesn't include the old vars
 ;fffffffixme check for name clashes
        (new-update-fns ;(make-var-names (pack$ new-fn '-update-) (len new-formals))  ;may not all be used?? ;also, no update fns for orig vars
@@ -11252,7 +11253,7 @@
                :check-inputs nil)
     (if erp
         (mv erp nil nil state)
-      (let ((simplified-fact (dag-to-term simplified-fact))) ; i hope this never blows up
+      (let ((simplified-fact (dag2term simplified-fact))) ; i hope this never blows up
         (if (equal fact simplified-fact)
             ;;no change:
             (mv nil nil nil state)
@@ -11667,7 +11668,7 @@
                            :normalize-xors nil
                            :check-inputs nil)))
        ((when erp) (mv erp nil nil nil analyzed-function-table rand state))
-       (simplified-expanded-exit-test-expr (dag-to-term simplified-expanded-exit-test-expr))
+       (simplified-expanded-exit-test-expr (dag2term simplified-expanded-exit-test-expr))
        (- (cw "Simplified exit test: ~x0)~%" simplified-expanded-exit-test-expr))
        (simplified-expanded-exit-test-theorem-name (packnew fn '-simplified-expanded-exit-test-theorem))
        ;;make sure to include here anything we used above to simplify the exit test (fffixme do the simplification and the proof simultaneously?):
@@ -13742,7 +13743,7 @@
                       :check-inputs nil)
            (if erp
                (mv erp nil nil rand state)
-             (let* ((simplified-exit-test-expr1 (dag-to-term simplified-exit-test-expr1))
+             (let* ((simplified-exit-test-expr1 (dag2term simplified-exit-test-expr1))
                     (dummy9 (cw "Simplified exit test expr 1: ~x0)~%" simplified-exit-test-expr1))
                     (dummy10 (cw "(Simplifying exit test 2:~%")))
                (declare (ignore dummy9 dummy10))
@@ -13763,7 +13764,7 @@
                             :check-inputs nil)
                  (if erp
                      (mv erp nil nil rand state)
-                   (let* ((simplified-exit-test-expr2 (dag-to-term simplified-exit-test-expr2))
+                   (let* ((simplified-exit-test-expr2 (dag2term simplified-exit-test-expr2))
                           (dummy11 (cw "Simplified exit test expr 2: ~x0)~%" simplified-exit-test-expr2))
                           (simplified-exit-test1-theorem-name (packnew fn1 '-simplified-exit-test-theorem))
                           (simplified-exit-test2-theorem-name (packnew fn2 '-simplified-exit-test-theorem))
@@ -17186,7 +17187,7 @@
             (cw "DAG for error message below:~%")
             (print-list dag)             ; always print the DAG
             (if (< (dag-size dag) 10000) ; print the term too, if small
-                (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
+                (cw "~%(Term: ~X01)~%" (dag2term dag) nil)
               nil)
             (er hard? 'prove-with-axe-core "If the tactic is :rewrite, the DAG must simplify to true, but it simplified to the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
             (mv :no-test-cases nil nil state))
@@ -20034,7 +20035,7 @@
 ;;                                :print print
 ;;                                :assumptions facts-acc
 ;;                                :normalize-xors nil)
-;;                 (let ((result-term (dag-to-term result)))
+;;                 (let ((result-term (dag2term result)))
 ;;                   (if (equal result-term *t*) ;skip any t..
 ;;                       (simplify-facts-aux (rest facts)
 ;;                                           facts-acc

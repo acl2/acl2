@@ -120,9 +120,13 @@
    (list* "b" (sgr-prefix "31;1") *sgr-suffix*)
    (list* "i" (sgr-prefix "3") *sgr-suffix*)
    (list* "u" (sgr-prefix "4") *sgr-suffix*)
-   (list* "tt" (sgr-prefix "47") *sgr-suffix*)
-   (list* "v" (sgr-prefix "47") *sgr-suffix*)
-   (list* "em" (sgr-prefix "3") *sgr-suffix*)
+   (list* "tt" ; 30 - black font, 47 - while background
+          (concatenate 'string (sgr-prefix "30") (sgr-prefix "47"))
+          (concatenate 'string *sgr-suffix* *sgr-suffix*))
+   (list* "v"
+          (concatenate 'string (sgr-prefix "30") (sgr-prefix "47"))
+          (concatenate 'string *sgr-suffix* *sgr-suffix*))
+   (list* "em" (sgr-prefix "3") *sgr-suffix*) ; italic
    '(("color")
      ("sf")
      ("box")

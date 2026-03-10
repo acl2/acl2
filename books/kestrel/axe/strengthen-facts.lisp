@@ -40,7 +40,7 @@
         (strengthen-fact fact (append (rest facts-to-strengthen) acc) print rules state)
         (if erp
             (mv erp nil nil state)
-          (let ((result (dag-to-term result-dag-lst))) ;fixme could this ever blow up?
+          (let ((result (dag2term result-dag-lst))) ;fixme could this ever blow up?
             (if (equal result fact)
                 ;;no change, so move fact to acc:
                 (find-a-fact-to-strengthen (rest facts-to-strengthen) print (cons fact acc) rules state)

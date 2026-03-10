@@ -460,7 +460,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (merge-term-into-dag-array-simple merge-terms-into-dag-array-simple car-becomes-nth-of-0
                                                       not-equal-of-len-and-1-when-dargp
-                                                      <-of-nth-when-bounded-darg-listp
+                                                      ;<-of-nth-when-bounded-darg-listp
                                                       true-listp-of-nth-1-of-nth-0-when-pseudo-termp
                                                       ALL-MYQUOTEP-WHEN-DARG-LISTP)
                            (natp dargp pseudo-term-listp)))))

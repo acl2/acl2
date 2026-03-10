@@ -22,6 +22,8 @@
 (include-book "../../syntax/abstract-syntax-operations")
 (include-book "../../syntax/validator")
 
+(include-book "qualified-ident")
+
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -94,86 +96,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod qualified-ident
-  :short "Fixtype for fully qualified identifiers"
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "This type tags an identifiers with an optional filepath for the
-       translation unit in which it was defined. This tagged identifier is
-       unique across a translation unit ensemble.")
-    (xdoc::p
-      "Only identifiers with internal linkage are tagged with a
-       filepath. External identifiers do not need qualification, as they are
-       already unique across the translation unit ensemble."))
-  ((filepath? c$::filepath-option)
-   (ident ident))
-  :pred qualified-identp)
-
-(fty::defoption qualified-ident-option
-  qualified-ident
-  :pred qualified-ident-optionp)
-
-(fty::defset qualified-ident-option-set
-  :elt-type qualified-ident-option
-  :elementp-of-nil t
-  :pred qualified-ident-option-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define qualified-ident-externalp
-  ((ident qualified-identp))
-  (declare (xargs :type-prescription
-                  (booleanp (qualified-ident-externalp ident))))
-  :parents (qualified-ident)
-  (not (qualified-ident->filepath? ident)))
-
-(define qualified-ident-internalp
-  ((ident qualified-identp))
-  (declare (xargs :type-prescription
-                  (booleanp (qualified-ident-internalp ident))))
-  :parents (qualified-ident)
-  (and (qualified-ident->filepath? ident) t))
-
-(defrule qualified-ident-internalp-becomes-not-qualified-ident-externalp
-  (equal (qualified-ident-internalp ident)
-         (not (qualified-ident-externalp ident)))
-  :enable (qualified-ident-internalp
-           qualified-ident-externalp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define external-ident
-  ((ident identp))
-  :returns (qualified-ident qualified-identp)
-  :parents (qualified-ident)
-  (make-qualified-ident
-   :ident ident))
-
-(defrule qualified-ident-externalp-of-external-ident
-  (qualified-ident-externalp (external-ident ident))
-  :enable (qualified-ident-externalp
-           external-ident))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define internal-ident
-  ((filepath filepathp)
-   (ident identp))
-  :returns (qualified-ident qualified-identp)
-  :parents (qualified-ident)
-  (make-qualified-ident
-   :filepath? (c$::filepath-fix filepath)
-   :ident ident))
-
-(defrule qualified-ident-internalp-of-internal-ident
-  (qualified-ident-internalp (internal-ident filepath ident))
-  :enable (qualified-ident-internalp
-           internal-ident)
-  :disable qualified-ident-internalp-becomes-not-qualified-ident-externalp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defomap call-graph
   :key-type qualified-ident
   :val-type qualified-ident-option-set
@@ -215,7 +137,7 @@
                                (c$::linkage-internal))
                 :otherwise nil))))
     (if is-internal
-        (internal-ident filepath ident)
+        (qualified-ident filepath ident)
       (external-ident ident))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -691,20 +613,33 @@
    :empty (call-graph-fix call-graph)
    :asm (call-graph-fix call-graph)))
 
-(define call-graph-ext-declon-list
-  ((extdecls ext-declon-listp)
+(define call-graph-trans-item
+  ((item trans-itemp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
    (call-graph call-graphp))
   :returns (call-graph$ call-graphp)
-  (if (endp extdecls)
+  (trans-item-case
+   item
+   :declon (call-graph-ext-declon item.declon filepath valid-table call-graph)
+   :include (prog2$ (raise "Unsupported #include directives.")
+                    (call-graph-fix call-graph))
+   :line-comment (call-graph-fix call-graph)))
+
+(define call-graph-trans-item-list
+  ((items trans-item-listp)
+   (filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
+  (if (endp items)
       (call-graph-fix call-graph)
-    (call-graph-ext-declon-list
-      (rest extdecls)
+    (call-graph-trans-item-list
+      (rest items)
       filepath
       valid-table
-      (call-graph-ext-declon
-        (first extdecls)
+      (call-graph-trans-item
+        (first items)
         filepath
         valid-table
         call-graph))))
@@ -719,7 +654,7 @@
   (b* (((transunit transunit) transunit)
        (info (c$::transunit-info-fix (c$::transunit->info transunit)))
        (valid-table (c$::transunit-info->table-end info)))
-    (call-graph-ext-declon-list transunit.declons filepath valid-table call-graph))
+    (call-graph-trans-item-list transunit.items filepath valid-table call-graph))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
 
 (define call-graph-filepath-transunit-map

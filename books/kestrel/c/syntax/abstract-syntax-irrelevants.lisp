@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -381,7 +381,7 @@
 (defirrelevant irr-attrib
   :short "An irrelevant attribute."
   :type attribp
-  :body (attrib-name (irr-attrib-name)))
+  :body (attrib-name-only (irr-attrib-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -530,14 +530,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-trans-item
+  :short "An irrelevant translation item."
+  :type trans-itemp
+  :body (trans-item-declon (irr-ext-declon)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-transunit
   :short "An irrelevant translation unit."
   :type transunitp
-  :body (transunit nil nil nil))
+  :body (transunit nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-transunit-ensemble
   :short "An irrelevant ensemble of translation units."
   :type transunit-ensemblep
-  :body (transunit-ensemble nil))
+  :body (make-transunit-ensemble :units nil
+                                 :info nil))

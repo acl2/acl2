@@ -67,7 +67,7 @@
                               (booleanp produce-theorem))
                   :verify-guards nil))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ((when (and (not produce-function)
                    (not (eq :auto function-params))))
         (er hard? 'unroll-spec-fn ":function-params should not be given if :produce-function is nil.")
@@ -127,7 +127,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               function-params))))
        (function-body (if (eq :auto function-type)
                           (if (dag-or-quotep-size-less-thanp dag 1000)
-                              (dag-to-term dag)
+                              (dag2term dag)
                             `(dag-val-with-axe-evaluator ,defconst-name
                                                          ,(make-acons-nest dag-vars)
                                                          ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
@@ -139,7 +139,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
        ;; produce an ACL2 proof. TODO: We could support adding the theorem even
        ;; if the DAG is large if we use dag-val-with-axe-evaluator to express
        ;; the theorem.
-       (new-term (and produce-theorem (dag-to-term dag))) ;tttodo: can explode!
+       (new-term (and produce-theorem (dag2term dag))) ;tttodo: can explode!
        (defconst-name-string (symbol-name defconst-name))
        (theorem-name (and produce-theorem (pack$ (subseq defconst-name-string 1 (- (length defconst-name-string) 1)) '-unroll-spec-theorem)))
        (theorem (and produce-theorem
@@ -147,7 +147,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                        (defthm ,theorem-name
                          (implies (and ,@assumptions)
                                   (equal ,term
-                                         ,(dag-to-term dag)))
+                                         ,(dag2term dag)))
                          ;; Use :rule-classes nil if it can't be a theorem
                          ;; TODO: Use a more thorough check of whether it's a valid rewrite rule (if no change, ACL2 will reject the rule)
                          ,@(if (equal new-term term) '(:rule-classes nil) nil)))))
@@ -166,9 +166,8 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         `(progn (defconst ,defconst-name ',dag)
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
-                (with-output :off :all (table unroll-spec-table ',whole-form ':fake))
-                (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
-                )
+                ,(redundancy-table-event whole-form ':fake)
+                (value-triple ',items-created))
         state)))
 
 ;; TODO: update

@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -345,7 +345,7 @@
            (equal x
                   (bvcat 1 1 size free1)))
   :rule-classes nil
-  :hints (("Goal" :in-theory (disable ;TRIM-TO-N-BITS-META-RULE-FOR-BVCAT
+  :hints (("Goal" :in-theory (disable
 ;                                      GETBIT-EQUAL-0-POLARITY
                                       ))))
 
@@ -1563,9 +1563,9 @@
   :rule-classes nil
 
   :hints (("Goal"
-           :use logext-of-+-of-bvchop
+           :use (:instance logext-of-+-of-bvchop-arg2 (y k) (size 32))
            :in-theory (disable
-                       logext-of-+-of-bvchop
+                       logext-of-+-of-bvchop-arg2
                        anti-slice))))
 
 (defthm cancel-from-logext-equality
@@ -2034,23 +2034,23 @@
            (equal (< (+ x (* x z)) (* x y))
                   (< (+ 1 z) y))))
 
-(defthm getbit-of-+-of-expt
-  (implies (and (natp n)
-                (natp x))
-           (equal (GETBIT n x)
-                  (bitnot (getbit n (+ (expt 2 n) x)))))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
+;; (defthm getbit-of-+-of-expt
+;;   (implies (and (natp n)
+;;                 (natp x))
+;;            (equal (GETBIT n x)
+;;                   (bitnot (getbit n (+ (expt 2 n) x)))))
+;;   :rule-classes nil
+;;   :hints (("Goal" :in-theory (enable getbit-of-+))))
 
-(defthm getbit-of-+-bvchop-expand
-  (implies (and (natp n)
-                (natp x))
-           (equal (getbit n (bvchop n x))
-                  (if (equal 0 (getbit n x))
-                      (getbit n (bvchop (+ 1 n) x))
-                    (bitnot (getbit n (bvchop (+ 1 n) x))))))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
+;; (defthm getbit-of-+-bvchop-expand
+;;   (implies (and (natp n)
+;;                 (natp x))
+;;            (equal (getbit n (bvchop n x))
+;;                   (if (equal 0 (getbit n x))
+;;                       (getbit n (bvchop (+ 1 n) x))
+;;                     (bitnot (getbit n (bvchop (+ 1 n) x))))))
+;;   :rule-classes nil
+;;   :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 (defthmd getbit-of-+-bvchop-expand2
   (implies (and (natp n)

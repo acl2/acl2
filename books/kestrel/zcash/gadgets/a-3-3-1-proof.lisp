@@ -37,7 +37,7 @@
                   (r1cs::r1cs->vars *a-3-3-1-r1cs*)
                   (r1cs::r1cs->constraints *a-3-3-1-r1cs*)))
 
-;; (acl2::get-conjuncts-of-term2 (acl2::dag-to-term *A-3-3-1-LIFTED*)))
+;; (acl2::get-conjuncts-of-term2 (acl2::dag2term *A-3-3-1-LIFTED*)))
 
 ;; Forward direction of the proof:
 ;; TODO: Can the proof be done by opening up less?

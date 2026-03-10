@@ -1,7 +1,7 @@
 ; Symbols to import into various Axe packages
 ;
 ; Copyright (C) 2017-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -67,6 +67,7 @@
     dag-size
 
     ensure-rules-known
+    ensure-rules-known-fn
     widen-margins
     unwiden-margins
 
@@ -259,14 +260,16 @@
     wrap-term-around-dag
     make-term-into-dag-basic
     dag-to-term
+    dag2term ; for now
     dag-node-to-term
-    dag-or-quotep-to-term
+    dag-or-constant-to-term
     dag-or-quotep-size
     dag-or-quotep-fns
     dag-or-quotep-vars
+    print-as-term-or-dag
 
     remove-assumptions-about
-    *non-stp-assumption-functions*
+;;    *non-stp-assumption-functions*
     equivalent-dagsp2
     print-to-hundredths
     print-dag-nicely
@@ -293,6 +296,7 @@
     lookup-safe
 
     translate-term
+    term-listp
 
     _ ;; used to print non-pure patterns
 
@@ -312,7 +316,6 @@
     print-terms-elided
     make-term-into-dag
     remove-assumptions-about
-    acl2::*non-stp-assumption-functions*
     ;; simplify-terms-using-each-other
     make-cons-nest ; move?
     make-rule-alist
@@ -345,6 +348,7 @@
     subset-eq
     submit-event
     strip-cadrs
+    set-difference-eq-fast
 
     ;; formal unit tester common stuff:
     print-test-summary
@@ -369,11 +373,13 @@
     untranslate$
     untranslate$-list
 
+    ;; could split out these binary related symbols (vs symbols for core axe tool implementation)
     parse-executable
     parse-elf-file-bytes ; helpful for tracing ; todo: more
     parsed-elfp
     parsed-elf-entry-point
     subroutine-address-elf
+    elf-position-independentp
 
     ensure-target-exists-in-executable
     make-flag
@@ -381,7 +387,17 @@
 
     tacticp
     tacticsp
-    ))
+
+    hitsp
+    combine-hits
+    maybe-print-hits
+    empty-hits
+
+    command-is-redundantp
+    redundancy-table-event
+    lifter-event-names
+    print-missing-rules
+    merge-sort-symbol<))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
@@ -415,7 +431,9 @@
     list-rules
     core-rules-bv
     amazing-rules-bv
-    trim-rules))
+    trim-rules
+    prune-dag-post-rewrite-rules
+    pre-stp-rules))
 
 (defconst *bv-list-symbols*
   '(packbv-little

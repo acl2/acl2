@@ -46,14 +46,14 @@ expressions as hp-forall or hp-exists applied to those lifted lambdas.
 ============================================================
 
 Consider forcing some hypotheses in generated rules by default, as
-suggested in theorem HOL::HOL{SUC}-alt in
-examples/eval-poly-support.lisp.
+suggested in theorem HOL{SUC}-alt in
+examples/eval-poly-thy-alt.lisp.
 
 ============================================================
 
 Consider improving matching by modifying generated rules to improve
 matching, as suggested in theorem HOL{SUM_POLYS}0-alt in
-examples/eval-poly-support.lisp.
+examples/eval-poly-thy-alt.lisp.
 
 ============================================================
 

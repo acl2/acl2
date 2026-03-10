@@ -135,14 +135,16 @@
     (equal (len objs)
            (nfix (- (next-bvar bvar-db) (nfix n))))))
 
+
+
+
+
 (define bvar-db-from-objectlist ((x fgl-objectlist-p) bvar-db state)
   :returns (new-bvar-db)
   (b* (((when (atom x))
         bvar-db)
-       (nextvar (next-bvar bvar-db))
        (x1 (fgl-object-fix (car x)))
-       (bvar-db (add-term-bvar x1 bvar-db))
-       (bvar-db (maybe-add-equiv-term x1 nextvar bvar-db state)))
+       (bvar-db (add-term-bvar x1 bvar-db)))
     (bvar-db-from-objectlist (cdr x) bvar-db state))
   ///
   (defret bvar-db-bfrlist-of-<fn>
@@ -190,9 +192,92 @@
                     :use ((:instance interp-st-bvar-db-ok-necc
                            (interp-st ,assume)
                            (n (interp-st-bvar-db-ok-witness . ,(cdr lit)))))))))))
-                   
    
 
+
+(define bvar-db-term-equivs (bvar-db)
+  :Returns (equivs term-equivs-p)
+  (b* ((equivs (term-equivs bvar-db)))
+    (if (mbt (term-equivs-okp equivs bvar-db))
+        equivs
+      nil))
+  ///
+  (defret term-equivs-okp-of-<fn>
+    (term-equivs-okp$c equivs bvar-db)))
+
+
+(define recreate-bvar-db-equivs ((objs fgl-objectlist-p)
+                                (old-equivs term-equivs-p))
+  :guard (and (eql (len objs) (len old-equivs)))
+  :returns (new-equivs term-equivs-p)
+  (b* (((when (atom old-equivs)) nil)
+       ((unless (mbt (and (consp (car old-equivs))
+                          (fgl-object-p (caar old-equivs)))))
+        (recreate-bvar-db-equivs objs (cdr old-equivs)))
+       (rest (recreate-bvar-db-equivs (cdr objs) (cdr old-equivs)))
+       (obj1 (fgl-object-fix (car objs)))
+       (indices1 (acl2::nat-list-fix (cdar old-equivs))))
+    (hons-acons obj1 indices1 rest))
+  ///
+  (local (defthm bvar-list-okp-when-base/next-match
+           (implies (and (bvar-list-okp$c x old)
+                         (equal (base-bvar old) (base-bvar new))
+                         (equal (next-bvar old) (next-bvar new)))
+                    (bvar-list-okp$c x new))
+           :hints(("Goal" :in-theory (enable bvar-list-okp$c
+                                             next-bvar$c)))))
+  (defret term-equivs-okp-of-<fn>
+    (implies (and (term-equivs-okp old-equivs old)
+                  (equal (base-bvar old) (base-bvar new))
+                  (equal (next-bvar old) (next-bvar new)))
+             (term-equivs-okp$c new-equivs new))
+    :hints(("Goal" :in-theory (enable term-equivs-okp$c
+                                      next-bvar$c))))
+
+  (defret term-equivs-okp-of-<fn>-special
+    :pre-bind ((old-equivs (bvar-db-term-equivs old)))
+    (implies (and (term-equivs-okp old-equivs old)
+                  (equal (base-bvar old) (base-bvar new))
+                  (equal (next-bvar old) (next-bvar new)))
+             (term-equivs-okp$c new-equivs new))
+    :hints (("goal" :use ((:instance term-equivs-okp-of-<fn>
+                           (old-equivs (bvar-db-term-equivs old))))
+             :in-theory (disable term-equivs-okp-of-<fn> <fn>))))
+  (local (in-theory (enable term-equivs-fix))))
+
+
+
+(define fgl-objectlist-map-bfrs-memo-only ((equiv-objs fgl-objectlist-p)
+                                           litarr
+                                           (memo fgl-object-map-bfrs-memo-p))
+  :guard (< 0 (lits-length litarr))
+  :returns (new-objs fgl-objectlist-p)
+  (b* (((when (atom equiv-objs))
+        nil)
+       (memo (fgl-object-map-bfrs-memo-fix memo litarr))
+       (x1 (fgl-object-fix (car equiv-objs)))
+       (new-x1 (fgl-object-case x1
+                 :g-concrete x1
+                 :g-var x1
+                 :otherwise (b* ((look (hons-get x1 memo)))
+                              (if look
+                                  (cdr look)
+                                x1)))))
+    (cons new-x1 (fgl-objectlist-map-bfrs-memo-only (cdr equiv-objs) litarr memo)))
+  ///
+  (defret len-of-<fn>
+    (equal (len new-objs) (len equiv-objs))))
+
+
+(local (defthm len-of-alist-keys-when-term-equivs-p
+         (implies (Term-equivs-p x)
+                  (equal (len (alist-keys x))
+                         (len x)))))
+
+(local (defthm fgl-objectlist-p-of-alist-keys-when-term-equivs-p
+         (implies (Term-equivs-p x)
+                  (fgl-objectlist-p (alist-keys x)))
+         :hints(("Goal" :in-theory (enable alist-keys term-equivs-p)))))
 
 (local (in-theory (disable w)))
 
@@ -237,6 +322,7 @@
                 (b* ((stack-obj (stack-extract stack))
                      (base-bvar (base-bvar bvar-db))
                      (bvar-db-objs (bvar-db-objectlist base-bvar bvar-db))
+                     (bvar-db-equivs (bvar-db-term-equivs bvar-db))
                      ((mv constraint-db stack-obj bvar-db-objs)
                       (mbe :logic (mv constraint-db stack-obj bvar-db-objs)
                            :exec (b* ((lst (hons-copy (list constraint-db stack-obj bvar-db-objs))))
@@ -252,6 +338,8 @@
                      ((mv bitarr seen) (acl2::cwtime (constraint-db-mark-bfrs constraint-db bitarr seen)))
                      ((mv bitarr seen) (acl2::cwtime (major-stack-mark-bfrs stack-obj bitarr seen)))
                      ((mv bitarr seen) (acl2::cwtime (fgl-objectlist-mark-bfrs bvar-db-objs bitarr seen)))
+                     (equiv-objs (alist-keys bvar-db-equivs))
+                     ;; ((mv bitarr seen) (acl2::cwtime (fgl-objectlist-mark-bfrs equiv-objs bitarr seen)))
                      (- (fast-alist-free seen))
 
                      (bitarr
@@ -285,6 +373,7 @@
                      ((mv constraint-db memo) (acl2::cwtime (constraint-db-map-bfrs constraint-db litarr memo)))
                      ((mv stack-obj memo) (acl2::cwtime (major-stack-map-bfrs stack-obj litarr memo)))
                      ((mv bvar-db-objs memo) (acl2::cwtime (fgl-objectlist-map-bfrs-memo bvar-db-objs litarr memo)))
+                     (equiv-objs (fgl-objectlist-map-bfrs-memo-only equiv-objs litarr memo))
 
                      (- (fast-alist-free memo))
 
@@ -299,6 +388,8 @@
 
                      (bvar-db (init-bvar-db base-bvar bvar-db))
                      (bvar-db (bvar-db-from-objectlist bvar-db-objs bvar-db state))
+                     (equivs (recreate-bvar-db-equivs equiv-objs bvar-db-equivs))
+                     (bvar-db (update-term-equivs equivs bvar-db))
 
                      (stack (stack-import stack-obj stack))
                      
@@ -631,6 +722,18 @@
   (local (defthm cancel-plus-first
            (equal (equal (+ a b) (+ a c))
                   (equal (fix b) (fix c)))))
+
+  (local
+   (defthm bvar-db-bfrlist-aux-of-update-term-equivs
+     (equal (bvar-db-bfrlist-aux n (update-term-equivs$c equivs bvar-db))
+            (bvar-db-bfrlist-aux n bvar-db))
+     :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)))))
+
+  (local
+   (defthm bvar-db-bfrlist-of-update-term-equivs
+     (equal (bvar-db-bfrlist (update-term-equivs$c equivs bvar-db))
+            (bvar-db-bfrlist bvar-db))
+     :hints(("Goal" :in-theory (enable bvar-db-bfrlist)))))
 
   (local (in-theory (enable bvar-db-boundedp-necc)))
 

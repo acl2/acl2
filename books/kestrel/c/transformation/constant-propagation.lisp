@@ -1986,23 +1986,33 @@
    :empty (ext-declon-empty)
    :asm (ext-declon-fix extdecl)))
 
-(define const-prop-ext-declon-list
-  ((extdecls ext-declon-listp)
+(define const-prop-trans-item
+  ((item trans-itemp)
    (env envp))
-  :returns (new-extdecls ext-declon-listp)
-  (if (endp extdecls)
+  :returns (new-item trans-itemp)
+  (trans-item-case
+   item
+   :declon (trans-item-declon (const-prop-ext-declon item.declon env))
+   :include (prog2$ (raise "Unsupported #include directives.")
+                    (irr-trans-item))
+   :line-comment (trans-item-fix item)))
+
+(define const-prop-trans-item-list
+  ((items trans-item-listp)
+   (env envp))
+  :returns (new-items trans-item-listp)
+  (if (endp items)
       nil
-    (cons (const-prop-ext-declon (first extdecls) env)
-          (const-prop-ext-declon-list (rest extdecls) env)))
-  :measure (acl2-count extdecls)
+    (cons (const-prop-trans-item (first items) env)
+          (const-prop-trans-item-list (rest items) env)))
+  :measure (acl2-count items)
   :hints (("Goal" :in-theory nil)))
 
 (define const-prop-transunit
   ((tunit transunitp))
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (make-transunit :comment nil
-                    :declons (const-prop-ext-declon-list tunit.declons nil)
+    (make-transunit :items (const-prop-trans-item-list tunit.items nil)
                     :info tunit.info)))
 
 (define const-prop-filepath-transunit-map
@@ -2024,8 +2034,8 @@
   :returns (new-tunits transunit-ensemblep)
   :short "Transform a translation unit ensemble."
   (b* (((transunit-ensemble tunits) tunits))
-    (transunit-ensemble
-      (const-prop-filepath-transunit-map tunits.units))))
+    (c$::make-transunit-ensemble
+      :units (const-prop-filepath-transunit-map tunits.units))))
 
 (define const-prop-code-ensemble
   ((code code-ensemblep))

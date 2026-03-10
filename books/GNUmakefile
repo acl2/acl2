@@ -780,6 +780,7 @@ ACL2_CUSTOM_TARGETS := \
   system/toothbrush/success.txt \
   clause-processors/SULFA/target.cert \
   projects/translators/l3-to-acl2/target.cert \
+  projects/acl2-in-hol/tests/success.txt \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
@@ -860,6 +861,9 @@ workshops/2003/kaufmann/support/rtl/package-defs.cert: \
 # The following has no dependencies, so doesn't need a "deps" file.
 workshops/2004/sumners-ray/support/success.txt:
 	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+
+projects/acl2-in-hol/tests/success.txt: arithmetic-2/meta/top.cert arithmetic-3/extra/top-ext.cert
+	@cd $(@D)/.. ; $(STARTJOB) -c "$(MAKE)"
 
 .PHONY: projects/apply-model/phony
 projects/apply-model/phony: projects/apply-model-deps.cert
@@ -978,7 +982,7 @@ critpath.txt: $(OK_CERTS)
 # WARNING: If you change the basic target, consider updating the list
 # of its contents in :doc books-certification.
 .PHONY: basic
-basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc/init.cert tools-without-quicklisp misc data-structures apply
+basic: arithmetic arithmetic-3 arithmetic-5 ihs std-without-some-tests xdoc/init.cert tools-without-quicklisp misc data-structures apply
 
 .PHONY: acl2s
 acl2s: $(filter acl2s/%, $(OK_CERTS))
@@ -1103,6 +1107,12 @@ tools: $(TOOLS_BOOKS)
 
 .PHONY: tools-without-quicklisp
 tools-without-quicklisp: $(filter-out tools/oracle-time%, $(TOOLS_BOOKS))
+
+# Because std/util/add-io-pairs-tests.lisp brings in some slow number theory
+# stuff that we don't want included in the basic target:
+.PHONY: std-without-some-tests
+STD_BOOKS := $(filter std/%, $(OK_CERTS))
+std-without-some-tests: $(filter-out std/util/add-io-pairs-tests%, $(STD_BOOKS))
 
 .PHONY: unicode
 unicode: $(filter unicode/%, $(OK_CERTS))
@@ -1242,6 +1252,12 @@ BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top-slow.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out projects/pdf-parser/pdf-parser.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out projects/python/embedding/enumerators/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2023/kumar-etal/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2023/walter-etal/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2025/kumar-manolios/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2025/medley-manolios/%, $(BOOKS_BKCHK_OUT))
 # Uses redefinition:
 BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/redef.bkchk.out, $(BOOKS_BKCHK_OUT))
 # Includes the redef book just above:

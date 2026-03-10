@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -76,17 +76,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>lexeme</i> in our ABNF grammar,
-     but since for now we just skip over comments and white space,
-     we have no additional information about them here.")
+    "This corresponds to the rule for lexemes in our ABNF grammar.
+     Since for now we just skip over comments and white space,
+     we have no additional information about them here.
+     The entry for control lines also carried no information:
+     see the documentation about this in the ABNF grammar.")
    (xdoc::p
-    "Like @(tsee token), this is abstract-syntax-like,
-     but it is not part of the abstract syntax,
+    "Like @(tsee token), this is AST-like,
+     but it is not part of the ASTs in @(see abstract-syntax-trees),
      because it is not needed there."))
-  (:token ((unwrap token)))
+  (:token ((token token)))
   (:comment ())
-  (:prepr-directive ())
   (:whitespace ())
+  (:control-line ())
   :pred lexemep
   :layout :fulltree)
 
@@ -163,7 +165,7 @@
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
-    (if (member-equal string (c::keywords (parstate->version parstate)))
+    (if (member-equal string (c::keywords-for (parstate->version parstate)))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
@@ -243,7 +245,7 @@
   (b* (((reterr) #\0 (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((when (not char))
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "a hexadecimal digit"
                     :found (char-to-msg char)))
        ((unless (or (and (utf8-<= (char-code #\0) char) ; 0
@@ -252,7 +254,7 @@
                          (utf8-<= char (char-code #\F))) ; F
                     (and (utf8-<= (char-code #\a) char) ; a
                          (utf8-<= char (char-code #\f))))) ; f
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "a hexadecimal digit"
                     :found (char-to-msg char))))
     (retok (code-char char) pos parstate))
@@ -495,7 +497,7 @@
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
-      (reterr-msg :where (position-to-msg pos)
+      (reterr-msg :where pos
                   :expected "a single quote ~
                              or a double quote ~
                              or a question mark ~
@@ -526,7 +528,7 @@
      ((utf8-= char (char-code #\v)) ; \ v
       (retok (escape-simple (simple-escape-v)) pos parstate))
      ((and (utf8-= char (char-code #\%)) ; \ %
-           (parstate->gcc parstate))
+           (parstate->gcc/clang parstate))
       (retok (escape-simple (simple-escape-percent)) pos parstate))
      ((and (utf8-<= (char-code #\0) char)
            (utf8-<= char (char-code #\7))) ; \ octdig
@@ -563,7 +565,7 @@
             (lex-*-hexadecimal-digit pos parstate)))
         (if hexdigs
             (retok (escape-hex hexdigs) last-pos parstate)
-          (reterr-msg :where (position-to-msg next-pos)
+          (reterr-msg :where next-pos
                       :expected "one or more hexadecimal digits"
                       :found "none"))))
      ((utf8-= char (char-code #\u))
@@ -577,7 +579,7 @@
                pos
                parstate)))
      (t
-      (reterr-msg :where (position-to-msg pos)
+      (reterr-msg :where pos
                   :expected "a single quote ~
                              or a double quote ~
                              or a question mark ~
@@ -641,7 +643,7 @@
   (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((unless char)
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
                                single quote or backslash or new-line"
@@ -649,7 +651,7 @@
        ((when (utf8-= char (char-code #\'))) ; '
         (retok nil pos parstate))
        ((when (utf8-= char 10)) ; new-line
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
                                single quote or backslash or new-line"
@@ -719,7 +721,7 @@
   (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((unless char)
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
                                double quote or backslash"
@@ -727,7 +729,7 @@
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos parstate))
        ((when (utf8-= char 10)) ; new-line
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
                                double quote or backslash"
@@ -788,7 +790,7 @@
        ((erp cchars closing-squote-pos parstate) (lex-*-c-char parstate))
        (span (make-span :start first-pos :end closing-squote-pos))
        ((unless cchars)
-        (reterr-msg :where (position-to-msg closing-squote-pos)
+        (reterr-msg :where closing-squote-pos
                     :expected "one or more characters and escape sequences"
                     :found "none")))
     (retok (lexeme-token (token-const (const-char (cconst cprefix? cchars))))
@@ -883,14 +885,14 @@
   (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((unless char)
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\>))) ; >
         (retok nil pos parstate))
        ((when (utf8-= char 10)) ; new-line
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
@@ -950,14 +952,14 @@
   (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((unless char)
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos parstate))
        ((when (utf8-= char 10)) ; new-line
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
@@ -1004,7 +1006,7 @@
        ((erp char first-pos parstate) (read-char parstate)))
     (cond
      ((not char)
-      (reterr-msg :where (position-to-msg first-pos)
+      (reterr-msg :where first-pos
                   :expected "a greater-than ~
                              or a double quote"
                   :found (char-to-msg char)))
@@ -1012,7 +1014,7 @@
       (b* (((erp hchars closing-angle-pos parstate) (lex-*-h-char parstate))
            (span (make-span :start first-pos :end closing-angle-pos))
            ((unless hchars)
-            (reterr-msg :where (position-to-msg closing-angle-pos)
+            (reterr-msg :where closing-angle-pos
                         :expected "one or more characters"
                         :found "none")))
         (retok (header-name-angles hchars)
@@ -1022,14 +1024,14 @@
       (b* (((erp qchars closing-dquote-pos parstate) (lex-*-q-char parstate))
            (span (make-span :start first-pos :end closing-dquote-pos))
            ((unless qchars)
-            (reterr-msg :where (position-to-msg closing-dquote-pos)
+            (reterr-msg :where closing-dquote-pos
                         :expected "one or more characters"
                         :found "none")))
         (retok (header-name-quotes qchars)
                span
                parstate)))
      (t ; other
-      (reterr-msg :where (position-to-msg first-pos)
+      (reterr-msg :where first-pos
                   :expected "a greater-than ~
                              or a double quote"
                   :found (char-to-msg char)))))
@@ -1298,7 +1300,7 @@
      If the next character is not part of any suffix,
      we unread the character and return no suffix.")
    (xdoc::p
-    "If GCC extensions are enabled,
+    "If GCC/Clang extensions are enabled,
      we allow the @('f') or @('F') suffix
      to be followed by @('<n>') or @('<n>x'),
      with @('<n>') among @('16'), @('32'), @('64'), or @('128')."))
@@ -1308,7 +1310,7 @@
      ((not char) ; EOF
       (retok nil pos parstate))
      ((utf8-= char (char-code #\f)) ; f
-      (b* (((unless (parstate->gcc parstate))
+      (b* (((unless (parstate->gcc/clang parstate))
             (retok (fsuffix-locase-f) pos parstate))
            ((erp digits digits-last-pos & parstate) ; f [digits]
             (lex-*-digit pos parstate)))
@@ -1316,7 +1318,7 @@
          (digits ; f digits
           (b* ((n (str::dec-digit-chars-value digits))
                ((unless (member-equal n '(16 32 64 128)))
-                (reterr-msg :where (position-to-msg pos)
+                (reterr-msg :where pos
                             :expected "one of ~
                                        f16, f32, f64, f128, ~
                                        f16x, f32x, f64x, f128x"
@@ -1341,7 +1343,7 @@
          (t ; f nondigits
           (retok (fsuffix-locase-f) pos parstate)))))
      ((utf8-= char (char-code #\F)) ; F
-      (b* (((unless (parstate->gcc parstate))
+      (b* (((unless (parstate->gcc/clang parstate))
             (retok (fsuffix-upcase-f) pos parstate))
            ((erp digits digits-last-pos & parstate) ; f [digits]
             (lex-*-digit pos parstate)))
@@ -1349,7 +1351,7 @@
          (digits ; F digits
           (b* ((n (str::dec-digit-chars-value digits))
                ((unless (member-equal n '(16 32 64 128)))
-                (reterr-msg :where (position-to-msg pos)
+                (reterr-msg :where pos
                             :expected "one of ~
                                        f16, f32, f64, f128, ~
                                        f16x, f32x, f64x, f128x"
@@ -1529,7 +1531,7 @@
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
-      (reterr-msg :where (position-to-msg pos)
+      (reterr-msg :where pos
                   :expected "a character in {e, E}"
                   :found (char-to-msg char)))
      ((or (utf8-= char (char-code #\e)) ; e
@@ -1542,7 +1544,7 @@
            ((erp digits digits-last-pos digits-next-pos parstate)
             (lex-*-digit sign-last-pos parstate))
            ((unless digits)
-            (reterr-msg :where (position-to-msg digits-next-pos)
+            (reterr-msg :where digits-next-pos
                         :expected "one or more digits"
                         :found "none")))
         (retok (make-dexpo :prefix prefix
@@ -1551,7 +1553,7 @@
                digits-last-pos
                parstate)))
      (t ; other
-      (reterr-msg :where (position-to-msg pos)
+      (reterr-msg :where pos
                   :expected "a character in {e, E}"
                   :found (char-to-msg char)))))
   :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
@@ -1590,7 +1592,7 @@
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
-      (reterr-msg :where (position-to-msg pos)
+      (reterr-msg :where pos
                   :expected "a character in {p, P}"
                   :found (char-to-msg char)))
      ((or (utf8-= char (char-code #\p)) ; p
@@ -1603,7 +1605,7 @@
            ((erp digits digits-last-pos digits-next-pos parstate)
             (lex-*-digit sign-last-pos parstate))
            ((unless digits)
-            (reterr-msg :where (position-to-msg digits-next-pos)
+            (reterr-msg :where digits-next-pos
                         :expected "one or more digits"
                         :found "none")))
         (retok (make-bexpo :prefix prefix
@@ -1612,7 +1614,7 @@
                digits-last-pos
                parstate)))
      (t ; other
-      (reterr-msg :where (position-to-msg pos)
+      (reterr-msg :where pos
                   :expected "a character in {p, P}"
                   :found (char-to-msg char)))))
   :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
@@ -1738,7 +1740,7 @@
                   (and ends-in-e
                        (or (utf8-= char (char-code #\+))
                            (utf8-= char (char-code #\-))))))
-        (reterr-msg :where (position-to-msg pos)
+        (reterr-msg :where pos
                     :expected (msg "a character other than ~
                                     a letter ~
                                     or a digit ~
@@ -1812,7 +1814,7 @@
       (b* (((erp char pos parstate) (read-char parstate)))
         (cond
          ((not char) ; 0 x/X EOF
-          (reterr-msg :where (position-to-msg pos)
+          (reterr-msg :where pos
                       :expected "a hexadecimal digit or a dot"
                       :found (char-to-msg char)))
          ((utf8-= char (char-code #\.)) ; 0 x/X .
@@ -1821,7 +1823,7 @@
             ;; 0 x/X . [hexdigs2]
             (cond
              ((not hexdigs2) ; 0 x/X .
-              (reterr-msg :where (position-to-msg hexdigs2-next-pos)
+              (reterr-msg :where hexdigs2-next-pos
                           :expected "a hexadecimal digit or a dot"
                           :found (char-to-msg nil)))
              (t ; 0 x/X . hexdigs2
@@ -1845,7 +1847,7 @@
                                (t expo-last-pos))
                          parstate)))))))
          (t ; 0 x/X other
-          (reterr-msg :where (position-to-msg pos)
+          (reterr-msg :where pos
                       :expected "a hexadecimal digit or a dot"
                       :found (char-to-msg char))))))
      (t ; 0 x/X hexdigs
@@ -2325,7 +2327,7 @@
        (t ; 0 not-all-octal-digits
         (b* ((parstate (unread-chars (len digits) parstate)) ; 0
              ((erp nonoctdig pos parstate) (lex-non-octal-digit parstate)))
-          (reterr-msg :where (position-to-msg pos)
+          (reterr-msg :where pos
                       :expected "octal digit"
                       :found (char-to-msg nonoctdig))))))
      ((utf8-= char (char-code #\.)) ; 0 [digits] .
@@ -2416,7 +2418,7 @@
        (t ; 0 not-all-octal-digits
         (b* ((parstate (unread-chars (len digits) parstate)) ; 0
              ((erp nonoctdig pos parstate) (lex-non-octal-digit parstate)))
-          (reterr-msg :where (position-to-msg pos)
+          (reterr-msg :where pos
                       :expected "octal digit"
                       :found (char-to-msg nonoctdig))))))))
   :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
@@ -2550,7 +2552,7 @@
             ((erp char pos parstate) (read-char parstate)))
          (cond
           ((not char) ; EOF
-           (reterr-msg :where (position-to-msg pos)
+           (reterr-msg :where pos
                        :expected "a character"
                        :found (char-to-msg char)
                        :extra (msg "The block comment starting at ~@1 ~
@@ -2571,7 +2573,7 @@
             ((erp char pos parstate) (read-char parstate)))
          (cond
           ((not char) ; EOF
-           (reterr-msg :where (position-to-msg pos)
+           (reterr-msg :where pos
                        :expected "a character"
                        :found (char-to-msg char)
                        :extra (msg "The block comment starting at ~@1 ~
@@ -2671,7 +2673,7 @@
           ((erp char pos parstate) (read-char parstate)))
        (cond
         ((not char) ; EOF
-         (reterr-msg :where (position-to-msg pos)
+         (reterr-msg :where pos
                      :expected "a character"
                      :found (char-to-msg char)
                      :extra (msg "The line comment starting at ~@1 ~
@@ -2714,7 +2716,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-prepr-directive ((first-pos positionp) (parstate parstatep))
+(define lex-control-line ((first-pos positionp) (parstate parstatep))
   :returns (mv erp
                (lexeme lexemep)
                (span spanp)
@@ -2723,8 +2725,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called when we expect a preprocessing directive,
-     after reading the initial @('#').")
+    "This is called when we expect a preprocessing directive to skip,
+     after reading the initial @('#').
+     This is only called if the @('skip-control-lines') flag
+     in the @(tsee parstate) stobj is @('t');
+     see the documentation in @(tsee parstate).")
    (xdoc::p
     "We read characters in a loop until
      either we find a new-line character (success)
@@ -2737,14 +2742,14 @@
      and the position of the closing new-line,
      which is returned by the loop function."))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
-       ((erp last-pos parstate) (lex-prepr-directive-loop first-pos parstate)))
-    (retok (lexeme-prepr-directive)
+       ((erp last-pos parstate) (lex-control-line-loop first-pos parstate)))
+    (retok (lexeme-control-line)
            (make-span :start first-pos :end last-pos)
            parstate))
 
   :prepwork
 
-  ((define lex-prepr-directive-loop ((first-pos positionp) (parstate parstatep))
+  ((define lex-control-line-loop ((first-pos positionp) (parstate parstatep))
      :returns (mv erp
                   (last-pos positionp)
                   (new-parstate parstatep :hyp (parstatep parstate)))
@@ -2753,7 +2758,7 @@
           ((erp char pos parstate) (read-char parstate)))
        (cond
         ((not char) ; EOF
-         (reterr-msg :where (position-to-msg pos)
+         (reterr-msg :where pos
                      :expected "a character"
                      :found (char-to-msg char)
                      :extra (msg "The preprocessing directive starting at ~@1 ~
@@ -2762,19 +2767,19 @@
         ((utf8-= char 10) ; new-line
          (retok pos parstate))
         (t ; other
-         (lex-prepr-directive-loop first-pos parstate))))
+         (lex-control-line-loop first-pos parstate))))
      :measure (parsize parstate)
      :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
      ///
 
-     (defret parsize-of-lex-prepr-directive-loop-uncond
+     (defret parsize-of-lex-control-line-loop-uncond
        (<= (parsize new-parstate)
            (parsize parstate))
        :rule-classes :linear
        :hints (("Goal" :induct t)))
 
-     (defret parsize-of-lex-prepr-directive-loop-cond
+     (defret parsize-of-lex-control-line-loop-cond
        (implies (not erp)
                 (<= (parsize new-parstate)
                     (1- (parsize parstate))))
@@ -2783,12 +2788,12 @@
 
   ///
 
-  (defret parsize-of-lex-prepr-directive-uncond
+  (defret parsize-of-lex-control-line-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-prepr-directive-cond
+  (defret parsize-of-lex-control-line-cond
     (implies (not erp)
              (<= (parsize new-parstate)
                  (1- (parsize parstate))))
@@ -2845,7 +2850,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-lexeme ((parstate parstatep))
+(define lex-lexeme ((header? booleanp) (parstate parstatep))
   :returns (mv erp
                (lexeme? lexeme-optionp)
                (span spanp)
@@ -2859,6 +2864,11 @@
      It returns the next lexeme found in the parser state,
      or @('nil') if we reached the end of the file;
      an error is returned if lexing fails.")
+   (xdoc::p
+    "The @('header?') flag is usually @('nil').
+     When it is @('t'), it means that we must find a header name next,
+     which modifies the treatment, in this function,
+     of double quote and less-than (i.e. open angle bracket).")
    (xdoc::p
     "First we get the next character, propagating errors.
      If there is no next character, we return @('nil') for no lexeme,
@@ -2950,7 +2960,10 @@
       it must start an unprefixed character constant.")
     (xdoc::li
      "If the next character is a double quote,
-      it must start an unprefixed string literal.")
+      and the @('header?') flag is @('nil'),
+      it must start an unprefixed string literal;
+      if instead the @('header?') flag is @('t'),
+      it must start a header name.")
     (xdoc::li
      "If the next character is @('/'),
       it could start a comment,
@@ -2972,7 +2985,23 @@
       and so we need to first try and lex the longer ones,
       using code similar to the one for other lexemes explained above.
       Some punctuators are not prefixes of others,
-      and so they can be immediately decided.")))
+      and so they can be immediately decided.")
+    (xdoc::li
+     "If we encounter the @('#') punctuator,
+      we look at the @('skip-control-lines') flag of the stobj.
+      If it is @('t'), we call @(tsee lex-control-line),
+      which will consume the whole preprocessing directive,
+      generating a control line lexeme that tokenization will skip.
+      If the flag is @('nil') instead,
+      we generate a token for the @('#'),
+      so that our parser can handle that and parse certain directives
+      (when we use our own preprocessor).")
+    (xdoc::li
+     "If we encounter the @('<') punctuator,
+      and the @('header?') flag is @('nil'),
+      it must be or start a punctuator;
+      if instead the @('header?') flag is @('t'),
+      it must start a header name.")))
 
   (b* (((reterr) nil (irr-span) parstate)
        ((erp char first-pos parstate) (read-char parstate))
@@ -3101,7 +3130,11 @@
       (lex-character-constant nil first-pos parstate))
 
      ((utf8-= char (char-code #\")) ; "
-      (lex-string-literal nil first-pos parstate))
+      (if header?
+          (b* ((parstate (unread-char parstate)) ;
+               ((erp hname span parstate) (lex-header-name parstate))) ; hname
+            (retok (lexeme-token (token-header hname)) span parstate))
+        (lex-string-literal nil first-pos parstate)))
 
      ((utf8-= char (char-code #\/)) ; /
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
@@ -3124,9 +3157,16 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((and (utf8-= char (char-code #\#))
-           (only-whitespace-backward-through-line parstate))
-      (lex-prepr-directive first-pos parstate))
+     ((utf8-= char (char-code #\#))
+      (if (parstate->skip-control-lines parstate)
+          (if (only-whitespace-backward-through-line parstate)
+              (lex-control-line first-pos parstate)
+            (reterr-msg :where first-pos
+                        :expected "not a #"
+                        :found "a #"))
+        (retok (lexeme-token (token-punctuator "#"))
+               (make-span :start first-pos :end first-pos)
+               parstate)))
 
      ((or (utf8-= char (char-code #\[)) ; [
           (utf8-= char (char-code #\])) ; ]
@@ -3418,47 +3458,51 @@
                    parstate))))))
 
      ((utf8-= char (char-code #\<)) ; <
-      (b* (((erp char2 pos2 parstate) (read-char parstate)))
-        (cond
-         ((not char2) ; < EOF
-          (retok (lexeme-token (token-punctuator "<"))
-                 (make-span :start first-pos :end first-pos)
-                 parstate))
-         ((utf8-= char2 (char-code #\<)) ; < <
-          (b* (((erp char3 pos3 parstate) (read-char parstate)))
-            (cond
-             ((not char3) ; < < EOF
-              (retok (lexeme-token (token-punctuator "<<"))
-                     (make-span :start first-pos :end pos2)
-                     parstate))
-             ((utf8-= char3 (char-code #\=)) ; < < =
-              (retok (lexeme-token (token-punctuator "<<="))
-                     (make-span :start first-pos :end pos3)
-                     parstate))
-             (t ; < < other
-              (b* ((parstate (unread-char parstate))) ; < <
-                (retok (lexeme-token (token-punctuator "<<"))
-                       (make-span :start first-pos :end pos2)
-                       parstate))))))
-         ((utf8-= char2 (char-code #\=)) ; < =
-          (retok (lexeme-token (token-punctuator "<="))
-                 (make-span :start first-pos :end pos2)
-                 parstate))
-         ((utf8-= char2 (char-code #\:)) ; < :
-          (retok (lexeme-token (token-punctuator "<:"))
-                 (make-span :start first-pos :end pos2)
-                 parstate))
-         ((utf8-= char2 (char-code #\%)) ; < %
-          (retok (lexeme-token (token-punctuator "<%"))
-                 (make-span :start first-pos :end pos2)
-                 parstate))
-         (t ; < other
-          (b* ((parstate (unread-char parstate))) ; <
+      (if header?
+          (b* ((parstate (unread-char parstate)) ;
+               ((erp hname span parstate) (lex-header-name parstate))) ; hname
+            (retok (lexeme-token (token-header hname)) span parstate))
+        (b* (((erp char2 pos2 parstate) (read-char parstate)))
+          (cond
+           ((not char2) ; < EOF
             (retok (lexeme-token (token-punctuator "<"))
                    (make-span :start first-pos :end first-pos)
-                   parstate))))))
+                   parstate))
+           ((utf8-= char2 (char-code #\<)) ; < <
+            (b* (((erp char3 pos3 parstate) (read-char parstate)))
+              (cond
+               ((not char3) ; < < EOF
+                (retok (lexeme-token (token-punctuator "<<"))
+                       (make-span :start first-pos :end pos2)
+                       parstate))
+               ((utf8-= char3 (char-code #\=)) ; < < =
+                (retok (lexeme-token (token-punctuator "<<="))
+                       (make-span :start first-pos :end pos3)
+                       parstate))
+               (t ; < < other
+                (b* ((parstate (unread-char parstate))) ; < <
+                  (retok (lexeme-token (token-punctuator "<<"))
+                         (make-span :start first-pos :end pos2)
+                         parstate))))))
+           ((utf8-= char2 (char-code #\=)) ; < =
+            (retok (lexeme-token (token-punctuator "<="))
+                   (make-span :start first-pos :end pos2)
+                   parstate))
+           ((utf8-= char2 (char-code #\:)) ; < :
+            (retok (lexeme-token (token-punctuator "<:"))
+                   (make-span :start first-pos :end pos2)
+                   parstate))
+           ((utf8-= char2 (char-code #\%)) ; < %
+            (retok (lexeme-token (token-punctuator "<%"))
+                   (make-span :start first-pos :end pos2)
+                   parstate))
+           (t ; < other
+            (b* ((parstate (unread-char parstate))) ; <
+              (retok (lexeme-token (token-punctuator "<"))
+                     (make-span :start first-pos :end first-pos)
+                     parstate)))))))
 
-     (t (reterr-msg :where (position-to-msg first-pos)
+     (t (reterr-msg :where first-pos
                     :expected "a white-space character ~
                                (space, ~
                                new-line, ~
@@ -3515,14 +3559,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-token ((parstate parstatep))
+(define read-token-header? ((header? booleanp) (parstate parstatep))
   :returns (mv erp
                (token? token-optionp)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Read a token."
+  :short "Read a token,
+          with a flag signaling whether
+          we should find a header name or not."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The @('header?') flag is passed to @(tsee lex-lexeme):
+     see that function's documentation.")
    (xdoc::p
     "If we find a token, we return it, along with its span.
      If we reach the end of file, we return @('nil') for no token,
@@ -3563,12 +3612,12 @@
           (retok (token+span->token token+span)
                  (token+span->span token+span)
                  parstate))))
-    (read-token-loop parstate))
+    (read-token-header?-loop header? parstate))
   :guard-hints (("Goal" :in-theory (enable natp fix len)))
 
   :prepwork
 
-  ((define read-token-loop ((parstate parstatep))
+  ((define read-token-header?-loop ((header? booleanp) (parstate parstatep))
      :returns (mv erp
                   (token? token-optionp)
                   (span spanp)
@@ -3576,11 +3625,11 @@
      :parents nil
      (b* (((reterr) nil (irr-span) parstate)
           (parstate.tokens-read (parstate->tokens-read parstate))
-          ((erp lexeme? span parstate) (lex-lexeme parstate))
+          ((erp lexeme? span parstate) (lex-lexeme header? parstate))
           ((when (not lexeme?))
            (retok nil span parstate))
           ((when (lexeme-case lexeme? :token))
-           (b* ((token (lexeme-token->unwrap lexeme?))
+           (b* ((token (lexeme-token->token lexeme?))
                 ((unless (< parstate.tokens-read
                             (parstate->tokens-length parstate)))
                  (raise "Internal error: index ~x0 out of bound ~x1."
@@ -3595,12 +3644,12 @@
                 (parstate (update-parstate->tokens-read
                            (1+ parstate.tokens-read) parstate)))
              (retok token span parstate))))
-       (read-token-loop parstate))
+       (read-token-header?-loop header? parstate))
      :measure (parsize parstate)
 
      ///
 
-     (defret parsize-of-read-token-loop-uncond
+     (defret parsize-of-read-token-header?-loop-uncond
        (<= (parsize new-parstate)
            (parsize parstate))
        :rule-classes :linear
@@ -3609,7 +3658,7 @@
                 :in-theory (enable parsize))
                '(:use parsize-of-lex-lexeme-uncond)))
 
-     (defret parsize-of-read-token-loop-cond
+     (defret parsize-of-read-token-header?-loop-cond
        (implies (and (not erp)
                      token?)
                 (<= (parsize new-parstate)
@@ -3622,16 +3671,16 @@
 
   ///
 
-  (defret parsize-of-read-token-uncond
+  (defret parsize-of-read-token-header?-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear
     :hints (("Goal"
              :in-theory (e/d (parsize len fix nfix)
-                             (parsize-of-read-token-loop-uncond))
-             :use parsize-of-read-token-loop-uncond)))
+                             (parsize-of-read-token-header?-loop-uncond))
+             :use parsize-of-read-token-header?-loop-uncond)))
 
-  (defret parsize-of-read-token-cond
+  (defret parsize-of-read-token-header?-cond
     (implies (and (not erp)
                   token?)
              (<= (parsize new-parstate)
@@ -3639,8 +3688,38 @@
     :rule-classes :linear
     :hints (("Goal"
              :in-theory (e/d (parsize len fix nfix)
-                             (parsize-of-read-token-loop-cond))
-             :use parsize-of-read-token-loop-cond))))
+                             (parsize-of-read-token-header?-loop-cond))
+             :use parsize-of-read-token-header?-loop-cond))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-token ((parstate parstatep))
+  :returns (mv erp
+               (token? token-optionp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Read a token."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This abbreviates @(tsee read-token-header?)
+     with @('header?') set to @('nil'),
+     which is the most frequent case."))
+  (read-token-header? nil parstate)
+
+  ///
+
+  (defret parsize-of-read-token-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-read-token-cond
+    (implies (and (not erp)
+                  token?)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3842,7 +3921,7 @@
   (b* (((reterr) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate))
        ((unless (token-punctuatorp token punct)) ; implies non-nil
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected (msg "the punctuator ~x0" punct)
                     :found (token-to-msg token))))
     (retok span parstate))
@@ -3877,7 +3956,7 @@
   (b* (((reterr) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate))
        ((unless (token-keywordp token keywd)) ; implies non-nil
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected (msg "the keyword \"~s0\"" keywd)
                     :found (token-to-msg token))))
     (retok span parstate))
@@ -3913,10 +3992,10 @@
        ((erp token span parstate) (read-token parstate))
        ((unless (and token
                      (token-case token :string)))
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "a string literal"
                     :found (token-to-msg token)))
-       (stringlit (token-string->unwrap token)))
+       (stringlit (token-string->literal token)))
     (retok stringlit span parstate))
 
   ///
@@ -3950,10 +4029,10 @@
        ((erp token span parstate) (read-token parstate))
        ((unless (and token
                      (token-case token :ident)))
-        (reterr-msg :where (position-to-msg (span->start span))
+        (reterr-msg :where (span->start span)
                     :expected "an identifier"
                     :found (token-to-msg token)))
-       (ident (token-ident->unwrap token)))
+       (ident (token-ident->ident token)))
     (retok ident span parstate))
 
   ///
@@ -3964,6 +4043,44 @@
     :rule-classes :linear)
 
   (defret parsize-of-read-ident-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-header-name ((parstate parstatep))
+  :returns (mv erp
+               (hname header-namep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Read a header name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when we expect a header name.
+     We read the next token, with the @('header?') flag set to @('t'),
+     ensuring it exists and is a header name.
+     We return the header name if successful."))
+  (b* (((reterr) (irr-header-name) (irr-span) parstate)
+       ((erp token span parstate) (read-token-header? t parstate))
+       ((unless (and token
+                     (token-case token :header)))
+        (reterr-msg :where (span->start span)
+                    :expected "a header name"
+                    :found (token-to-msg token)))
+       (hname (token-header->name token)))
+    (retok hname span parstate))
+
+  ///
+
+  (defret parsize-of-read-header-name-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-read-header-name-cond
     (implies (not erp)
              (<= (parsize new-parstate)
                  (1- (parsize parstate))))

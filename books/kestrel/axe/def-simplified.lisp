@@ -1,7 +1,7 @@
 ; A tool to simplify a term and store the resulting DAG in a constant
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -43,6 +43,7 @@
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
 (include-book "kestrel/bv/rules3" :dir :system) ; for max-constants-lemma
+(include-book "kestrel/bv/rules4" :dir :system) ; for bvlt-of-bvcat-arg2-constant-arg4-arg3, etc.
 (include-book "kestrel/arithmetic-light/ifix" :dir :system) ; for ifix-when-integerp
 (include-book "kestrel/bv/adder" :dir :system) ; for RIPPLE-CARRY-ADDER-RECURSIVE -- drop?
 (include-book "kestrel/bv/bvif2" :dir :system) ; for BVLT-OF-BVIF-ARG2-SAFE
@@ -132,14 +133,14 @@
                               (consp whole-form)
                               (symbolp (car whole-form)))))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))  ; todo: return (value-triple :redundant) instead?
+        (mv nil '(value-triple :redundant) state))
        ;; Choose which set of rules to use:
        (rule-list (choose-rules rules ;rule-lists
                                 extra-rules remove-rules (def-simplified-rules)))
        ((mv erp rule-alist)
         (make-rule-alist rule-list (w state)))
        ((when erp) (mv erp nil state))
-       ((mv erp dag)
+       ((mv erp dag &)
         (simplify-term-basic term
                              assumptions
                              rule-alist
@@ -167,9 +168,8 @@
         ;; constant, as usual:
         ;; TODO: Should the wrapper do this?
         `(progn (defconst ,defconst-name ',dag)
-                (table def-simplified-table ',whole-form ':fake)
-                (value-triple ',defconst-name) ;todo: use cw-event and then return :invisible here?
-                )
+                ,(redundancy-table-event whole-form ':fake)
+                (value-triple ',defconst-name))
         state)))
 
 ;; Returns an error triple, (mv erp event state).

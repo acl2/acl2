@@ -1,7 +1,7 @@
 ; Rule Lists used by the x86 Axe tools
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1227,6 +1227,7 @@
     acl2::signed-byte-p-of-logext
     acl2::integerp-of--))
 
+;move?
 (defund arith-to-bv-rules ()
   (declare (xargs :guard t))
   '(acl2::bvchop-of-*-becomes-bvmult
@@ -1242,6 +1243,8 @@
 
     acl2::mod-becomes-bvchop-when-power-of-2p
     ;; todo: more
+
+    acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
     ))
 
 ;; Rules to introduce our BV operators (todo: move these):
@@ -1380,7 +1383,11 @@
     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
 
     acl2::bvmod-of-power-of-2 ; replaces bvmod with bvchop
-    ))
+
+    acl2::bvminus-cancel-axe ; build these 4 in deeper? ; this is because we are not rewriting bvminus away
+    acl2::cancel-bvplus-arg-of-nil ; must have these if we have bvminus-cancel-axe
+    acl2::cancel-bvplus-arg-left
+    acl2::cancel-bvplus-arg-right))
 
 ;; ;not used?
 ;; (defund canonical-address-rules ()
@@ -1868,8 +1875,8 @@
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
 
-;; Do this late, to give the bitp rules a chance to fire first:
-(set-axe-rule-priority acl2::bitp-becomes-unsigned-byte-p 1)
+;; Do this first, since we'll use unsigned-byte-p as the normal form
+(set-axe-rule-priority acl2::bitp-becomes-unsigned-byte-p -1)
 
 ;; Fire very early to remove bvchop from things like (+ 4 (ESP X86)), at least for now:
 (set-axe-rule-priority bvchop-of-+-of-esp-becomes-+-of-esp -2)
@@ -1883,7 +1890,7 @@
 (defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
   '(    ;; newer scheme, 32-bit:
-    run-until-return4
+    run-until-return32
     run-until-esp-is-above-opener-axe ; not for IFs
     run-until-esp-is-above-base-axe ; not for IFs
     run-until-esp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
@@ -1910,7 +1917,7 @@
     acl2::equal-of-+-cancel-2
 
     ;; newer scheme:
-    run-until-return3
+    run-until-return64
     run-until-rsp-is-above-opener-axe ; not for IFs
     run-until-rsp-is-above-base-axe ; not for IFs
     run-until-rsp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
@@ -1949,7 +1956,7 @@
     ;; run-until-rsp-is-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
 
     ;;newer-scheme:
-    run-until-return-or-reach-pc3
+    run-until-return-or-reach-pc64
     run-until-rsp-is-above-or-reach-pc-opener-axe
     run-until-rsp-is-above-or-reach-pc-base-axe
     acl2::memberp-of-cons-irrel-strong ; for resolving the stop-pcs check
@@ -2935,7 +2942,7 @@
             acl2::collect-constants-over-<-2
             acl2::<-of-negative-when-usbp
             x86isa::canonical-address-p-of-if
-            acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
+            ;; acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
             acl2::bvlt-of-bvplus-constant-and-constant-other
             acl2::bvlt-transitive-4-a
             acl2::bvlt-transitive-4-b
@@ -5817,7 +5824,7 @@
 (defund extra-tester-rules ()
   (declare (xargs :guard t))
   '(acl2::integerp-of-expt
-    acl2::integerp-of-*                 ; for array index calcs
+    ;acl2::integerp-of-*                 ; for array index calcs
     acl2::my-integerp-<-non-integerp    ; for array index calcs
     acl2::bvsx-when-bvlt
     ;; x86isa::canonical-address-p-between-special5 ; todo: move these
@@ -5912,10 +5919,8 @@
     ;; booleanp-of-jnp-condition
     ;; booleanp-of-jz-condition
     ;; booleanp-of-jnz-condition
-    acl2::getbit-0-of-bool-to-bit
-    acl2::equal-of-0-and-bool-to-bit ; alt version needed, or do equals get turned around?
-    acl2::equal-of-1-and-bool-to-bit ; alt version needed, or do equals get turned around?
-    acl2::equal-of-1-and-bitnot ; todo: add 0 version
+    ;;acl2::getbit-0-of-bool-to-bit ; just use getbit-identity-axe
+
     ;;acl2::bvif-of-1-and-0-becomes-bool-to-bit ; introduces bool-to-bit?  maybe bad.
     ;; todo: just include boolean-rules?:
     ;; acl2::bvmult-tighten-when-power-of-2p-axe ; todo: uncomment
@@ -6026,10 +6031,10 @@
             acl2::bvplus-of-+-arg2 ; todo: drop once we characterize long negation?
             acl2::bvplus-of-+-arg3 ; todo: drop once we characterize long negation?
             ;acl2::integerp-when-unsigned-byte-p-free ; needed for the bvplus-of-+ rules.
-            acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
-            min ; why is min arising?  or add min-same
-            acl2::<-becomes-bvlt-axe-bind-free-arg1-strong
-            acl2::<-becomes-bvlt-dag-gen-better2
+            ;; acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
+            ;; min ; why is min arising?  or add min-same
+            ;; acl2::<-becomes-bvlt-axe-bind-free-arg1-strong
+            ;; acl2::<-becomes-bvlt-dag-gen-better2
             ;; after adding core-rules-bv:
             acl2::bvlt-tighten-bind-and-bind-dag
             ;;acl2::unsigned-byte-p-of-0-arg1 ; move to a more fundamental rule list
@@ -6394,6 +6399,38 @@
           (read-and-write-rules-bv)
           (unsigned-canonical-rules)
           (canonical-rules-bv)))
+
+;; This should include all rules used by the unroller:
+(defund all-unroller-rules ()
+  (declare (xargs :guard t))
+  (append (unroller-rules32)
+          (unroller-rules64)
+          (read-and-write-rules-bv)
+          ;;  (read-and-write-rules-non-bv)
+          (assumption-simplification-rules32)
+          (assumption-simplification-rules64)
+          (step-opener-rules32)
+          (step-opener-rules64)
+          (new-normal-form-rules-common)
+          (canonical-rules-bv)
+          (new-normal-form-rules64)
+          (unsigned-canonical-rules)
+          (symbolic-execution-rules32)
+          (symbolic-execution-rules64)
+          (prune-dag-post-rewrite-rules)))
+
+(defun additional-rules-for-tester ()
+  (declare (xargs :guard t))
+  (append (extra-tester-rules)
+          (extra-tester-lifting-rules)
+          (tester-proof-rules)))
+
+;; This should include all rules used by the tester:
+(defund all-tester-rules ()
+  (declare (xargs :guard t))
+  (append (all-unroller-rules)
+          (pre-stp-rules) ; since we call the tactic-prover
+          (additional-rules-for-tester)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

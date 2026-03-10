@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 (in-package "C$")
 
 (include-book "external-preprocessing")
+(include-book "preprocessor")
 (include-book "parser")
 (include-book "disambiguator")
 (include-book "validator")
@@ -22,6 +23,7 @@
 (include-book "kestrel/fty/string-option" :dir :system)
 (include-book "kestrel/fty/string-stringlist-map" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
@@ -50,77 +52,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ienv-default (&key
-                      ((std (or (eq std :auto)
-                                (equal std 17)
-                                (equal std 23)))
-                       ':auto)
-                      ((gcc (or (eq gcc :auto)
-                                (booleanp gcc)))
-                       ':auto))
-  :guard-debug t
-  :short "A default implementation environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the default used by @(tsee input-files).")
-   (xdoc::p
-    "We default to the C17 standard without GCC extensions.
-     This is the C version with the strongest support.
-     Optionally, this can be overridden
-     with the @(':std') and @(':gcc') keyword arguments.")
-   (xdoc::p
-    "For the type sizes and signedness options,
-     we use values which have anecdotally appeared common
-     on 64-bit machines."))
-  (b* ((std (if (eq std :auto) 17 std))
-       (gcc (if (eq gcc :auto) nil gcc))
-       (version (if (int= std 17)
-                    (if gcc
-                        (c::version-c17+gcc)
-                      (c::version-c17))
-                  (if gcc
-                        (c::version-c23+gcc)
-                      (c::version-c23)))))
-    (make-ienv :version version
-               :bool-bytes 1
-               :short-bytes 2
-               :int-bytes 4
-               :long-bytes 8
-               :llong-bytes 8
-               :float-bytes 4
-               :double-bytes 8
-               :ldouble-bytes 16
-               :pointer-bytes 8
-               :plain-char-signedp nil)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *input-files-allowed-options*
-  :short "Keyword options accepted by @(tsee input-files)."
-  (list :files
-        :path
-        :preprocess
-        :preprocess-args
-        :process
-        :const
-        :std
-        :gcc
-        :short-bytes
-        :int-bytes
-        :long-bytes
-        :long-long-bytes
-        :plain-char-signed)
-  ///
-  (assert-event (keyword-listp *input-files-allowed-options*))
-  (assert-event (no-duplicatesp-eq *input-files-allowed-options*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define input-files-preprocess-inputp (x)
   :returns (yes/no booleanp)
   :short "Recognize valid values of the @(':preprocess') input."
   (or (not x)
+      (eq x :internal)
       (eq x :auto)
       (stringp x)))
 
@@ -155,9 +91,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-path (path)
-  :returns (mv erp (new-path stringp))
-  :short "Process the @(':path') input."
+(define input-files-process-base-dir (base-dir)
+  :returns (mv erp (new-base-dir stringp))
+  :short "Process the @(':base-dir') input."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -166,20 +102,20 @@
      This is for uniformity when concatenating this
      with the files specified in the @(':files') input."))
   (b* (((reterr) "")
-       ((unless (stringp path))
-        (reterr (msg "The :PATH input must be a string, ~
+       ((unless (stringp base-dir))
+        (reterr (msg "The :BASE-DIR input must be a string, ~
                       but it is ~x0 instead."
-                     path)))
-       (path-chars (str::explode path))
-       ((unless (consp path-chars))
-        (reterr (msg "The :PATH input must be not empty, ~
+                     base-dir)))
+       (base-dir-chars (str::explode base-dir))
+       ((unless (consp base-dir-chars))
+        (reterr (msg "The :BASE-DIR input must be not empty, ~
                       but it is the empty string instead.")))
-       (path-chars (if (and (consp (cdr path-chars))
-                            (eql (car (last path-chars)) #\/))
-                       (butlast path-chars 1)
-                     path-chars))
-       (path (str::implode path-chars)))
-    (retok path)))
+       (base-dir-chars (if (and (consp (cdr base-dir-chars))
+                                (eql (car (last base-dir-chars)) #\/))
+                           (butlast base-dir-chars 1)
+                         base-dir-chars))
+       (base-dir (str::implode base-dir-chars)))
+    (retok base-dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -191,14 +127,24 @@
                                :in-theory
                                (enable input-files-preprocess-inputp)))))
   :short "Process the @(':preprocess') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('preprocessor') result of this function
+     encodes the preprocessor provided by this library as the empty string,
+     so that we can use a simpler return type here,
+     namely @(tsee string-optionp).
+     Note that the empty string cannot be confused with
+     any command to invoke an external preprocessor."))
   (b* (((reterr) nil)
        ((unless (input-files-preprocess-inputp preprocess))
-        (reterr (msg "The :PREPROCESS input must be NIL, :AUTO, or a string, ~
+        (reterr (msg "The :PREPROCESS input must be ~
+                      NIL, :INTERNAL, :AUTO, or a string, ~
                       but it is ~x0 instead."
                      preprocess)))
-       (preprocessor (if (eq preprocess :auto)
-                         "gcc"
-                       preprocess)))
+       (preprocessor (cond ((eq preprocess :internal) "")
+                           ((eq preprocess :auto) "gcc")
+                           (t preprocess))))
     (retok preprocessor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -217,8 +163,9 @@
    (xdoc::p
     "The @('preprocessor') input to this function
      is the result of processing the @(':preprocess') input.
-     If it is @('nil'), the @(':preprocess-args') input
-     is expected to also be @('nil').")
+     If it is @('nil') or the empty string
+     (the latter encodes the internal preprocessor of this library),
+     the @(':preprocess-args') input is expected to also be @('nil').")
    (xdoc::p
     "If processing of the @(':preprocess-args') input is successful,
      we return its value,
@@ -226,9 +173,9 @@
      This value is passed as part of the @(':extra-args') input
      of @(tsee preprocess-files), which justifies the name of the result."))
   (b* (((reterr) nil)
-       ((when (and (not preprocessor)
+       ((when (and (member-equal preprocessor '(nil ""))
                    preprocess-args))
-        (reterr (msg "Since the :PREPROCESS input is NIL, ~
+        (reterr (msg "Since the :PREPROCESS input is NIL or :INTERNAL, ~
                       the :PREPROCESS-ARGS input must also be NIL, ~
                       but it is ~x0 instead."
                      preprocess-args)))
@@ -262,6 +209,95 @@
       :in-theory
       (disable
        return-type-of-input-files-process-preprocess-args.preprocess-extra-args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *input-files-allowed-preprocess-options*
+  :short "Keyword options accepted by @(tsee input-files)
+          for the @(':preprocess-options') input."
+  (list :full-expansion
+        :keep-comments
+        :trace-expansion))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-preprocess-options (preprocess-options
+                                                (preprocessor string-optionp))
+  :returns (mv erp (options ppoptionsp))
+  :short "Process the @(':preprocess-options') input."
+  (b* (((reterr) (irr-ppoptions))
+       ((unless (keyword-value-listp preprocess-options))
+        (reterr (msg "The :PREPROCESS-OPTIONS must be a keyword-value list, ~
+                      but it is ~x0 instead."
+                     preprocess-options)))
+       ((when (and preprocess-options
+                   (not (equal preprocessor ""))))
+        (reterr (msg "Since the :PREPROCESS option is not :INTERNAL, ~
+                      the :PREPROCESS-OPTIONS must be NIL, ~
+                      but it is ~x0 instead."
+                     preprocess-options)))
+       (alist (keyword-value-list-to-alist preprocess-options))
+       (keywords (strip-cars alist))
+       ((unless (subsetp-eq keywords *input-files-allowed-preprocess-options*))
+        (reterr (msg "The keywords in the :PREPROCESS-OPTIONS input ~
+                      must be among ~&0, but they include ~&1 instead."
+                     *input-files-allowed-preprocess-options*
+                     (set-difference-eq
+                      keywords
+                      *input-files-allowed-preprocess-options*))))
+       ((unless (no-duplicatesp-eq keywords))
+        (reterr (msg "The keywords in the :PREPROCESS-OPTIONS input ~
+                      must have no duplicates, ~
+                      but the list ~x0 contains duplicates."
+                     keywords)))
+       (full-expansion (cdr (assoc-eq :full-expansion alist)))
+       ((unless (booleanp full-expansion))
+        (reterr (msg "The preprocessor option :FULL-EXPANSION ~
+                      must be T or NIL, but it is ~x0 instead."
+                     full-expansion)))
+       (keep-comments (b* ((kwd+val (assoc-eq :keep-comments alist)))
+                        (if kwd+val
+                            (cdr kwd+val)
+                          t)))
+       ((unless (booleanp keep-comments))
+        (reterr (msg "The preprocessor option :KEEP-COMMENTS ~
+                      must be T or NIL, but it is ~x0 instead."
+                     keep-comments)))
+
+       (trace-expansion (b* ((kwd+val (assoc-eq :trace-expansion alist)))
+                          (if kwd+val
+                              (cdr kwd+val)
+                            t)))
+       ((unless (booleanp trace-expansion))
+        (reterr (msg "The preprocessor option :TRACE-EXPANSION ~
+                      must be T or NIL, but it ~x0 instead."
+                     trace-expansion))))
+    (retok (make-ppoptions :full-expansion full-expansion
+                           :keep-comments keep-comments
+                           :trace-expansion trace-expansion
+                           :no-errors/warnings nil)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable acl2::symbol-listp-of-strip-cars-when-symbol-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-include-dirs ((preprocessor string-optionp)
+                                          include-dirs)
+  :returns (mv erp (new-include-dirs string-listp))
+  :short "Process the @(':include-dirs') input."
+  (b* (((reterr) nil)
+       ((unless (string-listp include-dirs))
+        (reterr (msg "The :INCLUDE-DIRS input must be a list of strings, ~
+                      but it is ~x0 instead."
+                     include-dirs)))
+       ((when (and (consp include-dirs)
+                   (not (equal preprocessor "")))) ; not :internal
+        (reterr (msg "Unless the :PREPROCESSOR input is :INTERNAL, ~
+                      the :INCLUDE-DIRS input must be NIL, ~
+                      but it is ~x0 instead."
+                     include-dirs))))
+    (retok include-dirs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -340,9 +376,11 @@
 
 (define input-files-process-inputs ((files-presentp booleanp)
                                     files
-                                    path
+                                    base-dir
                                     preprocess
                                     preprocess-args
+                                    preprocess-options
+                                    include-dirs
                                     process
                                     (const-presentp booleanp)
                                     const
@@ -352,11 +390,13 @@
                                     state)
   :returns (mv erp
                (new-files string-listp)
-               (new-path stringp)
+               (new-base-dir stringp)
                (preprocessor string-optionp)
                (preprocess-extra-args
                  (or (string-listp preprocess-extra-args)
                      (acl2::string-stringlist-mapp preprocess-extra-args)))
+               (options ppoptionsp)
+               (new-include-dirs string-listp)
                (new-process input-files-process-inputp)
                (new-const symbolp)
                (keep-going booleanp)
@@ -372,23 +412,30 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil "" nil nil :parse nil nil (irr-ienv))
+  (b* (((reterr) nil "" nil nil (irr-ppoptions) nil :parse nil nil (irr-ienv))
        ;; Process the inputs.
        ((erp files) (input-files-process-files files-presentp files))
-       ((erp path) (input-files-process-path path))
+       ((erp base-dir) (input-files-process-base-dir base-dir))
        ((erp preprocessor) (input-files-process-preprocess preprocess))
        ((erp preprocess-extra-args)
         (input-files-process-preprocess-args preprocessor
                                              preprocess-args
                                              state))
+       ((erp options)
+        (input-files-process-preprocess-options preprocess-options
+                                                preprocessor))
+       ((erp include-dirs)
+        (input-files-process-include-dirs preprocessor include-dirs))
        ((erp process) (input-files-process-process process))
        ((erp const) (input-files-process-const const-presentp const progp))
        ((erp keep-going) (input-files-process-keep-going keep-going))
        ((erp ienv) (input-files-process-ienv ienv)))
     (retok files
-           path
+           base-dir
            preprocessor
            preprocess-extra-args
+           options
+           include-dirs
            process
            const
            keep-going
@@ -437,7 +484,11 @@
       :c17 "-std=c17"
       :c23 "-std=c23"
       :c17+gcc "-std=gnu17"
-      :c23+gcc "-std=gnu23")))
+      :c23+gcc "-std=gnu23"
+      :c17+clang "-std=gnu17"
+      :c23+clang "-std=gnu23")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define string-stringlist-map-map-cons-values
   ((x stringp)
@@ -454,6 +505,8 @@
         (cons x (omap::head-val map))
         (string-stringlist-map-map-cons-values x (omap::tail map)))))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-complete-preprocess-extra-args
   ((preprocess-extra-args
@@ -480,6 +533,7 @@
         (cons arg-std preprocess-extra-args)
       (string-stringlist-map-map-cons-values arg-std preprocess-extra-args)))
   :guard-hints (("Goal" :in-theory (enable acl2::string-stringlist-mapp)))
+
   ///
 
   (defret string-stringlist-mapp-of-input-files-complete-preprocess-extra-args.new-preprocess-extra-args
@@ -496,41 +550,48 @@
       :in-theory
       (disable return-type-of-input-files-complete-preprocess-extra-args)))))
 
-(define input-files-read-files ((files string-listp) (path stringp) state)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-read-files ((files string-listp) (base-dir stringp) state)
   :returns (mv erp (fileset filesetp) state)
   :short "Read a file set from a given set of paths."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We go through each file, we prepend the path,
+    "We go through each file, we prepend the base directory,
      and we attempt to read the file at each resulting path,
      constructing the file set along the way.
-     Recall that @('path') never ends with @('/') (unless it is just @('/')),
+     Recall that @('base-dir') never ends with @('/')
+     (unless it is just @('/')),
      because input processing removes the ending slash."))
   (b* (((reterr) (irr-fileset) state)
        ((when (endp files)) (retok (fileset nil) state))
        (file (car files))
-       (path-to-read (str::cat path "/" file))
+       (path-to-read (str::cat base-dir "/" file))
        ((mv erp bytes state)
         (acl2::read-file-into-byte-list path-to-read state))
        ((when erp)
         (reterr (msg "Reading ~x0 failed." path-to-read)))
        (data (filedata bytes))
        ((erp fileset state)
-        (input-files-read-files (cdr files) path state)))
+        (input-files-read-files (cdr files) base-dir state)))
     (retok (fileset (omap::update (filepath file)
                                   data
                                   (fileset->unwrap fileset)))
            state))
   :verify-guards :after-returns)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define input-files-gen-events ((files string-listp)
-                                (path stringp)
+                                (base-dir stringp)
                                 (preprocessor string-optionp)
                                 (preprocess-extra-args
                                  (or (acl2::string-stringlist-mapp
                                       preprocess-extra-args)
                                      (string-listp preprocess-extra-args)))
+                                (options ppoptionsp)
+                                (include-dirs string-listp)
                                 (process input-files-process-inputp)
                                 (const symbolp)
                                 (keep-going booleanp)
@@ -554,19 +615,26 @@
   (b* (((reterr) nil (irr-code-ensemble) state)
        ;; Initialize list of generated events.
        (events nil)
-       ;; Preprocess if required, or read files from file system.
+       ;; Preprocess if required, or just read files from file system.
        ((erp files state)
-        (if preprocessor
-            (preprocess-files
-              files
-              :path path
-              :preprocessor preprocessor
-              :extra-args (input-files-complete-preprocess-extra-args
-                            preprocess-extra-args
-                            ienv))
-          (input-files-read-files files path state)))
+        (cond ((equal preprocessor "") ; internal preprocessor
+               (preprocess files base-dir include-dirs options ienv state))
+              ((not preprocessor)
+               (input-files-read-files files base-dir state))
+              (t ; external preprocessor
+               (preprocess-files
+                files
+                :path base-dir
+                :preprocessor preprocessor
+                :extra-args (input-files-complete-preprocess-extra-args
+                             preprocess-extra-args
+                             ienv)))))
        ;; Parsing is always required.
-       ((erp tunits) (parse-fileset files (ienv->version ienv) keep-going))
+       (skip-control-lines (not (equal preprocessor "")))
+       ((erp tunits) (parse-fileset files
+                                    (ienv->version ienv)
+                                    skip-control-lines
+                                    keep-going))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))
@@ -577,7 +645,7 @@
           (retok events code state)))
        ;; Disambiguation is required, if we get here.
        ((erp tunits)
-        (dimb-transunit-ensemble tunits (ienv->gcc ienv) keep-going))
+        (dimb-transunit-ensemble tunits (ienv->gcc/clang ienv) keep-going))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
@@ -612,9 +680,11 @@
 
 (define input-files-process-inputs-and-gen-events ((files-presentp booleanp)
                                                    files
-                                                   path
+                                                   base-dir
                                                    preprocess
                                                    preprocess-args
+                                                   preprocess-options
+                                                   include-dirs
                                                    process
                                                    (const-presentp booleanp)
                                                    const
@@ -636,18 +706,22 @@
      resulting from processing the (possibly preprocessed) files."))
   (b* (((reterr) '(_) (irr-code-ensemble) state)
        ((erp files
-             path
+             base-dir
              preprocessor
              preprocess-extra-args
+             options
+             include-dirs
              process
              const
              keep-going
              ienv)
         (input-files-process-inputs files-presentp
                                     files
-                                    path
+                                    base-dir
                                     preprocess
                                     preprocess-args
+                                    preprocess-options
+                                    include-dirs
                                     process
                                     const-presentp
                                     const
@@ -657,9 +731,11 @@
                                     state))
        ((erp events code state)
         (input-files-gen-events files
-                                path
+                                base-dir
                                 preprocessor
                                 preprocess-extra-args
+                                options
+                                include-dirs
                                 process
                                 const
                                 keep-going
@@ -682,9 +758,11 @@
 
 (define input-files-fn ((files-presentp booleanp)
                         files
-                        path
+                        base-dir
                         preprocess
                         preprocess-args
+                        preprocess-options
+                        include-dirs
                         process
                         (const-presentp booleanp)
                         const
@@ -702,9 +780,11 @@
   (b* (((mv erp event & state)
         (input-files-process-inputs-and-gen-events files-presentp
                                                    files
-                                                   path
+                                                   base-dir
                                                    preprocess
                                                    preprocess-args
+                                                   preprocess-options
+                                                   include-dirs
                                                    process
                                                    const-presentp
                                                    const
@@ -720,9 +800,11 @@
 (defsection input-files-definition
   :short "Definition of the @(tsee input-files) macro."
   (defmacro input-files (&key (files 'nil files-presentp)
-                              (path '".")
+                              (base-dir '".")
                               (preprocess 'nil)
                               (preprocess-args 'nil)
+                              (preprocess-options 'nil)
+                              (include-dirs 'nil)
                               (process ':validate)
                               (const 'nil const-presentp)
                               (keep-going 'nil)
@@ -730,9 +812,11 @@
     `(make-event-terse
        (input-files-fn ',files-presentp
                        ,files
-                       ',path
+                       ',base-dir
                        ',preprocess
                        ,preprocess-args
+                       ',preprocess-options
+                       ,include-dirs
                        ',process
                        ',const-presentp
                        ',const
@@ -753,13 +837,15 @@
      a programmatic interface to the functionality of @(tsee input-files).
      It has the form:")
    (xdoc::codeblock
-    "(input-files-prog :files           ...  ; required"
-    "                  :path            ...  ; default \".\""
-    "                  :preprocess      ...  ; default nil"
-    "                  :preprocess-args ...  ; default nil"
-    "                  :process         ...  ; default :validate"
-    "                  :keep-going      ...  ; default nil"
-    "                  :ienv            ...  ; default (ienv-default)"
+    "(input-files-prog :files              ...  ; required"
+    "                  :base-dir           ...  ; default \".\""
+    "                  :preprocess         ...  ; default nil"
+    "                  :preprocess-args    ...  ; default nil"
+    "                  :preprocess-options ...  ; default nil"
+    "                  :include-dirs       ...  ; default nil"
+    "                  :process            ...  ; default :validate"
+    "                  :keep-going         ...  ; default nil"
+    "                  :ienv               ...  ; default (ienv-default)"
     "  )")
    (xdoc::p
     "This is the same as @(tsee input-files),
@@ -793,9 +879,11 @@
 
 (define input-files-prog-fn ((files-presentp booleanp)
                              files
-                             path
+                             base-dir
                              preprocess
                              preprocess-args
+                             preprocess-options
+                             include-dirs
                              process
                              (const-presentp booleanp)
                              const
@@ -814,9 +902,11 @@
        ((erp & code state)
         (input-files-process-inputs-and-gen-events files-presentp
                                                    files
-                                                   path
+                                                   base-dir
                                                    preprocess
                                                    preprocess-args
+                                                   preprocess-options
+                                                   include-dirs
                                                    process
                                                    const-presentp
                                                    const
@@ -839,18 +929,22 @@
 (defsection input-files-prog-definition
   :short "Definition of the @(tsee input-files-prog) macro."
   (defmacro input-files-prog (&key (files 'nil files-presentp)
-                                   (path '".")
+                                   (base-dir '".")
                                    (preprocess 'nil)
                                    (preprocess-args 'nil)
+                                   (preprocess-options 'nil)
+                                   (include-dirs 'nil)
                                    (process ':validate)
                                    (const 'nil const-presentp)
                                    (keep-going 'nil)
                                    (ienv 'nil))
     `(input-files-prog-fn ',files-presentp
                           ,files
-                          ',path
+                          ',base-dir
                           ',preprocess
                           ,preprocess-args
+                          ',preprocess-options
+                          ,include-dirs
                           ',process
                           ',const-presentp
                           ',const

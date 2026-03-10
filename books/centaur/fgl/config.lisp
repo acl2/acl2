@@ -57,7 +57,18 @@
     "If true, skip applying rewrite rules to calls of the function when trying
      to resolve an IF test to a Boolean formula.")
    (dont-primitive-exec booleanp
-    "If true, skip applying primitives to calls of the function.")))
+    "If true, skip applying primitives to calls of the function.")
+   (dont-if-merge-args
+    booleanp
+    "If we encounter an IF term where both branches rewrite to a call of this
+     function and no merge rules apply, we may produce a single call of the function
+     where the arguments are recursively merged, unless this flag is set.")))
+
+(define fgl-function-mode-fix! (x)
+  :guard-hints(("Goal" :in-theory (enable fgl-function-mode-fix)))
+  :enabled t
+  (mbe :logic (fgl-function-mode-fix x)
+       :exec (loghead 7 (ifix x))))
 
 (fty::defmap fgl-function-mode-alist :key-type symbolp :val-type fgl-function-mode :true-listp t)
 

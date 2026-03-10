@@ -35,9 +35,20 @@
 
 
 ;; BOZO this is duplicated in basic-builders.  Move it to all-equalp.lisp
+; Matt K. mod: Avoid error noticed in preparation for Version 8.7 release when
+; attempting to make bootstrap/level9/crewrite-builders.mpcert:
+#|
+HARD ACL2 ERROR in %PROVE:  The proposed name, ALL-EQUALP-REMOVAL,
+is already in use as the name of a rule.
+|#
+; Unfortunately, an attempt failed to move it to the end of
+; projects/milawa/ACL2/bootstrap/utilities/all-equalp.lisp.  An attempt
+; also failed to rename it here.  So I'll make it local where needed.
+(local
 (%autoprove all-equalp-removal
             (%cdr-induction x)
             (%restrict default repeat (equal n '(+ '1 (len (cdr x))))))
+)
 
 (defsection rw.eqsetp
 

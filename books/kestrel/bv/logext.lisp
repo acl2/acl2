@@ -1,7 +1,7 @@
 ; A book about the sign-extending operation logext
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -827,3 +827,37 @@
 (defthm logext-min-value
   (equal (< -2147483648 (logext 32 x))
          (not (equal -2147483648 (logext 32 x)))))
+
+(defthm logext-of-+-of-bvchop-arg1
+  (implies (and (integerp x)
+                (integerp y)
+                (posp size))
+           (equal (logext size (+ (bvchop size x) y))
+                  (logext size (+ x y))))
+  :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
+
+(defthm logext-of-+-of-bvchop-arg2
+  (implies (and (integerp x)
+                (integerp y)
+                (posp size))
+           (equal (logext size (+ x (bvchop size y)))
+                  (logext size (+ x y))))
+  :hints (("Goal" :use (:instance logext-of-+-of-bvchop-arg1 (x y) (y x))
+                  :in-theory (disable logext-of-+-of-bvchop-arg1))))
+
+;; Disabled by default since this is pretty aggressive and splits into cases.
+(defthmd logext-of-plus
+  (implies (and (integerp x)
+                (posp size)
+                (integerp y))
+           (equal (logext size (+ x y))
+                  (if (>= (+ (logext size x) (logext size y))
+                          (expt 2 (+ -1 size)))
+                      (- (+ (logext size x) (logext size y))
+                         (expt 2 size))
+                    (if (< (+ (logext size x) (logext size y))
+                           (- (expt 2 (+ -1 size))))
+                        (+ (+ (logext size x) (logext size y))
+                           (expt 2 size))
+                      (+ (logext size x) (logext size y))))))
+  :hints (("Goal" :in-theory (enable logext-cases getbit-of-+-new bvchop-of-sum-cases))))

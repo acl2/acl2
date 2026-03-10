@@ -1,7 +1,7 @@
 ; Creating STP queries from DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -126,10 +126,11 @@
 ;;            (integer-listp x))
 ;;   :hints (("Goal" :in-theory (enable integer-listp))))
 
-(defthm nat-listp-forward-to-all-integerp
-  (implies (nat-listp x)
-           (all-integerp x))
-  :rule-classes :forward-chaining)
+(local
+  (defthm nat-listp-forward-to-all-integerp
+    (implies (nat-listp x)
+             (all-integerp x))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -149,12 +150,12 @@
            (equal 'quote (nth 0 expr)))
   :rule-classes :forward-chaining)
 
-;todo: make local
-(defthm natp-of-+-of--
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (natp (+ x (- y)))
-                  (<= y x))))
+(local
+  (defthm natp-of-+-of--
+    (implies (and (integerp x)
+                  (integerp y))
+             (equal (natp (+ x (- y)))
+                    (<= y x)))))
 
 (local
   (defthm natp-of-+-of---arg1
@@ -2178,7 +2179,14 @@
                               (string-treep translated-query-core)
                               (constant-array-infop constant-array-info))
                   :stobjs state))
-  (b* (((mv temp-dir-name state)
+  (b* (;; This check ensures that we never call this code with any other array
+       ;; name.  A step toward converting this code to use stobjs would be to
+       ;; ;; reduce the set of names to a single one:
+       ;; ((when (not (or (eq 'dag-array dag-array-name)
+       ;;                 (eq 'miter-array-0 dag-array-name))))
+       ;;  (er hard? 'prove-query-with-stp "Unexpected dag-array-name: ~x0." dag-array-name)
+       ;;  (mv :error state))
+       ((mv temp-dir-name state)
         (maybe-make-temp-dir state))
        (base-filename (concatenate 'string temp-dir-name "/" base-filename))
        (base-filename (maybe-shorten-filename base-filename))

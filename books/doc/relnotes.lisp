@@ -133,6 +133,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "air::air" "AIR"))
+
+   (xdoc::p
+    "A preliminary library about AIR (Algebraic Intermediate Representation),
+     which is used to express computations in zero-knowledge proofs.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "aleo::aleo" "Aleo Library"))
 
    (xdoc::p
@@ -145,12 +153,6 @@
     (xdoc::seetopic "aleobft::aleobft" "AleoBFT library")
     " is now a sub-library of this broader Aleo library.")
 
-   (xdoc::p
-    "We have added an ABNF grammar of the "
-    (xdoc::ahref "https://www.leo-lang.org" "Leo language")
-    ", along with ACL2 code to parse the grammar into an ACL2 representation
-     and prove some properties of the grammar.")
-
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "ACL2-IN-HOL Link Support")
@@ -159,6 +161,18 @@
     "See projects/acl2-in-hol/README-acl2.  That directory provides modifications
      of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
      that link to work with the latest versions of ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
+
+   (xdoc::p
+    "Data-lib is a library for efficient data structures. Currently, it only
+     includes "
+    (xdoc::seetopic "treeset::treeset" "treesets")
+    ", a tree-based implementation of finite sets, and the supporting "
+    (xdoc::seetopic "hash::hashes" "hash")
+    " function.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -175,21 +189,13 @@
    (xdoc::h4 (xdoc::seetopic "riscv::riscv" "RISC-V ISA Model"))
 
    (xdoc::p
-    "A preliminary model of RISC-V ISA has been added,
-     which covers unprivileged RV32IM and RV64IM
-     (except for @('FENCE'), @('HINT'), @('ECALL'), and @('EBREAK')),
-     little endian memory access,
+    "A model of RISC-V ISA has been added, which covers
+     unprivileged RV32IM, RV64IM, RV32EM, and RV64EM,
+     (except for
+     the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
      fully readable and writable address space,
-     and no alignment checks.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "treeset::set" "Treesets"))
-
-   (xdoc::p
-    "A tree-based implementation of finite sets. This library offers a similar
-     interface to @(see std/osets), but with improved performance
-     (generally scaling logarithmically instead of linearly).")
+     and no alignment checks for data in memory
+     (but there are alignment checks for instructions).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -220,7 +226,20 @@
    (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
 
    (xdoc::p
-    "We have added a disambiguator and a validator.")
+    "We have made several extensions and improvements.
+     Most notably, we have added
+     a disambiguator,
+     a validator,
+     and a preprocessor that preserves inclusions under suitable conditions.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5
+    (xdoc::seetopic "c2c::transformation-tools" "C Transformation Tools"))
+
+   (xdoc::p
+    "We have added several transformations,
+     along with proof generation capabilities for some of the transformations.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -304,6 +323,19 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
+
+   (xdoc::p
+    "A macro @('controlled-configuration') has been added,
+     in @('[books]/std/basic/controlled-configuration'),
+     to go into a ``controlled configuration'',
+     i.e. one where many built-ins are disabled (including tau),
+     there is no implicit induction,
+     and certain options of @(tsee define) (if present)
+     are set to certain values.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
                              "Standard Typed Alists Library"))
 
@@ -364,12 +396,14 @@
       of just one function.")
 
    (xdoc::p
-     "The utility, @(tsee with-supporters), has been improved to deal with the
-      case that support comes from a @(see local) event preceding the
-      @('with-supporters') call.  Thanks to Eric Smith for providing an example
-      to show the need for this improvement, and for suggesting that the
-      generated supporting events be elided (see discussion of @(tsee
-      elide-event) just below)")
+     "The utility, @(tsee with-supporters), has been improved in several ways,
+      including (but not limited to) the case that support comes from a @(see
+      local) event preceding the @('with-supporters') call; by extending the
+      tracking of supporters to functions introduced by @(tsee defabsstobj)
+      events; and improving efficiency by avoiding some duplicated compilation.
+      Thanks to Eric Smith for providing examples, and for suggesting elision
+      of generated supporting events (see discussion of @(tsee elide-event)
+      just below).")
 
    (xdoc::p
      "A new utility, @(tsee elide-event), maps an event to one that avoids
@@ -377,6 +411,41 @@
       the second pass of an @(tsee encapsulate) event.  Thanks to Eric Smith
       for a chat leading to development of this utility.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
+
+   (xdoc::p "Support for several instructions has been added.
+     Currently supported instructions can be seen at
+     @(see x86isa::sdm-instruction-set-summary),
+     organized according to some sections of the Intel manuals.")
+
+   (xdoc::p
+    "Added a new framework @(see x86isa::asmtest) for testing instruction
+     implementations against assembly snippets.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL Library"))
+
+   (xdoc::p
+    "Add @(see fgl::annotate) mechanism, a way of preventing of trivial rewrite
+     loops by setting and detecting annotations on subterms.")
+
+   (xdoc::p
+    "Add various rewriter features: @(see fgl::fgl-hide), @(see fgl::trigger-constraints),
+     @(see fgl::unconditional), @(see fgl::left-to-right), @(see fgl::conditionalize).")
+
+   (xdoc::p
+    "Add so-called identity congruences (see @(see fgl::add-fgl-id-congruence)), which indicate
+     that a certain argument of a function can be rewritten under any equivalence that
+     is applied to the function call.")
+
+   (xdoc::p
+    "Improved user interface for tracing applications of rewrite rules:
+     see @(see fgl::fgl-rewrite-tracing), @(see fgl::fgl-trace), and
+     @(see fgl::fgl-advanced-tracing).")
+   
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
@@ -388,6 +457,13 @@
    (xdoc::p
     "XDOC support for a number of HTML @(see xdoc::entities) was added.
      In particular, many letter variants with diacritics.")
+
+   (xdoc::p
+    "Added utility @(tsee eval-events-from-file), to create an event that
+     evaluates events from a file.")
+
+   (xdoc::p
+    "Display of typewriter font has been improved for dark backgrounds.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

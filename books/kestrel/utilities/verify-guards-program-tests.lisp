@@ -72,3 +72,6 @@
 ;Also test :otf-flg
 (verify-guards-program bar :otf-flg t
                        :hints (("Goal" :in-theory (enable car-cons))))
+;Also test :guard-debug
+(verify-guards-program bar :guard-debug t
+                       :hints (("Goal" :in-theory (enable car-cons))))

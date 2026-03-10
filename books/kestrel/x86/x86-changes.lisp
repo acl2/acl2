@@ -12,6 +12,7 @@
 
 ;; See also alt-defs.lisp
 
+(include-book "portcullis")
 (include-book "rflags-spec-sub")
 (include-book "projects/x86isa/machine/instructions/sub-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/add-spec" :dir :system)
@@ -19,7 +20,7 @@
 (include-book "projects/x86isa/machine/instructions/and-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/or-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/xor-spec" :dir :system)
-(include-book "projects/x86isa/machine/instructions/signextend" :dir :system) ; brings in ttags
+(include-book "projects/x86isa/machine/instructions/signextend" :dir :system)
 (include-book "kestrel/bv/bvshl" :dir :system)
 (include-book "kestrel/bv/bvshr" :dir :system)
 (include-book "kestrel/bv/bvashr" :dir :system)

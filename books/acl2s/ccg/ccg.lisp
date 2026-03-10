@@ -1706,7 +1706,7 @@
 ;;; limit-induction-hint-fn limits the amount of time spent on a proof
 ;;; attempt by limiting the amount of induction and subgoals that may
 ;;; be considered before the prover gives up. This is done with
-;;; computed hintus.
+;;; computed hints.
 (defun limit-induction-hint-fn (i)
   ;; this computed hint has two pieces. the first limits induction,
   ;; the second limits subgoals in order to avoid infinite loops.

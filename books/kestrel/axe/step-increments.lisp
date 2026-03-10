@@ -1,7 +1,7 @@
 ; Telling the lifter how many steps to take
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-;; A step-increment tells the lifter how many steps to take at once, before pausing to reset the memoization.
+;; A step-increment tells the lifter how many steps to take at once, before
+;; pausing to reset the memoization and maybe prune the DAG.
 (defund step-incrementp (step-increment)
   (declare (xargs :guard t))
   (or (posp step-increment) ; a simple increment (always step this many times);

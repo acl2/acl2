@@ -45,6 +45,45 @@
 
 ;; ======================================================================
 
+(include-book "tools/include-raw" :dir :system)
+
+(defsection other-non-deterministic-computations-exec
+  :parents (other-non-deterministic-computations)
+  :short "Definitions of non-deterministic computations to be used for
+  execution"
+  :long "<p>We smash the definition of @(see HW_RND_GEN) to provide
+  random numbers during execution by using Lisp's @('random')
+  function.</p>"
+
+; Instruction to cert.pl for dependency tracking.
+; (depends-on "../../machine/other-non-det-raw.lsp")
+
+  (defttag :other-non-det)
+  (include-raw "../../machine/other-non-det-raw.lsp"
+               :on-compile-fail
+               (format t "[other-non-det-raw.lsp] Compilation failed with message ~a~%"
+                       condition)
+               :on-load-fail
+               (cw "[other-non-det-raw.lsp] Load failed; Moving On.~%")
+               :host-readtable t))
+
+;; ======================================================================
+
+(defttag :undef-flg)
+
+; Instruction to cert.pl for dependency tracking.
+; (depends-on "../../machine/register-readers-and-writers-raw.lsp")
+
+(include-raw "../../machine/register-readers-and-writers-raw.lsp"
+             :on-compile-fail
+             (format t "[register-readers-and-writers-raw.lsp] Compilation failed with message ~a~%"
+                     condition)
+             :on-load-fail
+             (cw "[register-readers-and-writers-raw.lsp] Load failed; Moving On.~%")
+             :host-readtable t)
+
+;; ======================================================================
+
 (defxdoc program-execution
   :parents (X86ISA)
 

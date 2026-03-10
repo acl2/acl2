@@ -11,388 +11,255 @@
 (in-package "C$")
 
 (include-book "../preprocessor-reader")
-(include-book "../input-files") ; for IENV-DEFAULT
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
-(include-book "std/testing/assert-bang-stobj" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro init (input)
-  `(init-ppstate ,input
-                 1 ; no #include's
-                 (macro-table-init)
-                 (ienv-default)
-                 ppstate))
+; Test mapping of bytes to characters and positions.
+
+(defmacro test-bytes-to-chars+poss (&key
+                                    input
+                                    chars ; expected
+                                    poss ; expected
+                                    (std '17)
+                                    (gcc 'nil)
+                                    (clang 'nil)
+                                    (fail 'nil))
+  `(assert!
+    (b* ((version (case ,std
+                    (17 (cond (,gcc (c::version-c17+gcc))
+                              (,clang (c::version-c17+clang))
+                              (t (c::version-c17))))
+                    (23 (cond (,gcc (c::version-c23+gcc))
+                              (,clang (c::version-c23+clang))
+                              (t (c::version-c23))))))
+         (ienv (change-ienv (ienv-default) :version version))
+         ((mv erp chars poss) (read-chars+positions "" ,input ienv)))
+      (if ,fail
+          (and erp (not (cw "~@0" erp)))
+        (and (not erp)
+             (equal chars ,chars)
+             (equal poss ,poss))))))
+
+(defmacro pos (line column)
+  `(position "" ,line ,column))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Test reading and unreading of characters.
+(test-bytes-to-chars+poss
+ :input nil ; empty file
+ :chars nil
+ :poss (list (pos 1 0)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(test-bytes-to-chars+poss
+ :input '(0) ; disallowed character 0
+ :fail t)
 
-; pread-char
+(test-bytes-to-chars+poss
+ :input '(32 65) ; SP A
+ :chars '(32 65)
+ :poss (list (pos 1 0) (pos 1 1) (pos 1 2)))
 
-(assert!-stobj ; empty file
- (b* ((ppstate (init nil))
-      ((mv erp char? pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (not char?)
-            (equal pos (position 1 0))) ; just past end of (empty) file
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input '(10 65) ; LF A
+ :chars '(10 65)
+ :poss (list (pos 1 0) (pos 2 0) (pos 2 1)))
 
-(assert!-stobj ; disallowed character 0
- (b* ((ppstate (init '(0)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input '(13 65) ; CR A
+ :chars '(13 65)
+ :poss (list (pos 1 0) (pos 2 0) (pos 2 1)))
 
-(assert!-stobj ; character 32
- (b* ((ppstate (init '(32 65)))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char 32)
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 1)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input '(13 10 65) ; CR LF A
+ :chars '(13 10 65)
+ :poss (list (pos 1 0) (pos 1 0) (pos 2 0) (pos 2 1)))
 
-(assert!-stobj ; line feed
- (b* ((ppstate (init '(10 65)))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char 10)
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 2 0)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input '(255) ; disallowed byte 255
+ :fail t)
 
-(assert!-stobj ; carriage return
- (b* ((ppstate (init '(13 65)))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char 13)
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 2 0)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??=A")
+ :chars (acl2::string=>nats "#A")
+ :poss (list (pos 1 0) (pos 1 3) (pos 1 4)))
 
-(assert!-stobj ; carriage return + line feed
- (b* ((ppstate (init '(13 10 65)))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate))
-      ((mv erp3 char3 pos3 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char 13)
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 10)
-            (equal pos2 (position 1 0))
-            (not erp3)
-            (equal char3 65)
-            (equal pos3 (position 2 0)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??(A")
+ :chars (acl2::string=>nats "[A")
+ :poss (list (pos 1 0) (pos 1 3) (pos 1 4)))
 
-(assert!-stobj ; disallowed byte 255
- (b* ((ppstate (init '(255)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??/A")
+ :chars (list (char-code #\\) (char-code #\A))
+ :poss (list (pos 1 0) (pos 1 3) (pos 1 4)))
 
-(assert!-stobj ; ??=
- (b* ((ppstate (init (acl2::string=>nats "??=A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\#))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??)A")
+ :chars (acl2::string=>nats "]A")
+ :poss (list (pos 1 0) (pos 1 3) (pos 1 4)))
 
-(assert!-stobj ; ??(
- (b* ((ppstate (init (acl2::string=>nats "??(A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\[))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??'A")
+ :chars (acl2::string=>nats "^A")
+ :poss (list (pos 1 0) (pos 1 3) (pos 1 4)))
 
-(assert!-stobj ; ??/
- (b* ((ppstate (init (acl2::string=>nats "??/A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\\))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??<A")
+ :chars (acl2::string=>nats "{A")
+ :poss (list (pos 1 0) (pos 1 3) (pos 1 4)))
 
-(assert!-stobj ; ??)
- (b* ((ppstate (init (acl2::string=>nats "??)A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\]))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??!A")
+ :chars (acl2::string=>nats "|A")
+ :poss (list (pos 1 0) (pos 1 3) (pos 1 4)))
 
-(assert!-stobj ; ??'
- (b* ((ppstate (init (acl2::string=>nats "??'A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\^))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??>A")
+ :chars (acl2::string=>nats "}A")
+ :poss (list (pos 1 0) (pos 1 3) (pos 1 4)))
 
-(assert!-stobj ; ??<
- (b* ((ppstate (init (acl2::string=>nats "??<A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\{))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??-A")
+ :chars (acl2::string=>nats "~A")
+ :poss (list (pos 1 0) (pos 1 3) (pos 1 4)))
 
-(assert!-stobj ; ??!
- (b* ((ppstate (init (acl2::string=>nats "??!A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\|))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??a")
+ :chars (acl2::string=>nats "??a")
+ :poss (list (pos 1 0) (pos 1 1) (pos 1 2) (pos 1 3)))
 
-(assert!-stobj ; ??>
- (b* ((ppstate (init (acl2::string=>nats "??>A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\}))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "?a")
+ :chars (acl2::string=>nats "?a")
+ :poss (list (pos 1 0) (pos 1 1) (pos 1 2)))
 
-(assert!-stobj ; ??-
- (b* ((ppstate (init (acl2::string=>nats "??-A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\~))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "??")
+ :chars (acl2::string=>nats "??")
+ :poss (list (pos 1 0) (pos 1 1) (pos 1 2)))
 
-(assert!-stobj ; ??a
- (b* ((ppstate (init (acl2::string=>nats "??a")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate))
-      ((mv erp3 char3 pos3 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\?))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 (char-code #\?))
-            (equal pos2 (position 1 1))
-            (not erp3)
-            (equal char3 (char-code #\a))
-            (equal pos3 (position 1 2)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (acl2::string=>nats "?")
+ :chars (acl2::string=>nats "?")
+ :poss (list (pos 1 0) (pos 1 1)))
 
-(assert!-stobj ; ?a
- (b* ((ppstate (init (acl2::string=>nats "?a")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\?))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 (char-code #\a))
-            (equal pos2 (position 1 1)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list (char-code #\\))
+ :chars (list (char-code #\\))
+ :poss (list (pos 1 0) (pos 1 1)))
 
-(assert!-stobj ; ??
- (b* ((ppstate (init (acl2::string=>nats "??")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\?))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 (char-code #\?))
-            (equal pos2 (position 1 1)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list (char-code #\a) (char-code #\\))
+ :chars (list (char-code #\a) (char-code #\\))
+ :poss (list (pos 1 0) (pos 1 1) (pos 1 2)))
 
-(assert!-stobj ; ?
- (b* ((ppstate (init (acl2::string=>nats "?")))
-      ((mv erp char pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\?))
-            (equal pos (position 1 0)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list (char-code #\\) 10) ; \ LF
+ :chars nil
+ :poss (list (pos 2 0)))
 
-(assert!-stobj ; \ at end of file
- (b* ((ppstate (init (list (char-code #\\))))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list 65 (char-code #\\) 10) ; A \ LF
+ :chars (list 65) ; A
+ :poss (list (pos 1 0) (pos 2 0)))
 
-(assert!-stobj ; \ LF at end of file
- (b* ((ppstate (init (list (char-code #\\) 10)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list (char-code #\\) 10 66) ; \ LF B
+ :chars (list 66) ; B
+ :poss (list (pos 2 0) (pos 2 1)))
 
-(assert!-stobj ; \ LF a
- (b* ((ppstate (init (list (char-code #\\) 10 (char-code #\a))))
-      ((mv erp char pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\a))
-            (equal pos (position 2 0)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list 65 (char-code #\\) 10 66) ; A \ LF B
+ :chars (list 65 66) ; A B
+ :poss (list (pos 1 0) (pos 2 0) (pos 2 1)))
 
-(assert!-stobj ; \ CR a
- (b* ((ppstate (init (list (char-code #\\) 13 (char-code #\a))))
-      ((mv erp char pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\a))
-            (equal pos (position 2 0)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list (char-code #\\) 13) ; \ CR
+ :chars nil
+ :poss (list (pos 2 0)))
 
-(assert!-stobj ; \ CR LF a
- (b* ((ppstate (init (list (char-code #\\) 13 10 (char-code #\a))))
-      ((mv erp char pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\a))
-            (equal pos (position 2 0)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list 65 (char-code #\\) 13) ; A \ CR
+ :chars (list 65) ; A
+ :poss (list (pos 1 0) (pos 2 0)))
 
-(assert!-stobj ; \ n
- (b* ((ppstate (init (list (char-code #\\) (char-code #\n))))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\\))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 (char-code #\n))
-            (equal pos2 (position 1 1)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list (char-code #\\) 13 66) ; \ CR B
+ :chars (list 66) ; B
+ :poss (list (pos 2 0) (pos 2 1)))
 
-(assert!-stobj ; 2-byte UTF-8 encoding of Greek capital letter sigma
- (b* ((ppstate (init (acl2::string=>nats "Σ")))
-      ((mv erp char? pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char? #x03a3)
-            (equal pos (position 1 0)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list 65 (char-code #\\) 13 66) ; A \ CR B
+ :chars (list 65 66) ; A B
+ :poss (list (pos 1 0) (pos 2 0) (pos 2 1)))
 
-(assert!-stobj ; invalid 2-byte UTF-8 encoding of 0
- (b* ((ppstate (init (list #b11000000 #b10000000)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list (char-code #\\) 13 10) ; \ CR LF
+ :chars nil
+ :poss (list (pos 2 0)))
 
-(assert!-stobj ; 3-byte UTF-8 encoding of anticlockwise top semicircle arrow
- (b* ((ppstate (init (acl2::string=>nats "↺")))
-      ((mv erp char? pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char? #x21ba)
-            (equal pos (position 1 0)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list 65 (char-code #\\) 13 10) ; A \ CR LF
+ :chars (list 65) ; A
+ :poss (list (pos 1 0) (pos 2 0)))
 
-(assert!-stobj ; disallowed 3-byte UTF-8 encoding
- (b* ((ppstate (init (list #b11100010 #b10000000 #b10101010))) ; 202Ah
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list (char-code #\\) 13 10 66) ; \ CR LF B
+ :chars (list 66) ; B
+ :poss (list (pos 2 0) (pos 2 1)))
 
-(assert!-stobj ; invalid 3-byte UTF-8 encoding of 0
- (b* ((ppstate (init (list #b11100000 #b10000000 #b10000000)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list 65 (char-code #\\) 13 10 66) ; A \ CR LF B
+ :chars (list 65 66) ; A B
+ :poss (list (pos 1 0) (pos 2 0) (pos 2 1)))
 
-(assert!-stobj ; 4-byte UTF-8 encoding of musical symbol eighth note
- (b* ((ppstate (init (acl2::string=>nats "𝅘𝅥𝅮")))
-      ((mv erp char? pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char? #x1d160)
-            (equal pos (position 1 0)))
-       ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ :input (list (char-code #\\) (char-code #\n)) ; \ n
+ :chars (list (char-code #\\) (char-code #\n)) ; \ n
+ :poss (list (pos 1 0) (pos 1 1) (pos 1 2)))
 
-(assert!-stobj ; invalid 4-byte UTF-8 encoding of 0
- (b* ((ppstate (init (list #b11110000 #b10000000 #b10000000 #b10000000)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ ;; 2-byte UTF-8 encoding of Greek capital letter sigma
+ :input (acl2::string=>nats "Σ")
+ :chars (list #x03a3)
+ :poss (list (pos 1 0) (pos 1 1)))
 
-(assert!-stobj ; invalid 4-byte UTF-8 encoding of 1FFFFFh
- (b* ((ppstate (init (list #b11110111 #b10111111 #b10111111 #b10111111)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
+(test-bytes-to-chars+poss
+ ;; invalid 2-byte UTF-8 encoding of 0
+ :input (list #b11000000 #b10000000)
+ :fail t)
+
+(test-bytes-to-chars+poss
+ ;; 3-byte UTF-8 encoding of anticlockwise top semicircle arrow
+ :input (acl2::string=>nats "↺")
+ :chars (list #x21ba)
+ :poss (list (pos 1 0) (pos 1 1)))
+
+(test-bytes-to-chars+poss
+ ;; disallowed 3-byte UTF-8 encoding
+ :input (list #b11100010 #b10000000 #b10101010) ; 202Ah
+ :fail t)
+
+(test-bytes-to-chars+poss
+ ;; invalid 3-byte UTF-8 encoding of 0
+ :input (list #b11100000 #b10000000 #b10000000)
+ :fail t)
+
+(test-bytes-to-chars+poss
+ ;; 4-byte UTF-8 encoding of musical symbol eighth note
+ :input (acl2::string=>nats "𝅘𝅥𝅮")
+ :chars (list #x1d160)
+ :poss (list (pos 1 0) (pos 1 1)))
+
+(test-bytes-to-chars+poss
+ ;; invalid 4-byte UTF-8 encoding of 0
+ :input (list #b11110000 #b10000000 #b10000000 #b10000000)
+ :fail t)
+
+(test-bytes-to-chars+poss
+ ;; invalid 4-byte UTF-8 encoding of 1FFFFFh
+ :input (list #b11110111 #b10111111 #b10111111 #b10111111)
+ :fail t)

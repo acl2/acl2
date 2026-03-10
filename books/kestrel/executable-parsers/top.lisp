@@ -1,0 +1,28 @@
+; Top book for x86 binary parsing sub-library
+;
+; Copyright (C) 2016-2019 Kestrel Technology, LLC
+; Copyright (C) 2020-2026 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "ACL2")
+
+(include-book "parser-utils")
+
+;; The 3 main parsers:
+(include-book "parse-elf-file")
+(include-book "parse-mach-o-file")
+(include-book "parse-pe-file")
+
+;; Can parse all 3 kinds of executable:
+(include-book "parse-executable")
+
+;; Tools for extracting information from parsed executables:
+(include-book "elf-tools")
+(include-book "mach-o-tools")
+(include-book "pe-tools")
+(include-book "parsed-executable-tools")

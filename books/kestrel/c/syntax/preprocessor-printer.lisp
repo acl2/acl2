@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,9 +10,10 @@
 
 (in-package "C$")
 
-(include-book "preprocessor-states")
+(include-book "preprocessor-files")
 (include-book "grammar-characters")
 
+(include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
@@ -45,19 +46,33 @@
      preprocessed them,
      and generates a file set with the files after preprocessing;
      see @(see preprocessor).
-     The preprocessing of the files results in a list of lexemes,
+     The preprocessing of the files results in
+     preprocessor files (i.e. values of type @(tsee pfile)),
      which we turn into bytes via this printer.")
    (xdoc::p
-    "Since our preprocessing lexemes include white space,
+    "Since the AST structure of preprocess files is relative simple,
+     and our lexemes include white space,
      the printing is relatively easy.
-     We do not need to add white space, keep track of indentation, etc.
-     Compare this with the @(see printer).")
+     We do not need to add white space (mostly), keep track of indentation, etc.
+     Compare this with the @(see printer).
+     The `mostly' above refers to the fact that, in some cases,
+     we need to add single spaces to avoid confusing two consecutive lexemes
+     with one consisting of the characters of both,
+     e.g. confusing two subsequent @('+') punctuators
+     with the @('++') punctuator.")
    (xdoc::p
     "Our printing functions take as input and return as output a list of bytes,
-     which form the growing result in reverse.
+     which form the growing result.
      The list of bytes is extended by the printing functions
      via @(tsee cons) (which motivates the reversal of the list).
-     The list of bytes is reversed after it is complete."))
+     The list of bytes is reversed when complete.")
+   (xdoc::p
+    "Some of our current ASTs for preprocessor files
+     do not store information about comments, new lines, and other white space.
+     For now, when we need to print a newline without having one,
+     we print a line feed.
+     We should extend our AST to keep information about at least new lines,
+     for consistency."))
   :order-subtopics t
   :default-parent t)
 
@@ -188,17 +203,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-line-comment ((content nat-listp)
-                             (newline newlinep)
-                             (bytes byte-listp))
+(define pprint-line-comment ((content nat-listp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a line comment after preprocessing."
   (b* ((bytes (pprint-astring "//" bytes))
        ((unless (grammar-character-listp content))
         (raise "Internal error: bad line comment content ~x0."
                (nat-list-fix content)))
-       (bytes (pprint-chars content bytes))
-       (bytes (pprint-newline newline bytes)))
+       (bytes (pprint-chars content bytes)))
     bytes)
   :no-function nil)
 
@@ -622,7 +634,7 @@
    :punctuator (pprint-punctuator lexeme.punctuator bytes)
    :other (pprint-other lexeme.char bytes)
    :block-comment (pprint-block-comment lexeme.content bytes)
-   :line-comment (pprint-line-comment lexeme.content lexeme.newline bytes)
+   :line-comment (pprint-line-comment lexeme.content bytes)
    :newline (pprint-newline lexeme.chars bytes)
    :spaces (pprint-spaces lexeme.count bytes)
    :horizontal-tab (pprint-horizontal-tab bytes)
@@ -631,12 +643,318 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pprint-separation? ((lexeme plexemep)
+                            (lexeme? plexeme-optionp)
+                            (bytes byte-listp))
+  :returns (new-bytes byte-listp)
+  :short "Print, if needed, a separation between two lexemes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called, in @(tsee pprint-lexeme-list),
+     just after printing each lexeme, which is passed as the @('lexeme') input.
+     The @('lexeme?') input is the lexeme that just follows, if any;
+     it is @('nil') if no lexeme follows.")
+   (xdoc::p
+    "The separation consists of a single space.
+     This is necessary, for instance, to separate a @('+') and a @('+'),
+     which otherwise would be erroneously joined into a @('++').
+     Other pairs of punctuators need a space as well.
+     Also identifiers and preprocessing numbers need a space in between.")
+   (xdoc::p
+    "Some of these might be actually unnecessary because of
+     some possible post-conditions ensured by our preprocessor,
+     but those need to be investigated and fleshed out.")
+   (xdoc::p
+    "The case of two contiguous dots does not necessarily need a space:
+     we would need a third following dot for confusing them with @('...');
+     but we keep the code simpler by looking just at the next lexeme."))
+  (b* (((unless lexeme?) (byte-list-fix bytes)))
+    (if (or (and (member-eq (plexeme-kind lexeme) '(:ident :number))
+                 (member-eq (plexeme-kind lexeme?) '(:ident :number)))
+            (and (plexeme-case lexeme :punctuator)
+                 (plexeme-case lexeme? :punctuator)
+                 (b* ((punc1 (plexeme-punctuator->punctuator lexeme))
+                      (punc2 (plexeme-punctuator->punctuator lexeme?)))
+                   (or (and (equal punc2 "=")
+                            (member-equal punc1 '("=" "!" "<" ">"
+                                                  "+" "-" "*" "/" "%"
+                                                  "&" "|" "^" "<<" ">>")))
+                       (and (equal punc1 "+")
+                            (equal punc2 "+"))
+                       (and (equal punc1 "-")
+                            (member-equal punc2 '("-" ">")))
+                       (and (equal punc1 "&")
+                            (equal punc2 "&"))
+                       (and (equal punc1 "|")
+                            (equal punc2 "|"))
+                       (and (equal punc1 "<")
+                            (member-equal punc2 '("<" "<=" ":" "%")))
+                       (and (equal punc1 ">")
+                            (member-equal punc2 '(">" ">=")))
+                       (and (equal punc1 ".")
+                            (equal punc2 "."))
+                       (and (equal punc1 "%")
+                            (member-equal punc2 '(">" ":")))
+                       (and (equal punc1 ":")
+                            (equal punc2 ">"))))))
+        (cons 32 (byte-list-fix bytes))
+      (byte-list-fix bytes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pprint-lexeme-list ((lexemes plexeme-listp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a list of lexemes after preprocessing."
   (b* (((when (endp lexemes)) (byte-list-fix bytes))
-       (bytes (pprint-lexeme (car lexemes) bytes)))
+       (lexeme (car lexemes))
+       (bytes (pprint-lexeme lexeme bytes))
+       (bytes (pprint-separation? lexeme (cadr lexemes) bytes)))
     (pprint-lexeme-list (cdr lexemes) bytes)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-pexpr ((expr pexprp) (bytes byte-listp))
+  :returns (new-bytes byte-listp)
+  :short "Print an expression after preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since the ASTs of expressions include parentheses,
+     we do not need to worry about adding parentheses when printing,
+     unlike the @(see printer).
+     However, we need to be careful with
+     subsequent unary operators @('+') and @('-'),
+     since they could be mistaken for @('++') and @('--')
+     when the generated file is later parsed:
+     as in the @(see printer), we add a separation space."))
+  (pexpr-case
+   expr
+   :number (pprint-pnumber expr.number bytes)
+   :char (pprint-cconst expr.char bytes)
+   :paren (b* ((bytes (pprint-astring "(" bytes))
+               (bytes (pprint-pexpr expr.inner bytes))
+               (bytes (pprint-astring ")" bytes)))
+            bytes)
+   :plus (b* ((bytes (pprint-astring "+" bytes))
+              (bytes (if (pexpr-case expr.arg :plus)
+                         (pprint-astring " " bytes)
+                       bytes))
+              (bytes (pprint-pexpr expr.arg bytes)))
+           bytes)
+   :minus (b* ((bytes (pprint-astring "-" bytes))
+               (bytes (if (pexpr-case expr.arg :minus)
+                          (pprint-astring " " bytes)
+                        bytes))
+               (bytes (pprint-pexpr expr.arg bytes)))
+            bytes)
+   :bitnot (b* ((bytes (pprint-astring "~" bytes))
+                (bytes (pprint-pexpr expr.arg bytes)))
+             bytes)
+   :lognot (b* ((bytes (pprint-astring "!" bytes))
+                (bytes (pprint-pexpr expr.arg bytes)))
+             bytes)
+   :mul (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+             (bytes (pprint-astring " * " bytes))
+             (bytes (pprint-pexpr expr.arg2 bytes)))
+          bytes)
+   :div (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+             (bytes (pprint-astring " / " bytes))
+             (bytes (pprint-pexpr expr.arg2 bytes)))
+          bytes)
+   :rem (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+             (bytes (pprint-astring " % " bytes))
+             (bytes (pprint-pexpr expr.arg2 bytes)))
+          bytes)
+   :add (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+             (bytes (pprint-astring " + " bytes))
+             (bytes (pprint-pexpr expr.arg2 bytes)))
+          bytes)
+   :sub (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+             (bytes (pprint-astring " - " bytes))
+             (bytes (pprint-pexpr expr.arg2 bytes)))
+          bytes)
+   :shl (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+             (bytes (pprint-astring " << " bytes))
+             (bytes (pprint-pexpr expr.arg2 bytes)))
+          bytes)
+   :shr (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+             (bytes (pprint-astring " >> " bytes))
+             (bytes (pprint-pexpr expr.arg2 bytes)))
+          bytes)
+   :lt (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+            (bytes (pprint-astring " < " bytes))
+            (bytes (pprint-pexpr expr.arg2 bytes)))
+         bytes)
+   :gt (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+            (bytes (pprint-astring " > " bytes))
+            (bytes (pprint-pexpr expr.arg2 bytes)))
+         bytes)
+   :le (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+            (bytes (pprint-astring " <= " bytes))
+            (bytes (pprint-pexpr expr.arg2 bytes)))
+         bytes)
+   :ge (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+            (bytes (pprint-astring " >= " bytes))
+            (bytes (pprint-pexpr expr.arg2 bytes)))
+         bytes)
+   :eq (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+            (bytes (pprint-astring " == " bytes))
+            (bytes (pprint-pexpr expr.arg2 bytes)))
+         bytes)
+   :ne (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+            (bytes (pprint-astring " != " bytes))
+            (bytes (pprint-pexpr expr.arg2 bytes)))
+         bytes)
+   :bitand (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+                (bytes (pprint-astring " & " bytes))
+                (bytes (pprint-pexpr expr.arg2 bytes)))
+             bytes)
+   :bitxor (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+                (bytes (pprint-astring " ^ " bytes))
+                (bytes (pprint-pexpr expr.arg2 bytes)))
+             bytes)
+   :bitior (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+                (bytes (pprint-astring " | " bytes))
+                (bytes (pprint-pexpr expr.arg2 bytes)))
+             bytes)
+   :logand (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+                (bytes (pprint-astring " && " bytes))
+                (bytes (pprint-pexpr expr.arg2 bytes)))
+             bytes)
+   :logor (b* ((bytes (pprint-pexpr expr.arg1 bytes))
+               (bytes (pprint-astring " || " bytes))
+               (bytes (pprint-pexpr expr.arg2 bytes)))
+            bytes)
+   :cond (b* ((bytes (pprint-pexpr expr.test bytes))
+              (bytes (pprint-astring " ? " bytes))
+              (bytes (pprint-pexpr expr.then bytes))
+              (bytes (pprint-astring " : " bytes))
+              (bytes (pprint-pexpr expr.else bytes)))
+           bytes)
+   :defined (b* ((bytes (pprint-astring "defined(" bytes))
+                 (bytes (pprint-ident expr.name bytes))
+                 (bytes (pprint-astring ")" bytes)))
+              bytes))
+  :measure (pexpr-count expr)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-pif ((if pifp) (bytes byte-listp))
+  :returns (new-bytes byte-listp)
+  :short "Print an `if' directive after preprocessing."
+  (b* ((bytes (pprint-astring "#" bytes)))
+    (pif-case
+     if
+     :if (b* ((bytes (pprint-astring "if " bytes))
+              (bytes (pprint-pexpr if.expr bytes))
+              (bytes (pprint-newline (newline-lf) bytes)))
+           bytes)
+     :ifdef (b* ((bytes (pprint-astring "ifdef " bytes))
+                 (bytes (pprint-ident if.name bytes))
+                 (bytes (pprint-newline (newline-lf) bytes)))
+              bytes)
+     :ifndef (b* ((bytes (pprint-astring "ifndef " bytes))
+                  (bytes (pprint-ident if.name bytes))
+                  (bytes (pprint-newline (newline-lf) bytes)))
+               bytes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines pprint-pparts/conds
+  :short "Print preprocessor group parts and related entities."
+
+  (define pprint-ppart ((part ppartp) (bytes byte-listp))
+    :returns (new-bytes byte-listp)
+    :parents (preprocessor-printer pprint-pparts/conds)
+    :short "Print a preprocessor group part."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The lexemes in the @(':line') case including the ending new line,
+       so we do not need to add one."))
+    (ppart-case
+     part
+     :line (pprint-lexeme-list part.lexemes bytes)
+     :cond (b* ((bytes (pprint-pif part.if bytes))
+                (bytes (pprint-ppart-list part.parts bytes))
+                (bytes (pprint-pelif-list part.elifs bytes))
+                (bytes (pprint-pelse-option part.else bytes))
+                (bytes (pprint-astring "#endif" bytes))
+                (bytes (pprint-newline (newline-lf) bytes)))
+             bytes))
+    :measure (ppart-count part))
+
+  (define pprint-ppart-list ((parts ppart-listp) (bytes byte-listp))
+    :returns (new-bytes byte-listp)
+    :parents (preprocessor-printer pprint-pparts/conds)
+    :short "Print zero or more preprocessor group parts."
+    (b* (((when (endp parts)) (byte-list-fix bytes))
+         (bytes (pprint-ppart (car parts) bytes))
+         (bytes (pprint-ppart-list (cdr parts) bytes)))
+      bytes)
+    :measure (ppart-list-count parts))
+
+  (define pprint-pelif ((elif pelifp) (bytes byte-listp))
+    :returns (new-bytes byte-listp)
+    :parents (preprocessor-printer pprint-pparts/conds)
+    :short "Print an `elif' section."
+    (b* (((pelif elif) elif)
+         (bytes (pprint-astring "#elif " bytes))
+         (bytes (pprint-pexpr elif.expr bytes))
+         (bytes (pprint-newline (newline-lf) bytes))
+         (bytes (pprint-ppart-list elif.parts bytes)))
+      bytes)
+    :measure (pelif-count elif))
+
+  (define pprint-pelif-list ((elifs pelif-listp) (bytes byte-listp))
+    :returns (new-bytes byte-listp)
+    :parents (preprocessor-printer pprint-pparts/conds)
+    :short "Print zero or more `elif' sections."
+    (b* (((when (endp elifs)) (byte-list-fix bytes))
+         (bytes (pprint-pelif (car elifs) bytes))
+         (bytes (pprint-pelif-list (cdr elifs) bytes)))
+      bytes)
+    :measure (pelif-list-count elifs))
+
+  (define pprint-pelse ((else pelsep) (bytes byte-listp))
+    :returns (new-bytes byte-listp)
+    :parents (preprocessor-printer pprint-pparts/conds)
+    :short "Print an `else' section."
+    (b* ((bytes (pprint-astring "#else" bytes))
+         (bytes (pprint-newline (newline-lf) bytes))
+         (bytes (pprint-ppart-list (pelse->parts else) bytes)))
+      bytes)
+    :measure (pelse-count else))
+
+  (define pprint-pelse-option ((else? pelse-optionp) (bytes byte-listp))
+    :returns (new-bytes byte-listp)
+    :parents (preprocessor-printer pprint-pparts/conds)
+    :short "Print an optional `else' section."
+    (pelse-option-case
+     else?
+     :some (pprint-pelse else?.val bytes)
+     :none (byte-list-fix bytes))
+    :measure (pelse-option-count else?))
+
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-pfile ((file pfilep))
+  :returns (bytes byte-listp)
+  :short "Print a preprocessor file."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unlike the previous functions,
+     this one does not take bytes as input,
+     because a preprocessor file is the unit of printing,
+     i.e. it always starts with no bytes.
+     We print the group parts that form the file,
+     and we reverse the bytes to their proper order."))
+  (rev (pprint-ppart-list (pfile->parts file) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -646,8 +964,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the top-level function of our printer.
+    "This is used for certain chunks of lexemes.
      The reversed list of bytes is initialized to empty,
-     and we call the top-level printing function,
-     reversing the final byte list."))
+     we convert the lexemes to reversed bytes,
+     and we reverse the bytes to the proper order."))
   (rev (pprint-lexeme-list lexemes nil)))

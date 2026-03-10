@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -94,7 +94,8 @@
       :objfun (c$::type-case
                 ord-info.type
                 :struct ;; TODO also check defstatus isn't undefined?
-                        (retok ord-info.linkage ord-info.type.tag?)
+                        (retok ord-info.linkage
+                               (c$::type-struct->tag? ord-info.type))
                 :otherwise (retmsg$ "~x0 has type ~x1, not a struct type"
                                     ident
                                     ord-info.type))
@@ -386,47 +387,84 @@
     (true-listp extdecls)
     :rule-classes :type-prescription))
 
-(define dup-split-struct-type-ext-declon-list
+(define dup-split-struct-type-trans-item
   ((original identp)
    (new1 ident-optionp)
    (new2 ident-optionp)
    (blacklist ident-setp)
    (split-members ident-listp)
-   (extdecls ext-declon-listp))
+   (item trans-itemp))
   :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
-               (extdecls$ ext-declon-listp))
+               (items trans-item-listp))
+  (b* (((reterr) nil nil nil))
+    (trans-item-case
+      item
+      :declon (b* (((erp new1 new2 extdecls)
+                    (dup-split-struct-type-ext-declon
+                     original
+                     new1
+                     new2
+                     blacklist
+                     split-members
+                     item.declon)))
+                (retok new1
+                       new2
+                       (c$::trans-item-declon-list extdecls)))
+      :include (retmsg$ "#include directives not supported.")
+      :line-comment (retok nil nil (list (trans-item-fix item)))))
+  ///
+
+  (defret identp-of-dup-split-struct-type-trans-item.new2$
+    (equal (identp new2$)
+           (identp new1$)))
+
+  (defret dup-split-struct-type-extdecl.trans-items-type-prescription
+    (true-listp items)
+    :rule-classes :type-prescription))
+
+(define dup-split-struct-type-trans-item-list
+  ((original identp)
+   (new1 ident-optionp)
+   (new2 ident-optionp)
+   (blacklist ident-setp)
+   (split-members ident-listp)
+   (items trans-item-listp))
+  :returns (mv (er? maybe-msgp)
+               (new1$ ident-optionp)
+               (new2$ ident-optionp)
+               (items$ trans-item-listp))
   (b* (((reterr) nil nil nil)
-       ((when (endp extdecls))
+       ((when (endp items))
         (retok nil nil nil))
-       ((erp new1$ new2$ new-extdecls1)
-        (dup-split-struct-type-ext-declon
+       ((erp new1$ new2$ new-items1)
+        (dup-split-struct-type-trans-item
           original
           new1
           new2
           blacklist
           split-members
-          (first extdecls)))
+          (first items)))
        ((when new1$)
         (retok new1$
                new2$
-               (append new-extdecls1
-                       (ext-declon-list-fix (rest extdecls)))))
-       ((erp new1 new2 new-extdecls2)
-        (dup-split-struct-type-ext-declon-list
+               (append new-items1
+                       (trans-item-list-fix (rest items)))))
+       ((erp new1 new2 new-items2)
+        (dup-split-struct-type-trans-item-list
           original
           new1
           new2
           blacklist
           split-members
-          (rest extdecls))))
-    (retok new1 new2 (append new-extdecls1 new-extdecls2)))
+          (rest items))))
+    (retok new1 new2 (append new-items1 new-items2)))
 
-  :measure (acl2-count extdecls)
+  :measure (acl2-count items)
   ///
 
-  (defret identp-of-dup-split-struct-type-ext-declon-list.new2$
+  (defret identp-of-dup-split-struct-type-trans-item-list.new2$
     (equal (identp new2$)
            (identp new1$))
     :hints (("Goal" :induct t))))
@@ -444,17 +482,18 @@
                (tunit$ transunitp))
   (b* (((reterr) nil nil (c$::irr-transunit))
        ((transunit tunit) tunit)
-       ((erp new1 new2 extdecls)
-        (dup-split-struct-type-ext-declon-list
+       ((erp new1 new2 items)
+        (dup-split-struct-type-trans-item-list
           original
           new1
           new2
           blacklist
           split-members
-          tunit.declons)))
+          tunit.items)))
     (retok new1
            new2
-           (make-transunit :comment nil :declons extdecls :info tunit.info)))
+           (make-transunit :items items
+                           :info tunit.info)))
     ///
 
     (defret identp-of-dup-split-struct-type-transunit.new2$
@@ -769,7 +808,7 @@
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription)))
 
-(define split-gso-split-object-ext-declon-list
+(define split-gso-split-object-trans-item
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -777,14 +816,49 @@
    (new1-type identp)
    (new2-type identp)
    (split-members ident-listp)
-   (extdecls ext-declon-listp))
+   (item trans-itemp))
   :returns (mv (er? maybe-msgp)
-               (extdecls$ ext-declon-listp))
+               (found booleanp
+                      :rule-classes :type-prescription)
+               (items trans-item-listp))
+  (b* (((reterr) nil nil))
+    (trans-item-case
+      item
+      :declon (b* (((erp found extdecls)
+                    (split-gso-split-object-ext-declon
+                     original
+                     linkage
+                     new1
+                     new2
+                     new1-type
+                     new2-type
+                     split-members
+                     item.declon)))
+                (retok found
+                       (c$::trans-item-declon-list extdecls)))
+      :include (retmsg$ "#include directives not supported.")
+      :line-comment (retok nil (list (trans-item-fix item)))))
+  ///
+
+  (more-returns
+   (items true-listp :rule-classes :type-prescription)))
+
+(define split-gso-split-object-trans-item-list
+  ((original identp)
+   (linkage c$::linkagep)
+   (new1 identp)
+   (new2 identp)
+   (new1-type identp)
+   (new2-type identp)
+   (split-members ident-listp)
+   (items trans-item-listp))
+  :returns (mv (er? maybe-msgp)
+               (items$ trans-item-listp))
   (b* (((reterr) nil)
-       ((when (endp extdecls))
+       ((when (endp items))
         (retok nil))
-       ((erp found new-extdecls1)
-        (split-gso-split-object-ext-declon
+       ((erp found new-items1)
+        (split-gso-split-object-trans-item
           original
           linkage
           new1
@@ -792,12 +866,12 @@
           new1-type
           new2-type
           split-members
-          (first extdecls)))
+          (first items)))
        ((when found)
-        (retok (append new-extdecls1
-                       (ext-declon-list-fix (rest extdecls)))))
-       ((erp new-extdecls2)
-        (split-gso-split-object-ext-declon-list
+        (retok (append new-items1
+                       (trans-item-list-fix (rest items)))))
+       ((erp new-items2)
+        (split-gso-split-object-trans-item-list
           original
           linkage
           new1
@@ -805,8 +879,8 @@
           new1-type
           new2-type
           split-members
-          (rest extdecls))))
-    (retok (append new-extdecls1 new-extdecls2))))
+          (rest items))))
+    (retok (append new-items1 new-items2))))
 
 (define split-gso-split-object-transunit
   ((original identp)
@@ -821,8 +895,8 @@
                (tunit$ transunitp))
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
-       ((erp extdecls)
-        (split-gso-split-object-ext-declon-list
+       ((erp items)
+        (split-gso-split-object-trans-item-list
           original
           linkage
           new1
@@ -830,8 +904,8 @@
           new1-type
           new2-type
           split-members
-          tunit.declons)))
-    (retok (make-transunit :comment nil :declons extdecls :info tunit.info))))
+          tunit.items)))
+    (retok (make-transunit :items items :info tunit.info))))
 
 (define split-gso-split-object-filepath-transunit-map
   ((original identp)
@@ -889,6 +963,8 @@
                 fundef
                 ext-declon
                 ext-declon-list
+                trans-item
+                trans-item-list
                 transunit
                 filepath-transunit-map)
     :extra-args
@@ -1113,7 +1189,7 @@
           split-members
           map)))
     (retok
-      (transunit-ensemble (split-gso-rename-filepaths map)))))
+      (c$::make-transunit-ensemble :units (split-gso-rename-filepaths map)))))
 
 (define split-gso-code-ensemble
   ((filepath? c$::filepath-optionp)
@@ -1124,20 +1200,21 @@
    (new-struct-tag2 ident-optionp)
    (split-members ident-listp)
    (code code-ensemblep))
-  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (code$ code-ensemblep))
   (b* (((reterr) (irr-code-ensemble))
        ((code-ensemble code) code)
        ((erp tunits) (split-gso-transunit-ensemble filepath?
-                                                  orig-struct
-                                                  new-struct1
-                                                  new-struct2
-                                                  new-struct-tag1
-                                                  new-struct-tag2
-                                                  split-members
-                                                  code.transunits)))
-    (retok (change-code-ensemble code :transunits tunits))))
+                                                   orig-struct
+                                                   new-struct1
+                                                   new-struct2
+                                                   new-struct-tag1
+                                                   new-struct-tag2
+                                                   split-members
+                                                   code.transunits)))
+    (retok (change-code-ensemble code :transunits tunits)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1154,12 +1231,6 @@
           (ident-map (rest strings))))
   :guard-hints (("Goal" :in-theory (enable string-listp))))
 
-(defrulel transunit-ensemble-annop-of-irr-code-ensemble
-  (c$::transunit-ensemble-annop
-   (code-ensemble->transunits (c$::irr-code-ensemble)))
-  :enable ((:e c$::transunit-ensemble-annop)
-           (:e c$::irr-code-ensemble)))
-
 (define split-gso-process-inputs (const-old
                                   const-new
                                   object-name
@@ -1171,9 +1242,7 @@
                                   split-members
                                   (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (code (and (code-ensemblep code)
-                          (c$::transunit-ensemble-annop
-                           (code-ensemble->transunits code))))
+               (code code-ensemblep)
                (object-ident identp)
                (filepath? c$::filepath-optionp)
                (new-object1 ident-optionp)
@@ -1198,8 +1267,7 @@
        (code (acl2::constant-value const-old wrld))
        ((unless (code-ensemblep code))
         (retmsg$ "~x0 must be a code ensemble." const-old))
-       (tunits (code-ensemble->transunits code))
-       ((unless (c$::transunit-ensemble-annop tunits))
+       ((unless (code-ensemble-annop code))
         (retmsg$ "~x0 must be an annotated with validation information."
                  const-old))
        ((unless (or (not object-filepath)
@@ -1240,7 +1308,12 @@
            new-type1
            new-type2
            split-members
-           const-new)))
+           const-new))
+  ///
+
+  (defret code-ensemble-annop-of-split-gso-process-inputs.code
+    (implies (not er?)
+             (code-ensemble-annop code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1258,7 +1331,7 @@
    (new-type2 ident-optionp)
    (split-members ident-listp)
    (const-new symbolp))
-  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."

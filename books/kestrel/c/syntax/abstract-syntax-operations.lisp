@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-operations
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "Operations on the abstract syntax."
   :order-subtopics t
   :default-parent t)
@@ -692,6 +692,40 @@
 
   :verify-guards :after-returns)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define declor-to-dirdeclor ((declor declorp))
+  :returns (ddeclor dirdeclorp)
+  :short "Turn a declarator into a direct declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the declarator has no pointers,
+     we return its direct declarator component.
+     Otherwise, we parenthesize it into a direct declarator."))
+  (b* (((declor declor) declor))
+    (if declor.pointers
+        (dirdeclor-paren declor)
+      declor.direct)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define absdeclor-to-dirabsdeclor? ((adeclor absdeclorp))
+  :returns (dadeclor dirabsdeclor-optionp)
+  :short "Turn an abstract declarator into
+          an optional direct abstract declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the abstract declarator has no pointers,
+     we return its direct abstract declarator component.
+     Otherwise, we parenthesize it
+     into an optional direct abstract declarator."))
+  (b* (((absdeclor adeclor) adeclor))
+    (if adeclor.pointers
+        (dirabsdeclor-paren adeclor)
+      adeclor.direct?)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-expr-ident ((expr exprp))
@@ -1047,6 +1081,51 @@
           specifiers related to linkage."
   (cons (decl-spec-stoclass (stor-spec-static))
         (declor-spec-list-filter-out-linkage-specs specs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist trans-item-list-declon/directive-p (x)
+  :guard (trans-item-listp x)
+  :short "Check if all the translation items in a list
+          are external declarations or directives."
+  (or (trans-item-case x :declon)
+      (trans-item-case x :include))
+  :elementp-of-nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist trans-item-list-commentp (x)
+  :guard (trans-item-listp x)
+  :short "Check if all the translation items in a list are comments."
+  (trans-item-case x :line-comment)
+  :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection trans-item-declon-list ((x ext-declon-listp))
+  :returns (items trans-item-listp)
+  :short "Lift @(tsee trans-item-declon) to lists."
+  (trans-item-declon x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection trans-item-include-list ((x header-name-listp))
+  :returns (item trans-item-listp)
+  :short "Lift @(tsee trans-item-include) to lists."
+  (trans-item-include x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define transunit-emptyp ((tunit transunitp))
+  :returns (yes/no booleanp)
+  :short "Check if a translation unit is empty, in the sense of having
+          no external declarations and no @('#include') directives."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, if the translation unit only contains comments,
+     it is regarded as effectively empty, according to this predicate."))
+  (trans-item-list-commentp (transunit->items tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

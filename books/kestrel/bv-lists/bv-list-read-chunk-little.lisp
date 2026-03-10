@@ -1,6 +1,6 @@
 ; Reading a chunk of data from a BV list
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -59,6 +59,19 @@
                               (<= (+ index element-count)
                                   (len list)))))
   (packbv-little element-count element-size (take element-count (nthcdr index list))))
+
+(defthm unsigned-byte-p-of-bv-list-read-chunk-little
+  (implies (and (<= (* element-size element-count) size)
+                (integerp size)
+                (natp element-size)
+                (natp element-count))
+           (unsigned-byte-p size (bv-list-read-chunk-little element-size element-count index list)))
+  :hints (("Goal" :in-theory (enable bv-list-read-chunk-little))))
+
+;; for axe only (move)
+(defthmd integerp-of-bv-list-read-chunk-little
+  (integerp (bv-list-read-chunk-little element-size element-count index list))
+  :hints (("Goal" :in-theory (enable bv-list-read-chunk-little))))
 
 ;; prevent matching a constant list?
 (defthm bv-list-read-chunk-little-of-cons-irrel

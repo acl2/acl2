@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,7 @@
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
@@ -166,6 +167,23 @@
   :pred identp
   :layout :list)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define ident-equal ((x identp) (y identp))
+  (mbe :logic (ident-equiv x y)
+       :exec (equal (ident->unwrap x)
+                    (ident->unwrap y)))
+  :enabled t
+  :inline t
+  ;; TODO: improve proof to avoid these explicit expansions.
+  :guard-hints (("Goal" :in-theory (enable ident->unwrap
+                                           identp
+                                           identity)
+                        :expand ((len x)
+                                 (len y)
+                                 (len (cdr x))
+                                 (len (cdr y))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist ident-list
@@ -177,7 +195,27 @@
   :elt-type ident
   :true-listp t
   :elementp-of-nil nil
-  :pred ident-listp)
+  :pred ident-listp
+
+  ///
+
+  (defruled true-listp-when-ident-listp
+    (implies (ident-listp idents)
+             (true-listp idents))
+    :induct t
+    :enable ident-listp)
+
+  (defrule ident-listp-of-add-to-set-equal
+    (equal (ident-listp (add-to-set-equal ident idents))
+           (and (identp ident)
+                (ident-listp idents)))
+    :enable add-to-set-equal)
+
+  (defrule ident-listp-of-remove1-equal
+    (implies (ident-listp x)
+             (ident-listp (remove1-equal a x)))
+    :induct t
+    :enable remove1-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -891,7 +929,15 @@
   :elt-type s-char
   :true-listp t
   :elementp-of-nil nil
-  :pred s-char-listp)
+  :pred s-char-listp
+
+  ///
+
+  (defruled true-listp-when-s-char-listp
+    (implies (s-char-listp x)
+             (true-listp x))
+    :induct t
+    :enable s-char-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -994,6 +1040,13 @@
   :elementp-of-nil nil
   :pred h-char-listp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection h-char-list->code-list ((x h-char-listp))
+  :returns (chars nat-listp)
+  :short "Lift @(tsee h-char->code) to lists."
+  (h-char->code x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod q-char
@@ -1029,6 +1082,13 @@
   :elementp-of-nil nil
   :pred q-char-listp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection q-char-list->code-list ((x q-char-listp))
+  :returns (chars nat-listp)
+  :short "Lift @(tsee q-char->code) to lists."
+  (q-char->code x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum header-name
@@ -1041,6 +1101,15 @@
   (:quotes ((chars q-char-list)))
   :pred header-namep
   :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist header-name-list
+  :short "Fixtype of lists of header names."
+  :elt-type header-name
+  :true-listp t
+  :elementp-of-nil nil
+  :pred header-name-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1858,8 +1927,8 @@
     (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
                          (inc/dec inc/dec-op-list)
                          (arg/arg2 expr)))
-    (:stmt ((stmt comp-stmt)))
     ;; GCC extensions:
+    (:stmt ((stmt comp-stmt)))
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
     (:offsetof ((type tyname)
@@ -2848,7 +2917,7 @@
       ". For now we only model the older @('__attribute__') syntax.")
      (xdoc::p
       "The documentation lists three kinds of attributes:
-       empty, names, and names with parameters.
+       empty, names only, and names with parameters.
        For now we only model the latter two kinds.
        The documentation lists three kinds of parameters
        (which presumably refer to the whole collection of parameters
@@ -2874,7 +2943,7 @@
        and an attributed that consists of a name and zero parameters:
        in concrete syntax, the latter would include open and closed parentheses,
        without anything in between (except white space or comments)."))
-    (:name ((name attrib-name)))
+    (:name-only ((name attrib-name)))
     (:name-params ((name attrib-name)
                    (params expr-list)))
     :pred attribp
@@ -3459,6 +3528,49 @@
     :induct t
     :enable remove1-equal))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection spec/qual-typespec-list ((x type-spec-listp))
+  :returns (specquals spec/qual-listp)
+  :short "Lift @(tsee spec/qual-typespec) to lists."
+  (spec/qual-typespec x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection decl-spec-stoclass-list ((x stor-spec-listp))
+  :returns (declspecs decl-spec-listp)
+  :short "Lift @(tsee decl-spec-stoclass) to lists."
+  (decl-spec-stoclass x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection decl-spec-typespec-list ((x type-spec-listp))
+  :returns (declspecs decl-spec-listp)
+  :short "Lift @(tsee decl-spec-typespec) to lists."
+  (decl-spec-typespec x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption init-declor-option
+  init-declor
+  :short "Fixtype of optional initializer declarators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Initializer declarators are defined in @(tsee init-declor)."))
+  :pred init-declor-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption declon-option
+  declon
+  :short "Fixtype of optional declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Declarations are defined in @(tsee declon)."))
+  :pred declon-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum expr/tyname
@@ -3628,6 +3740,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum trans-item
+  :short "Fixtype of translation items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This notion has no explicit counterpart in [C17],
+     but it has a meaning in our abstract syntax for tools:
+     it consists of the entities that may appear
+     at the top level of a translation unit.
+     These are external declarations,
+     but also @('#include') directives
+     and some forms of comments;
+     we also plan to add more directives and more forms of comments.")
+   (xdoc::p
+    "An alternative approach is to extend our ASTs for external declarations
+     with such directives and comments.
+     But it seems a bit of a terminological abuse.
+     Furthermore, since we plan to add some forms of preprocessing conditionals,
+     those will make translation items recursive,
+     which definitely does not fit well with the external declaration notion.
+     Thus, it seems best to introduce this new notion.")
+   (xdoc::p
+    "The dash in @('trans-item') is consistent with @(tsee block-item),
+     but not with @(tsee transunit);
+     the latter should be probably renamed to @('trans-unit'),
+     and perhaps @(tsee transunit-ensemble)
+     could be renamed to @('trans-ensemble'),
+     since we do not need to repeat @('unit') there.")
+   (xdoc::p
+    "A @('#include') directive, as a translation item,
+     is represented by the header name.")
+   (xdoc::p
+    "For now the only comments that we allow as translation items
+     are line comments, represented by their content (character codes).
+     The content excludes the initial double slash and the final new line.
+     The line comment is regarded as taking the whole line,
+     i.e. the first slash of the double slash is at column 0."))
+  (:declon ((declon ext-declon)))
+  (:include ((header header-name)))
+  (:line-comment ((content nat-listp)))
+  :pred trans-itemp
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist trans-item-list
+  :short "Fixtype of lists of translation items."
+  :elt-type trans-item
+  :true-listp t
+  :pred trans-item-listp
+  :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod transunit
   :short "Fixtype of translation units [C17:6.9] [C17:A.2.4]."
   :long
@@ -3635,21 +3801,13 @@
    (xdoc::p
     "This corresponds to <i>translation-unit</i> in the grammar in [C17].")
    (xdoc::p
-    "A translation unit consists of a list of external declarations,
-     optionally preceded by a line comment,
-     which we represent as its content, namely a list of character codes;
-     the comment is absent if the list is empty.
-     This is useful when generating code:
-     the comment can convey information about the generation.
-     We may eventually generalize this to allow
-     both line and block comments at the top level,
-     intermixed with external declarations,
-     also extending our parser to recognize and preserve those comments
-     (now the tokenizer skips over all comments.")
+    "As discussed in @(tsee trans-item),
+     we allow other entities, besides external declaration.
+     Thus, a translation unit, in our abstract syntax,
+     consists of zero or more translation items.")
    (xdoc::p
     "We also add a slot with additional information, e.g. from validation."))
-  ((comment nat-list)
-   (declons ext-declon-list)
+  ((items trans-item-list)
    (info any))
   :pred transunitp
   :layout :fulltree)
@@ -3697,6 +3855,7 @@
      The notion of file set as formalized here will still apply to that case,
      with some elements of the ensembles
      that may be headers instead of source files."))
-  ((units filepath-transunit-map))
+  ((units filepath-transunit-map)
+   (info any))
   :pred transunit-ensemblep
   :layout :fulltree)

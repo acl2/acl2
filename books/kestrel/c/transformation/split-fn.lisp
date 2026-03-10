@@ -484,24 +484,49 @@
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription)))
 
-(define split-fn-ext-declon-list
+(define split-fn-trans-item
   ((target-fn identp)
    (new-fn-name identp)
-   (extdecls ext-declon-listp)
+   (item trans-itemp)
+   (split-point natp))
+  :short "Transform an external declaration."
+  :returns (mv (er? maybe-msgp)
+               (target-found booleanp)
+               (items trans-item-listp))
+  (b* (((reterr) nil nil))
+    (trans-item-case
+      item
+      :declon (b* (((erp target-found extdecls)
+                    (split-fn-ext-declon target-fn
+                                         new-fn-name
+                                         item.declon
+                                         split-point)))
+                (retok target-found
+                       (c$::trans-item-declon-list extdecls)))
+      :include (retmsg$ "#include directives not supported.")
+      :line-comment (retok nil (list (trans-item-fix item)))))
+  ///
+  (more-returns
+   (items true-listp :rule-classes :type-prescription)))
+
+(define split-fn-trans-item-list
+  ((target-fn identp)
+   (new-fn-name identp)
+   (items trans-item-listp)
    (split-point natp))
   :short "Transform a list of external declarations."
   :returns (mv (er? maybe-msgp)
-               (new-extdecls ext-declon-listp))
+               (new-items trans-item-listp))
   (b* (((reterr) nil)
-       ((when (endp extdecls))
+       ((when (endp items))
         (retok nil))
-       ((erp target-found extdecls1)
-        (split-fn-ext-declon target-fn new-fn-name (first extdecls) split-point))
+       ((erp target-found items1)
+        (split-fn-trans-item target-fn new-fn-name (first items) split-point))
        ((when target-found)
-        (retok (append extdecls1 (ext-declon-list-fix (rest extdecls)))))
-       ((erp extdecls2)
-        (split-fn-ext-declon-list target-fn new-fn-name (rest extdecls) split-point)))
-    (retok (append extdecls1 extdecls2))))
+        (retok (append items1 (trans-item-list-fix (rest items)))))
+       ((erp items2)
+        (split-fn-trans-item-list target-fn new-fn-name (rest items) split-point)))
+    (retok (append items1 items2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -513,10 +538,12 @@
   :short "Transform a translation unit."
   :returns (mv (er? maybe-msgp)
                (new-tunit transunitp))
-  (b* (((transunit tunit) tunit)
-       ((mv er extdecls)
-        (split-fn-ext-declon-list target-fn new-fn-name tunit.declons split-point)))
-    (mv er (make-transunit :comment nil :declons extdecls :info tunit.info))))
+  (b* (((reterr) (irr-transunit))
+       ((transunit tunit) tunit)
+       ((mv er items)
+        (split-fn-trans-item-list target-fn new-fn-name tunit.items split-point)))
+    (mv er (make-transunit :items items
+                           :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -559,7 +586,7 @@
                                          new-fn-name
                                          tunits.units
                                          split-point)))
-    (mv er (transunit-ensemble map))))
+    (mv er (c$::make-transunit-ensemble :units map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,7 +620,7 @@
    split-point
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (code (code-ensemblep code))
+               (code code-ensemblep)
                (const-new$ symbolp)
                (target$ identp)
                (new-fn$ identp)

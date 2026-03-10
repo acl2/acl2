@@ -149,19 +149,18 @@ To test whether STP is being called correctly in your environment, run the scrip
   :parents (axe-core)
   :short "Axe's DAG data structure."
   :long
-  (xdoc::topstring
-   (xdoc::topparas
+  (xdoc::topparas
     "Axe can represent an ACL2 term in a compact form called a \"DAG\" (directed acyclic graph).  In a DAG, each distinct subterm is represented only once, so DAGs can be much smaller than their corresponding terms.  Certain classes of terms with extensive sharing of subterms can be exponentially larger than their DAG representations.  Most of Axe's algorithms operate directly on DAGs (often stored internally as arrays).
 
-A DAG contains a set of nodes, each of which has a node number (a natural number) and a \"dag-expr\" (DAG expression).  A dag-expr is either:")
-   (xdoc::ul-from-string
+A DAG contains a set of nodes, each of which has a node number (a natural number) and a \"dag-expr\" (DAG expression).  A dag-expr is either:"
+
+    (xdoc::ul-from-string
     "A variable (a symbol), or
 
 A quoted constant, or
 
 The application of a function symbol (almost always a defined ACL2 function) to a list of arguments.  Each argument (or \"darg\" = \"DAG argument\") should be either a quoted constant or the number of a DAG node, which must be smaller than the number of the node that contains this expression.  Since the expression for a given node can only refer to nodes with smaller numbers, the DAG is acyclic.")
 
-   (xdoc::topparas
     "A DAG is usually represented as an alist from node numbers to their corresponding expresspions.  Nodes are listed in decreasing order, with each node number consed onto its expression.  Here is an example DAG containing 5 nodes:
 
 @({
@@ -204,6 +203,6 @@ Often Axe stores DAGs in named constants, since the DAGs themselves may be large
 and
 
 @({(dag-info *my-dag*)})
-.")))
+."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

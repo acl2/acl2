@@ -30,18 +30,28 @@
                (mv nil (c$::irr-fundef))))
    :otherwise (mv nil (c$::irr-fundef))))
 
-(define ext-declon-list-find-fundef
+(define trans-item-find-fundef
   ((ident identp)
-   (extdecls ext-declon-listp))
+   (item trans-itemp))
+  :returns (mv (found booleanp)
+               (fundef fundefp))
+  (trans-item-case
+   item
+   :declon (ext-declon-find-fundef ident item.declon)
+   :otherwise (mv nil (c$::irr-fundef))))
+
+(define trans-item-list-find-fundef
+  ((ident identp)
+   (items trans-item-listp))
   :returns (mv (erp booleanp)
                (fundef fundefp))
   (b* (((reterr) (c$::irr-fundef))
-       ((when (endp extdecls))
+       ((when (endp items))
         (reterr t))
-       ((mv found fundef) (ext-declon-find-fundef ident (first extdecls)))
+       ((mv found fundef) (trans-item-find-fundef ident (first items)))
        ((when found)
         (retok fundef)))
-    (ext-declon-list-find-fundef ident (rest extdecls))))
+    (trans-item-list-find-fundef ident (rest items))))
 
 (define transunit-find-fundef
   ((ident identp)
@@ -49,7 +59,7 @@
   :returns (mv (erp booleanp)
                (fundef fundefp))
   (b* (((transunit transunit) transunit))
-    (ext-declon-list-find-fundef ident transunit.declons)))
+    (trans-item-list-find-fundef ident transunit.items)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,7 +75,8 @@
   `(assert-event
     (b* (((mv erp1 ast) (c$::parse-file (filepath "test")
                                         (acl2::string=>nats ,input)
-                                        (c::version-c17+gcc)))
+                                        (c::version-c17+gcc)
+                                        t))
          ((mv erp2 ast) (c$::dimb-transunit ast t))
          ((mv erp3 fundef) (transunit-find-fundef (c$::ident ,fun) ast))
          (free-vars (free-vars-fundef fundef nil))

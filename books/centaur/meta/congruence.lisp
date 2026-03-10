@@ -31,11 +31,12 @@
 (in-package "CMR")
 
 (include-book "equivalence")
+(include-book "pseudo-term-var-list")
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
 (include-book "centaur/misc/nth-equiv" :dir :system)
 
-(local (include-book "std/lists/append" :dir :system))
+(local (include-book "std/lists/sets" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
@@ -119,17 +120,18 @@
     (equal (equiv-ev-context-equiv-symm nil x y)
            (equal x y)))
 
-  (defthm equiv-ev-context-equiv-symm-of-append
-    (equal (equiv-ev-context-equiv-symm (append ctx1 ctx2) x y)
-           (or (equiv-ev-context-equiv-symm ctx1 x y)
-               (equiv-ev-context-equiv-symm ctx2 x y))))
-
   (defthmd equiv-ev-context-equiv-symm-by-member
     (implies (and (member equiv (equiv-contexts-fix ctx))
                   (or (equiv-ev (pseudo-term-fncall equiv (list (pseudo-term-quote x) (pseudo-term-quote y))) nil)
                       (equiv-ev (pseudo-term-fncall equiv (list (pseudo-term-quote y) (pseudo-term-quote x))) nil)))
              (equiv-ev-context-equiv-symm ctx x y))
     :hints(("Goal" :in-theory (enable equiv-ev-context-equiv-base-by-member))))
+
+  (defthm equiv-ev-context-equiv-symm-of-union
+    (equal (equiv-ev-context-equiv-symm (union-equal ctx1 ctx2) x y)
+           (or (equiv-ev-context-equiv-symm ctx1 x y)
+               (equiv-ev-context-equiv-symm ctx2 x y)))
+    :hints(("Goal" :in-theory (enable equiv-ev-context-equiv-base))))
 
   (defthmd equiv-ev-context-equiv-symm-by-singleton
     (implies (and (equiv-ev-context-equiv-symm (list equiv) x y)
@@ -270,10 +272,10 @@
                           (a nil)))))))
 
 
-  (defthm equiv-ev-context-equiv-trace-of-append-contexts
+  (defthm equiv-ev-context-equiv-trace-of-union-contexts
     (implies (or (equiv-ev-context-equiv-trace ctx1 trace)
                  (equiv-ev-context-equiv-trace ctx2 trace))
-             (equiv-ev-context-equiv-trace (append ctx1 ctx2) trace))))
+             (equiv-ev-context-equiv-trace (union-equal ctx1 ctx2) trace))))
 
 ;; The transitive/symmetric/reflexive closure of the OR of the equivalences.
 (defsection equiv-ev-context-equiv
@@ -396,17 +398,17 @@
                             (ctx ,(cadr other))
                             (trace (equiv-ev-context-equiv-witness . ,(cdr assum))))))))))
 
-  (defthm equiv-ev-context-equiv-of-append-contexts
+  (defthm equiv-ev-context-equiv-of-union-contexts
     (implies (or (equiv-ev-context-equiv ctx1 x y)
                  (equiv-ev-context-equiv ctx2 x y))
-             (equiv-ev-context-equiv (append ctx1 ctx2) x y))
+             (equiv-ev-context-equiv (union-equal ctx1 ctx2) x y))
     :hints (("goal" :expand ((equiv-ev-context-equiv ctx1 x y)
                              (equiv-ev-context-equiv ctx2 x y))
              :use ((:instance equiv-ev-context-equiv-suff
-                    (ctx (append ctx1 ctx2))
+                    (ctx (union-equal ctx1 ctx2))
                     (trace (equiv-ev-context-equiv-witness ctx1 x y)))
                    (:instance equiv-ev-context-equiv-suff
-                    (ctx (append ctx1 ctx2))
+                    (ctx (union-equal ctx1 ctx2))
                     (trace (equiv-ev-context-equiv-witness ctx2 x y)))))))
 
   (defthmd equiv-ev-context-equiv-when-symm
@@ -515,12 +517,12 @@
     :hints(("Goal" :in-theory (enable equiv-ev-equiv-contexts-refinement-p
                                       equiv-ev-context-equiv-by-singleton))))
 
-  (defthm equiv-ev-equiv-contexts-refinement-p-of-append-1
-    (equiv-ev-equiv-contexts-refinement-p ctx1 (append ctx1 ctx2))
+  (defthm equiv-ev-equiv-contexts-refinement-p-of-union-equal-1
+    (equiv-ev-equiv-contexts-refinement-p ctx1 (union-equal ctx1 ctx2))
     :hints(("Goal" :in-theory (enable equiv-ev-equiv-contexts-refinement-p))))
 
-  (defthm equiv-ev-equiv-contexts-refinement-p-of-append-2
-    (equiv-ev-equiv-contexts-refinement-p ctx1 (append ctx1 ctx2))
+  (defthm equiv-ev-equiv-contexts-refinement-p-of-union-equal-2
+    (equiv-ev-equiv-contexts-refinement-p ctx1 (union-equal ctx1 ctx2))
     :hints(("Goal" :in-theory (enable equiv-ev-equiv-contexts-refinement-p)))))
 
 (deflist equiv-contextslist :elt-type equiv-contexts :true-listp t)
@@ -1002,11 +1004,10 @@
 (define join-equiv-contexts ((x equiv-contextsp)
                              (y equiv-contextsp))
   :enabled t
-  (mbe :logic (append (equiv-contexts-fix x) (equiv-contexts-fix y))
+  (mbe :logic (union-equal (equiv-contexts-fix x) (equiv-contexts-fix y))
        :exec
-       (cond ((atom x) y)
-             ((atom y) x)
-             (t (append x y)))))
+       (cond ((atom y) x)
+             (t (union-equal x y)))))
 
 (define join-equiv-contextslists ((x equiv-contextslist-p)
                                   (y equiv-contextslist-p))
@@ -1239,20 +1240,6 @@
                    (ctx contexts)))))))
 
 
-(define pseudo-term-var-listp ((x pseudo-term-listp))
-  (if (atom x)
-      t
-    (and (pseudo-term-case (car x) :var)
-         (pseudo-term-var-listp (cdr x))))
-  ///
-  (defthm pseudo-term-var-listp-of-cons
-    (equal (pseudo-term-var-listp (cons a b))
-           (and (pseudo-term-case a :var)
-                (pseudo-term-var-listp b))))
-  (defthm pseudo-term-var-listp-of-append
-    (equal (pseudo-term-var-listp (append a b))
-           (and (pseudo-term-var-listp a)
-                (pseudo-term-var-listp b)))))
 
 (local (defthm pseudo-term-list-fix-of-append
          (equal (pseudo-term-list-fix (append a b))
@@ -1287,22 +1274,8 @@
 ;;                            (congruence-var-list-check-aux (1- n) (cdr vars1) (cdr vars2) var2))))))
 
 
-(define pseudo-term-var-list->names ((x pseudo-term-listp))
-  :guard (pseudo-term-var-listp x)
-  :returns (vars pseudo-var-list-p)
-  :prepwork ((local (in-theory (enable pseudo-term-var-listp))))
-  (if (atom x)
-      nil
-    (cons (pseudo-term-var->name (car x))
-          (pseudo-term-var-list->names (cdr x))))
-  ///
-  (defthm pseudo-term-var-list->names-when-pseudo-term-listp
-    (implies (and (pseudo-term-listp x)
-                  (pseudo-term-var-listp x))
-             (equal (pseudo-term-var-list->names x) x))
-    :hints(("Goal" :in-theory (enable pseudo-termp
-                                      pseudo-term-kind
-                                      pseudo-term-var->name))))
+
+(encapsulate nil
 
   (local (defthm equiv-ev-list-of-acons-non-member
            (implies (and (pseudo-term-var-listp vars)
@@ -1321,20 +1294,9 @@
                   (no-duplicatesp (pseudo-term-var-list->names vars)))
              (equal (equiv-ev-list vars (pairlis$ (pseudo-term-var-list->names vars) vals))
                     (take (len vars) vals)))
-    :hints(("Goal" :in-theory (enable pseudo-term-var-listp)
-            :induct (pairlis$ vars vals))))
-
-  (local (in-theory (enable pseudo-term-list-fix)))
-
-
-  (defthm pseudo-term-var-list->names-of-cons
-    (equal (pseudo-term-var-list->names (cons a b))
-           (cons (pseudo-term-var->name a)
-                (pseudo-term-var-list->names b))))
-  (defthm pseudo-term-var-list->names-of-append
-    (equal (pseudo-term-var-list->names (append a b))
-           (append (pseudo-term-var-list->names a)
-                   (pseudo-term-var-list->names b)))))
+    :hints(("Goal" :in-theory (enable pseudo-term-var-listp
+                                      pseudo-term-var-list->names)
+            :induct (pairlis$ vars vals)))))
 
 
 
@@ -1732,6 +1694,17 @@
                  :induct (equiv-ev-context-equiv-list-of-update-nth-ind n x y)))))
 
 
+(local (fty::deffixcong pseudo-term-equiv iff (equiv-ev-theoremp x) x
+         :hints ((and stable-under-simplificationp
+                      (b* ((lit (assoc 'equiv-ev-theoremp clause))
+                           ((unless lit) nil)
+                           (x (cadr lit))
+                           (other (if (eq x 'x) '(pseudo-term-fix x) 'x)))
+                        `(:expand (,lit)
+                          :use ((:instance equiv-ev-theoremp-implies
+                                 (x ,other) (a (equiv-ev-falsify ,x))))
+                          :in-theory (disable equiv-ev-theoremp-implies)))))))
+
 
 (define parse-congruence-rule ((x pseudo-termp) (w plist-worldp))
   :returns (mv errmsg
@@ -1767,13 +1740,13 @@
                                   :arg-contexts (update-nth index (list equiv-new) nil)
                                   :arity (len args1))))
   ///
-  (local (defund equiv-ev-theoremp-fn (x)
-           (equiv-ev-theoremp x)))
-  (local (defthmd equiv-ev-theoremp-fn-implies
-           (implies (equiv-ev-theoremp-fn x)
-                    (equiv-ev x a))
-           :hints(("Goal" :in-theory (enable equiv-ev-theoremp-fn)
-                   :use equiv-ev-falsify))))
+  ;; (local (defund equiv-ev-theoremp-fn (x)
+  ;;          (equiv-ev-theoremp x)))
+  ;; (local (defthmd equiv-ev-theoremp-fn-implies
+  ;;          (implies (equiv-ev-theoremp-fn x)
+  ;;                   (equiv-ev x a))
+  ;;          :hints(("Goal" :in-theory (enable equiv-ev-theoremp-fn)
+  ;;                  :use equiv-ev-falsify))))
 
   (local (defthm equiv-ev-when-pseudo-term-equiv
            (implies (and (equal (pseudo-term-fix x) (pseudo-term-fncall fn args))
@@ -1814,9 +1787,16 @@
            (implies (equal (len x) (len y))
                     (equal (equal (len (cdr x)) (len (cdr y))) t))))
 
+  (local (defthm equiv-rel-term-theoremp
+           (implies (and (equiv-ev-meta-extract-global-facts)
+                         (ensure-equiv-relationp e (w state)))
+                    (equiv-ev-theoremp (equiv-rel-term e)))
+           :hints(("Goal" :in-theory (enable equiv-ev-theoremp
+                                             ensure-equiv-relationp-correct)))))
+  
 
   (local (defret equiv-ev-congruence-rule-correct-p-of-<fn>-lemma
-           (implies (and (equiv-ev-theoremp-fn x)
+           (implies (and (equiv-ev-theoremp x)
                          (equiv-ev-meta-extract-global-facts)
                          (equal w (w state))
                          (not errmsg))
@@ -1829,8 +1809,9 @@
                                            equiv-ev-context-equiv-when-singleton
                                            list-equiv)
                                           (equiv-ev-when-pseudo-term-fncall
-                                           len kwote-lst-redef))
-                   :use ((:instance equiv-ev-theoremp-fn-implies
+                                           equiv-ev-theoremp-implies
+                                           len kwote-lst-redef w))
+                   :use ((:instance equiv-ev-theoremp-implies
                           (a (b* (((congruence-rule r) rule))
                                (congruence-var-list-alist
                                 (cdr (assoc 'args1 (parse-congruence-rule-shape x)))
@@ -1853,4 +1834,4 @@
                   (not errmsg))
              (equiv-ev-congruence-rule-correct-p rule))
     :hints(("Goal" :use equiv-ev-congruence-rule-correct-p-of-<fn>-lemma
-            :in-theory (enable equiv-ev-theoremp-fn)))))
+            :in-theory (enable equiv-ev-theoremp)))))

@@ -1,7 +1,7 @@
 ; Overflow and underflow of signed addition
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,8 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "bvuminus"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;
 ;;; signed-addition-overflowsp
@@ -54,9 +56,7 @@
                                           getbit-of-+
                                           logext-cases
                                           bvminus bvuminus
-                                          bvchop-when-top-bit-1
-
-                                          )
+                                          bvchop-when-top-bit-1)
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    ;; for speed:
                                    associativity-of-+ bvchop-when-top-bit-1
@@ -75,14 +75,11 @@
                 (unsigned-byte-p size x)
                 (unsigned-byte-p size y))
            (iff (signed-addition-overflowsp size x y)
-                ;; could also say "not signed-byte-p ..."
                 (<= (expt 2 (+ -1 size)) (+ (logext size x) (logext size y)))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt
                                           logext-cases
                                           bvminus  bvuminus
-                                          BVCHOP-WHEN-TOP-BIT-1
-
-                                          )
+                                          BVCHOP-WHEN-TOP-BIT-1)
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    bvchop-when-top-bit-1 ; for speed
                                    getbit-of-+ ; for speed
@@ -102,6 +99,8 @@
                 (sbvle 32 k 0))
            (not (signed-addition-overflowsp 32 k k))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;
 ;;; signed-addition-underflowsp
 ;;;
@@ -113,7 +112,7 @@
                               (unsigned-byte-p size y) ;but interpred as signed
                               )))
   (and (sbvlt size x 0)
-       ;; if x is negative, the addition might overflow:
+       ;; if x is negative, the addition might underflow:
        (sbvlt size y (bvminus size (- (expt 2 (- size 1))) x)))) ;implies that y is negative?
 
 (defthm not-signed-addition-underflowsp-of-0-arg1
@@ -153,6 +152,8 @@
                                           bvminus bvuminus
                                           bvchop-when-top-bit-1)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm not-signed-addition-underflowsp-when-signed-addition-overflowsp-cheap
   (implies (and (signed-addition-overflowsp size x y)

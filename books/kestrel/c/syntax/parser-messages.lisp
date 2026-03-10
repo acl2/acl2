@@ -51,38 +51,13 @@
   (if token
       (token-case
        token
-       :keyword (msg "the keyword ~x0" token.unwrap)
+       :keyword (msg "the keyword ~x0" token.keyword)
        :ident "an identifier"
        :const "a constant"
        :string "a string literal"
-       :punctuator (msg "the punctuator ~x0" token.unwrap))
+       :punctuator (msg "the punctuator ~x0" token.punctuator)
+       :header "a header name")
     "end of file"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define position-to-msg ((pos positionp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a position as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in user-oriented error messages."))
-  (msg "(line ~x0, column ~x1)" (position->line pos) (position->column pos)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define span-to-msg ((span spanp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a span as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in user-oriented messages."))
-  (msg "[~@0 to ~@1]"
-       (position-to-msg (span->start span))
-       (position-to-msg (span->end span))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -203,7 +178,7 @@
   `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%~
                  [from function ~x4]~%"
                 ,expected
-                ,where
+                (position-to-msg ,where)
                 ,found
                 ,(if extra
                      `(msg " ~@0" ,extra)

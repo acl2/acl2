@@ -112,8 +112,12 @@
            (collect-int-vector-adder-meta-aux y (dont-rw-car (dont-rw-cdr (dont-rw-cdr dont-rw))))))
        (mv (append xs ys)
            (append x-dont-rws y-dont-rws))))
-    (('rp & x)
-     (collect-int-vector-adder-meta-aux x (dont-rw-car (dont-rw-cdr (dont-rw-cdr dont-rw)))))
+    ;(('rp & x)
+    ; (collect-int-vector-adder-meta-aux x (dont-rw-car (dont-rw-cdr (dont-rw-cdr dont-rw)))))
+    (('rp sc x)
+     (if (equal sc ''bitp)
+         (mv (list term) (list dont-rw))
+       (collect-int-vector-adder-meta-aux x (dont-rw-car (dont-rw-cdr (dont-rw-cdr dont-rw))))))
     (&
      (b* (((mv k dont-rw)
            (case-match term

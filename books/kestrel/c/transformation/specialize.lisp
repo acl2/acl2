@@ -174,21 +174,43 @@
    :empty (mv nil (ext-declon-fix extdecl))
    :asm (mv nil (ext-declon-fix extdecl))))
 
-(define specialize-ext-declon-list
-  ((extdecls ext-declon-listp)
+(define specialize-trans-item
+  ((item trans-itemp)
    (target-fn identp)
    (target-param identp)
    (const exprp))
-  :short "Transform a list of external declarations."
-  :returns (new-extdecls ext-declon-listp)
-  (b* (((when (endp extdecls))
+  :short "Transform a translation item."
+  :returns (mv (found booleanp)
+               (new-item trans-itemp))
+  (trans-item-case
+   item
+   :declon (b* (((mv found declon)
+                 (specialize-ext-declon item.declon
+                                        target-fn
+                                        target-param
+                                        const)))
+             (mv found (trans-item-declon declon)))
+   :include (prog2$
+             (raise "#include directives not supported.")
+             (mv nil (irr-trans-item)))
+   :line-comment (mv nil (trans-item-fix item)))
+  :no-function nil)
+
+(define specialize-trans-item-list
+  ((items trans-item-listp)
+   (target-fn identp)
+   (target-param identp)
+   (const exprp))
+  :short "Transform a list of translation items."
+  :returns (new-items trans-item-listp)
+  (b* (((when (endp items))
         nil)
-       ((mv found extdecl)
-        (specialize-ext-declon (first extdecls) target-fn target-param const)))
-    (cons extdecl
+       ((mv found item)
+        (specialize-trans-item (first items) target-fn target-param const)))
+    (cons item
           (if found
-              (ext-declon-list-fix (rest extdecls))
-            (specialize-ext-declon-list (rest extdecls) target-fn target-param const)))))
+              (trans-item-list-fix (rest items))
+            (specialize-trans-item-list (rest items) target-fn target-param const)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -201,9 +223,9 @@
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
     (make-transunit
-     :comment nil
-     :declons (specialize-ext-declon-list tunit.declons target-fn target-param const)
-     :info tunit.info)))
+     :items (specialize-trans-item-list tunit.items target-fn target-param const)
+     :info tunit.info))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -234,11 +256,11 @@
   :short "Transform a translation unit ensemble."
   :returns (new-tunits transunit-ensemblep)
   (b* (((transunit-ensemble tunits) tunits))
-    (transunit-ensemble
-      (specialize-filepath-transunit-map tunits.units
-                                         target-fn
-                                         target-param
-                                         const))))
+    (c$::make-transunit-ensemble
+      :units (specialize-filepath-transunit-map tunits.units
+                                                target-fn
+                                                target-param
+                                                const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

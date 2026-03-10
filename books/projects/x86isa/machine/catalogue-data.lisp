@@ -1,11 +1,12 @@
 ; x86isa categorized listings of implemented/unimplemented instructions
 ;
 ; X86ISA Library
-; Copyright (C) 2024 Kestrel Technology, LLC
+; Copyright (C) 2026 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Sol Swords (sswords@gmail.com)
+; Contributor: Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
 
@@ -31,14 +32,11 @@
 <ul>
 <li>POP variants that write to segment registers: these have side effects,
 perhaps similar to those of MOV to a segment register</li>
-<li>CMPEXCHG8B</li>
 </ul>")
 
 (def-sdm-instruction-section "5.1.2 Binary Arithmetic Instructions"
   :mnemonics
-  '(ADCX ADOX ADD ADC SUB SBB IMUL MUL IDIV DIV INC DEC NEG CMP)
-  :doc "<p>The only unimplemented instructions are ADCX and ADOX, which set
-  CF and OF flags differently from the more typical ADD/ADC operations.</p>")
+  '(ADCX ADOX ADD ADC SUB SBB IMUL MUL IDIV DIV INC DEC NEG CMP))
 
 (def-sdm-instruction-section "5.1.3 Decimal Arithmetic Instructions"
   :mnemonics
@@ -58,7 +56,6 @@ perhaps similar to those of MOV to a segment register</li>
                   SETS SETNS SETO SETNO  TEST CRC32 POPCNT)
   :doc "<p>Unimplemented instructions are:</p>
 <ul>
-<li>POPCNT</li>
 <li>BTC</li>
 <li>CRC32</li>
 </ul>")
@@ -133,7 +130,6 @@ perhaps similar to those of MOV to a segment register</li>
 <li>XLAT: table lookup in memory</li>
 <li>PREFETCHW: prefetch with intent to write</li>
 <li>CLFLUSH: flush cache line</li>
-<li>MOVBE: move data after reversing byte order</li>
 </ul>
 <p>One oddity: Another UD operation form, UD0 (0x0FFF) is described in the
   manual but not listed in our opcode maps.</p>")
@@ -162,7 +158,7 @@ perhaps similar to those of MOV to a segment register</li>
 <ul>
 <li>LZCNT -- leading zero count</li>
 <li>ANDN -- logical AND NOT</li>
-<li>BLSI, BLSMSK, BLSR -- operations involving lowest set bit</li>
+<li>BLSMSK, BLSR -- operations involving lowest set bit</li>
 <li>BZHI -- zero bits left of an index</li>
 <li>PDEP/PEXT -- bitmask deposit/extract</li>
 <li>BEXTR -- bit field extract</li>
@@ -179,6 +175,7 @@ perhaps similar to those of MOV to a segment register</li>
 (def-sdm-instruction-section "5.2.1 X87 FPU Data Transfer Instructions"
   :mnemonics '(FLD FST FSTP FILD FIST FISTP FBLD FBSTP FXCH FCMOVE FCMOVNE
                    FCMOVB FCMOVBE FCMOVNB FCMOVNBE FCMOVU FCMOVNU))
+
 (def-sdm-instruction-section "5.2.2 X87 FPU Basic Arithmetic Instructions"
   :mnemonics
   '(FADD FADDP FIADD FSUB FSUBP FISUB FSUBR FSUBRP FISUBR FMUL FMULP FIMUL FDIV
@@ -218,52 +215,43 @@ what the instruction. Not sure why they are listed that way.</p>")
   :mnemonics '(FXSAVE FXRSTOR))
 
 (def-sdm-instruction-section "5.4 MMX Instructions")
+
 (def-sdm-instruction-section "5.4.1 MMX Data Transfer Instructions"
   :mnemonics '(MOVD/Q MOVQ)
-  :features :mmx
-  :doc "<p>MMX versions of these instructions are not implemented</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.2 MMX Conversion Instructions"
   :mnemonics '(PACKSSWB PACKSSDW PACKUSWB PUNPCKHBW PUNPCKHWD PUNPCKHDQ PUNPCKLBW PUNPCKLWD PUNPCKLDQ)
-  :features :mmx
-  :doc "<p>All unimplemented</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.3 MMX Packed Arithmetic Instructions"
   :mnemonics '(PADDB PADDW PADDD PADDSB PADDSW PADDUSB PADDUSW PSUBB PSUBW
                      PSUBD PSUBSB PSUBSW PSUBUSB PSUBUSW PMULHW PMULLW PMADDWD)
-  :features '(or :mmx (and :sse "PMULHW"))
-  :doc "<p>MMX versions are all unimplemented. A few have SSE versions
-  implemented.</p>")
+  :features '(or :mmx (and :sse "PMULHW")))
 
 (def-sdm-instruction-section "5.4.4 MMX Comparison Instructions"
   :mnemonics '(PCMPEQB PCMPEQW PCMPEQD PCMPGTB PCMPGTW PCMPGTD)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
+
 (def-sdm-instruction-section "5.4.5 MMX Logical Instructions"
   :mnemonics '(PAND PANDN POR PXOR)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.6 MMX Shift and Rotate Instructions"
   :mnemonics '(PSLLW PSLLD PSLLQ PSRLW PSRLD PSRLQ PSRAW PSRAD)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.7 MMX State Management Instructions"
-  :mnemonics '(EMMS)
-  :doc "<p>Unimplemented</p>")
+  :mnemonics '(EMMS))
 
 (def-sdm-instruction-section "5.5 Intel(R) SSE Instructions")
+
 (def-sdm-instruction-section "5.5.1 Intel(R) SSE SIMD Single Precision Floating-Point Instructions")
+
 (def-sdm-instruction-section "5.5.1.1 Intel(R) SSE Data Transfer Instructions"
   :mnemonics '(MOVAPS MOVUPS MOVHPS MOVHLPS MOVLPS MOVLHPS MOVMSKPS MOVSS)
   ;; :features :sse
-  :doc "<p>Unimplemented:</p>
-<ul>
-<li>MOVLHPS</li>
-<li>MOVMSKPS</li>
-</ul>
-")
+)
 
 (def-sdm-instruction-section "5.5.1.2 Intel(R) SSE Packed Arithmetic Instructions"
   :mnemonics '(ADDPS ADDSS SUBPS SUBSS MULPS MULSS DIVPS DIVSS RCPPS RCPSS
@@ -308,11 +296,14 @@ what the instruction. Not sure why they are listed that way.</p>")
 </ul>")
 
 (def-sdm-instruction-section "5.6 Intel(R) SSE2 Instructions")
+
 (def-sdm-instruction-section "5.6.1 Intel(R) SSE2 Packed and Scalar Double Precision Floating-Point Instructions")
+
 (def-sdm-instruction-section "5.6.1.1 Intel(R) SSE2 Data Movement Instructions"
   :mnemonics '(MOVAPD MOVUPD MOVHPD MOVLPD MOVMSKPD MOVSD)
   :features :sse2
   :doc "<p>Unimplemented: MOVMSKPD</p>")
+
 (def-sdm-instruction-section "5.6.1.2 Intel(R) SSE2 Packed Arithmetic Instructions"
   :mnemonics '(ADDPD ADDSD SUBPD SUBSD MULPD MULSD DIVPD DIVSD SQRTPD SQRTSD MAXPD MAXSD MINPD MINSD)
   :features :sse2)
@@ -384,11 +375,8 @@ float-integer are implemented as are scalar and packed float-float.</p>")
        (missing-sse2-with-prev-mnemonics (find-insts-named-str (keep-strings mmx-sse-mnemonics) missing-sse2)))
     missing-sse2-with-prev-mnemonics))
 
-
-
-
-
 (def-sdm-instruction-section "5.7 Intel(R) SSE3 Instructions")
+
 (def-sdm-instruction-section "5.7.1 Intel(R) SSE3 x87-FP Integer Conversion Instruction"
   :mnemonics '(FISTTP))
 
@@ -414,6 +402,7 @@ float-integer are implemented as are scalar and packed float-float.</p>")
   :mnemonics '(MONITOR MWAIT))
 
 (def-sdm-instruction-section "5.8 Supplemental Streaming Simd Extensions 3 (SSSE3) Instructions")
+
 (def-sdm-instruction-section "5.8.1 Horizontal Addition/Subtraction"
   :mnemonics '(PHADDW PHADDSW PHADDD PHSUBW PHSUBSW PHSUBD)
   :features :ssse3)
@@ -425,39 +414,51 @@ float-integer are implemented as are scalar and packed float-float.</p>")
 (def-sdm-instruction-section "5.8.3 Multiply and Add Packed Signed and Unsigned Bytes"
   :mnemonics '(PMADDUBSW)
   :features :ssse3)
+
 (def-sdm-instruction-section "5.8.4 Packed Multiply High with Round and Scale"
   :mnemonics '(PMULHRSW)
   :features :ssse3)
+
 (def-sdm-instruction-section "5.8.5 Packed Shuffle Bytes"
   :mnemonics '(PSHUFB)
   :features :ssse3)
+
 (def-sdm-instruction-section "5.8.6 Packed Sign"
   :mnemonics '(PSIGNB PSIGNW PSIGND)
   :features :ssse3)
+
 (def-sdm-instruction-section "5.8.7 Packed Align Right"
   :mnemonics '(PALIGNR)
   :features :ssse3)
 
 ;; (def-sdm-instruction-section "5.9 Intel(R) SSE4 Instructions")
+
 (def-sdm-instruction-section "5.10 Intel(R) SSE4.1 Instructions")
+
 (def-sdm-instruction-section "5.10.1 Dword Multiply Instructions"
   :mnemonics '(PMULLD PMULDQ)
   :features :sse4.1)
+
 (def-sdm-instruction-section "5.10.2 Floating-Point Dot Product Instructions"
   :mnemonics '(DPPD DPPS)
   :features :sse4.1)
+
 (def-sdm-instruction-section "5.10.3 Streaming Load Hint Instruction"
   :mnemonics '(MOVNTDQA)
   :features :sse4.1)
+
 (def-sdm-instruction-section "5.10.4 Packed Blending Instructions"
   :mnemonics '(BLENDPD BLENDPS BLENDVPD BLENDVPS PBLENDVB PBLENDW)
   :features :sse4.1)
+
 (def-sdm-instruction-section "5.10.5 Packed Integer MIN/MAX Instructions"
   :mnemonics '(PMINUW PMINUD PMINSB PMINSD PMAXUW PMAXUD PMAXSB PMAXSD)
   :features :sse4.1)
+
 (def-sdm-instruction-section "5.10.6 Floating-Point Round Instructions with Selectable Rounding Mode"
   :mnemonics '(ROUNDPS ROUNDPD ROUNDSS ROUNDSD)
   :features :sse4.1)
+
 (def-sdm-instruction-section "5.10.7 Insertion and Extractions from XMM Registers"
   :mnemonics '(EXTRACTPS INSERTPS PINSRB PINSRD/Q PEXTRB PEXTRW PEXTRD/Q)
   :features :sse4.1)
@@ -478,20 +479,25 @@ float-integer are implemented as are scalar and packed float-float.</p>")
 (def-sdm-instruction-section "5.10.11 Packed Test"
   :mnemonics '(PTEST)
   :features :sse4.1)
+
 (def-sdm-instruction-section "5.10.12 Packed Qword Equality Comparisons"
   :mnemonics '(PCMPEQQ)
   :features :sse4.1)
+
 (def-sdm-instruction-section "5.10.13 Dword Packing With Unsigned Saturation"
   :mnemonics '(PACKUSDW)
   :features :sse4.1)
 
 (def-sdm-instruction-section "5.11 Intel(R) SSE4.2 Instruction Set")
+
 (def-sdm-instruction-section "5.11.1 String and Text Processing Instructions"
   :mnemonics '(PCMPESTRI PCMPESTRM PCMPISTRI PCMPISTRM)
   :features :sse4.2)
+
 (def-sdm-instruction-section "5.11.2 Packed Comparison SIMD Integer Instruction"
   :mnemonics '(PCMPGTQ)
   :features :sse4.2)
+
 (def-sdm-instruction-section "5.12 Intel(R) AES-NI And PCLMULQDQ"
   :mnemonics '(AESDEC AESDECLAST AESENC AESENCAST AESIMC AESKEYGENASSIST PCLMULQDQ)
   :doc "<p>AESENCLAST is misspelled AESENCAST</p>")
@@ -607,7 +613,6 @@ these, e.g., the ones listed in 14-2 are instead in fake section @(see
                VPSLLDQ VPSRLDQ)
   :features '(and :avx :vex))
 
-
 (def-sdm-instruction-section "5.14 16-Bit Floating-Point Conversion"
   :mnemonics '(VCVTPH2PS VCVTPS2PH)
   :features :vex)
@@ -667,7 +672,6 @@ these.</p>")
                               ;; not listed in SDM section
                               VPBROADCASTB VPBROADCASTW VPBROADCASTD VPBROADCASTQ)
   :features :avx2)
-
 
 (def-sdm-instruction-section "5.17 Intel(R) Transactional Synchronization Extensions (Intel(R) Tsx)"
   :mnemonics '(XABORT
@@ -800,7 +804,6 @@ the SDM.</p>")
                VPANDD VPANDQ VPANDND VPANDNQ VPORD VPORQ VPXORD VPXORQ)
   :features :avx512f)
 
-
 (def-sdm-instruction-section "5.19.3 AVX-512DQ instructions that are not Intel AVX or AVX2 promotions"
   :mnemonics '(
                VCVTPD2QQ
@@ -853,7 +856,6 @@ the SDM.</p>")
                VBROADCASTI64X2
                VBROADCASTI32X8)
   :features :avx512dq)
-
 
 (def-sdm-instruction-section "5.19.5 AVX-512BW instructions that are not Intel AVX or AVX2 promotions"
   :mnemonics '(VDBPSADBW
@@ -987,7 +989,6 @@ table in the SDM -- they are not mentioned elsewhere</p>")
   :doc "<p>As far as I understand we don't yet support EVEX MAP5 or MAP6 encodings -- I
 think we basically need two new opcode maps for these.</p>")
 
-
 (def-sdm-instruction-section "5.19.13 Other AVX512 Features Not Listed in SDM Ch. 5"
   :doc "<p>Organized by feature for now.</p>")
 
@@ -1014,9 +1015,6 @@ think we basically need two new opcode maps for these.</p>")
   :instructions (all-opcode-maps)
   :features :avx512_4vnniw)
 
-
-
-
 (def-sdm-instruction-section "5.20 System Instructions"
   :mnemonics '(CLAC STAC LGDT SGDT LLDT SLDT LTR STR LIDT SIDT ;; MOV
                     LMSW SMSW CLTS ARPL LAR LSL VERR VERW           ;; MOV
@@ -1031,7 +1029,6 @@ think we basically need two new opcode maps for these.</p>")
 <li>XRSTORS (0x0FC7 /3) XSAVEC (0x0FC7 /4), and XSAVES (0x0FC7 /5) are missing from the opcode maps</li>
 <li>Removed MOV from the list until I can specify only certain forms of it</li>
 </ul>")
-
 
 (def-sdm-instruction-section "5.21 64-Bit Mode Instructions"
   :mnemonics '(CBW/CWDE/CDQE CMPS/W/D CMPXCHG16B LODS/W/D/Q MOVS/W/D/Q MOVZX
@@ -1063,11 +1060,13 @@ VMFUNC
 
 (def-sdm-instruction-section "5.23 Safer Mode Extensions"
   :mnemonics '(GETSEC))
+
 (def-sdm-instruction-section "5.24 Intel(R) Memory Protection Extensions"
   :mnemonics '(BNDMK BNDCL BNDCU BNDCN BNDMOV BNDMOV BNDLDX BNDSTX))
 
 (def-sdm-instruction-section "5.25 Intel(R) Software Guard Extensions"
   :mnemonics '(ENCLS ENCLU))
+
 (def-sdm-instruction-section "5.26 Shadow Stack Management Instructions"
   :mnemonics nil
   ;; '(CLRSSBSY INCSSP RDSSP RSTORSSP SAVEPREVSSP SETSSBSY WRSS WRUSS)
@@ -1081,22 +1080,21 @@ VMFUNC
   ;; '(LDTILECFG STTILECFG TDPBF16PS TDPBSSD TDPBSUD TDPBUSD TDPBUUD
   ;;                        TILELOADD TILELOADDT1 TILERELEASE TILESTORED TILEZERO)
   :doc "<p>Not yet included in opcode maps</p>")
+
 (def-sdm-instruction-section "5.29 User Interrupt Instructions"
   :mnemonics nil
   ;; '(CLUI SENDUIPI STUI TESTUI UIRET)
   :doc "<p>Not yet included in opcode maps</p>")
+
 (def-sdm-instruction-section "5.30 Enqueue Store Instructions"
   :mnemonics nil
   ;; '(ENQCMD ENQCMDS)
   :doc "<p>Not yet included in opcode maps</p>")
 
-
-
 (def-sdm-instruction-section "5.31 Intel(R) Advanced Vector Extensions 10 Version 1 Instructions")
 
 (def-sdm-instruction-section "5.40 Other ISA Extensions"
   :mnemonics '(RDPID))
-
 
 (define keep-string-mnemonic-insts ((x inst-list-p))
   :returns (insts inst-list-p)
@@ -1106,7 +1104,6 @@ VMFUNC
         (cons (inst-fix (car x))
               (keep-string-mnemonic-insts (cdr x)))
       (keep-string-mnemonic-insts (cdr x)))))
-
 
 (def-sdm-instruction-section "5.50 Uncategorized \"Instructions\""
   :instructions
@@ -1121,9 +1118,6 @@ VMFUNC
                                       (set::mergesort all-catalogued))))
     uncatalogued))
 
-
-
-
 (defconsts *all-uncatalogued-instructions*
   (b* ((section '(5 50))
        (table (table-alist 'sdm-instruction-sect (w state)))
@@ -1135,7 +1129,6 @@ VMFUNC
        (uncatalogued (set::difference (set::mergesort (all-opcode-maps))
                                       (set::mergesort all-catalogued))))
     uncatalogued))
-
 
 (assert-event (equal (set::mergesort (keep-strings (inst-list->mnemonics *all-uncatalogued-instructions*)))
                      '("#UD" "JMPE" "RESERVEDNOP" "far CALL"

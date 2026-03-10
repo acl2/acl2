@@ -56,9 +56,9 @@
   (declare (xargs :mode :program :stobjs x86)
            (type (integer 2 8) size))
 
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from HW_RND_GEN$notinline
@@ -84,9 +84,9 @@
 ;;   (declare (xargs :mode :program :stobjs x86)
 ;;            (type (integer 2 8) size))
 
-;;   (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+;;   (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
 ;;                    t)
-;;             (equal (f-get-global 'in-verify-flg
+;;             (equal (f-get-global 'acl2::in-verify-flg
 ;;                                  ACL2::*the-live-state*)
 ;;                    t))
 ;;     (return-from HW_RND_GEN$notinline

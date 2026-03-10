@@ -746,10 +746,17 @@ pointer, or opcode registers\).</em></p>"
     :no-function t
     :guard-hints (("Goal" :in-theory (e/d (unsigned-byte-p-when-fp-statusbits-p)
                                           ())))
-    :short "We set the FPU tag and TOS field to 00B \(valid\) and 000B
-    respectively.  This function accounts for the effects of all MMX
-    instructions except EMMS."
-
+    :short "We set the FPU tags and the TOS field
+            to 00B \(valid\) and 000B respectively."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This function accounts for the effects of
+       all MMX instructions except EMMS.
+       The settting of the FPU tags is described in
+       Intel manual Volume 1 (Feb 2026) Section 9.5.1.
+       The setting of the TOS field of the status register is described in
+       Intel manual Volume 3 (Feb 2026) Section 15.2."))
     (b* ((x86 (!fp-tag 0 x86))
          (fp-status (fp-status x86))
          (x86 (!fp-status (!fp-statusBits->top 0 fp-status) x86)))
@@ -1812,17 +1819,5 @@ values.</p>"
                                                rflagsbits-fix)
                                              (force (force))))))))
 
-
-;; ----------------------------------------------------------------------
-
-(include-book "tools/include-raw" :dir :system)
-(defttag :undef-flg)
-(include-raw "register-readers-and-writers-raw.lsp"
-             :on-compile-fail
-             (format t "[register-readers-and-writers-raw.lsp] Compilation failed with message ~a~%"
-                     condition)
-             :on-load-fail
-             (cw "[register-readers-and-writers-raw.lsp] Load failed; Moving On.~%")
-             :host-readtable t)
 
 ;; ----------------------------------------------------------------------

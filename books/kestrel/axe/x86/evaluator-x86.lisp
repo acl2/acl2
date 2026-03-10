@@ -15,9 +15,9 @@
 (include-book "../evaluator-basic")
 (include-book "../unguarded-defuns2")
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p$inline
-(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline, has ttag :UNDEF-FLG
+(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, x86isa::get-one-byte-prefix-array-code-unguarded, etc.
-(include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline, has ttag :OTHER-NON-DET
+(include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
 ;(local (include-book "kestrel/bv/logext" :dir :system))

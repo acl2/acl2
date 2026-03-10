@@ -434,7 +434,9 @@
                            :in-theory (e/d (,aux-fn expand-array
                                                            ;; default
                                                            ;; header
-                                                           array1p-of-cons-when-header-and-expanding)
+                                                    array1p-of-cons-when-header-and-expanding
+                                                    assoc-keyword ; or include a library
+                                                    )
                                                   (alen1-of-expand-array
                                                    ;keyword-value-listp
                                                    ;;len
@@ -456,7 +458,9 @@
                   :hints (("Goal" :in-theory (e/d (,aux-fn expand-array
                                                            ;; default
                                                            ;; header
-                                                           array1p-of-cons-when-header-and-expanding)
+                                                           array1p-of-cons-when-header-and-expanding
+                                                           assoc-keyword ; or include a library
+                                                           )
                                                   (alen1-of-expand-array)))))))
 
        ;;

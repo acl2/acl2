@@ -40,8 +40,7 @@
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils")
 
 (include-book "../top-level-memory")
 (include-book "fp/base")
