@@ -92,7 +92,16 @@
             arm::execute-cmp-register-shifted-register-alt
             arm::execute-cmn-immediate-alt
             arm::execute-cmn-register-alt
-            arm::execute-cmn-register-shifted-register-alt)
+            arm::execute-cmn-register-shifted-register-alt
+
+            ;; These support relieving hyps of the -alt rules:
+            arm::cmn-immediate-argsp
+            arm::cmn-register-argsp
+            arm::cmn-register-shifted-register-argsp
+            arm::cmp-immediate-argsp
+            arm::cmp-register-argsp
+            arm::cmp-register-shifted-register-argsp
+            )
           '(arm::mov-common
             arm::mov-register-core
             arm::pop-encoding-a2-core
@@ -152,10 +161,15 @@
      ;; arm::conditionpassed-of-set-reg ; these are not needed if we always can open conditionpassed
      ;; arm::conditionpassed-of-write
 
-     arm::eq-condition-of-cmn-zero ; cmn rules
+     ;; cmn rules: ; todo: add the rest!
+     arm::eq-condition-of-cmn-zero
      arm::ne-condition-of-cmn-zero
-     arm::eq-condition-of-cmp-zero ; cmp rules
+
+     ;; cmp rules: ; todo: add the rest!
+     arm::eq-condition-of-cmp-zero
      arm::ne-condition-of-cmp-zero
+     arm::hi-condition-of-cmp-carry-and-cmp-zero
+     arm::ls-condition-of-cmp-carry-and-cmp-zero
 
      arm::eq-condition-constant-opener
      arm::ne-condition-constant-opener
@@ -268,6 +282,8 @@
      arm::isetstate-of-set-apsr.v
      arm::isetstate-of-set-apsr.q
      arm::isetstate-of-write
+
+     arm::update-isetstate-when-equal-of-isetstate
 
      ;;;
 
@@ -412,6 +428,10 @@
 ;   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
+   ;; bv rules:
+   '(acl2::bitnot-of-bitxor-of-1 ; move to core-rules-bv
+     acl2::bitxor-of-1-and-bitnot ; move to core-rules-bv
+     )
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
