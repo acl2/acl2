@@ -692,7 +692,7 @@
        ((reterr) ppstate)
        ((erp chars poss) (read-chars+positions file-name bytes ienv))
        (ppstate
-        (init-ppstate file-name chars poss macros options ienv ppstate)))
+        (init-ppstate chars poss macros options ienv ppstate)))
     (retok ppstate))
   :guard-hints (("Goal" :in-theory (enable len-of-read-chars+positions-1+))))
 
