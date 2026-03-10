@@ -72,4 +72,4 @@ async def repl(send_stop_on_eof=False):
 
 
 if __name__ == "__main__":
-    asyncio.run(repl(send_stop_on_eof="--stop" in sys.argv))
+    asyncio.run(repl(send_stop_on_eof="--send-stop-on-eof" in sys.argv))

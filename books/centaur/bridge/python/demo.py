@@ -69,4 +69,4 @@ def repl(send_stop_on_eof=False):
 
 
 if __name__ == "__main__":
-    repl(send_stop_on_eof="--stop" in sys.argv)
+    repl(send_stop_on_eof="--send-stop-on-eof" in sys.argv)
