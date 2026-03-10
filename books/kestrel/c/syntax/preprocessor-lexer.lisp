@@ -1080,7 +1080,7 @@
            (reterr-msg :where pos
                        :expected "a character"
                        :found (char-to-msg char)
-                       :extra (msg "The block comment starting at ~@1 ~
+                       :extra (msg "The block comment starting at (~@1) ~
                                     never ends."
                                    (position-to-msg first-pos))))
           ((utf8-= char (char-code #\*)) ; *
@@ -1114,7 +1114,7 @@
            (reterr-msg :where pos
                        :expected "a character"
                        :found (char-to-msg char)
-                       :extra (msg "The block comment starting at ~@1 ~
+                       :extra (msg "The block comment starting at (~@1) ~
                                     never ends."
                                    (position-to-msg first-pos))))
           ((utf8-= char (char-code #\/)) ; /
