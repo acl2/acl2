@@ -61,18 +61,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define position-to-msg ((pos positionp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a position as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in user-oriented error messages."))
-  (msg "(line ~x0, column ~x1)" (position->line pos) (position->column pos)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define span-to-msg ((span spanp))
   :returns (msg msgp
                 :hints (("Goal" :in-theory (enable msgp character-alistp))))

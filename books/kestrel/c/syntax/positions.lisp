@@ -102,7 +102,7 @@
     :induct t
     :enable (update-nth nfix zp len)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define position-init ((file stringp))
   :returns (pos positionp)
@@ -155,3 +155,15 @@
 
   (fty::deffixequiv position-inc-line
     :args ((pos positionp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define position-to-msg ((pos positionp))
+  :returns (msg msgp
+                :hints (("Goal" :in-theory (enable msgp character-alistp))))
+  :short "Represent a position as a message."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in user-oriented error messages."))
+  (msg "(line ~x0, column ~x1)" (position->line pos) (position->column pos)))
