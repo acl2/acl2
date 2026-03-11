@@ -80,6 +80,11 @@
      "The "
      (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html"
                   "Clang Language Extensions")
+     ".")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://clang.llvm.org/docs/AttributeReference.html"
+                  "Attributes in Clang")
      "."))
    (xdoc::p
     "In the documentation of this library,
@@ -89,8 +94,9 @@
      `[GCCM]',
      `[GCCL]',
      `[CPPM]',
-     `[CPPI]', and
-     `[CLE]';
+     `[CPPI]',
+     `[CLE]', and
+     `[CLA]';
      sections are referenced
      by appending their designations separated by colon,
      e.g. `[C17:6.2.6]' references Section 6.2.6 of [C17];
