@@ -175,10 +175,10 @@
      an indication of the ACL2 function that caused the error.
      This is useful as we are debugging the parser,
      but we may remove it once the parser is more tested or even verified."))
-  `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%~
+  `(reterr (msg "~@0: Expected ~@1; found ~@2 instead.~@3~%~
                  [from function ~x4]~%"
-                ,expected
                 (position-to-msg ,where)
+                ,expected
                 ,found
                 ,(if extra
                      `(msg " ~@0" ,extra)
