@@ -95,7 +95,7 @@
             (mv (erp-nil)
                 (list res)))))
        ((when erp) (mv erp nil state))
-       ((mv erp dag state)
+       ((mv erp dag-or-constant state)
         (simp-term term
                    :rule-alists rule-alists
                    :monitor monitor
@@ -105,6 +105,10 @@
                    :check-inputs nil))
        ((when erp)
         (mv erp nil state))
+       ((when (quotep dag-or-constant)) ;; TODO: Should we allow this?
+        (er hard? 'unroll-spec-fn "Spec unexpectedly rewrote to the constant ~x0." dag-or-constant)
+        (mv :unexpected-quotep nil state))
+       (dag dag-or-constant) ; it is a DAG, not a constant
        ;; build the function:
        (function-name (intern-in-package-of-symbol
                        ;;todo: why is the re-interning needed here?
@@ -127,7 +131,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               function-params))))
        (function-body (if (eq :auto function-type)
                           (if (dag-or-quotep-size-less-thanp dag 1000)
-                              (dag2term dag)
+                              (dag-to-term dag)
                             `(dag-val-with-axe-evaluator ,defconst-name
                                                          ,(make-acons-nest dag-vars)
                                                          ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
@@ -139,7 +143,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
        ;; produce an ACL2 proof. TODO: We could support adding the theorem even
        ;; if the DAG is large if we use dag-val-with-axe-evaluator to express
        ;; the theorem.
-       (new-term (and produce-theorem (dag2term dag))) ;tttodo: can explode!
+       (new-term (and produce-theorem (dag-to-term dag))) ;tttodo: can explode!
        (defconst-name-string (symbol-name defconst-name))
        (theorem-name (and produce-theorem (pack$ (subseq defconst-name-string 1 (- (length defconst-name-string) 1)) '-unroll-spec-theorem)))
        (theorem (and produce-theorem
@@ -147,7 +151,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                        (defthm ,theorem-name
                          (implies (and ,@assumptions)
                                   (equal ,term
-                                         ,(dag2term dag)))
+                                         ,(dag-to-term dag)))
                          ;; Use :rule-classes nil if it can't be a theorem
                          ;; TODO: Use a more thorough check of whether it's a valid rewrite rule (if no change, ACL2 will reject the rule)
                          ,@(if (equal new-term term) '(:rule-classes nil) nil)))))

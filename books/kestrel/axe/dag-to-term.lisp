@@ -104,9 +104,8 @@
                                                              ;;quotep
                                                              )))))
 
-;; ;; todo: eventually remove dag2term below (once all of its calls have been turned into calls of either this or dag-or-constant-to-term)
 (defund dag-to-term (dag)
-  (declare (xargs :guard (weak-dagp dag)))
+  (declare (xargs :guard (weak-dagp dag))) ;; todo: consider strengthening this to pseudo-dagp
   (dag-to-term-aux (top-nodenum dag) dag))
 
 (defthm pseudo-termp-of-dag-to-term
@@ -116,11 +115,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;; Convert DAG to an equivalent term. Of course, this can blow up exponentially
 ;; if there is a lot of sharing in DAG. Another option to convert a dag to a
 ;; term would be to quote the dag and pass it to the Axe evaluator.
-;; todo: convert all calls of this to dag-to-term or dag-or-constant-to-term
+;; todo: convert all calls of this to dag-to-term or dag-or-constant-to-term and then remove this
 (defund dag2term (dag)
   (declare (xargs :guard (or (weak-dagp dag)
                              (quotep dag))
