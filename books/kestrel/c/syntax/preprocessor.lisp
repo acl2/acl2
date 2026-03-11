@@ -3742,12 +3742,12 @@
                       after macro expansion; ~
                       found ~x0 instead."
                      stringlit)))
-       (bytes (pprint-s-char-list stringlit.schars nil))
+       (bytes (rev (pprint-s-char-list stringlit.schars nil)))
        (file (acl2::nats=>string bytes))
        (wsc-between wsc-between/after)
        ((mv wsc-after newline? &) (find-first-token/newline lexemes))
-       ((unless (or (not newline?) ; #line <number> <string> EOL/EOF
-                    (plexeme-case newline? :newline)))
+       ((when (or (not newline?) ; #line <number> <string> EOL/EOF
+                  (plexeme-case newline? :newline)))
         (retok wsc-before line wsc-between file wsc-after newline?)))
     (reterr (msg "Expected a new line or end of file after macro expansion; ~
                   found ~x0 instead."
