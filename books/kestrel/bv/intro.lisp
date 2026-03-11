@@ -13,7 +13,7 @@
 (include-book "bvand-def")
 (include-book "bvor")
 (include-book "bvxor")
-(include-book "bvplus")
+(include-book "bvplus-def")
 (include-book "bvminus")
 (include-book "bv-syntax")
 (include-book "bvcat-def")
@@ -32,6 +32,13 @@
 (local (include-book "slice-rules"))
 (local (include-book "slice"))
 (local (include-book "rules"))
+
+;; There are several ways to convert logops (like logxor) to bv ops (like bvxor):
+;; 1. If there is a surrounding operator that chops its argument (see convert-to-bv-rules.lisp).
+;; 2. If we can tell syntactically what the BV size of an operand is.
+;; 3. If we have an unsigned-byte-p hyp about an operand.
+;; 4. If we just guess that the operand(s) have size 32 or 64 or whatever and can prove that.
+;; Functions with multiple operands may require both to have the given size.
 
 ;; See also ../axe/bv-intro-rules.lisp
 
@@ -70,6 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Is this really an intro rule?
 (defthm getbit-of-logmask
   (implies (and (natp n)
                 (integerp width))
@@ -78,12 +86,7 @@
                       1
                     0))))
 
-;; There are several ways to convert logops (like logxor) to bv ops (like bvxor):
-;; 1. If there is a surrounding operator that chops its argument (see convert-to-bv-rules.lisp).
-;; 2. If we can tell syntactically what the BV size of an operand is.
-;; 3. If we have an unsigned-byte-p hyp about an operand.
-;; 4. If we just guess that the operand(s) have size 32 or 64 or whatever and can prove that.
-;; Functions with multiple operands may require both to have the given size.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd bvchop-of-logand-becomes-bvand
   (equal (bvchop size (logand x y))
@@ -271,13 +274,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvif-of---arg3
+(defthmd bvif-of---arg3
   (implies (integerp x)
            (equal (bvif size test (- x) z)
                   (bvif size test (bvuminus size x) z)))
   :hints (("Goal" :in-theory (enable bvif bvuminus bvminus))))
 
-(defthm bvif-of---arg4
+(defthmd bvif-of---arg4
   (implies (integerp x)
            (equal (bvif size test z (- x))
                   (bvif size test z (bvuminus size x))))
@@ -286,7 +289,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; replace with a general rule?
-(defthm bvplus-of-logext-arg2-convert-to-bv
+(defthmd bvplus-of-logext-arg2-convert-to-bv
   (implies (and (< size2 size) ; could allow =
                 (integerp size)
                 (posp size2))
@@ -295,7 +298,7 @@
   :hints (("Goal" :cases ((equal size size2)))))
 
 ;; replace with a general rule?
-(defthm bvplus-of-logext-arg3-convert-to-bv
+(defthmd bvplus-of-logext-arg3-convert-to-bv
   (implies (and (< size2 size) ; could allow =
                 (integerp size)
                 (posp size2))
@@ -306,7 +309,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; replace with a general rule?
-(defthm bvminus-of-logext-arg2-convert-to-bv
+(defthmd bvminus-of-logext-arg2-convert-to-bv
   (implies (and (< size2 size) ; could allow =
                 (integerp size)
                 (posp size2))
@@ -315,7 +318,7 @@
   :hints (("Goal" :cases ((equal size size2)))))
 
 ;; replace with a general rule?
-(defthm bvminus-of-logext-arg3-convert-to-bv
+(defthmd bvminus-of-logext-arg3-convert-to-bv
   (implies (and (< size2 size) ; could allow =
                 (integerp size)
                 (posp size2))
