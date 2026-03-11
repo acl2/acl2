@@ -27,6 +27,7 @@
                                                         state
                                                         ;; extra-function-renaming
                                                         untranslate
+                                                        ;; rule-names
                                                         )
   (declare (xargs :guard (and (symbolp fn)
                               ;; (doublet-listp extra-function-renaming)
@@ -41,7 +42,7 @@
        (conjuncts (get-conjuncts-of-term2 translated-body))
        ;; todo: handle conjunctions not at the top level:
        ((mv erp new-conjuncts &) (simplify-conjunction-basic conjuncts
-                                                             nil ; rule-alist
+                                                             nil ;; (make-rule-alist! rule-names (w state))
                                                              (known-booleans wrld)
                                                              nil ; monitored-symbols
                                                              nil ; no-warn-ground-functions
@@ -52,7 +53,7 @@
        ((when erp) (er hard? 'simplify-conjunctions-function-body-transformer "Error simplifying conjunctions: ~x0." erp))
        (new-body (if nil ;; (perm new-conjuncts conjuncts) ;todo: get this to work, but consider duplicate removal when getting conjuncts
                      (prog2$ (cw "No change!~%")
-                             untranslated-body ; no change! todo: supporting making this an error
+                             untranslated-body ; no change! todo: support making this an error
                              )
                    (let ((new-body (make-conjunction-from-list new-conjuncts)))
                      (if (eq nil untranslate)
@@ -73,9 +74,13 @@
 (def-equality-transformation
   simplify-conjunctions ; name of the transformation to create
   simplify-conjunctions-function-body-transformer ; core function to transform a function body
+  ;; transform-specific-required-args:
   (;extra-function-renaming ; required arg, can't be called "function-renaming" since there already is one (TODO: maybe rename the other one to "recursive-call-renaming")
    )
-  ((untranslate 't))                       ; keyword args and defaults
+  ;; transform-specific-keyword-args-and-defaults:
+  ((untranslate 't)
+   ;;   (rule-names 'nil)
+   )
   :enables (simplify-conjunctions-enables fn (w state)) ; form to compute the enables for the 'becomes theorem' ; TODO: Allow the function-body-transformer to return pre-events and hints?
   :short "Simplify conjunctions in a function using the Axe Rewriter."
   ;; todo: put this sort of thing in automatically?:
@@ -85,4 +90,5 @@ arguments.</p>"
   ;; TODO: Think about the best way to specify which functions to rename, what they get renamed to (if mulitple options exist) and how to find the corresponding rules.
   (;; (extra-function-renaming "The renaming to apply to called functions (each entry should have a corresponding entry in the renaming-rule-table).")
    (untranslate "How to untranslate the function body after changing it.")
+   ;; (rule-names "Names of rules to use when simplifying.  These should be usable both as ACL2 rules and as Axe rules.")
    ))
