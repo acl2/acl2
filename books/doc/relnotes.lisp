@@ -217,6 +217,9 @@
    (xdoc::p
     "Python bindings are available in @('[books]/centaur/bridge/python').")
 
+   (xdoc::p
+	"Support for SBCL added in @('[books]/centaur/bridge/bridge-sbcl-raw.lsp').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
