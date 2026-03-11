@@ -810,8 +810,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is always called when we are at the start of a line;
-     we double-check that, throwing a hard error if the check fails.")
+    "This is always called after preprocessing a @('#line') directive.
+     So the current position is normally
+     the start of the line just after the directive,
+     except when the directive ends with the file (without a new line);
+     the latter is possible only if GCC or Clang extensions are enabled.
+     If we are indeed at the end of the file,
+     there is no need to change anything
+     in the positions in the preprocessor state,
+     because the change must apply to subsequent lines [C17:6.10.4/3],
+     but there are no subsequent lines.
+     If we are not at the end of the file,
+     we double-check that we are at column 0,
+     throwing a hard error if not
+     (this should be a static invariant eventually).")
    (xdoc::p
     "This is used just after preprocessing a @('#line') directive,
      so that the current position is the start of the line just after that
@@ -839,13 +851,15 @@
      so we coerce each result with @(tsee pos-fix) for now."))
   (b* ((ppstate (ppstate-fix ppstate))
        (index (ppstate->char-index ppstate))
-       ((unless (< index (ppstate->positions-length ppstate)))
+       (positions-length (ppstate->positions-length ppstate))
+       ((unless (< index positions-length))
         (raise "Internal error: ~
                 the index ~x0 is not below ~
                 the length ~x1 of the positions array."
                index
-               (ppstate->positions-length ppstate))
+               positions-length)
         ppstate)
+       ((when (= index (1- positions-length))) ppstate) ; no change
        (pos (ppstate->position index ppstate))
        ((unless (= (position->column pos) 0))
         (raise "Internal error: current column is ~x0."
@@ -890,13 +904,15 @@
      [C17:6.10.4]."))
   (b* ((ppstate (ppstate-fix ppstate))
        (index (ppstate->char-index ppstate))
-       ((unless (< index (ppstate->positions-length ppstate)))
+       (positions-length (ppstate->positions-length ppstate))
+       ((unless (< index positions-length))
         (raise "Internal error: ~
                 the index ~x0 is not below ~
                 the length ~x1 of the positions array."
                index
-               (ppstate->positions-length ppstate))
+               positions-length)
         ppstate)
+       ((when (= index (1- positions-length))) ppstate) ; no change
        (pos (ppstate->position index ppstate))
        ((unless (= (position->column pos) 0))
         (raise "Internal error: current column is ~x0."
