@@ -46,6 +46,8 @@
 (include-book "simplify-doc")
 (include-book "simplify-term-doc")
 
+(include-book "simplify-conjunctions")
+
 (include-book "solve")
 (include-book "solve-doc")
 (include-book "solve-method-acl2-rewriter")
