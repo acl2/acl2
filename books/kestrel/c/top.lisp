@@ -51,53 +51,43 @@
     (xdoc::li
      (xdoc::ahref "https://www.iso.org/standard/82075.html"
                   "ISO/IEC 9899:2024")
-     ", i.e. the C23 standard.")
+     ", i.e. the C23 standard, which we reference as `[C17]'.")
     (xdoc::li
      (xdoc::ahref "https://www.iso.org/standard/74528.html"
                   "ISO/IEC 9899:2018")
-     ", i.e. the C17 standard.")
+     ", i.e. the C17 standard, which we reference as `[C23]'.")
     (xdoc::li
      "The "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/"
-                  "GCC Manual for the current development")
-     ".")
+                  "GCC Manual")
+     ", which we reference as `[GCCM]'.")
     (xdoc::li
      "The "
      (xdoc::ahref "https://www.gnu.org/software/c-intro-and-ref/manual"
                   "GNU C Language Intro and Reference Manual")
-     ".")
+     ", which we reference as `[GCCL]'.")
     (xdoc::li
      "The "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/"
                   "GNU C Preprocessor Manual")
-     ".")
+     ", which we reference as `[CPPM]'.")
     (xdoc::li
      "The "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cppinternals/"
                   "GNU C Preprocessor Internals")
-     ".")
+     "document, which we reference as `[CPPI]'.")
     (xdoc::li
      "The "
      (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html"
                   "Clang Language Extensions")
-     ".")
+     "document, which we reference as `[CLE]'.")
     (xdoc::li
      "The "
      (xdoc::ahref "https://clang.llvm.org/docs/AttributeReference.html"
                   "Attributes in Clang")
-     "."))
+     "document, which we reference as `[CLA]'."))
    (xdoc::p
-    "In the documentation of this library,
-     these source are referenced as
-     `[C23]',
-     `[C17]',
-     `[GCCM]',
-     `[GCCL]',
-     `[CPPM]',
-     `[CPPI]',
-     `[CLE]', and
-     `[CLA]';
-     sections are referenced
+    "Sections of the above sources are referenced
      by appending their designations separated by colon,
      e.g. `[C17:6.2.6]' references Section 6.2.6 of [C17];
      paragraphs are referenced
@@ -105,27 +95,27 @@
      e.g. `[C17:6.2.5/2]' references Paragraph 2 of Section 6.2.5 of [C17].
      These square-bracketed references may be used
      as nouns or parenthetically.
-     In the case of the GNU sources, we also give URL links,
+     For the GNU and Clang sources, we also give URL links,
      which, given the characters that form them, may be useful to locate
      documentation that has moved or otherwise changed,
      given that those are live documents;
      an example is "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html"
                  "[GCCM:6]")
-    ", which currently refers to Section 6 of [GCCM],
+    ", which, at the time of this writing,
+     refers to Section 6 of [GCCM],
      titled `Extensions to the C Language Family',
      and whose URL includes @('C-Extensions.html').")
    (xdoc::p
-    "The GCC extensions to the ISO/IEC standard
+    "The GCC and Clang extensions to the ISO/IEC standard
      are sufficiently prevalent and important that
      we need to take them into account
      for our library of C to be of practical use.
      But in the documentation of this ACL2 library,
      we always clearly distinguish between
-     standard C and GCC extensions.")
+     standard C and GCC or Clang extensions.")
    (xdoc::p
-    "Likewise, we provide support for Clang extensions.
-     Clang attempts to support a broad range of GCC extensions,
+    "Clang attempts to support a broad range of GCC extensions,
      while also providing a few of its own.
      Since Clang mostly follows GCC, we frequently refer to ``GCC extensions''
      in the documentation to refer to extensions supported by both systems,
