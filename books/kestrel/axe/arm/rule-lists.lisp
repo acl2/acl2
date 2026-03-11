@@ -415,7 +415,9 @@
      arm::set-reg-of-set-reg-diff-2
 
      arm::decodeimmshift
-     arm::unsigned-byte-p-of-mv-nth-1-of-AddWithCarry ; could drop if we have the replacement rule
+     arm::unsigned-byte-p-of-mv-nth-0-of-AddWithCarry ; could drop these if the replacement rule always fires
+     arm::unsigned-byte-p-of-mv-nth-1-of-AddWithCarry
+     arm::unsigned-byte-p-of-mv-nth-2-of-AddWithCarry
      arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
      arm::mv-nth-1-of-AddWithCarry ;;     arm::addwithcarry
      arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
