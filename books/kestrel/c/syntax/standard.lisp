@@ -126,6 +126,12 @@
                          (type-qual-restrict->uscores type-qual) :none))
    (type-qual :volatile (keyword-uscores-case
                          (type-qual-volatile->uscores type-qual) :none))
+   (type-qual :seg-fs nil)
+   (type-qual :seg-gs nil)
+   (type-qual :nonnull nil)
+   (type-qual :null-unspecified nil)
+   (type-qual :nullable nil)
+   (type-qual :nullable-result nil)
    (fun-spec :inline (keyword-uscores-case
                       (fun-spec-inline->uscores fun-spec) :none))
    (expr :unary (and (expr-standardp (expr-unary->arg expr))

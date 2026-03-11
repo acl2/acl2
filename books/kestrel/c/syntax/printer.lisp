@@ -1746,7 +1746,11 @@
               :both (print-astring "__volatile__" pstate))
    :atomic (print-astring "_Atomic" pstate)
    :seg-fs (print-astring "__seg_fs" pstate)
-   :seg-gs (print-astring "__seg_gs" pstate))
+   :seg-gs (print-astring "__seg_gs" pstate)
+   :nonnull (print-astring "_Nonnull" pstate)
+   :null-unspecified (print-astring "_Null_unspecified" pstate)
+   :nullable (print-astring "_Nullable" pstate)
+   :nullable-result (print-astring "_Nullable_result" pstate))
   :hooks (:fix)
 
   ///

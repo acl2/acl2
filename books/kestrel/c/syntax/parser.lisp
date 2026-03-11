@@ -519,18 +519,10 @@
    (xdoc::p
     "All type qualifiers consist of single keywords.")
    (xdoc::p
-    "We also compare the token against the GCC variants
-     @('__restrict') and @('__restrict__') of @('restrict').
-     Note that these variants are keywords only if
-     GCC/Clang extensions are supported:
-     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
-     So the comparison here with those variant keywords
-     will always fail if GCC/Clang extensions are not supported,
-     because in that case both @('__restrict') and @('__restrict__')
-     would be identifier tokens, not keyword tokens.")
-   (xdoc::p
-    "We do the same for the @('__volatile') and @('__volatile__')
-     variants of @('volatile')."))
+    "We also compare the token against the GCC and Clang keywords.
+     Note that these are keywords only if GCC/Clang extensions are supported:
+     @(tsee lex-identifier/keyword) checks grammatical identifiers
+     against keywords depending on the C version."))
   (or (token-keywordp token? "const")
       (token-keywordp token? "restrict")
       (token-keywordp token? "__restrict")
@@ -540,7 +532,11 @@
       (token-keywordp token? "__volatile__")
       (token-keywordp token? "_Atomic")
       (token-keywordp token? "__seg_fs")
-      (token-keywordp token? "__seg_gs"))
+      (token-keywordp token? "__seg_gs")
+      (token-keywordp token? "_Nonnull")
+      (token-keywordp token? "_Null_unspecified")
+      (token-keywordp token? "_Nullable")
+      (token-keywordp token? "_Nullable_result"))
   ///
 
   (defrule non-nil-when-token-type-qualifier-p
@@ -571,6 +567,10 @@
         ((token-keywordp token "_Atomic") (type-qual-atomic))
         ((token-keywordp token "__seg_fs") (type-qual-seg-fs))
         ((token-keywordp token "__seg_gs") (type-qual-seg-gs))
+        ((token-keywordp token "_Nonnull") (type-qual-nonnull))
+        ((token-keywordp token "_Null_unspecified") (type-qual-null-unspecified))
+        ((token-keywordp token "_Nullable") (type-qual-nullable))
+        ((token-keywordp token "_Nullable_result") (type-qual-nullable-result))
         (t (prog2$ (impossible) (irr-type-qual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 
