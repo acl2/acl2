@@ -450,7 +450,12 @@
      ;acl2::list-to-bv-array-aux-constant-opener ; slow?!
      acl2::bv-list-read-chunk-little-constant-opener
      acl2::packbv-little-constant-opener
-     )
+
+     ;;todo: think about bv-list-read-chunk vs bv-array-read-chunk
+     acl2::unsigned-byte-p-of-bv-array-read-chunk-little-gen
+     acl2::unsigned-byte-p-of-bv-list-read-chunk-little
+     acl2::integerp-of-bv-list-read-chunk-little
+     acl2::bvchop-32-of-bv-list-read-chunk-little)
    '(arm::len-of-read-bytes arm::nth-of-read-bytes) ; for output-indicator handling
    '(;; error32p-of-set-reg
      ;; error32p-of-write
@@ -511,7 +516,7 @@
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1
-     acl2::bv-array-read-chunk-little-unroll
+     acl2::bv-array-read-chunk-little-unroll ; todo: think about this
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
 
      acl2::bv-list-read-chunk-little-of-cons-irrel

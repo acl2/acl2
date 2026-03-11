@@ -14,6 +14,21 @@
 (include-book "instructions")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Library rules:
+
+(defthmd sbvlt-when-not-equal-weaken
+  (implies (and (syntaxp (acl2::want-to-weaken (sbvlt 32 x y)))
+                (not (equal x y))
+                (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (sbvlt 32 x y)
+                  (not (sbvlt 32 y x))))
+  :hints (("Goal" :in-theory (enable acl2::sbvlt-rewrite))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm conditionpassed-of-set-reg
   (equal (conditionpassed cond (set-reg n val arm))
          (conditionpassed cond arm))
@@ -262,25 +277,39 @@
 (defthm equal-of-cmp-sign-and-cmp-overflow-becomes-sbvle
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
-           (equal (equal (arm::cmp-sign x y) (arm::cmp-overflow x y))
+           (equal (equal (cmp-sign x y) (cmp-overflow x y))
                   (sbvle 32 y x)))
-  :otf-flg t
   :hints (("Goal"
            :use (:instance acl2::split-bv (x y) (n 32) (m 31))
-           :in-theory (e/d (arm::cmp-sign
-                            arm::cmp-overflow
-                            arm::addwithcarry-overflow
-                            acl2::sbvlt-rewrite bvminus bvplus
+           :in-theory (e/d (cmp-sign
+                            cmp-overflow
+                            addwithcarry-overflow
+                            acl2::sbvlt-rewrite
+                            bvminus
+                            bvplus
                             acl2::getbit-of-+
                             bvlt
                             acl2::bvchop-of-sum-cases
                             bvnot
-                            bvcat
+                            ;bvcat
                             ;logapp
                             lognot
                             bvuminus)
-                           (;acl2::slice-of-lognot ;todo: disable globally
-                            )))))
+                           ()))))
+
+(defthm le-condition-cmp-idiom
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (le-condition (cmp-sign x y) (cmp-overflow x y) (cmp-zero x y))
+                  (sbvle 32 x y)))
+  :hints (("Goal" :in-theory (enable le-condition cmp-zero-elim sbvlt-when-not-equal-weaken))))
+
+(defthm gt-condition-cmp-idiom
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (gt-condition (cmp-sign x y) (cmp-overflow x y) (cmp-zero x y))
+                  (sbvlt 32 y x)))
+  :hints (("Goal" :in-theory (enable gt-condition cmp-zero-elim sbvlt-when-not-equal-weaken))))
 
 ; restrict to constant k?
 (defthm getbit-32-of-bvplus-helper
@@ -308,6 +337,7 @@
 (local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/axe/rules3" :dir :system)) ; todo: reduce, for acl2::bvplus-commutative-2-sizes-differ
 
+;drop?
 ;todo: subgoal hints
 ;; often y and carry_in are constants.
 ;; todo: how do we know whether we want sbvlt or bvlt expressions in the RHS?
@@ -318,7 +348,7 @@
                 (unsigned-byte-p 32 y)
                 (unsigned-byte-p 32 (bvplus 33 carry_in y))
                 (bitp carry_in))
-           (equal (mv-nth '1 (arm::addwithcarry '32 x y carry_in))
+           (equal (mv-nth '1 (addwithcarry '32 x y carry_in))
                   (if (if (sbvle 32 0 x) ; todo: generalize?
                           (sbvle 32 (- (expt 2 32) (bvplus 32 y carry_in)) x)
                         t)
@@ -356,23 +386,3 @@
   :hints (("Goal" :in-theory (enable addwithcarry uint))))
 
 ; (defstub foo (x y) t)
-
-(defthm le-condition-cmp-idiom
-  (implies (and (unsigned-byte-p 32 x)
-                (unsigned-byte-p 32 y))
-           (equal (le-condition (cmp-sign x y) (cmp-overflow x y) (cmp-zero x y))
-                  (sbvle 32 x y)))
-  :hints (("Goal" :in-theory (enable le-condition
-                                     cmp-zero-elim
-                                     acl2::sbvlt-rewrite ; yuck
-                                     ))))
-
-(defthm gt-condition-cmp-idiom
-  (implies (and (unsigned-byte-p 32 x)
-                (unsigned-byte-p 32 y))
-           (equal (gt-condition (cmp-sign x y) (cmp-overflow x y) (cmp-zero x y))
-                  (sbvlt 32 y x)))
-  :hints (("Goal" :in-theory (enable gt-condition
-                                     cmp-zero-elim
-                                     acl2::sbvlt-rewrite ; yuck
-                                     ))))

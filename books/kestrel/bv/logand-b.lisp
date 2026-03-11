@@ -11,8 +11,6 @@
 
 (in-package "ACL2")
 
-;; todo: rename to logand-b.lisp
-
 ;; This book contains theorems that mix LOGAND with BVCHOP, LOGTAIL, etc.
 
 (include-book "logand")
@@ -50,6 +48,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; See also bvchop-of-logand-becomes-bvand
 (defthm bvchop-of-logand
   (equal (bvchop size (logand i j))
          (logand (bvchop size i)
@@ -74,8 +73,7 @@
   (equal (getbit n (logand i j))
          (logand (getbit n i)
                  (getbit n j)))
-  :hints (("Goal" :in-theory (e/d (getbit)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit))))
 
 (defthm logbitp-of-logand
   (implies (and (natp i)
@@ -88,5 +86,4 @@
 (defthm logand-of-1-arg1
   (equal (logand 1 x)
          (getbit 0 x))
-  :hints (("Goal" :in-theory (e/d (logand getbit bvchop)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable logand getbit bvchop))))
