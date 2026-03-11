@@ -12,3 +12,17 @@ unsigned char* strcpy_safe(unsigned char* dst, unsigned char* src) {
   dst[i] = (unsigned char) 0;
   return dst;
 }
+
+// This was the original form of the code, before our slight modifications.
+// The ${BUFFER_SIZE} is a placeholder, not actual C syntax.
+/*
+char* strcpy_safe(char* dst, const char* src) {
+  volatile int buffersize = ${BUFFER_SIZE};
+  int i;
+  for (i = 0; i < buffersize - 1 && src[i]; i++) {
+    dst[i] = src[i];
+  }
+  dst[i] = 0;
+  return dst;
+}
+*/
