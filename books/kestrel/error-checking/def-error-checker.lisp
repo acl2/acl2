@@ -85,7 +85,7 @@
       This return specifier is:
       @('(erp (implies erp (equal erp error-erp)))')
       if @('<mode>') is @(':logic'); and
-      @('(erp \"@('nil') or @('error-erp').\")')
+      @('(erp \"\@(\'nil\') or \@(\'error-erp\').\")')
       if @('<mode>') is @(':program').")
     (xdoc::li
      "@('<val>') is a "
