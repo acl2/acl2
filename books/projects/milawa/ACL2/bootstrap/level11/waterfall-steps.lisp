@@ -87,6 +87,12 @@
 ;; (%autoprove cons-listp-of-list-list-fix
 ;;             (%cdr-induction x))
 
+; Matt K. mod: Make the next four local, to avoid error noticed in preparation
+; for Version 8.7 release when attempting to make
+; bootstrap/level11/waterfall-compiler.mpcert and several others in that
+; directory.
+(local (acl2::progn
+
 (%autoprove true-list-listp-of-list-list-fix
             (%cdr-induction x))
 
@@ -98,7 +104,7 @@
 
 (%autoprove logic.term-list-list-atblp-of-list-list-fix
             (%cdr-induction x))
-
+))
 
 (%autoadmit rw.flag-waterstepp)
 

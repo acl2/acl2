@@ -295,6 +295,8 @@
     bvif-of-bvcat-low-arg4
     bvcat-of-bvcat-tighten-arg2
     bvcat-of-bvcat-tighten-arg4
+    bvlt-of-bvcat-low-arg2
+    bvlt-of-bvcat-low-arg3
     ;; bvsx rules:
     bitand-of-bvsx-low-arg1
     bitand-of-bvsx-low-arg2
@@ -315,6 +317,8 @@
     bvminus-of-bvsx-low-arg2
     bvminus-of-bvsx-low-arg3
     bvuminus-of-bvsx-low
+    bvlt-of-bvsx-low-arg2
+    bvlt-of-bvsx-low-arg3
     ;; todo: what about rules like bvand-of-bvcat-tighten-arg2 here?
 
     ;;these also seem safe (perhaps trimming constants is always safe?):
@@ -561,6 +565,8 @@
     bool->bit-becomes-bool-to-bit ; bool->bit is from std
     bit->bool-becomes-bit-to-bool
     logbitp-to-getbit-equal-1 ;rename
+
+    bitp-becomes-unsigned-byte-p ; since our rules use unsigned-byte-p
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
@@ -678,7 +684,10 @@
     ;; bvif-trim-arg3-axe-all ; use instead?
     ;; bvif-trim-arg4-axe-all ; use instead?
     leftrotate32-trim-arg1-axe-all
-    bvsx-trim-axe-all))
+    bvsx-trim-axe-all
+
+    bvlt-trim-arg1-axe-all
+    bvlt-trim-arg2-axe-all))
 
 ;; WARNING: Keep in sync with *trimmable-operators*
 (defun trim-helper-rules ()
@@ -1315,7 +1324,11 @@
      equal-of-1-and-bool-to-bit
      ;; equal-of-bool-to-bit-and-0 ; not needed if we turn equals around
      ;; equal-of-bool-to-bit-and-1 ; not needed if we turn equals around
-     )))
+
+     bvlt-of-bvcat-arg2-constant-arg2-arg3
+     bvlt-of-bvcat-arg2-constant-arg4-arg3
+     bvlt-of-bvcat-arg3-constant-arg2-arg2
+     bvlt-of-bvcat-arg3-constant-arg2-arg4)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -2320,8 +2333,8 @@
     mod-becomes-bvchop-when-power-of-2p
     bvlt-of-bvmult-6-5-20 ;which one of these helps?
     bvlt-of-bvmult-6-5-20-alt
-    bvlt-trim-arg1-axe-all
-    bvlt-trim-arg2-axe-all
+    bvlt-trim-arg1-axe-all ; drop?
+    bvlt-trim-arg2-axe-all ; drop?
     equal-of-bvplus-constant-and-constant
     equal-of-bvplus-constant-and-constant-alt
     bvlt-of-bvplus-of-bvcat-of-slice-sha1

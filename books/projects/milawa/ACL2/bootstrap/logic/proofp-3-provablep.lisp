@@ -39,6 +39,9 @@
                  (logic.proofp proof axioms thms atbl)
                  (equal (logic.conclusion proof) x)))
 
+; Matt K. mod, 3/2/2026: The milawa::defun just below now fails to generate a
+; redundant common-lisp::defun.  A fix follows.
+#|
 (defun logic.provablep (x axioms thms atbl)
   ;; BOZO because we used defun-sk to introduce it, which is based on
   ;; ACL2::defun instead of MILAWA::defun, there's no syntax-defuns entry for
@@ -52,6 +55,23 @@
        (and (logic.appealp proof)
             (logic.proofp proof axioms thms atbl)
             (equal (logic.conclusion proof) x))))
+|#
+
+(DEFUN LOGIC.PROVABLEP (X AXIOMS THMS ATBL)
+  (DECLARE (XARGS :NON-EXECUTABLE T :MODE :LOGIC))
+  (DECLARE (XARGS :VERIFY-GUARDS NIL))
+  (DECLARE (XARGS :VERIFY-GUARDS NIL
+                  :GUARD (AND (LOGIC.FORMULAP X)
+                              (LOGIC.FORMULA-LISTP AXIOMS)
+                              (LOGIC.FORMULA-LISTP THMS)
+                              (LOGIC.ARITY-TABLEP ATBL))))
+  (ACL2::PROG2$
+   (ACL2::THROW-NONEXEC-ERROR 'LOGIC.PROVABLEP
+                              (LIST X AXIOMS THMS ATBL))
+   (LET ((PROOF (LOGIC.PROVABLE-WITNESS X AXIOMS THMS ATBL)))
+        (AND (LOGIC.APPEALP PROOF)
+             (LOGIC.PROOFP PROOF AXIOMS THMS ATBL)
+             (EQUAL (LOGIC.CONCLUSION PROOF) X)))))
 
 (%autoadmit logic.provablep)
 

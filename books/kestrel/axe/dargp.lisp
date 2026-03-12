@@ -156,6 +156,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks that a darg is a quoted constant, not a nodenum
+;deprecate (see darg-is-quotep)
 (defund-inline darg-quotep (darg)
   (declare (xargs :guard (dargp darg)))
   (consp darg))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Checks whether a DARG is a quoted constant (rather than a nodenum).
+;; TODO: Eventually disable
+(defun-inline darg-is-quotep (darg)
+  (declare (xargs :guard (dargp darg)))
+  (consp darg))
+
+(defthm not-darg-is-quotep-forward-to-natp
+  (implies (and (not (darg-is-quotep darg))
+                (dargp darg))
+           (natp darg))
+  :rule-classes :forward-chaining)
+
+;; Unquotes a darg that is a quoted constant
+(defund-inline unquote-darg (darg)
+  (declare (xargs :guard (and (dargp darg)
+                              (darg-is-quotep darg))))
+  (unquote darg))

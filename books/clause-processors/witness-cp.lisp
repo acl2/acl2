@@ -1000,7 +1000,7 @@ defwitness/definstantiate rules for it.</p>")
                                     (replace-subterms-list
                                      wcp-fix-generalize-alist
                                      simple-term-vars-lst))
-             :use ((:instance witness-ev-falsify
+             :use ((:instance witness-ev-theoremp-implies
                     (x (disjoin
                         (wcp-generalize-clause
                          genalist clause)))
@@ -1012,7 +1012,15 @@ defwitness/definstantiate rules for it.</p>")
                         a))))))))
 
 
+(local (defthm witness-ev-falsify-to-theoremp
+         (equal (witness-ev x (witness-ev-falsify x))
+                (witness-ev-theoremp x))
+         :hints(("Goal" :in-theory (enable witness-ev-theoremp)))))
 
+(local (defthm witness-ev-theoremp-forward-to-falsify
+         (implies (witness-ev-theoremp x)
+                  (witness-ev x (witness-ev-falsify x)))
+         :rule-classes :forward-chaining))
 
 ;;========================================================================
 ;; WITNESS-CP

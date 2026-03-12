@@ -77,8 +77,9 @@
                               (context-arrayp 'context-array context-array old-dag-len))
                   :guard-hints (("Goal" :in-theory (enable
                                                     bounded-renaming-arrayp ;todo
-                                                    rename-darg ;todo
-                                                    dargp-rules)))
+                                                    dargp-rules ; todo
+                                                    darg-is-quotep ; todo
+                                                    )))
                   :measure (nfix (+ 1 (- old-dag-len old-nodenum)))))
   (if (or (not (and (mbt (natp old-nodenum))
                     (mbt (natp old-dag-len))))
@@ -111,11 +112,11 @@
                (let ((resolved-test ; will be :true, :false, or :unknown
                       (let* ((test-darg (darg1 expr))
                              ;; Only used to check for quotep, since the context uses the old node numbers:
-                             (renamed-test (if (consp test-darg) ;test for quotep (rare)
+                             (renamed-test (if (darg-is-quotep test-darg) ;test for quotep (rare)
                                                test-darg ;don't attempt to rename
                                              (rename-darg test-darg 'renaming-array renaming-array))))
-                        (if (consp renamed-test) ; test for quotep
-                            (if (unquote renamed-test)
+                        (if (darg-is-quotep renamed-test) ; test for quotep
+                            (if (unquote-darg renamed-test)
                                 :true
                               :false)
                           ;; test wasn't renamed to a constant, so try to use the context:
@@ -134,7 +135,7 @@
                  (if (eq :false resolved-test)
                      ;; test is known to be false (assuming the context), so replace with (renamed) else branch:
                      (let* ((else-darg (darg3 expr))
-                            (renamed-else-darg (if (consp else-darg) ; test for quotep
+                            (renamed-else-darg (if (darg-is-quotep else-darg) ; test for quotep
                                                    else-darg
                                                  (rename-darg else-darg 'renaming-array renaming-array)))
                             ;; The IF/MYIF node maps to its (renamed) else branch:
@@ -145,7 +146,7 @@
                    (if (eq :true resolved-test)
                        ;; test is known to be true (assuming the context), so replace with (renamed) then branch:
                        (let* ((then-darg (darg2 expr))
-                              (renamed-then-darg (if (consp then-darg) ; test for quotep
+                              (renamed-then-darg (if (darg-is-quotep then-darg) ; test for quotep
                                                      then-darg
                                                    (rename-darg then-darg 'renaming-array renaming-array)))
                               ;; The IF/MYIF node maps to its (renamed) then branch:

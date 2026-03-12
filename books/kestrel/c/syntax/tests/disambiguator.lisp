@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -296,8 +296,9 @@
  return (char *) (a) - b;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (transunit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -312,8 +313,9 @@
  return a + (b) + c;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (transunit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -343,8 +345,9 @@
   return (a) + (b) + c;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (transunit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -376,8 +379,9 @@
   return a + (b) + (c) + d;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (transunit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -415,8 +419,9 @@
   return ~ (a) + b;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (transunit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))

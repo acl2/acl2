@@ -1,7 +1,7 @@
 ; Mixed theorems about getbit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,8 @@
 
 (include-book "getbit")
 (include-book "bitnot")
+(include-book "bitxor")
+(include-book "bvplus-def")
 (include-book "kestrel/arithmetic-light/ceiling-of-lg-def" :dir :system)
 (local (include-book "slice-rules"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -110,3 +112,75 @@
                   1))
   :hints (("Goal" :use (:instance getbit-when->=-of-high-helper
                                   (size (ceiling-of-lg k))))))
+
+;; todo: arrange for this to be a better type rule, like bitp-of-logtail-of-bvchop-one-more-type?
+(defthm unsigned-byte-p-of-logtail-of-bvchop-one-more
+  (implies (natp size)
+           (unsigned-byte-p 1 (logtail size (bvchop (+ 1 size) x)))))
+
+(defthm bitp-of-logtail-of-bvchop-one-more-type
+  (implies (natp size)
+           (bitp (logtail size (bvchop (+ 1 size) x))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :use unsigned-byte-p-of-logtail-of-bvchop-one-more
+                  :in-theory (disable unsigned-byte-p-of-logtail-of-bvchop-one-more
+                                      unsigned-byte-p-of-logtail-strong))))
+
+;; this version doesn't use have bvplus in the rhs
+(defthmd getbit-of-+-new
+  (implies (and (integerp x)
+                (integerp y)
+                (natp size))
+           (equal (getbit size (+ x y))
+                  (if (>= (+ (bvchop size x) (bvchop size y))
+                          (expt 2 size))
+                      (bitnot (bitxor (getbit size x) (getbit size y)))
+                    (bitxor (getbit size x) (getbit size y)))))
+  :hints (("Goal" :in-theory (enable getbit slice bvchop-of-logtail bvchop-of-sum-cases
+                                     bitxor-split
+                                     logtail-of-plus
+                                     bvplus))))
+
+;rename?
+;; this version has bvplus in the rhs.  should it also use bvle?
+;i don't like the bvplus here
+;trying disabled.
+;just go to getbit of bvplus?
+(defthmd getbit-of-+
+  (implies (and (integerp x)
+                (integerp y)
+                (natp size))
+           (equal (getbit size (+ x y))
+                  (if (>= (bvplus (+ 1 size) (bvchop size x) (bvchop size y))
+                          (expt 2 size))
+                      (bitnot (bitxor (getbit size x) (getbit size y)))
+                    (bitxor (getbit size x) (getbit size y)))))
+  :hints (("Goal" :use getbit-of-+-new
+                  :in-theory (e/d (bvplus) (getbit-of-+-new)))))
+
+(defthm getbit-of-+-of-expt-same-arg1
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ (expt 2 n) x))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit slice bitnot))))
+
+(defthm getbit-of-+-of-expt-same-arg2
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ x (expt 2 n)))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit slice bitnot))))
+
+(defthm getbit-of-+-of-expt-same-when-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep n)))
+                (equal k (expt 2 n))
+                (natp n)
+                (integerp x)
+                ;(integerp k)
+                )
+           (equal (getbit n (+ k x))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :use (getbit-of-+-of-expt-same-arg1)
+           :in-theory (disable getbit-of-+-of-expt-same-arg1))))

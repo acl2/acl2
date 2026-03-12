@@ -1,7 +1,7 @@
 ; Using the dag-parent-array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -390,9 +390,7 @@
                 (all-dag-parent-entriesp n 'dag-parent-array dag-parent-array))
            (all-dag-parent-entriesp n 'dag-parent-array (add-to-parents-of-atoms items nodenum dag-parent-array)))
   :hints (("Subgoal *1/6" :cases ((< N (CAR ITEMS))))
-          ("Goal" :in-theory (enable add-to-parents-of-atoms integer-listp
-                                     <-of-car-when-bounded-darg-listp
-                                     not-<-of-car-when-bounded-darg-listp))))
+          ("Goal" :in-theory (enable add-to-parents-of-atoms integer-listp))))
 
 (defthm dag-parent-arrayp-of-add-to-parents-of-atoms
   (implies (and (bounded-darg-listp items nodenum)

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,9 @@
 
 (include-book "../symbolic-computation-states")
 (include-book "../shallow-embedding")
+
+(include-book "../../proof-support/const-ast-accessors")
+(include-book "../../proof-support/exec-stmt-openers")
 
 (include-book "types")
 (include-book "values")
@@ -29,7 +32,6 @@
 (include-book "exec-expr-when-asg")
 (include-book "exec-expr-when-pure")
 (include-book "exec-fun")
-(include-book "exec-stmt")
 (include-book "exec-initer")
 (include-book "exec-obj-declon")
 (include-book "exec-block-item")
@@ -164,7 +166,7 @@
           *atc-exec-expr-when-asg-rules*
           *atc-exec-expr-when-pure-rules*
           *atc-exec-fun-rules*
-          *atc-exec-stmt-rules*
+          *exec-stmt-openers-split*
           *atc-exec-initer-rules*
           *atc-init-value-to-value-rules*
           *atc-exec-obj-declon-rules*
@@ -206,7 +208,8 @@
           *atc-flexible-array-member-rules*
           *atc-pointed-integer-rules*
           *atc-apconvert-rules*
-          *atc-object-designator-rules*))
+          *atc-object-designator-rules*
+          *const-ast-accessors*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

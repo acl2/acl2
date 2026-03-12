@@ -40,8 +40,7 @@
 
 ;; ======================================================================
 
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils")
 
 (def-inst x86-invlpg
 

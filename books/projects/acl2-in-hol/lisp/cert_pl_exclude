@@ -1,0 +1,2 @@
+During a regression, certification in this directory is controlled by
+./Makefile, which is invoked by ../Makefile.

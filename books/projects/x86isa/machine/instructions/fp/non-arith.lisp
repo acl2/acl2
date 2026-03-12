@@ -40,10 +40,8 @@
 
 ;; ======================================================================
 
-(include-book "../../decoding-and-spec-utils"
-              :ttags (:undef-flg))
-(include-book "base"
-              :ttags (:undef-flg))
+(include-book "../../decoding-and-spec-utils")
+(include-book "base")
 
 ; =============================================================================
 ; INSTRUCTION: AVX Non-Arithmetic Instructions

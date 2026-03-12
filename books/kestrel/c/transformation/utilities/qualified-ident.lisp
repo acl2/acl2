@@ -150,25 +150,43 @@
       :otherwise (retok nil)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-(define ext-declon-list-resolve-qualified-ident
+(define trans-item-resolve-qualified-ident
   ((qual-ident qualified-identp)
-   (declons ext-declon-listp))
-  :guard (ext-declon-list-annop declons)
+   (item trans-itemp))
+  :guard (trans-item-annop item)
+  :returns (mv (er? maybe-msgp)
+               (uid? c$::uid-optionp))
+  (b* (((reterr) nil)
+       ((qualified-ident qual-ident) qual-ident))
+    (trans-item-case
+     item
+     :declon (ext-declon-resolve-qualified-ident qual-ident item.declon)
+     :include (retmsg$ "~x0 is not an object or function ~
+                        with internal linkage in translation unit ~x1."
+                       qual-ident.ident
+                       qual-ident.filepath?)
+     :line-comment (retok nil)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
+
+(define trans-item-list-resolve-qualified-ident
+  ((qual-ident qualified-identp)
+   (items trans-item-listp))
+  :guard (trans-item-list-annop items)
   :returns (mv (er? maybe-msgp)
                (uid c$::uidp))
   (b* (((reterr) (c$::irr-uid))
        ((qualified-ident qual-ident) qual-ident)
-       ((when (endp declons))
+       ((when (endp items))
         (retmsg$ "~x0 is not an object or function ~
                   with internal linkage in translation unit ~x1."
                  qual-ident.ident
                  qual-ident.filepath?))
        ((erp uid?)
-        (ext-declon-resolve-qualified-ident qual-ident (first declons)))
+        (trans-item-resolve-qualified-ident qual-ident (first items)))
        ((when uid?)
         (retok uid?)))
-    (ext-declon-list-resolve-qualified-ident qual-ident
-                                             (rest declons)))
+    (trans-item-list-resolve-qualified-ident qual-ident
+                                             (rest items)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;; TODO: this should look at the translation validation table instead of going
@@ -179,11 +197,9 @@
   :guard (transunit-annop transunit)
   :returns (mv (er? maybe-msgp)
                (uid c$::uidp))
-  (b* (((reterr) (c$::irr-uid))
-       ((when (transunit->includes transunit))
-        (retmsg$ "Unsupported #include directives.")))
-    (ext-declon-list-resolve-qualified-ident qual-ident
-                                             (transunit->declons transunit)))
+  (b* (((reterr) (c$::irr-uid)))
+    (trans-item-list-resolve-qualified-ident qual-ident
+                                             (transunit->items transunit)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 (define resolve-qualified-ident

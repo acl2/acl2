@@ -303,7 +303,7 @@
                         (new-function-name (pack$ function-name '-specialized))
                         (new-body-dag (fixup-recursive-calls new-body-dag function-name new-function-name slots-to-drop))
 
-                        (new-body-term (dag-to-term new-body-dag))
+                        (new-body-term (dag2term new-body-dag))
 ;do we need to lift ifs over the lambdas?
 ;(new-body-term (dag-to-term-with-lambdas new-body-dag)) ;fixme can this blow up?
 ;(new-body `(dag-val-with-axe-evaluator ',new-body-dag .. ..))                                                          ..

@@ -1618,6 +1618,76 @@
    :hints(("Goal" :in-theory (enable preferred-defs-to-overrides)))))
 
 
+(local (in-theory (disable (glcp-generic-geval-ev-theoremp))))
+(local (defthm glcp-generic-geval-ev-theoremp-of-nil
+         (not (glcp-generic-geval-ev-theoremp ''nil))
+         :hints(("Goal" :in-theory (enable glcp-generic-geval-ev-theoremp)))))
+
+(local
+ (defthm glcp-generic-correct-lemma
+   (implies (and (pseudo-term-listp clause)
+                 (alistp alist)
+                 (glcp-generic-geval-ev-meta-extract-global-facts)
+                 (glcp-generic-geval-ev-theoremp
+                  (conjoin-clauses
+                   (acl2::clauses-result
+                    (glcp-generic clause hints interp-st state)))))
+            (glcp-generic-geval-ev (disjoin clause) alist))
+   :hints
+   (("goal" :do-not-induct
+     t
+     :in-theory
+     (e/d* (glcp-generic-run-cases-correct-rw
+            glcp-generic-run-parametrized-correct-rw)
+           (glcp-analyze-interp-result-correct
+            ;; glcp-generic-geval-alist-gobj-alist-to-param-space
+            ;; glcp-generic-geval-gtests-nonnil-correct
+            glcp-generic-run-cases-correct
+            glcp-generic-run-parametrized-correct
+            pseudo-term-listp-cdr
+            pseudo-termp-car
+            ;; acl2::consp-under-iff-when-true-listp
+            glcp-generic-run-cases-bad-obligs
+            ;; acl2::consp-by-len
+            nfix
+            ;; shape-spec-listp-impl-shape-spec-to-gobj-list
+            (:rules-of-class :definition :here))
+           (gl-cp-hint
+            ;; Jared added acl2::fast-alist-free since that's my new name
+            ;; for flush-hons-get-hash-table-link
+            fast-alist-free
+            flush-hons-get-hash-table-link
+            acl2::clauses-result
+            glcp-generic glcp-error
+            assoc-equal))
+
+     :restrict ((glcp-generic-geval-ev-disjoin-append ((a alist)))
+                (glcp-generic-geval-ev-disjoin-cons ((a alist)))))
+    (and stable-under-simplificationp
+         (acl2::bind-as-in-definition
+          glcp-generic
+          (hyp-clause concl-clause params-cov-term hyp)
+          `(:use ((:instance glcp-generic-geval-ev-falsify
+                   (x (disjoin ,hyp-clause))
+                   (a alist))
+                  (:instance glcp-generic-geval-ev-falsify
+                   (x (disjoin ,concl-clause))
+                   (a alist))
+                  (:instance glcp-generic-geval-ev-falsify
+                   (x (disjoin (CONS
+                                (CONS
+                                 'NOT
+                                 (CONS
+                                  (CONS 'GL-CP-HINT
+                                        (CONS (CONS 'QUOTE (CONS 'CASESPLIT 'NIL))
+                                              'NIL))
+                                  'NIL))
+                                (CONS (CONS 'NOT (CONS ,HYP 'NIL))
+                                      (CONS ,PARAMS-COV-TERM 'NIL)))))
+                   (a alist)))))))
+;  :otf-flg t
+   :rule-classes nil))
+
 (defthm glcp-generic-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp alist)
@@ -1632,57 +1702,9 @@
                     (glcp-generic clause hints interp-st state))))))
            (glcp-generic-geval-ev (disjoin clause) alist))
   :hints
-  (("goal" :do-not-induct
-    t
-    :in-theory
-    (e/d* (glcp-generic-run-cases-correct-rw
-           glcp-generic-run-parametrized-correct-rw)
-          (glcp-analyze-interp-result-correct
-           ;; glcp-generic-geval-alist-gobj-alist-to-param-space
-           ;; glcp-generic-geval-gtests-nonnil-correct
-           glcp-generic-run-cases-correct
-           glcp-generic-run-parametrized-correct
-           pseudo-term-listp-cdr
-           pseudo-termp-car
-           ;; acl2::consp-under-iff-when-true-listp
-           glcp-generic-run-cases-bad-obligs
-           ;; acl2::consp-by-len
-           nfix
-           ;; shape-spec-listp-impl-shape-spec-to-gobj-list
-           (:rules-of-class :definition :here))
-          (gl-cp-hint
-           ;; Jared added acl2::fast-alist-free since that's my new name
-           ;; for flush-hons-get-hash-table-link
-           fast-alist-free
-           flush-hons-get-hash-table-link
-           acl2::clauses-result
-           glcp-generic glcp-error
-           assoc-equal))
-
-    :restrict ((glcp-generic-geval-ev-disjoin-append ((a alist)))
-               (glcp-generic-geval-ev-disjoin-cons ((a alist)))))
-   (and stable-under-simplificationp
-        (acl2::bind-as-in-definition
-         glcp-generic
-         (hyp-clause concl-clause params-cov-term hyp)
-         `(:use ((:instance glcp-generic-geval-ev-falsify
-                            (x (disjoin ,hyp-clause))
-                            (a alist))
-                 (:instance glcp-generic-geval-ev-falsify
-                            (x (disjoin ,concl-clause))
-                            (a alist))
-                 (:instance glcp-generic-geval-ev-falsify
-                  (x (disjoin (CONS
-                               (CONS
-                                'NOT
-                                (CONS
-                                 (CONS 'GL-CP-HINT
-                                       (CONS (CONS 'QUOTE (CONS 'CASESPLIT 'NIL))
-                                             'NIL))
-                                 'NIL))
-                               (CONS (CONS 'NOT (CONS ,HYP 'NIL))
-                                     (CONS ,PARAMS-COV-TERM 'NIL)))))
-                  (a alist)))))))
+  (("goal" :use glcp-generic-correct-lemma
+    :in-theory (e/d (glcp-generic-geval-ev-theoremp)
+                    (glcp-generic))))
 ;  :otf-flg t
   :rule-classes nil)
 

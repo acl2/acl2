@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,7 +13,8 @@
 
 (include-book "expression-generation")
 (include-book "object-tables")
-(include-book "pure-expression-execution")
+
+(include-book "../proof-support/pure-expression-execution")
 
 (include-book "std/system/close-lambdas" :dir :system)
 (include-book "std/system/make-mv-let-call" :dir :system)

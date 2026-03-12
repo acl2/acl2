@@ -530,13 +530,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-trans-item
+  :short "An irrelevant translation item."
+  :type trans-itemp
+  :body (trans-item-declon (irr-ext-declon)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-transunit
   :short "An irrelevant translation unit."
   :type transunitp
-  :body (make-transunit :comment nil
-                        :includes nil
-                        :declons nil
-                        :info nil))
+  :body (transunit nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

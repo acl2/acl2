@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,11 +11,10 @@
 
 (in-package "C")
 
-(include-book "../pure-expression-execution")
+(include-book "../../proof-support/test-star")
+(include-book "../../proof-support/pure-expression-execution")
 
 (include-book "../../representation/integer-operations")
-
-(include-book "../test-star")
 
 (include-book "syntaxp")
 
@@ -637,27 +636,7 @@
       exec-expr-pure-when-cond
       expr-valuep-of-expr-value
       expr-value->value-of-expr-value
-      (:e member-equal)
-      (:e expr-kind)
-      (:e expr-ident->get)
-      (:e expr-const->get)
-      (:e expr-arrsub->arr)
-      (:e expr-arrsub->sub)
-      (:e expr-member->target)
-      (:e expr-member->name)
-      (:e expr-memberp->target)
-      (:e expr-memberp->name)
-      (:e expr-unary->op)
-      (:e expr-unary->arg)
-      (:e expr-cast->type)
-      (:e expr-cast->arg)
-      (:e expr-binary->op)
-      (:e expr-binary->arg1)
-      (:e expr-binary->arg2)
-      (:e binop-kind)
-      (:e expr-cond->test)
-      (:e expr-cond->then)
-      (:e expr-cond->else))))
+      (:e member-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

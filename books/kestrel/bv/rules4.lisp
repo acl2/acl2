@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -237,6 +237,7 @@
   :hints (("Goal" :in-theory (e/d (bvlt)
                                   ()))))
 
+;; below we further restrict to x or y being constant
 (defthm bvlt-of-bvcat-arg2-constant
   (implies (and (syntaxp (and (quotep k)
                               (quotep lowsize)
@@ -249,6 +250,40 @@
                   (boolor (bvlt highsize x (slice (+ -1 size) lowsize k))
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize y k))))))
+
+;; special case for constant x, so we can "solve" for y
+(defthm bvlt-of-bvcat-arg2-constant-arg2-arg3
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep k)
+                              (quotep lowsize)
+                              (quotep highsize)
+                              (quotep size)))
+                (equal size (+ lowsize highsize))
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvlt size (bvcat highsize x lowsize y) k)
+                  ;;redid conc
+                  (if (bvlt highsize x (slice (+ -1 size) lowsize k)) ; gets computed
+                      t
+                    (if (equal (bvchop highsize x) (slice (+ -1 size) lowsize k)) ; gets computed
+                        (bvlt lowsize y k)
+                      nil)))))
+
+;; special case for constant y, so we can "solve" for x
+(defthm bvlt-of-bvcat-arg2-constant-arg4-arg3
+  (implies (and (syntaxp (and (quotep y)
+                              (quotep k)
+                              (quotep lowsize)
+                              (quotep highsize)
+                              (quotep size)))
+                (equal size (+ lowsize highsize))
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvlt size (bvcat highsize x lowsize y) k)
+                  (if (bvlt lowsize y k) ; gets computed
+                      ;; the slices get computed too:
+                      (bvle highsize x (slice (+ -1 size) lowsize k))
+                    (bvlt highsize x (slice (+ -1 size) lowsize k))))))
 
 (defthmd logapp-less-than-alt-helper-1
   (IMPLIES (AND (NATP LOWSIZE)
@@ -356,6 +391,7 @@
   :hints (("Goal" :in-theory (e/d (bvlt)
                                   ()))))
 
+;; below we further restrict to x or y being constant
 (defthm bvlt-of-bvcat-arg3-constant
   (implies (and (syntaxp (and (quotep k)
                               (quotep lowsize)
@@ -368,6 +404,39 @@
                   (boolor (bvlt highsize (slice (+ -1 size) lowsize k) x)
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize k y))))))
+
+;; special case for constant x, so we can "solve" for y
+(defthm bvlt-of-bvcat-arg3-constant-arg2-arg2
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep k)
+                              (quotep lowsize)
+                              (quotep highsize)
+                              (quotep size)))
+                (equal size (+ lowsize highsize))
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvlt size k (bvcat highsize x lowsize y))
+                  (if (bvlt highsize (slice (+ -1 size) lowsize k) x) ; gets computed
+                      t
+                    (if (equal (bvchop highsize x) (slice (+ -1 size) lowsize k)) ; gets computed
+                        (bvlt lowsize k y)
+                      nil)))))
+
+;; special case for constant y, so we can "solve" for x
+(defthm bvlt-of-bvcat-arg3-constant-arg2-arg4
+  (implies (and (syntaxp (and (quotep y)
+                              (quotep k)
+                              (quotep lowsize)
+                              (quotep highsize)
+                              (quotep size)))
+                (equal size (+ lowsize highsize))
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvlt size k (bvcat highsize x lowsize y))
+                  (if (bvlt lowsize k y) ; gets computed
+                      ;; the slices get computed:
+                      (bvle highsize (slice (+ -1 size) lowsize k) x)
+                    (bvlt highsize (slice (+ -1 size) lowsize k) x)))))
 
 ;dangerous since we have a rule to take out the bvchop
 (defthmd bvlt-of-bvcat-trim-gen

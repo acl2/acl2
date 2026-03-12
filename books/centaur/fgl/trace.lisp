@@ -440,20 +440,17 @@ state globals:</p>
  ;; Enable the tracing function
  (assign :fgl-trace-rewrites t)
 
- ;; Alist whose keys are the rules that will be traced
- (assign :fgl-trace-rule-alist '(((:rewrite fgl::fgl-lognot))))
-
  ;; Evisc tuple for trace output
  (assign :fgl-trace-evisc-tuple (evisc-tuple 8 12 nil nil))
 
  })
 
-<h3>Advanced Tracing</h3>
-
-<p>More specific tracing behavior can be specified for each rule via the
-trace-rule-alist. The @(see fgl-trace) macro offers a more user-friendly
-interface for this than direct manipulation of the trace-rule-alist; see that
-topic for options, as well as @(see fgl-advanced-tracing).</p>
+<p>Rules can then be traced using @(see fgl-trace):</p>
+@({
+ (fgl::fgl-trace (:formula fgl::fgl-lognot))
+ })
+<p>Extensive options for what is printed and when are provided. See also
+@(see fgl-advanced-tracing) for more tips and tricks.</p>
 
 ")
 

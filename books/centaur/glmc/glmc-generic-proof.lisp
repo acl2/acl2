@@ -353,6 +353,10 @@
 
 (local (in-theory (disable nth update-nth)))
 
+(local (defthm theoremp-of-t
+         (glcp-generic-geval-ev-theoremp ''t)
+         :hints(("Goal" :in-theory (enable glcp-generic-geval-ev-theoremp)))))
+
 (define interp-st-obligs-extension-p (x y)
   :non-executable t
   :verify-guards nil
@@ -389,7 +393,9 @@
                     (not (glcp-generic-geval-ev-theoremp
                           (conjoin-clauses
                            (acl2::interp-defs-alist-clauses new)))))
-           :hints(("Goal" :in-theory (enable acl2::interp-defs-alist-clauses acl2::suffixp conjoin-clauses)))))
+           :hints(("Goal" :in-theory (e/d (acl2::interp-defs-alist-clauses
+                                           acl2::suffixp conjoin-clauses)
+                                          ((glcp-generic-geval-ev-theoremp)))))))
 
   (defthm not-theoremp-when-obligs-extension-p
     (implies (and (bind-interp-st-extension new old)
@@ -461,7 +467,9 @@
                                (conjoin-clauses
                                 (acl2::interp-defs-alist-clauses
                                  (take (- (len new) (len old)) new)))))))
-           :hints(("Goal" :in-theory (enable acl2::interp-defs-alist-clauses acl2::suffixp)))))
+           :hints(("Goal" :in-theory (e/d (acl2::interp-defs-alist-clauses
+                                           acl2::suffixp conjoin-clauses)
+                                          ((glcp-generic-geval-ev-theoremp)))))))
 
   (defthm obligs-clauses-theoremp-when-extension
     (implies (and ;; (acl2::rewriting-negative-literal
@@ -7845,7 +7853,7 @@
                                                         (pairlis$ config.in-vars
                                                                   (glcp-generic-geval-ev-lst config.rest-ins alist)))
                                  (glcp-generic-geval-ev config.in-measure alist))))))
-    :hints (("goal" :use ((:instance glcp-generic-geval-ev-falsify-sufficient
+    :hints (("goal" :use ((:instance glcp-generic-geval-ev-theoremp-implies
                            (a alist) (x (conjoin-clauses (glmc-measure-clauses config)))))))))
 
 (defsection glmc-run-check-clause
@@ -8844,8 +8852,13 @@
              :in-theory (e/d (acl2::eval-alists-agree-by-bad-guy)
                              (glmc-generic-ev-bindinglist-when-eval-alists-agree-on-free-vars))))))
 
-
-  (defthm glmc-generic-correct
+  (local (in-theory (disable (glcp-generic-geval-ev-theoremp))))
+  (local (defthm theoremp-of-nil
+           (not (glcp-generic-geval-ev-theoremp ''nil))
+           :hints(("Goal" :in-theory (enable glcp-generic-geval-ev-theoremp)))))
+  
+  (local
+   (defthm glmc-generic-correct-lemma
     (implies (and (pseudo-term-listp clause)
                   (alistp a)
                   (glcp-generic-geval-ev-meta-extract-global-facts :state state)
@@ -8854,6 +8867,19 @@
                     (acl2::clauses-result
                      (glmc-generic clause config interp-st state)))))
              (glcp-generic-geval-ev (disjoin clause) a))
-    ;; :hints (("goal" :cases ((CONSP (GLMC-GENERIC-TERM-LEVEL-ALISTS CONFIG A)))))
     :otf-flg t
+    :rule-classes nil))
+
+  (defthm glmc-generic-correct
+    (implies (and (pseudo-term-listp clause)
+                  (alistp a)
+                  (glcp-generic-geval-ev-meta-extract-global-facts :state state)
+                  (glcp-generic-geval-ev-theoremp*
+                   (conjoin-clauses
+                    (acl2::clauses-result
+                     (glmc-generic clause config interp-st state)))))
+             (glcp-generic-geval-ev (disjoin clause) a))
+    :hints (("goal" :use glmc-generic-correct-lemma
+             :in-theory (e/d (glcp-generic-geval-ev-theoremp)
+                             (glmc-generic))))
     :rule-classes nil))

@@ -42,8 +42,7 @@
 ;; or
 
 (include-book "structures" :dir :utils)
-(include-book "../rflags-spec"
-              :ttags (:undef-flg))
+(include-book "../rflags-spec")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

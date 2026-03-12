@@ -95,6 +95,15 @@
     ;; arm::run-until-return-aux
     ;; arm::run-until-return
     ;; arm::run-subroutine
+
+    arm::cmn-sign
+    arm::cmn-zero
+    arm::cmn-carry
+    arm::cmn-overflow
+    arm::cmp-sign
+    arm::cmp-zero
+    arm::cmp-carry
+    arm::cmp-overflow
     ))
 
 ;; (defconst *arm-symbols-in-acl2-package*

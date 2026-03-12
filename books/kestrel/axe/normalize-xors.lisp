@@ -1,7 +1,7 @@
 ; A tool to normalize XOR nests in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -524,9 +524,7 @@
                     (< nil bound))))
   :hints (("Goal" :in-theory (e/d (all-< nth) (nth-of-cdr)))))
 
-(local (in-theory (disable <-OF-NTH-WHEN-BOUNDED-DARG-LISTP)))
-
-(local (in-theory (enable CAR-BECOMES-NTH-OF-0)))
+(local (in-theory (enable car-becomes-nth-of-0))) ; why?
 
 (local (in-theory (enable not-<-of-nth-and-0-when-all-natp)))
 
@@ -817,9 +815,6 @@
 ;;                                      0   ;accumulated-constant
 ;;                                      )))
 
-(local (in-theory (enable ;not-cddr-when-bounded-darg-listp ;maybe enable for all axe stuff?
-                          ;<-OF-NTH-WHEN-BOUNDED-DARG-LISTP ;make a cheap version with a free var
-                          )))
 
 ;; ;returns (mv new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist translation-array)
 ;; ;check this over..

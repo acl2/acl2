@@ -132,6 +132,9 @@
   (%autoprove forcing-logic.proofp-of-clause.update-clause-bldr))
 
 
+; Matt K. mod: Avoid error noticed in preparation for Version 8.7 release when
+; attempting to make update-clause-iff-bldr.mpcert.
+#+skip
 (%autoprove logic.formula-list-atblp-of-logic.strip-conclusions-of-cdr-when-logic.provable-listp)
 
 (defsection clause.update-clause-bldr-okp

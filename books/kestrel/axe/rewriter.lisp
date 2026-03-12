@@ -2162,7 +2162,7 @@
 ;;                      :monitor monitored-rules
 ;;                      :print (if monitored-rules t nil)))
 ;;          ((when erp) (mv erp nil state))
-;;          (new-term (dag-to-term dag))
+;;          (new-term (dag2term dag))
 ;;          ((mv erp new-terms state)
 ;;           (simplify-terms-to-new-terms-aux (rest terms) rule-alist monitored-rules state))
 ;;          ((when erp) (mv erp nil state)))
@@ -2203,7 +2203,7 @@
 ;;                    :check-inputs nil)
 ;;         (if erp
 ;;             (mv erp nil nil state)
-;;           (let ((result-term (dag-to-term result-dag))) ;fixme could this ever blow up?
+;;           (let ((result-term (dag2term result-dag))) ;fixme could this ever blow up?
 ;;             (if (equal result-term term)
 ;;                 ;;no change, so keep looking
 ;;                 (find-a-term-to-simplify (rest terms-to-simplify) rule-alist monitored-symbols all-terms state)
@@ -2290,7 +2290,7 @@
                      :warn-missingp warn-missingp
                      :check-inputs nil))
          ((when erp) (mv erp nil nil state))
-         (result-term (dag-to-term result-dag))) ; todo: in theory, this could blow up
+         (result-term (dag2term result-dag))) ; todo: in theory, this could blow up
       (if (equal result-term term) ;; no change:
           (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-symbols memoizep warn-missingp againp state)
         (if (equal *t* result-term) ;todo: also check for *nil*?

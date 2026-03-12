@@ -894,7 +894,7 @@ when it becomes available.
                 (pseudo-termp term))
            (equal (ctx-ev (mv-nth 1 (mfc-apply-rewrite-rule rule rune term mfc state)) a)
                   (ctx-ev term a)))
-  :hints (("goal" :use ((:instance ctx-ev-falsify
+  :hints (("goal" :use ((:instance ctx-ev-theoremp-implies
                          (x (rewrite-rule-term rule))
                          (a (append (ctx-ev-alist
                                      (mv-nth 1
@@ -907,7 +907,8 @@ when it becomes available.
                                               term 0 mfc state))
                                      a)
                                     a))))
-           :in-theory (disable symbol-alistp alistp-of-cdr))))
+           :in-theory (disable symbol-alistp alistp-of-cdr
+                               ctx-ev-theoremp-implies))))
 
 
 
@@ -1730,7 +1731,7 @@ when it becomes available.
                 (pseudo-termp term))
            (equal (ctx-ev (mv-nth 1 (try-context-rw term rule rune mfc state)) a)
                   (ctx-ev term a)))
-  :hints (("goal" :use ((:instance ctx-ev-falsify
+  :hints (("goal" :use ((:instance ctx-ev-theoremp-implies
                          (x (rewrite-rule-term rule))
                          (a (ctx-ev-alist
                              (mv-nth 1
@@ -1742,7 +1743,8 @@ when it becomes available.
                                       rune term 0 mfc state))
                              a))))
            :in-theory (e/d (rewrite-rule-term)
-                           (alistp-of-cdr symbol-alistp)))))
+                           (alistp-of-cdr symbol-alistp
+                                          ctx-ev-theoremp-implies)))))
 
 (in-theory (disable try-context-rw))
 
@@ -1778,6 +1780,16 @@ when it becomes available.
         (mv t new-term)))
     (try-context-rws term (cdr runes) lemmas mfc state)))
 
+(local
+ (defthm ctx-ev-meta-extract-lemma-term-theoremp
+   (implies (and (ctx-ev-meta-extract-global-facts)
+                 (bind-free '((fn . fn)) (fn))
+                 (member rule (fgetprop fn 'lemmas nil (w state))))
+            (ctx-ev-theoremp (rewrite-rule-term rule)))
+   :hints(("Goal" :in-theory (e/d (ctx-ev-theoremp)
+                                  (rewrite-rule-term w))))))
+
+
 (defthm try-context-rws-correct
   (implies (and (ctx-ev-meta-extract-contextual-facts a)
                 (ctx-ev-meta-extract-global-facts)
@@ -1786,18 +1798,8 @@ when it becomes available.
            (let ((lemmas (fgetprop fn 'lemmas nil (w state))))
              (equal (ctx-ev (mv-nth 1 (try-context-rws term runes lemmas mfc state)) a)
                     (ctx-ev term a))))
-  :hints (("goal" :induct (len runes))
-          (and stable-under-simplificationp
-               '(:use ((:instance ctx-ev-meta-extract-lemma-term
-                        (rule (lookup-rewrite-in-lemmas
-                               (car runes)
-                               (fgetprop fn 'lemmas nil (w state))))
-                        (a (ctx-ev-falsify
-                            (rewrite-rule-term
-                             (lookup-rewrite-in-lemmas
-                              (car runes)
-                              (fgetprop fn 'lemmas nil (w state))))))
-                        (st state)))))))
+  :hints (("goal" :induct (len runes)
+           :in-theory (disable rewrite-rule-term w))))
 
 
 (in-theory (disable try-context-rws))

@@ -1200,16 +1200,34 @@
    :asm nil)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define trans-item-formalp ((item trans-itemp))
+  :guard (trans-item-unambp item)
+  :returns (yes/no booleanp)
+  :short "Check if a translation item has dynamic formal semantics."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We accept external declarations with formal semantics,
+     but not yet @('#include') directives and comments."))
+  (trans-item-case
+   item
+   :declon (ext-declon-formalp item.declon)
+   :include nil
+   :line-comment nil)
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-declon-list-formalp ((edecls ext-declon-listp))
-  :guard (ext-declon-list-unambp edecls)
+(define trans-item-list-formalp ((items trans-item-listp))
+  :guard (trans-item-list-unambp items)
   :returns (yes/no booleanp)
-  :short "Check if all the external declarations in a list
+  :short "Check if all the translation items in a list
           have formal dynamic semantics."
-  (or (endp edecls)
-      (and (ext-declon-formalp (car edecls))
-           (ext-declon-list-formalp (cdr edecls))))
+  (or (endp items)
+      (and (trans-item-formalp (car items))
+           (trans-item-list-formalp (cdr items))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1221,11 +1239,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There must be no @('#include') directives.")
-   (xdoc::p
-    "All its external declarations must be supported."))
-  (and (not (transunit->includes tunit))
-       (ext-declon-list-formalp (transunit->declons tunit)))
+    "All its translation items must have formal semantics."))
+  (trans-item-list-formalp (transunit->items tunit))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

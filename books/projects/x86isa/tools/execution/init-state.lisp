@@ -38,7 +38,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../../machine/linear-memory" :ttags (:undef-flg))
+(include-book "../../machine/linear-memory")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

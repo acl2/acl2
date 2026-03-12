@@ -130,21 +130,38 @@
    :empty (mv nil (list (ext-declon-fix extdecl)))
    :asm (mv nil (list (ext-declon-fix extdecl)))))
 
-(define copy-fn-ext-declon-list
-  ((extdecls ext-declon-listp)
+(define copy-fn-trans-item
+  ((item trans-itemp)
    (target-fn identp)
    (new-fn identp))
-  :guard (ext-declon-list-annop extdecls)
+  :guard (trans-item-annop item)
+  :short "Transform a translation item."
+  :returns (mv (found booleanp)
+               (items trans-item-listp))
+  (trans-item-case
+   item
+   :declon (b* (((mv found extdecls)
+                 (copy-fn-ext-declon item.declon target-fn new-fn)))
+             (mv found (c$::trans-item-declon-list extdecls)))
+   :include (prog2$ (raise "#include directives not supported.")
+                    (mv nil nil))
+   :line-comment (mv nil (list (trans-item-fix item)))))
+
+(define copy-fn-trans-item-list
+  ((items trans-item-listp)
+   (target-fn identp)
+   (new-fn identp))
+  :guard (trans-item-list-annop items)
   :short "Transform a list of external declarations."
-  :returns (new-extdecls ext-declon-listp)
-  (b* (((when (endp extdecls))
+  :returns (new-items trans-item-listp)
+  (b* (((when (endp items))
         nil)
-       ((mv found new-extdecls)
-        (copy-fn-ext-declon (first extdecls) target-fn new-fn)))
-    (append new-extdecls
+       ((mv found new-items)
+        (copy-fn-trans-item (first items) target-fn new-fn)))
+    (append new-items
             (if found
-                (ext-declon-list-fix (rest extdecls))
-              (copy-fn-ext-declon-list (rest extdecls) target-fn new-fn))))
+                (trans-item-list-fix (rest items))
+              (copy-fn-trans-item-list (rest items) target-fn new-fn))))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -156,13 +173,8 @@
   :guard (transunit-annop tunit)
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
-  (b* (((transunit tunit) tunit)
-       ((when tunit.includes)
-        (raise "Unsupported #include directives.")
-        (transunit-fix tunit)))
-    (make-transunit :comment nil
-                    :includes nil
-                    :declons (copy-fn-ext-declon-list tunit.declons target-fn new-fn)
+  (b* (((transunit tunit) tunit))
+    (make-transunit :items (copy-fn-trans-item-list tunit.items target-fn new-fn)
                     :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

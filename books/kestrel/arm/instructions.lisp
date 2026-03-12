@@ -65,21 +65,6 @@
   (declare (xargs :stobjs arm))
   (update-error :unsupported-unconditional-instruction arm))
 
-(defun and32 (x y)
-  (declare (xargs :guard (and (unsigned-byte-p 32 x)
-                              (unsigned-byte-p 32 y))))
-  (bvand 32 x y))
-
-(defun eor32 (x y)
-  (declare (xargs :guard (and (unsigned-byte-p 32 x)
-                              (unsigned-byte-p 32 y))))
-  (bvxor 32 x y))
-
-(defun or32 (x y)
-  (declare (xargs :guard (and (unsigned-byte-p 32 x)
-                              (unsigned-byte-p 32 y))))
-  (bvor 32 x y))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-inst :adc-immediate
@@ -591,14 +576,47 @@
                               (unsigned-byte-p 32 y))))
   (getbit 31 (bvplus 32 x y)))
 
+(defthm unsigned-byte-p-of-cmn-sign
+  (implies (posp size)
+           (unsigned-byte-p size (cmn-sign x y)))
+  :hints (("Goal" :in-theory (enable cmn-sign))))
+
+(defund cmn-zero (x y)
+  (declare (xargs :guard (and (unsigned-byte-p 32 x)
+                              (unsigned-byte-p 32 y))))
+  (bool-to-bit (= (bvplus 32 x y) 0)))
+
+(defthm unsigned-byte-p-of-cmn-zero
+  (implies (posp size)
+           (unsigned-byte-p size (cmn-zero x y)))
+  :hints (("Goal" :in-theory (enable cmn-zero))))
+
+(defund cmn-carry (x y)
+  (declare (xargs :guard (and (unsigned-byte-p 32 x)
+                              (unsigned-byte-p 32 y))))
+  ;; todo: simplify:
+  (mv-let (result carry_out overflow)
+      (AddWithCarry 32 x y 0)
+    (declare (ignore result overflow))
+    carry_out))
+
+(defthm unsigned-byte-p-of-cmn-carry
+  (implies (posp size)
+           (unsigned-byte-p size (cmn-carry x y)))
+  :hints (("Goal" :in-theory (enable cmn-carry))))
+
 ;; Also includes underflow
 (defund cmn-overflow (x y)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 32 y))))
   ;; (bool-to-bit (or (acl2::signed-addition-underflowsp 32 x y)
   ;;                  (acl2::signed-addition-overflowsp 32 x y)))
-  ;; todo: make this nicer: the added 1 is part of the "flip bits and add 1" idiom:
   (addwithcarry-overflow 32 x y 0))
+
+(defthm unsigned-byte-p-of-cmn-overflow
+  (implies (posp size)
+           (unsigned-byte-p size (cmn-overflow x y)))
+  :hints (("Goal" :in-theory (enable cmn-overflow))))
 
 (def-inst :cmn-immediate
     (b* (;; EncodingSpecificOperations:
@@ -617,15 +635,17 @@
        (n (uint 4 rn))
        (imm32 (ARMExpandImm imm12 arm))
        ;; end EncodingSpecificOperations
-       ((mv result carry &) (AddWithCarry 32 (reg n arm) imm32 0))
+;;       ((mv & & &) (AddWithCarry 32 (reg n arm) imm32 0))
        (arm (set-apsr.n (cmn-sign (reg n arm) imm32) arm))
-       (arm (set-apsr.z (IsZeroBit 32 result) arm))
-       (arm (set-apsr.c carry arm))
+       (arm (set-apsr.z (cmn-zero (reg n arm) imm32) arm))
+       (arm (set-apsr.c (cmn-carry (reg n arm) imm32) arm))
        (arm (set-apsr.v (cmn-overflow (reg n arm) imm32) arm))
        (arm (advance-pc arm)))
     arm)
   :alt-body-hints (("Goal" :in-theory (e/d (cmn-sign
                                             cmn-overflow
+                                            cmn-carry
+                                            cmn-zero
                                             ;;addwithcarry-overflow
                                             ;;addwithcarry
                                             uint
@@ -637,8 +657,7 @@
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry
-                                            ))))
-  )
+                                            )))))
 
 (def-inst :cmn-register
     (b* (;; EncodingSpecificOperations:
@@ -661,16 +680,18 @@
        ((mv shift_t shift_n) (decodeImmShift type imm5))
        ;; end EncodingSpecificOperations
        (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-       ((mv result carry &) (AddWithCarry 32 (reg n arm) shifted 0))
+       ;; ((mv & &  &) (AddWithCarry 32 (reg n arm) shifted 0))
        (arm (set-apsr.n (cmn-sign (reg n arm) shifted) arm))
-       (arm (set-apsr.z (IsZeroBit 32 result) arm))
-       (arm (set-apsr.c carry arm))
+       (arm (set-apsr.z (cmn-zero (reg n arm) shifted) arm))
+       (arm (set-apsr.c (cmn-carry (reg n arm) shifted) arm))
        (arm (set-apsr.v (cmn-overflow (reg n arm) shifted) arm))
        (arm (advance-pc arm)))
     arm)
   :alt-body-hints (("Goal" :in-theory (e/d (cmn-sign
                                             cmn-overflow
-                                            ;uint bvuminus-becomes-bvplus-of-bvnot-and-1
+                                            cmn-zero
+                                            cmn-carry
+                                            ;;uint bvuminus-becomes-bvplus-of-bvnot-and-1
                                             ;acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
                                             acl2::bvplus-convert-arg3-to-bv
@@ -713,15 +734,17 @@
        ;; end EncodingSpecificOperations
        (shift_n (uint 8 (slice 7 0 (reg sval arm))))
        (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-       ((mv result carry &) (AddWithCarry 32 (reg n arm) shifted 0))
+       ;; ((mv & & &) (AddWithCarry 32 (reg n arm) shifted 0))
        (arm (set-apsr.n (cmn-sign (reg n arm) shifted) arm))
-       (arm (set-apsr.z (IsZeroBit 32 result) arm))
-       (arm (set-apsr.c carry arm))
+       (arm (set-apsr.z (cmn-zero (reg n arm) shifted) arm))
+       (arm (set-apsr.c (cmn-carry (reg n arm) shifted) arm))
        (arm (set-apsr.v (cmn-overflow (reg n arm) shifted) arm))
        (arm (advance-pc arm)))
     arm)
   :alt-body-hints (("Goal" :in-theory (e/d (cmn-sign
                                             cmn-overflow
+                                            cmn-zero
+                                            cmn-carry
                                             acl2::trim-of-+-becomes-bvplus
                                             acl2::bvplus-convert-arg3-to-bv
                                             )
@@ -742,19 +765,15 @@
            (unsigned-byte-p size (cmp-sign x y)))
   :hints (("Goal" :in-theory (enable cmp-sign))))
 
-;; Also includes underflow
-(defund cmp-overflow (x y)
+(defund cmp-zero (x y)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 32 y))))
-  ;; (bool-to-bit (or (acl2::signed-addition-underflowsp 32 x y)
-  ;;                  (acl2::signed-addition-overflowsp 32 x y)))
-  ;; todo: make this nicer: the added 1 is part of the "flip bits and add 1" idiom:
-  (addwithcarry-overflow 32 x (bvnot 32 y) 1))
+  (bool-to-bit (= (bvplus 32 1 (bvplus 32 x (bvnot 32 y))) 0)))
 
-(defthm unsigned-byte-p-of-cmp-overflow
+(defthm unsigned-byte-p-of-cmp-zero
   (implies (posp size)
-           (unsigned-byte-p size (cmp-overflow x y)))
-  :hints (("Goal" :in-theory (enable cmp-overflow))))
+           (unsigned-byte-p size (cmp-zero x y)))
+  :hints (("Goal" :in-theory (enable cmp-zero))))
 
 (defund cmp-carry (x y)
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
@@ -770,7 +789,20 @@
            (unsigned-byte-p size (cmp-carry x y)))
   :hints (("Goal" :in-theory (enable cmp-carry))))
 
-;; todo: recharacterize the other CMP instructions
+;; Also includes underflow
+(defund cmp-overflow (x y)
+  (declare (xargs :guard (and (unsigned-byte-p 32 x)
+                              (unsigned-byte-p 32 y))))
+  ;; (bool-to-bit (or (acl2::signed-addition-underflowsp 32 x y)
+  ;;                  (acl2::signed-addition-overflowsp 32 x y)))
+  ;; todo: make this nicer: the added 1 is part of the "flip bits and add 1" idiom:
+  (addwithcarry-overflow 32 x (bvnot 32 y) 1))
+
+(defthm unsigned-byte-p-of-cmp-overflow
+  (implies (posp size)
+           (unsigned-byte-p size (cmp-overflow x y)))
+  :hints (("Goal" :in-theory (enable cmp-overflow))))
+
 (def-inst :cmp-immediate
     (b* (;; EncodingSpecificOperations:
          (n (uint 4 rn))
@@ -788,9 +820,9 @@
        (n (uint 4 rn))
        (imm32 (ARMExpandImm imm12 arm))
        ;; end EncodingSpecificOperations
-       ((mv result & &) (AddWithCarry 32 (reg n arm) (bvnot 32 imm32) 1))
+       ;; ((mv & & &) (AddWithCarry 32 (reg n arm) (bvnot 32 imm32) 1))
        (arm (set-apsr.n (cmp-sign (reg n arm) imm32) arm)) ; note the call of cmp-csign
-       (arm (set-apsr.z (IsZeroBit 32 result) arm))
+       (arm (set-apsr.z (cmp-zero (reg n arm) imm32) arm))
        (arm (set-apsr.c (cmp-carry (reg n arm) imm32) arm))
        (arm (set-apsr.v (cmp-overflow (reg n arm) imm32) arm)) ; note the call of cmp-overflow
        (arm (advance-pc arm)))
@@ -798,6 +830,7 @@
   :alt-body-hints (("Goal" :in-theory (e/d (cmp-sign
                                             cmp-overflow
                                             cmp-carry
+                                            cmp-zero
                                               ;addwithcarry-overflow
                                               ;addwithcarry
                                               uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
@@ -830,9 +863,9 @@
        ((mv shift_t shift_n) (decodeImmShift type imm5))
        ;; end EncodingSpecificOperations
        (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-       ((mv result & &) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) 1))
+       ;; ((mv & & &) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) 1))
        (arm (set-apsr.n (cmp-sign (reg n arm) shifted) arm))
-       (arm (set-apsr.z (IsZeroBit 32 result) arm))
+       (arm (set-apsr.z (cmp-zero (reg n arm) shifted) arm))
        (arm (set-apsr.c (cmp-carry (reg n arm) shifted) arm))
        (arm (set-apsr.v (cmp-overflow (reg n arm) shifted) arm))
        (arm (advance-pc arm)))
@@ -840,6 +873,7 @@
   :alt-body-hints (("Goal" :in-theory (e/d (cmp-sign
                                             cmp-overflow
                                             cmp-carry
+                                            cmp-zero
                                             ;;addwithcarry-overflow
                                             ;;addwithcarry
                                             uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
@@ -884,9 +918,9 @@
          ;; end EncodingSpecificOperations
          (shift_n (uint 8 (slice 7 0 (reg sval arm))))
          (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
-         ((mv result & &) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) 1))
+         ;; ((mv & & &) (AddWithCarry 32 (reg n arm) (bvnot 32 shifted) 1))
          (arm (set-apsr.n (cmp-sign (reg n arm) shifted) arm))
-         (arm (set-apsr.z (IsZeroBit 32 result) arm))
+         (arm (set-apsr.z (cmp-zero (reg n arm) shifted) arm))
          (arm (set-apsr.c (cmp-carry (reg n arm) shifted) arm))
          (arm (set-apsr.v (cmp-overflow (reg n arm) shifted) arm))
          (arm (advance-pc arm)))
@@ -894,6 +928,7 @@
         :alt-body-hints (("Goal" :in-theory (e/d (cmp-sign
                                                   cmp-overflow
                                                   cmp-carry
+                                                  cmp-zero
                                             ;;addwithcarry-overflow
                                             ;;addwithcarry
                                             uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv

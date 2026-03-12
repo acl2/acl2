@@ -1,7 +1,7 @@
 ; Arrays for renumbering DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -144,7 +144,7 @@
            (renaming-arrayp-aux array-name (make-empty-array array-name size) -1))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
 
-;; enabling dargp-rulesy may avoid the need for these:
+;; enabling dargp-rules may avoid the need for these:
 
 (defthm true-listp-of-aref1-when-renaming-arrayp-aux
   (implies (and (renaming-arrayp-aux renaming-array-name renaming-array top-nodenum-to-check)

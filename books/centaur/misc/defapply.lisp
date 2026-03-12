@@ -646,7 +646,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
                 (evmeta-ev-meta-extract-global-facts)
-                (evmeta-ev-theoremp
+                (evmeta-ev-theoremp*
                  (conjoin-clauses
                   (clauses-result
                    (apply-for-ev-cp clause hints state)))))

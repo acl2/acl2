@@ -1,7 +1,7 @@
 ; Lists of DAG function args ("dargs") whose nodenum elemements are bounded
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,7 @@
 (include-book "darg-listp")
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
+;; BOUND is often a nodenum whose expression is call of a function on DARGS.
 (defund bounded-darg-listp (dargs bound)
   (declare (xargs :guard (natp bound)
                   :split-types t)
@@ -50,121 +51,132 @@
               (bounded-darg-listp dargs2 bound)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp revappend))))
 
+(defthm bounded-darg-listp-of-reverse-list
+  (equal (bounded-darg-listp (reverse-list dargs) bound)
+         (bounded-darg-listp (true-list-fix dargs) bound))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp
+                                     reverse-list))))
+
 (defthm bounded-darg-listp-of-cdr
   (implies (bounded-darg-listp dargs bound)
            (bounded-darg-listp (cdr dargs) bound))
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
+(defthm bounded-darg-listp-of-take
+  (implies (and (bounded-darg-listp dargs bound)
+                (<= (nfix n) (len dargs)))
+           (bounded-darg-listp (take n dargs) bound))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
+
+;; Usually we use nth to extract particular dargs, but sometimes we walk through the list of dargs
 (defthm dargp-less-than-of-car-when-bounded-darg-listp
   (implies (bounded-darg-listp dargs bound)
            (equal (dargp-less-than (car dargs) bound)
                   (consp dargs)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
-(defthm bounded-darg-listp-forward-to-true-listp
+(defthm bounded-darg-listp-forward-to-darg-listp
   (implies (bounded-darg-listp dargs bound)
-           (true-listp dargs))
+           (darg-listp dargs))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 (defthmd bounded-darg-listp-when-non-positive
   (implies (<= n 0)
-           (equal (bounded-darg-listp items n)
-                  (and (all-myquotep items)
-                       (true-listp items))))
+           (equal (bounded-darg-listp dargs n)
+                  (and (all-myquotep dargs)
+                       (true-listp dargs))))
   :hints (("Goal" :in-theory (enable bounded-darg-listp all-myquotep))))
 
-(defthm bounded-darg-listp-of-reverse-list
-  (equal (bounded-darg-listp (reverse-list items) bound)
-         (bounded-darg-listp (true-list-fix items) bound))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp
-                                     reverse-list))))
-
-(defthm darg-listp-when-bounded-darg-listp
-  (implies (bounded-darg-listp items free)
-           (darg-listp items))
+;; drop since we have the forward-chaining rule?
+(defthmd darg-listp-when-bounded-darg-listp
+  (implies (bounded-darg-listp dargs free)
+           (darg-listp dargs))
   :hints (("Goal" :in-theory (enable bounded-darg-listp darg-listp dargp-less-than))))
 
-(defthm <-of-0-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound)
-                (not (consp (nth 0 args))))
-           (not (< (nth 0 args) 0)))
+(defthmd <-of-0-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp dargs bound)
+                ;;(not (consp (nth 0 dargs)))
+                )
+           (not (< (nth 0 dargs) 0)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
 (defthm integerp-of-nth-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound)
-                (not (consp (nth n args)))
+  (implies (and (bounded-darg-listp dargs bound)
+                (not (consp (nth n dargs)))
                 (natp n)
-                (< n (len args)))
-           (integerp (nth n args)))
+                (< n (len dargs)))
+           (integerp (nth n dargs)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
-(defthm integerp-of-nth-when-bounded-darg-listp-special
-  (implies (and (bounded-darg-listp (cdr expr) bound)
-                (not (consp (nth n expr)))
-                (posp n)
-                (< n (len expr)))
-           (integerp (nth n expr)))
-  :hints (("Goal" :in-theory (e/d (bounded-darg-listp nth) (;NTH-OF-CDR
-                                                            )))))
+;; ;drop?  should use nth of dargs as the normal form
+;; (defthmd integerp-of-nth-when-bounded-darg-listp-speciala
+;;   (implies (and (bounded-darg-listp (cdr expr) bound)
+;;                 (not (consp (nth n expr)))
+;;                 (posp n)
+;;                 (< n (len expr)))
+;;            (integerp (nth n expr)))
+;;   :hints (("Goal" :in-theory (e/d (bounded-darg-listp nth) (;NTH-OF-CDR
+;;                                                             )))))
 
 (defthm true-listp-of-nth-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound)
+  (implies (and (bounded-darg-listp dargs bound)
                 (natp n)
-                (< n (len args)))
-           (equal (true-listp (nth n args))
-                  (consp (nth n args))))
+                (< n (len dargs)))
+           (equal (true-listp (nth n dargs))
+                  (consp (nth n dargs))))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
-(defthm true-listp-of-car-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound)
+(defthmd true-listp-of-car-when-bounded-darg-listp
+  (implies (and (bounded-darg-listp dargs bound)
                 (natp n)
-                (< 0 (len args)))
-           (equal (true-listp (car args))
-                  (consp (car args))))
+                (< 0 (len dargs)))
+           (equal (true-listp (car dargs))
+                  (consp (car dargs))))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
 (defthm <-of-nth-0-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound)
-                (not (consp (nth 0 args)))
-                (consp args))
-           (< (nth 0 args) bound))
+  (implies (and (bounded-darg-listp dargs bound)
+                (not (consp (nth 0 dargs)))
+                (consp dargs))
+           (< (nth 0 dargs) bound))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
+;; todo: almost the same as the above
 (defthmd <-of-car-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp vals bound)
-                (consp vals)
-                (not (consp (car vals))))
-           (< (car vals) bound))
+  (implies (and (bounded-darg-listp dargs bound)
+                (consp dargs)
+                (not (consp (car dargs))))
+           (< (car dargs) bound))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
-(defthm not-<-of-car-when-bounded-darg-listp-2
+(defthmd not-<-of-car-when-bounded-darg-listp-2
   (implies (and (syntaxp (quotep k))
                 (<= k 0)
-                (bounded-darg-listp vals bound)
-                (consp vals)
-                (not (consp (car vals))))
-           (not (< (car vals) k)))
+                (bounded-darg-listp dargs bound)
+                (consp dargs)
+                (not (consp (car dargs))))
+           (not (< (car dargs) k)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
 ;gen?
 (defthmd not-<-of-car-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp vals bound2)
+  (implies (and (bounded-darg-listp dargs bound2)
                 (<= bound2 (+ 1 bound))
                 (integerp bound)
                 (integerp bound2)
-                (consp vals)
-                (not (consp (car vals))))
-           (not (< bound (car vals))))
+                (consp dargs)
+                (not (consp (car dargs))))
+           (not (< bound (car dargs))))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
 ;we use consp as the normal form
-(defthm integerp-of-car-when-bounded-darg-listp
-  (implies (bounded-darg-listp args len)
-           (equal (integerp (car args))
-                  (if (consp args)
-                      (not (consp (car args)))
+(defthmd integerp-of-car-when-bounded-darg-listp
+  (implies (bounded-darg-listp dargs len)
+           (equal (integerp (car dargs))
+                  (if (consp dargs)
+                      (not (consp (car dargs)))
                       nil)))
   :hints (("Goal" :in-theory (enable darg-listp dargp-less-than bounded-darg-listp))))
 
@@ -172,94 +184,96 @@
 
 ;; too expensive to leave enabled
 (defthmd <-of-nth-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound)
-                (not (consp (nth n args)))
+  (implies (and (bounded-darg-listp dargs bound)
+                (not (consp (nth n dargs)))
                 (natp n)
-                (< n (len args)))
-           (< (nth n args) bound))
+                (< n (len dargs)))
+           (< (nth n dargs) bound))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
 (defthm <-of-nth-when-bounded-darg-listp-free
-  (implies (and (bounded-darg-listp args bound2)
+  (implies (and (bounded-darg-listp dargs bound2)
                 (<= bound2 bound)
-                (not (consp (nth n args)))
+                (not (consp (nth n dargs)))
                 (natp n)
-                (< n (len args)))
-           (< (nth n args) bound))
+                (< n (len dargs)))
+           (< (nth n dargs) bound))
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 (defthm bounded-darg-listp-monotone
-  (implies (and (bounded-darg-listp items m)
+  (implies (and (bounded-darg-listp dargs m)
                 (<= m n))
-           (bounded-darg-listp items n))
+           (bounded-darg-listp dargs n))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than))))
 
 (defthm bounded-darg-listp-when-all-myquotep-cheap
-  (implies (all-myquotep items)
-           (equal (bounded-darg-listp items bound)
-                  (true-listp items)))
+  (implies (all-myquotep dargs)
+           (equal (bounded-darg-listp dargs bound)
+                  (true-listp dargs)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp
                                      all-myquotep))))
 
+;drop?
 (defthm bounded-darg-listp-of-0
-  (equal (bounded-darg-listp items 0)
-         (and (all-myquotep items)
-              (true-listp items)))
+  (equal (bounded-darg-listp dargs 0)
+         (and (all-myquotep dargs)
+              (true-listp dargs)))
   :hints (("Goal" :in-theory (enable all-myquotep))))
 
 ;not tight?
 (defthmd bound-lemma-for-car-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp items n)
-                (consp items)
-                (not (consp (car items))))
-           (not (< n (car items))))
+  (implies (and (bounded-darg-listp dargs n)
+                (consp dargs)
+                (not (consp (car dargs))))
+           (not (< n (car dargs))))
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 (defthm <-of-1-and-len-of-nth-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound)
+  (implies (and (bounded-darg-listp dargs bound)
                 (natp n)
-                (< n (len args)))
-           (equal (< 1 (len (nth n args)))
-                  (consp (nth n args))))
+                (< n (len dargs)))
+           (equal (< 1 (len (nth n dargs)))
+                  (consp (nth n dargs))))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than nth))))
 
 (defthm natp-of-nth-when-bounded-darg-listp-gen
-  (implies (and (bounded-darg-listp vals bound)
+  (implies (and (bounded-darg-listp dargs bound)
                 (natp n)
-                (< n (len vals)))
-           (equal (natp (nth n vals))
-                  (not (consp (nth n vals)))))
+                (< n (len dargs)))
+           (equal (natp (nth n dargs))
+                  (not (consp (nth n dargs)))))
   :hints
   (("Goal" :in-theory (enable bounded-darg-listp))))
 
-;true whether it's a quotep or nodenum
-(defthmd not-cddr-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp items bound)
-         ;       (consp item)
-                (member-equal item items))
-           (not (cddr item)))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
+;; ;true whether it's a quotep or nodenum
+;; (defthmd not-cddr-when-bounded-darg-listp
+;;   (implies (and (bounded-darg-listp dargs bound)
+;;          ;       (consp item)
+;;                 (member-equal item dargs))
+;;            (not (cddr item)))
+;;   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 (defthm not-cddr-of-nth-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound) ;bound is a free var
+  (implies (and (bounded-darg-listp dargs bound) ;bound is a free var
                 (natp n)
-                (< n (len args)))
-           (not (cddr (nth n args))))
+                (< n (len dargs)))
+           (not (cddr (nth n dargs))))
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 (defthm dargp-of-nth-when-bounded-darg-listp
-  (implies (and (bounded-darg-listp args bound)
-                (< n (len args))
+  (implies (and (bounded-darg-listp dargs bound)
+                (< n (len dargs))
                 (natp n))
-           (dargp (nth n args)))
+           (dargp (nth n dargs)))
   :hints (("Goal" :in-theory (enable darg-listp))))
 
+;drop?
 (defthm bounded-darg-listp-when-bounded-darg-listp-of-cdr-cheap
-  (implies (bounded-darg-listp (cdr items) bound)
-           (equal (bounded-darg-listp items bound)
-                  (if (not (consp items))
-                      (null items)
-                    (dargp-less-than (car items) bound))))
+  (implies (bounded-darg-listp (cdr dargs) bound)
+           (equal (bounded-darg-listp dargs bound)
+                  (if (not (consp dargs))
+                      (null dargs)
+                    (dargp-less-than (car dargs) bound))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))

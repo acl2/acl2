@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../test-star")
+(include-book "../../proof-support/test-star")
 
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)

@@ -537,54 +537,93 @@
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ext-declon-list-wrap-fn
-  ((extdecls ext-declon-listp)
+(define trans-item-wrap-fn-add-wrapper-def
+  ((item trans-itemp)
    (target-name identp)
    (wrapper-name? ident-optionp)
    (blacklist ident-setp))
-  :guard (c$::ext-declon-list-annop extdecls)
+  :guard (c$::trans-item-annop item)
   :returns (mv (er? maybe-msgp)
-               (foundp booleanp :rule-classes :type-prescription)
-               (found-satp booleanp :rule-classes :type-prescription)
-               (extdecls$ ext-declon-listp))
-  :short "Transform an external declaration list."
+               (uid? c$::uid-optionp)
+               (wrapper? fundef-optionp)
+               (wrapper-name?$ ident-optionp))
+  :short "Check if a translation item matches the target, and create the
+          function wrapper if so."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This searches for an external declaration matching the target function.
+     "The returned @('uid?') value, if it is not @('nil'), is the @(see
+      c$::uid) of the matched function.")
+   (xdoc::p
+     "If @('uid?') return value is non-@('nil') but @('wrapper?') is @('nil'),
+      that means the translation item matched the target, but some aspect
+      of it is unsupported by the current implementation."))
+  (b* (((reterr) nil nil nil))
+    (trans-item-case
+     item
+     :declon (ext-declon-wrap-fn-add-wrapper-def
+              item.declon target-name wrapper-name? blacklist)
+     :include (retmsg$ "Unsupported #include directives.")
+     :line-comment (retok nil nil nil)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
+  ///
+
+  (defret fundefp-of-trans-item-wrap-fn-add-wrapper-def.wrapper?-under-iff
+    (iff (fundefp wrapper?)
+         wrapper?))
+
+  (defret identp-of-trans-item-wrap-fn-add-wrapper-def.wrapper-name?$
+    (equal (identp wrapper-name?$)
+           (fundefp wrapper?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define trans-item-list-wrap-fn
+  ((items trans-item-listp)
+   (target-name identp)
+   (wrapper-name? ident-optionp)
+   (blacklist ident-setp))
+  :guard (c$::trans-item-list-annop items)
+  :returns (mv (er? maybe-msgp)
+               (foundp booleanp :rule-classes :type-prescription)
+               (found-satp booleanp :rule-classes :type-prescription)
+               (items$ trans-item-listp))
+  :short "Transform a translation item list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This searches for a translation item matching the target function.
       When it finds one, it creates the function wrapper. It then substitutes
       the wrapper function for the original function in direct function calls
       occurring in the remainder of the translation unit."))
   (b* (((reterr) nil nil nil)
-       ((when (endp extdecls))
+       ((when (endp items))
         (retok nil nil nil))
-       (extdecl (ext-declon-fix (first extdecls)))
+       (item (trans-item-fix (first items)))
        ((erp uid? wrapper? wrapper-name?$)
-        (ext-declon-wrap-fn-add-wrapper-def
-         extdecl target-name wrapper-name? blacklist))
+        (trans-item-wrap-fn-add-wrapper-def
+         item target-name wrapper-name? blacklist))
        ((when (and uid? wrapper?))
         (retok t
                t
-               (list* extdecl
-                      (ext-declon-fundef wrapper?)
-                      (ext-declon-list-rename-fn (rest extdecls)
+               (list* item
+                      (trans-item-declon (ext-declon-fundef wrapper?))
+                      (trans-item-list-rename-fn (rest items)
                                                  uid?
                                                  wrapper-name?$))))
-       ((erp foundp$ found-satp extdecls$)
-        (ext-declon-list-wrap-fn
-         (rest extdecls) target-name wrapper-name? blacklist)))
+       ((erp foundp$ found-satp items$)
+        (trans-item-list-wrap-fn
+         (rest items) target-name wrapper-name? blacklist)))
     (retok (if uid?
                t
              foundp$)
            found-satp
-           (cons extdecl extdecls$)))
+           (cons item items$)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
 
   (more-returns
-   (extdecls$ true-listp :rule-classes :type-prescription)))
+   (items$ true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -601,11 +640,9 @@
   :short "Transform a translation unit."
   (b* (((reterr) nil nil (c$::transunit-fix transunit))
        ((transunit transunit) transunit)
-       ((when transunit.includes)
-        (retmsg$ "Unsupported #include directives."))
-       ((erp foundp found-satp extdecls)
-        (ext-declon-list-wrap-fn
-          transunit.declons target-name wrapper-name? blacklist))
+       ((erp foundp found-satp items)
+        (trans-item-list-wrap-fn
+          transunit.items target-name wrapper-name? blacklist))
        (warnings?
          (if (and foundp (not found-satp))
              (msg$ "Declaration of ~x0 found, but couldn't create a wrapper."
@@ -615,7 +652,7 @@
            foundp
            (c$::change-transunit
              transunit
-             :declons extdecls
+             :items items
              :info nil)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 

@@ -613,20 +613,33 @@
    :empty (call-graph-fix call-graph)
    :asm (call-graph-fix call-graph)))
 
-(define call-graph-ext-declon-list
-  ((extdecls ext-declon-listp)
+(define call-graph-trans-item
+  ((item trans-itemp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
    (call-graph call-graphp))
   :returns (call-graph$ call-graphp)
-  (if (endp extdecls)
+  (trans-item-case
+   item
+   :declon (call-graph-ext-declon item.declon filepath valid-table call-graph)
+   :include (prog2$ (raise "Unsupported #include directives.")
+                    (call-graph-fix call-graph))
+   :line-comment (call-graph-fix call-graph)))
+
+(define call-graph-trans-item-list
+  ((items trans-item-listp)
+   (filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
+  (if (endp items)
       (call-graph-fix call-graph)
-    (call-graph-ext-declon-list
-      (rest extdecls)
+    (call-graph-trans-item-list
+      (rest items)
       filepath
       valid-table
-      (call-graph-ext-declon
-        (first extdecls)
+      (call-graph-trans-item
+        (first items)
         filepath
         valid-table
         call-graph))))
@@ -639,12 +652,9 @@
   :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation unit."
   (b* (((transunit transunit) transunit)
-       ((when transunit.includes)
-        (raise "Unsupported #include directives.")
-        (call-graph-fix call-graph))
        (info (c$::transunit-info-fix (c$::transunit->info transunit)))
        (valid-table (c$::transunit-info->table-end info)))
-    (call-graph-ext-declon-list transunit.declons filepath valid-table call-graph))
+    (call-graph-trans-item-list transunit.items filepath valid-table call-graph))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
 
 (define call-graph-filepath-transunit-map

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -22,97 +22,99 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert!-stobj ; empty file
- (b* ((parstate (init-parstate nil (c::version-c17) t parstate))
+ (b* ((parstate (init-parstate "" nil (c::version-c17) t parstate))
       (pstate0 (to-parstate$ parstate))
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
             (not char?)
-            (equal pos (position 1 0)) ; just past end of (empty) file
+            (equal pos (position "" 1 0)) ; just past end of (empty) file
             (equal (to-parstate$ parstate)
                    pstate0))
        parstate))
  parstate)
 
 (assert!-stobj ; disallowed character 0
- (b* ((parstate (init-parstate (list 0) (c::version-c17) t parstate))
+ (b* ((parstate (init-parstate "" (list 0) (c::version-c17) t parstate))
       ((mv erp & & parstate) (read-char parstate))
       (- (cw "~@0" erp)))
    (mv erp parstate))
  parstate)
 
 (assert!-stobj ; character 32
- (b* ((parstate (init-parstate (list 32 1 2 3) (c::version-c17) t parstate))
+ (b* ((parstate (init-parstate "" (list 32 1 2 3) (c::version-c17) t parstate))
       (pstate0 (to-parstate$ parstate))
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
             (equal char? 32)
-            (equal pos (position 1 0))
+            (equal pos (position "" 1 0))
             (equal (to-parstate$ parstate)
                    (change-parstate$
                     pstate0
                     :bytes (list 1 2 3)
-                    :position (position 1 1)
-                    :chars-read (list (char+position 32 (position 1 0))))))
+                    :position (position "" 1 1)
+                    :chars-read (list (char+position 32 (position "" 1 0))))))
        parstate))
  parstate)
 
 (assert!-stobj ; line feed
- (b* ((parstate (init-parstate (list 10 1 2 3) (c::version-c17) t parstate))
+ (b* ((parstate (init-parstate "" (list 10 1 2 3) (c::version-c17) t parstate))
       (pstate0 (to-parstate$ parstate))
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
             (equal char? 10)
-            (equal pos (position 1 0))
+            (equal pos (position "" 1 0))
             (equal (to-parstate$ parstate)
                    (change-parstate$
                     pstate0
                     :bytes (list 1 2 3)
-                    :position (position 2 0)
-                    :chars-read (list (char+position 10 (position 1 0))))))
+                    :position (position "" 2 0)
+                    :chars-read (list (char+position 10 (position "" 1 0))))))
        parstate))
  parstate)
 
 (assert!-stobj ; carriage return
- (b* ((parstate (init-parstate (list 13 1 2 3) (c::version-c17) t parstate))
+ (b* ((parstate (init-parstate "" (list 13 1 2 3) (c::version-c17) t parstate))
       (pstate0 (to-parstate$ parstate))
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
             (equal char? 10)
-            (equal pos (position 1 0))
+            (equal pos (position "" 1 0))
             (equal (to-parstate$ parstate)
                    (change-parstate$
                     pstate0
                     :bytes (list 1 2 3)
-                    :position (position 2 0)
-                    :chars-read (list (char+position 10 (position 1 0))))))
+                    :position (position "" 2 0)
+                    :chars-read (list (char+position 10 (position "" 1 0))))))
        parstate))
  parstate)
 
 (assert!-stobj ; carriage return + line feed
- (b* ((parstate (init-parstate (list 13 10 1 2 3) (c::version-c17) t parstate))
+ (b* ((parstate
+       (init-parstate "" (list 13 10 1 2 3) (c::version-c17) t parstate))
       (pstate0 (to-parstate$ parstate))
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
             (equal char? 10)
-            (equal pos (position 1 0))
+            (equal pos (position "" 1 0))
             (equal (to-parstate$ parstate)
                    (change-parstate$
                     pstate0
                     :bytes (list 1 2 3)
-                    :position (position 2 0)
-                    :chars-read (list (char+position 10 (position 1 0))))))
+                    :position (position "" 2 0)
+                    :chars-read (list (char+position 10 (position "" 1 0))))))
        parstate))
  parstate)
 
 (assert!-stobj ; disallowed byte 255
- (b* ((parstate (init-parstate (list 255) (c::version-c17) t parstate))
+ (b* ((parstate (init-parstate "" (list 255) (c::version-c17) t parstate))
       ((mv erp & & parstate) (read-char parstate))
       (- (cw "~@0" erp)))
    (mv erp parstate))
  parstate)
 
 (assert!-stobj ; 2-byte UTF-8 encoding of Greek capital letter sigma
- (b* ((parstate (init-parstate (acl2::string=>nats "Σ")
+ (b* ((parstate (init-parstate ""
+                               (acl2::string=>nats "Σ")
                                (c::version-c17)
                                t
                                parstate))
@@ -120,18 +122,19 @@
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
             (equal char? #x03a3)
-            (equal pos (position 1 0))
+            (equal pos (position "" 1 0))
             (equal (to-parstate$ parstate)
                    (change-parstate$
                     pstate0
                     :bytes nil
-                    :position (position 1 1)
-                    :chars-read (list (char+position #x03a3 (position 1 0))))))
+                    :position (position "" 1 1)
+                    :chars-read (list (char+position #x03a3 (position "" 1 0))))))
        parstate))
  parstate)
 
 (assert!-stobj ; invalid 2-byte UTF-8 encoding of 0
- (b* ((parstate (init-parstate (list #b11000000 #b10000000)
+ (b* ((parstate (init-parstate ""
+                               (list #b11000000 #b10000000)
                                (c::version-c17)
                                t
                                parstate))
@@ -141,7 +144,8 @@
  parstate)
 
 (assert!-stobj ; 3-byte UTF-8 encoding of anticlockwise top semicircle arrow
- (b* ((parstate (init-parstate (acl2::string=>nats "↺")
+ (b* ((parstate (init-parstate ""
+                               (acl2::string=>nats "↺")
                                (c::version-c17)
                                t
                                parstate))
@@ -149,18 +153,19 @@
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
             (equal char? #x21ba)
-            (equal pos (position 1 0))
+            (equal pos (position "" 1 0))
             (equal (to-parstate$ parstate)
                    (change-parstate$
                     pstate0
                     :bytes nil
-                    :position (position 1 1)
-                    :chars-read (list (char+position #x21ba (position 1 0))))))
+                    :position (position "" 1 1)
+                    :chars-read (list (char+position #x21ba (position "" 1 0))))))
        parstate))
  parstate)
 
 (assert!-stobj ; disallowed 3-byte UTF-8 encoding
- (b* ((parstate (init-parstate (list #b11100010 #b10000000 #b10101010) ; 202Ah
+ (b* ((parstate (init-parstate ""
+                               (list #b11100010 #b10000000 #b10101010) ; 202Ah
                                (c::version-c17)
                                t
                                parstate))
@@ -170,7 +175,8 @@
  parstate)
 
 (assert!-stobj ; invalid 3-byte UTF-8 encoding of 0
- (b* ((parstate (init-parstate (list #b11100000 #b10000000 #b10000000)
+ (b* ((parstate (init-parstate ""
+                               (list #b11100000 #b10000000 #b10000000)
                                (c::version-c17)
                                t
                                parstate))
@@ -180,7 +186,8 @@
  parstate)
 
 (assert!-stobj ; 4-byte UTF-8 encoding of musical symbol eighth note
- (b* ((parstate (init-parstate (acl2::string=>nats "𝅘𝅥𝅮")
+ (b* ((parstate (init-parstate ""
+                               (acl2::string=>nats "𝅘𝅥𝅮")
                                (c::version-c17)
                                t
                                parstate))
@@ -188,18 +195,19 @@
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
             (equal char? #x1d160)
-            (equal pos (position 1 0))
+            (equal pos (position "" 1 0))
             (equal (to-parstate$ parstate)
                    (change-parstate$
                     pstate0
                     :bytes nil
-                    :position (position 1 1)
-                    :chars-read (list (char+position #x1d160 (position 1 0))))))
+                    :position (position "" 1 1)
+                    :chars-read (list (char+position #x1d160 (position "" 1 0))))))
        parstate))
  parstate)
 
 (assert!-stobj ; invalid 4-byte UTF-8 encoding of 0
- (b* ((parstate (init-parstate (list #b11110000 #b10000000 #b10000000 #b10000000)
+ (b* ((parstate (init-parstate ""
+                               (list #b11110000 #b10000000 #b10000000 #b10000000)
                                (c::version-c17)
                                t
                                parstate))
@@ -210,6 +218,7 @@
 
 (assert!-stobj ; invalid 4-byte UTF-8 encoding of 1FFFFFh
  (b* ((parstate (init-parstate
+                 ""
                  (list #b11110111 #b10111111 #b10111111 #b10111111)
                  (c::version-c17)
                  t
@@ -223,7 +232,7 @@
 
 (assert!-stobj
  (b* ((parstate
-       (init-parstate (list 65 66 67) (c::version-c17) t parstate)) ; A B C
+       (init-parstate "" (list 65 66 67) (c::version-c17) t parstate)) ; A B C
       (pstate0 (to-parstate$ parstate))
       ((mv erp1 char-a pos-a parstate) (read-char parstate))
       (pstate1 (to-parstate$ parstate))
@@ -247,43 +256,43 @@
             (equal char-b2 66)
             (equal char-c 67)
             (equal char-eof nil)
-            (equal pos-a (position 1 0))
-            (equal pos-b (position 1 1))
-            (equal pos-b2 (position 1 1))
-            (equal pos-c (position 1 2))
-            (equal pos-eof (position 1 3))
+            (equal pos-a (position "" 1 0))
+            (equal pos-b (position "" 1 1))
+            (equal pos-b2 (position "" 1 1))
+            (equal pos-c (position "" 1 2))
+            (equal pos-eof (position "" 1 3))
             (equal pstate1
                    (change-parstate$
                     pstate0
                     :bytes (list 66 67)
-                    :position (position 1 1)
-                    :chars-read (list (char+position 65 (position 1 0)))))
+                    :position (position "" 1 1)
+                    :chars-read (list (char+position 65 (position "" 1 0)))))
             (equal pstate2
                    (change-parstate$
                     pstate1
                     :bytes (list 67)
-                    :position (position 1 2)
-                    :chars-read (list (char+position 66 (position 1 1))
-                                      (char+position 65 (position 1 0)))))
+                    :position (position "" 1 2)
+                    :chars-read (list (char+position 66 (position "" 1 1))
+                                      (char+position 65 (position "" 1 0)))))
             (equal pstate3
                    (change-parstate$
                     pstate2
-                    :chars-read (list (char+position 65 (position 1 0)))
-                    :chars-unread (list (char+position 66 (position 1 1)))))
+                    :chars-read (list (char+position 65 (position "" 1 0)))
+                    :chars-unread (list (char+position 66 (position "" 1 1)))))
             (equal pstate4
                    (change-parstate$
                     pstate3
-                    :chars-read (list (char+position 66 (position 1 1))
-                                      (char+position 65 (position 1 0)))
+                    :chars-read (list (char+position 66 (position "" 1 1))
+                                      (char+position 65 (position "" 1 0)))
                     :chars-unread nil))
             (equal pstate5
                    (change-parstate$
                     pstate4
                     :bytes nil
-                    :position (position 1 3)
-                    :chars-read (list (char+position 67 (position 1 2))
-                                      (char+position 66 (position 1 1))
-                                      (char+position 65 (position 1 0)))))
+                    :position (position "" 1 3)
+                    :chars-read (list (char+position 67 (position "" 1 2))
+                                      (char+position 66 (position "" 1 1))
+                                      (char+position 65 (position "" 1 0)))))
             (equal pstate6
                    pstate5))
        parstate))
@@ -291,7 +300,7 @@
 
 (assert!-stobj
  (b* ((parstate
-       (init-parstate (list 65 10 66) (c::version-c17) t parstate)) ; A LF B
+       (init-parstate "" (list 65 10 66) (c::version-c17) t parstate)) ; A LF B
       (pstate0 (to-parstate$ parstate))
       ((mv erp1 char-a pos-a parstate) (read-char parstate))
       (pstate1 (to-parstate$ parstate))
@@ -325,62 +334,62 @@
             (equal char-nl3 10)
             (equal char-b 66)
             (equal char-eof nil)
-            (equal pos-a (position 1 0))
-            (equal pos-a2 (position 1 0))
-            (equal pos-nl (position 1 1))
-            (equal pos-nl2 (position 1 1))
-            (equal pos-nl3 (position 1 1))
-            (equal pos-b (position 2 0))
-            (equal pos-eof (position 2 1))
+            (equal pos-a (position "" 1 0))
+            (equal pos-a2 (position "" 1 0))
+            (equal pos-nl (position "" 1 1))
+            (equal pos-nl2 (position "" 1 1))
+            (equal pos-nl3 (position "" 1 1))
+            (equal pos-b (position "" 2 0))
+            (equal pos-eof (position "" 2 1))
             (equal pstate1
                    (change-parstate$
                     pstate0
                     :bytes (list 10 66)
-                    :position (position 1 1)
-                    :chars-read (list (char+position 65 (position 1 0)))))
+                    :position (position "" 1 1)
+                    :chars-read (list (char+position 65 (position "" 1 0)))))
             (equal pstate2
                    (change-parstate$
                     pstate1
                     :bytes (list 66)
-                    :position (position 2 0)
-                    :chars-read (list (char+position 10 (position 1 1))
-                                      (char+position 65 (position 1 0)))))
+                    :position (position "" 2 0)
+                    :chars-read (list (char+position 10 (position "" 1 1))
+                                      (char+position 65 (position "" 1 0)))))
             (equal pstate3
                    (change-parstate$
                     pstate2
                     :chars-read nil
-                    :chars-unread (list (char+position 65 (position 1 0))
-                                        (char+position 10 (position 1 1)))))
+                    :chars-unread (list (char+position 65 (position "" 1 0))
+                                        (char+position 10 (position "" 1 1)))))
             (equal pstate4
                    (change-parstate$
                     pstate3
-                    :chars-read (list (char+position 65 (position 1 0)))
-                    :chars-unread (list (char+position 10 (position 1 1)))))
+                    :chars-read (list (char+position 65 (position "" 1 0)))
+                    :chars-unread (list (char+position 10 (position "" 1 1)))))
             (equal pstate5
                    (change-parstate$
                     pstate4
-                    :chars-read (list (char+position 10 (position 1 1))
-                                      (char+position 65 (position 1 0)))
+                    :chars-read (list (char+position 10 (position "" 1 1))
+                                      (char+position 65 (position "" 1 0)))
                     :chars-unread nil))
             (equal pstate6
                    (change-parstate$
                     pstate5
-                    :chars-read (list (char+position 65 (position 1 0)))
-                    :chars-unread (list (char+position 10 (position 1 1)))))
+                    :chars-read (list (char+position 65 (position "" 1 0)))
+                    :chars-unread (list (char+position 10 (position "" 1 1)))))
             (equal pstate7
                    (change-parstate$
                     pstate6
-                    :chars-read (list (char+position 10 (position 1 1))
-                                      (char+position 65 (position 1 0)))
+                    :chars-read (list (char+position 10 (position "" 1 1))
+                                      (char+position 65 (position "" 1 0)))
                     :chars-unread nil))
             (equal pstate8
                    (change-parstate$
                     pstate7
                     :bytes nil
-                    :position (position 2 1)
-                    :chars-read (list (char+position 66 (position 2 0))
-                                      (char+position 10 (position 1 1))
-                                      (char+position 65 (position 1 0)))))
+                    :position (position "" 2 1)
+                    :chars-read (list (char+position 66 (position "" 2 0))
+                                      (char+position 10 (position "" 1 1))
+                                      (char+position 65 (position "" 1 0)))))
             (equal pstate9
                    pstate8))
        parstate))

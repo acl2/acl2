@@ -184,7 +184,7 @@
 
 
 ;; get set theorems
-(local (fty::deflist pseudo-var-list :elt-type pseudo-var :true-listp t))
+(local (fty::deflist pseudo-var-list :elt-type pseudo-var :true-listp t :elementp-of-nil nil))
 
 (define pseudo-var-set-p (x)
   (and (pseudo-var-list-p x)

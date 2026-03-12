@@ -91,6 +91,8 @@
               fundef
               ext-declon
               ext-declon-list
+              trans-item
+              trans-item-list
               transunit
               filepath-transunit-map
               transunit-ensemble)

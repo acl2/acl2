@@ -279,6 +279,7 @@
            :subst ((fn fn) (arg-ctxs1 arg-ctxs1) (arg-ctxs2 arg-ctxs2)))))
 
 (add-equiv-ev-fgl-ev-functional-subst cmr::equiv-ev-falsify fgl-ev-falsify)
+(add-equiv-ev-fgl-ev-functional-subst cmr::equiv-ev-theoremp fgl-ev-theoremp)
 (add-equiv-ev-fgl-ev-functional-subst cmr::equiv-ev-meta-extract-global-badguy fgl-ev-meta-extract-global-badguy)
 (local (equiv-ev-fgl-ev-record-functional-subst fgl-ev-falsify-func-inst cmr::equiv-ev-falsify
                                                 :other-hints (:computed-hint-replacement
@@ -297,7 +298,9 @@
                 (not cmr::errmsg))
            (fgl-ev-congruence-rule-correct-p cmr::rule))
   :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-congruence-rule-correct-p-of-<fn>))
+          cmr::equiv-ev-congruence-rule-correct-p-of-<fn>)
+         (And stable-under-simplificationp
+              '(:in-theory (enable fgl-ev-theoremp))))
   :fn cmr::parse-congruence-rule)
 
 
@@ -368,6 +371,11 @@
             fgl-ev-context-fix-list-func-inst
             cmr::equiv-ev-context-fix-list))))
 
+
+(local (defthm fgl-ev-theoremp-when-falsify
+         (implies (fgl-ev x (fgl-ev-falsify x))
+                  (fgl-ev-theoremp x))
+         :hints(("Goal" :in-theory (enable fgl-ev-theoremp)))))
 
 (defsection fgl-ev-context-equiv
   (defthm fgl-ev-context-equiv-self

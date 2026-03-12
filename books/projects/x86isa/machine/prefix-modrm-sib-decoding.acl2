@@ -1,6 +1,6 @@
 (ld "cert.acl2")
 ; From cert.acl2:
-;; cert-flags: ? t :ttags (:syscall-exec :other-non-det :undef-flg)
+;; cert-flags: ? t :ttags (:syscall-exec)
 
 #+acl2-par
 ; computed hints that modify state

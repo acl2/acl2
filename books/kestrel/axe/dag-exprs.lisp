@@ -1,7 +1,7 @@
 ; Expressions that can appear in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -99,14 +99,27 @@
   :hints (("Goal" :expand ((nth 1 (cdr (cdr (dargs expr))))
                            (nth 2 (cdr (dargs expr)))
                            (nth 3 (dargs expr)))
-           :in-theory (enable nth))))
+                  :in-theory (enable nth))))
 
-(defun-inline darg1 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 1 (len (dargs x)))))) (first (dargs x)))
-(defun-inline darg2 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 2 (len (dargs x)))))) (second (dargs x)))
-(defun-inline darg3 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 3 (len (dargs x)))))) (third (dargs x)))
-(defun-inline darg4 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 4 (len (dargs x)))))) (fourth (dargs x)))
-(defun-inline darg5 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 5 (len (dargs x)))))) (fifth (dargs x)))
-(defun-inline darg6 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 6 (len (dargs x)))))) (sixth (dargs x)))
+(local
+ (defthmd nth-opener
+   (implies (and (syntaxp (quotep n))
+                 (natp n))
+            (equal (nth n l)
+                   (if (endp l)
+                       nil
+                     (if (zp n)
+                         (car l)
+                       (nth (- n 1) (cdr l))))))
+   :hints (("Goal" :in-theory (enable nth)))))
+
+;; We use nth in the :logic part since we prefer that normal form for accessing individual dargs.
+(defun-inline darg1 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 1 (len (dargs x)))) :guard-hints (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 0 (dargs x)) :exec (first (dargs x))))
+(defun-inline darg2 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 2 (len (dargs x)))) :guard-hints  (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 1 (dargs x)) :exec (second (dargs x))))
+(defun-inline darg3 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 3 (len (dargs x)))) :guard-hints  (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 2 (dargs x)) :exec (third (dargs x))))
+(defun-inline darg4 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 4 (len (dargs x)))) :guard-hints  (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 3 (dargs x)) :exec (fourth (dargs x))))
+(defun-inline darg5 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 5 (len (dargs x)))) :guard-hints  (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 4 (dargs x)) :exec (fifth (dargs x))))
+(defun-inline darg6 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 6 (len (dargs x)))) :guard-hints  (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 5 (dargs x)) :exec (sixth (dargs x))))
 
 ;; Now that dargs has been defined, we redefine dag-function-call-exprp so that
 ;; its expansion mentions dargs instead of fargs.
@@ -155,6 +168,16 @@
            (darg-listp (dargs expr)))
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
+;; This happens to be true for all 3 kinds of dag-expr.
+(defthm dag-exprp-forward-to-true-listp-of-dargs
+  (implies (and (dag-exprp expr)
+                ;; (consp expr)
+                )
+           (true-listp (dargs expr)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable dag-exprp dargs))))
+
+;; This happens to be true for all 3 kinds of expr.
 (defthm true-listp-of-dargs-when-dag-exprp
   (implies (and (dag-exprp expr)
                 ;; (consp expr)
@@ -192,11 +215,9 @@
   :hints (("Goal" :in-theory (enable dag-function-call-exprp dag-exprp))))
 
 ;drop?
-(local (in-theory (enable consp-of-cdr-of-nth-when-darg-listp)))
-
-(local (in-theory (enable equal-of-quote-and-car-of-nth-when-darg-listp)))
-
-(local (in-theory (enable equal-of-quote-and-nth-0-of-nth-when-darg-listp)))
+(local (in-theory (enable consp-of-cdr-of-nth-when-darg-listp
+                          equal-of-quote-and-car-of-nth-when-darg-listp
+                          equal-of-quote-and-nth-0-of-nth-when-darg-listp)))
 
 ;; We normalize claims about dag-args to consp.
 (defthm consp-of-cdr-of-nth-of-dargs
@@ -374,10 +395,18 @@
                     0)))
   :hints (("Goal" :in-theory (enable <-of-1-and-len-of-nth-when-darg-listp))))
 
+;; Happens to be true for all 3 kinds of dag-expr.
 ;; too expensive to leave enabled
 (defthmd symbolp-of-car-when-dag-exprp
   (implies (dag-exprp expr)
            (symbolp (car expr)))
+  :hints (("Goal" :in-theory (enable dag-exprp))))
+
+;; Happens to be true for all 3 kinds of dag-expr.
+(defthm dag-exprp-forward-to-symbolp-of-car
+  (implies (dag-exprp expr)
+           (symbolp (car expr)))
+  :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
 ;; too expensive to leave enabled
@@ -399,15 +428,6 @@
                   nil))
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
-(defthm dag-exprp-and-consp-forward-to-true-listp-of-dargs
-  (implies (and (dag-exprp expr)
-                (consp expr))
-           (true-listp (dargs expr)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable dag-exprp
-                                     dargs ;todo: this theorem happens to be true for quoteps too
-                                     ))))
-
 (defthm dag-exprp-and-not-consp-forward-to-symbolp
   (implies (and (dag-exprp expr)
                 (not (consp expr)))
@@ -415,9 +435,11 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
+;; true for quoteps and function calls
 (defthm dag-exprp-and-forward-to-true-listp-when-quote
   (implies (and (dag-exprp expr)
-                (eq 'quote (car expr)))
+                (consp expr) ; (eq 'quote (car expr)))
+                )
            (true-listp expr))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable dag-exprp))))

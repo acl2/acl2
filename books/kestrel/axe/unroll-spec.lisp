@@ -95,7 +95,7 @@
             (mv (erp-nil)
                 (list res)))))
        ((when erp) (mv erp nil state))
-       ((mv erp dag state)
+       ((mv erp dag-or-constant state)
         (simp-term term
                    :rule-alists rule-alists
                    :monitor monitor
@@ -105,6 +105,10 @@
                    :check-inputs nil))
        ((when erp)
         (mv erp nil state))
+       ((when (quotep dag-or-constant)) ;; TODO: Should we allow this?
+        (er hard? 'unroll-spec-fn "Spec unexpectedly rewrote to the constant ~x0." dag-or-constant)
+        (mv :unexpected-quotep nil state))
+       (dag dag-or-constant) ; it is a DAG, not a constant
        ;; build the function:
        (function-name (intern-in-package-of-symbol
                        ;;todo: why is the re-interning needed here?

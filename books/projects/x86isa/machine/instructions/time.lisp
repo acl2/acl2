@@ -37,8 +37,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils")
 
 ;; ======================================================================
 ;; INSTRUCTION: RDTSC

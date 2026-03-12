@@ -490,7 +490,6 @@
                                   (
                                    acl2::bvchop-identity-cheap
                                    acl2::bvchop-identity
-                                   ;acl2::trim-to-n-bits-meta-rule-for-bvcat ;looped
                                    acl2::bvcat-of-bvchop-low ;looped
                                    acl2::slice-of-bvchop-low ;looped
                                    acl2::slice-of-bvchop-low-gen ;looped
@@ -542,7 +541,6 @@
                                                 acl2::getbit)
                                   (ACL2::BVCHOP-IDENTITY-CHEAP
                                    ACL2::BVCHOP-IDENTITY
-                                   ;ACL2::TRIM-TO-N-BITS-META-RULE-FOR-BVCAT ;looped
                                    ACL2::BVCAT-OF-BVCHOP-LOW ;looped
                                    ))
            :use (:instance acl2::split-bv

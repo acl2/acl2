@@ -348,10 +348,13 @@
     (implies (and (ordinal-p a)
                   (ordinal-p b)
                   (subset b a)
-                  (not (equal b a)))
+                  (not (equal b a))
+; We avoid forcing diff$prop because that causes some proofs in other books,
+; including community book projects/hol-in-acl2/acl2/lemmas.lisp, to fail.
+                  (diff$prop))
              (in b a))
-    :hints (("Goal" :use ordinal-proper-subset-is-element-3))
-    :props (zfc diff$prop)))
+    :props (zfc) ; also diff$prop, but not forced; see above
+    :hints (("Goal" :use ordinal-proper-subset-is-element-3))))
 
 (defthmz ordinal-trichotomy-lemma-1
 
@@ -408,3 +411,13 @@
                  (:instance ordinal-trichotomy-lemma-1
                             (a b)
                             (b a))))))
+
+; The following is useful for lemma hpp-natp in community book
+; projects/hol-in-acl2/acl2/lemmas.lisp.
+
+(defthmz omega-is-not-natp
+  (not (natp (omega)))
+  :hints (("Goal"
+           :in-theory (disable in-irreflexive)
+           :use ((:instance in-irreflexive (x (omega))))))
+  :rule-classes :type-prescription)

@@ -318,7 +318,11 @@
       "__const__"
       "__nullptr"
       "__typeof_unqual"
-      "__typeof_unqual__")
+      "__typeof_unqual__"
+      "_Nonnull"
+      "_Null_unspecified"
+      "_Nullable"
+      "_Nullable_result")
     (set-difference-equal
       *keywords-gcc-c17*
       '("__float80"
@@ -358,7 +362,11 @@
       "__const__"
       "__nullptr"
       "__typeof_unqual"
-      "__typeof_unqual__")
+      "__typeof_unqual__"
+      "_Nonnull"
+      "_Null_unspecified"
+      "_Nullable"
+      "_Nullable_result")
     (set-difference-equal
       *keywords-gcc-c23*
       '("__float80"

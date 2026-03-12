@@ -39,9 +39,10 @@
 (in-package "X86ISA")
 
 ;; (include-book "instructions/top"
-;;               :ttags (:syscall-exec :other-non-det :undef-flg))
+;;               :ttags (:syscall-exec))
 ;; Other instruction books may be needed here eventually:
 (include-book "instructions/bit")
+(include-book "instructions/logical")
 (include-book "instructions/padd")
 (include-book "instructions/psub")
 (include-book "instructions/pcmp")

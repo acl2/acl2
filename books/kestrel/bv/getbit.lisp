@@ -1,7 +1,7 @@
 ; BV Library: getbit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -813,3 +813,24 @@
   (equal (getbit n (ifix x))
          (getbit n x))
   :hints (("Goal" :in-theory (enable ifix))))
+
+;gen!
+(defthm getbit-of-+-of-expt-2
+  (implies (integerp x)
+           (equal (GETBIT 31 (+ 2147483648 x))
+                  (if (equal 0 (GETBIT 31 x))
+                      1
+                    0)))
+  :hints (("Goal" :in-theory (enable getbit slice))))
+
+(defthm getbit-of-+-of-constant-irrel
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep n)))
+                (equal 0 (bvchop (+ 1 n) k))
+                (natp n)
+                (integerp x)
+                (integerp k))
+           (equal (getbit n (+ k x))
+                  (getbit n x)))
+  :hints (("Goal" :use (:instance slice-of-+-of-constant-irrel (high n) (low n))
+                  :in-theory (e/d (getbit) (slice-of-+-of-constant-irrel)))))
