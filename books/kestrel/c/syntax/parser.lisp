@@ -11984,8 +11984,8 @@
                        "and no #include directives"))))
        ((unless (= (position->column eof-pos) 0))
         (reterr (msg "The file does not end in new-line.")))
-       (items (append (trans-item-include-list includes)
-                      (trans-item-declon-list extdecls))))
+       (items (append (trans-item-list-include includes)
+                      (trans-item-list-declon extdecls))))
     (retok (make-transunit :items items
                            :info nil)
            parstate))

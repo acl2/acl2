@@ -502,7 +502,7 @@
                                          item.declon
                                          split-point)))
                 (retok target-found
-                       (c$::trans-item-declon-list extdecls)))
+                       (c$::trans-item-list-declon extdecls)))
       :include (retmsg$ "#include directives not supported.")
       :line-comment (retok nil (list (trans-item-fix item)))))
   ///

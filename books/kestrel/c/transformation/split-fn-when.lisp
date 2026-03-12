@@ -179,7 +179,7 @@
                     (ext-declon-try-split-fn-when item.declon
                                                   triggers
                                                   transunits)))
-                (retok found (c$::trans-item-declon-list extdecls)))
+                (retok found (c$::trans-item-list-declon extdecls)))
       :include (retmsg$ "Unsupported #include directive.")
       :line-comment (retok nil (list (trans-item-fix item)))))
   ///

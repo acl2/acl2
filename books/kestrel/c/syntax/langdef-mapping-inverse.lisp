@@ -909,8 +909,8 @@
         (and file-name
              (list (string-to-q-header-name (str::cat file-name ".h")))))
        (declons (ildm-ext-declon-list (c::transunit->declons tunit)))
-       (items (append (trans-item-include-list includes)
-                      (trans-item-declon-list declons))))
+       (items (append (trans-item-list-include includes)
+                      (trans-item-list-declon declons))))
     (make-transunit :items items :info nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

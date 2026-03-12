@@ -38,14 +38,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection trans-item-declon-list ((x ext-declon-listp))
+(std::defprojection trans-item-list-declon ((x ext-declon-listp))
   :returns (items trans-item-listp)
   :short "Lift @(tsee trans-item-declon) to lists."
   (trans-item-declon x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection trans-item-include-list ((x header-name-listp))
+(std::defprojection trans-item-list-include ((x header-name-listp))
   :returns (item trans-item-listp)
   :short "Lift @(tsee trans-item-include) to lists."
   (trans-item-include x))
