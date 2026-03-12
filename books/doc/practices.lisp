@@ -57,13 +57,14 @@
                noise to Git commits and disrupt navigation in the editor.")
     (xdoc::li "Non-ASCII characters should be avoided in identifiers, but are
                permissible in comments and strings.")
-    (xdoc::li "UTF-8 is the preferred encoding for non-ASCII characters. Note
-               that the Common Lisp reader will interpret books according to
-               the Latin-1 encoding (see @(see character-encoding)). If you use
-               UTF-8 characters in strings, note that certain utilities may
-               behave in unexpected ways. (For instance, @(tsee length) will
-               return the number of bytes, not the number of unicode grapheme
-               clusters.)")
+    (xdoc::li "UTF-8 is the preferred encoding for non-ASCII characters in
+               strings and comments due to standard editor support. Note that
+               the Common Lisp reader will interpret books according to the
+               Latin-1 encoding (see @(see character-encoding)). If an ACL2
+               string contains bytes representing UTF-8 encodings of non-ASCII
+               characters, certain utilities may yield unexpected results. For
+               instance, @(tsee length) will return the number of bytes, not the
+               number of user-perceived characters (grapheme clusters).")
     (xdoc::li "Avoid consecutive blank lines.")
     (xdoc::li "Line breaks should use the posix-style newline
                (i.e. @('\"\\n\"'), not @('\"\\r\\n\"')). Linux and Mac
