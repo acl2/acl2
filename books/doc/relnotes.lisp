@@ -476,6 +476,10 @@
    (xdoc::p
     "Display of typewriter font has been improved for dark backgrounds.")
 
+   (xdoc::p
+    "A bibtex parser was introduced, as well as tools to generate XDOC from
+     bibtex entries. See @('[books]/kestrel/bibtex/').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Documentation")
@@ -488,6 +492,9 @@
     "A new topic, @(see osicat), was added. It describes an occasional
      build issue caused by a race condition in the build logic,
      as well as the fix.")
+
+   (xdoc::p
+    "Various broken links have been fixed.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
