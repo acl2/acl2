@@ -418,10 +418,18 @@
 
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
 
-   (xdoc::p "Support for several instructions has been added.
+   (xdoc::p
+    "A new summary of implemented and unimplemenetd instructions has been added.
+     at @(see x86isa::sdm-instruction-set-summary).
+     It is organized according to the sections of
+     Chapter 5 of Volume 1 of Intel's Software Development Manual (SFM).
+     The summary is generated from the opcode maps,
+     and thus it is always automatically up to date.")
+
+   (xdoc::p
+    "Support for several instructions has been added.
      Currently supported instructions can be seen at
-     @(see x86isa::sdm-instruction-set-summary),
-     organized according to some sections of the Intel manuals.")
+     @(see x86isa::sdm-instruction-set-summary).")
 
    (xdoc::p
     "Added a new framework @(see x86isa::asmtest) for testing instruction
@@ -448,7 +456,7 @@
     "Improved user interface for tracing applications of rewrite rules:
      see @(see fgl::fgl-rewrite-tracing), @(see fgl::fgl-trace), and
      @(see fgl::fgl-advanced-tracing).")
-   
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
