@@ -23,7 +23,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are operations that depend only on the structure of the ASTs,
-     and could be even automatically generated
+     and at least some of them could be even automatically generated
      from the fixtype definitions themselves,
      in the future."))
   :order-subtopics t
@@ -31,12 +31,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stringlit-list->prefix?-list ((strlits stringlit-listp))
+(std::defprojection stringlit-list->prefix? ((x stringlit-listp))
   :returns (prefixes eprefix-option-listp)
   :short "Lift @(tsee stringlit->prefix?) to lists."
-  (cond ((endp strlits) nil)
-        (t (cons (stringlit->prefix? (car strlits))
-                 (stringlit-list->prefix?-list (cdr strlits))))))
+  (stringlit->prefix? x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
