@@ -212,6 +212,25 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "axe" "Axe Toolkit"))
+
+   (xdoc::p
+    "Several new x86 binary lifting examples were added,
+     including switch statement and jump table examples
+     and string (@('char*')) examples.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "bls12-377-curves" "BLS12-377 Curves"))
+
+   (xdoc::p
+    "The BLS12-377 elliptic curve files were moved from
+     @('[books]/kestrel/crypto/') to a new project directory
+     @('[books]/projects/bls12-377-curves/').
+     A Pratt certificate for the BLS12-377 base field prime was added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "bridge::bridge" "Bridge"))
 
    (xdoc::p
@@ -313,6 +332,49 @@
 
    (xdoc::p
     "@(tsee oslib::date) now optionally includes a timezone.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
+                             "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "Unary negation and binary subtraction
+     were added to the PFCS abstract syntax,
+     concrete syntax (ABNF grammar),
+     parser, semantics, and lifter.
+     The R1CS-translatable subset recognizer
+     and the PFCS string representations of AleoVM circuits
+     were updated accordingly.")
+
+   (xdoc::p
+    "Parenthesized expressions were added
+     as a primary expression alternative in the PFCS parser.
+     A convenience function @('parse-def') was added
+     for parsing a single PFCS definition from a string.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "primes" "Primes Library"))
+
+   (xdoc::p
+    "Pratt certificate primality proofs were added for
+     the KoalaBear prime (@('2^31 - 2^24 + 1'),
+     used in the Plonky3 proving system),
+     the Ed25519 base field and group order primes,
+     and the NIST P-256 base field and group order primes.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "r1cs::r1cs" "R1CS Library"))
+
+   (xdoc::p
+    "A human-readable R1CS constraint printer @('p1cs') was added,
+     supporting both the BN-254 and BLS12-377 scalar field primes.")
+
+   (xdoc::p
+    "The element recognizer for sparse vectors was factored out
+     and renamed from @('r1cs-termp') to @('sparse-vector-elementp').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
