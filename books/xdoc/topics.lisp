@@ -863,6 +863,7 @@ manual with others, you should read about @(see deploying-manuals).</li>
           [:logo-image path]               ;; default is nil
           [:error      bool]               ;; default is nil
           [:error-on-undefined-parents bool] ;; default is nil
+          [:error-on-missing-parents   bool] ;; default is nil
           [:broken-links-limit nil-or-nat] ;; default is nil
           )
 })
@@ -1610,8 +1611,8 @@ instead.  But we found that during development, this sometimes led to a
 strange-looking hierarchy where ``random'' topics were presented as top-level
 topics just because they were new or being moved around or because @(see
 set-default-parents) forms weren't quite in the right places.  To avoid this,
-we now move these topics to @('missing-parents') and print notes about them
-when a manual is saved with @(see xdoc::save).</p>")
+we now move these topics to @('missing-parents') and either print notes about
+them or cause an error when a manual is saved with @(see xdoc::save).</p>")
 
 (defxdoc set-default-parents
   :short "Set up default parents to use for @(see xdoc)."

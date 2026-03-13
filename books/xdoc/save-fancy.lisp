@@ -404,11 +404,13 @@
   state)
 ||#
 
-(defun save-json-files (topics dir error-on-undefined-parents state)
+(defun save-json-files (topics dir error-on-undefined-parents error-on-missing-parents state)
   (b* ((topics0 (force-missing-parents
                  (maybe-add-top-topic
                   (normalize-parents-list
-                   (clean-topics topics)))))
+                    (clean-topics topics)))
+                 error-on-missing-parents
+                 nil))
 
        (prev-event-table-binding
         ;; save the previous binding (or lack) of xdoc-get-event-table, set it
@@ -655,12 +657,12 @@
                   (t msg-list))))
            msg-list))))))))
 
-(defun save-fancy (all-topics dir zip-p logo-image broken-links-limit error-on-undefined-parents state)
+(defun save-fancy (all-topics dir zip-p logo-image broken-links-limit error-on-undefined-parents error-on-missing-parents state)
   (prog2$
    (check-xdoc-topics all-topics nil)
    (b* ((state (f-put-global 'broken-links-limit broken-links-limit state))
         (state (prepare-fancy-dir dir logo-image state))
-        (state (save-json-files all-topics dir error-on-undefined-parents state))
+        (state (save-json-files all-topics dir error-on-undefined-parents error-on-missing-parents state))
         (state (if zip-p
                    (run-fancy-zip dir state)
                  state)))
