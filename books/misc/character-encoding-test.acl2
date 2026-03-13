@@ -1,0 +1,19 @@
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See character-encoding-test.lisp for a description of this file.
+
+; Like character-encoding-test.lisp, this file has been saved using the utf-8
+; character-encoding. Take care that your editor does not convert this file to
+; another encoding.
+
+(defun test-1 () "ó")
+
+(defthm len-test-1
+  (equal (length (test-1)) 2)
+  :rule-classes nil)
