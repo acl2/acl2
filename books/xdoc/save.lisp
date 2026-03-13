@@ -84,6 +84,7 @@
                     (logo-image 'nil)
                     (error      'nil)
                     (error-on-undefined-parents 'nil)
+                    (error-on-missing-parents 'nil)
                     (broken-links-limit 'nil))
   (declare (xargs :guard (booleanp error))) ; probably incomplete
   `(progn
@@ -117,6 +118,8 @@
            ((mv & & state) (assign acl2::writes-okp t))
            (- (acl2::tshell-ensure))
            (state (save-fancy all-xdoc-topics ,dir ,zip-p ,logo-image
-                              ,broken-links-limit ,error-on-undefined-parents state))
+                              ,broken-links-limit
+                              ,error-on-undefined-parents ,error-on-missing-parents
+                              state))
            (- (report-xdoc-errors 'save)))
         (value '(value-triple :invisible))))))
