@@ -221,7 +221,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "bls12-377-curves" "BLS12-377 Curves"))
+   (xdoc::h4 (xdoc::seetopic "crypto::bls12-377-curves" "BLS12-377 Curves"))
 
    (xdoc::p
     "The BLS12-377 elliptic curve files were moved from
@@ -355,7 +355,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "primes" "Primes Library"))
+   (xdoc::h4 (xdoc::seetopic "primes::primes" "Primes Library"))
 
    (xdoc::p
     "Pratt certificate primality proofs were added for
