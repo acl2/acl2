@@ -130,14 +130,6 @@
 
 (add-to-ruleset from-omap-theory '(values-of-to-omap))
 
-;; TODO: wherever from-omap is defined
-;; (defrule omap-values-becomes-values
-;;   (equal (omap::values map)
-;;          (treeset::to-oset (values (from-omap map))))
-;;   :enable (to-omap
-;;            values
-;;            break-abstraction))
-
 (defruled values-becomes-omap-values
   (equal (values map)
          (treeset::from-oset (omap::values (to-omap map))))
