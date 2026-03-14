@@ -13,6 +13,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/treeset/hash-defs" :dir :system)
+(include-book "kestrel/data/treeset/to-oset-defs" :dir :system)
 (include-book "kestrel/data/treeset/insert-defs" :dir :system)
 (include-book "kestrel/data/treeset/union-defs" :dir :system)
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
@@ -24,6 +25,7 @@
 (include-book "size-defs")
 (include-book "in-defs")
 (include-book "lookup-defs")
+(include-book "values-defs")
 (include-book "submap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -66,6 +68,7 @@
 (local (include-book "to-omap"))
 (local (include-book "size"))
 (local (include-book "in"))
+(local (include-book "values"))
 (local (include-book "lookup"))
 (local (include-book "submap"))
 (local (include-book "extensionality"))
@@ -702,11 +705,11 @@
 
 (add-to-ruleset to-omap-theory '(keys-of-from-omap))
 
-(defruled from-oset-of-keys
-  (equal (treeset::from-oset (omap::keys omap))
-         (keys (from-omap omap))))
+(defruled omap-keys-becomes-keys
+  (equal (omap::keys omap)
+         (treeset::to-oset (keys (from-omap omap)))))
 
-(add-to-ruleset from-omap-theory '(from-oset-of-keys))
+(add-to-ruleset from-omap-theory '(omap-keys-becomes-keys))
 
 (defrule lookup-of-from-omap
   (equal (lookup key (from-omap omap) :default default)
@@ -725,6 +728,20 @@
   :enable omap::in-of-keys-to-assoc)
 
 (add-to-ruleset from-omap-theory '(omap-assoc-becomes-lookup))
+
+;; TODO
+;; (defrule values-of-from-omap
+;;   (equal (values (from-omap omap))
+;;          (treeset::from-oset (omap::values omap)))
+;;   :enable from-omap)
+;;
+;; (add-to-ruleset to-omap-theory '(values-of-from-omap))
+;;
+;; (defruled omap-values-becomes-values
+;;   (equal (omap::values omap)
+;;          (treeset::to-oset (values (from-omap omap)))))
+;;
+;; (add-to-ruleset from-omap-theory '(omap-values-becomes-values))
 
 (defrule to-omap-of-from-omap
   (equal (to-omap (from-omap omap))

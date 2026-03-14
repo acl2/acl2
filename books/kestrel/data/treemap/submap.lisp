@@ -258,21 +258,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; (defruled submap-when-not-in-of-head
-;;   (implies (and (not (emptyp x))
-;;                 (not (in (head x) y)))
-;;            (not (submap x y)))
-;;   :enable (submap
-;;            in
-;;            head
-;;            emptyp))
-;;
-;; (defrule submap-when-not-in-of-head-cheap
-;;   (implies (and (not (in (head x) y))
-;;                 (not (emptyp x)))
-;;            (not (submap x y)))
-;;   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-;;   :by submap-when-not-in-of-head)
+(defruled submap-when-not-in-of-head-key
+  (implies (and (not (emptyp x))
+                (not (treeset::in (head-key x) (keys y))))
+           (not (submap x y))))
+
+(defrule submap-when-not-in-of-head-key-cheap
+  (implies (and (not (treeset::in (head-key x) (keys y)))
+                (not (emptyp x)))
+           (not (submap x y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :by submap-when-not-in-of-head-key)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -500,6 +496,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (defthy submap-extra-rules
-;;   '(;; submap-when-not-in-of-head
-;;     ))
+(defthy submap-extra-rules
+  '(submap-when-not-in-of-head-key
+    ))

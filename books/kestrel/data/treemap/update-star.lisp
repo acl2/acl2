@@ -216,58 +216,14 @@
 
 (defrule submap-of-arg1-and-update*-of-arg1
   (submap x (update* x y))
-  :enable (pick-a-point
-           submap))
+  :enable pick-a-point)
 
-;; (defrule submap-of-arg1-and-update*-of-arg2-when-compatiblep
-;;   (implies (compatiblep x y)
-;;            (subset x (update* y x)))
-;;   :enable (pick-a-point
-;;            subset))
-
-;; TODO
-#|
-(defrule monotonicity-of-update*
-  (implies (and (submap x0 x1)
-                (submap y0 y1))
-           (submap (update* x0 y0)
-                   (update* x1 y1)))
-  :use ((:instance lookup-when-in-of-keys-and-submap
-                   (x x0)
-                   (y x1)
-                   (key (mv-nth 0
-                                (submap-sk-witness (update* x0 y0)
-                                                   (update* x1 y1))))
-                   (default (mv-nth 1
-                                    (submap-sk-witness (update* x0 y0)
-                                                       (update* x1 y1)))))
-        (:instance lookup-when-in-of-keys-and-submap
-                   (x y0)
-                   (y y1)
-                   (key (mv-nth 0
-                                (submap-sk-witness (update* x0 y0)
-                                                   (update* x1 y1))))
-                   (default (mv-nth 1
-                                    (submap-sk-witness (update* x0 y0)
-                                                       (update* x1 y1)))))
-        ;; (:instance lookup-when-in-of-keys-and-submap
-        ;;            (x x0)
-        ;;            (y x1)
-        ;;            (key (mv-nth 0
-        ;;                         (submap-sk-witness (update* x0 y0)
-        ;;                                            (update* x1 y1))))
-        ;;            (default nil))
-        ;; (:instance lookup-when-in-of-keys-and-submap
-        ;;            (x y0)
-        ;;            (y y1)
-        ;;            (key (mv-nth 0
-        ;;                         (submap-sk-witness (update* x0 y0)
-        ;;                                            (update* x1 y1))))
-        ;;            (default nil))
-        )
-  :enable (pick-a-point-polar
-           lookup-with-default-becomes-lookup-syntaxp))
-|#
+;; Note: update* is *not* monotonic on arg1.
+(defrule monotonicity-of-update*-on-arg2
+  (implies (submap y0 y1)
+           (submap (update* x y0)
+                   (update* x y1)))
+  :enable pick-a-point-polar)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -275,18 +231,6 @@
   (equal (update* (update* x y) z)
          (update* x y z))
   :enable extensionality)
-
-;; (defrule commutativity-of-update*-when-compatiblep
-;;   (implies (compatiblep x y)
-;;            (equal (update* y x)
-;;                   (update* x y)))
-;;   :enable extensionality)
-
-;; (defrule commutativity-2-of-update*-when-compatiblep
-;;   (implies (compatiblep x y)
-;;            (equal (update* y x z)
-;;                   (update* x y z)))
-;;   :enable extensionality)
 
 (defrule idempotence-of-update*
   (equal (update* x x)
@@ -390,59 +334,6 @@
              (update* x y)
            (delete key (update* x y))))
   :enable extensionality)
-
-;;;;;;;;;;;;;;;;;;;;
-
-#|
-(defrule min-of-update*
-  (equal (min (update* x y))
-         (cond ((emptyp x) (min y))
-               ((emptyp y) (min x))
-               (t (min-<< (min x) (min y)))))
-  ;; TODO: improve proof
-  :use ((:instance <<-of-arg1-and-min-when-in
-                   (x (not-<<-all-l-sk-witness (update* x y) (min x)))
-                   (set x))
-        (:instance <<-of-arg1-and-min-when-in
-                   (x (not-<<-all-l-sk-witness (update* x y) (min x)))
-                   (set y))
-        (:instance <<-of-arg1-and-min-when-in
-                   (x (not-<<-all-l-sk-witness (update* x y) (min y)))
-                   (set x))
-        (:instance <<-of-arg1-and-min-when-in
-                   (x (not-<<-all-l-sk-witness (update* x y) (min y)))
-                   (set y)))
-  :enable (equal-of-min-becomes-sk
-           not-<<-all-l-sk
-           min-<<
-           data::<<-rules)
-  :disable <<-of-arg1-and-min-when-in)
-
-(defrule max-of-update*
-  (equal (max (update* x y))
-         (cond ((emptyp x) (max y))
-               ((emptyp y) (max x))
-               (t (max-<< (max x) (max y)))))
-  ;; TODO: improve proof
-  :use ((:instance <<-of-max-when-in
-                   (x (not-<<-all-r-sk-witness (max x) (update* x y)))
-                   (set x))
-        (:instance <<-of-max-when-in
-                   (x (not-<<-all-r-sk-witness (max x) (update* x y)))
-                   (set y))
-        (:instance <<-of-max-when-in
-                   (x (not-<<-all-r-sk-witness (max y) (update* x y)))
-                   (set x))
-        (:instance <<-of-max-when-in
-                   (x (not-<<-all-r-sk-witness (max y) (update* x y)))
-                   (set y)))
-  :enable (equal-of-max-becomes-sk
-           not-<<-all-r-sk
-           max-<<
-           data::<<-rules)
-  :disable (<<-of-max-when-in
-            <<-of-arg1-and-max-when-in))
-|#
 
 ;;;;;;;;;;;;;;;;;;;;
 

@@ -79,8 +79,6 @@
 
 (add-to-ruleset from-omap-theory '(size-of-to-omap))
 
-;; TODO: omap::size becomes size of from-omap
-
 (defruled size-becomes-omap-size
   (equal (size map)
          (omap::size (to-omap map))))

@@ -204,8 +204,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO to-omap and from-omap theories
-
 (defrule assoc-of-to-omap
   (equal (omap::assoc key (to-omap map))
          (if (treeset::in key (keys map))
@@ -217,8 +215,6 @@
            break-abstraction))
 
 (add-to-ruleset from-omap-theory '(assoc-of-to-omap))
-
-;; TODO: assoc becomes lookup of from-omap
 
 (defruled lookup-becomes-omap-assoc
   (equal (lookup key map :default default)

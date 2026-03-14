@@ -52,13 +52,13 @@
   (key
    (tree treep))
   :parents (implementation)
-  :short "Remove a value from the tree."
+  :short "Remove a key/value pair from the tree."
   :long
   (xdoc::topstring
    (xdoc::p
      "The tree is expected to be a binary search tree. If it is not, the
-      element @('x') intended to be deleted might outside the search path and
-      thus remain in the tree.")
+      element @('x') intended to be deleted might be outside the search path
+      and thus remain in the tree.")
    (xdoc::p
      "After deletion, the tree is rebalanced with respect to the @(tsee
       heapp) property."))

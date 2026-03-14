@@ -243,13 +243,21 @@
   (submap (restrict keys map) map)
   :enable pick-a-point)
 
-;; TODO
-;; (defrule submap-of-arg1-and-restrict
-;;   (equal (submap map (restrict keys map))
-;;          (treeset::subset (keys map) keys))
-;;   :enable (acl2::equal-of-booleans-cheap
-;;            pick-a-point-polar
-;;            treeset::pick-a-point-polar))
+(defrule submap-of-arg1-and-restrict
+  (equal (submap map (restrict keys map))
+         (treeset::subset (keys map) keys))
+  :enable (acl2::equal-of-booleans-cheap
+           pick-a-point-polar)
+  :prep-lemmas
+  ((defrule lemma
+     (implies (submap map (restrict keys map))
+              (treeset::subset (keys map) keys))
+     ;; TODO: why isn't this inferred by forward-chaining?
+     :use (:instance subset-of-keys
+                     (x map)
+                     (y (restrict keys map)))
+     :enable treeset::pick-a-point-polar
+     :disable subset-of-keys)))
 
 (defrule monotonicity-of-restrict
   (implies (and (treeset::subset keys0 keys1)
@@ -322,13 +330,6 @@
          (restrict (treeset::union (keys x) keys) (update* x y)))
   :enable extensionality)
 
-;; TODO GJ: Resume
-
-;; (defrule restrict-over-union
-;;   (equal (restrict (union x y) z)
-;;          (union (restrict x z) (restrict y z)))
-;;   :enable extensionality)
-
 ;; NOTE: this goes the opposite direction then the corresponding operations on
 ;; sets (update* -> union, restrict -> intersect).
 (defrule update*-of-restrict-restrict-1
@@ -340,6 +341,36 @@
   (equal (update* (restrict keys x) (restrict keys y))
          (restrict keys (update* x y)))
   :enable extensionality)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled lookup-when-equal-of-restrict
+  (implies (and (equal (restrict keys x) (restrict keys y))
+                (treeset::in key keys))
+           (equal (lookup key x :default default)
+                  (lookup key y :default default)))
+  :use ((:instance lookup-of-restrict
+                   (map x))
+        (:instance lookup-of-restrict
+                   (map y)))
+  :disable lookup-of-restrict)
+
+(defrule lookup-when-equal-of-restrict-forward-chaining
+  (implies (and (equal (restrict keys x) (restrict keys y))
+                (treeset::in key keys))
+           (equal (lookup key x :default default)
+                  (lookup key y :default default)))
+  :rule-classes
+  ((:forward-chaining :trigger-terms ((lookup key x :default default))))
+  :by lookup-when-equal-of-restrict)
+
+(defrule lookup-default-nil-when-equal-of-restrict-forward-chaining
+  (implies (and (equal (restrict keys x) (restrict keys y))
+                (treeset::in key keys))
+           (equal (lookup key x)
+                  (lookup key y)))
+  :rule-classes :forward-chaining
+  :by lookup-when-equal-of-restrict)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -378,6 +409,37 @@
                             (from-omap map)))))
 
 (add-to-ruleset from-omap-theory '(omap-restrict-becomes-restrict))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule commutativity-of-update*-when-compatiblep
+  (implies (equal (restrict (treeset::intersect (keys x) (keys y)) x)
+                  (restrict (treeset::intersect (keys x) (keys y)) y))
+           (equal (update* y x)
+                  (update* x y)))
+  :use ((:instance lookup-when-equal-of-restrict
+                   (keys (treeset::intersect (keys x) (keys y)))
+                   (key (mv-nth 0 (ext-equal-witness (update* y x)
+                                                     (update* x y))))
+                   (default nil)))
+  :enable extensionality-polar)
+
+(defrule commutativity-2-of-update*-when-compatiblep
+  (implies (equal (restrict (treeset::intersect (keys x) (keys y)) x)
+                  (restrict (treeset::intersect (keys x) (keys y)) y))
+           (equal (update* y x z)
+                  (update* x y z)))
+  :use ((:instance lookup-when-equal-of-restrict
+                   (keys (treeset::intersect (keys x) (keys y)))
+                   (key (mv-nth 0 (ext-equal-witness (update* y x z)
+                                                     (update* x y z))))
+                   (default nil)))
+  :enable extensionality-polar)
+
+(defrule submap-of-arg1-and-update*-of-arg2-when-compatiblep
+  (implies (equal (restrict (treeset::intersect (keys x) (keys y)) x)
+                  (restrict (treeset::intersect (keys x) (keys y)) y))
+           (submap x (update* y x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

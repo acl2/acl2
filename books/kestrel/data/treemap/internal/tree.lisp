@@ -48,7 +48,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "This is a triple, containing a hash, a key, and value.
+     "This is a triple containing a hash, a key, and value.
       The hash is the hash of the key."))
   (and (consp x)
        (consp (cdr x))

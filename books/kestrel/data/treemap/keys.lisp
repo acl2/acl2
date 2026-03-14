@@ -89,6 +89,13 @@
          (treeset::empty))
   :enable keys-when-emptyp)
 
+(defrule in-of-head-key
+  (equal (treeset::in (head-key map) (keys map))
+         (not (emptyp map)))
+  :enable (head-key
+           keys
+           emptyp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: it isn't clear to me that either direction is more natural for the
@@ -101,14 +108,6 @@
            break-abstraction))
 
 (add-to-ruleset from-omap-theory '(keys-of-to-omap))
-
-;; TODO: wherever from-omap is defined
-;; (defrule omap-keys-becomes-keys
-;;   (equal (omap::keys map)
-;;          (treeset::to-oset (keys (from-omap map))))
-;;   :enable (to-omap
-;;            keys
-;;            break-abstraction))
 
 (defruled keys-becomes-omap-keys
   (equal (keys map)

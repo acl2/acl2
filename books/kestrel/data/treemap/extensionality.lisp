@@ -12,6 +12,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "kestrel/utilities/polarity" :dir :system)
+
 (include-book "map-defs")
 (include-book "keys-defs")
 (include-book "lookup-defs")
@@ -155,6 +157,17 @@
            equiv)
   :use ext-equal-becomes-equiv)
 
+(defruled extensionality-no-backchain-limit-polar
+  (implies (and (syntaxp (acl2::want-to-weaken (equal x y)))
+                (mapp x)
+                (mapp y))
+           (equal (equal x y)
+                  (mv-let (arbitrary-key default)
+                          (ext-equal-witness x y)
+                    (equal (lookup arbitrary-key x :default default)
+                           (lookup arbitrary-key y :default default)))))
+  :by extensionality-no-backchain-limit)
+
 (defruled extensionality
   (implies (and (mapp x)
                 (mapp y))
@@ -164,4 +177,16 @@
                     (equal (lookup arbitrary-key x :default default)
                            (lookup arbitrary-key y :default default)))))
   :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
+  :by extensionality-no-backchain-limit)
+
+(defruled extensionality-polar
+  (implies (and (syntaxp (acl2::want-to-weaken (equal x y)))
+                (mapp x)
+                (mapp y))
+           (equal (equal x y)
+                  (mv-let (arbitrary-key default)
+                          (ext-equal-witness x y)
+                    (equal (lookup arbitrary-key x :default default)
+                           (lookup arbitrary-key y :default default)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil 1 1)))
   :by extensionality-no-backchain-limit)
