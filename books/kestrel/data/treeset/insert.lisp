@@ -573,6 +573,13 @@
 
 (add-to-ruleset from-oset-theory '(oset-emptyp-becomes-emptyp))
 
+(defrule from-oset-of-nil
+  (equal (treeset::from-oset nil)
+         (treeset::empty))
+  :enable ((:e treeset::empty)))
+
+(add-to-ruleset from-oset-theory '(from-oset-of-nil))
+
 (defrule in-of-from-oset
   (equal (in x (from-oset oset))
          (set::in x oset))

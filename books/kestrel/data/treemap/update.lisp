@@ -621,12 +621,6 @@
   :induct t
   :enable update-from-omap)
 
-;; MOVE
-(defrule treeset-from-oset-of-nil
-  (equal (treeset::from-oset nil)
-         (treeset::empty))
-  :enable ((:e treeset::empty)))
-
 (defrule keys-of-update-from-omap
   (equal (keys (update-from-omap omap map))
          (treeset::union (treeset::from-oset (omap::keys omap))
