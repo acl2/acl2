@@ -14,6 +14,7 @@
 (include-book "abstract-syntax-operations")
 (include-book "pfield-lib-ext")
 
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/nat-result" :dir :system)
 (include-book "kestrel/fty/nat-list-result" :dir :system)
@@ -23,15 +24,12 @@
 (include-book "std/util/defprojection" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
 
-(local (in-theory (disable primep)))
-
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -152,6 +150,7 @@
                   (nat-listp vals)
                   (equal (len keys) (len vals)))
              (assignmentp (omap::from-lists keys vals)))
+    :induct t
     :enable omap::from-lists))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -181,7 +180,6 @@
         (b* (((mv & nat) (omap::head asg)))
           (and (fep nat p)
                (assignment-wfp (omap::tail asg) p)))))
-  :hooks (:fix)
 
   ///
 
@@ -189,7 +187,8 @@
     (implies (and (assignmentp asg)
                   (assignment-wfp asg p)
                   (consp (omap::assoc var asg)))
-             (fep (cdr (omap::assoc var asg)) p)))
+             (fep (cdr (omap::assoc var asg)) p))
+    :induct t)
 
   (defrule assignment-wfp-of-tail
     (implies (and (assignmentp asg)
@@ -204,6 +203,7 @@
                   (assignment-wfp asg p)
                   (fep nat p))
              (assignment-wfp (omap::update var nat asg) p))
+    :induct t
     :enable omap::update
     :prep-lemmas
     ((defrule lemma
@@ -220,18 +220,21 @@
                   (assignment-wfp asg-new p)
                   (assignment-wfp asg-old p))
              (assignment-wfp (omap::update* asg-new asg-old) p))
+    :induct t
     :enable omap::update*)
 
   (defrule assignment-wfp-of-delete
     (implies (and (assignmentp asg)
                   (assignment-wfp asg p))
              (assignment-wfp (omap::delete var asg) p))
+    :induct t
     :enable omap::delete)
 
   (defrule assignment-wfp-of-delete*
     (implies (and (assignmentp asg)
                   (assignment-wfp asg p))
              (assignment-wfp (omap::delete* vars asg) p))
+    :induct t
     :enable omap::delete*)
 
   (defrule assignment-wfp-of-from-lists
@@ -305,9 +308,8 @@
    :mul (b* (((ok val1) (eval-expr expr.arg1 asg p))
              ((ok val2) (eval-expr expr.arg2 asg p)))
           (mul val1 val2 p)))
+  :no-function nil
   :measure (expression-count expr)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :hooks (:fix)
   :verify-guards nil ; done below
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
 
@@ -319,6 +321,7 @@
                   (assignment-wfp asg p)
                   (not (reserrp (eval-expr expr asg p))))
              (fep (eval-expr expr asg p) p))
+    :induct t
     :enable fep-of-cdr-of-assoc-when-assignment-wfp)
 
   (verify-guards eval-expr)
@@ -357,7 +360,7 @@
        ((ok val) (eval-expr (car exprs) asg p))
        ((ok vals) (eval-expr-list (cdr exprs) asg p)))
     (cons val vals))
-  :hooks (:fix)
+  :no-function nil
   :prepwork
   ((local
     (in-theory
@@ -371,13 +374,14 @@
                   (assignmentp asg)
                   (assignment-wfp asg p)
                   (not (reserrp (eval-expr-list exprs asg p))))
-             (fe-listp (eval-expr-list exprs asg p) p)))
+             (fe-listp (eval-expr-list exprs asg p) p))
+    :induct t)
 
   (defret len-of-eval-expr-list
     (implies (nat-listp nats)
              (equal (len nats)
                     (len exprs)))
-    :hints (("Goal" :induct t :in-theory (enable len))))
+    :hints (("Goal" :induct t :in-theory (enable len (:e tau-system)))))
 
   (defruled eval-expr-list-of-omap-udpate-of-var-not-in-exprs
     (implies (and (namep var)
@@ -491,22 +495,14 @@
 (std::defprojection assertion-list->asg-list ((x assertion-listp))
   :returns (asgs assignment-listp)
   :short "Lift @(tsee assertion->asg) to lists."
-  (assertion->asg x)
-
-  ///
-
-  (fty::deffixequiv assertion-list->asg-list))
+  (assertion->asg x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection assertion-list->constr-list ((x assertion-listp))
   :returns (constrs constraint-listp)
   :short "Lift @(tsee assertion->constr) to lists."
-  (assertion->constr x)
-
-  ///
-
-  (fty::deffixequiv assertion-list->constr-list))
+  (assertion->constr x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -519,7 +515,6 @@
         (t (cons (assertion (car asgs) (car constrs))
                  (assertion-list-from (cdr asgs) (cdr constrs)))))
   :guard-hints (("Goal" :in-theory (enable len)))
-  :hooks (:fix)
 
   ///
 
@@ -545,6 +540,7 @@
                      (assertion-list->asg-list assertions)
                      (assertion-list->constr-list assertions))
                     assertions))
+    :induct t
     :enable (assertion-list->asg-list
              assertion-list->constr-list))
 
@@ -786,18 +782,19 @@
           :assertions
           (proof-list-outcome-assertions (cons outcome.get outcome1.get))))))
     :measure (proof-tree-list-count ptrees)
+
     ///
 
     (defret len-of-exec-proof-tree-list
       (implies (proof-list-outcome-case outcome :assertions)
                (equal (len (proof-list-outcome-assertions->get outcome))
                       (len ptrees)))
-      :hints (("Goal" :in-theory (enable len)))))
-
-  :hints (("Goal" :in-theory (enable o< o-finp)))
+      :hints (("Goal" :induct (len ptrees) :in-theory (enable len)))))
 
   :verify-guards nil ; done below
+
   ///
+
   (verify-guards exec-proof-tree)
 
   (fty::deffixequiv-mutual exec-proof-tree)
@@ -845,7 +842,17 @@
           (and (proof-treep ptree)
                (equal (exec-proof-tree ptree defs p)
                       (proof-outcome-assertion
-                       (make-assertion :asg asg :constr constr))))))
+                       (make-assertion :asg asg :constr constr)))))
+
+  ///
+
+  (local (in-theory (enable identity)))
+
+  (fty::deffixequiv-sk constraint-satp
+    :args ((constr constraintp)
+           (defs definition-listp)
+           (asg assignmentp)
+           (p acl2::any-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -867,8 +874,19 @@
           (and (proof-tree-listp ptrees)
                (equal (exec-proof-tree-list ptrees defs p)
                       (proof-list-outcome-assertions
-                       (assertion-list-from (repeat (len constrs) asg)
-                                            constrs))))))
+                       (assertion-list-from (repeat (len constrs)
+                                                    (assignment-fix asg))
+                                            constrs)))))
+
+  ///
+
+  (local (in-theory (enable identity)))
+
+  (fty::deffixequiv-sk constraint-list-satp
+    :args ((constrs constraint-listp)
+           (defs definition-listp)
+           (asg assignmentp)
+           (p acl2::any-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
