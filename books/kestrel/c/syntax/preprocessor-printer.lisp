@@ -607,13 +607,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-ident ((ident identp) (bytes byte-listp))
+(define pprint-ident ((ident stringp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print an identifier after preprocessing."
-  (b* ((string (ident->unwrap ident))
-       ((unless (stringp string))
-        (raise "Internal error: bad identifier non-string ~x0." string))
-       (chars (acl2::string=>nats string))
+  (b* ((chars (acl2::string=>nats ident))
        ((unless (grammar-character-listp chars))
         (raise "Internal error: bad identifier characters ~x0." chars)))
     (pprint-chars chars bytes))

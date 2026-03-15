@@ -128,6 +128,23 @@
    (xdoc::p
     "We reuse some of the fixtypes for ASTs here.")
    (xdoc::p
+    "For identifiers, we do not use @(tsee ident) from the ASTs,
+     because in the preprocessor we do not need
+     the kind of flexibility discussed in @(tsee ident).
+     We use directly ACL2 strings.
+     Although ACL2 does not support Unicode,
+     ACL2 strings are isomorphic to byte sequences,
+     and can thus represent any UTF-8 sequence,
+     which in fact will be also displayed as expected
+     in at least some popular Lisp implementations.
+     Even though currently we only support ASCII identifiers,
+     if we extend that in the future (perhaps subject to options),
+     we can still use ACL2 strings to represent
+     UTF-8-encoded Unicode strings with some non-ASCII characters.
+     In the event that we extend our syntax for tools to
+     some different character set than Unicode,
+     we should be able to map that characte set to Unicode.")
+   (xdoc::p
     "The @(':other') summand corresponds to
      the last alternative in the ABNF grammar rule for @('preprocessing-token'),
      as well as the prose description of the rule in [C17].
@@ -147,7 +164,7 @@
      Since spaces (code 32) often occur in consecutive chunks,
      we represent them more efficiently as chunks, via positive counts."))
   (:header ((name header-name)))
-  (:ident ((ident ident)))
+  (:ident ((ident string)))
   (:number ((number pnumber)))
   (:char ((const cconst)))
   (:string ((literal stringlit)))
@@ -167,7 +184,7 @@
 (defirrelevant irr-plexeme
   :short "An irrelevant preprocessing lexeme."
   :type plexemep
-  :body (plexeme-ident (ident :irrelevant)))
+  :body (plexeme-ident "irrelevant"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

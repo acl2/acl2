@@ -342,11 +342,7 @@
   (plexeme-case
    lexeme
    :header (raise "Internal error: header name ~x0." (plexeme-fix lexeme))
-   :ident (b* ((astring (ident->unwrap lexeme.ident))
-               ((unless (stringp astring))
-                (raise "Internal error: non-string ~x0 in identifier."
-                       astring)))
-            (stringize-astring astring))
+   :ident (stringize-astring lexeme.ident)
    :number (stringize-pnumber lexeme.number)
    :char (stringize-cconst lexeme.const)
    :string (stringize-stringlit lexeme.literal)

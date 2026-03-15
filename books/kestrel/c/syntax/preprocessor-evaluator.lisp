@@ -1628,8 +1628,7 @@
         (retok (pexpr-char (plexeme-char->const token)) lexemes))
        ((plexeme-case token :ident) ; ident
         (cond
-         ((equal (ident->unwrap (plexeme-ident->ident token))
-                 "defined") ; defined
+         ((equal (plexeme-ident->ident token) "defined") ; defined
           (b* (((mv token2 lexemes) (find-first-token lexemes)))
             (cond
              ((not token2) ; defined END
