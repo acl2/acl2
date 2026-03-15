@@ -11,6 +11,7 @@
 (include-book "tree-defs")
 (include-book "keys-defs")
 (include-book "lookup-defs")
+(include-book "split-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "submap"))
@@ -21,7 +22,8 @@
   :names (tree-submap-p
           tree-submap-p-sk-witness
           tree-submap-p-sk
-          acl2-number-tree-submap-p
-          symbol-tree-submap-p
-          eqlable-tree-submap-p
+          fast-tree-submap-p
+          acl2-number-fast-tree-submap-p
+          symbol-fast-tree-submap-p
+          eqlable-fast-tree-submap-p
           ))

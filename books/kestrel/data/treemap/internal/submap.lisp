@@ -20,6 +20,7 @@
 (include-book "tree-defs")
 (include-book "keys-defs")
 (include-book "lookup-defs")
+(include-book "split-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -38,6 +39,7 @@
 (local (include-book "heap"))
 (local (include-book "keys"))
 (local (include-book "lookup"))
+(local (include-book "split"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,17 +50,10 @@
 (define tree-submap-p
   ((x treep)
    (y treep))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (implementation)
   :short "Check if one tree is a submap of the other."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "Time complexity: @($O(m\\log(n))$) (Note: the current implementation is
-      inefficient. This should eventually be @($O(m\\log(n/m))$), where
-      @($m < n$). This may be implemented similar to
-      @(tsee treeset::diff).)"))
   :guard (bstp y)
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p x)
       (and (mbe :logic
                 (and (treeset::in (tree-element->key (tree->head x))
@@ -289,6 +284,24 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :by tree-submap-p-when-not-tree-assoc-of-tree->head)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule tree-submap-p-of-arg1-and-tree-split.left
+  (implies (and (bstp y)
+                (<<-all-l x a))
+           (equal (tree-submap-p x (mv-nth 1 (tree-split a y)))
+                  (tree-submap-p x y)))
+  :induct t
+  :enable tree-submap-p)
+
+(defrule tree-submap-p-of-arg1-and-tree-split.right
+  (implies (and (bstp y)
+                (<<-all-r a x))
+           (equal (tree-submap-p x (mv-nth 2 (tree-split a y)))
+                  (tree-submap-p x y)))
+  :induct t
+  :enable tree-submap-p)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk tree-submap-p-sk (x y)
@@ -405,70 +418,180 @@
   :rule-classes :definition
   :by tree-submap-p-pick-a-point)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule tree-sumbap-p-when-<<-all-l-of-head
+  (implies (and (bstp x)
+                (bstp y)
+                (not (tree-empty-p y))
+                (<<-all-l x (tree-element->key (tree->head y))))
+           (equal (tree-submap-p x y)
+                  (tree-submap-p x (tree->left y))))
+  :enable acl2::equal-of-booleans-cheap
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (bstp x)
+                   (bstp y)
+                   (not (tree-empty-p y))
+                   (<<-all-l x (tree-element->key (tree->head y)))
+                   (tree-submap-p x y))
+              (tree-submap-p x (tree->left y)))
+     ;; TODO: improve proof
+     :use ((:instance treeset::in-when-subset-and-in
+                      (x (tree-key-set x))
+                      (y (tree-key-set y))
+                      (a (tree-submap-p-sk-witness x (tree->left y))))
+           (:instance tree-lookup-when-tree-submap-p-and-in-of-tree-key-set
+                      (key (tree-submap-p-sk-witness x (tree->left y)))))
+     :enable tree-submap-p-pick-a-point-polar
+     :disable (treeset::in-when-in-and-subset
+               treeset::in-when-subset-and-in
+               tree-lookup-when-in-of-tree-key-set-and-tree-submap-p-forward-chaining))))
+
+(defrule tree-sumbap-p-when-<<-all-r-of-head
+  (implies (and (bstp x)
+                (bstp y)
+                (not (tree-empty-p y))
+                (<<-all-r (tree-element->key (tree->head y)) x))
+           (equal (tree-submap-p x y)
+                  (tree-submap-p x (tree->right y))))
+  :enable acl2::equal-of-booleans-cheap
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (bstp x)
+                   (bstp y)
+                   (not (tree-empty-p y))
+                   (<<-all-r (tree-element->key (tree->head y)) x)
+                   (tree-submap-p x y))
+              (tree-submap-p x (tree->right y)))
+     ;; TODO: improve proof
+     :use ((:instance treeset::in-when-subset-and-in
+                      (x (tree-key-set x))
+                      (y (tree-key-set y))
+                      (a (tree-submap-p-sk-witness x (tree->right y))))
+           (:instance tree-lookup-when-tree-submap-p-and-in-of-tree-key-set
+                      (key (tree-submap-p-sk-witness x (tree->right y)))))
+     :enable tree-submap-p-pick-a-point-polar
+     :disable (treeset::in-when-in-and-subset
+               treeset::in-when-subset-and-in
+               tree-lookup-when-in-of-tree-key-set-and-tree-submap-p-forward-chaining))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define acl2-number-tree-submap-p
+(define fast-tree-submap-p
+  ((x treep)
+   (y treep))
+  :returns (yes/no booleanp)
+  :parents (tree-submap-p)
+  :short "Fast submap check."
+  (cond ((tree-empty-p x) t)
+        ((tree-empty-p y) nil)
+        (t (mv-let (assoc left right)
+                   (tree-split (tree-element->key (tree->head x)) y)
+             (and assoc
+                  (equal (tree-element->val (tree->head x))
+                         (cdr assoc))
+                  (fast-tree-submap-p (tree->left x) left)
+                  (fast-tree-submap-p (tree->right x) right)))))
+  :measure (acl2-count x))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule fast-tree-submap-p-when-tree-equiv-of-arg1-congruence
+  (implies (tree-equiv x0 x1)
+           (equal (fast-tree-submap-p x0 y)
+                  (fast-tree-submap-p x1 y)))
+  :rule-classes :congruence
+  :induct t
+  :enable fast-tree-submap-p)
+
+(defrule fast-tree-submap-p-when-tree-equiv-of-arg2-congruence
+  (implies (tree-equiv y0 y1)
+           (equal (fast-tree-submap-p x y0)
+                  (fast-tree-submap-p x y1)))
+  :rule-classes :congruence
+  :induct t
+  :enable fast-tree-submap-p)
+
+(defrule fast-tree-submap-p-when-bstp
+  (implies (and (bstp x)
+                (bstp y))
+           (equal (fast-tree-submap-p x y)
+                  (tree-submap-p x y)))
+  :induct (fast-tree-submap-p x y)
+  :enable (fast-tree-submap-p
+           tree-submap-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define acl2-number-fast-tree-submap-p
   ((x acl2-number-treep)
    (y acl2-number-treep))
   :guard (bstp y)
-  (mbe :logic (tree-submap-p x y)
+  (mbe :logic (fast-tree-submap-p x y)
        :exec
-       (or (tree-empty-p x)
-           (and (let ((assoc (acl2-number-tree-search-assoc
-                               (tree-element->key (tree->head x))
-                               y)))
+       (cond ((tree-empty-p x) t)
+             ((tree-empty-p y) nil)
+             (t (mv-let (assoc left right)
+                        (acl2-number-tree-split
+                          (tree-element->key (tree->head x))
+                          y)
                   (and assoc
                        (equal (tree-element->val (tree->head x))
-                              (cdr assoc))))
-                (acl2-number-tree-submap-p (tree->left x) y)
-                (acl2-number-tree-submap-p (tree->right x) y))))
+                              (cdr assoc))
+                       (acl2-number-fast-tree-submap-p (tree->left x) left)
+                       (acl2-number-fast-tree-submap-p (tree->right x) right))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-submap-p
-                                           acl2-number-tree-submap-p
+  :guard-hints (("Goal" :in-theory (enable fast-tree-submap-p
+                                           acl2-number-fast-tree-submap-p
                                            tree-keys-acl2-numberp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define symbol-tree-submap-p
+(define symbol-fast-tree-submap-p
   ((x symbol-treep)
    (y symbol-treep))
   :guard (bstp y)
-  (mbe :logic (tree-submap-p x y)
+  (mbe :logic (fast-tree-submap-p x y)
        :exec
-       (or (tree-empty-p x)
-           (and (let ((assoc (symbol-tree-search-assoc
-                               (tree-element->key (tree->head x))
-                               y)))
+       (cond ((tree-empty-p x) t)
+             ((tree-empty-p y) nil)
+             (t (mv-let (assoc left right)
+                        (symbol-tree-split
+                          (tree-element->key (tree->head x))
+                          y)
                   (and assoc
                        (equal (tree-element->val (tree->head x))
-                              (cdr assoc))))
-                (symbol-tree-submap-p (tree->left x) y)
-                (symbol-tree-submap-p (tree->right x) y))))
+                              (cdr assoc))
+                       (symbol-fast-tree-submap-p (tree->left x) left)
+                       (symbol-fast-tree-submap-p (tree->right x) right))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-submap-p
-                                           symbol-tree-submap-p
+  :guard-hints (("Goal" :in-theory (enable fast-tree-submap-p
+                                           symbol-fast-tree-submap-p
                                            tree-keys-symbolp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eqlable-tree-submap-p
+(define eqlable-fast-tree-submap-p
   ((x eqlable-treep)
    (y eqlable-treep))
   :guard (bstp y)
-  (mbe :logic (tree-submap-p x y)
+  (mbe :logic (fast-tree-submap-p x y)
        :exec
-       (or (tree-empty-p x)
-           (and (let ((assoc (eqlable-tree-search-assoc
-                               (tree-element->key (tree->head x))
-                               y)))
+       (cond ((tree-empty-p x) t)
+             ((tree-empty-p y) nil)
+             (t (mv-let (assoc left right)
+                        (eqlable-tree-split
+                          (tree-element->key (tree->head x))
+                          y)
                   (and assoc
                        (equal (tree-element->val (tree->head x))
-                              (cdr assoc))))
-                (eqlable-tree-submap-p (tree->left x) y)
-                (eqlable-tree-submap-p (tree->right x) y))))
+                              (cdr assoc))
+                       (eqlable-fast-tree-submap-p (tree->left x) left)
+                       (eqlable-fast-tree-submap-p (tree->right x) right))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-submap-p
-                                           eqlable-tree-submap-p
+  :guard-hints (("Goal" :in-theory (enable fast-tree-submap-p
+                                           eqlable-fast-tree-submap-p
                                            tree-keys-eqlablep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

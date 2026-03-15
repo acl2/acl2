@@ -19,7 +19,6 @@
 (include-book "rotate-defs")
 (include-book "keys-defs")
 (include-book "lookup-defs")
-(include-book "submap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -41,7 +40,6 @@
 (local (include-book "keys"))
 (local (include-book "lookup"))
 (local (include-book "rotate"))
-(local (include-book "submap"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
