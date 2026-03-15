@@ -17,7 +17,6 @@
 (include-book "rotate-defs")
 (include-book "in-defs")
 (include-book "count-defs")
-(include-book "subset-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -32,7 +31,6 @@
 (local (include-book "in"))
 (local (include-book "count"))
 (local (include-book "rotate"))
-(local (include-book "subset"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

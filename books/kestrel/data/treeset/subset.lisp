@@ -47,9 +47,7 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "Time complexity: @($O(m\\log(n))$) (Note: the current implementation is
-       slightly inefficient. This should eventually be @($O(m\\log(n/m))$),
-       where @($m < n$). This may be implemented similar to @(tsee diff).)")
+      "Time complexity: @($O(m\\log(n/m))$) (where @($m < n$)).")
     (xdoc::section
       "General form"
       (xdoc::codeblock
@@ -79,7 +77,8 @@
   ((x setp)
    (y setp))
   :returns (yes/no booleanp)
-  (tree-subset-p (fix x) (fix y))
+  (mbe :logic (tree-subset-p (fix x) (fix y))
+       :exec (fast-tree-subset-p x y))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction)))
 
   ///
@@ -350,7 +349,7 @@
   ((x acl2-number-setp)
    (y acl2-number-setp))
   (mbe :logic (subset x y)
-       :exec (tree-subset-p x y))
+       :exec (acl2-number-fast-tree-subset-p x y))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -363,7 +362,7 @@
   ((x symbol-setp)
    (y symbol-setp))
   (mbe :logic (subset x y)
-       :exec (tree-subset-p x y))
+       :exec (symbol-fast-tree-subset-p x y))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -376,7 +375,7 @@
   ((x eqlable-setp)
    (y eqlable-setp))
   (mbe :logic (subset x y)
-       :exec (tree-subset-p x y))
+       :exec (eqlable-fast-tree-subset-p x y))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
