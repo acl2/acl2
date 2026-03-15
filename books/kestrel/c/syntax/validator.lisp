@@ -1104,7 +1104,7 @@
        ((unless (consp strlits))
         (retmsg$ "There must be at least one string literal."))
        ((erp prefix? conflictp) (valid-stringlit-list-loop strlits ienv))
-       (prefixes (stringlit-list->prefix?-list strlits))
+       (prefixes (stringlit-list->prefix? strlits))
        ((when (and (member-equal (eprefix-locase-u8) prefixes)
                    (or (member-equal (eprefix-locase-u) prefixes)
                        (member-equal (eprefix-upcase-u) prefixes)

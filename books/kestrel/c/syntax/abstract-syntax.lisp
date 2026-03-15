@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-irrelevants")
+(include-book "abstract-syntax-structurals")
 (include-book "code-ensembles")
 (include-book "abstract-syntax-make-self")
 (include-book "abstract-syntax-operations")
@@ -50,6 +51,7 @@
      for code ensembles and contained ASTs."))
   :order-subtopics (abstract-syntax-trees
                     abstract-syntax-irrelevants
+                    abstract-syntax-structurals
                     code-ensembles
                     make-self-code-ensemble
                     abstract-syntax-operations

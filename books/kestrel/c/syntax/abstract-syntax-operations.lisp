@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-irrelevants")
+(include-book "abstract-syntax-structurals")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -23,15 +24,6 @@
   :short "Operations on the abstract syntax."
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stringlit-list->prefix?-list ((strlits stringlit-listp))
-  :returns (prefixes eprefix-option-listp)
-  :short "Lift @(tsee stringlit->prefix?) to lists."
-  (cond ((endp strlits) nil)
-        (t (cons (stringlit->prefix? (car strlits))
-                 (stringlit-list->prefix?-list (cdr strlits))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1099,20 +1091,6 @@
   :short "Check if all the translation items in a list are comments."
   (trans-item-case x :line-comment)
   :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection trans-item-declon-list ((x ext-declon-listp))
-  :returns (items trans-item-listp)
-  :short "Lift @(tsee trans-item-declon) to lists."
-  (trans-item-declon x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection trans-item-include-list ((x header-name-listp))
-  :returns (item trans-item-listp)
-  :short "Lift @(tsee trans-item-include) to lists."
-  (trans-item-include x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
