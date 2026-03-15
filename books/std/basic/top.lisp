@@ -56,6 +56,7 @@
 (include-book "symbol-package-name-lst")
 (include-book "symbol-package-name-non-cl")
 (include-book "two-nats-measure")
+(include-book "yyyjoin")
 
 (defxdoc std/basic
   :parents (std)
