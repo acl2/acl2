@@ -47,6 +47,37 @@
   :induct t
   :enable omap::assoc)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled in-of-omap-keys-when-omap-rlookup
+  (implies (in key (omap::rlookup val omap))
+           (in key (omap::keys omap)))
+  :induct t
+  :enable omap::rlookup)
+
+(defrule in-of-omap-keys-when-omap-rlookup-forward-chaining
+  (implies (in key (omap::rlookup val omap))
+           (in key (omap::keys omap)))
+  :rule-classes :forward-chaining
+  :by in-of-omap-keys-when-omap-rlookup)
+
+(defrule subset-of-omap-rlookup-and-omap-keys
+  (subset (omap::rlookup val omap)
+          (omap::keys omap))
+  :enable set::expensive-rules)
+
+(defrule in-of-omap-rlookup
+  (equal (in key (omap::rlookup val omap))
+         (and (omap::assoc key omap)
+              (equal (cdr (omap::assoc key omap)) val)))
+  :induct t
+  :hints ('(:use (:instance in-of-omap-keys-when-omap-rlookup
+                            (key (mv-nth 0 (omap::head omap)))
+                            (omap (omap::tail omap)))))
+  :enable (omap::rlookup
+           omap::assoc)
+  :disable in-of-omap-keys-when-omap-rlookup-forward-chaining)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: These original definitions should probably be inline.

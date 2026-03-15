@@ -15,6 +15,7 @@
 (include-book "size-defs")
 (include-book "lookup-defs")
 (include-book "values-defs")
+(include-book "rlookup-defs")
 (include-book "submap-defs")
 (include-book "min-max-defs")
 (include-book "update-defs")

@@ -171,6 +171,22 @@
            tree-key-set
            tree-val-set))
 
+(defruled tree-lookup-when-not-in-tree-val-set
+  (implies (and (not (treeset::in val (tree-val-set tree)))
+                (or (treeset::in key (tree-key-set tree))
+                    (not (equal val nil))))
+           (not (equal (tree-lookup key tree)
+                       val))))
+
+(defrule tree-lookup-when-not-in-tree-val-set-forward-chaining
+  (implies (and (not (treeset::in val (tree-val-set tree)))
+                (or (treeset::in key (tree-key-set tree))
+                    (not (equal val nil))))
+           (not (equal (tree-lookup key tree)
+                       val)))
+  :rule-classes ((:forward-chaining :trigger-terms ((tree-lookup key tree))))
+  :by tree-lookup-when-not-in-tree-val-set)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule cardinality-of-tree-val-set-when-bstp-linear

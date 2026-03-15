@@ -21,8 +21,9 @@
 (include-book "tree-defs")
 (include-book "bst-defs")
 (include-book "keys-defs")
-(include-book "values-defs")
 (include-book "lookup-defs")
+(include-book "values-defs")
+(include-book "rlookup-defs")
 (include-book "min-max-defs")
 (include-book "count-defs")
 (include-book "update-defs")
@@ -61,8 +62,9 @@
 (local (include-book "tree"))
 (local (include-book "bst"))
 (local (include-book "keys"))
-(local (include-book "values"))
 (local (include-book "lookup"))
+(local (include-book "values"))
+(local (include-book "rlookup"))
 (local (include-book "min-max"))
 (local (include-book "count"))
 (local (include-book "update"))
@@ -324,6 +326,12 @@
      :enable (tree-val-set
               tree-in-order
               member-equal))))
+
+(defrule rlookup-of-tree-in-order
+  (implies (bstp tree)
+           (equal (omap::rlookup val (tree-in-order tree))
+                  (treeset::to-oset (tree-rlookup val tree))))
+  :enable set::expensive-rules)
 
 (defrule tree-in-order-of-tree-update
   (implies (bstp tree)

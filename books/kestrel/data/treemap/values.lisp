@@ -113,10 +113,6 @@
            keys
            values))
 
-;; TODO: element is in the value set iff the reverse-lookup of the value yields
-;;   a non-empty set.
-;;   (Need to define reverse-lookup or map inversion first.)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: it isn't clear to me that either direction is more natural for the

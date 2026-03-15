@@ -16,6 +16,7 @@
 (include-book "size")
 (include-book "lookup")
 (include-book "values")
+(include-book "rlookup")
 (include-book "submap")
 (include-book "extensionality")
 (include-book "min-max")

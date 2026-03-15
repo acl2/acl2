@@ -14,6 +14,7 @@
 (include-book "keys")
 (include-book "lookup")
 (include-book "values")
+(include-book "rlookup")
 (include-book "count")
 (include-book "submap")
 (include-book "antisymmetry")
