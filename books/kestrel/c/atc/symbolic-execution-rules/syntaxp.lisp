@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,11 +14,8 @@
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(local (xdoc::set-default-parents atc-symbolic-execution-rules))
-
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,12 +24,13 @@
                 :hyp (symbolp var)
                 :hints (("Goal" :in-theory (enable pseudo-termp
                                                    pseudo-term-listp))))
+  :parents (atc-symbolic-execution-rules)
   :short "Construct a @(tsee syntaxp) hypothesis for
-          a symbolic execution rule for pure expressions."
+          certain symbolic execution rules for pure expressions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use these hypotheses to ensure that
+    "These hypotheses can be used to ensure that
      certain execution subterms are rewritten
      to their shallow embedding counterparts
      before their enclosing terms are rewritten.
@@ -54,4 +52,5 @@
                                              exec-arrsub-of-member
                                              exec-arrsub-of-memberp
                                              exec-expr-pure
-                                             test-value))))))
+                                             test-value)))))
+  :hooks nil)
