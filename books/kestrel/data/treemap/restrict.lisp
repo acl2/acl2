@@ -72,7 +72,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc restrict
-  :parents (treeset)
+  :parents (treemap)
   :short "A restriction of a @(see treemap) to a key set."
   :long
   (xdoc::topstring
