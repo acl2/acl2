@@ -14,7 +14,7 @@
 			(union-eq
 			 *common-lisp-symbols-from-main-lisp-package*
 			 '(remove-one multiset-diff ctoa atoc))))
-;;; Con la nueva representación, añadimos ctoa y atoc al paquete MUL
+;;; Con la nueva representaciÃ³n, aÃ±adimos ctoa y atoc al paquete MUL
 
 (certify-book "multiset" 1)
 
@@ -342,7 +342,7 @@
 
 
 ;;; Conviene tenerlo separado, por que hace falta. PERO NO DENTRO DEL
-;;; ENCAPSULADO. Como alternativa, yo la he puesto además como regla de
+;;; ENCAPSULADO. Como alternativa, yo la he puesto ademÃ¡s como regla de
 ;;; reescritura. Preguntar a CK si esto afecta a defmul.
 
 
@@ -350,9 +350,9 @@
 ;;; values must be greater than 0.  Thus, we define a new measure
 ;;; function "fn1" equal to "fn" except for integers, where 1 is added.
 
-;;; Nota: hace falta probar que la relación es b.f. "respecto" a
+;;; Nota: hace falta probar que la relaciÃ³n es b.f. "respecto" a
 ;;; e0-ordinalp, porque la prueba esta hecha para los ordinales
-;;; antiguos. Así que ahora también introducimos "ctoa"
+;;; antiguos. AsÃ­ que ahora tambiÃ©n introducimos "ctoa"
 
 (defun add1-if-integer (x)
   (if (integerp x) (1+ x) x))
@@ -416,10 +416,10 @@
 ;;; - The embedding justifying well-foundedness: mp-fn-o-p.
 
 ;;; Como originalmente hicimos la prueba con e0-ordinal, habiamos construido una
-;;; inmersión en los ordinales, llamada map-fn-e0-ordinal y toda la
-;;; prueba la habíamos hecho probando que era una inmersión en los
+;;; inmersiÃ³n en los ordinales, llamada map-fn-e0-ordinal y toda la
+;;; prueba la habÃ­amos hecho probando que era una inmersiÃ³n en los
 ;;; e0 ordinales. Para aprovechar eso en la 2-8, definimos map-fn-o-p
-;;; simplemente aplicando atoc en un último paso.
+;;; simplemente aplicando atoc en un Ãºltimo paso.
 
 ;;; Measure property
 
@@ -459,9 +459,9 @@
 		       (map-fn-e0-ord (cdr l)))
       0))
 
-;;; Nuevo para la 2.8: má adelante tendremos que definir esto y
+;;; Nuevo para la 2.8: mÃ¡ adelante tendremos que definir esto y
 ;;; demostrar que se trata de una inmersion en los nuevos ordinales de
-;;; la versión 2.8:
+;;; la versiÃ³n 2.8:
 ;; (defun map-fn-o-p (x)
 ;;   (declare (xargs :guard (mp-true-listp x)))
 ;;   (atoc (map-fn-e0-ord x)))
@@ -559,9 +559,9 @@
 ;;;    (e0-ord-< (map-fn-e0-ord n) (map-fn-e0-ord m))
 
 
-;;; ············································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 ;;; 2.5.1 The measure is an e0-ordinal.
-;;; ············································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (defthm e0-ordinalp-insert-e0-ord-<
@@ -577,9 +577,9 @@
 	    (e0-ordinalp (map-fn-e0-ord m)))))
 
 
-;;; ············································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 ;;; 2.5.2 The measure is an embedding
-;;; ············································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 
 
@@ -613,7 +613,7 @@
 
 
 ;;; max-fn1-list (an element in l with maximal (fn1 ..)) and properties.
-;;; ······································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (defun max-fn1-list (l)
@@ -652,7 +652,7 @@
 
 
 ;;; An "alternative definition" of "map-fn-e0-ord".
-;;; ···············································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (encapsulate
@@ -779,7 +779,7 @@
 
 
 ;;; Needed for forall-exists-rel-bigger-max-fn1-list
-;;; ················································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 ;;; We prove forall-exists-rel-bigger-max-fn1-list-lemma, establishing
 ;;; that if (mul-rel n m), and x is in n and not in m, then (fn1 x) is
@@ -875,7 +875,7 @@
 
 
 ;;; Previous lemmas to map-fn-e0-ord-measure, handling every subgoal
-;;; ································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 ;;; Needed for "Subgoal *1/8":
 
@@ -957,7 +957,7 @@
 
 
 ;;; At last: map-fn-e0-ord-measure.
-;;; ·······························
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (encapsulate
@@ -1012,9 +1012,9 @@
 
 
 ;;; Pero con los nuevos ordinales no nos basta con esto, hay que demostrar
-;;; una inmersión en los ordinales con la nueva representación. Esta
-;;; inmersión la dá map-fn-o-p, definida simplemente
-;;; como la aplicación de atoc a map-fn-e0-ord
+;;; una inmersiÃ³n en los ordinales con la nueva representaciÃ³n. Esta
+;;; inmersiÃ³n la dÃ¡ map-fn-o-p, definida simplemente
+;;; como la aplicaciÃ³n de atoc a map-fn-e0-ord
 
 
 (defun map-fn-o-p (x)

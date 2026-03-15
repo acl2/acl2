@@ -30,13 +30,13 @@
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripción:
+;;; DescripciÃ³n:
 ;;;
 ;;; Desarrollo del opuesto de un polinomio, que se define monomio a
-;;; monomio. Su corrección se prueba demostrando que la función que lo
-;;; calcula produce el inverso aditivo. Para que éstas y otras
-;;; propiedades sean incondicionales (carezcan de hipótesis) se
-;;; completa cuidadosamente la definición de la función. Se demuestra
+;;; monomio. Su correcciÃ³n se prueba demostrando que la funciÃ³n que lo
+;;; calcula produce el inverso aditivo. Para que Ã©stas y otras
+;;; propiedades sean incondicionales (carezcan de hipÃ³tesis) se
+;;; completa cuidadosamente la definiciÃ³n de la funciÃ³n. Se demuestra
 ;;; que los polinomios con las operaciones de suma y opuesto forman un
 ;;; grupo conmutativo.
 ;;; ------------------------------------------------------------------
@@ -82,8 +82,8 @@ To certify this book, first, create a world with the following packages:
 ;;; Opuesto de polinomios
 ;;; ---------------------
 
-;;; La siguiente desactivación es necesaria para la verificación de la
-;;; protección del opuesto
+;;; La siguiente desactivaciÃ³n es necesaria para la verificaciÃ³n de la
+;;; protecciÃ³n del opuesto
 
 (in-theory (disable FUMON::monomio-coeficiente-termino))
 
@@ -191,7 +191,7 @@ To certify this book, first, create a world with the following packages:
 (local (in-theory (disable polinomiop = + -)))
 
 ;;; -----------------------------------------------------------------------
-;;; El inverso debe ser invisible para la primera operación y para sí mismo
+;;; El inverso debe ser invisible para la primera operaciÃ³n y para sÃ­ mismo
 ;;; -----------------------------------------------------------------------
 (ACL2::set-invisible-fns-table ((+ -) (- -)))
 
@@ -245,7 +245,7 @@ To certify this book, first, create a world with the following packages:
 	   :in-theory (disable |p + q = 0 <=> q = - p|)
 	   :use (:instance |p + q = 0 <=> q = - p| (p (- p)) (q p)))))
 
-;;; Distributividad de la inversa sobre la primera operación
+;;; Distributividad de la inversa sobre la primera operaciÃ³n
 
 (defthm |- (p + q) = (- p) + (- q)|
   (= (- (+ p q)) (+ (- p) (- q)))

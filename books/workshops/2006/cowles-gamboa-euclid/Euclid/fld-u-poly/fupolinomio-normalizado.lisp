@@ -30,11 +30,11 @@
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripción:
+;;; DescripciÃ³n:
 ;;;
 ;;; Polinomios normalizados definidos a partir de los polinomios
-;;; desnormalizados y de la operación de normalización. Ascenso de las
-;;; propiedades de anillo de la representación desnormalizada a la
+;;; desnormalizados y de la operaciÃ³n de normalizaciÃ³n. Ascenso de las
+;;; propiedades de anillo de la representaciÃ³n desnormalizada a la
 ;;; normalizada.
 ;;; ------------------------------------------------------------------
 #|
@@ -138,7 +138,7 @@ To certify this book, first, create a world with the following packages:
   :rule-classes :type-prescription)
 
 ;;; --------------
-;;; Multiplicación
+;;; MultiplicaciÃ³n
 ;;; --------------
 
 (defun * (p q)
@@ -386,13 +386,13 @@ To certify this book, first, create a world with the following packages:
   (equal (- (nulo)) (nulo)))
 
 
-;;; Mejor con teorías
+;;; Mejor con teorÃ­as
 
 (in-theory (disable + (+) * (*) - (-) nulo (nulo) identidad (identidad)))
 
 (in-theory (disable = (=)))
 ;;; -----------------------------------------------------------------------
-;;; El inverso debe ser invisible para la primera operación y para sí mismo
+;;; El inverso debe ser invisible para la primera operaciÃ³n y para sÃ­ mismo
 ;;; -----------------------------------------------------------------------
 
 ;; (ACL2::set-invisible-fns-table ((+ -) (- -)))
@@ -432,7 +432,7 @@ To certify this book, first, create a world with the following packages:
 (defthm |(p + q) * r = (p * r) + (q * r)|
   (= (* (+ p q) r) (+ (* p r) (* q r))))
 
-;;; Teorema de cancelación
+;;; Teorema de cancelaciÃ³n
 
 ;; (defthm |p + r = q + r <=> p = q|
 ;;   (implies (and (polinomiop p) (polinomiop q))
