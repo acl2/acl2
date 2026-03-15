@@ -315,13 +315,11 @@
                  (and (equal (len args) (len def.para))
                       (b* ((vals (eval-expr-list args asg p)))
                         (and (nat-listp vals)
-                             (b* ((asg-para-vals (omap::from-lists def.para
-                                                                   vals)))
+                             (b* ((asgpara (omap::from-lists def.para vals)))
                                (and (equal (omap::keys asgfree)
                                            (definition-free-vars def))
-                                    (b* ((asg-sub (omap::update*
-                                                   asgfree
-                                                   asg-para-vals)))
+                                    (b* ((asg-sub
+                                          (omap::update* asgfree asgpara)))
                                       (constraint-list-satp def.body
                                                             defs
                                                             asg-sub
@@ -467,11 +465,8 @@
            (and (equal (len args) (len def.para))
                 (b* ((vals (eval-expr-list args asg p)))
                   (and (nat-listp vals)
-                       (b* ((asg-para-vals (omap::from-lists def.para vals)))
-                         (constraint-list-satp def.body
-                                               defs
-                                               asg-para-vals
-                                               p))))))))
+                       (b* ((asgpara (omap::from-lists def.para vals)))
+                         (constraint-list-satp def.body defs asgpara p))))))))
   :guard-hints (("Goal" :in-theory (enable acl2::not-reserrp-when-nat-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
