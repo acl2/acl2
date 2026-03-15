@@ -14,6 +14,8 @@
 
 (include-book "abstract-syntax-trees")
 
+(include-book "std/basic/yyyjoin" :dir :system)
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -29,21 +31,6 @@
      in the abstract syntax."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define yyyjoin (fn rev-args)
-  :short "Spread a binary function over two or more arguments."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is similar to the builtin @('xxxjoin'),
-     but it associates left instead of right,
-     and arguments are passed reversed."))
-  :mode :program
-  (if (cdr (cdr rev-args))
-      (list fn (yyyjoin fn (cdr rev-args)) (car rev-args))
-    (list fn (second rev-args) (first rev-args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
