@@ -55,11 +55,16 @@
     (xdoc::li "Do not leave ``trailing whitespace'' at the end of your lines
                (see @(see remove-whitespace)). Trailing whitespace can add
                noise to Git commits and disrupt navigation in the editor.")
-    (xdoc::li "Unicode characters should be avoided in identifiers, but are
-               permissible in comments and strings. (Keep in mind that some
-               string utilities may not behave as expected, for instance @(tsee
-               length) may return the number of bytes instead of the number of
-               unicode code points.)")
+    (xdoc::li "Non-ASCII characters should be avoided in identifiers, but are
+               permissible in comments and strings.")
+    (xdoc::li "UTF-8 is the preferred encoding for non-ASCII characters in
+               strings and comments due to standard editor support. Note that
+               the Common Lisp reader will interpret books according to the
+               Latin-1 encoding (see @(see character-encoding)). If an ACL2
+               string contains bytes representing UTF-8 encodings of non-ASCII
+               characters, certain utilities may yield unexpected results. For
+               instance, @(tsee length) will return the number of bytes, not the
+               number of user-perceived characters (grapheme clusters).")
     (xdoc::li "Avoid consecutive blank lines.")
     (xdoc::li "Line breaks should use the posix-style newline
                (i.e. @('\"\\n\"'), not @('\"\\r\\n\"')). Linux and Mac
@@ -76,7 +81,9 @@
               (xdoc::i "not")
               (xdoc::codeblock ";This is a comment."))
     (xdoc::li "Books should begin with a copyright and licensing header (which
-               may just point to the repository's top-level LICENSE file).")
+               may just point to the repository's top-level LICENSE file).
+               Ensure that your license is accurate &mdash; a false or
+               unapproved license is worse than including no license.")
     (xdoc::li "Use two semicolons for inline comments which should be indented
                as a form would be. This is a standard practice in Common Lisp,
                and editors like Emacs will indent such comments
