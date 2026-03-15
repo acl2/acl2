@@ -318,11 +318,11 @@
                              (b* ((asgpara (omap::from-lists def.para vals)))
                                (and (equal (omap::keys asgfree)
                                            (definition-free-vars def))
-                                    (b* ((asg-sub
+                                    (b* ((asgall
                                           (omap::update* asgfree asgpara)))
                                       (constraint-list-satp def.body
                                                             defs
-                                                            asg-sub
+                                                            asgall
                                                             p))))))))))))
   :guard-hints (("Goal" :in-theory (enable acl2::not-reserrp-when-nat-listp))))
 
