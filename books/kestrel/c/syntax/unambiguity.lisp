@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -80,6 +80,8 @@
           fundef-option
           ext-declon
           ext-declon-list
+          trans-item
+          trans-item-list
           transunit
           filepath-transunit-map
           transunit-ensemble
@@ -216,6 +218,11 @@
              (stmt-unambp stmt))
     :expand (stmt-unambp stmt))
 
+  (defruled trans-item-unambp-when-line-comment
+    (implies (trans-item-case item :line-comment)
+             (trans-item-unambp item))
+    :enable trans-item-unambp)
+
   ;; These are variants that negate the cases.
   ;; Attempting to replace these with theorems of the form above
   ;; causes some disambiguator proofs to fail.
@@ -231,6 +238,11 @@
                   (not (ext-declon-case ext-declon :declon)))
              (ext-declon-unambp ext-declon))
     :enable ext-declon-unambp)
+
+  (defruled trans-item-unambp-when-not-declon
+    (implies (not (trans-item-case item :declon))
+             (trans-item-unambp item))
+    :enable trans-item-unambp)
 
   ;; The following theorems exclude certain cases from consideration.
 
@@ -349,14 +361,16 @@
                     type-spec-unambp-when-struct-empty
                     spec/qual-unambp-when-typequal
                     spec/qual-unambp-when-attrib
-                    decl-spec-unambp-when-not-tyspec/align
                     designor-unambp-when-dot
                     dirdeclor-unambp-when-ident
                     label-unambp-when-name
                     stmt-unambp-when-null-attrib
                     stmt-unambp-when-goto
                     stmt-unambp-when-asm
+                    trans-item-unambp-when-line-comment
+                    decl-spec-unambp-when-not-tyspec/align
                     ext-declon-unambp-when-not-fundef/declon
+                    trans-item-unambp-when-not-declon
                     expr-not-sizeof-when-unambp
                     expr-not-alignof-when-unambp
                     expr-not-cast/call-ambig-when-unambp

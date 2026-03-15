@@ -43,10 +43,8 @@
 
 ;; ======================================================================
 
-(include-book "arith-and-logic-spec"
-              :ttags (:undef-flg))
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "arith-and-logic-spec")
+(include-book "../decoding-and-spec-utils")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================

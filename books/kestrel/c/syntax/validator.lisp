@@ -1104,7 +1104,7 @@
        ((unless (consp strlits))
         (retmsg$ "There must be at least one string literal."))
        ((erp prefix? conflictp) (valid-stringlit-list-loop strlits ienv))
-       (prefixes (stringlit-list->prefix?-list strlits))
+       (prefixes (stringlit-list->prefix? strlits))
        ((when (and (member-equal (eprefix-locase-u8) prefixes)
                    (or (member-equal (eprefix-locase-u) prefixes)
                        (member-equal (eprefix-upcase-u) prefixes)
@@ -7335,30 +7335,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-ext-declon-list ((edecls ext-declon-listp)
+(define valid-trans-item ((item trans-itemp) (table valid-tablep) (ienv ienvp))
+  :guard (trans-item-unambp item)
+  :returns (mv (erp maybe-msgp)
+               (new-item trans-itemp)
+               (new-table valid-tablep))
+  :short "Validate a translation item."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support external declarations and comments.
+     The latter are always considered valid."))
+  (b* (((reterr) (irr-trans-item) (irr-valid-table)))
+    (trans-item-case
+     item
+     :declon (b* (((erp new-declon table)
+                   (valid-ext-declon item.declon table ienv)))
+               (retok (trans-item-declon new-declon) table))
+     :include (reterr
+               (msg "Validator does not support #include directives yet."))
+     :line-comment (retok (trans-item-fix item) (valid-table-fix table))))
+  :hooks (:fix)
+
+  ///
+
+  (defret trans-item-unambp-of-valid-trans-item
+    (implies (not erp)
+             (trans-item-unambp new-item))
+    :hyp (trans-item-unambp item)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-trans-item-list ((items trans-item-listp)
                                (table valid-tablep)
                                (ienv ienvp))
-  :guard (ext-declon-list-unambp edecls)
+  :guard (trans-item-list-unambp items)
   :returns (mv (erp maybe-msgp)
-               (new-edecls ext-declon-listp)
+               (new-items trans-item-listp)
                (new-table valid-tablep))
-  :short "Validate a list of external declarations."
+  :short "Validate a list of translation items."
   :long
   (xdoc::topstring
    (xdoc::p
     "We validate them in order, threading the validation table through."))
   (b* (((reterr) nil (irr-valid-table))
-       ((when (endp edecls)) (retok nil (valid-table-fix table)))
-       ((erp new-edecl table) (valid-ext-declon (car edecls) table ienv))
-       ((erp new-edecls table) (valid-ext-declon-list (cdr edecls) table ienv)))
-    (retok (cons new-edecl new-edecls) table))
+       ((when (endp items)) (retok nil (valid-table-fix table)))
+       ((erp new-item table) (valid-trans-item (car items) table ienv))
+       ((erp new-items table) (valid-trans-item-list (cdr items) table ienv)))
+    (retok (cons new-item new-items) table))
 
   ///
 
   (defret ext-declon-list-unambp-of-valid-ext-declon-list
     (implies (not erp)
-             (ext-declon-list-unambp new-edecls))
-    :hyp (ext-declon-list-unambp edecls)
+             (trans-item-list-unambp new-items))
+    :hyp (trans-item-list-unambp items)
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -7403,9 +7434,6 @@
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-transunit) (irr-valid-table))
-       ((when (transunit->includes tunit))
-        (reterr
-         (msg "Validator does not support #include directives yet.")))
        (gcc/clang (ienv->gcc/clang ienv))
        (table (valid-init-table filepath externals completions next-uid))
        (table
@@ -7427,11 +7455,10 @@
                      table)))
                table)
            table))
-       ((erp new-edecls table)
-        (valid-ext-declon-list (transunit->declons tunit) table ienv))
+       ((erp new-items table)
+        (valid-trans-item-list (transunit->items tunit) table ienv))
        (info (make-transunit-info :table-end table)))
-    (retok (make-transunit :comment (transunit->comment tunit)
-                           :declons new-edecls
+    (retok (make-transunit :items new-items
                            :info info)
            table))
 

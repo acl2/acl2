@@ -402,7 +402,7 @@
         as the corresponding result,
         or the stobj name that the function returns
         as the corresponding results.
-        In other words, this is the @(tsee stobjs-out) of @('old).")
+        In other words, this is the @(tsee stobjs-out) of @('old').")
       (xdoc::li
        "@(':base-case-then'),
         to search for a base case within the domain of the new function.

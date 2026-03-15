@@ -1235,10 +1235,21 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; (see https://gcc.gnu.org/onlinedocs/gcc/Named-Address-Spaces.html,
 ; which says that they are used like type qualifiers).
 
+; As a Clang extension,
+; we include the nullability type qualifiers described in
+; the 'Nullability Attributess' section of [CLA]
+; https://clang.llvm.org/docs/AttributeReference.html#nullability-attributes
+; (which, despite the name, also describes type qualifiers).
+; The nullability type qualifiers can only appear in
+; the type-qualifier-and-attribute-specifier-list in a pointer after the '*',
+; but we enforce this outside the grammar.
+
 ; As a GCC extension, we allow a list of type qualifiers
 ; to also contains attribute specifiers.
 ; Thus we use type-qualifier-and-attribute-specifier-list
 ; instead of just type-qualifier-list.
+; As noted above, with Clang extensions,
+; nullability type qualifiers may appear after the '*' in a pointer.
 
 ; As a GCC extension, we allow attribute specifiers
 ; at the end of a parameter declaration,
@@ -1434,6 +1445,12 @@ type-qualifier = %s"const"
                / %s"_Atomic"
                / %s"__seg_fs" ; GCC extension
                / %s"__seg_gs" ; GCC extension
+               / nullability-qualifier ; Clang extension
+
+nullability-qualifier = %s"_Nonnull"
+                      / %s"_Null_unspecified"
+                      / %s"_Nullable"
+                      / %s"_Nullable_result"
 
 function-specifier = inline-keyword
                    / %s"_Noreturn"

@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-operations")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
@@ -23,20 +24,22 @@
 
 (defxdoc+ standard
   :parents (abstract-syntax)
-  :short "Standard syntax (i.e. without GCC extensions)."
+  :short "Standard syntax (i.e. without GCC or Clang extensions)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Our abstract syntax includes constructs for GCC extensions.
+    "Our abstract syntax includes constructs for GCC and Clang extensions.
      Standard C syntax corresponds to a subset of our abstract syntax.
      Here we define predicates that characterize the standard subset.")
    (xdoc::p
-    "In the future, we might defines predicates for subsets
-     corresponding to different versions of standard C,
-     different GCC extensions, etc.
-     For now we just have a boolean choice (GCC extensions or not),
-     and the full abstract syntax corresponds to including GCC extensions,
-     while the predicates defined here correspond to excluding them."))
+    "We plan to extend this predicate to one that takes a "
+    (xdoc::seetopic "c::version" "C version")
+    " as an additional argument,
+     and says whether the syntax conforms to that version.")
+   (xdoc::p
+    "The current definition is a bit out of date
+     with respect to all the GCC and Clang extensions in our ASTs.
+     We should update it, along with the extension mentioned just above."))
   :order-subtopics t
   :default-parent t)
 
@@ -45,19 +48,19 @@
 (fty::deffold-reduce standardp
   :short "Definition of the predicates that check whether
           the abstract syntax is standard C,
-          i.e. without any GCC extensions."
+          i.e. without any GCC or Clang extensions."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
    (xdoc::p
     "We use @('t') as @(':default') because
-     there are more standard constructs than GCC extensions.")
+     there are more standard constructs than GCC and Clang extensions.")
    (xdoc::p
     "The @(':combine') operator is @(tsee and),
      because we need to check all the identifiers, recursively.")
    (xdoc::p
-    "We override predicates for types that may involve GCC extensions.
+    "We override predicates for types that may involve GCC or Clang extensions.
      We exclude the @('\\%') simple escape,
      the variant keywords with underscores,
      the unary @('&&') operator,
@@ -70,6 +73,22 @@
      GCC attributes,
      the empty structure declaration,
      and ranges in @('case')s.")
+   (xdoc::p
+    "Standard C prohibits empty translation units,
+     i.e. with no external declarations [C17:6.9/1].
+     However, since our ASTs may contain @('#include') directives,
+     non-emptiness of a translation unit is a non-local property,
+     requiring knowledge of the included translation units.
+     But we want to define this predicate locally,
+     i.e. on just one translation unit at a time.
+     So we require to contain
+     at least one external declaration or @('#include') directive,
+     i.e. not to consist solely of comments.
+     Although the translation unit referenced by a @('#include') could be empty,
+     it we assume that this predicate is used on
+     all the translation units of an ensemble,
+     and that the @('#include') references are closed within the ensemble,
+     then the local check suffices to guarantee non-emptiness.")
    (xdoc::p
     "Since we intend to use this predicate only on disambiguated ASTs,
      we add overridings for ambiguous constructs that thrown hard errors.
@@ -91,6 +110,8 @@
           fundef
           ext-declon
           ext-declon-list
+          trans-item
+          trans-item-list
           transunit
           filepath-transunit-map
           transunit-ensemble)
@@ -105,6 +126,12 @@
                          (type-qual-restrict->uscores type-qual) :none))
    (type-qual :volatile (keyword-uscores-case
                          (type-qual-volatile->uscores type-qual) :none))
+   (type-qual :seg-fs nil)
+   (type-qual :seg-gs nil)
+   (type-qual :nonnull nil)
+   (type-qual :null-unspecified nil)
+   (type-qual :nullable nil)
+   (type-qual :nullable-result nil)
    (fun-spec :inline (keyword-uscores-case
                       (fun-spec-inline->uscores fun-spec) :none))
    (expr :unary (and (expr-standardp (expr-unary->arg expr))
@@ -227,6 +254,7 @@
                 (comp-stmt-standardp (fundef->body fundef))))
    (ext-declon :empty nil)
    (ext-declon :asm nil)
-   (transunit (and (consp (transunit->declons transunit))
-                   (ext-declon-list-standardp
-                    (transunit->declons transunit))))))
+   (transunit (and (not (trans-item-list-commentp
+                         (transunit->items transunit)))
+                   (trans-item-list-standardp
+                    (transunit->items transunit))))))

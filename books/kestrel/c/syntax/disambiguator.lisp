@@ -3777,26 +3777,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-ext-declon-list ((edecls ext-declon-listp)
-                              (table dimb-tablep)
-                              (gcc/clang booleanp))
-  :returns (mv (erp maybe-msgp)
-               (new-edecls ext-declon-listp)
-               (new-table dimb-tablep))
-  :short "Disambiguate a list of external declarations."
-  (b* (((reterr) nil (irr-dimb-table))
-       ((when (endp edecls)) (retok nil (dimb-table-fix table)))
-       ((erp new-edecl table) (dimb-ext-declon (car edecls) table gcc/clang))
-       ((erp new-edecls table)
-        (dimb-ext-declon-list (cdr edecls) table gcc/clang)))
-    (retok (cons new-edecl new-edecls) table))
+(define dimb-trans-item ((item trans-itemp)
+                         (table dimb-tablep)
+                         (gcc/clang booleanp))
+  :returns (mv (erp maybe-msgp) (new-item trans-itemp) (new-table dimb-tablep))
+  :short "Disambiguate a translation item."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only support external declarations and comments.
+     The latter are always considered disambiguated."))
+  (b* (((reterr) (irr-trans-item) (irr-dimb-table)))
+    (trans-item-case
+     item
+     :declon (b* (((erp declon table)
+                   (dimb-ext-declon item.declon table gcc/clang)))
+               (retok (trans-item-declon declon) table))
+     :include (reterr
+               (msg "Disambiguator does not support #include directives yet."))
+     :line-comment (retok (trans-item-fix item) (dimb-table-fix table))))
   :hooks (:fix)
 
   ///
 
-  (defret ext-declon-list-unambp-of-dimb-ext-declon-list
+  (defret trans-item-unambp-of-dimb-trans-item
     (implies (not erp)
-             (ext-declon-list-unambp new-edecls))
+             (trans-item-unambp new-item))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-trans-item-list ((items trans-item-listp)
+                              (table dimb-tablep)
+                              (gcc/clang booleanp))
+  :returns (mv (erp maybe-msgp)
+               (new-items trans-item-listp)
+               (new-table dimb-tablep))
+  :short "Disambiguate a list of translation items."
+  (b* (((reterr) nil (irr-dimb-table))
+       ((when (endp items)) (retok nil (dimb-table-fix table)))
+       ((erp new-item table) (dimb-trans-item (car items) table gcc/clang))
+       ((erp new-items table)
+        (dimb-trans-item-list (cdr items) table gcc/clang)))
+    (retok (cons new-item new-items) table))
+  :hooks (:fix)
+
+  ///
+
+  (defret trans-item-list-unambp-of-dimb-trans-item-list
+    (implies (not erp)
+             (trans-item-list-unambp new-items))
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3808,7 +3837,7 @@
   (xdoc::topstring
    (xdoc::p
     "We initialize the disambiguation table,
-     we disambiguate all the external declarations in order,
+     we disambiguate all the translation items in order,
      and we discard the final disambiguation table.")
    (xdoc::p
     "If the GCC/Clang flag is @('nil') (i.e. no GCC/Clang extensions),
@@ -3860,18 +3889,14 @@
      we should refine our GCC/Clang flag with
      a richer description of the C implementation."))
   (b* (((reterr) (irr-transunit))
-       ((when (transunit->includes tunit))
-        (reterr
-         (msg "Disambiguator does not support #include directives yet.")))
-       (edecls (transunit->declons tunit))
+       (items (transunit->items tunit))
        (table (dimb-init-table))
        (table
          (if gcc/clang
              (dimb-add-idents-objfun *gcc-builtin* table)
            table))
-       ((erp new-edecls &) (dimb-ext-declon-list edecls table gcc/clang)))
-    (retok (make-transunit :comment (transunit->comment tunit)
-                           :declons new-edecls
+       ((erp new-items &) (dimb-trans-item-list items table gcc/clang)))
+    (retok (make-transunit :items new-items
                            :info nil)))
   :hooks (:fix)
 

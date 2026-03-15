@@ -1,6 +1,6 @@
 ; Extracting conjuncts from a DAGs
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,5 +15,7 @@
 
 ;; Extracts the conjuncts of DAG, as a list of terms.  May explode if there is
 ;; a lot of shared structure.
+;; This appears to never be called
 (defun dag-conjuncts (dag)
+  (declare (xargs :guard (pseudo-dagp dag)))
   (get-conjuncts-of-term2 (dag-to-term dag)))

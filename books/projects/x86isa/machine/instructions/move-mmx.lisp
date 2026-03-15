@@ -40,7 +40,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../decoding-and-spec-utils" :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,6 +180,7 @@
        ;; is the MMX register specified in Reg.
        ;; Since there are only 8 MMX registers, the REX byte is not used.
        (x86 (!mmx reg src x86))
+       (x86 (mmx-instruction-updates x86))
 
        ;; Update the instruction pointer.
        (x86 (write-*ip proc-mode temp-rip x86)))
@@ -260,6 +261,7 @@
        ;; and when we store it into the register
        ;; we implicitly zero-extend it, as required.
        (x86 (!mmx reg src x86))
+       (x86 (mmx-instruction-updates x86))
 
        ;; Update the instruction pointer.
        (x86 (write-*ip proc-mode temp-rip x86)))

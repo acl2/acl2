@@ -39,7 +39,7 @@
                   (r1cs::r1cs->vars *a-3-3-4-r1cs*)
                   (r1cs::r1cs->constraints *a-3-3-4-r1cs*)))
 
-;; (acl2::get-conjuncts-of-term2 (acl2::dag-to-term *A-3-3-4-SIMP-LIFTED*)))
+;; (acl2::get-conjuncts-of-term2 (acl2::dag2term *A-3-3-4-SIMP-LIFTED*)))
 
 (defthm solve-for-xprime
   (implies (and (primep p)

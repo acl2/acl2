@@ -61,32 +61,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define position-to-msg ((pos positionp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a position as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in user-oriented error messages."))
-  (msg "(line ~x0, column ~x1)" (position->line pos) (position->column pos)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define span-to-msg ((span spanp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a span as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in user-oriented messages."))
-  (msg "[~@0 to ~@1]"
-       (position-to-msg (span->start span))
-       (position-to-msg (span->end span))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define char-to-msg ((char nat-optionp))
   :returns (msg msgp
                 :hints (("Goal" :in-theory (enable msgp
@@ -201,10 +175,10 @@
      an indication of the ACL2 function that caused the error.
      This is useful as we are debugging the parser,
      but we may remove it once the parser is more tested or even verified."))
-  `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%~
+  `(reterr (msg "~@0: Expected ~@1; found ~@2 instead.~@3~%~
                  [from function ~x4]~%"
+                (position-to-msg ,where)
                 ,expected
-                ,where
                 ,found
                 ,(if extra
                      `(msg " ~@0" ,extra)

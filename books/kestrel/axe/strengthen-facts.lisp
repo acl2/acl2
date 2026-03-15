@@ -1,7 +1,7 @@
 ; Tools to strengthen facts by rewriting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "rewriter-alt") ; why this rewriter?
+(include-book "rewriter-alt") ; because this rewriter supports :rewrite-objective
 (include-book "dag-to-term")
 
 ;fixme combine with simplify-fact?  well, this one doesn't make a theorem..
@@ -40,7 +40,7 @@
         (strengthen-fact fact (append (rest facts-to-strengthen) acc) print rules state)
         (if erp
             (mv erp nil nil state)
-          (let ((result (dag-to-term result-dag-lst))) ;fixme could this ever blow up?
+          (let ((result (dag2term result-dag-lst))) ;fixme could this ever blow up?
             (if (equal result fact)
                 ;;no change, so move fact to acc:
                 (find-a-fact-to-strengthen (rest facts-to-strengthen) print (cons fact acc) rules state)

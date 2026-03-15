@@ -643,7 +643,7 @@
                                                   (cons updated-assumption proved-assumptions-acc)
                                                   failed-assumptions-acc
                                                   state))
-        (prog2$ (cw "Failed.  Candidate assumption rewrote to ~x0.)~%" (dag-to-term res)) ;todo: think about blowup
+        (prog2$ (cw "Failed.  Candidate assumption rewrote to ~x0.)~%" (dag2term res)) ;todo: think about blowup
                 (try-to-reestablish-assumptions (rest assumptions) state-dag state-var previous-state-vars all-assumptions
                                                 rule-alist rules-to-monitor print known-booleans
                                                 proved-assumptions-acc
@@ -1757,7 +1757,7 @@
         ((mv erp loop-top-pc-dag & &) ; todo: do we need the assumptions?
          (extract-pc-dag loop-top-state-dag assumptions))
         ((when erp) (mv erp nil nil nil state))
-        (loop-top-pc-term (dag-to-term loop-top-pc-dag))
+        (loop-top-pc-term (dag2term loop-top-pc-dag))
         (- (cw "(Loop top PC is ~x0.)~%" loop-top-pc-term))
         (pc-offset (get-added-offset loop-top-pc-term 'base-address)) ; relative to base-address
         ;; Assume that the RIP is at the loop top:
@@ -1767,7 +1767,7 @@
         ((mv erp loop-top-rsp-dag & &)
          (extract-rsp-dag loop-top-state-dag assumptions))
         ((when erp) (mv erp nil nil nil state))
-        (loop-top-rsp-term (dag-to-term loop-top-rsp-dag))
+        (loop-top-rsp-term (dag2term loop-top-rsp-dag))
         ;; (- (cw "(Original RSP was ~x0.)~%" original-rsp-term)) ;will always be (xr ':rgf '4 x86_0) ?
         ;; ((when (not (equal original-rsp-term '(xr ':rgf '4 x86_0)))) ;todo: allow x86_1, etc. here
         ;;  (prog2$ (er hard? 'lift-loop "Unexpected RSP term.")
@@ -1789,7 +1789,7 @@
         ((mv erp loop-top-rbp-dag & &)
          (extract-rbp-dag loop-top-state-dag assumptions))
         ((when erp) (mv erp nil nil nil state))
-        (loop-top-rbp-term (dag-to-term loop-top-rbp-dag))
+        (loop-top-rbp-term (dag2term loop-top-rbp-dag))
         (- (cw "(Loop top RBP is ~x0.)~%" loop-top-rbp-term))
 
         (- (cw "(Determining which assumptions still hold at the loop top:~%"))
@@ -1857,11 +1857,11 @@
                             remove-rules rules-to-monitor loop-alist measure-alist base-name lifter-rules 64-bitp print state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Loop body DAG: ~x0)~%" loop-body-dag))
-        (loop-body-term (dag-to-term loop-body-dag)) ;todo: watch for blow-up here
+        (loop-body-term (dag2term loop-body-dag)) ;todo: watch for blow-up here
         (- (cw "(Loop body term: ~x0)~%" (untranslate loop-body-term nil (w state))))
         ((when (member-eq 'run-until-exit-segment-or-hit-loop-header
                           (dag-fns loop-body-dag)))
-         (cw "~X01" (dag-to-term loop-body-dag) nil) ;todo: can blow up
+         (cw "~X01" (dag2term loop-body-dag) nil) ;todo: can blow up
          (er hard? 'lift-loop "Symbolic execution for loop body did not finish; a call of run-until-exit-segment-or-hit-loop-header remains in the DAG (see above).")
          (mv erp nil nil nil state))
         ;; Split loop-body into the one-rep-term (from leaves that returned to the loop top), the exit-test-term, and the exit-term:
@@ -2250,7 +2250,7 @@
                    (extract-pc-dag state-dag
                                    assumptions))
                   ((when erp) (mv erp nil state))
-                  (pc-term (dag-to-term pc-dag))
+                  (pc-term (dag2term pc-dag))
                   (- (cw "(PC term is ~x0.)~%" pc-dag)))
                (if (equal pc-term
                           ;; We've jumped to the return address of the main subroutine, so we've exited the segment:
@@ -2376,7 +2376,7 @@
          (mv (erp-t) nil nil nil state))
         ;; Print the result of running:
         (- (cw "(DAG after running: ~x0)~%" state-dag))
-        (state-term (dag-to-term state-dag))
+        (state-term (dag2term state-dag))
         (- (cw "(Term after running: ~x0)~%" state-term))
         ;; Now, handle any loops:
         ((mv erp changep state-dag generated-events next-loop-num state)
@@ -2493,7 +2493,7 @@
         ((mv erp rsp-dag & &)
          (extract-rsp-dag state-dag assumptions))
         ((when erp) (mv erp nil nil nil state))
-        (rsp-term (dag-to-term rsp-dag))
+        (rsp-term (dag2term rsp-dag))
         (- (cw "(RSP is ~x0.)~%" rsp-term))
         ;; Run until all leaves are at a loop header or have exited the
         ;; segment (perhaps by exiting the subroutine):
@@ -2757,7 +2757,7 @@
                                 *no-warn-ground-functions*
                                 nil state))
        ((when erp) (mv erp nil state))
-       (output-term (dag-to-term output-dag))
+       (output-term (dag2term output-dag))
        ;; TODO: Generalize:
        (output-term (replace-components-of-initial-state-in-term output-term))
        ;; (output-term (acl2::replace-in-term output-term

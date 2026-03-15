@@ -53,6 +53,8 @@
           c$::fundef-option
           c$::ext-declon
           c$::ext-declon-list
+          c$::trans-item
+          c$::trans-item-list
           transunit
           c$::filepath-transunit-map
           transunit-ensemble)

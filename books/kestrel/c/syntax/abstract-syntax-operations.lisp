@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-irrelevants")
+(include-book "abstract-syntax-structurals")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -23,15 +24,6 @@
   :short "Operations on the abstract syntax."
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stringlit-list->prefix?-list ((strlits stringlit-listp))
-  :returns (prefixes eprefix-option-listp)
-  :short "Lift @(tsee stringlit->prefix?) to lists."
-  (cond ((endp strlits) nil)
-        (t (cons (stringlit->prefix? (car strlits))
-                 (stringlit-list->prefix?-list (cdr strlits))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1081,6 +1073,37 @@
           specifiers related to linkage."
   (cons (decl-spec-stoclass (stor-spec-static))
         (declor-spec-list-filter-out-linkage-specs specs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist trans-item-list-declon/directive-p (x)
+  :guard (trans-item-listp x)
+  :short "Check if all the translation items in a list
+          are external declarations or directives."
+  (or (trans-item-case x :declon)
+      (trans-item-case x :include))
+  :elementp-of-nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist trans-item-list-commentp (x)
+  :guard (trans-item-listp x)
+  :short "Check if all the translation items in a list are comments."
+  (trans-item-case x :line-comment)
+  :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define transunit-emptyp ((tunit transunitp))
+  :returns (yes/no booleanp)
+  :short "Check if a translation unit is empty, in the sense of having
+          no external declarations and no @('#include') directives."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, if the translation unit only contains comments,
+     it is regarded as effectively empty, according to this predicate."))
+  (trans-item-list-commentp (transunit->items tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

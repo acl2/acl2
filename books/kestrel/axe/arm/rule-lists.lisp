@@ -92,7 +92,16 @@
             arm::execute-cmp-register-shifted-register-alt
             arm::execute-cmn-immediate-alt
             arm::execute-cmn-register-alt
-            arm::execute-cmn-register-shifted-register-alt)
+            arm::execute-cmn-register-shifted-register-alt
+
+            ;; These support relieving hyps of the -alt rules:
+            arm::cmn-immediate-argsp
+            arm::cmn-register-argsp
+            arm::cmn-register-shifted-register-argsp
+            arm::cmp-immediate-argsp
+            arm::cmp-register-argsp
+            arm::cmp-register-shifted-register-argsp
+            )
           '(arm::mov-common
             arm::mov-register-core
             arm::pop-encoding-a2-core
@@ -107,6 +116,7 @@
             arm::ldm-loop-base
             arm::ldm-loop-unroll
             arm::ldm-core
+            arm::ldr-literal-core
             arm::stm-loop-base
             arm::stm-loop-unroll)))
 
@@ -133,10 +143,56 @@
      arm::r14
      arm::r15
 
+     arm::conditionpassed-of-0 ;; FIXME: Need to add rules to handle all combinations of the resulting condition functions with things like cmp-zero/cmn-zero
+     arm::conditionpassed-of-1
+     arm::conditionpassed-of-2
+     arm::conditionpassed-of-3
+     arm::conditionpassed-of-4
+     arm::conditionpassed-of-5
+     arm::conditionpassed-of-6
+     arm::conditionpassed-of-7
+     arm::conditionpassed-of-8
+     arm::conditionpassed-of-9
+     arm::conditionpassed-of-10
+     arm::conditionpassed-of-11
+     arm::conditionpassed-of-12
+     arm::conditionpassed-of-13
+     arm::conditionpassed-of-14
+     arm::conditionpassed-of-15
+     ;; arm::conditionpassed-of-set-reg ; these are not needed if we always can open conditionpassed
+     ;; arm::conditionpassed-of-write
+
+     ;; cmn rules: ; todo: add the rest!
+     arm::eq-condition-of-cmn-zero
+     arm::ne-condition-of-cmn-zero
+
+     ;; cmp rules: ; todo: add the rest!
+     arm::eq-condition-of-cmp-zero
+     arm::ne-condition-of-cmp-zero
+     arm::hi-condition-of-cmp-carry-and-cmp-zero
+     arm::ls-condition-of-cmp-carry-and-cmp-zero
+     arm::le-condition-cmp-idiom
+     arm::gt-condition-cmp-idiom
+
+     arm::eq-condition-constant-opener
+     arm::ne-condition-constant-opener
+     arm::cs-condition-constant-opener
+     arm::cc-condition-constant-opener
+     arm::mi-condition-constant-opener
+     arm::pl-condition-constant-opener
+     arm::vs-condition-constant-opener
+     arm::vc-condition-constant-opener
+     arm::hi-condition-constant-opener
+     arm::ls-condition-constant-opener
+     arm::ge-condition-constant-opener
+     arm::lt-condition-constant-opener
+     arm::gt-condition-constant-opener
+     arm::le-condition-constant-opener
+
+
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
-     arm::ldr-literal-core
-     arm::conditionpassed
+     arm::signextend ; exposes BVSX
      arm::uint
      arm::zeroextend
      arm::nullcheckifthumbee
@@ -144,14 +200,18 @@
      arm::align ; redef?
      arm::div
      arm::memu
+     arm::mema
      arm::advance-pc
-     arm::pc ; should we open this? if so, do it in the assumptions too
+     arm::pc ; exposes the call to REG ; should we open this? if so, do it in the assumptions too
+     arm::sp ; exposes the call to REG
+     arm::lr ; exposes the call to REG
 
      arm::register-numberp
      arm::add-to-address
 
      arm::archversion ; exposes the stobj accessor
      arm::currentinstrset ; exposes the stobj accessor
+     arm::selectinstrset ; restrict?
 
      ;; Read-of-write rules (some commented-out rules are not currently
      ;; needed due to our current choice of normal forms):
@@ -229,6 +289,8 @@
      arm::isetstate-of-set-apsr.q
      arm::isetstate-of-write
 
+     arm::update-isetstate-when-equal-of-isetstate
+
      ;;;
 
      arm::apsr.n-of-set-apsr.n
@@ -304,20 +366,36 @@
      arm::set-apsr.v-of-write
      arm::set-apsr.q-of-write
 
-
      arm::branchto
      arm::pcstorevalue
      arm::loadwritepc
      arm::bxwritepc
      arm::branchwritepc
 
-     arm::armexpandimm_c
+     arm::and32 ; exposes bvand
+     arm::or32 ; exposes bvor
+     arm::eor32 ; exposes bvxor
+
      arm::armexpandimm
+     arm::armexpandimm_c
+     arm::shift
      arm::shift_c
-     arm::ror_c
-     arm::lsr
-     arm::lsr_c
-     arm::lsl
+
+     ;; left shifts:
+     arm::mv-nth-0-of-lsl_c-becomes-bvshl ; arm::lsl_c
+     arm::mv-nth-1-of-lsl_c-becomes-getbit
+     arm::lsl-becomes-bvshl ; arm::lsl
+
+     ;; right shifts;
+     arm::mv-nth-0-of-lsr_c-becomes-bvshr ; arm::lsr_c
+     arm::mv-nth-1-of-lsr_c-becomes-getbit
+     arm::lsr-becomes-bvshr ; arm::lsr
+
+     ;; right rotation:
+     arm::mv-nth-0-of-ror_c-becomes-rightrotate ; arm::ror_c
+     arm::mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
+     arm::ror-becomes-rightrotate ; arm::ror
+
      arm::bitcount
      arm::write_memu
      arm::write_mema
@@ -329,24 +407,41 @@
      acl2::bvcount-constant-opener
      arm::integerp-of-reg
      arm::unsigned-byte-p-32-of-reg
+     arm::bvchop-of-reg ; rename?
+     arm::getbit-of-reg-too-high
      ;; arm::write-byte-of-set-reg ; we always use write as the normal form
      arm::write-of-set-reg
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
 
      arm::decodeimmshift
-     arm::unsigned-byte-p-of-mv-nth-1-of-AddWithCarry ; could drop if we have the replacement rule
+     arm::unsigned-byte-p-of-mv-nth-0-of-AddWithCarry ; could drop these if the replacement rule always fires
+     arm::unsigned-byte-p-of-mv-nth-1-of-AddWithCarry
+     arm::unsigned-byte-p-of-mv-nth-2-of-AddWithCarry
      arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
      arm::mv-nth-1-of-AddWithCarry ;;     arm::addwithcarry
      arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
-     arm::shift
-     arm::lsl_c
      arm::iszerobit
      arm::iszero
+
+     arm::unsigned-byte-p-of-cmn-sign
+     arm::unsigned-byte-p-of-cmn-zero
+     arm::unsigned-byte-p-of-cmn-carry
+     arm::unsigned-byte-p-of-cmn-overflow
+
+     arm::unsigned-byte-p-of-cmp-sign
+     arm::unsigned-byte-p-of-cmp-zero
+     arm::unsigned-byte-p-of-cmp-carry
+     arm::unsigned-byte-p-of-cmp-overflow
+
      )
 ;   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
+   ;; bv rules:
+   '(acl2::bitnot-of-bitxor-of-1 ; move to core-rules-bv
+     acl2::bitxor-of-1-and-bitnot ; move to core-rules-bv
+     )
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
@@ -357,7 +452,12 @@
      ;acl2::list-to-bv-array-aux-constant-opener ; slow?!
      acl2::bv-list-read-chunk-little-constant-opener
      acl2::packbv-little-constant-opener
-     )
+
+     ;;todo: think about bv-list-read-chunk vs bv-array-read-chunk
+     acl2::unsigned-byte-p-of-bv-array-read-chunk-little-gen
+     acl2::unsigned-byte-p-of-bv-list-read-chunk-little
+     acl2::integerp-of-bv-list-read-chunk-little
+     acl2::bvchop-32-of-bv-list-read-chunk-little)
    '(arm::len-of-read-bytes arm::nth-of-read-bytes) ; for output-indicator handling
    '(;; error32p-of-set-reg
      ;; error32p-of-write
@@ -370,8 +470,11 @@
      arm::read-of-bvchop-32 ; todo: say which arg
      arm::read-of-+ ; needed?
 
+     arm::bvchop-of-read-safe
+     ;; arm::bvchop-of-read ; causes issues with SMT not knowing that 2 reads of different sizes from the same address are related
+
      ;; UNCOMMENT:
-     ;; bvchop-of-read
+
      ;; <-of-read ; for an array pattern rule
      ;; not-equal-of-read-and-constant
      ;; not-equal-of-constant-and-read
@@ -415,7 +518,7 @@
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1
-     acl2::bv-array-read-chunk-little-unroll
+     acl2::bv-array-read-chunk-little-unroll ; todo: think about this
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
 
      acl2::bv-list-read-chunk-little-of-cons-irrel

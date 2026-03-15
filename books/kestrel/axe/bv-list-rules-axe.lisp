@@ -1,7 +1,7 @@
 ; Axe rules about BV lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -35,6 +35,7 @@
 (include-book "kestrel/lists-light/repeat" :dir :system)
 ;(include-book "kestrel/lists-light/nth" :dir :system)
 (local (include-book "list-rules")) ; for nth-equal-car-hack
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 
 (add-known-boolean unsigned-byte-listp)
 (add-known-boolean all-unsigned-byte-p)

@@ -483,7 +483,7 @@
   (print-levelp (print-level-fix p))
   :hints (("Goal" :in-theory (enable print-level-fix))))
 
-(defun normalize-xors-option-fix (n)
+(defund-inline normalize-xors-option-fix (n)
   (declare (xargs :guard (normalize-xors-optionp n)))
   (mbe :logic (if (normalize-xors-optionp n) n nil)
        :exec n))
@@ -3284,10 +3284,11 @@
                      (:forward-chaining bounded-dag-parent-arrayp-forward-to-bounded-dag-parent-arrayp)
                      (:forward-chaining bounded-dag-variable-alistp-forward-to-dag-variable-alistp)
                      (:forward-chaining bounded-darg-list-listp-forward-to-true-listp)
-                     (:forward-chaining bounded-darg-listp-forward-to-true-listp)
+                     (:forward-chaining bounded-darg-listp-forward-to-darg-listp)
                      (:forward-chaining bounded-node-replacement-arrayp-forward-to-array1p)
                      (:forward-chaining consp-forward-to-len-bound)
                      (:forward-chaining consp-of-cdr-forward-to-consp)
+                     (:forward-chaining darg-listp-forward-to-true-listp)
                      (:forward-chaining maybe-bounded-memoizationp-forward-to-bounded-memoizationp)
                      (:forward-chaining myquotep-forward-to-consp)
                      (:forward-chaining pseudo-dag-arrayp-forward-chaining)
@@ -6789,9 +6790,7 @@
                                                    count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
                 ((when erp) (mv erp nil nil ,@maybe-state)))
              (mv (erp-nil)
-                 (if (quotep dag)
-                     dag
-                   (dag-to-term dag))
+                 (dag-or-constant-to-term dag)
                  hits
                  ,@maybe-state)))
 

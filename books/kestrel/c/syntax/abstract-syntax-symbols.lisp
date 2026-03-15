@@ -462,12 +462,20 @@
     ext-declon-listp
     ext-declon-list-fix
 
+    trans-itemp
+    trans-item-fix
+    trans-item-case
+    trans-item-declon
+    trans-item-line-comment
+
+    trans-item-listp
+    trans-item-list-fix
+
     transunitp
     transunit
     make-transunit
     transunit-fix
-    transunit->includes
-    transunit->declons
+    transunit->items
 
     filepath-transunit-mapp
 
@@ -512,6 +520,7 @@
     irr-comp-stmt
     irr-block-item
     irr-fundef
+    irr-trans-item
     irr-transunit
     irr-transunit-ensemble
     irr-code-ensemble
@@ -571,6 +580,8 @@
     fundef-unambp
     ext-declon-unambp
     ext-declon-list-unambp
+    trans-item-unambp
+    trans-item-list-unambp
     transunit-unambp
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
@@ -639,6 +650,8 @@
     fundef-aidentp
     ext-declon-aidentp
     ext-declon-list-aidentp
+    trans-item-aidentp
+    trans-item-list-aidentp
     transunit-aidentp
     filepath-transunit-map-aidentp
     transunit-ensemble-aidentp
@@ -814,6 +827,8 @@
     fundef-annop
     ext-declon-annop
     ext-declon-list-annop
+    trans-item-annop
+    trans-item-list-annop
     transunit-annop
     filepath-transunit-map-annop
     transunit-ensemble-annop

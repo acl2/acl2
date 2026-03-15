@@ -155,6 +155,14 @@
     (cons (ext-declon-declon (first declons))
           (map-ext-declon-declon (rest declons)))))
 
+(define map-trans-item-declon
+  ((edeclons ext-declon-listp))
+  :returns (items trans-item-listp)
+  (if (endp edeclons)
+      nil
+    (cons (trans-item-declon (first edeclons))
+          (map-trans-item-declon (rest edeclons)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod attrib-spec-list+init-declor-list
@@ -255,6 +263,8 @@
               fundef
               ext-declon
               ext-declon-list
+              trans-item
+              trans-item-list
               transunit
               filepath-transunit-map
               transunit-ensemble)
@@ -303,18 +313,23 @@
        (c$::change-fundef
          fundef$
          :specs (append decl-specs fundef$.specs))))
-   (c$::ext-declon-list
-     (b* (((when (endp c$::ext-declon-list))
-           nil)
-          (ext-declon (ext-declon-add-attributes (first c$::ext-declon-list) attrs))
-          (split-ext-declons
-            (ext-declon-case
-              ext-declon
-              :declon (map-ext-declon-declon
-                        (declon-add-attrib-split ext-declon.declon attrs))
-              :otherwise (list ext-declon))))
-       (append split-ext-declons
-               (ext-declon-list-add-attributes (rest c$::ext-declon-list) attrs))))))
+   (c$::trans-item-list
+    (b* (((when (endp c$::trans-item-list))
+          nil)
+         (trans-item (trans-item-add-attributes (first c$::trans-item-list) attrs))
+         (split-trans-items
+          (trans-item-case
+           trans-item
+           :declon
+           (ext-declon-case
+            trans-item.declon
+            :declon (map-trans-item-declon
+                     (map-ext-declon-declon
+                      (declon-add-attrib-split trans-item.declon.declon attrs)))
+            :otherwise (list trans-item))
+           :otherwise (list trans-item))))
+      (append split-trans-items
+              (trans-item-list-add-attributes (rest c$::trans-item-list) attrs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

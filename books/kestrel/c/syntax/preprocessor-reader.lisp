@@ -351,7 +351,7 @@
        ;; 2-byte UTF-8:
        ((when (utf8-= (logand byte #b11100000) #b11000000)) ; 110xxxyy
         (b* (((unless (consp bytes))
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 110... ~
@@ -361,7 +361,7 @@
                           :found "end of file"))
              ((cons byte2 bytes) bytes)
              ((unless (utf8-= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -373,7 +373,7 @@
              (char (+ (ash (logand byte #b00011111) 6)
                       (logand byte2 #b00111111)))
              ((when (< char #x80))
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "a value between 80h and 7FFh ~
                                           UTF-8-encoded in the two bytes ~
                                           (~x0 ~x1)"
@@ -383,7 +383,7 @@
        ;; 3-byte UTF-8:
        ((when (utf8-= (logand byte #b11110000) #b11100000)) ; 1110xxxx
         (b* (((unless (consp bytes))
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
@@ -393,7 +393,7 @@
                           :found "end of file"))
              ((cons byte2 bytes) bytes)
              ((unless (utf8-= (logand byte2 #b11000000) #b10000000)) ; 10yyyyzz
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -403,7 +403,7 @@
                                          byte)
                           :found (msg "the byte ~x0" byte2)))
              ((unless (consp bytes))
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
@@ -416,7 +416,7 @@
                           :found "end of file"))
              ((cons byte3 bytes) bytes)
              ((unless (utf8-= (logand byte3 #b11000000) #b10000000)) ; 10zzwwww
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -432,7 +432,7 @@
                       (ash (logand byte2 #b00111111) 6)
                       (logand byte3 #b00111111)))
              ((when (< char #x800))
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "a value between 800h and FFFFh ~
                                           UTF-8-encoded in the three bytes ~
                                           (~x0 ~x1 ~x2)"
@@ -444,7 +444,7 @@
                              (utf8-<= char #x2069))
                         (and (utf8-<= #xd800 char)
                              (utf8-<= char #xdfff))))
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected "a Unicode character with code ~
                                      in the range 9-13 or 32-126 ~
                                      or 128-8233 or 8239-8293 or ~
@@ -454,7 +454,7 @@
        ;; 4-byte UTF-8:
        ((when (utf8-= (logand #b11111000 byte) #b11110000)) ; 11110xyy
         (b* (((unless (consp bytes))
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
@@ -464,7 +464,7 @@
                           :found "end of file"))
              ((cons byte2 bytes) bytes)
              ((unless (utf8-= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -474,7 +474,7 @@
                                          byte)
                           :found (msg "the byte ~x0" byte2)))
              ((unless bytes)
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
@@ -487,7 +487,7 @@
                           :found "end of file"))
              ((cons byte3 bytes) bytes)
              ((unless (utf8-= (logand byte3 #b11000000) #b10000000)) ; 10wwwwuu
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -500,7 +500,7 @@
                                          byte byte2)
                           :found (msg "the byte ~x0" byte3)))
              ((unless (consp bytes))
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
@@ -516,7 +516,7 @@
                           :found "end of file"))
              ((cons byte4 bytes) bytes)
              ((unless (utf8-= (logand byte4 #b11000000) #b10000000)) ; 10uuvvvv
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
                                           after the first byte ~x0 ~
@@ -537,14 +537,14 @@
                       (logand byte4 #b00111111)))
              ((when (or (< char #x10000)
                         (> char #x10ffff)))
-              (reterr-msg :where (position-to-msg pos)
+              (reterr-msg :where pos
                           :expected (msg "a value between 10000h and 10FFFFh ~
                                           UTF-8-encoded in the four bytes ~
                                           (~x0 ~x1 ~x2 ~x3)"
                                          byte byte2 byte3 byte4)
                           :found (msg "the value ~x0" char))))
           (retok char pos pos+1 bytes))))
-    (reterr-msg :where (position-to-msg pos)
+    (reterr-msg :where pos
                 :expected "a byte in the range 9-13 or 32-126 or 192-223"
                 :found (msg "the byte ~x0" byte)))
   :no-function nil
@@ -628,19 +628,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-chars+positions ((bytes byte-listp) (ienv ienvp))
+(define read-chars+positions ((file stringp) (bytes byte-listp) (ienv ienvp))
   :returns (mv erp (chars uchar-listp) (poss position-listp))
   :short "Read all the characters from a list of bytes,
           obtaining the list of characters and the corresponding positions."
   :long
   (xdoc::topstring
    (xdoc::p
+    "We also pass the path of the file, to put into the positions.")
+   (xdoc::p
     "We repeatedly call @(tsee read-next-char)
      so long as it returns characters.
      We start with the initial position.
      The final position is the one just past the end of the file.
      There is one more position than characters."))
-  (read-chars+positions-loop (position-init) bytes ienv)
+  (read-chars+positions-loop (position-init file) bytes ienv)
 
   :prepwork
   ((define read-chars+positions-loop ((pos positionp)
@@ -671,13 +673,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ppstate-for-file ((bytes byte-listp)
+(define ppstate-for-file ((file-name stringp)
+                          (bytes byte-listp)
                           (macros macro-tablep)
                           (options ppoptionsp)
                           (ienv ienvp)
                           (ppstate ppstatep))
   :returns (mv erp (new-ppstate ppstatep))
-  :short "Initialize a preprocessor for a file with given bytes."
+  :short "Initialize a preprocessor for a file with given name and bytes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -687,8 +690,9 @@
      and uses those to initialize the stobj with @(tsee init-ppstate)."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
-       ((erp chars poss) (read-chars+positions bytes ienv))
-       (ppstate (init-ppstate chars poss macros options ienv ppstate)))
+       ((erp chars poss) (read-chars+positions file-name bytes ienv))
+       (ppstate
+        (init-ppstate chars poss macros options ienv ppstate)))
     (retok ppstate))
   :guard-hints (("Goal" :in-theory (enable len-of-read-chars+positions-1+))))
 

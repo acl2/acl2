@@ -45,9 +45,6 @@
          (equal (union-eq (union-eq a b) c)
                 (union-eq a (union-eq b c)))))
 
-;; pick up some set lemmas
-(local (deflist pseudo-var-list :elt-type pseudo-var :true-listp t))
-
 (define term-subst-vars-acc ((x pseudo-term-subst-p)
                              (acc pseudo-var-list-p))
   :returns (vars pseudo-var-list-p)
