@@ -123,7 +123,7 @@
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
-    (retok (plexeme-ident (ident string)) span ppstate))
+    (retok (plexeme-ident string) span ppstate))
 
   :prepwork
 
@@ -1476,7 +1476,7 @@
       (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; u EOF
-          (retok (plexeme-ident (ident "u"))
+          (retok (plexeme-ident "u")
                  (make-span :start pos :end pos)
                  ppstate))
          ((utf8-= char2 (char-code #\')) ; u '
@@ -1487,7 +1487,7 @@
           (b* (((erp char3 & ppstate) (read-pchar ppstate)))
             (cond
              ((not char3) ; u 8 EOF
-              (retok (plexeme-ident (ident "u8"))
+              (retok (plexeme-ident "u8")
                      (make-span :start pos :end pos2)
                      ppstate))
              ((utf8-= char3 (char-code #\")) ; u 8 "
@@ -1504,7 +1504,7 @@
       (b* (((erp char2 & ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; U EOF
-          (retok (plexeme-ident (ident "U"))
+          (retok (plexeme-ident "U")
                  (make-span :start pos :end pos)
                  ppstate))
          ((utf8-= char2 (char-code #\')) ; U '
@@ -1519,7 +1519,7 @@
       (b* (((erp char2 & ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; L EOF
-          (retok (plexeme-ident (ident "L"))
+          (retok (plexeme-ident "L")
                  (make-span :start pos :end pos)
                  ppstate))
          ((utf8-= char2 (char-code #\')) ; L '

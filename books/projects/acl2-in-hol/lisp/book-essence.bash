@@ -1,16 +1,20 @@
 #!/bin/bash
 
-if [ $# -eq 2 ] ; then \
-    export outfile="\"$2\"" ;\
-elif [ $# -eq 1 ] ; then \
+if [ $# -eq 3 ] ; then \
+    export outfile="\"$3\"" ;\
+elif [ $# -eq 2 ] ; then \
     export outfile="" ;\
 else \
     echo "Usage: $0 infile [outfile]" ;\
     exit 1 ;\
 fi
 
-export tmpfile=/tmp/workxxx
-export infile="\"$1\""
+# Suggestion from perplexity.ai:
+export SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+export tmpfile=${SCRIPT_DIR}/workxxx-book-essence-${1}
+
+export infile="\"$2\""
 
 rm -f $tmpfile
 

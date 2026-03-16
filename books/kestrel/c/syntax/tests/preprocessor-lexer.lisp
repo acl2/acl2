@@ -107,42 +107,42 @@
  "w abc"
  :more-inputs ((char-code #\w) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident (ident "w"))))
+ :cond (equal ast (plexeme-ident "w")))
 
 (test-lex
  plex-identifier
  "uabc456"
  :more-inputs ((char-code #\u) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident (ident "uabc456"))))
+ :cond (equal ast (plexeme-ident "uabc456")))
 
 (test-lex
  plex-identifier
  "static"
  :more-inputs ((char-code #\s) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident (ident "static"))))
+ :cond (equal ast (plexeme-ident "static")))
 
 (test-lex
  plex-identifier
  "include"
  :more-inputs ((char-code #\i) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident (ident "include"))))
+ :cond (equal ast (plexeme-ident "include")))
 
 (test-lex
  plex-identifier
  "includ_"
  :more-inputs ((char-code #\i) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident (ident "includ_"))))
+ :cond (equal ast (plexeme-ident "includ_")))
 
 (test-lex
  plex-identifier
  "includ+"
  :more-inputs ((char-code #\i) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident (ident "includ"))))
+ :cond (equal ast (plexeme-ident "includ")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1164,35 +1164,35 @@
 
 (test-lex-lexeme
  "x"
- :cond (equal ast (plexeme-ident (ident "x"))))
+ :cond (equal ast (plexeme-ident "x")))
 
 (test-lex-lexeme
  "an_identifier_88"
- :cond (equal ast (plexeme-ident (ident "an_identifier_88"))))
+ :cond (equal ast (plexeme-ident "an_identifier_88")))
 
 (test-lex-lexeme
  "u"
- :cond (equal ast (plexeme-ident (ident "u"))))
+ :cond (equal ast (plexeme-ident "u")))
 
 (test-lex-lexeme
  "u*"
- :cond (equal ast (plexeme-ident (ident "u"))))
+ :cond (equal ast (plexeme-ident "u")))
 
 (test-lex-lexeme
  "U*"
- :cond (equal ast (plexeme-ident (ident "U"))))
+ :cond (equal ast (plexeme-ident "U")))
 
 (test-lex-lexeme
  "L*"
- :cond (equal ast (plexeme-ident (ident "L"))))
+ :cond (equal ast (plexeme-ident "L")))
 
 (test-lex-lexeme
  "u8*"
- :cond (equal ast (plexeme-ident (ident "u8"))))
+ :cond (equal ast (plexeme-ident "u8")))
 
 (test-lex-lexeme
  "u8'"
- :cond (equal ast (plexeme-ident (ident "u8"))))
+ :cond (equal ast (plexeme-ident "u8")))
 
 ; character constants
 

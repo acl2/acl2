@@ -90,8 +90,8 @@
      The markers are artifacts, not an actual part of the input files."))
   (:lexeme ((lexeme plexeme)
             (span span)))
-  (:start ((macro ident)))
-  (:end ((macro ident)))
+  (:start ((macro string)))
+  (:end ((macro string)))
   :pred lexmarkp)
 
 ;;;;;;;;;;;;;;;;;;;;
