@@ -55,11 +55,13 @@
     (xdoc::li "Do not leave ``trailing whitespace'' at the end of your lines
                (see @(see remove-whitespace)). Trailing whitespace can add
                noise to Git commits and disrupt navigation in the editor.")
-    (xdoc::li "Unicode characters should be avoided in identifiers, but are
-               permissible in comments and strings. (Keep in mind that some
-               string utilities may not behave as expected, for instance @(tsee
-               length) may return the number of bytes instead of the number of
-               unicode code points.)")
+    (xdoc::li "Non-ASCII characters should be avoided in identifiers, but are
+               permissible in comments and strings.")
+    (xdoc::li "UTF-8 is the preferred encoding for non-ASCII characters. Note
+               that input is read according to the Latin-1 encoding (see
+               @(see character-encoding)). If you use UTF-8 characters in
+               strings, note that certain utilities may behave in unexpected
+               ways. See @(see using-utf-8).")
     (xdoc::li "Avoid consecutive blank lines.")
     (xdoc::li "Line breaks should use the posix-style newline
                (i.e. @('\"\\n\"'), not @('\"\\r\\n\"')). Linux and Mac
@@ -76,7 +78,9 @@
               (xdoc::i "not")
               (xdoc::codeblock ";This is a comment."))
     (xdoc::li "Books should begin with a copyright and licensing header (which
-               may just point to the repository's top-level LICENSE file).")
+               may just point to the repository's top-level LICENSE file).
+               Ensure that your license is accurate &mdash; a false or
+               unapproved license is worse than including no license.")
     (xdoc::li "Use two semicolons for inline comments which should be indented
                as a form would be. This is a standard practice in Common Lisp,
                and editors like Emacs will indent such comments
