@@ -245,7 +245,7 @@
     "Python bindings are available in @('[books]/centaur/bridge/python').")
 
    (xdoc::p
-	"Support for SBCL added in @('[books]/centaur/bridge/bridge-sbcl-raw.lsp').")
+    "Support for SBCL added in @('[books]/centaur/bridge/bridge-sbcl-raw.lsp').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -599,6 +599,10 @@
     "A new topic, @(see osicat), was added. It describes an occasional
      build issue caused by a race condition in the build logic,
      as well as the fix.")
+
+   (xdoc::p
+    "@(see character-encoding) has been updated to remove old advice and to
+     link to a new topic, @(see using-utf-8).")
 
    (xdoc::p
     "Various broken links have been fixed.")
