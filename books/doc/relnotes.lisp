@@ -601,6 +601,10 @@
      as well as the fix.")
 
    (xdoc::p
+    "@(see character-encoding) has been updated to remove old advice and to
+     link to a new topic, @(using-utf-8).")
+
+   (xdoc::p
     "Various broken links have been fixed.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
