@@ -26,29 +26,29 @@
 
 ;;  Based on
 ;;; ------------------------------------------------------------------
-;;; Términos abstractos
+;;; TÃ©rminos abstractos
 ;;;
 ;;; Autores:
 ;;;
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripción:
+;;; DescripciÃ³n:
 ;;;
-;;; Un monoide conmutativo de términos con un orden bien fundamentado
-;;; cuya representación se abstrae mediante un encapsulado. Las listas
-;;; propias de números naturales de ACL2 con la suma elemento a
-;;; elemento y el orden lexicográfico sirven como modelo de la teoría
-;;; generada. La buena fundamentación del orden se establece por
-;;; inmersión en los ordinales ACL2.
+;;; Un monoide conmutativo de tÃ©rminos con un orden bien fundamentado
+;;; cuya representaciÃ³n se abstrae mediante un encapsulado. Las listas
+;;; propias de nÃºmeros naturales de ACL2 con la suma elemento a
+;;; elemento y el orden lexicogrÃ¡fico sirven como modelo de la teorÃ­a
+;;; generada. La buena fundamentaciÃ³n del orden se establece por
+;;; inmersiÃ³n en los ordinales ACL2.
 ;;;
 ;;; Notas generales:
 ;;;
-;;; La parte más complicada es la inmersión y la buena fundamentación
+;;; La parte mÃ¡s complicada es la inmersiÃ³n y la buena fundamentaciÃ³n
 ;;; del orden. Es curioso que los ordinales obtenidos son bastante
-;;; pequeños en relación a, por ejemplo, los propuestos por Kaufmann,
-;;; Manolios y Moore como solución al ejercicio 6.8 de su libro
-;;; «Computer-Aided Reasoning. An Approach». Véase el trabajo
+;;; pequeÃ±os en relaciÃ³n a, por ejemplo, los propuestos por Kaufmann,
+;;; Manolios y Moore como soluciÃ³n al ejercicio 6.8 de su libro
+;;; Â«Computer-Aided Reasoning. An ApproachÂ». VÃ©ase el trabajo
 ;;; presentado en Austin.
 ;;; ------------------------------------------------------------------
 #|
@@ -100,7 +100,7 @@ To certify this book, first, create a world with the following package:
   (and (integerp a)
        (>= a 0)))
 
-  ;;; Neutro de la operación
+  ;;; Neutro de la operaciÃ³n
 
 ;;   (local
 ;;     (defun uno ()
@@ -112,7 +112,7 @@ To certify this book, first, create a world with the following package:
 (defun
   uno ()
   (hide 0))
-  ;;; Operación
+  ;;; OperaciÃ³n
 
 ;;   (local
 ;;     (defun * (a b)
@@ -132,12 +132,12 @@ To certify this book, first, create a world with the following package:
   * (a b)
   (ACL2::+ a b))
 
-  ;;; Igualdad sintáctica entre términos
+  ;;; Igualdad sintÃ¡ctica entre tÃ©rminos
 
 (defmacro = (a b)
   `(equal ,a ,b))
 
-  ;;; Inmersión en los ordinales
+  ;;; InmersiÃ³n en los ordinales
 
 ;;   (local
 ;;     (defun termino->e0-ordinal (a)
@@ -155,7 +155,7 @@ To certify this book, first, create a world with the following package:
   termino->ordinal (a)
   (ACL2::+ 1 a))
 
-  ;;; Orden lexicográfico estricto
+  ;;; Orden lexicogrÃ¡fico estricto
 
 ;;   (local
 ;;     (defun < (a b)
@@ -178,7 +178,7 @@ To certify this book, first, create a world with the following package:
   ;;; Axiomas
   ;;; -------
 
-  ;;; El reconocedor es una función booleana
+  ;;; El reconocedor es una funciÃ³n booleana
 
 (defthm booleanp-terminop
   (booleanp (terminop a))
@@ -195,29 +195,29 @@ To certify this book, first, create a world with the following package:
   (terminop (uno))
   :rule-classes :type-prescription)
 
-  ;;; Conmutatividad de la operación
+  ;;; Conmutatividad de la operaciÃ³n
 
 (defthm |a * b = b * a|
   (implies (and (terminop a) (terminop b))
 	   (= (* a b) (* b a))))
 
-  ;;; Asociatividad de la operación
+  ;;; Asociatividad de la operaciÃ³n
 
 (defthm |(a * b) * c = a * (b * c)|
   (implies (and (terminop a) (terminop b) (terminop c))
 	   (= (* (* a b) c) (* a (* b c)))))
 
-  ;;; Neutro de la operación
+  ;;; Neutro de la operaciÃ³n
 
 (defthm |1 * a = a|
   (implies (terminop a)
 	   (= (* (uno) a) a)))
 
   ;;; --------------------
-  ;;; Buena fundamentación
+  ;;; Buena fundamentaciÃ³n
   ;;; --------------------
 
-  ;;; Extensión de la corrección de la inmersión
+  ;;; ExtensiÃ³n de la correcciÃ³n de la inmersiÃ³n
 
 ;;   (local
 ;;     (defthm extension-correccion
@@ -226,7 +226,7 @@ To certify this book, first, create a world with the following package:
 ;; 	       (o-p (termino->ordinal a)))
 ;;       :otf-flg t))
 
-  ;;; Corrección de la inmersión
+  ;;; CorrecciÃ³n de la inmersiÃ³n
 
 ;;   (local
 ;;     (defthm o-p-termino->ordinal
@@ -235,12 +235,12 @@ To certify this book, first, create a world with the following package:
 ;;       :hints (("Goal"
 ;; 	       :in-theory (disable o-p termino->ordinal)))))
 
-  ;;; Buena fundamentación
+  ;;; Buena fundamentaciÃ³n
 
   ;;; NOTA:
   ;;;
-  ;;; Este teorema es útil como regla de reescritura para extender el
-  ;;; orden de términos a polinomios.
+  ;;; Este teorema es Ãºtil como regla de reescritura para extender el
+  ;;; orden de tÃ©rminos a polinomios.
 
 (defthm buena-fundamentacion-<
   (and (implies (terminop a)
@@ -250,11 +250,11 @@ To certify this book, first, create a world with the following package:
 		(o< (termino->ordinal a) (termino->ordinal b))))
   :rule-classes (:rewrite :well-founded-relation))
 
-  ;;; La inmersión no produce 0
+  ;;; La inmersiÃ³n no produce 0
 
   ;;; NOTA:
   ;;;
-  ;;; Estos teoremas facilitan la extensión del orden de términos a
+  ;;; Estos teoremas facilitan la extensiÃ³n del orden de tÃ©rminos a
   ;;; polinomios.
 
 (defthm |~(termino->ordinal(a) = 0)|
@@ -272,13 +272,13 @@ To certify this book, first, create a world with the following package:
   ;;; NOTA:
   ;;;
   ;;; En realidad estas propiedades no son independientes de los
-  ;;; axiomas. Se podrían deducir de la inmersión.
+  ;;; axiomas. Se podrÃ­an deducir de la inmersiÃ³n.
 
   ;;; Irreflexividad
 
 (defthm |~(a < a)|
   (not (< a a)))
-  ;;; Antisimetría
+  ;;; AntisimetrÃ­a
 
 (defthm |a < b => ~(b < a)|
   (implies (< a b) (not (< b a))))
@@ -288,7 +288,7 @@ To certify this book, first, create a world with the following package:
 (defthm |a < b & b < c => a < c|
   (implies (and (< a b) (< b c)) (< a c)))
 
-  ;;; Tricotomía
+  ;;; TricotomÃ­a
 
 (defthm |a < b or b < a or a = b|
   (implies (and (terminop a) (terminop b))
@@ -324,7 +324,7 @@ To certify this book, first, create a world with the following package:
   (implies (terminop a)
 	   (= (* a (uno)) a)))
 
-;;; Complemento a la conmutatividad y la asociatividad de la operación
+;;; Complemento a la conmutatividad y la asociatividad de la operaciÃ³n
 
 (defthm |a * (b * c) = b * (a * c)|
   (implies (and (terminop a) (terminop b) (terminop c))
