@@ -7,9 +7,12 @@ if [ $# -ne 2 && $# -ne 3 ] ; then \
 	exit 1 ;\
 fi
 
-export tmpfile=/tmp/workxxx
+# Suggestion from perplexity.ai:
+export SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 export infile="$1"
 export outfile="$2"
+export tmpfile=${SCRIPT_DIR}/workxxx-a2ml-"$(basename ${infile})"
 if [ $# -eq 3 ] ; then \
     export infile_dir="$3" ;\
 else \
