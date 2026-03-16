@@ -602,7 +602,7 @@
 
    (xdoc::p
     "@(see character-encoding) has been updated to remove old advice and to
-     link to a new topic, @(using-utf-8).")
+     link to a new topic, @(see using-utf-8).")
 
    (xdoc::p
     "Various broken links have been fixed.")
