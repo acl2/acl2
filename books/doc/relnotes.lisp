@@ -165,6 +165,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "arm::arm32" "ARM32"))
+
+   (xdoc::p
+    "A formal model of the ARM32 CPU has been added.  This is still in progress,
+     but it supports a variety of instructions seen in real-world ARM32 code.
+     It is suitable for use with @(see axe).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
 
    (xdoc::p
@@ -231,6 +240,18 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "axe" "Axe Toolkit"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "axe-arm" "ARM variant"))
+
+   (xdoc::p
+    "A variant of Axe for reasoning about ARM32 binaries has been added.  This is
+     still in progress.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "axe-x86" "x86 variant"))
 
    (xdoc::p
     "Several new x86 binary lifting examples were added,
