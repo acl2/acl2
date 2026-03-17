@@ -608,6 +608,23 @@
      link to a new topic, @(see using-utf-8).")
 
    (xdoc::p
+    "The publications page available from the ACL2 home page has been replaced
+     by the :DOC topic, @(see publications).")
+
+   (xdoc::p
+    "Several changes were made to the "
+    (xdoc::ahref "https:://acl2.org/doc" "web manual")
+    ". The ``jump to'' bar now shows more results in the preview.
+     If the current text is not a prefix of an topic, the preview now shows
+     substring matches. General improvements were made to the local ``search''
+     functionality, including improving tokenization and searching through
+     @(':short') forms. Finally, when the manual is deployed with a database
+     (in contrast to viewing a local copy, see @(see xdoc::deploying-manuals)),
+     we offer server-side searching using sqlite's built-in search
+     capabilities. This searches through @(':long')s,
+     in addition to @(':short')s and topic names.")
+
+   (xdoc::p
     "Various broken links have been fixed.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -649,23 +666,6 @@
      floating-point operations may be found in
      @('demos/floating-point-input.lsp'), with associated output file
      @('demos/floating-point-log.txt').")
-
-   (xdoc::p
-    "The publications page available from the ACL2 home page has been replaced
-     by the :DOC topic, @(see publications).")
-
-   (xdoc::p
-    "Several changes were made to the "
-    (xdoc::ahref "https:://acl2.org/doc" "web manual")
-    ". The ``jump to'' bar now shows more results in the preview.
-     If the current text is not a prefix of an topic, the preview now shows
-     substring matches. General improvements were made to the local ``search''
-     functionality, including improving tokenization and searching through
-     @(':short') forms. Finally, when the manual is deployed with a database
-     (in contrast to viewing a local copy, see @(see xdoc::deploying-manuals)),
-     we offer server-side searching using sqlite's built-in search
-     capabilities. This searches through @(':long')s,
-     in addition to @(':short')s and topic names.")
 
    ))
 
