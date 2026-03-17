@@ -249,13 +249,6 @@
                     (exec-binary-strict-pure op eval1 eval2)))
     :enable (exec-expr-pure binop-purep))
 
-  (defund sint-from-boolean-with-error (test)
-    (if (errorp test)
-        test
-      (if test
-          (expr-value (sint-from-integer 1) nil)
-        (expr-value (sint-from-integer 0) nil))))
-
   (defruled exec-expr-pure-when-binary-logand
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :binary)

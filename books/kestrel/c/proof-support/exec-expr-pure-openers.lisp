@@ -14,6 +14,8 @@
 (include-book "test-star")
 (include-book "pure-expression-execution")
 
+(include-book "../representation/integers")
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -200,6 +202,29 @@
        (elem-objdes (make-objdesign-element :super objdes-mem :index index)))
     (make-expr-value :value val :object elem-objdes))
   :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-from-boolean-with-error ((test boolean-resultp))
+  :returns (eval expr-value-resultp)
+  :short "Intermediate function for non-strict binary operators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('test') input to this function is
+     the boolean result of executing the second operand of @('&&') or @('||'),
+     when the first operand is insufficient to determine the final result.
+     The usage of this function in the rules for @('&&') and @('||')
+     should make the purpose of this function clearer.
+     If the result is an error, it is propagated;
+     otherwise, an @('int') expression value, with no object designator,
+     is returned, based on the boolean."))
+  (if (errorp test)
+      test
+    (if test
+        (expr-value (sint-from-integer 1) nil)
+      (expr-value (sint-from-integer 0) nil)))
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
