@@ -69,6 +69,8 @@
   :enable (exec-stmt
            not-errorp-when-expr-value-optionp))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (defruled exec-stmt-when-expr
   :short "Opener rule for expression statements."
   (implies (and (syntaxp (quotep s))
@@ -83,6 +85,8 @@
                   (mv (stmt-value-none) compst1)))
   :enable (exec-stmt
            not-errorp-when-expr-value-optionp))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defruled exec-stmt-when-if
   :short "Opener splitting rule for @('if') statements."
@@ -149,6 +153,8 @@
            exec-expr-to-exec-expr-pure-when-expr-pure-limit
            not-errorp-when-expr-value-optionp
            test*))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defruled exec-stmt-when-ifelse
   :short "Opener splitting rule for @('if')-@('else') statements."
@@ -218,6 +224,8 @@
            not-errorp-when-expr-value-optionp
            test*))
 
+;;;;;;;;;;;;;;;;;;;;
+
 (defruled exec-stmt-when-while
   :short "Opener rule for @('while') statements."
   (implies (and (syntaxp (quotep s))
@@ -230,6 +238,8 @@
                                    fenv
                                    (1- limit))))
   :enable exec-stmt)
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defruled exec-stmt-when-return
   :short "Opener rule for @('return') statements."
