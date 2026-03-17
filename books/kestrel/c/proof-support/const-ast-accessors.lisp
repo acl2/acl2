@@ -48,28 +48,28 @@
      and the field accessors for each summand with fields.
      We omit fields that carry no semantic significance."))
   '(;; ident:
-    (:E C::IDENT->NAME)
+    (:e c::ident->name)
     ;; iconst-base:
-    (:E C::ICONST-BASE-KIND)
+    (:e c::iconst-base-kind)
     ;; iconst-length:
-    (:E C::ICONST-LENGTH-KIND)
+    (:e c::iconst-length-kind)
     ;; iconst:
-    (:E C::ICONST->VALUE)
-    (:E C::ICONST->BASE)
-    (:E C::ICONST->UNSIGNEDP)
-    (:E C::ICONST->LENGTH)
+    (:e c::iconst->value)
+    (:e c::iconst->base)
+    (:e c::iconst->unsignedp)
+    (:e c::iconst->length)
     ;; const:
-    (:E C::CONST-KIND)
-    (:E C::CONST-INT->GET)
+    (:e c::const-kind)
+    (:e c::const-int->get)
     (:e const-enum->get)
     ;; tyspecseq:
-    (:E C::TYSPECSEQ-KIND)
+    (:e c::tyspecseq-kind)
     (:e tyspecseq-float->complex)
     (:e tyspecseq-double->complex)
     (:e tyspecseq-ldouble->complex)
-    (:E C::TYSPECSEQ-STRUCT->TAG)
-    (:E C::TYSPECSEQ-union->TAG)
-    (:E C::TYSPECSEQ-enum->TAG)
+    (:e c::tyspecseq-struct->tag)
+    (:e c::tyspecseq-union->tag)
+    (:e c::tyspecseq-enum->tag)
     (:e tyspecseq-typedef->name)
     ;; scspecseq:
     (:e scspecseq-kind)

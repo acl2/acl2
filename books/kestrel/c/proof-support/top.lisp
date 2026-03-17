@@ -12,7 +12,9 @@
 (in-package "C")
 
 (include-book "test-star")
+(include-book "syntaxp-for-expr-pure")
 (include-book "pure-expression-execution")
+(include-book "exec-expr-pure-openers")
 (include-book "exec-stmt-openers")
 (include-book "exec-stmt-while-openers")
 (include-book "const-folding")
