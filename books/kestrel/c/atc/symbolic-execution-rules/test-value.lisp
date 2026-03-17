@@ -15,7 +15,8 @@
 
 (include-book "../../representation/integer-operations")
 
-(include-book "syntaxp")
+(include-book "../../proof-support/syntaxp-for-expr-pure")
+
 (include-book "value-integer-get")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))

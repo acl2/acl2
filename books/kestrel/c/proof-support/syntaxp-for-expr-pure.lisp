@@ -14,6 +14,8 @@
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "../portcullis")
+
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
@@ -24,7 +26,7 @@
                 :hyp (symbolp var)
                 :hints (("Goal" :in-theory (enable pseudo-termp
                                                    pseudo-term-listp))))
-  :parents (atc-symbolic-execution-rules)
+  :parents (proof-support)
   :short "Construct a @(tsee syntaxp) hypothesis for
           certain symbolic execution rules for pure expressions."
   :long

@@ -15,7 +15,8 @@
 
 (include-book "../../representation/integer-operations")
 
-(include-book "syntaxp")
+(include-book "../../proof-support/syntaxp-for-expr-pure")
+
 (include-book "promote-value")
 (include-book "uaconvert-values")
 (include-book "integer-conversions")

@@ -17,7 +17,8 @@
 
 (include-book "../types")
 
-(include-book "syntaxp")
+(include-book "../../proof-support/syntaxp-for-expr-pure")
+
 (include-book "promote-value")
 (include-book "value-integer-get")
 (include-book "apconvert")

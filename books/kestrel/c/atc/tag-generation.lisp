@@ -13,7 +13,7 @@
 
 (include-book "tag-tables")
 
-(include-book "symbolic-execution-rules/syntaxp")
+(include-book "../proof-support/syntaxp-for-expr-pure")
 
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
