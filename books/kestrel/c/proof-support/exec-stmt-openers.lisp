@@ -264,7 +264,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *exec-stmt-openers*
-  :parents (exec-stmt-openers)
   :short "List of opener rules for @(tsee exec-stmt)."
   '(exec-stmt-when-compound
     exec-stmt-when-expr
@@ -278,7 +277,6 @@
     exec-stmt-when-return))
 
 (defval *exec-stmt-openers-split*
-  :parents (exec-stmt-openers)
   :short "List of opener rules for @(tsee exec-stmt)
           that cause splits at conditionals."
   '(exec-stmt-when-compound
@@ -289,7 +287,6 @@
     exec-stmt-when-return))
 
 (defval *exec-stmt-openers-nosplit*
-  :parents (exec-stmt-openers)
   :short "List of opener rules for @(tsee exec-stmt)
           that do not cause splits at conditionals."
   '(exec-stmt-when-compound
