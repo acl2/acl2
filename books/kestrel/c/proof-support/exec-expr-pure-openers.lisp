@@ -537,37 +537,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled exec-expr-pure-when-binary-logand
-  :short "Opener splitting rule for logical conjunction expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This produces @(tsee sint-from-boolean-with-error)."))
-  (implies (and (syntaxp (quotep e))
-                (equal (expr-kind e) :binary)
-                (equal op (expr-binary->op e))
-                (equal (binop-kind op) :logand)
-                (equal arg1 (exec-expr-pure (expr-binary->arg1 e) compst))
-                (expr-valuep arg1)
-                (equal carg1 (apconvert-expr-value arg1))
-                (expr-valuep carg1)
-                (equal test1 (test-value (expr-value->value carg1)))
-                (booleanp test1))
-           (equal (exec-expr-pure e compst)
-                  (if test1
-                      (sint-from-boolean-with-error
-                       (b* ((arg2 (exec-expr-pure (expr-binary->arg2 e)
-                                                  compst))
-                            ((when (errorp arg2)) arg2)
-                            (arg2 (apconvert-expr-value arg2))
-                            ((when (errorp arg2)) arg2))
-                         (test-value (expr-value->value arg2))))
-                    (expr-value (sint-from-integer 0) nil))))
-  :enable (exec-expr-pure
-           binop-purep
-           sint-from-boolean-with-error
-           (:e tau-system)))
-
 (defruled exec-expr-pure-when-binary-logand-and-true
   :short "Opener non-splitting rule for logical conjunction expressions,
           when the first operand is true."
@@ -616,10 +585,8 @@
            test*
            (:e tau-system)))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled exec-expr-pure-when-binary-logor
-  :short "Opener splitting rule for logical disjunction expressions."
+(defruled exec-expr-pure-when-binary-logand
+  :short "Opener splitting rule for logical conjunction expressions."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -627,7 +594,7 @@
   (implies (and (syntaxp (quotep e))
                 (equal (expr-kind e) :binary)
                 (equal op (expr-binary->op e))
-                (equal (binop-kind op) :logor)
+                (equal (binop-kind op) :logand)
                 (equal arg1 (exec-expr-pure (expr-binary->arg1 e) compst))
                 (expr-valuep arg1)
                 (equal carg1 (apconvert-expr-value arg1))
@@ -636,18 +603,20 @@
                 (booleanp test1))
            (equal (exec-expr-pure e compst)
                   (if test1
-                      (expr-value (sint-from-integer 1) nil)
-                    (sint-from-boolean-with-error
-                     (b* ((arg2 (exec-expr-pure (expr-binary->arg2 e)
-                                                compst))
-                          ((when (errorp arg2)) arg2)
-                          (arg2 (apconvert-expr-value arg2))
-                          ((when (errorp arg2)) arg2))
-                       (test-value (expr-value->value arg2)))))))
+                      (sint-from-boolean-with-error
+                       (b* ((arg2 (exec-expr-pure (expr-binary->arg2 e)
+                                                  compst))
+                            ((when (errorp arg2)) arg2)
+                            (arg2 (apconvert-expr-value arg2))
+                            ((when (errorp arg2)) arg2))
+                         (test-value (expr-value->value arg2))))
+                    (expr-value (sint-from-integer 0) nil))))
   :enable (exec-expr-pure
            binop-purep
            sint-from-boolean-with-error
            (:e tau-system)))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defruled exec-expr-pure-when-binary-logor-and-true
   :short "Opener non-splitting rule for logical disjunction expressions,
@@ -697,31 +666,38 @@
            test*
            (:e tau-system)))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled exec-expr-pure-when-cond
-  :short "Opener splitting rule for ternary conditional expressions."
+(defruled exec-expr-pure-when-binary-logor
+  :short "Opener splitting rule for logical disjunction expressions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This produces @(tsee exec-expr-pure-apconvert-no-object)."))
+    "This produces @(tsee sint-from-boolean-with-error)."))
   (implies (and (syntaxp (quotep e))
-                (equal (expr-kind e) :cond)
-                (equal arg1 (exec-expr-pure (expr-cond->test e) compst))
+                (equal (expr-kind e) :binary)
+                (equal op (expr-binary->op e))
+                (equal (binop-kind op) :logor)
+                (equal arg1 (exec-expr-pure (expr-binary->arg1 e) compst))
                 (expr-valuep arg1)
                 (equal carg1 (apconvert-expr-value arg1))
                 (expr-valuep carg1)
-                (equal test (test-value (expr-value->value carg1)))
-                (booleanp test))
+                (equal test1 (test-value (expr-value->value carg1)))
+                (booleanp test1))
            (equal (exec-expr-pure e compst)
-                  (if test
-                      (exec-expr-pure-apconvert-no-object
-                       (expr-cond->then e) compst)
-                    (exec-expr-pure-apconvert-no-object
-                     (expr-cond->else e) compst))))
+                  (if test1
+                      (expr-value (sint-from-integer 1) nil)
+                    (sint-from-boolean-with-error
+                     (b* ((arg2 (exec-expr-pure (expr-binary->arg2 e)
+                                                compst))
+                          ((when (errorp arg2)) arg2)
+                          (arg2 (apconvert-expr-value arg2))
+                          ((when (errorp arg2)) arg2))
+                       (test-value (expr-value->value arg2)))))))
   :enable (exec-expr-pure
-           exec-expr-pure-apconvert-no-object
+           binop-purep
+           sint-from-boolean-with-error
            (:e tau-system)))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defruled exec-expr-pure-when-cond-and-true
   :short "Opener non-splitting rule for ternary conditional expressions,
@@ -767,6 +743,108 @@
            test*
            (:e tau-system)))
 
+(defruled exec-expr-pure-when-cond
+  :short "Opener splitting rule for ternary conditional expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This produces @(tsee exec-expr-pure-apconvert-no-object)."))
+  (implies (and (syntaxp (quotep e))
+                (equal (expr-kind e) :cond)
+                (equal arg1 (exec-expr-pure (expr-cond->test e) compst))
+                (expr-valuep arg1)
+                (equal carg1 (apconvert-expr-value arg1))
+                (expr-valuep carg1)
+                (equal test (test-value (expr-value->value carg1)))
+                (booleanp test))
+           (equal (exec-expr-pure e compst)
+                  (if test
+                      (exec-expr-pure-apconvert-no-object
+                       (expr-cond->then e) compst)
+                    (exec-expr-pure-apconvert-no-object
+                     (expr-cond->else e) compst))))
+  :enable (exec-expr-pure
+           exec-expr-pure-apconvert-no-object
+           (:e tau-system)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; move here material from ../atc/symbolic-execution-rules/exec-expr-pure.lisp
+(defval *exec-expr-pure-openers*
+  :short "List of opener rules for @(tsee exec-expr-pure)."
+  '(exec-expr-pure-when-ident
+    exec-expr-pure-when-const
+    exec-expr-pure-when-arrsub
+    exec-expr-pure-when-member
+    exec-expr-pure-when-memberp
+    exec-expr-pure-when-arrsub-of-member
+    exec-expr-pure-when-arrsub-of-memberp
+    exec-expr-pure-when-unary
+    exec-expr-pure-when-cast
+    exec-expr-pure-when-strict-pure-binary
+    exec-expr-pure-when-binary-logand-and-true
+    exec-expr-pure-when-binary-logand-and-false
+    exec-expr-pure-when-binary-logand
+    exec-expr-pure-when-binary-logor-and-true
+    exec-expr-pure-when-binary-logor-and-false
+    exec-expr-pure-when-binary-logor
+    exec-expr-pure-when-cond-and-true
+    exec-expr-pure-when-cond-and-false
+    exec-expr-pure-when-cond
+    sint-from-boolean-with-error-when-booleanp-and-true
+    sint-from-boolean-with-error-when-booleanp-and-false
+    sint-from-boolean-with-error-when-booleanp
+    exec-expr-pure-apconvert-no-object-open))
+
+(defval *exec-expr-pure-openers-split*
+  :short "List of opener splitting rules for @(tsee exec-expr-pure)."
+  '(exec-expr-pure-when-ident
+    exec-expr-pure-when-const
+    exec-expr-pure-when-arrsub
+    exec-expr-pure-when-member
+    exec-expr-pure-when-memberp
+    exec-expr-pure-when-arrsub-of-member
+    exec-expr-pure-when-arrsub-of-memberp
+    exec-expr-pure-when-unary
+    exec-expr-pure-when-cast
+    exec-expr-pure-when-strict-pure-binary
+    exec-expr-pure-when-binary-logand
+    exec-expr-pure-when-binary-logor
+    exec-expr-pure-when-cond
+    sint-from-boolean-with-error-when-booleanp
+    exec-expr-pure-apconvert-no-object-open))
+
+(defval *exec-expr-pure-openers-nosplit*
+  :short "List of opener non-splitting rules for @(tsee exec-expr-pure)."
+  '(exec-expr-pure-when-ident
+    exec-expr-pure-when-const
+    exec-expr-pure-when-arrsub
+    exec-expr-pure-when-member
+    exec-expr-pure-when-memberp
+    exec-expr-pure-when-arrsub-of-member
+    exec-expr-pure-when-arrsub-of-memberp
+    exec-expr-pure-when-unary
+    exec-expr-pure-when-cast
+    exec-expr-pure-when-strict-pure-binary
+    exec-expr-pure-when-binary-logand-and-true
+    exec-expr-pure-when-binary-logand-and-false
+    exec-expr-pure-when-binary-logor-and-true
+    exec-expr-pure-when-binary-logor-and-false
+    exec-expr-pure-when-cond-and-true
+    exec-expr-pure-when-cond-and-false
+    sint-from-boolean-with-error-when-booleanp-and-true
+    sint-from-boolean-with-error-when-booleanp-and-false
+    exec-expr-pure-apconvert-no-object-open))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(def-ruleset exec-expr-pure-openers
+    ',*exec-expr-pure-openers*))
+
+(make-event
+ `(def-ruleset exec-expr-pure-openers-split
+    ',*exec-expr-pure-openers-split*))
+
+(make-event
+ `(def-ruleset exec-expr-pure-openers-nosplit
+    ',*exec-expr-pure-openers-nosplit*))
