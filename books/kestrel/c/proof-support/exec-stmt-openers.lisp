@@ -26,8 +26,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We provide rules for different kinds of statements.
-     For @('if') and @('if')-@('else'),
+    "We provide rules for different kinds of statements.")
+   (xdoc::p
+    "For @('if') and @('if')-@('else'),
      we provide both splitting rules (i.e. which produce @(tsee if)s)
      and non-splitting rules.
      The non-splitting rules use the @(tsee test*) wrapper for the tests,
