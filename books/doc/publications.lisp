@@ -1756,37 +1756,106 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun generate-workshop-documentation-xdoc (entries)
+;; Returns (mv this-group-entry-pairs remaining-entry-pairs).
+(defund group-bibtex-entries-aux (entry-pairs headers)
+  (if (endp entry-pairs)
+      (mv nil nil)
+    (let* ((entry-pair (first entry-pairs))
+           ;; the car of the pair seems to always be the same as the key
+           (alist (cdr entry-pair))
+           (key (acl2::get-entry-field "key" alist)))
+      (if (assoc-equal key headers) ; we expect it to the first key in headers, so we could just check that
+          ;; we've reached the start of the next group
+          (mv nil entry-pairs)
+        (mv-let (this-group-entry-pairs rest-entry-pairs)
+          (group-bibtex-entries-aux (rest entry-pairs) headers)
+          (mv (cons entry-pair this-group-entry-pairs)
+              rest-entry-pairs))))))
+
+(local
+  (defthm <=-of-len-of-mv-nth-1-of-group-bibtex-entries-aux
+    (<= (len (mv-nth 1 (group-bibtex-entries-aux entry-pairs headers)))
+        (len entry-pairs))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable group-bibtex-entries-aux)))))
+
+(defun group-bibtex-entries (entry-pairs headers)
+  (declare (xargs :measure (len entry-pairs)))
+  (if (endp entry-pairs)
+      (if (not (endp headers))
+          (er hard? 'group-bibtex-entries "Extra headers found: ~x0." headers)
+        nil)
+    (let* ((entry-pair (first entry-pairs))
+           ;; the car of the pair seems to always be the same as the key
+           (alist (cdr entry-pair))
+           (key (acl2::get-entry-field "key" alist)))
+      (if (not (and (consp headers)
+                    (equal key (car (first headers)))))
+          (er hard? 'group-bibtex-entries "No header found for entry ~x0." key)
+        (mv-let (rest-this-group-entry-pairs rest-entry-pairs)
+          (group-bibtex-entries-aux (rest entry-pairs) (rest headers))
+          (acons (cdr (first headers)) ; description of this group
+                 (cons entry-pair rest-this-group-entry-pairs)
+                 (group-bibtex-entries rest-entry-pairs (rest headers))))))))
+
+(defun generate-workshop-documentation-xdoc (entries headers)
   "Generate single XDOC documentation for all workshop entries"
-  (let ((entry-count (len entries))
-        (entries (acl2::generate-bibtex-entries-XDOC entries)))
+  (let* ((entry-count (len entries))
+         (groups (group-bibtex-entries entries headers))
+         (xdoc-for-entries (acl2::generate-bibtex-groups-XDOC groups)))
     `(defxdoc pubs-workshops
-       :parents (pubs-papers)
-       :short "ACL2 Workshop Papers and Publications"
+       :parents (pubs-papers acl2::workshops)
+       :short "ACL2 Workshop Papers"
        :long ,(concatenate 'string
-                           "<p>This section contains documentation for papers and publications related to ACL2 workshops and conferences.</p>"
+                           "<p>This topic lists the papers presented at the ACL2 Workshops, which have taken place approximately every 18 months since 1999.</p>"
                            "<p><b>Total number of entries:</b> "(if (natp entry-count)
                                                                     (coerce (explode-atom entry-count 10) 'string)
                                                                   "unknown")
                            "</p>"
-                           "<ul>"
-                           entries
-                           "</ul>"))))
+                           xdoc-for-entries))))
 
 ; generate XDOC documentation from BibTeX file along with the state
-(defun generate-workshop-documentation-fn (bibtex-filename state)
+(defun generate-workshop-documentation-fn (bibtex-filename headers state)
   (declare (xargs :stobjs state
                   :verify-guards nil))
   (mv-let (entries state)
     (acl2::parse-bibtex-file bibtex-filename state)
     (if entries
-        (let ((xdoc-form (generate-workshop-documentation-xdoc entries)))
+        (let ((xdoc-form (generate-workshop-documentation-xdoc entries headers)))
           (mv nil xdoc-form state))
       (mv "no-entries-found" nil state))))
 
-(defmacro generate-workshop-documentation (bibtex-filename)
+(defmacro generate-workshop-documentation (bibtex-filename headers)
   `(make-event
-    (generate-workshop-documentation-fn ,bibtex-filename state)))
+    (generate-workshop-documentation-fn ,bibtex-filename ,headers state)))
+
+;; This supports grouping the entries by workshop.  It associates the (key of)
+;; the first bibtex entry in each workshop with a description to be printed
+;; before that group of entries:
+(defconst *workshop-headers*
+  '(("99-moore-graph" . "ACL2 Workshop 1999")
+    ("00-lusk-parallel" . "ACL2 Workshop 2000")
+    ("02-barrione-vhdl" . "ACL2 Workshop 2002")
+    ("03-kaufmann-simplifying" . "ACL2 Workshop 2003")
+    ("04-sumners-invariant" . "ACL2 Workshop 2004")
+    ("06-pike-cryptol" . "ACL2 Workshop 2006")
+    ("07-dillinger-hacking" . "ACL2 Workshop 2007")
+    ("09-sumners-simplifier" . "ACL2 Workshop 2009")
+    ("10-klein-what" . "ACL2 Workshop 2010")
+    ("11-chamarthi-testing" . "ACL2 Workshop 2011")
+    ("13-davis-embedding" . "ACL2 Workshop 2013")
+    ("14-kaufmann-enhancements" . "ACL2 Workshop 2014")
+    ("15-rager-fp" . "ACL2 Workshop 2015")
+    ("17-goel-x86isa" . "ACL2 Workshop 2017")
+    ("18-coglio-java" . "ACL2 Workshop 2018")
+    ("20-russinoff-rtl" . "ACL2 Workshop 2020")
+    ("22-kaufmann-tables" . "ACL2 Workshop 2022")
+    ("23-kwan-lu" . "ACL2 Workshop 2023")
+    ("25-russinoff-linear-one" . "ACL2 Workshop 2025")
+    ;; Extend this for an additional workshop by finding the first reference
+    ;; for that workshop in books/workshops/references/workshops.bib.
+    ))
 
 ;Submit documentation for ACL2 workshops file
-(generate-workshop-documentation "../workshops/references/workshops.bib")
+; (depends-on "../workshops/references/workshops.bib")
+(generate-workshop-documentation "../workshops/references/workshops.bib" *workshop-headers*)
