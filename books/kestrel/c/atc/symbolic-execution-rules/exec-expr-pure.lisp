@@ -40,24 +40,11 @@
      used to check the kind of expression and to retrieve its constituents."))
 
   (defval *atc-exec-expr-pure-rules*
-    '(exec-expr-pure-when-ident
-      exec-expr-pure-when-const
-      exec-expr-pure-when-arrsub
-      exec-expr-pure-when-member
-      exec-expr-pure-when-memberp
-      exec-expr-pure-when-arrsub-of-member
-      exec-expr-pure-when-arrsub-of-memberp
-      exec-expr-pure-when-unary
-      exec-expr-pure-when-cast
-      exec-expr-pure-when-strict-pure-binary
-      exec-expr-pure-when-binary-logand
-      exec-expr-pure-when-binary-logor
-      sint-from-boolean-with-error-when-booleanp
-      exec-expr-pure-apconvert-no-object-open
-      exec-expr-pure-when-cond
-      expr-valuep-of-expr-value
-      expr-value->value-of-expr-value
-      (:e member-equal))))
+    (append
+     *exec-expr-pure-openers-split*
+     '(expr-valuep-of-expr-value
+       expr-value->value-of-expr-value
+       (:e member-equal)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
