@@ -159,7 +159,7 @@
 
 
 ;;; A noetherian and locally confluent reduction relation
-;;; ·····················································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 
 (encapsulate
@@ -227,7 +227,7 @@
 ;;; See newman.lisp for details.
 
 ;;; Well-founded multiset extension of rel
-;;; ······································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 ;(acl2::defmul-components rel)
 ;The list of components is:
@@ -237,7 +237,7 @@
 
 
 ;;; Auxiliary functions in the definition of transform-to-valley
-;;; ···························································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (defun exists-local-peak (p)
@@ -260,7 +260,7 @@
 
 
 ;;; transform-to-valley terminates
-;;; ······························
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 ;;; By functional instantiation of the same result in newman.lisp
 
@@ -283,7 +283,7 @@
 
 
 ;;; Definition of transform-to-valley
-;;; ·································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (defun transform-to-valley (p)
@@ -298,7 +298,7 @@
 
 
 ;;; Properties of transform-to-valley: the Church-Rosser property
-;;; ·····························································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 ;;; By functional instantiation of the same results in newman.lisp
 
@@ -338,7 +338,7 @@
 ;;; axioms.
 
 ;;; Definition of proof-irreducible
-;;; ·······························
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 ;;; REMARK: Iteratively apply reduction steps until an irreducible
 ;;; element is found. This function termination can be justified by the
@@ -358,7 +358,7 @@
 
 
 ;;; Properties of proof-irreducible (normalizing property)
-;;; ······················································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 ;;; REMARK: These are the assumed proerties of proof-irreducible in
 ;;; confluence.lisp, in rewriting rule form:
@@ -404,7 +404,7 @@
 
 
 ;;; This is the same function as r-equiv in confluence.lisp
-;;; ·······················································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 ;;; REMARK: normal-form-aux is analogue NWM::normal-form, but
 ;;; normal-form is more eficcient. The same for r-equiv.
@@ -428,7 +428,7 @@
 ;;; ----------------------------------------------------------------------------
 
 ;;; Completeness
-;;; ············
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 ;;; By functional instantiation of the same results in confluence.lisp
 
@@ -448,7 +448,7 @@
 
 
 ;;; Soundness
-;;; ·········
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 ;;; By functional instantiation of the same results in confluence.lisp
 

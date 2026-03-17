@@ -1,7 +1,7 @@
 ; Clearing ranges of values in bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "bv-array-clear")
 (include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "all-unsigned-byte-p2"))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))

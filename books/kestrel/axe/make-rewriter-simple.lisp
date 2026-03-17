@@ -6790,9 +6790,7 @@
                                                    count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
                 ((when erp) (mv erp nil nil ,@maybe-state)))
              (mv (erp-nil)
-                 (if (quotep dag)
-                     dag
-                   (dag-to-term dag))
+                 (dag-or-constant-to-term dag)
                  hits
                  ,@maybe-state)))
 

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,20 +20,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key pos more-inputs std gcc cond)
+(defmacro test-parse (fn input &key pos more-inputs std gcc clang cond)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
   ;; STD indicates the C standard version (17 or 23; default 17).
   ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; CLANG flag says whether Clang extensions are enabled (default NIL).
   ;; Optional COND may be over variables AST, SPAN, PARSTATE
   ;; and also EOF-POS for PARSE-*-EXTERNAL-DECLARATION.
   `(assert!-stobj
     (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (acl2::string=>nats ,input)
+                      (cond (,gcc (c::version-c23+gcc))
+                            (,clang (c::version-c23+clang))
+                            (t (c::version-c23)))
+                    (cond (,gcc (c::version-c17+gcc))
+                          (,clang (c::version-c17+clang))
+                          (t (c::version-c17)))))
+         (parstate (init-parstate ""
+                                  (acl2::string=>nats ,input)
                                   version
                                   t
                                   parstate))
@@ -51,18 +57,24 @@
           parstate))
     parstate))
 
-(defmacro test-parse-fail (fn input &key pos more-inputs std gcc)
+(defmacro test-parse-fail (fn input &key pos more-inputs std gcc clang)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
   ;; STD indicates the C standard version (17 or 23; default 17).
   ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; CLANG flag says whether Clang extensions are enabled (default NIL).
   `(assert!-stobj
     (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (acl2::string=>nats ,input)
+                      (cond (,gcc (c::version-c23+gcc))
+                            (,clang (c::version-c23+clang))
+                            (t (c::version-c23)))
+                    (cond (,gcc (c::version-c17+gcc))
+                          (,clang (c::version-c17+clang))
+                          (t (c::version-c17)))))
+         (parstate (init-parstate ""
+                                  (acl2::string=>nats ,input)
                                   version
                                   t
                                   parstate))
@@ -449,16 +461,16 @@
 (test-parse
  parse-struct-or-union-specifier
  "empty {}"
- :pos (position 1 7)
- :more-inputs (t (span (position 1 0) (position 1 6)))
+ :pos (position "" 1 7)
+ :more-inputs (t (span (position "" 1 0) (position "" 1 6)))
  :gcc t
  :cond (type-spec-case ast :struct-empty))
 
 (test-parse
  parse-struct-or-union-specifier
  "{}"
- :pos (position 1 7)
- :more-inputs (t (span (position 1 0) (position 1 6)))
+ :pos (position "" 1 7)
+ :more-inputs (t (span (position "" 1 0) (position "" 1 6)))
  :gcc t
  :cond (type-spec-case ast :struct-empty))
 
@@ -823,6 +835,35 @@
  parse-declaration
  "int __seg_gs *x;"
  :gcc t)
+
+(test-parse
+ parse-declaration
+ "int * _Nonnull ptr = 0;"
+ :clang t)
+
+(test-parse
+ parse-declaration
+ "int * _Null_unspecified ptr = 0;"
+ :clang t)
+
+(test-parse
+ parse-declaration
+ "int * _Nullable ptr = 0;"
+ :clang t)
+
+(test-parse
+ parse-declaration
+ "int * _Nullable_result f();"
+ :clang t)
+
+(test-parse-fail
+ parse-declaration
+ "int * _Nonnull ptr = 0;") ; no Clang extensions
+
+(test-parse-fail
+ parse-declaration
+ "int * _Nonnull ptr = 0;"
+ :gcc t) ; Clang-only extension
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

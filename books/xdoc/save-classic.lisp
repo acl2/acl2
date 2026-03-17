@@ -121,22 +121,28 @@
         x
       (acons :parents parents x))))
 
-(defun force-missing-parents (all-topics)
+(defun force-missing-parents (all-topics error-on-missing-parents names-with-missing-parents)
   ;; Assumes the topics have been normalized.
   (declare (xargs :mode :program))
   (b* (((when (atom all-topics))
-        nil)
+        ;; xdoc::missing-parents-test has missing parents intentionally
+        (let ((names-with-missing-parents (remove-eq 'xdoc::missing-parents-test names-with-missing-parents)))
+          (if (and error-on-missing-parents names-with-missing-parents)
+              (er hard? 'force-missing-parents "These xdoc topics have no parents: ~X01." names-with-missing-parents nil)
+            nil)))
        (topic   (car all-topics))
        (name    (cdr (assoc :name topic)))
        (parents (cdr (assoc :parents topic)))
        ((when (or (equal name 'acl2::top)
                   (consp parents)))
-        (cons topic (force-missing-parents (cdr all-topics))))
+        (cons topic (force-missing-parents (cdr all-topics) error-on-missing-parents names-with-missing-parents)))
        (- (cw "Missing parents: forcing ~x0 to be a child of ~x1.~%" name 'missing-parents))
        (new-topic
-        (cons (cons :parents '(missing-parents))
-              topic)))
-    (cons new-topic (force-missing-parents (cdr all-topics)))))
+         (cons (cons :parents '(missing-parents))
+               topic)))
+    (cons new-topic (force-missing-parents (cdr all-topics)
+                                           error-on-missing-parents
+                                           (cons name names-with-missing-parents)))))
 
 (defun normalize-parents-list (x)
 
@@ -176,35 +182,36 @@ command, along the following lines:</p>
            (cons :from "xdoc/save-classic.lisp :DIR :SYSTEM"))
      all-topics)))
 
-(defun find-roots (x)
+;; (defun find-roots (x)
 
-; Gather names of all doc topics which have no parents.
+;; ; Gather names of all doc topics which have no parents.
 
-  (if (atom x)
-      nil
-    (if (not (cdr  (assoc :parents (car x))))
-        (cons (cdr (assoc :name (car x)))
-              (find-roots (cdr x)))
-      (find-roots (cdr x)))))
+;;   (if (atom x)
+;;       nil
+;;     (if (not (cdr  (assoc :parents (car x))))
+;;         (cons (cdr (assoc :name (car x)))
+;;               (find-roots (cdr x)))
+;;       (find-roots (cdr x)))))
 
-(defun find-orphaned-topics-1 (child parents topics-fal acc)
-  ;; Returns an alist of (CHILD . MISSING-PARENT)
+(defun undefined-parent-info-1 (child parents topics-fal acc)
+  ;; Returns a list of (CHILD . UNDEFINED-PARENT) entries.
   (cond ((atom parents)
          acc)
         ((hons-get (car parents) topics-fal)
-         (find-orphaned-topics-1 child (cdr parents) topics-fal acc))
+         (undefined-parent-info-1 child (cdr parents) topics-fal acc))
         (t
-         (find-orphaned-topics-1 child (cdr parents) topics-fal
-                                 (cons (cons child (car parents))
-                                       acc)))))
+         (undefined-parent-info-1 child (cdr parents) topics-fal
+                                    (cons (cons child (car parents))
+                                          acc)))))
 
-(defun find-orphaned-topics (x topics-fal acc)
-  (b* (((when (atom x))
+(defun undefined-parent-info (topics topics-fal acc)
+  ;; Returns a list of (CHILD . UNDEFINED-PARENT) entries.
+  (b* (((when (atom topics))
         acc)
-       (child   (cdr (assoc :name (car x))))
-       (parents (cdr (assoc :parents (car x))))
-       (acc     (find-orphaned-topics-1 child parents topics-fal acc)))
-    (find-orphaned-topics (cdr x) topics-fal acc)))
+       (child   (cdr (assoc :name (car topics))))
+       (parents (cdr (assoc :parents (car topics))))
+       (acc     (undefined-parent-info-1 child parents topics-fal acc)))
+    (undefined-parent-info (cdr topics) topics-fal acc)))
 
 
 ;; (mutual-recursion
@@ -448,11 +455,10 @@ command, along the following lines:</p>
 ;;                       :mintime 1/2))
 ;;        (state  (time$ (save-hierarchy x dir topics-fal index-pkg expand-level state)
 ;;                       :msg "; Saving hierarchical index: ~st sec, ~sa bytes~%"))
-;;        (orphans (find-orphaned-topics x topics-fal nil))
+;;        (undefined-parent-info (undefined-parent-info x topics-fal nil))
 ;;        (-       (fast-alist-free topics-fal))
 ;;        (state   (save-success-file (len x) dir state)))
-;;     (or (not orphans)
-;;         (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~
-;;              topics may only show up in the index pages.~%~%" orphans))
+;;     (or (not undefined-parent-info)
+;;         (cw "~|~%WARNING: found topics with undefined parents:~%~x0~%These ~
+;;              topics may only show up in the index pages.~%~%" undefined-parent-info))
 ;;     state))
-

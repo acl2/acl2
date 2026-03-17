@@ -17,6 +17,7 @@
     (append '(bvnot bvor bvand bvxor slice getbit bvchop bvplus bvminus bvuminus bvmult bvcat bvsx bvcount repeatbit putbit
               bvlt sbvlt
               bvle sbvle
+              bvshl bvshr bvashr
               bv-array-read
               bv-array-read-chunk-little
               bv-list-read-chunk-little

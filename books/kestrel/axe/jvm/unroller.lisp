@@ -71,7 +71,7 @@
             (member-eq 'jvm::error-state dag-fns))
         (progn$ (if (dag-or-quotep-size-less-thanp! dag 10000)
                     (progn$ (cw "(Result Term:~%")
-                            (cw "~X01" (untranslate$ (dag-to-term dag) nil state) nil)
+                            (cw "~X01" (untranslate$ (dag2term dag) nil state) nil)
                             (cw ")~%"))
                   (cw "(Result DAG: ~x0)~%" dag))
                 (cw "(Assumptions were: ~x0)~%" assumptions)
@@ -365,7 +365,7 @@
                          ;; Print as a term unless it would be huge:
                          (if (dag-or-quotep-size-less-thanp! dag 1000)
                              (progn$ (cw "(Term after ~x0 steps:~%" total-steps)
-                                     (cw "~X01" (untranslate$ (elide-method-info-in-term (dag-to-term dag)) nil state) nil)
+                                     (cw "~X01" (untranslate$ (elide-method-info-in-term (dag2term dag)) nil state) nil)
                                      (cw ")~%"))
                            (progn$ (cw "(DAG after ~x0 steps:~%" total-steps)
                                    (print-dag-with-elided-method-info dag)
@@ -942,7 +942,7 @@
                      nil
                    (dag-fns dag-or-quotep)))
        (function-body (if (dag-or-quotep-size-less-thanp dag-or-quotep 1000)
-                          (dag-to-term dag-or-quotep)
+                          (dag2term dag-or-quotep)
                         `(dag-val-with-axe-evaluator ,defconst-name
                                                      ,(make-acons-nest dag-vars)
                                                      ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))

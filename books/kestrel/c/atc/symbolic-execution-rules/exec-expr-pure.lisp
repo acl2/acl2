@@ -636,27 +636,7 @@
       exec-expr-pure-when-cond
       expr-valuep-of-expr-value
       expr-value->value-of-expr-value
-      (:e member-equal)
-      (:e expr-kind)
-      (:e expr-ident->get)
-      (:e expr-const->get)
-      (:e expr-arrsub->arr)
-      (:e expr-arrsub->sub)
-      (:e expr-member->target)
-      (:e expr-member->name)
-      (:e expr-memberp->target)
-      (:e expr-memberp->name)
-      (:e expr-unary->op)
-      (:e expr-unary->arg)
-      (:e expr-cast->type)
-      (:e expr-cast->arg)
-      (:e expr-binary->op)
-      (:e expr-binary->arg1)
-      (:e expr-binary->arg2)
-      (:e binop-kind)
-      (:e expr-cond->test)
-      (:e expr-cond->then)
-      (:e expr-cond->else))))
+      (:e member-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

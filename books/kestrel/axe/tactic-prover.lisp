@@ -494,7 +494,7 @@
                   ))
   (b* ((dag (first problem))
        (assumptions (second problem))
-       (term (dag-to-term dag))
+       (term (dag-or-constant-to-term dag))
        (- (and print (cw "(Calling ACL2 on term ~x0.~%" term)))
        ((mv & provedp state)
         (prove$ ;TODO: Add support for hints
@@ -876,7 +876,7 @@
                  (cw "The DAG is:~%")
                  (print-dag-or-quotep dag)
                  (if (< (dag-or-quotep-size dag) 10000)
-                     (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
+                     (cw "~%(Term: ~X01)~%" (dag-or-constant-to-term dag) nil)
                    nil)
                  (mv *unknown* info-acc state)))
      (b* ((tactic (first tactics))
@@ -1134,7 +1134,7 @@
              (maybe-theorem
                (and produce-theoremp
                     (b* ((theorem-conclusion (if (< (dag-or-quotep-size dag-or-constant) 1000)
-                                                 (if (quotep dag-or-constant) dag-or-constant (dag-to-term dag-or-constant))
+                                                 (if (quotep dag-or-constant) dag-or-constant (dag-or-constant-to-term dag-or-constant))
                                                (embed-dag-in-term dag-or-constant (w state))))
                          (defthm-name (or name (fresh-name-in-world-with-$s 'prove-with-tactics nil (w state))))
                          (disablep (if rule-classes t nil)) ;can't disable if :rule-classes nil ;todo: make this an option

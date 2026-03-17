@@ -260,8 +260,9 @@
     wrap-term-around-dag
     make-term-into-dag-basic
     dag-to-term
+    dag2term ; for now
     dag-node-to-term
-    dag-or-quotep-to-term
+    dag-or-constant-to-term
     dag-or-quotep-size
     dag-or-quotep-fns
     dag-or-quotep-vars
@@ -295,6 +296,7 @@
     lookup-safe
 
     translate-term
+    term-listp
 
     _ ;; used to print non-pure patterns
 
@@ -392,7 +394,10 @@
     empty-hits
 
     command-is-redundantp
-    redundancy-table-event))
+    redundancy-table-event
+    lifter-event-names
+    print-missing-rules
+    merge-sort-symbol<))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg

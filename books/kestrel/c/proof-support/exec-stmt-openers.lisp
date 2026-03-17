@@ -21,6 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-stmt-openers
+  :parents (proof-support)
   :short "Opener rules for @(tsee exec-stmt)."
   :long
   (xdoc::topstring

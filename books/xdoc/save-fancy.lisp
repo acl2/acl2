@@ -404,11 +404,13 @@
   state)
 ||#
 
-(defun save-json-files (topics dir error-on-non-existent-parents state)
+(defun save-json-files (topics dir error-on-undefined-parents error-on-missing-parents state)
   (b* ((topics0 (force-missing-parents
                  (maybe-add-top-topic
                   (normalize-parents-list
-                   (clean-topics topics)))))
+                    (clean-topics topics)))
+                 error-on-missing-parents
+                 nil))
 
        (prev-event-table-binding
         ;; save the previous binding (or lack) of xdoc-get-event-table, set it
@@ -472,7 +474,7 @@
        (state (princ$ data channel state))
        (state (close-output-channel channel state))
 
-       (orphans (find-orphaned-topics topics topics-fal nil))
+       (undefined-parent-info (undefined-parent-info topics topics-fal nil))
 
 
         (- (fast-alist-free (@ xdoc-get-event-table)))
@@ -480,9 +482,9 @@
                    (f-put-global 'xdoc-get-event-table (car prev-event-table-binding) state)
                  (makunbound-global 'xdoc-get-event-table state))))
 
-    (or (not orphans)
-        (not error-on-non-existent-parents)
-        (er hard? 'save-json-files "Found topics with non-existent parents:~%~x0" orphans))
+    (or (not undefined-parent-info)
+        (not error-on-undefined-parents)
+        (er hard? 'save-json-files "Found topics with undefined parents:~%~x0" undefined-parent-info))
 
     (fast-alist-free topics-fal)
     (fast-alist-free uid-map)
@@ -655,12 +657,12 @@
                   (t msg-list))))
            msg-list))))))))
 
-(defun save-fancy (all-topics dir zip-p logo-image broken-links-limit error-on-non-existent-parents state)
+(defun save-fancy (all-topics dir zip-p logo-image broken-links-limit error-on-undefined-parents error-on-missing-parents state)
   (prog2$
    (check-xdoc-topics all-topics nil)
    (b* ((state (f-put-global 'broken-links-limit broken-links-limit state))
         (state (prepare-fancy-dir dir logo-image state))
-        (state (save-json-files all-topics dir error-on-non-existent-parents state))
+        (state (save-json-files all-topics dir error-on-undefined-parents error-on-missing-parents state))
         (state (if zip-p
                    (run-fancy-zip dir state)
                  state)))

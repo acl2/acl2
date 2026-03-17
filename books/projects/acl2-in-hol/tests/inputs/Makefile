@@ -1,4 +1,4 @@
-TMPFILE = /tmp/workxxx
+TMPFILE = $(CURDIR)/workxxx-Makefile
 
 top: pkg-check.txt
 
@@ -7,12 +7,6 @@ include ${ACL2_SYSTEM_BOOKS}/Makefile-generic
 ACL2 ?= acl2
 
 -include Makefile-deps
-
-# Missing dependencies copied from comments in Makefile-deps:
-cone-of-influence.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-2/meta/top.cert
-m1-story.cert: $(ACL2_SYSTEM_BOOKS)/arithmetic-3/extra/top-ext.cert
-cone-of-influence.pcert0: $(ACL2_SYSTEM_BOOKS)/arithmetic-2/meta/top.cert
-m1-story.pcert0: $(ACL2_SYSTEM_BOOKS)/arithmetic-3/extra/top-ext.cert
 
 pkg-check.txt: PKGS.lsp PKGS.sml
 	@echo '(include-book "../../lisp/pkg-alist-to-alist")' > $(TMPFILE)

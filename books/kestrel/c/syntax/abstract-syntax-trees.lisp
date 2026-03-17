@@ -994,6 +994,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption stringlit-option
+  stringlit
+  :short "Fixtype of optional string literals."
+  :pred stringlit-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist stringlit-list
   :short "Fixtype of lists of string literals."
   :long
@@ -1368,6 +1375,9 @@
      to the @(':volatile') case.")
    (xdoc::p
     "we also include the GCC extensions for x86 named address spaces.
+     See the ABNF grammar.")
+   (xdoc::p
+    "We also include the Clang extensions for nullability qualifiers.
      See the ABNF grammar."))
   (:const ())
   (:restrict ((uscores keyword-uscores)))
@@ -1375,6 +1385,10 @@
   (:atomic ())
   (:seg-fs ())
   (:seg-gs ())
+  (:nonnull ())
+  (:null-unspecified ())
+  (:nullable ())
+  (:nullable-result ())
   :pred type-qualp
   :layout :fulltree)
 

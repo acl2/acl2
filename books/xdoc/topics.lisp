@@ -862,7 +862,8 @@ manual with others, you should read about @(see deploying-manuals).</li>
           [:zip-p      bool]               ;; default is t
           [:logo-image path]               ;; default is nil
           [:error      bool]               ;; default is nil
-          [:error-on-non-existent-parents bool] ;; default is nil
+          [:error-on-undefined-parents bool] ;; default is nil
+          [:error-on-missing-parents   bool] ;; default is nil
           [:broken-links-limit nil-or-nat] ;; default is nil
           )
 })
@@ -916,10 +917,10 @@ command.</dd>
 to cause an error upon encountering a syntax error in xdoc source (marked with
 \"xdoc error\").</dd>
 
-<dt>@(':error-on-non-existent-parents')</dt>
+<dt>@(':error-on-undefined-parents')</dt>
 
-<dd>The value is @('t') or @('nil'), to indicate whether to cause an error if a
-non-existent topic is declared to be a parent of some topic.</dd>
+<dd>The value is @('t') or @('nil'), to indicate whether to cause an error if
+a declared parent of some topic does not exist in the xdoc database.</dd>
 
 <dt>@(':broken-links-limit')</dt>
 
@@ -1610,8 +1611,8 @@ instead.  But we found that during development, this sometimes led to a
 strange-looking hierarchy where ``random'' topics were presented as top-level
 topics just because they were new or being moved around or because @(see
 set-default-parents) forms weren't quite in the right places.  To avoid this,
-we now move these topics to @('missing-parents') and print notes about them
-when a manual is saved with @(see xdoc::save).</p>")
+we now move these topics to @('missing-parents') and either print notes about
+them or cause an error when a manual is saved with @(see xdoc::save).</p>")
 
 (defxdoc set-default-parents
   :short "Set up default parents to use for @(see xdoc)."

@@ -160,7 +160,7 @@
   (:logand ((arg1 pexpr) (arg2 pexpr)))
   (:logor ((arg1 pexpr) (arg2 pexpr)))
   (:cond ((test pexpr) (then pexpr) (else pexpr)))
-  (:defined ((name ident)))
+  (:defined ((name string)))
   :pred pexprp
   :prepwork ((set-induction-depth-limit 1)))
 
@@ -183,8 +183,8 @@
     "This fixtype only captures the directive, i.e. the first line,
      not the whole `if' section, which is captured elsewhere."))
   (:if ((expr pexpr)))
-  (:ifdef ((name ident)))
-  (:ifndef ((name ident)))
+  (:ifdef ((name string)))
+  (:ifndef ((name string)))
   :pred pifp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

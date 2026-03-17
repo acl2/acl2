@@ -280,3 +280,25 @@
                                 (- low))
                              (getbit (+ -1 old-size) x))))
   :hints (("Goal" :in-theory (enable bvsx natp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvlt-of-bvsx-low-arg2
+  (implies (and (<= size old-size)
+                (<= old-size new-size)
+                (natp size)
+                (integerp new-size)
+                (natp old-size))
+           (equal (bvlt size (bvsx new-size old-size x) y)
+                  (bvlt size x y)))
+  :hints (("Goal" :in-theory (enable bvsx bvlt))))
+
+(defthm bvlt-of-bvsx-low-arg3
+  (implies (and (<= size old-size)
+                (<= old-size new-size)
+                (natp size)
+                (integerp new-size)
+                (natp old-size))
+           (equal (bvlt size x (bvsx new-size old-size y))
+                  (bvlt size x y)))
+  :hints (("Goal" :in-theory (enable bvsx bvlt))))

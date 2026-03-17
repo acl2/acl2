@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# This script is not invoked automatically.  If that changes, consider
+# changing tmpfile below, perhaps by passing in a suitable extra
+# argument, so as to avoid having that same tmpfile be used by two
+# different processes.
+
+exit 1
+
 if [ $# -eq 1 ] ; then \
     export outfile="\"$1\"" ;\
 elif [ $# -eq 0 ] ; then \

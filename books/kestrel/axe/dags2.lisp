@@ -546,7 +546,7 @@
                                  )
   `(compose-term-and-dags-fn ,term ,alist ,extra-vars))
 
-;; (equal (dag-to-term (COMPOSE-TERM-AND-DAGS '(foo x (bar y) (bar y)) (acons 'x '((1 + '1 0) (0 . W)) (acons 'y ''3 nil))))
+;; (equal (dag2term (COMPOSE-TERM-AND-DAGS '(foo x (bar y) (bar y)) (acons 'x '((1 + '1 0) (0 . W)) (acons 'y ''3 nil))))
 ;;        '(FOO (+ '1 W) (BAR '3) (BAR '3)))
 
 ;; Returns (mv low-nodes rev-high-nodes) where low-nodes are the nodes below

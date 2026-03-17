@@ -91,7 +91,6 @@
     ,@*atc-exec-bitxor-events*
     ,@*atc-exec-bitior-events*
     (defval *atc-exec-binary-strict-pure-rules*
-      :parents nil
       '(,@*atc-exec-mul-rules*
         ,@*atc-exec-div-rules*
         ,@*atc-exec-rem-rules*

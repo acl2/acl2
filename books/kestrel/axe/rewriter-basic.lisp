@@ -1,7 +1,7 @@
 ; A general-purpose Axe Rewriter
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -47,6 +47,7 @@
 ;; Returns (mv erp new-conjuncts againp hits) where NEW-CONJUNCTS is a set of terms
 ;; whose conjunction is equal to the conjunction of the CONJUNCTS and the
 ;; DONE-CONJUNCTS.
+;; TODO: Can we optimize by storing all the results in a single DAG?
 (defund simplify-conjuncts-basic (conjuncts
                                   done-conjuncts ; an accumulator, also used as assumptions
                                   ;;print
@@ -113,14 +114,9 @@
   (defthm pseudo-term-listp-of-mv-nth-1-of-simplify-conjuncts-basic
     (implies (and (pseudo-term-listp conjuncts)
                   (pseudo-term-listp done-conjuncts)
-                  (rule-alistp rule-alist)
-                  ;; (symbol-listp known-booleans)
-                  ;; (booleanp memoizep)
-                  ;; (booleanp warn-missingp)
-                  ;; (booleanp againp)
-                  )
+                  (rule-alistp rule-alist))
              (pseudo-term-listp (mv-nth 1 (simplify-conjuncts-basic conjuncts
-                                                                    done-conjuncts ; an accumulator, also used as assumptions
+                                                                    done-conjuncts
                                                                     ;;print
                                                                     rule-alist
                                                                     known-booleans
@@ -137,13 +133,8 @@
    (implies (and (pseudo-term-listp conjuncts)
                  (pseudo-term-listp done-conjuncts)
                  (rule-alistp rule-alist)
-                 ;; (symbol-listp known-booleans)
-                 ;; (booleanp memoizep)
-                 ;; (booleanp warn-missingp)
-                 ;; (booleanp againp)
-                 (hitsp hits)
-                 )
-            (hitsp (mv-nth 3 (simplify-conjuncts-basic conjuncts done-conjuncts ; an accumulator, also used as assumptions
+                 (hitsp hits))
+            (hitsp (mv-nth 3 (simplify-conjuncts-basic conjuncts done-conjuncts
                                                        ;;print
                                                        rule-alist
                                                        known-booleans
@@ -182,23 +173,14 @@
 
 (local
   (defthm pseudo-term-listp-of-mv-nth-1-of-simplify-conjunction-basic-aux
-    (implies (and ;; (natp passes-left)
-                  (pseudo-term-listp conjuncts)
-                  (rule-alistp rule-alist)
-                  ;; (symbol-listp known-booleans)
-                  ;; (booleanp memoizep)
-                  ;; (booleanp warn-missingp)
-                  )
+    (implies (and (pseudo-term-listp conjuncts)
+                  (rule-alistp rule-alist))
              (pseudo-term-listp (mv-nth 1 (simplify-conjunction-basic-aux passes-left conjuncts rule-alist known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits hits warn-missingp))))))
 
 (local
   (defthm hitsp-of-mv-nth-2-of-simplify-conjunction-basic-aux
-    (implies (and ;; (natp passes-left)
-                  (pseudo-term-listp conjuncts)
+    (implies (and (pseudo-term-listp conjuncts)
                   (rule-alistp rule-alist)
-                  ;; (symbol-listp known-booleans)
-                  ;; (booleanp memoizep)
-                  ;; (booleanp warn-missingp)
                   (hitsp hits))
              (hitsp (mv-nth 2 (simplify-conjunction-basic-aux passes-left conjuncts rule-alist known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits hits warn-missingp))))))
 
@@ -207,6 +189,7 @@
 ;; Repeatedly simplifies the CONJUNCTS using the RULE-ALIST.
 ;; Returns (mv erp new-conjuncts hits) where NEW-CONJUNCTS is a set of conjuncts
 ;; whose conjunction is equal to the conjunction of the CONJUNCTS.
+;; TODO: Consider flattening first, by extracting conjuncts from each individual conjunct.
 (defund simplify-conjunction-basic (conjuncts rule-alist known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits warn-missingp)
   (declare (xargs :guard (and (pseudo-term-listp conjuncts)
                               (rule-alistp rule-alist)
@@ -227,21 +210,13 @@
 
 (defthm pseudo-term-listp-of-mv-nth-1-of-simplify-conjunction-basic
   (implies (and (pseudo-term-listp conjuncts)
-                (rule-alistp rule-alist)
-                ;; (symbol-listp known-booleans)
-                ;; (booleanp memoizep)
-                ;; (booleanp warn-missingp)
-                )
+                (rule-alistp rule-alist))
            (pseudo-term-listp (mv-nth 1 (simplify-conjunction-basic conjuncts rule-alist known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits warn-missingp))))
   :hints (("Goal" :in-theory (enable simplify-conjunction-basic))))
 
 (defthm hitsp-of-mv-nth-2-of-simplify-conjunction-basic
   (implies (and (pseudo-term-listp conjuncts)
-                (rule-alistp rule-alist)
-                ;; (symbol-listp known-booleans)
-                ;; (booleanp memoizep)
-                ;; (booleanp warn-missingp)
-                )
+                (rule-alistp rule-alist))
            (hitsp (mv-nth 2 (simplify-conjunction-basic conjuncts rule-alist known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits warn-missingp))))
   :hints (("Goal" :in-theory (enable simplify-conjunction-basic))))
 
@@ -272,10 +247,13 @@
 
 (defthm pseudo-term-listp-of-mv-nth-1-of-simplify-conjunction-with-rule-alists-basic
   (implies (and (pseudo-term-listp conjuncts)
-                (rule-alistsp rule-alists)
-                ;; (symbol-listp known-booleans)
-                ;; (booleanp memoizep)
-                ;; (booleanp warn-missingp)
-                )
+                (rule-alistsp rule-alists))
            (pseudo-term-listp (mv-nth 1 (simplify-conjunction-with-rule-alists-basic conjuncts rule-alists known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits hits warn-missingp))))
+  :hints (("Goal" :in-theory (enable simplify-conjunction-with-rule-alists-basic))))
+
+(defthm hitsp-of-mv-nth-2-of-simplify-conjunction-with-rule-alists-basic
+  (implies (and (pseudo-term-listp conjuncts)
+                (rule-alistsp rule-alists)
+                (hitsp hits))
+           (hitsp (mv-nth 2 (simplify-conjunction-with-rule-alists-basic conjuncts rule-alists known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits hits warn-missingp))))
   :hints (("Goal" :in-theory (enable simplify-conjunction-with-rule-alists-basic))))

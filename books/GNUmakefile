@@ -862,7 +862,7 @@ workshops/2003/kaufmann/support/rtl/package-defs.cert: \
 workshops/2004/sumners-ray/support/success.txt:
 	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
-projects/acl2-in-hol/tests/success.txt:
+projects/acl2-in-hol/tests/success.txt: arithmetic-2/meta/top.cert arithmetic-3/extra/top-ext.cert
 	@cd $(@D)/.. ; $(STARTJOB) -c "$(MAKE)"
 
 .PHONY: projects/apply-model/phony

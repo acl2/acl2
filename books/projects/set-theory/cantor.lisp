@@ -35,7 +35,7 @@
   (apply (inverse f) (b f)))
 
 ; x \in B <=> not(x \in f(x))
-(defthmz lemma-1
+(defthmz cantor-lemma1
   (implies (in x (domain f))
            (iff (in x (b f))
                 (not (in x (apply f x)))))
@@ -46,7 +46,7 @@
   ()
 
   (local
-   (defthmz lemma-2a
+   (defthmz cantor-lemma2a
      (implies (and (funp f)
                    (equal (image f)
                           (powerset (domain f))))
@@ -55,7 +55,7 @@
      :props (zfc b$prop)))
 
 ; f(xi) = B
-  (defthmz lemma-2
+  (defthmz cantor-lemma2
     (implies (and (funp f)
                   (equal (image f)
                          (powerset (domain f))))
@@ -64,7 +64,7 @@
     :props (zfc prod2$prop domain$prop inverse$prop b$prop)))
 
 ; xi \in A
-(defthmz lemma-3
+(defthmz cantor-lemma3
   (implies (and (funp f)
                 (equal (image f)
                        (powerset (domain f))))
@@ -82,6 +82,6 @@
                        (powerset (domain f)))))
   :props (zfc prod2$prop domain$prop inverse$prop b$prop)
   :hints (("Goal"
-           :in-theory (union-theories '(lemma-2 lemma-3)
+           :in-theory (union-theories '(cantor-lemma2 cantor-lemma3)
                                       (theory 'minimal-theory))
-           :use ((:instance lemma-1 (x (xi f)))))))
+           :use ((:instance cantor-lemma1 (x (xi f)))))))

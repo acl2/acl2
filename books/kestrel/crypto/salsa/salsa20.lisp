@@ -1,6 +1,6 @@
 ; A formal specification of the Salsa20 hash function
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,6 +21,7 @@
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/leftrotate" :dir :system)
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/bv-lists/packbv-little-and-unpackbv-little" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))

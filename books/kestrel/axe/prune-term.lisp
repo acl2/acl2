@@ -233,8 +233,9 @@
         (if (unquote simplified-dag-or-quotep)
             (mv nil :true state)
           (mv nil :false state)))
+       (simplified-dag simplified-dag-or-quotep) ; it is in fact a dag
        ;; Test did not rewrite to a constant, so try other things:
-       ;; (- (cw "(Simplified to ~X01.)~%" simplified-dag-or-quotep nil))
+       ;; (- (cw "(Simplified to ~X01.)~%" simplified-dag nil))
        (- (and (print-level-at-least-verbosep print)
                (cw "Test did not simplify to a constant.)~%")))
        ;; Is this needed, given that we simplified the test above using the assumptions (maybe if non-boolean)?
@@ -251,7 +252,7 @@
              (cw "Failed to resolve test by rewriting and we have been told not to call STP.)"))
         (mv nil :unknown state)) ; give up if we are not allowed to call STP
        ;; TODO: Avoid turning the DAG into a term:
-       (simplified-test-term (dag-to-term simplified-dag-or-quotep)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
+       (simplified-test-term (dag-to-term simplified-dag)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
        ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test, or getting an indication of which branch we expect to be pruned away).
        (- (and (print-level-at-least-verbosep print)
                (cw "(Attempting to prove test true with STP:~%")))
