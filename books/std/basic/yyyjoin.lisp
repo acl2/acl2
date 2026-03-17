@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define yyyjoin (fn rev-args)
+  :parents (std/basic)
   :short "Spread a binary function over two or more arguments."
   :long
   (xdoc::topstring
