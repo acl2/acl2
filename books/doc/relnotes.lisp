@@ -158,7 +158,8 @@
    (xdoc::h4 "ACL2-IN-HOL Link Support")
 
    (xdoc::p
-    "See projects/acl2-in-hol/README-acl2.  That directory provides modifications
+    "See @('[books]/projects/acl2-in-hol/README-acl2').  That directory provides
+     modifications
      of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
      that link to work with the latest versions of ACL2.")
 
@@ -242,10 +243,12 @@
    (xdoc::h4 (xdoc::seetopic "bridge::bridge" "Bridge"))
 
    (xdoc::p
-    "Python bindings are available in @('[books]/centaur/bridge/python').")
+    "Python bindings for the ACL2 Bridge are available in
+     @('[books]/centaur/bridge/python/').")
 
    (xdoc::p
-    "Support for SBCL added in @('[books]/centaur/bridge/bridge-sbcl-raw.lsp').")
+    "Support for using the ACL2 Bridge with SBCL has been added in
+     @('[books]/centaur/bridge/bridge-sbcl-raw.lsp').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -398,8 +401,8 @@
    (xdoc::h4 "Schroeder-Bernstein Library")
 
    (xdoc::p
-    "This library has moved from @('[books]/projects/schroder-bernstein') to
-     @('[books]/projects/schroeder-bernstein') in order to reflect the
+    "This library has moved from @('[books]/projects/schroder-bernstein/') to
+     @('[books]/projects/schroeder-bernstein/') in order to reflect the
      prevailing German convention of printing an @('\"o\"') with umlaut as
      @('\"oe\"') when umlaut letters are unavailable.")
 
@@ -645,7 +648,7 @@
      floating-point operations in ACL2.  Note that an extensive test suite for
      floating-point operations may be found in
      @('demos/floating-point-input.lsp'), with associated output file
-     @('demos/floating-point-log.txt'), with associated output file")
+     @('demos/floating-point-log.txt').")
 
    (xdoc::p
     "The publications page available from the ACL2 home page has been replaced
