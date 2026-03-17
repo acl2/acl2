@@ -213,6 +213,23 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "arithmetic-5" "Arithmetic-5 Library"))
+
+   (xdoc::p
+    "Certain rewrite loops involving function @('find-constant-addend') are now
+     avoided.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "arithmetic-light" "Arithmetic-light Library"))
+
+   (xdoc::p
+    "A variety of improvements have been made, including adding new functions and
+    proving various new rules (e.g., about functions such as @('ceiling'),
+    @('floor'), @('mod'), @('ceiling-of-log'), @('min'), @('max'), etc.).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "axe" "Axe Toolkit"))
 
    (xdoc::p
@@ -639,6 +656,12 @@
 
    (xdoc::h3 "Testing")
 
+   (xdoc::p
+     "Additional test plans have been added to the "
+     (xdoc::ahref "https://leeroy.defthm.com/" "Jenkins server for
+      ACL2 regression testing")
+     ".  Related scripts have been improved.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
@@ -666,6 +689,10 @@
      floating-point operations may be found in
      @('demos/floating-point-input.lsp'), with associated output file
      @('demos/floating-point-log.txt').")
+
+   (xdoc::p
+    "Some books that previously did not work with ACL2(r) @(see real) have been
+    made compatible with ACL2(r).")
 
    ))
 
