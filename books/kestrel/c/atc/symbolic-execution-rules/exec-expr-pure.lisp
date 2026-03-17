@@ -522,7 +522,7 @@
 
   (make-event
    `(defruled sint-from-boolean-with-error-when-booleanp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'test)
+      (implies (and ,(syntaxp-for-expr-pure 'test)
                     (booleanp test))
                (equal (sint-from-boolean-with-error test)
                       (if test
@@ -532,7 +532,7 @@
 
   (make-event
    `(defruled sint-from-boolean-with-error-when-booleanp-and-true
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'test)
+      (implies (and ,(syntaxp-for-expr-pure 'test)
                     (booleanp test)
                     (test* test))
                (equal (sint-from-boolean-with-error test)
@@ -541,7 +541,7 @@
 
   (make-event
    `(defruled sint-from-boolean-with-error-when-booleanp-and-false
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'test)
+      (implies (and ,(syntaxp-for-expr-pure 'test)
                     (booleanp test)
                     (test* (not test)))
                (equal (sint-from-boolean-with-error test)

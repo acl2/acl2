@@ -57,70 +57,70 @@
 
   (make-event
    `(defruled test-value-when-scharp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-for-expr-pure 'x)
                     (scharp x))
                (equal (test-value x)
                       (boolean-from-schar x)))))
 
   (make-event
    `(defruled test-value-when-ucharp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-for-expr-pure 'x)
                     (ucharp x))
                (equal (test-value x)
                       (boolean-from-uchar x)))))
 
   (make-event
    `(defruled test-value-when-sshortp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-for-expr-pure 'x)
                     (sshortp x))
                (equal (test-value x)
                       (boolean-from-sshort x)))))
 
   (make-event
    `(defruled test-value-when-ushortp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-for-expr-pure 'x)
                     (ushortp x))
                (equal (test-value x)
                       (boolean-from-ushort x)))))
 
   (make-event
    `(defruled test-value-when-sintp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-for-expr-pure 'x)
                     (sintp x))
                (equal (test-value x)
                       (boolean-from-sint x)))))
 
   (make-event
    `(defruled test-value-when-uintp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-for-expr-pure 'x)
                     (uintp x))
                (equal (test-value x)
                       (boolean-from-uint x)))))
 
   (make-event
    `(defruled test-value-when-slongp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-for-expr-pure 'x)
                     (slongp x))
                (equal (test-value x)
                       (boolean-from-slong x)))))
 
   (make-event
    `(defruled test-value-when-ulongp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-for-expr-pure 'x)
                     (ulongp x))
                (equal (test-value x)
                       (boolean-from-ulong x)))))
 
   (make-event
    `(defruled test-value-when-sllongp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-for-expr-pure 'x)
                     (sllongp x))
                (equal (test-value x)
                       (boolean-from-sllong x)))))
 
   (make-event
    `(defruled test-value-when-ullongp
-      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-for-expr-pure 'x)
                     (ullongp x))
                (equal (test-value x)
                       (boolean-from-ullong x)))))

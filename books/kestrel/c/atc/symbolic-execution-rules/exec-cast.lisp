@@ -89,7 +89,7 @@
                       (and (type-case dtype :sllong)
                            (not (member-eq (type-kind stype)
                                            '(:schar :sshort :sint :slong)))))))
-         (hyps `(and ,(syntaxp-hyp-for-expr-pure 'x)
+         (hyps `(and ,(syntaxp-for-expr-pure 'x)
                      (,spred x)
                      ,@(and guardp `((,dtype-from-stype-okp x)))))
          (rhs (if (equal dtype stype)

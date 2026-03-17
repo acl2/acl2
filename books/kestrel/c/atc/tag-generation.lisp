@@ -134,7 +134,7 @@
                                                  names-to-avoid
                                                  wrld))
              (formula-member
-              `(implies (and ,(syntaxp-hyp-for-expr-pure 'struct)
+              `(implies (and ,(syntaxp-for-expr-pure 'struct)
                              (,recognizer struct))
                         (equal (exec-member (expr-value struct objdes)
                                             (ident ,(ident->name memname)))
@@ -145,7 +145,7 @@
                                                 (ident ,(ident->name memname)))
                                              nil)))))
              (formula-memberp
-              `(implies (and ,(syntaxp-hyp-for-expr-pure 'ptr)
+              `(implies (and ,(syntaxp-for-expr-pure 'ptr)
                              (valuep ptr)
                              (value-case ptr :pointer)
                              (value-pointer-validp ptr)

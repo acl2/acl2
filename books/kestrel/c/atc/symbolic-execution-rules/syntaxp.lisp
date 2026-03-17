@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define syntaxp-hyp-for-expr-pure ((var symbolp))
+(define syntaxp-for-expr-pure ((var symbolp))
   :returns (hyp pseudo-termp
                 :hyp (symbolp var)
                 :hints (("Goal" :in-theory (enable pseudo-termp
