@@ -255,7 +255,7 @@
                  "</li>")))
 
 (defun generate-bibtex-entries-XDOC (entries)
-  "Generate XDOC list items for all BibTeX entries"
+  "Generate XDOC list items for the BibTeX entries"
   (if (endp entries)
       ""
     (let ((entry-pair (car entries)))
@@ -266,3 +266,17 @@
                        (generate-bibtex-entry-XDOC (cdr entry-pair))
                        (generate-bibtex-entries-XDOC (cdr entries)))
         (generate-bibtex-entries-XDOC (cdr entries))))))
+
+;; Each group is of the form (<group-name> . <entry-pairs>).
+(defun generate-bibtex-groups-XDOC (groups)
+  (if (endp groups)
+      ""
+    (let* ((group-name-and-entries (first groups))
+           (group-name (car group-name-and-entries))
+           (entries (cdr group-name-and-entries)))
+      (concatenate 'string
+                   "<h3>" group-name "</h3>"
+                   "<ul>"
+                   (generate-bibtex-entries-XDOC entries)
+                   "</ul>"
+                   (generate-bibtex-groups-XDOC (rest groups))))))
