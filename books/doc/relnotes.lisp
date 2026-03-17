@@ -613,7 +613,7 @@
 
    (xdoc::p
     "Several changes were made to the "
-    (xdoc::ahref "https:://acl2.org/doc" "web manual")
+    (xdoc::ahref "https://acl2.org/doc" "web manual")
     ". The ``jump to'' bar now shows more results in the preview.
      If the current text is not a prefix of an topic, the preview now shows
      substring matches. General improvements were made to the local ``search''
