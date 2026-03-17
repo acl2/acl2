@@ -75,7 +75,7 @@
   (cond ((endp lst) state)
         ((endp (cdr lst))
          (acl2-doc-print-fix-symbol (car lst) channel state))
-        (t (pprogn 
+        (t (pprogn
             (acl2-doc-print-fix-symbol (car lst) channel state)
             (princ$ " " channel state)
             (acl2-doc-print-fix-symbol-lst (cdr lst) channel state)))))
@@ -223,7 +223,10 @@
                                     (maybe-add-top-topic all-topics1)
                                   all-topics1))
                    (all-topics3 (if force-missing-parents-p
-                                    (force-missing-parents all-topics2)
+                                    ;; If we are sure we would want missing
+                                    ;; parents to signal an error here, we could
+                                    ;; pass t as the second argument:
+                                    (force-missing-parents all-topics2 nil nil)
                                   all-topics2)))
               all-topics3)))
           ((er rendered)
