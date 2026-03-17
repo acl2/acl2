@@ -133,6 +133,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "ACL2-IN-HOL Link Support")
+
+   (xdoc::p
+    "See @('[books]/projects/acl2-in-hol/README-acl2').  That directory provides
+     modifications
+     of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
+     that link to work with the latest versions of ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "air::air" "AIR"))
 
    (xdoc::p
@@ -155,13 +165,12 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "ACL2-IN-HOL Link Support")
+   (xdoc::h4 (xdoc::seetopic "arm::arm32" "ARM32"))
 
    (xdoc::p
-    "See @('[books]/projects/acl2-in-hol/README-acl2').  That directory provides
-     modifications
-     of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
-     that link to work with the latest versions of ACL2.")
+    "A formal model of the ARM32 CPU has been added.  This is still in progress,
+     but it supports a variety of instructions seen in real-world ARM32 code.
+     It is suitable for use with @(see axe).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,7 +222,36 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "arithmetic-5" "Arithmetic-5 Library"))
+
+   (xdoc::p
+    "Certain rewrite loops involving function @('find-constant-addend') are now
+     avoided.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "arithmetic-light" "Arithmetic-light Library"))
+
+   (xdoc::p
+    "A variety of improvements have been made, including adding new functions and
+    proving various new rules (e.g., about functions such as @('ceiling'),
+    @('floor'), @('mod'), @('ceiling-of-log'), @('min'), @('max'), etc.).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "axe" "Axe Toolkit"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "axe-arm" "ARM variant"))
+
+   (xdoc::p
+    "A variant of Axe for reasoning about ARM32 binaries has been added.  This is
+     still in progress.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "axe-x86" "x86 variant"))
 
    (xdoc::p
     "Several new x86 binary lifting examples were added,
@@ -595,21 +633,31 @@
    (xdoc::h3 "Documentation")
 
    (xdoc::p
+     "The bleeding-edge version of the ACL2+Books manual is now available at "
+     (xdoc::ahref "https://acl2.org/doc" "acl2.org/doc")
+     ".  It tracks the latest development snapshot of ACL2 from GitHub and
+      is automatically updated every time the master branch builds
+      successfully.")
+
+   (xdoc::p
+    "The @(see installation-instructions) have been updated and clarified.")
+
+   (xdoc::p
     "A new topic, @(see how-to-contribute), was added.
      The existing @(see best-practices) topic was greatly extended.")
 
    (xdoc::p
-    "A new topic, @(see osicat), was added. It describes an occasional
-     build issue caused by a race condition in the build logic,
-     as well as the fix.")
-
-   (xdoc::p
-    "@(see character-encoding) has been updated to remove old advice and to
-     link to a new topic, @(see using-utf-8).")
+    "A new topic, @(see emacs-workflow), has been added to describe a typical
+    Emacs-based workflow that many ACL2 users rely on.")
 
    (xdoc::p
     "The publications page available from the ACL2 home page has been replaced
      by the :DOC topic, @(see publications).")
+
+   (xdoc::p
+    "A new topic, @(see pubs::pubs-videos), has been added to collect links to videos
+    about ACL2.  It includes links to an in-depth multi-part tutorial series
+    for learning ACL2.")
 
    (xdoc::p
     "Several changes were made to the "
@@ -625,6 +673,15 @@
      in addition to @(':short')s and topic names.")
 
    (xdoc::p
+    "@(see character-encoding) has been updated to remove old advice and to
+     link to a new topic, @(see using-utf-8).")
+
+   (xdoc::p
+    "A new topic, @(see osicat), was added. It describes an occasional
+     build issue caused by a race condition in the build logic,
+     as well as the fix.")
+
+   (xdoc::p
     "Various broken links have been fixed.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -638,6 +695,12 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")
+
+   (xdoc::p
+     "Additional test plans have been added to the "
+     (xdoc::ahref "https://leeroy.defthm.com/" "Jenkins server for
+      ACL2 regression testing")
+     ".  Related scripts have been improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -666,6 +729,10 @@
      floating-point operations may be found in
      @('demos/floating-point-input.lsp'), with associated output file
      @('demos/floating-point-log.txt').")
+
+   (xdoc::p
+    "Some books that previously did not work with ACL2(r) @(see real) have been
+    made compatible with ACL2(r).")
 
    ))
 

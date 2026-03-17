@@ -1,6 +1,6 @@
 ; Documentation for Axe
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "portcullis")
 ;(include-book "xdoc/top" :dir :system)
+(include-book "arm/doc")
 (include-book "jvm/doc")
 (include-book "x86/doc")
 (include-book "risc-v/doc")
