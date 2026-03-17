@@ -121,22 +121,28 @@
         x
       (acons :parents parents x))))
 
-(defun force-missing-parents (all-topics)
+(defun force-missing-parents (all-topics error-on-missing-parents names-with-missing-parents)
   ;; Assumes the topics have been normalized.
   (declare (xargs :mode :program))
   (b* (((when (atom all-topics))
-        nil)
+        ;; xdoc::missing-parents-test has missing parents intentionally
+        (let ((names-with-missing-parents (remove-eq 'xdoc::missing-parents-test names-with-missing-parents)))
+          (if (and error-on-missing-parents names-with-missing-parents)
+              (er hard? 'force-missing-parents "These xdoc topics have no parents: ~X01." names-with-missing-parents nil)
+            nil)))
        (topic   (car all-topics))
        (name    (cdr (assoc :name topic)))
        (parents (cdr (assoc :parents topic)))
        ((when (or (equal name 'acl2::top)
                   (consp parents)))
-        (cons topic (force-missing-parents (cdr all-topics))))
+        (cons topic (force-missing-parents (cdr all-topics) error-on-missing-parents names-with-missing-parents)))
        (- (cw "Missing parents: forcing ~x0 to be a child of ~x1.~%" name 'missing-parents))
        (new-topic
-        (cons (cons :parents '(missing-parents))
-              topic)))
-    (cons new-topic (force-missing-parents (cdr all-topics)))))
+         (cons (cons :parents '(missing-parents))
+               topic)))
+    (cons new-topic (force-missing-parents (cdr all-topics)
+                                           error-on-missing-parents
+                                           (cons name names-with-missing-parents)))))
 
 (defun normalize-parents-list (x)
 
