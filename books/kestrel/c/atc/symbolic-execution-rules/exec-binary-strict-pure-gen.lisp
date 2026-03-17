@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -149,7 +149,7 @@
                         (pack op-kind '- (type-kind ltype))))
          (op-ltype-okp (and op-ltype
                             (pack op-ltype '-okp)))
-         (formula `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'y)
+         (formula `(implies (and ,(syntaxp-hyp-for-expr-pure 'y)
                                  (,rpred y)
                                  ,@(and op-ltype-rtype-okp
                                         `((,op-ltype-rtype-okp x y))))
@@ -325,7 +325,7 @@
              (,op-values (,ltype-fix x) y)))
          (thm-event
           `(defruled ,op-values-when-ltype
-             (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+             (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                            (,lpred x))
                       (equal (,op-values x y)
                              (,op-ltype-and-value x y)))

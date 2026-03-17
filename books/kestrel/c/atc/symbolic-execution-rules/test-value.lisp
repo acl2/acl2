@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -57,70 +57,70 @@
 
   (make-event
    `(defruled test-value-when-scharp
-      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                     (scharp x))
                (equal (test-value x)
                       (boolean-from-schar x)))))
 
   (make-event
    `(defruled test-value-when-ucharp
-      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                     (ucharp x))
                (equal (test-value x)
                       (boolean-from-uchar x)))))
 
   (make-event
    `(defruled test-value-when-sshortp
-      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                     (sshortp x))
                (equal (test-value x)
                       (boolean-from-sshort x)))))
 
   (make-event
    `(defruled test-value-when-ushortp
-      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                     (ushortp x))
                (equal (test-value x)
                       (boolean-from-ushort x)))))
 
   (make-event
    `(defruled test-value-when-sintp
-      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                     (sintp x))
                (equal (test-value x)
                       (boolean-from-sint x)))))
 
   (make-event
    `(defruled test-value-when-uintp
-      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                     (uintp x))
                (equal (test-value x)
                       (boolean-from-uint x)))))
 
   (make-event
    `(defruled test-value-when-slongp
-      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                     (slongp x))
                (equal (test-value x)
                       (boolean-from-slong x)))))
 
   (make-event
    `(defruled test-value-when-ulongp
-      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                     (ulongp x))
                (equal (test-value x)
                       (boolean-from-ulong x)))))
 
   (make-event
    `(defruled test-value-when-sllongp
-      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                     (sllongp x))
                (equal (test-value x)
                       (boolean-from-sllong x)))))
 
   (make-event
    `(defruled test-value-when-ullongp
-      (implies (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+      (implies (and ,(syntaxp-hyp-for-expr-pure 'x)
                     (ullongp x))
                (equal (test-value x)
                       (boolean-from-ullong x)))))

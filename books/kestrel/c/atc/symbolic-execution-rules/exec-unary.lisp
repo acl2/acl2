@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -68,7 +68,7 @@
                                     '(:plus :minus :bitnot))
                          (member-eq (type-kind type)
                                     '(:schar :uchar :sshort :ushort))))
-         (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+         (hyps `(and ,(syntaxp-hyp-for-expr-pure 'x)
                      (equal op (,(pack 'unop- op-kind)))
                      (,pred x)
                      ,@(and op-type-okp
@@ -223,7 +223,7 @@
     (b* ((fixtype (integer-type-to-fixtype type))
          (pred (pack fixtype 'p))
          (name (pack 'exec-indir-when- pred))
-         (hyps `(and ,(atc-syntaxp-hyp-for-expr-pure 'x)
+         (hyps `(and ,(syntaxp-hyp-for-expr-pure 'x)
                      (valuep x)
                      (value-case x :pointer)
                      (value-pointer-validp x)

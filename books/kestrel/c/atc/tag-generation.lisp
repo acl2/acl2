@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -134,7 +134,7 @@
                                                  names-to-avoid
                                                  wrld))
              (formula-member
-              `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
+              `(implies (and ,(syntaxp-hyp-for-expr-pure 'struct)
                              (,recognizer struct))
                         (equal (exec-member (expr-value struct objdes)
                                             (ident ,(ident->name memname)))
@@ -145,7 +145,7 @@
                                                 (ident ,(ident->name memname)))
                                              nil)))))
              (formula-memberp
-              `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
+              `(implies (and ,(syntaxp-hyp-for-expr-pure 'ptr)
                              (valuep ptr)
                              (value-case ptr :pointer)
                              (value-pointer-validp ptr)
