@@ -223,8 +223,9 @@
                                     (maybe-add-top-topic all-topics1)
                                   all-topics1))
                    (all-topics3 (if force-missing-parents-p
-                                    ;; We could consider passing t as the
-                                    ;; second argument here:
+                                    ;; If we are sure we would want missing
+                                    ;; parents to signal an error here, we could
+                                    ;; pass t as the second argument:
                                     (force-missing-parents all-topics2 nil nil)
                                   all-topics2)))
               all-topics3)))
