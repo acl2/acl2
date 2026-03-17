@@ -98,6 +98,7 @@
    item
    :declon (ext-declon-find-first-field-name item.declon struct-tag)
    :include (raise "Unsupported #include directive.")
+   :cond (raise "Unsupported conditional directive.")
    :line-comment nil))
 
 (define trans-item-list-find-first-field-name
@@ -210,6 +211,7 @@
    item
    :declon (ext-declon-find-gso-candidate item.declon blacklist)
    :include (raise "Unsupported #include directive.")
+   :cond (raise "Unsupported conditional directive.")
    :line-comment nil))
 
 (define trans-item-list-find-gso-candidate

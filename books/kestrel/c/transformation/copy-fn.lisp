@@ -145,6 +145,8 @@
              (mv found (c$::trans-item-list-declon extdecls)))
    :include (prog2$ (raise "#include directives not supported.")
                     (mv nil nil))
+   :cond (prog2$ (raise "Conditional directives not supported.")
+                 (mv nil nil))
    :line-comment (mv nil (list (trans-item-fix item)))))
 
 (define copy-fn-trans-item-list

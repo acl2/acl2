@@ -17,6 +17,8 @@
 
 (include-book "../../syntax/abstract-syntax-operations")
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -53,8 +55,9 @@
           c$::fundef-option
           c$::ext-declon
           c$::ext-declon-list
-          c$::trans-item
-          c$::trans-item-list
+          c$::hash-if/elif-expr
+          c$::hash-if/ifdef/ifndef
+          c$::trans-items
           transunit
           c$::filepath-transunit-map
           transunit-ensemble)

@@ -7354,6 +7354,8 @@
                (retok (trans-item-declon new-declon) table))
      :include (reterr
                (msg "Validator does not support #include directives yet."))
+     :cond (reterr
+            (msg "Validator does not support conditional directives yet."))
      :line-comment (retok (trans-item-fix item) (valid-table-fix table))))
   :hooks (:fix)
 

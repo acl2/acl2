@@ -15,6 +15,8 @@
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -80,8 +82,9 @@
           fundef-option
           ext-declon
           ext-declon-list
-          trans-item
-          trans-item-list
+          hash-if/elif-expr
+          hash-if/ifdef/ifndef
+          trans-items
           transunit
           filepath-transunit-map
           transunit-ensemble
@@ -239,8 +242,9 @@
              (ext-declon-unambp ext-declon))
     :enable ext-declon-unambp)
 
-  (defruled trans-item-unambp-when-not-declon
-    (implies (not (trans-item-case item :declon))
+  (defruled trans-item-unambp-when-not-declon/cond
+    (implies (and (not (trans-item-case item :declon))
+                  (not (trans-item-case item :cond)))
              (trans-item-unambp item))
     :enable trans-item-unambp)
 
@@ -370,7 +374,7 @@
                     trans-item-unambp-when-line-comment
                     decl-spec-unambp-when-not-tyspec/align
                     ext-declon-unambp-when-not-fundef/declon
-                    trans-item-unambp-when-not-declon
+                    trans-item-unambp-when-not-declon/cond
                     expr-not-sizeof-when-unambp
                     expr-not-alignof-when-unambp
                     expr-not-cast/call-ambig-when-unambp

@@ -15,6 +15,8 @@
 (include-book "../../syntax/abstract-syntax-trees")
 (include-book "../../syntax/validation-information")
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration
   ;; Necessary for the deffold-map termination.
@@ -59,8 +61,9 @@
               fundef-option
               ext-declon
               ext-declon-list
-              trans-item
-              trans-item-list)
+              hash-if/elif-expr
+              hash-if/ifdef/ifndef
+              trans-items)
   :extra-args ((uid c$::uidp) (new-fn identp))
   :override
   ((c$::expr
