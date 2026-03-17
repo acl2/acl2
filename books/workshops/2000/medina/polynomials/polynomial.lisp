@@ -6,7 +6,7 @@
 ;;; Polynomial recognizer
 ;;; ---------------------
 
-;;; Similar to «integer-listp» function.
+;;; Similar to Â«integer-listpÂ» function.
 
 (defun monomial-listp (l)
   (cond ((atom l)

@@ -31,6 +31,7 @@
 (include-book "std/strings/strrpos" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/max" :dir :system))
+(local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -42,6 +43,14 @@
 (acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel string-listp-of-add-to-set-equal
+  (equal (string-listp (add-to-set-equal string strings))
+         (and (stringp string)
+              (string-listp strings)))
+  :enable add-to-set-equal)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -751,12 +760,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-token-handling-markers ((stop-at-newline-p booleanp)
-                                     (disabled ident-listp)
+                                     (disabled string-listp)
                                      (ppstate ppstatep))
   :returns (mv erp
                (token plexemep)
                (span spanp)
-               (new-disabled ident-listp)
+               (new-disabled string-listp)
                (new-ppstate ppstatep))
   :short "Read a token, handling any markers along the way."
   :long
@@ -787,7 +796,7 @@
         (read-token-handling-markers stop-at-newline-p disabled ppstate)))
      ((lexmark-case lexmark :end) ; end(M)
       (b* ((name (lexmark-end->macro lexmark))
-           (disabled (remove1-equal name (ident-list-fix disabled))))
+           (disabled (remove1-equal name (string-list-fix disabled))))
         (read-token-handling-markers stop-at-newline-p disabled ppstate)))
      (t ; lexeme
       (b* ((lexeme (lexmark-lexeme->lexeme lexmark))
@@ -801,7 +810,7 @@
                                  a token"
                       :found (plexeme?-to-msg lexeme)))
          ((plexeme-tokenp lexeme) ; token
-          (retok lexeme span (ident-list-fix disabled) ppstate))
+          (retok lexeme span (string-list-fix disabled) ppstate))
          (t ; comment or white space
           (read-token-handling-markers stop-at-newline-p disabled ppstate)))))))
   :no-function nil
@@ -1028,7 +1037,7 @@
 
 (define read-macro-params ((ppstate ppstatep))
   :returns (mv erp
-               (params ident-listp)
+               (params string-listp)
                (ellipsis booleanp)
                (new-ppstate ppstatep))
   :short "Read the parameters of a function-like macro."
@@ -1078,7 +1087,7 @@
         (retok nil t ppstate)))
      ((plexeme?-identp token) ; # define name ( param
       (b* ((param (plexeme-ident->ident token))
-           ((when (equal param (ident "__VA_ARGS__")))
+           ((when (equal param "__VA_ARGS__"))
             (reterr (msg "Disallowed macro parameter '__VA_ARGS__' at ~x0."
                          (span-to-msg span))))
            ((erp params ellipsis ppstate) ; # define ( params[...] )
@@ -1094,13 +1103,14 @@
                              an identifer"
                   :found (plexeme?-to-msg token)))))
   :no-function nil
-  :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp
-                                           plexeme?-identp)))
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::true-listp-when-string-listp-rewrite
+                              plexeme?-identp)))
 
   :prepwork
   ((define read-macro-params-rest ((ppstate ppstatep))
      :returns (mv erp
-                  (params ident-listp)
+                  (params string-listp)
                   (ellipsis booleanp)
                   (new-ppstate ppstatep))
      :parents nil
@@ -1121,7 +1131,7 @@
                (retok nil t ppstate)))
             ((plexeme?-identp token2) ; # define name ( 1stparam , param
              (b* ((param (plexeme-ident->ident token2))
-                  ((when (equal param (ident "__VA_ARGS__")))
+                  ((when (equal param "__VA_ARGS__"))
                    (reterr (msg "Disallowed macro parameter ~
                                  '__VA_ARGS__' at ~x0."
                                 (span-to-msg span2))))
@@ -1146,12 +1156,13 @@
      :measure (ppstate->size ppstate)
      :hints (("Goal" :in-theory (enable plexeme?-identp)))
      :verify-guards :after-returns
-     :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp
-                                              plexeme?-identp))))))
+     :guard-hints
+     (("Goal" :in-theory (enable acl2::true-listp-when-string-listp-rewrite
+                                 plexeme?-identp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-macro-object-replist ((name identp) (ppstate ppstatep))
+(define read-macro-object-replist ((name stringp) (ppstate ppstatep))
   :returns (mv erp
                (replist plexeme-listp)
                (newline? plexeme-optionp)
@@ -1178,7 +1189,7 @@
                    (or (plexeme-hashhashp (car replist))
                        (plexeme-hashhashp (car (last replist))))))
         (reterr (msg "The replacement list of ~x0 starts or ends with ##."
-                     (ident-fix name)))))
+                     (str-fix name)))))
     (retok replist newline? ppstate))
 
   :prepwork
@@ -1247,14 +1258,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-macro-function-replist ((name identp)
-                                     (params ident-listp)
+(define read-macro-function-replist ((name stringp)
+                                     (params string-listp)
                                      (ellipsis booleanp)
                                      (ppstate ppstatep))
   :returns (mv erp
                (replist plexeme-listp)
                (newline? plexeme-optionp)
-               (hash-params ident-listp)
+               (hash-params string-listp)
                (new-ppstate ppstatep))
   :short "Read the replacement list of a function-like macro."
   :long
@@ -1293,15 +1304,15 @@
   (read-macro-function-replist-loop name nil params ellipsis ppstate)
 
   :prepwork
-  ((define read-macro-function-replist-loop ((name identp)
+  ((define read-macro-function-replist-loop ((name stringp)
                                              (previous plexeme-optionp)
-                                             (params ident-listp)
+                                             (params string-listp)
                                              (ellipsis booleanp)
                                              (ppstate ppstatep))
      :returns (mv erp
                   (replist plexeme-listp)
                   (newline? plexeme-optionp)
-                  (hash-params ident-listp)
+                  (hash-params string-listp)
                   (new-ppstate ppstatep))
      :parents nil
      (b* ((ppstate (ppstate-fix ppstate))
@@ -1312,22 +1323,22 @@
          (b* (((when (and previous
                           (plexeme-hashp previous))) ; # EOL
                (reterr (msg "The replacement list of ~x0 must not end with #."
-                            (ident-fix name))))
+                            (str-fix name))))
               ((when (and previous
                           (plexeme-hashhashp previous))) ; ## EOL
                (reterr (msg "The replacement list of ~x0 must not end with ##."
-                            (ident-fix name)))))
+                            (str-fix name)))))
            (retok nil toknl? nil ppstate)))
         ((plexeme?-identp toknl?) ; ident
          (b* ((ident (plexeme-ident->ident toknl?))
-              ((when (and (equal ident (ident "__VA_ARGS__"))
+              ((when (and (equal ident "__VA_ARGS__")
                           (not ellipsis)))
                (reterr (msg "The replacement list of ~x0 ~
                              must not contain '__VA_ARGS__', ~
                              because it has no ellipsis."
-                            (ident-fix name))))
-              (paramp (or (member-equal ident (ident-list-fix params))
-                          (and (equal (ident->unwrap ident) "__VA_ARGS__")
+                            (str-fix name))))
+              (paramp (or (member-equal ident (string-list-fix params))
+                          (and (equal ident "__VA_ARGS__")
                                ellipsis)))
               ((when (and previous
                           (plexeme-hashp previous) ; # ident
@@ -1335,7 +1346,7 @@
                (reterr (msg "The replacement list of ~x0 ~
                              must not contain a # ~
                              not immediately followed by a parameter."
-                            (ident-fix name))))
+                            (str-fix name))))
               ((erp replist newline? hash-params ppstate)
                (read-macro-function-replist-loop name
                                                  toknl?
@@ -1358,13 +1369,13 @@
          (b* (((when (not previous)) ; nothing ##
                (reterr
                 (msg "The replacement list of ~x0 must not start with ##."
-                     (ident-fix name))))
+                     (str-fix name))))
               ((when (and previous
                           (plexeme-hashp previous))) ; # ##
                (reterr (msg "The replacement list of ~x0 ~
                              must not contain a # ~
                              not immediately followed by a parameter."
-                            (ident-fix name))))
+                            (str-fix name))))
               ((erp replist newline? hash-params ppstate)
                (read-macro-function-replist-loop name
                                                  toknl?
@@ -1374,8 +1385,8 @@
               (hash-params
                (if (plexeme-case previous :ident) ; ident ##
                    (b* ((ident (plexeme-ident->ident previous)))
-                     (if (or (member-equal ident (ident-list-fix params))
-                             (and (equal (ident->unwrap ident) "__VA_ARGS__")
+                     (if (or (member-equal ident (string-list-fix params))
+                             (and (equal ident "__VA_ARGS__")
                                   ellipsis)) ; param ##
                          (add-to-set-equal ident hash-params)
                        hash-params))
@@ -1391,7 +1402,7 @@
                (reterr (msg "The replacement list of ~x0 ~
                              must not contain a # ~
                              not immediately followed by a parameter."
-                            (ident-fix name))))
+                            (str-fix name))))
               ((erp replist newline? hash-params ppstate)
                (read-macro-function-replist-loop name
                                                  toknl?
@@ -1413,7 +1424,8 @@
      :no-function nil
      :measure (ppstate->size ppstate)
      :verify-guards :after-returns
-     :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp)))
+     :guard-hints
+     (("Goal" :in-theory (enable acl2::true-listp-when-string-listp-rewrite)))
      :prepwork ((local (in-theory (enable plexeme?-identp))))
 
      ///
@@ -1440,15 +1452,15 @@
 
      (defret read-macro-function-replist-loop-subsetp-when-ellipsis
        (subsetp-equal hash-params
-                      (cons (ident "__VA_ARGS__") params))
+                      (cons "__VA_ARGS__" params))
        :hyp (and ellipsis
-                 (ident-listp params))
+                 (string-listp params))
        :hints (("Goal" :induct t :in-theory (disable (:e ident)))))
 
      (defret read-macro-function-replist-loop-subsetp-when-not-ellipsis
        (subsetp-equal hash-params params)
        :hyp (and (not ellipsis)
-                 (ident-listp params))
+                 (string-listp params))
        :hints (("Goal" :induct t)))))
 
   ///
@@ -1463,20 +1475,18 @@
 
   (defret read-macro-replist-subsetp-when-ellipsis
     (subsetp-equal hash-params
-                   (cons (ident "__VA_ARGS__") params))
+                   (cons "__VA_ARGS__" params))
     :hyp (and ellipsis
-              (ident-listp params))
-    :hints (("Goal" :in-theory (disable (:e ident)))))
+              (string-listp params)))
 
   (defret read-macro-replist-subsetp-when-not-ellipsis
     (subsetp-equal hash-params params)
     :hyp (and (not ellipsis)
-              (ident-listp params))
-    :hints (("Goal" :in-theory (disable (:e ident))))))
+              (string-listp params))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rebuild-define-directive-id ((name identp)
+(define rebuild-define-directive-id ((name stringp)
                                      (newline-at-end? plexeme-optionp))
   :returns (lexemes plexeme-listp)
   :short "Rebuild a @('#define') directive from its name,
@@ -1487,7 +1497,7 @@
     "The rationale for this identity definition
      is explained in @(see preservable-inclusions)."))
   `(,(plexeme-punctuator "#")
-    ,(plexeme-ident (ident "define"))
+    ,(plexeme-ident "define")
     ,(plexeme-spaces 1)
     ,(plexeme-ident name)
     ,(plexeme-spaces 1)
@@ -1576,12 +1586,12 @@
                     :expected "an identifier"
                     :found (plexeme?-to-msg name)))
        (name (plexeme-ident->ident name))
-       ((when (equal name (ident "defined")))
+       ((when (equal name "defined"))
         (reterr (msg "Cannot define macro with name 'defined'.")))
        ((when (assoc-equal name
                            (macro-table->predefined (ppstate->macros ppstate))))
         (reterr (msg "Cannot define macro with predefined name '~s0'."
-                     (ident->unwrap name))))
+                     name)))
        ((erp lexeme? lexeme-span ppstate) (read-lexeme nil ppstate)))
     (cond
      ((plexeme?-endlinep lexeme? (ppstate->gcc/clang ppstate))
@@ -1634,20 +1644,19 @@
                              other white space"
                   :found (plexeme?-to-msg lexeme?)))))
   :no-function nil
-  :guard-simplify :limited ; to stop (:E IDENT)
+  :guard-simplify :limited
   :guard-hints
-  (("Goal" :in-theory (e/d (alistp-when-ident-macro-info-alistp-rewrite
-                            plexeme?-identp)
-                           ((:e ident))))))
+  (("Goal" :in-theory (enable alistp-when-string-macro-info-alistp-rewrite
+                              plexeme?-identp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rebuild-undef-directive ((name identp)
+(define rebuild-undef-directive ((name stringp)
                                  (newline-at-end? plexeme-optionp))
   :returns (lexemes plexeme-listp)
   :short "Rebuild a @('#undef') directive from its name."
   `(,(plexeme-punctuator "#")
-    ,(plexeme-ident (ident "undef"))
+    ,(plexeme-ident "undef")
     ,(plexeme-spaces 1)
     ,(plexeme-ident name)
     ,@(and newline-at-end? (list (plexeme-option-fix newline-at-end?)))))
@@ -1686,7 +1695,7 @@
                     :expected "an identifier"
                     :found (plexeme?-to-msg name?)))
        (name (plexeme-ident->ident name?))
-       ((when (equal name (ident "defined")))
+       ((when (equal name "defined"))
         (reterr (msg "Cannot undefine macro with name 'defined'.")))
        ((erp & newline? newline?-span ppstate) (read-token/newline ppstate))
        ((unless (plexeme?-endlinep newline? (ppstate->gcc/clang ppstate)))
@@ -1706,8 +1715,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist ident-lexmark-list-alist
-  :short "Fixtype of alists from identifiers to lists of lexmarks."
+(fty::defalist string-lexmark-list-alist
+  :short "Fixtype of alists
+          from strings (representing identifiers)
+          to lists of lexmarks."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1715,18 +1726,18 @@
      to the corresponding macro arguments.
      The macro arguments retain their markers,
      so we have a list of lexmarks and not just of lexemes."))
-  :key-type ident
+  :key-type string
   :val-type lexmark-list
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil t
-  :pred ident-lexmark-list-alistp
+  :pred string-lexmark-list-alistp
   :prepwork ((set-induction-depth-limit 1))
 
   ///
 
-  (defruled lexmark-listp-of-cdr-of-assoc-equal-when-ident-lexmark-list-alistp
-    (implies (and (ident-lexmark-list-alistp alist)
+  (defruled lexmark-listp-of-cdr-of-assoc-equal-when-string-lexmark-list-alistp
+    (implies (and (string-lexmark-list-alistp alist)
                   (assoc-equal key alist))
              (lexmark-listp (cdr (assoc-equal key alist))))
     :induct t
@@ -1891,7 +1902,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define replace-macro-args ((replist plexeme-listp)
-                            (subst ident-lexmark-list-alistp))
+                            (subst string-lexmark-list-alistp))
   :guard (plexeme-list-token/space-p replist)
   :returns (lexmarks/placemarkers lexmark-option-listp)
   :short "In the replacement list of a function-like macro,
@@ -1965,7 +1976,7 @@
                    param))
            (param (plexeme-ident->ident param))
            (param+arg (assoc-equal param
-                                   (ident-lexmark-list-alist-fix subst)))
+                                   (string-lexmark-list-alist-fix subst)))
            ((unless param+arg)
             (raise "Internal error: # is followed by a non-parameter ~x0."
                    param))
@@ -1986,7 +1997,7 @@
               (replace-macro-args replist subst)))
      ((plexeme-case token :ident) ; ident (param or not)
       (b* ((ident (plexeme-ident->ident token))
-           (ident+arg (assoc-equal ident (ident-lexmark-list-alist-fix subst)))
+           (ident+arg (assoc-equal ident (string-lexmark-list-alist-fix subst)))
            ;; If the token is an identifier but not a parameter,
            ;; it remains unchanged.
            ((when (not ident+arg))
@@ -2013,7 +2024,7 @@
   :measure (len replist)
   :guard-hints
   (("Goal" :in-theory (enable
-                       alistp-when-ident-lexmark-list-alistp-rewrite
+                       alistp-when-string-lexmark-list-alistp-rewrite
                        true-listp-when-lexmark-listp)))
   :hooks nil)
 
@@ -2409,7 +2420,7 @@
                          (rev-lexmarks lexmark-listp)
                          (paren-level natp)
                          (no-expandp booleanp)
-                         (disabled ident-listp)
+                         (disabled string-listp)
                          (directivep booleanp)
                          (ppstate ppstatep)
                          (limit natp))
@@ -2579,7 +2590,7 @@
                       :found "end of file")))
        ((lexmark-case lexmark :start) ; start(M)
         (b* ((name (lexmark-start->macro lexmark))
-             (disabled (cons name (ident-list-fix disabled))))
+             (disabled (cons name (string-list-fix disabled))))
           (pproc-lexemes mode
                          (if (member-eq (macrep-mode-kind mode)
                                         '(:arg-nonlast :arg-last :arg-dots))
@@ -2593,7 +2604,7 @@
                          (1- limit))))
        ((lexmark-case lexmark :end) ; end(M)
         (b* ((name (lexmark-end->macro lexmark))
-             (disabled (remove1-equal name (ident-list-fix disabled))))
+             (disabled (remove1-equal name (string-list-fix disabled))))
           (pproc-lexemes mode
                          (if (member-eq (macrep-mode-kind mode)
                                         '(:arg-nonlast :arg-last :arg-dots))
@@ -2698,7 +2709,7 @@
            ((plexeme-case lexeme :ident) ; ident
             (b* ((ident (plexeme-ident->ident lexeme))
                  ((when (and (macrep-mode-case mode :expr)
-                             (equal (ident->unwrap ident) "defined"))) ; defined
+                             (equal ident "defined"))) ; defined
                   (b* (((erp lexmarks disabled ppstate)
                         (b* (((reterr) nil nil ppstate)
                              ((erp token2 span2 disabled ppstate)
@@ -2750,7 +2761,7 @@
                                    (revappend lexmarks
                                               (cons (make-lexmark-lexeme
                                                      :lexeme (plexeme-ident
-                                                              (ident "defined"))
+                                                              "defined")
                                                      :span (irr-span))
                                                     rev-lexmarks))
                                    paren-level
@@ -2760,7 +2771,7 @@
                                    ppstate
                                    (1- limit))))
                  ((when (or no-expandp
-                            (member-equal ident (ident-list-fix disabled))))
+                            (member-equal ident (string-list-fix disabled))))
                   (pproc-lexemes mode
                                  (cons lexmark rev-lexmarks)
                                  paren-level
@@ -2869,15 +2880,15 @@
     :no-function nil
     :measure (nfix limit))
 
-  (define pproc-macro-args ((params ident-listp)
+  (define pproc-macro-args ((params string-listp)
                             (ellipsis booleanp)
-                            (hash-params ident-listp)
-                            (disabled ident-listp)
+                            (hash-params string-listp)
+                            (disabled string-listp)
                             (directivep booleanp)
                             (ppstate ppstatep)
                             (limit natp))
     :returns (mv erp
-                 (subst ident-lexmark-list-alistp)
+                 (subst string-lexmark-list-alistp)
                  (new-ppstate ppstatep))
     :parents (preprocessor pproc-lexemes/macroargs)
     :short "Preprocess macro arguments."
@@ -2903,10 +2914,10 @@
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((when (endp params))
           (if ellipsis
-              (b* ((va-args (ident "__VA_ARGS__"))
+              (b* ((va-args "__VA_ARGS__")
                    (mode (macrep-mode-arg-dots))
                    (no-expandp (and (member-equal va-args
-                                                  (ident-list-fix hash-params))
+                                                  (string-list-fix hash-params))
                                     t))
                    ((erp rev-arg ppstate)
                     (pproc-lexemes mode
@@ -2923,12 +2934,12 @@
                 (retok subst ppstate))
             (retok nil ; subst
                    ppstate)))
-         (param (ident-fix (car params)))
+         (param (str-fix (car params)))
          (mode (if (or (consp (cdr params))
                        ellipsis)
                    (macrep-mode-arg-nonlast)
                  (macrep-mode-arg-dots)))
-         (no-expandp (and (member-equal param (ident-list-fix hash-params)) t))
+         (no-expandp (and (member-equal param (string-list-fix hash-params)) t))
          ((erp rev-arg ppstate)
           (pproc-lexemes mode
                          nil ; rev-lexmarks
@@ -2958,8 +2969,8 @@
 
   :guard-hints
   (("Goal" :in-theory (enable ifix
-                              true-listp-when-ident-listp
-                              alistp-when-ident-lexmark-list-alistp-rewrite))))
+                              acl2::true-listp-when-string-listp-rewrite
+                              alistp-when-string-lexmark-list-alistp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3159,7 +3170,7 @@
            ((plexeme-case toknl2 :newline) ; # EOL -- null directive
             (retok nil ppstate))
            ((plexeme-case toknl2 :ident) ; # ident
-            (b* ((directive (ident->unwrap (plexeme-ident->ident toknl2))))
+            (b* ((directive (plexeme-ident->ident toknl2)))
               (cond
                ((equal directive "elif") ; # elif
                 (retok (groupend-elif) ppstate))
@@ -3812,7 +3823,7 @@
   `(,@(plexeme-list-fix nontoknls-before-hash)
     ,(plexeme-punctuator "#")
     ,@(plexeme-list-fix nontoknls-after-hash)
-    ,(plexeme-ident (ident "include"))
+    ,(plexeme-ident "include")
     ,@(plexeme-list-fix nontoknls-before-header)
     ,(plexeme-header header)
     ,@(plexeme-list-fix nontoknls-after-header)
@@ -4485,7 +4496,7 @@
                    ppstate
                    state))
            ((plexeme-case toknl2 :ident) ; # ident
-            (b* ((directive (ident->unwrap (plexeme-ident->ident toknl2))))
+            (b* ((directive (plexeme-ident->ident toknl2)))
               (cond
                ((equal directive "elif") ; # elif
                 (retok nil ; no group parts

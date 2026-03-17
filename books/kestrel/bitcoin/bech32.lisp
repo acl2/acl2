@@ -235,7 +235,7 @@
       (xdoc::li "The overall string must not exceed 90 characters.  Since
                  none of the characters is allowed to be encoded using multiple
                  bytes, this means the string does not exceed 90 bytes.")
-      (xdoc::li "There must be a @('#\\1' character) in the string.
+      (xdoc::li "There must be a @('#\\1') character in the string.
                  The last @('#\\1') in the string separates the @('hrp') from
                  the data.")
       (xdoc::li "@('hrp-valid-p') makes sure the @('hrp') has at least one

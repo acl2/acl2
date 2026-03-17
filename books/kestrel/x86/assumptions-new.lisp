@@ -388,7 +388,7 @@
       (er hard? 'make-standard-assumptions64-new "Offset too big.") ; todo: make this a proper error (once the target handling stuff is factored out)
     (let ((target-address-term (if position-independentp
                                    ;; Position-independent, so the target is the base-address-var plus the target-offset:
-                                   ;; We posulate that there exists some canonical base var wrt which  the executable is loaded.
+                                   ;; We postulate that there exists some canonical base var wrt which  the executable is loaded.
                                    ;; When making assumptions for the regions, we will check that it is possible for them all to be canonical
                                    (if (= 0 target-offset)
                                        base-address-var ; avoids adding 0
