@@ -1804,7 +1804,7 @@
          (groups (group-bibtex-entries entries headers))
          (xdoc-for-entries (acl2::generate-bibtex-groups-XDOC groups)))
     `(defxdoc pubs-workshops
-       :parents (pubs-papers)
+       :parents (pubs-papers acl2::workshops)
        :short "ACL2 Workshop Papers"
        :long ,(concatenate 'string
                            "<p>This topic lists the papers presented at the ACL2 Workshops, which have taken place approximately every 18 months since 1999.</p>"
