@@ -633,21 +633,31 @@
    (xdoc::h3 "Documentation")
 
    (xdoc::p
+     "The bleeding-edge version of the ACL2+Books manual is now available at "
+     (xdoc::ahref "https://acl2.org/doc" "acl2.org/doc")
+     ".  It tracks the latest development snapshot of ACL2 from GitHub and
+      is automatically updated every time the master branch builds
+      successfully.  .")
+
+   (xdoc::p
+    "The @(see installation-instructions) have been updated and clarified.")
+
+   (xdoc::p
     "A new topic, @(see how-to-contribute), was added.
      The existing @(see best-practices) topic was greatly extended.")
 
    (xdoc::p
-    "A new topic, @(see osicat), was added. It describes an occasional
-     build issue caused by a race condition in the build logic,
-     as well as the fix.")
-
-   (xdoc::p
-    "@(see character-encoding) has been updated to remove old advice and to
-     link to a new topic, @(see using-utf-8).")
+    "A new topic, @(see emacs-workflow), has been added to describe a typical
+    Emacs-based workflow that many ACL2 users rely on.")
 
    (xdoc::p
     "The publications page available from the ACL2 home page has been replaced
      by the :DOC topic, @(see publications).")
+
+   (xdoc::p
+    "A new topic, @(see pubs::pubs-videos), has been added to collect links to videos
+    about ACL2.  It includes links to an in-depth multi-part tutorial series
+    for learning ACL2.")
 
    (xdoc::p
     "Several changes were made to the "
@@ -661,6 +671,15 @@
      we offer server-side searching using sqlite's built-in search
      capabilities. This searches through @(':long')s,
      in addition to @(':short')s and topic names.")
+
+   (xdoc::p
+    "@(see character-encoding) has been updated to remove old advice and to
+     link to a new topic, @(see using-utf-8).")
+
+   (xdoc::p
+    "A new topic, @(see osicat), was added. It describes an occasional
+     build issue caused by a race condition in the build logic,
+     as well as the fix.")
 
    (xdoc::p
     "Various broken links have been fixed.")
