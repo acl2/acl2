@@ -17,8 +17,6 @@
 
 (include-book "../../syntax/abstract-syntax-operations")
 
-(local (include-book "kestrel/utilities/ordinals" :dir :system))
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
