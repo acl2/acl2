@@ -637,7 +637,7 @@
      (xdoc::ahref "https://acl2.org/doc" "acl2.org/doc")
      ".  It tracks the latest development snapshot of ACL2 from GitHub and
       is automatically updated every time the master branch builds
-      successfully.  .")
+      successfully.")
 
    (xdoc::p
     "The @(see installation-instructions) have been updated and clarified.")
