@@ -133,6 +133,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "ACL2-IN-HOL Link Support")
+
+   (xdoc::p
+    "See @('[books]/projects/acl2-in-hol/README-acl2').  That directory provides
+     modifications
+     of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
+     that link to work with the latest versions of ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "air::air" "AIR"))
 
    (xdoc::p
@@ -152,16 +162,6 @@
     "The existing "
     (xdoc::seetopic "aleobft::aleobft" "AleoBFT library")
     " is now a sub-library of this broader Aleo library.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 "ACL2-IN-HOL Link Support")
-
-   (xdoc::p
-    "See @('[books]/projects/acl2-in-hol/README-acl2').  That directory provides
-     modifications
-     of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
-     that link to work with the latest versions of ACL2.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
