@@ -1375,6 +1375,9 @@
      to the @(':volatile') case.")
    (xdoc::p
     "we also include the GCC extensions for x86 named address spaces.
+     See the ABNF grammar.")
+   (xdoc::p
+    "We also include the Clang extensions for nullability qualifiers.
      See the ABNF grammar."))
   (:const ())
   (:restrict ((uscores keyword-uscores)))
@@ -1382,6 +1385,10 @@
   (:atomic ())
   (:seg-fs ())
   (:seg-gs ())
+  (:nonnull ())
+  (:null-unspecified ())
+  (:nullable ())
+  (:nullable-result ())
   :pred type-qualp
   :layout :fulltree)
 

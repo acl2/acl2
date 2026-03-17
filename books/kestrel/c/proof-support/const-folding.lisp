@@ -125,7 +125,7 @@
      e.g. @('(sint-from-integer 2)').
      The array is not constant."))
 
-  (defruled uchar-array-index-okp-const-fold
+  (defruled uchar-array-sint-index-okp-const-fold
     (implies (and (syntaxp (quotep c))
                   (sint-integerp c)
                   (<= 0 c)
@@ -152,7 +152,7 @@
 
 (defval *array-index-const-folding*
   :short "List of constant folding rules for operations on array indices."
-  '(uchar-array-index-okp-const-fold))
+  '(uchar-array-sint-index-okp-const-fold))
 
 ;;;;;;;;;;;;;;;;;;;;
 

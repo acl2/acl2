@@ -142,7 +142,7 @@
    item
    :declon (b* (((mv found extdecls)
                  (copy-fn-ext-declon item.declon target-fn new-fn)))
-             (mv found (c$::trans-item-declon-list extdecls)))
+             (mv found (c$::trans-item-list-declon extdecls)))
    :include (prog2$ (raise "#include directives not supported.")
                     (mv nil nil))
    :line-comment (mv nil (list (trans-item-fix item)))))
