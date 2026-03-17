@@ -1789,4 +1789,5 @@
     (generate-workshop-documentation-fn ,bibtex-filename state)))
 
 ;Submit documentation for ACL2 workshops file
+; (depends-on "../workshops/references/workshops.bib")
 (generate-workshop-documentation "../workshops/references/workshops.bib")
