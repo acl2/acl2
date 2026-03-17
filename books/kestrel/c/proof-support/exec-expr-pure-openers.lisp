@@ -228,4 +228,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-expr-pure-apconvert-no-object ((e exprp) (compst compustatep))
+  :returns (eval expr-value-resultp)
+  :short "Combination of @(tsee exec-expr-pure)
+          and @(tsee apconvert-expr-value),
+          without object designator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This calls @(tsee exec-expr-pure),
+     propagating any error,
+     then it calls @(tsee apconvert-expr-value),
+     propagating any error,
+     and then it returns an expression value without the object designator.
+     We have found this useful for some symbolic executions.")
+   (xdoc::p
+    "We also provide an opener rule for this function."))
+  (b* ((eval (exec-expr-pure e compst))
+       ((when (errorp eval)) eval)
+       (eval1 (apconvert-expr-value eval))
+       ((when (errorp eval1)) eval1))
+    (expr-value (expr-value->value eval1) nil))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable expr-valuep-when-expr-value-resultp-and-not-errorp)))
+
+  ///
+
+  (defruled exec-expr-pure-apconvert-no-object-open
+    (implies (and (equal eval (exec-expr-pure e compst))
+                  (expr-valuep eval)
+                  (equal eval1 (apconvert-expr-value eval))
+                  (expr-valuep eval1))
+             (equal (exec-expr-pure-apconvert-no-object e compst)
+                    (expr-value (expr-value->value eval1) nil)))
+    :enable ((:e tau-system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; move here material from ../atc/symbolic-execution-rules/exec-expr-pure.lisp

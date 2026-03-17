@@ -400,22 +400,6 @@
                       (expr-value (sint-from-integer 0) nil)))
       :enable (sint-from-boolean-with-error test*)))
 
-  (defund exec-expr-pure-apconvert-no-object (e compst)
-    (b* ((eval (exec-expr-pure e compst))
-         ((when (errorp eval)) eval)
-         (eval1 (apconvert-expr-value eval))
-         ((when (errorp eval1)) eval1))
-      (expr-value (expr-value->value eval1) nil)))
-
-  (defruled exec-expr-pure-apconvert-no-object-open
-    (implies (and (equal eval (exec-expr-pure e compst))
-                  (expr-valuep eval)
-                  (equal eval1 (apconvert-expr-value eval))
-                  (expr-valuep eval1))
-             (equal (exec-expr-pure-apconvert-no-object e compst)
-                    (expr-value (expr-value->value eval1) nil)))
-    :enable exec-expr-pure-apconvert-no-object)
-
   (defruled exec-expr-pure-when-cond
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :cond)
