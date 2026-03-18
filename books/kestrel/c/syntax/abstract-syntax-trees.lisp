@@ -3971,7 +3971,7 @@
     (xdoc::topstring
      (xdoc::p
       "We cannot use a @(tsee fty::defoption) here
-       because the @(:layout fulltree') of @(tsee hash-else)
+       because the @(':layout :fulltree') of @(tsee hash-else)
        means that @('nil') could be a valid value of that type."))
     (:some ((val hash-else)))
     (:none ())
