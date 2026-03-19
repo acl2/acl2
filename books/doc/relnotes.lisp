@@ -165,6 +165,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
+
+   (xdoc::p "A new @(see simplify-conjunctions) transformation was added (in
+   progress), and @('def-equality-transformation') was improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "arm::arm32" "ARM32"))
 
    (xdoc::p
@@ -186,6 +193,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Executable Parsers")
+
+   (xdoc::p "A new library, @('[books]/kestrel/executable-parsers/') was added to collect
+   parsers for ELF, PE, and MACH-O executables.  The parsers, which previously
+   lived elsewhere, were also improved in various ways.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "HOL4 to ACL2 Translator")
 
    (xdoc::p
@@ -193,6 +208,15 @@
      from HOL4 to ACL2 &mdash; more specifically, a translator to the
      integration of set theory with ACL2 supported by directory
      @('[books]/projects/set-theory/').  Examples are included.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Memory library")
+
+   (xdoc::p "A new library, @('[books]/kestrel/memory/') was added to help in
+   reasoning about memory spaces whose sizes are powers of 2.  Supported
+   concepts include memory regions, subregions, and rules about disjointness of
+   regions and non-equality of addresses.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -222,6 +246,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Alists-light Library")
+
+   (xdoc::p "Various rules were added, as was the function @('acons-unique-eq'). See
+   @('[books]/kestrel/alists-light/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "arithmetic-5" "Arithmetic-5 Library"))
 
    (xdoc::p
@@ -241,17 +272,46 @@
 
    (xdoc::h4 (xdoc::seetopic "axe" "Axe Toolkit"))
 
+   (xdoc::p "Extensive improvements have been made to the general-purpose tools
+   in the Axe Toolkit, including adding capabilities/features, adding new
+   rules, improving rule-lists, simplifying and optimizing the implementation,
+   and adding documentation.  To give just one example of a new feature, Axe
+   Rewriters can now use an SMT solver to relieve hypotheses of conditional
+   rules.")
+
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "axe-arm" "ARM variant"))
 
    (xdoc::p
     "A variant of Axe for reasoning about ARM32 binaries has been added.  This is
-     still in progress.")
+     still in progress but is capable of lifting simple ARM32 binary programs
+     into logic.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "axe-jvm" "JVM variant"))
+
+   (xdoc::p "Improvements were made to the unroller, which lifts JVM bytecode
+   into logic while unrolling loops, and to the Formal Unit Tester.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "axe-risc-v" "RISC-V variant"))
+
+   (xdoc::p
+    "A variant of Axe for reasoning about RISC-V binaries has been added.  This is
+     still in progress but is capable of lifting simple RISC-V binary programs
+     into logic.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "axe-x86" "x86 variant"))
+
+   (xdoc::p
+     "Extensive improvements were made to the x86 variant of Axe, including the
+     lifters-into-logic and the Formal Unit Tester.  These included
+     improvements to robustness, generality, performance, documentation, etc.")
 
    (xdoc::p
     "Several new x86 binary lifting examples were added,
@@ -290,6 +350,24 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "bv" "BV Library"))
+
+   (xdoc::p "A large number of improvements have been made to this library
+   about bit-vectors, including adding and improving rules and improving
+   definitions. See @('[books]/kestrel/bv/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Bv-lists Library")
+
+   (xdoc::p "Various rules have been added/improved about functions that deal
+   with lists and arrays of bit-vectors.  Definitions have been improved.  The
+   functions bv-list-read-chunk-little, map-packbv-little, map-unpackbv-little,
+   map-bvsx, and map-bvplus-val have been added.  See
+   @('[books]/kestrel/bv-lists/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
 
    ;;;;;;;;;;;;;;;;;;;;
@@ -311,6 +389,32 @@
    (xdoc::p
     "We have added several transformations,
      along with proof generation capabilities for some of the transformations.")
+
+   (xdoc::p
+    "A command-line interface to the C Transformations was also added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Clause-processors Library")
+
+   (xdoc::p "Additional verified clause-processors were added (e.g., for
+   pushing unary functions into @('if') branches).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptography Library"))
+
+   (xdoc::p "Specifications for the BLAKE2b hash function and the CHACHA20
+   stream cipher have been added, and the specifications/proofs for AES,
+   BLAKE2s, SHA-3, and TEA have been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "file-io-light" "File-IO-Light Library"))
+
+   (xdoc::p "Various rules were added, and new function
+   @('read-file-into-character-list-safe') was added to support reading the
+   same file more than once.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -350,6 +454,22 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Helpers library")
+
+   (xdoc::p "Improvements have been made to the tools to improve, speed-up, and lint check
+   ACL2 books as well as to the Proof Advice tool that uses ML models to help
+   with ACL2 proofs.  A tool was added to find duplicate rules in the world.  See
+   @('[books]/kestrel/helpers/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "JVM model")
+
+   (xdoc::p "Various rules were added and small improvements made.  See
+   @('[books]/kestrel/jvm/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
 
    (xdoc::p
@@ -371,6 +491,18 @@
      between all of the equivalence relations.
      The book @('arith-fix-and-equiv-defs.lisp')
      contains all of the definitions with no theorems and no dependencies.")
+
+   (xdoc::p
+     "Various other improvements/additions were made to the utilities in
+     @('[books]/kestrel/utilities/'), such as @('defstobj+'),
+     @('defmergesort'), @('defopeners') and @('xdoc::topparas').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "lists-light" "Lists Light Library"))
+
+   (xdoc::p "Various improvements have been made, including adding new
+   functions and new rules.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -446,6 +578,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Sequences Library")
+
+   (xdoc::p "@('Defforall') can now be local and can now be used inside
+   @('encapsulate') (when the @(':suppress-includes') option is used).  See
+   @('[books]/kestrel/sequences/defforall.lisp').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
 
    (xdoc::p
@@ -509,6 +649,17 @@
     (xdoc::seetopic "declare" "declarations")
     ".")
 
+   (xdoc::p
+    "The @(tsee std::defaggregate) utility was fixed to support the tagless
+    :tree case.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Terms-light Library")
+
+   (xdoc::p "Various rules were added, and small improvements/additions were made to the
+   functions that process terms.  See @('[books]/kestrel/terms-light/').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Tools Library")
@@ -533,6 +684,13 @@
       declarations that are unnecessary when either including a book or making
       the second pass of an @(tsee encapsulate) event.  Thanks to Eric Smith
       for a chat leading to development of this utility.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Typed-lists-light Library")
+
+   (xdoc::p "Various rules were added/improved, and various functions over typed lists,
+   such as @('all->='), were moved here.  See @('[books]/kestrel/typed-lists-light/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -583,6 +741,23 @@
      variable that enables the @(':reuse-address') option on the TTY TCP
      socket.")
 
+   (xdoc::p
+     "Refactoring was done to reduce the scope of trust tags and to avoid
+     unnecessary dependencies, which speeds up certification.")
+
+   (xdoc::p
+     "Various other improvements were made, e.g., to @('defbitstruct'), to @('flgi')
+     and related macros, and to linear memory operations like @('rml128').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "X86 Library")
+
+   (xdoc::p
+     "Many improvements were made to the @('[books]/kestrel/x86/') library,
+     which is based on and extends the X86ISA library.  These improvements
+     support symbolic execution with the x86 variant of Axe.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL Library"))
@@ -628,6 +803,13 @@
     "A bibtex parser was introduced, as well as tools to generate XDOC from
      bibtex entries. See @('[books]/kestrel/bibtex/').")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "XML Parser")
+
+   (xdoc::p "The XML parser in @('[books]/kestrel/xml') is now guard-verified
+   and handles errors better.  See @('[books]/kestrel/xml/').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Documentation")
@@ -640,11 +822,14 @@
       successfully.")
 
    (xdoc::p
-    "The @(see installation-instructions) have been updated and clarified.")
+    "The @(see installation-instructions) and related topics have been updated and
+    clarified.")
 
    (xdoc::p
     "A new topic, @(see how-to-contribute), was added.
-     The existing @(see best-practices) topic was greatly extended.")
+     The existing @(see best-practices) topic was greatly extended.
+     Git-related topics, such as @(see git-quick-start) have been simplified
+     and clarified.")
 
    (xdoc::p
     "A new topic, @(see emacs-workflow), has been added to describe a typical
@@ -652,12 +837,21 @@
 
    (xdoc::p
     "The publications page available from the ACL2 home page has been replaced
-     by the :DOC topic, @(see publications).")
+     by the :DOC topic, @(see publications).  Also, a new topic, @(see
+     pubs::pubs-workshops), lists all the ACL2 Workshop papers since 1999.")
 
    (xdoc::p
     "A new topic, @(see pubs::pubs-videos), has been added to collect links to videos
     about ACL2.  It includes links to an in-depth multi-part tutorial series
     for learning ACL2.")
+
+   (xdoc::p
+    "A new topic, @(see community), has been added about how to get help with ACL2
+    and become involved in the ACL2 Community.")
+
+   (xdoc::p
+    "A new topic, @(see mailing-lists), has been added with information about the
+    various ACL2 mailing lists.")
 
    (xdoc::p
     "Several changes were made to the "
@@ -682,7 +876,13 @@
      as well as the fix.")
 
    (xdoc::p
-    "Various broken links have been fixed.")
+    "Options have been added for stricter checking of documentation (causing an
+    error when a topic has no parents or has parents that are not valid
+    topics).  These stricter checks have been enabled for the main manual
+    build.  Also, various broken links have been fixed.")
+
+   (xdoc::p
+    "The main GitHub README for the ACL2 project has been updated and clarified.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -691,6 +891,11 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Build System Updates")
+
+   (xdoc::p
+     "The Makefile for the Community Books was improved in various ways,
+     including speeding up the @('basic') target and refining the list of slow
+     books excluded from most builds.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
