@@ -358,7 +358,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Bv-lists Library")
+   (xdoc::h4 "BV-lists Library")
 
    (xdoc::p "Various rules have been added/improved about functions that deal
    with lists and arrays of bit-vectors.  Definitions have been improved.  The
@@ -407,6 +407,28 @@
    (xdoc::p "Specifications for the BLAKE2b hash function and the CHACHA20
    stream cipher have been added, and the specifications/proofs for AES,
    BLAKE2s, SHA-3, and TEA have been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL Library"))
+
+   (xdoc::p
+    "Add @(see fgl::annotate) mechanism, a way of preventing of trivial rewrite
+     loops by setting and detecting annotations on subterms.")
+
+   (xdoc::p
+    "Add various rewriter features: @(see fgl::fgl-hide), @(see fgl::trigger-constraints),
+     @(see fgl::unconditional), @(see fgl::left-to-right), @(see fgl::conditionalize).")
+
+   (xdoc::p
+    "Add so-called identity congruences (see @(see fgl::add-fgl-id-congruence)), which indicate
+     that a certain argument of a function can be rewritten under any equivalence that
+     is applied to the function call.")
+
+   (xdoc::p
+    "Improved user interface for tracing applications of rewrite rules:
+     see @(see fgl::fgl-rewrite-tracing), @(see fgl::fgl-trace), and
+     @(see fgl::fgl-advanced-tracing).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -757,28 +779,6 @@
      "Many improvements were made to the @('[books]/kestrel/x86/') library,
      which is based on and extends the X86ISA library.  These improvements
      support symbolic execution with the x86 variant of Axe.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL Library"))
-
-   (xdoc::p
-    "Add @(see fgl::annotate) mechanism, a way of preventing of trivial rewrite
-     loops by setting and detecting annotations on subterms.")
-
-   (xdoc::p
-    "Add various rewriter features: @(see fgl::fgl-hide), @(see fgl::trigger-constraints),
-     @(see fgl::unconditional), @(see fgl::left-to-right), @(see fgl::conditionalize).")
-
-   (xdoc::p
-    "Add so-called identity congruences (see @(see fgl::add-fgl-id-congruence)), which indicate
-     that a certain argument of a function can be rewritten under any equivalence that
-     is applied to the function call.")
-
-   (xdoc::p
-    "Improved user interface for tracing applications of rewrite rules:
-     see @(see fgl::fgl-rewrite-tracing), @(see fgl::fgl-trace), and
-     @(see fgl::fgl-advanced-tracing).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2404,7 +2404,7 @@ additional theorems from the list have also been added by the ACL2 community.")
      lines come from the @('cert.out') file.")
 
    (xdoc::p
-     "`The Makefile and scripts used by the Jenkins continuous integration system
+     "The Makefile and scripts used by the Jenkins continuous integration system
 were improved (especially comments and printing).  The CPU load is now limited
 to the value of the @('BOOK_PARALLELISM_LEVEL') variable.")
 
