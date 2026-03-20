@@ -7,6 +7,35 @@
 (local (include-book "nonstd/nsa/equivalence-derivatives-composition" :dir :system))
 (local (include-book "arithmetic-5/top" :dir :system))
 
+(defthm close-times
+    (implies (and (i-close x1 x2)
+		  (i-limited y))
+	     (i-close (* x1 y) (* x2 y)))
+  :hints (("Goal"
+	   :use ((:instance small*limited->small
+			    (x (- x1 x2))
+			    (y y)))
+           :in-theory (enable i-close)
+           )))
+
+(defthm close-times-2
+    (implies (and (i-close x1 x2)
+		  (i-close y1 y2)
+		  (i-limited x1)
+		  (i-limited y1))
+	     (i-close (* x1 y1) (* x2 y2)))
+  :hints (("Goal"
+	   :use ((:instance close-times (x1 x1) (x2 x2) (y y1))
+		 (:instance close-times (x1 y1) (x2 y2) (y x2))
+		 (:instance i-close-transitive
+			    (x (* x1 y1))
+			    (y (* x2 y1))
+			    (z (* x2 y2)))
+		 (:instance i-close-limited
+			    (x x1)
+			    (y x2)))
+           )))
+
 (encapsulate
  nil
 
@@ -1012,6 +1041,9 @@
 (defun positive-domain ()
   (interval '(0) nil))
 
+(defun negative-domain ()
+  (interval nil '(0)))
+
 (defun real-domain ()
   (interval nil nil))
 
@@ -1069,7 +1101,6 @@
 		   (and (realp delta)
 			(< 0 delta)
 			(forall-x-eps-delta-in-range-deriv-raise-posp-x-works x n eps delta)))))
-
 
 (local
  (defthmd exists-raise1-fn1-o-fn2->exists-raise-posp
@@ -1223,6 +1254,24 @@
 		 (realp eps)
 		 (< 0 eps))
 	    (exists-delta-for-x-and-eps-so-deriv-raise-works x n eps))
+   :hints (("Goal"
+	    :use ((:instance raise1-fn1-o-fn2-differentiable-classical-using-hyperreal-criterion)
+		  (:instance exists-raise1-fn1-o-fn2->exists-raise-posp)
+		  (:instance exists-raise-posp->exists-raise))
+	    :in-theory (disable raise1-fn1-o-fn2-differentiable-classical-using-hyperreal-criterion
+				exists-raise1-fn1-o-fn2->exists-raise-posp
+				exists-raise-posp->exists-raise
+				exists-delta-for-x-and-eps-so-deriv-raise-works
+				exists-delta-for-x-and-eps-so-deriv-raise-posp-x-works
+				exists-delta-for-x-and-eps-so-deriv-raise1-fn1-o-fn2-works)))))
+
+(local
+  (defthmd raise-differentiable-for-posp-x-using-hyperreal-criterion-2
+   (implies (and (inside-interval-p x (positive-domain))
+		 (realp n)
+		 (realp eps)
+		 (< 0 eps))
+	    (exists-delta-for-x-and-eps-so-deriv-raise-posp-x-works x n eps))
    :hints (("Goal"
 	    :use ((:instance raise1-fn1-o-fn2-differentiable-classical-using-hyperreal-criterion)
 		  (:instance exists-raise1-fn1-o-fn2->exists-raise-posp)
@@ -1542,9 +1591,6 @@
 				 |(equal (expt x n) -1)|)
 	     )
 	    ))))
-
-(defun negative-domain ()
-  (interval nil '(0)))
 
 (defun-sk forall-x-eps-delta-in-range-deriv-raise-neg-x-works (x n eps delta)
  (forall (x1)
@@ -2085,7 +2131,7 @@
 			(< 0 eps))
 		   (and (realp delta)
 			(< 0 delta)
-			(forall-x-eps-delta-in-range-deriv-expt-works x n eps delta)))))
+			(forall-x-eps-delta-in-range-deriv-expt-works-positive-x x n eps delta)))))
 
 (defun-sk forall-x-eps-delta-in-range-deriv-expt-works-negative-x (x n eps delta)
   (forall (x1)
@@ -2111,7 +2157,7 @@
 			(< 0 eps))
 		   (and (realp delta)
 			(< 0 delta)
-			(forall-x-eps-delta-in-range-deriv-expt-works x n eps delta)))))
+			(forall-x-eps-delta-in-range-deriv-expt-works-negative-x x n eps delta)))))
 
 (encapsulate
  nil
@@ -2122,7 +2168,6 @@
 	     (equal (derivative-raise x n)
 		    (derivative-expt x n)))))
 
-
  (local
   (defthmd lemma-2
     (implies (and (integerp n)
@@ -2131,6 +2176,17 @@
     :hints (("Goal"
 	     :use ((:instance forall-x-eps-delta-in-range-deriv-raise-works-necc
 			      (x1 (forall-x-eps-delta-in-range-deriv-expt-works-witness x n eps delta))))
+	     :in-theory (disable abs raise expt)
+	     ))))
+
+ (local
+  (defthmd lemma-2a
+    (implies (and (integerp n)
+		  (forall-x-eps-delta-in-range-deriv-raise-posp-x-works x n eps delta))
+	     (forall-x-eps-delta-in-range-deriv-expt-works-positive-x x n eps delta))
+    :hints (("Goal"
+	     :use ((:instance forall-x-eps-delta-in-range-deriv-raise-posp-x-works-necc
+			      (x1 (forall-x-eps-delta-in-range-deriv-expt-works-positive-x-witness x n eps delta))))
 	     :in-theory (disable abs raise expt)
 	     ))))
 
@@ -2146,6 +2202,17 @@
 	     ))))
 
  (local
+  (defthmd lemma-3a
+      (implies (and (integerp n)
+		    (forall-x-eps-delta-in-range-deriv-expt-works-positive-x x n eps delta))
+	       (forall-x-eps-delta-in-range-deriv-raise-posp-x-works x n eps delta))
+    :hints (("Goal"
+	     :use ((:instance forall-x-eps-delta-in-range-deriv-expt-works-positive-x-necc
+			      (x1 (forall-x-eps-delta-in-range-deriv-raise-posp-x-works-witness x n eps delta))))
+	     :in-theory (disable abs raise expt)
+	     ))))
+
+ (local
   (defthmd lemma-4
     (implies (integerp n)
 	     (equal (forall-x-eps-delta-in-range-deriv-expt-works x n eps delta)
@@ -2155,6 +2222,18 @@
 		   (:instance lemma-3))
 	     :in-theory (disable forall-x-eps-delta-in-range-deriv-raise-works
 				 forall-x-eps-delta-in-range-deriv-expt-works)))))
+
+ (local
+  (defthmd lemma-4a
+    (implies (integerp n)
+	     (equal (forall-x-eps-delta-in-range-deriv-expt-works-positive-x x n eps delta)
+		    (forall-x-eps-delta-in-range-deriv-raise-posp-x-works x n eps delta)))
+    :hints (("Goal"
+	     :use ((:instance lemma-2a)
+		   (:instance lemma-3a))
+	     :in-theory (disable forall-x-eps-delta-in-range-deriv-raise-works
+				 forall-x-eps-delta-in-range-deriv-expt-works)))))
+
 
  (local
   (defthmd lemma-5
@@ -2169,6 +2248,50 @@
 	     :in-theory (disable forall-x-eps-delta-in-range-deriv-raise-works
 				 forall-x-eps-delta-in-range-deriv-expt-works)))))
 
+ (local
+  (defthmd lemma-5a
+    (implies (and (integerp n)
+		  (exists-delta-for-x-and-eps-so-deriv-raise-posp-x-works x n eps))
+	     (exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x x n eps))
+    :hints (("Goal"
+	     :use ((:instance exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x-suff
+			      (delta (exists-delta-for-x-and-eps-so-deriv-raise-posp-x-works-witness x n eps)))
+		   (:instance lemma-4a
+			      (delta (exists-delta-for-x-and-eps-so-deriv-raise-posp-x-works-witness x n eps))))
+	     :in-theory (disable forall-x-eps-delta-in-range-deriv-raise-posp-x-works
+				 forall-x-eps-delta-in-range-deriv-expt-works-positive-x)))))
+
+ (local
+  (defthmd lemma-6
+   (implies (not (integerp n))
+	    (FORALL-X-EPS-DELTA-IN-RANGE-DERIV-EXPT-WORKS x n eps delta))))
+
+
+
+ (local
+  (defthmd lemma-6a
+   (implies (not (integerp n))
+	    (FORALL-X-EPS-DELTA-IN-RANGE-DERIV-EXPT-WORKS-positive-x x n eps delta))))
+
+ (local
+  (defthmd lemma-7
+   (implies (not (integerp n))
+	    (exists-delta-for-x-and-eps-so-deriv-expt-works x n eps))
+    :hints (("Goal"
+             :use ((:instance exists-delta-for-x-and-eps-so-deriv-expt-works-suff
+                              (delta 1))
+                   (:instance lemma-6 (delta 1))
+                   )))))
+
+  (local
+  (defthmd lemma-7a
+   (implies (not (integerp n))
+	    (exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x x n eps))
+    :hints (("Goal"
+             :use ((:instance exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x-suff
+                              (delta 1))
+                   (:instance lemma-6a (delta 1))
+                   )))))
 
  (defthmd expt-differentiable-using-hyperreal-criterion
    (implies (and (integerp n)
@@ -2179,16 +2302,27 @@
 	    (exists-delta-for-x-and-eps-so-deriv-expt-works x n eps))
    :hints (("Goal"
 	    :use ((:instance raise-differentiable-using-hyperreal-criterion)
-		  (:instance lemma-5))
+		  (:instance lemma-5)
+                  (:instance lemma-7))
 	    :in-theory (e/d (inside-interval-p)
 			    (forall-x-eps-delta-in-range-deriv-raise-works
 			     forall-x-eps-delta-in-range-deriv-expt-works)))))
- )
 
-;; TODO -- specialize theorem above to three cases
-;; 1) positive-domain
-;; 2) negative-domain
-;; 3) n is a natural (DONE)
+ (defthmd expt-differentiable-using-hyperreal-criterion-positive-x
+   (implies (and (integerp n)
+		 (or (not (equal x 0))
+		     (<= 0 n))
+		 (realp eps)
+		 (< 0 eps))
+	    (exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x x n eps))
+   :hints (("Goal"
+	    :use ((:instance raise-differentiable-for-posp-x-using-hyperreal-criterion-2)
+		  (:instance lemma-5a)
+                  (:instance lemma-7a))
+	    :in-theory (e/d (inside-interval-p)
+			    (forall-x-eps-delta-in-range-deriv-raise-posp-x-works
+			     forall-x-eps-delta-in-range-deriv-expt-works-positive-x)))))
+ )
 
 (local
  (defthmd forall-x-eps-delta-in-range-deriv-expt-works-when-n-not-an-integer
@@ -2204,6 +2338,23 @@
             :use ((:instance exists-delta-for-x-and-eps-so-deriv-expt-works-suff
                              (delta 1))
                   (:instance forall-x-eps-delta-in-range-deriv-expt-works-when-n-not-an-integer
+                             (delta 1)))))
+   ))
+
+(local
+ (defthmd forall-x-eps-delta-in-range-deriv-expt-works-positive-x-when-n-not-an-integer
+     (implies (not (integerp n))
+              (forall-x-eps-delta-in-range-deriv-expt-works-positive-x x n eps delta))
+   ))
+
+(local
+ (defthmd exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x-when-n-not-an-integer
+     (implies (not (integerp n))
+              (exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x x n eps))
+   :hints (("Goal"
+            :use ((:instance exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x-suff
+                             (delta 1))
+                  (:instance forall-x-eps-delta-in-range-deriv-expt-works-positive-x-when-n-not-an-integer
                              (delta 1)))))
    ))
 
@@ -2283,6 +2434,399 @@
                             (n (nfix context)))))
           ))
 
+(defthm expt-differentiable-using-nonstd-criterion-for-non-integer-n
+    (implies (and (standardp x)
+                  (standardp n)
+                  (not (integerp n))
+                  (inside-interval-p x (real-domain))
+                  (inside-interval-p y1 (real-domain))
+                  (inside-interval-p y2 (real-domain))
+		  (i-close x y1) (not (= x y1))
+		  (i-close x y2) (not (= x y2)))
+	     (and (i-limited (/ (- (expt x n) (expt y1 n))
+                                (- x y1)))
+		  (i-close (/ (- (expt x n) (expt y1 n))
+                              (- x y1))
+			   (/ (- (expt x n) (expt y2 n))
+                              (- x y2)))))
+  )
+
+
+(local
+ (encapsulate nil
+
+     (local
+      (defthmd lemma-1
+          (implies (and (acl2-numberp x)
+                        (acl2-numberp y)
+                        (not (equal x 0))
+                        (not (equal y 0)))
+                   (equal (+ (/ x) (- (/ y)))
+                          (/ (+ y (- x)) (* x y)))))
+      )
+
+   (local
+    (defthmd lemma-2
+        (implies (and (acl2-numberp y)
+                      (not (i-small y)))
+                 (not (i-large (/ y))))
+      :hints (("Goal"
+               :in-theory (enable i-large
+                                  i-small)))))
+
+   (local
+    (defthmd lemma-3
+        (implies (and (i-small x)
+                      (acl2-numberp y)
+                      (not (i-small y)))
+                 (i-small (/ x y)))
+      :hints (("Goal"
+               :use ((:instance limited*small->small
+                                (y x)
+                                (x (/ y)))
+                     lemma-2)))
+      ))
+
+   (local
+    (defthmd lemma-4
+        (implies (i-small (+ x (- y)))
+                 (i-small (+ (- x) y)))
+      :hints (("Goal"
+               :in-theory (enable i-small)))))
+
+
+  (local
+    (defthmd lemma-5
+        (implies (and (i-close x y)
+                      (not (i-small x)))
+                 (not (i-small y)))
+      :hints (("Goal"
+               :use ((:instance i-close-small-2))
+               :in-theory (disable i-close-small-2)))))
+
+   (local
+    (defthmd lemma-6
+        (implies (and (i-close x y)
+                      (not (i-small x))
+                      )
+                 (not (i-small (* x y))))
+      :hints (("Goal"
+               :use ((:instance lemma-5)
+                     (:instance LIMITED*SMALL->SMALL
+                                (y (* x y))
+                                (x (/ y)))))
+              ("Subgoal 5"
+               :in-theory (enable i-close))
+              ("Subgoal 3"
+               :in-theory (enable i-LARGE))
+              ("Subgoal 2"
+               :in-theory (enable i-LARGE))
+                 ("Subgoal 1"
+               :in-theory (enable i-close))
+              )))
+
+     (defthm close-udivide
+         (implies (and (i-close x y)
+                       (not (i-small x)))
+                  (i-close (/ x) (/ y)))
+       :hints (("Goal"
+                :use ((:instance lemma-1)
+                      (:instance lemma-3
+                                 (x (+ y (- x)))
+                                 (y (* x y)))
+                      (:instance lemma-4)
+                      (:instance lemma-6)
+                      )
+                :in-theory (enable i-close)))
+       )
+
+     (defthmd large*not-small->large
+         (implies (and (i-large x)
+                       (not (i-small y))
+                       (acl2-numberp y))
+                  (i-large (* x y)))
+       :hints (("Goal"
+                :in-theory (enable i-large))))
+
+     (local
+      (defthmd lemma-7
+          (equal (- (* Z (/ (+ (- X) Y))))
+                 (* Z (/ (+ X (- Y)))))
+        :hints (("Goal"
+                 :use ((:instance (:theorem (equal (/ (- x)) (- (/ x))))
+                                  (x (+ (- X) Y))))))))
+
+     (local
+      (defthmd lemma-8
+          (equal (/ (/ z (* x y)))
+                 (/ (* x y) z))))
+
+     (local
+      (defthmd lemma-9
+          (IMPLIES (AND (ACL2-NUMBERP X)
+                        (Acl2-numberp y)
+                        (not (equal x 0))
+                        (not (equal y 0)))
+                   (equal (/ (+ (/ X) (- (/ Y))))
+                          (* x y (/ (+ y (- x))))))
+        :hints (("Goal"
+                 :use ((:instance lemma-1)
+                       (:instance lemma-8
+                                  (z (+ y (- x)))
+                                  (X X)
+                                  (Y Y)))
+                 :in-theory '(|(* (* x y) z)|)
+                 ))
+        ))
+
+     (local
+      (defthmd lemma-10
+          (IMPLIES (AND (ACL2-NUMBERP X)
+                        (Acl2-numberp y)
+                        (not (equal x 0))
+                        (not (equal y 0)))
+                   (equal (/ (+ (/ X) (- (/ Y))))
+                          (- (* x y (/ (+ x (- y)))))))
+        :hints (("Goal"
+                 :use ((:instance lemma-9)
+                       (:instance (:theorem (equal (/ (- x)) (- (/ x))))
+                                  (x (+ (- X) Y))))))))
+
+     (defthm limited-product-/x-/y
+         (implies (and (i-large (/ z (- x y)))
+                       (i-close x y)
+                       (not (i-small x))
+                       )
+                  (i-large (/ z (- (/ x) (/ y)))))
+       :otf-flg t
+       :hints (("Goal"
+                :use ((:instance lemma-1)
+                      (:instance lemma-6)
+                      (:INSTANCE LEMMA-7)
+                      (:instance lemma-10)
+                      (:instance large*not-small->large
+                                 (y (* x y))
+                                 (x (/ z (- y x)))))
+                )
+               ))
+
+     (local
+      (defthmd lemma-11
+          (IMPLIES (AND (ACL2-NUMBERP X)
+                        (Acl2-numberp y1)
+                        ;(acl2-numberp y2)
+                        (standardp x)
+                        (not (equal x 0))
+                        (i-close x y1)
+                        ;(i-close x y2)
+                        )
+                   (not (i-large (/ (* x y1)))))
+        :hints (("Goal"
+                 :use ((:instance standard-small-is-zero)
+                       ;;(:instance STANDARDS-ARE-LIMITED)
+                       (:instance i-close-small-2
+                                  (x x)
+                                  (y y1))
+                       (:instance I-CLOSE-LIMITED
+                                  (x x)
+                                  (y y1))
+                       (:instance STANDARD-PART-OF-TIMES
+                                  (x x)
+                                  (y y1))
+                       )
+                 :in-theory (e/d (i-large i-small)
+                                 (;;STANDARDS-ARE-LIMITED
+                                  ;;(:FORWARD-CHAINING STANDARDS-ARE-LIMITED-FORWARD)
+                                  i-close-limited
+                                  i-close-small-2
+                                  standard-part-of-times
+                                  ))
+                 )
+                )
+        ))
+
+     (local
+      (defthmd lemma-12
+          (IMPLIES (AND (ACL2-NUMBERP X)
+                        (Acl2-numberp y1)
+                        (acl2-numberp y2)
+                        (standardp x)
+                        (i-close x y1)
+                        (i-close x y2)
+                        (not (equal x 0))
+                        (not (equal y1 0))
+                        (not (equal y2 0))
+                        )
+                   (i-close (/ (* x y1))
+                            (/ (* x y2))))
+        :otf-flg t
+        :hints (("Goal"
+                 :use ((:instance standard-small-is-zero)
+                       (:instance close-udivide
+                                  (x x)
+                                  (y y1))
+                       (:instance close-udivide
+                                  (x x)
+                                  (y y2))
+                       (:instance i-close-transitive
+                                  (x (/ y1))
+                                  (y (/ x))
+                                  (z (/ y2)))
+                       (:instance close-times
+                                  (x1 (/ y1))
+                                  (x2 (/ y2))
+                                  (y (/ x))))
+                 :in-theory (disable close-times
+                                     i-close-transitive
+
+
+                 )
+                ))))
+
+     (defthmd close-differentials-/x-/y
+          (IMPLIES (AND (ACL2-NUMBERP X)
+                        (Acl2-numberp y1)
+                        (acl2-numberp y2)
+                        (acl2-numberp z1)
+                        (acl2-numberp z2)
+                        (standardp x)
+                        (i-close x y1)
+                        (i-close x y2)
+                        (not (equal x 0))
+                        (not (equal y1 0))
+                        (not (equal y2 0))
+                        (not (i-large (/ z1 (- (/ x) (/ y1)))))
+                        (i-close (/ z1 (- (/ x) (/ y1)))
+                                 (/ z2 (- (/ x) (/ y2))))
+                        )
+                   (i-close (/ z1 (- x y1))
+                            (/ z2 (- x y2))))
+        :otf-flg t
+        :hints (("Goal"
+                 :use ((:instance lemma-10
+                                  (y y1))
+                       (:instance lemma-10
+                                  (y y2))
+                       (:instance lemma-11)
+                       (:instance lemma-12)
+                       (:instance close-times-2
+                                  (x1 (* Z1 (- (* X Y1 (/ (+ X (- Y1)))))))
+                                  (x2 (* Z2 (- (* X Y2 (/ (+ X (- Y2)))))))
+                                  (y1 (/ (* x y1)))
+                                  (y2 (/ (* x y2)))
+                                  )
+                       )
+                 )
+                ))
+     )
+ )
+
+
+(local
+ (defthm close-udivide-when-x-not-zero
+     (implies (and (i-close x y)
+                   (standardp x)
+                   (not (equal x 0)))
+              (i-close (/ x) (/ y)))
+   :hints (("Goal"
+            :use ((:instance close-udivide)
+                  (:instance standard-small-is-zero))
+            :in-theory (disable close-udivide)
+            ))))
+
+(defthm limited-product-/x-/y-when-x-not-zero
+    (implies (and (i-large (/ z (- x y)))
+                  (i-close x y)
+                  (standardp x)
+                  (not (equal x 0))
+                  )
+             (i-large (/ z (- (/ x) (/ y)))))
+  :otf-flg t
+  :hints (("Goal"
+           :use ((:instance limited-product-/x-/y)
+                 (:instance standard-small-is-zero))
+           :in-theory (disable limited-product-/x-/y)
+           )))
+
+(local
+ (defthm not-close-to-zero
+     (implies (and (standardp x)
+                   (not (equal x 0))
+                   )
+              (not (i-close x 0)))
+   :hints (("Goal"
+            :use ((:instance standard-small-is-zero))
+            :in-theory (enable i-close)))))
+
+(defthm expt-differentiable-using-nonstd-criterion-for-negative-integer-n
+    (implies (and (standardp x)
+                  (not (equal x 0))
+                  (standardp n)
+                  (integerp n)
+                  (< n 0)
+                  (inside-interval-p x (real-domain))
+                  (inside-interval-p y1 (real-domain))
+                  (inside-interval-p y2 (real-domain))
+		  (i-close x y1) (not (= x y1))
+		  (i-close x y2) (not (= x y2)))
+	     (and (i-limited (/ (- (expt x n) (expt y1 n))
+                                (- x y1)))
+		  (i-close (/ (- (expt x n) (expt y1 n))
+                              (- x y1))
+			   (/ (- (expt x n) (expt y2 n))
+                              (- x y2)))))
+  :otf-flg t
+  :hints (("Goal"
+           :use ((:instance expt-differentiable-using-nonstd-criterion-for-natural-n
+                            (x (/ x))
+                            (y1 (/ y1))
+                            (y2 (/ y2))
+                            (n (- n)))
+                 (:instance limited-product-/x-/y-when-x-not-zero
+                            (z (- (expt x n) (expt y1 n)))
+                            (x x)
+                            (y y1))
+                 (:instance close-differentials-/x-/y
+                            (x x)
+                            (y1 y1)
+                            (y2 y2)
+                            (z1 (- (expt x n) (expt y1 n)))
+                            (Z2 (- (expt x n) (expt y2 n))))
+                 (:instance close-udivide
+                            (x x)
+                            (y y1))
+                 (:instance close-udivide
+                            (x x)
+                            (y y2))
+                 (:instance standard-small-is-zero)
+                 )
+           :in-theory (disable expt-differentiable-using-nonstd-criterion-for-natural-n
+                               limited-product-/x-/y-when-x-not-zero
+                               close-udivide)))
+  )
+
+
+(defthm expt-differentiable-using-nonstd-criterion
+    (implies (and (standardp x)
+                  (standardp n)
+                  (or (not (equal x 0)) (natp n))
+                  (inside-interval-p x (real-domain))
+                  (inside-interval-p y1 (real-domain))
+                  (inside-interval-p y2 (real-domain))
+		  (i-close x y1) (not (= x y1))
+		  (i-close x y2) (not (= x y2)))
+	     (and (i-limited (/ (- (expt x n) (expt y1 n))
+                                (- x y1)))
+		  (i-close (/ (- (expt x n) (expt y1 n))
+                              (- x y1))
+			   (/ (- (expt x n) (expt y2 n))
+                              (- x y2)))))
+  :hints (("Goal"
+           :use ((:instance expt-differentiable-using-nonstd-criterion-for-natural-n)
+                 (:instance expt-differentiable-using-nonstd-criterion-for-non-integer-n)
+                 (:instance expt-differentiable-using-nonstd-criterion-for-negative-integer-n)))))
+
+
 (defthm derivative-expt-is-derivative-for-natural-n
     (implies (and (standardp x)
                   (standardp n)
@@ -2321,6 +2865,195 @@
           ))
 
 
+(defun nonzerofix (x)
+  (if (and (realp x)
+           (not (equal x 0)))
+      x
+      1))
+
+(encapsulate
+    nil
+
+    (local
+     (defthmd lemma-1
+         (implies (and (realp x)
+                       (< 0 x)
+                       (standardp x)
+                       (realp x1)
+                       (i-close x x1))
+                  (< 0 x1))
+       :hints (("Goal"
+                :use ((:instance standard-part-<= (x x1) (y 0))
+                      (:instance close-x-y->same-standard-part (x x) (y x1)))))
+       ))
+
+  (defthm derivative-expt-is-derivative-for-positive-x-negative-integer-n
+      (implies (and (standardp x)
+                    (< 0 x)
+                    (standardp n)
+                    (integerp n)
+                    (< n 0)
+                    (inside-interval-p x (real-domain))
+                    (i-close x x1)
+                    (inside-interval-p x1 (real-domain))
+                    (not (equal x1 x)))
+               (i-close (/ (- (expt x n) (expt x1 n))
+                           (- x x1))
+                        (derivative-expt x n)))
+    :otf-flg nil
+    :hints (("Goal"
+             :use ((:instance
+                    (:functional-instance
+                     rdfn-classic-is-differentiable
+                     (rdfn-classical (lambda (n x) (expt (nonzerofix x) N)))
+                     (derivative-rdfn-classical
+                      (lambda (n x) (derivative-expt (nonzerofix x) n)))
+                     (rdfn-classical-domain positive-domain)
+                     (exists-delta-for-x-and-eps-so-deriv-classical-works
+                      (lambda (n x eps)
+                        (exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x x n eps)))
+                     (exists-delta-for-x-and-eps-so-deriv-classical-works-witness
+                      (lambda (n x eps)
+                        (exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x-witness x n eps)))
+                     (forall-x-eps-delta-in-range-deriv-classical-works
+                      (lambda (n x eps delta)
+                        (forall-x-eps-delta-in-range-deriv-expt-works-positive-x x n EPS DELTA)))
+                     (forall-x-eps-delta-in-range-deriv-classical-works-witness
+                      (lambda (n x eps delta)
+                        (forall-x-eps-delta-in-range-deriv-expt-works-positive-x-witness x n EPS DELTA)))
+                     )
+                    (context n)
+                    )
+                   ))
+            ("Subgoal 7"
+             :use ((:instance lemma-1))
+             :in-theory (enable interval-definition-theory)
+             )
+            ("Subgoal 6"
+             :use ((:instance expt-differentiable-using-hyperreal-criterion-positive-x
+                              (n context))
+                   (:instance exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x-when-n-not-an-integer
+                              (n context))
+                   ))
+            ("Subgoal 4"
+             :use ((:instance  expt-differentiable-using-hyperreal-criterion-positive-x
+                               (x x)
+                               (n context))
+                   (:instance exists-delta-for-x-and-eps-so-deriv-expt-works-positive-x-when-n-not-an-integer
+                              (n context))
+                   ))
+            ("Subgoal 2"
+             :use ((:instance FORALL-X-EPS-DELTA-IN-RANGE-DERIV-EXPT-WORKS-positive-x-necc
+                              (x x)
+                              (n context))))
+            ))
+  )
+
+(local
+ (defthmd expt-negative-x-natp-n
+     (implies (and (realp x)
+                   (< x 0)
+                   (natp n))
+              (equal (expt (- x) n)
+                     (if (evenp n)
+                         (expt x n)
+                         (- (expt x n)))))))
+
+(local
+ (defthmd expt-negative-x
+     (implies (and (realp x)
+                   (< x 0)
+                   (integerp n))
+              (equal (expt (- x) n)
+                     (if (evenp n)
+                         (expt x n)
+                         (- (expt x n)))))
+   :hints (("Goal"
+            :cases ((< 0 n) (= 0 n))))
+   ))
+
+(local
+ (defthmd swap-difference-in-denominator
+     (implies (and (acl2-numberp x)
+                   (acl2-numberp y)
+                   (not (equal x y)))
+              (equal (/ (+ (- x) y))
+                     (- (/ (+ x (- y))))))
+   :hints (("Goal"
+            :use ((:instance |(- (+ x y))|
+                             (x x)
+                             (y (- y))))
+            :in-theory (disable |(- (+ x y))|
+                                DISTRIBUTIVITY-OF-MINUS-OVER-+)
+            ))
+
+   ))
+
+(defthm derivative-expt-is-derivative-for-negative-x-negative-integer-n
+    (implies (and (standardp x)
+                  (< x 0)
+                  (standardp n)
+                  (integerp n)
+                  (< n 0)
+                  (inside-interval-p x (real-domain))
+                  (i-close x x1)
+                  (inside-interval-p x1 (real-domain))
+                  (not (equal x1 x)))
+             (i-close (/ (- (expt x n) (expt x1 n))
+                         (- x x1))
+                      (derivative-expt x n)))
+  :hints (("Goal"
+           :use ((:instance expt-negative-x)
+                 (:instance swap-difference-in-denominator
+                            (x x)
+                            (y x1))
+                    (:instance derivative-expt-is-derivative-for-positive-x-negative-integer-n
+                            (x (- x))
+                            (x1 (- x1)))
+                 (:instance close-uminus
+                            (x (+ (* (EXPT X N) (/ (+ (- X) X1)))
+                                  (- (* (EXPT X1 N) (/ (+ (- X) X1))))))
+                            (y (- (* N (EXPT X (+ -1 N))))))
+                 (:instance close-uminus
+                            (x (- x))
+                            (y (- x1)))
+                 )
+           :in-theory (disable close-uminus)
+           ))
+  )
+
+(defthm derivative-expt-is-derivative-for-non-integer-n
+    (implies (and (standardp x)
+                  (standardp n)
+                  (not (integerp n))
+                  (inside-interval-p x (real-domain))
+                  (i-close x x1)
+                  (inside-interval-p x1 (real-domain))
+                  (not (equal x1 x)))
+             (i-close (/ (- (expt x n) (expt x1 n))
+                         (- x x1))
+                      (derivative-expt x n)))
+  )
+
+(defthm derivative-expt-is-derivative
+    (implies (and (standardp x)
+                  (standardp n)
+                  (or (not (equal x 0)) (natp n))
+                  (inside-interval-p x (real-domain))
+                  (i-close x x1)
+                  (inside-interval-p x1 (real-domain))
+                  (not (equal x1 x)))
+             (i-close (/ (- (expt x n) (expt x1 n))
+                         (- x x1))
+                      (derivative-expt x n)))
+  :hints (("Goal"
+           :use ((:instance derivative-expt-is-derivative-for-natural-n)
+                 (:instance derivative-expt-is-derivative-for-positive-x-negative-integer-n)
+                 (:instance derivative-expt-is-derivative-for-negative-x-negative-integer-n)
+                 (:instance derivative-expt-is-derivative-for-non-integer-n)
+                 )
+           )))
+
 (defthm expt-differentiable-using-nonstd-criterion-for-nfix-n
     (implies (and (standardp x)
                   (standardp n)
@@ -2335,11 +3068,30 @@
                               (- x y1))
 			   (/ (- (expt x (nfix n)) (expt y2 (nfix n)))
                               (- x y2)))))
-  :hints (("Goal"
-           :use ((:instance
-                  expt-differentiable-using-nonstd-criterion-for-natural-n
+  :hints (("goal"
+           :use ((:instance expt-differentiable-using-nonstd-criterion
                   (n (nfix n))))
-           :in-theory (disable expt-differentiable-using-nonstd-criterion-for-natural-n))))
+           :in-theory (disable expt-differentiable-using-nonstd-criterion))))
+
+(defthm expt-differentiable-using-nonstd-criterion-for-nonzerofix-x
+    (implies (and (standardp x)
+                  (standardp n)
+                  (inside-interval-p x (real-domain))
+                  (inside-interval-p y1 (real-domain))
+                  (inside-interval-p y2 (real-domain))
+		  (i-close (nonzerofix x) y1) (not (= (nonzerofix x) y1))
+		  (i-close (nonzerofix x) y2) (not (= (nonzerofix x) y2)))
+	     (and (i-limited (/ (- (expt (nonzerofix x) n) (expt y1 n))
+                                (- (nonzerofix x) y1)))
+		  (i-close (/ (- (expt (nonzerofix x) n) (expt y1 n))
+                              (- (nonzerofix x) y1))
+			   (/ (- (expt (nonzerofix x) n) (expt y2 n))
+                              (- (nonzerofix x) y2)))))
+  :hints (("goal"
+           :use ((:instance expt-differentiable-using-nonstd-criterion
+                            (x (nonzerofix x))))
+           :in-theory (disable expt-differentiable-using-nonstd-criterion))))
+
 
 (defthm derivative-expt-is-derivative-for-nfix-n
     (implies (and (standardp x)
@@ -2352,143 +3104,21 @@
                          (- x x1))
                       (derivative-expt x (nfix n))))
   :hints (("Goal"
-           :use ((:instance derivative-expt-is-derivative-for-natural-n
-                  (n (nfix n))))
-           :in-theory (disable derivative-expt-is-derivative-for-natural-n))))
+           :use ((:instance derivative-expt-is-derivative
+                            (n (nfix n))))
+           :in-theory (disable derivative-expt-is-derivative))))
 
-
-
-#|
-(i-am-here)
-
-(defthm expt-differentiable-using-nonstd-criterion-for-positive-x
+(defthm derivative-expt-is-derivative-for-nonzerofix-x
     (implies (and (standardp x)
                   (standardp n)
-                  (inside-interval-p x (positive-domain))
-                  (inside-interval-p y1 (positive-domain))
-                  (inside-interval-p y2 (positive-domain))
-		  (i-close x y1) (not (= x y1))
-		  (i-close x y2) (not (= x y2)))
-	     (and (i-limited (/ (- (expt x n) (expt y1 n))
-                                (- x y1)))
-		  (i-close (/ (- (expt x n) (expt y1 n))
-                              (- x y1))
-			   (/ (- (expt x n) (expt y2 n))
-                              (- x y2)))))
+                  (inside-interval-p x (real-domain))
+                  (i-close (nonzerofix x) x1)
+                  (inside-interval-p x1 (real-domain))
+                  (not (equal x1 (nonzerofix x))))
+             (i-close (/ (- (expt (nonzerofix x) n) (expt x1 n))
+                         (- (nonzerofix x) x1))
+                      (derivative-expt (nonzerofix x) n)))
   :hints (("Goal"
-           :by (:instance
-                (:functional-instance
-                 rdfn-classic-is-differentiable-using-nonstd-criterion
-                 (rdfn-classical (lambda (n x) (expt x n)))
-                 (derivative-rdfn-classical
-                  (lambda (n x) (derivative-expt x n)))
-                 (rdfn-classical-domain positive-domain)
-                 (exists-delta-for-x-and-eps-so-deriv-classical-works
-                  (lambda (n x eps)
-                    (exists-delta-for-x-and-eps-so-deriv-expt-works x n eps)))
-                 (exists-delta-for-x-and-eps-so-deriv-classical-works-witness
-                  (lambda (n x eps)
-                    (exists-delta-for-x-and-eps-so-deriv-expt-works-witness x n eps)))
-                 (forall-x-eps-delta-in-range-deriv-classical-works
-                  (lambda (n x eps delta)
-                    (forall-x-eps-delta-in-range-deriv-expt-works X N EPS DELTA)))
-                 (forall-x-eps-delta-in-range-deriv-classical-works-witness
-                  (lambda (n x eps delta)
-                    (forall-x-eps-delta-in-range-deriv-expt-works-witness X N EPS DELTA)))
-                 )
-                )
-           )
-          ("Subgoal 7"
-           :use ((:instance expt-differentiable-using-hyperreal-criterion
-                            (n context))
-                 (:instance exists-delta-for-x-and-eps-so-deriv-expt-works-when-n-not-an-integer
-                            (n context)))
-           :in-theory (enable interval-definition-theory)
-           )
-          ))
-
-
-
-
-
-
-
-
-
-
-(defun fixexpt (x n)
-  (if (or (not (equal (realfix x) 0))
-          (<= 0 (ifix n)))
-      (expt (realfix x) (ifix n))
-      0))
-
-(defthmd fixexpt->expt
-    (implies (and (realp x)
-                  (integerp n)
-                  (or (not (equal x 0))
-		      (<= 0 n)))
-             (equal (fixexpt x n)
-                    (expt x n))))
-
-(defun derivative-fixexpt (x n)
-  (if (or (not (equal (realfix x) 0))
-          (<= 0 (ifix n)))
-      (derivative-expt (realfix x) (ifix n))
-      0))
-
-(defthmd derivatie-fixexpt->derivative-expt
-    (implies (and (realp x)
-                  (integerp n)
-                  (or (not (equal x 0))
-		      (<= 0 n)))
-             (equal (derivative-fixexpt x n)
-                    (derivative-expt x n))))
-
-
-(defun-sk forall-x-eps-delta-in-range-deriv-fixexpt-works (x n eps delta)
-  (forall (x1)
-	  (implies (and (inside-interval-p x1 (real-domain))
-			(inside-interval-p x (real-domain))
-			(realp delta)
-			(< 0 delta)
-			(realp eps)
-			(< 0 eps)
-			(not (equal x x1))
-			(< (abs (- x x1)) delta))
-		   (< (abs (- (/ (- (fixexpt x n) (fixexpt x1 n)) (- x x1))m
-			      (derivative-fixexpt x n)))
-		      eps)))
-  :rewrite :direct)
-
-(defun-sk exists-delta-for-x-and-eps-so-deriv-fixexpt-works (x n eps)
-  (exists delta
-	  (implies (and (inside-interval-p x (real-domain))
-			;(standardp x)
-			(realp eps)
-			;(standardp eps)
-			(< 0 eps))
-		   (and (realp delta)
-			(< 0 delta)
-			(forall-x-eps-delta-in-range-deriv-fixexpt-works x n eps
-                                                                      delta)))))
-
-(local
- (defthmd expt-differentiable-using-hyperreal-criterion-vacuous-part1
-     (implies (or (not (realp x))
-                  (not (integerp n))
-                  (equal x 0)
-                  (not (<= 0 n)))
-	      (forall-x-eps-delta-in-range-deriv-fixexpt-works x n eps delta))
-   ))
-
-
-
-
-
-(local
- (defthmd expt-differentiable-using-nonstd-criterion-lemma-1
-     (implies (and (integerp n)
-                   (< 0 x)
-                   (standardp x)
-                   (standardp n))
-|#
+           :use ((:instance derivative-expt-is-derivative
+                            (x (nonzerofix x))))
+           :in-theory (disable derivative-expt-is-derivative))))

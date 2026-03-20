@@ -872,26 +872,25 @@
 
 (encapsulate nil
 
-    (local
-     (defthm limited-riemann-bpfn-u*v-prime-small-partition
-         (implies (and (realp a) (standardp a)
-		       (realp b) (standardp b)
-                       (standardp context)
-		       (inside-interval-p a (bpfn-domain))
-		       (inside-interval-p b (bpfn-domain))
-		       (< a b))
-	          (i-limited (riemann-bpfn-u*v-prime context (make-small-partition a b))))
-       :hints (("Goal"
-	        :by (:functional-instance limited-riemann-rcfn-small-partition
-				          (rcfn-domain bpfn-domain)
-				          (rcfn bpfn-u*v-prime)
-				          (map-rcfn map-bpfn-u*v-prime)
-				          (riemann-rcfn riemann-bpfn-u*v-prime)))
-               ("Subgoal 4"
-                :use ((:instance bpfn-u*v-prime-continuous
-                                 (x1 y))))
-	       ("Subgoal 2"
-	        :use ((:instance bpfn-domain-non-trivial))))))
+    (defthm limited-riemann-bpfn-u*v-prime-small-partition
+     (implies (and (realp a) (standardp a)
+		   (realp b) (standardp b)
+                   (standardp context)
+		   (inside-interval-p a (bpfn-domain))
+		   (inside-interval-p b (bpfn-domain))
+		   (< a b))
+	      (i-limited (riemann-bpfn-u*v-prime context (make-small-partition a b))))
+     :hints (("Goal"
+	      :by (:functional-instance limited-riemann-rcfn-small-partition
+				        (rcfn-domain bpfn-domain)
+				        (rcfn bpfn-u*v-prime)
+				        (map-rcfn map-bpfn-u*v-prime)
+				        (riemann-rcfn riemann-bpfn-u*v-prime)))
+             ("Subgoal 4"
+              :use ((:instance bpfn-u*v-prime-continuous
+                               (x1 y))))
+	     ("Subgoal 2"
+	      :use ((:instance bpfn-domain-non-trivial)))))
 
   (local (in-theory (disable riemann-bpfn-u*v-prime)))
 
@@ -996,26 +995,25 @@
 (encapsulate
     nil
 
-    (local
-     (defthm limited-riemann-bpfn-u-plain*v-prime-small-partition
-         (implies (and (realp a) (standardp a)
-		       (realp b) (standardp b)
-                       (standardp context)
-		       (inside-interval-p a (bpfn-domain))
-		       (inside-interval-p b (bpfn-domain))
-		       (< a b))
-	          (i-limited (riemann-bpfn-u-plain*v-prime context (make-small-partition a b))))
-       :hints (("Goal"
-	        :by (:functional-instance limited-riemann-rcfn-small-partition
-				          (rcfn-domain bpfn-domain)
-				          (rcfn bpfn-u-plain*v-prime)
-				          (map-rcfn map-bpfn-u-plain*v-prime)
-				          (riemann-rcfn riemann-bpfn-u-plain*v-prime)))
-               ("Subgoal 3"
-                :use ((:instance bpfn-u-plain*v-prime-continuous
-                                 (x1 y))))
-	       ("Subgoal 2"
-	        :use ((:instance bpfn-domain-non-trivial))))))
+    (defthm limited-riemann-bpfn-u-plain*v-prime-small-partition
+     (implies (and (realp a) (standardp a)
+		   (realp b) (standardp b)
+                   (standardp context)
+		   (inside-interval-p a (bpfn-domain))
+		   (inside-interval-p b (bpfn-domain))
+		   (< a b))
+	      (i-limited (riemann-bpfn-u-plain*v-prime context (make-small-partition a b))))
+     :hints (("Goal"
+	      :by (:functional-instance limited-riemann-rcfn-small-partition
+				        (rcfn-domain bpfn-domain)
+				        (rcfn bpfn-u-plain*v-prime)
+				        (map-rcfn map-bpfn-u-plain*v-prime)
+				        (riemann-rcfn riemann-bpfn-u-plain*v-prime)))
+             ("Subgoal 3"
+              :use ((:instance bpfn-u-plain*v-prime-continuous
+                               (x1 y))))
+	     ("Subgoal 2"
+	      :use ((:instance bpfn-domain-non-trivial)))))
 
   (local (in-theory (disable riemann-bpfn-u-plain*v-prime)))
 
@@ -1048,26 +1046,25 @@
 (encapsulate
     nil
 
-    (local
-     (defthm limited-riemann-bpfn-u-prime*v-plain-small-partition
-         (implies (and (realp a) (standardp a)
-		       (realp b) (standardp b)
-                       (standardp context)
-		       (inside-interval-p a (bpfn-domain))
-		       (inside-interval-p b (bpfn-domain))
-		       (< a b))
-	          (i-limited (riemann-bpfn-u-prime*v-plain context (make-small-partition a b))))
-       :hints (("Goal"
-	        :by (:functional-instance limited-riemann-rcfn-small-partition
-				          (rcfn-domain bpfn-domain)
-				          (rcfn bpfn-u-prime*v-plain)
-				          (map-rcfn map-bpfn-u-prime*v-plain)
-				          (riemann-rcfn riemann-bpfn-u-prime*v-plain)))
-               ("Subgoal 3"
-                :use ((:instance bpfn-u-prime*v-plain-continuous
-                                 (x1 y))))
-	       ("Subgoal 2"
-	        :use ((:instance bpfn-domain-non-trivial))))))
+    (defthm limited-riemann-bpfn-u-prime*v-plain-small-partition
+     (implies (and (realp a) (standardp a)
+		   (realp b) (standardp b)
+                   (standardp context)
+		   (inside-interval-p a (bpfn-domain))
+		   (inside-interval-p b (bpfn-domain))
+		   (< a b))
+	      (i-limited (riemann-bpfn-u-prime*v-plain context (make-small-partition a b))))
+     :hints (("Goal"
+	      :by (:functional-instance limited-riemann-rcfn-small-partition
+				        (rcfn-domain bpfn-domain)
+				        (rcfn bpfn-u-prime*v-plain)
+				        (map-rcfn map-bpfn-u-prime*v-plain)
+				        (riemann-rcfn riemann-bpfn-u-prime*v-plain)))
+             ("Subgoal 3"
+              :use ((:instance bpfn-u-prime*v-plain-continuous
+                               (x1 y))))
+	     ("Subgoal 2"
+	      :use ((:instance bpfn-domain-non-trivial)))))
 
   (local (in-theory (disable riemann-bpfn-u-prime*v-plain)))
 

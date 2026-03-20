@@ -4,53 +4,59 @@
 
 (include-book "nonstd/nsa/trig" :dir :system)
 
-(local
- (encapsulate
-     ( ((wallis *) => * ) )
+(encapsulate
+    ( ((wallis *) => * ) )
 
-     (local
-      (defun wallis (n) (declare (ignore n)) 0))
+    (local (include-book "wallis-integral"))
 
-   (skip-proofs
-    (defthm wallis-of-0
-        (equal (wallis 0) (acl2-pi))))
+  (local
+   (defun wallis (n)
+     (wallis-integral n)))
 
-   (skip-proofs
-    (defthm wallis-of-1
-        (equal (wallis 1) 2)))
+  (defthm wallis-of-0
+      (equal (wallis 0) (acl2-pi))
+    :hints (("Goal"
+             :use ((:instance wallis-integral-0))))
+    )
 
-   (skip-proofs
-    (defthm wallis-recurrence
-        (implies (and (integerp n)
-                      (<= 2 n))
-                 (equal (wallis n)
-                        (/ (* (- n 1)
-                              (wallis (- n 2)))
-                           n)))))
+  (defthm wallis-of-1
+      (equal (wallis 1) 2)
+    :hints (("Goal"
+             :use ((:instance wallis-integral-1))))
+    )
 
-   (skip-proofs
-    (defthm wallis-decreasing
-        (implies (natp n)
-                 (<= (wallis (+ n 1))
-                     (wallis n)))))
+  (defthm wallis-recurrence
+      (implies (and (integerp n)
+                    (<= 2 n))
+               (equal (wallis n)
+                      (/ (* (- n 1)
+                            (wallis (- n 2)))
+                         n)))
+    :hints (("Goal"
+             :use ((:instance wallis-integral-recursion)))))
 
-   (skip-proofs
-    (defthm wallis-number
-        (implies (natp n)
-                 (realp (wallis n)))
-      :rule-classes (:type-prescription :rewrite)))
+  (defthm wallis-decreasing
+      (implies (natp n)
+               (<= (wallis (+ n 1))
+                   (wallis n)))
+    :hints (("Goal"
+             :use ((:instance wallis-integral-decreasing))))
+    )
 
-   )
- )
+  (defthm wallis-number
+      (implies (natp n)
+               (realp (wallis n)))
+    :rule-classes (:type-prescription :rewrite))
 
-(local
- (defun wallis-expansion (n)
-   (if (zp n)
-       (acl2-pi)
-       (if (equal n 1)
-           2
-           (* (/ (- n 1) n)
-              (wallis-expansion (- n 2)))))))
+  )
+
+(defun wallis-expansion (n)
+  (if (zp n)
+      (acl2-pi)
+      (if (equal n 1)
+          2
+          (* (/ (- n 1) n)
+             (wallis-expansion (- n 2))))))
 
 (local
  (defun wallis-factor (n)
@@ -138,7 +144,7 @@
    :hints (("Goal"
             :use ((:instance wallis-expansion-positive)
                   (:instance wallis-as-wallis-expansion-for-evens)
-                  (:instance wallisg-as-wallis-expansion-for-odds)
+                  (:instance wallis-as-wallis-expansion-for-odds)
                   )
             :in-theory (disable wallis-expansion-positive
                                 (:type-prescription wallis-expansion))))
@@ -317,7 +323,7 @@
    :hints (("Goal"
             :use ((:instance large-if->-large
                              (x n)
-                             (y 2)))))))1
+                             (y 2)))))))
 
 
 (local
