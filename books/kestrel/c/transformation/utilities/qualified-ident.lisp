@@ -165,6 +165,10 @@
                         with internal linkage in translation unit ~x1."
                        qual-ident.ident
                        qual-ident.filepath?)
+     :cond (retmsg$ "~x0 is not an object or function ~
+                     with internal linkage in translation unit ~x1."
+                    qual-ident.ident
+                    qual-ident.filepath?)
      :line-comment (retok nil)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 

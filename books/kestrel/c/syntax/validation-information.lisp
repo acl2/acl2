@@ -790,8 +790,9 @@
             fundef
             ext-declon
             ext-declon-list
-            trans-item
-            trans-item-list
+            hash-if/elif-expr
+            hash-if/ifdef/ifndef
+            trans-items
             transunit
             filepath-transunit-map
             transunit-ensemble

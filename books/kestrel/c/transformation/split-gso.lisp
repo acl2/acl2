@@ -413,6 +413,7 @@
                        new2
                        (c$::trans-item-list-declon extdecls)))
       :include (retmsg$ "#include directives not supported.")
+      :cond (retmsg$ "Conditional directives not supported.")
       :line-comment (retok nil nil (list (trans-item-fix item)))))
   ///
 
@@ -837,6 +838,7 @@
                 (retok found
                        (c$::trans-item-list-declon extdecls)))
       :include (retmsg$ "#include directives not supported.")
+      :cond (retmsg$ "Conditional directives not supported.")
       :line-comment (retok nil (list (trans-item-fix item)))))
   ///
 
@@ -963,8 +965,9 @@
                 fundef
                 ext-declon
                 ext-declon-list
-                trans-item
-                trans-item-list
+                hash-if/elif-expr
+                hash-if/ifdef/ifndef
+                trans-items
                 transunit
                 filepath-transunit-map)
     :extra-args

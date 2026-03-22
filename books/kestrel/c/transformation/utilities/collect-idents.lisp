@@ -53,8 +53,9 @@
           c$::fundef-option
           c$::ext-declon
           c$::ext-declon-list
-          c$::trans-item
-          c$::trans-item-list
+          c$::hash-if/elif-expr
+          c$::hash-if/ifdef/ifndef
+          c$::trans-items
           transunit
           c$::filepath-transunit-map
           transunit-ensemble)

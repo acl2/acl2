@@ -193,6 +193,9 @@
    :include (prog2$
              (raise "#include directives not supported.")
              (mv nil (irr-trans-item)))
+   :cond (prog2$
+          (raise "Conditional directives not supported.")
+          (mv nil (irr-trans-item)))
    :line-comment (mv nil (trans-item-fix item)))
   :no-function nil)
 

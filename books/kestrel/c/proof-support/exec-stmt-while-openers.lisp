@@ -19,13 +19,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection exec-stmt-while-openers
+(defxdoc+ exec-stmt-while-openers
   :parents (proof-support)
   :short "Opener rules for @(tsee exec-stmt-while)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We provide rules for three cases:
+    "We provide non-splitting rules for three cases:
      the test is false and the loop terminates;
      the test is true but the body returns (so the loop terminates);
      the test is true and the body does not return,
@@ -37,81 +37,93 @@
      Thus, the rules are suitable for symbolic execution of concrete code.")
    (xdoc::p
     "Currently these rules are limited to
-     loops whose test expressions are pure."))
+     loops whose test expressions are pure,
+     and they are non-splitting.
+     We may add splitting rules,
+     as well as more general rules involving non-pure expressions."))
+  :order-subtopics t
+  :default-parent t)
 
-  (defruled exec-stmt-while-when-false
-    (implies (and (syntaxp (and (quotep test)
-                                (quotep body)))
-                  (expr-purep test)
-                  (integerp limit)
-                  (>= limit (1+ (expr-pure-limit test)))
-                  (compustatep compst)
-                  (equal eval (exec-expr-pure test compst))
-                  (expr-valuep eval)
-                  (equal eval1 (apconvert-expr-value eval))
-                  (expr-valuep eval1)
-                  (equal val (expr-value->value eval1))
-                  (equal continuep (test-value val))
-                  (booleanp continuep)
-                  (not continuep))
-             (equal (exec-stmt-while test body compst fenv limit)
-                    (mv (stmt-value-none) compst)))
-    :enable (exec-stmt-while
-             exec-expr-to-exec-expr-pure-when-expr-pure-limit
-             not-errorp-when-expr-valuep))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled exec-stmt-while-when-true-and-return
-    (implies (and (syntaxp (and (quotep test)
-                                (quotep body)))
-                  (expr-purep test)
-                  (integerp limit)
-                  (>= limit (1+ (expr-pure-limit test)))
-                  (compustatep compst)
-                  (equal eval (exec-expr-pure test compst))
-                  (expr-valuep eval)
-                  (equal eval1 (apconvert-expr-value eval))
-                  (expr-valuep eval1)
-                  (equal val (expr-value->value eval1))
-                  (equal continuep (test-value val))
-                  (booleanp continuep)
-                  continuep
-                  (equal sval+compst1 (exec-stmt body compst fenv (1- limit)))
-                  (equal sval (mv-nth 0 sval+compst1))
-                  (equal compst1 (mv-nth 1 sval+compst1))
-                  (stmt-valuep sval)
-                  (equal (stmt-value-kind sval) :return))
-             (equal (exec-stmt-while test body compst fenv limit)
-                    (mv sval compst1)))
-    :enable (exec-stmt-while
-             exec-expr-to-exec-expr-pure-when-expr-pure-limit
-             not-errorp-when-expr-valuep))
+(defruled exec-stmt-while-when-false
+  :short "Opener non-splitting rule for @('while') loops with false tests."
+  (implies (and (syntaxp (and (quotep test)
+                              (quotep body)))
+                (expr-purep test)
+                (integerp limit)
+                (>= limit (1+ (expr-pure-limit test)))
+                (compustatep compst)
+                (equal eval (exec-expr-pure test compst))
+                (expr-valuep eval)
+                (equal eval1 (apconvert-expr-value eval))
+                (expr-valuep eval1)
+                (equal val (expr-value->value eval1))
+                (equal continuep (test-value val))
+                (booleanp continuep)
+                (not continuep))
+           (equal (exec-stmt-while test body compst fenv limit)
+                  (mv (stmt-value-none) compst)))
+  :enable (exec-stmt-while
+           exec-expr-to-exec-expr-pure-when-expr-pure-limit
+           not-errorp-when-expr-valuep))
 
-  (defruled exec-stmt-while-when-true-and-noreturn
-    (implies (and (syntaxp (and (quotep test)
-                                (quotep body)))
-                  (expr-purep test)
-                  (integerp limit)
-                  (>= limit (1+ (expr-pure-limit test)))
-                  (compustatep compst)
-                  (equal eval (exec-expr-pure test compst))
-                  (expr-valuep eval)
-                  (equal eval1 (apconvert-expr-value eval))
-                  (expr-valuep eval1)
-                  (equal val (expr-value->value eval1))
-                  (equal continuep (test-value val))
-                  (booleanp continuep)
-                  continuep
-                  (equal sval+compst1 (exec-stmt body compst fenv (1- limit)))
-                  (equal sval (mv-nth 0 sval+compst1))
-                  (equal compst1 (mv-nth 1 sval+compst1))
-                  (stmt-valuep sval)
-                  (not (equal (stmt-value-kind sval) :return)))
-             (equal (exec-stmt-while test body compst fenv limit)
-                    (exec-stmt-while test body compst1 fenv (1- limit))))
-    :enable (exec-stmt-while
-             exec-expr-to-exec-expr-pure-when-expr-pure-limit
-             not-errorp-when-expr-valuep
-             not-errorp-when-stmt-valuep)))
+(defruled exec-stmt-while-when-true-and-return
+  :short "Opener non-splitting rule for @('while') loops
+          with true tests and returning bodies."
+  (implies (and (syntaxp (and (quotep test)
+                              (quotep body)))
+                (expr-purep test)
+                (integerp limit)
+                (>= limit (1+ (expr-pure-limit test)))
+                (compustatep compst)
+                (equal eval (exec-expr-pure test compst))
+                (expr-valuep eval)
+                (equal eval1 (apconvert-expr-value eval))
+                (expr-valuep eval1)
+                (equal val (expr-value->value eval1))
+                (equal continuep (test-value val))
+                (booleanp continuep)
+                continuep
+                (equal sval+compst1 (exec-stmt body compst fenv (1- limit)))
+                (equal sval (mv-nth 0 sval+compst1))
+                (equal compst1 (mv-nth 1 sval+compst1))
+                (stmt-valuep sval)
+                (equal (stmt-value-kind sval) :return))
+           (equal (exec-stmt-while test body compst fenv limit)
+                  (mv sval compst1)))
+  :enable (exec-stmt-while
+           exec-expr-to-exec-expr-pure-when-expr-pure-limit
+           not-errorp-when-expr-valuep))
+
+(defruled exec-stmt-while-when-true-and-noreturn
+  :short "Opener non-splitting rule for @('while') loops
+          with true tests and non-returning bodies."
+  (implies (and (syntaxp (and (quotep test)
+                              (quotep body)))
+                (expr-purep test)
+                (integerp limit)
+                (>= limit (1+ (expr-pure-limit test)))
+                (compustatep compst)
+                (equal eval (exec-expr-pure test compst))
+                (expr-valuep eval)
+                (equal eval1 (apconvert-expr-value eval))
+                (expr-valuep eval1)
+                (equal val (expr-value->value eval1))
+                (equal continuep (test-value val))
+                (booleanp continuep)
+                continuep
+                (equal sval+compst1 (exec-stmt body compst fenv (1- limit)))
+                (equal sval (mv-nth 0 sval+compst1))
+                (equal compst1 (mv-nth 1 sval+compst1))
+                (stmt-valuep sval)
+                (not (equal (stmt-value-kind sval) :return)))
+           (equal (exec-stmt-while test body compst fenv limit)
+                  (exec-stmt-while test body compst1 fenv (1- limit))))
+  :enable (exec-stmt-while
+           exec-expr-to-exec-expr-pure-when-expr-pure-limit
+           not-errorp-when-expr-valuep
+           not-errorp-when-stmt-valuep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

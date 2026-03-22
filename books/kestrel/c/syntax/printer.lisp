@@ -21,6 +21,7 @@
 (local (include-book "kestrel/bv/logand" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (local (in-theory (enable* abstract-syntax-aidentp-rules)))
@@ -4488,43 +4489,358 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-trans-item ((item trans-itemp) (pstate pristatep))
-  :guard (and (trans-item-unambp item)
-              (trans-item-aidentp item (pristate->version pstate)))
+(define print-hash-if/elif-expr ((expr hash-if/elif-exprp) (pstate pristatep))
+  :guard (and (hash-if/elif-expr-unambp expr)
+              (hash-if/elif-expr-aidentp expr (pristate->version pstate)))
   :returns (new-pstate pristatep)
-  :short "Print a translation item."
-  (trans-item-case
-   item
-   :declon (print-ext-declon item.declon pstate)
-   :include (print-include-directive item.header pstate)
-   :line-comment (print-line-comment item.content pstate))
-  :hooks (:fix)
-
-  ///
-
-  (defret-same-version print-trans-item))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-trans-item-list ((items trans-item-listp) (pstate pristatep))
-  :guard (and (trans-item-list-unambp items)
-              (trans-item-list-aidentp items (pristate->version pstate)))
-  :returns (new-pstate pristatep)
-  :short "Print a list of zero or more translation items."
+  :short "Print an expression in @('#if') and @('#elif') conditions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We separate them with blank lines."))
-  (b* (((when (endp items)) (pristate-fix pstate))
-       (pstate (print-trans-item (car items) pstate))
-       ((when (endp (cdr items))) pstate)
-       (pstate (print-new-line pstate)))
-    (print-trans-item-list (cdr items) pstate))
+    "For now, we do not need to handle priorities as in @(tsee print-expr),
+     because these expressions come from preprocessing, include parentheses,
+     and are never manipulated/transformed.
+     But we should handle priorities here for robustness,
+     because we may well transform these expressions in the future.")
+   (xdoc::p
+    "Unlike @(tsee print-expr),
+     here we do not need to add spaces
+     between certain combinations of unary operators,
+     because there is a limited set of unary operators,
+     all formed by a single character."))
+  (hash-if/elif-expr-case
+   expr
+   :number (print-iconst expr.number pstate)
+   :char (print-cconst expr.char pstate)
+   :paren (b* ((pstate (print-astring "(" pstate))
+               (pstate (print-hash-if/elif-expr expr.inner pstate))
+               (pstate (print-astring ")" pstate)))
+            pstate)
+   :plus (b* ((pstate (print-astring "+" pstate))
+              (pstate (print-hash-if/elif-expr expr.arg pstate)))
+           pstate)
+   :minus (b* ((pstate (print-astring "-" pstate))
+               (pstate (print-hash-if/elif-expr expr.arg pstate)))
+            pstate)
+   :bitnot (b* ((pstate (print-astring "!" pstate))
+                (pstate (print-hash-if/elif-expr expr.arg pstate)))
+             pstate)
+   :lognot (b* ((pstate (print-astring "!" pstate))
+                (pstate (print-hash-if/elif-expr expr.arg pstate)))
+             pstate)
+   :mul (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+             (pstate (print-astring " * " pstate))
+             (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+          pstate)
+   :div (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+             (pstate (print-astring " / " pstate))
+             (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+          pstate)
+   :rem (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+             (pstate (print-astring " % " pstate))
+             (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+          pstate)
+   :add (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+             (pstate (print-astring " + " pstate))
+             (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+          pstate)
+   :sub (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+             (pstate (print-astring " - " pstate))
+             (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+          pstate)
+   :shl (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+             (pstate (print-astring " << " pstate))
+             (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+          pstate)
+   :shr (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+             (pstate (print-astring " >> " pstate))
+             (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+          pstate)
+   :lt (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+            (pstate (print-astring " < " pstate))
+            (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+         pstate)
+   :gt (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+            (pstate (print-astring " > " pstate))
+            (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+         pstate)
+   :le (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+            (pstate (print-astring " <= " pstate))
+            (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+         pstate)
+   :ge (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+            (pstate (print-astring " >= " pstate))
+            (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+         pstate)
+   :eq (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+            (pstate (print-astring " == " pstate))
+            (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+         pstate)
+   :ne (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+            (pstate (print-astring " != " pstate))
+            (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+         pstate)
+   :bitand (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+                (pstate (print-astring " & " pstate))
+                (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+             pstate)
+   :bitxor (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+                (pstate (print-astring " ^ " pstate))
+                (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+             pstate)
+   :bitior (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+                (pstate (print-astring " | " pstate))
+                (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+             pstate)
+   :logand (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+                (pstate (print-astring " && " pstate))
+                (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+             pstate)
+   :logor (b* ((pstate (print-hash-if/elif-expr expr.arg1 pstate))
+               (pstate (print-astring " || " pstate))
+               (pstate (print-hash-if/elif-expr expr.arg2 pstate)))
+            pstate)
+   :cond (b* ((pstate (print-hash-if/elif-expr expr.test pstate))
+              (pstate (print-astring " ? " pstate))
+              (pstate (print-hash-if/elif-expr expr.then pstate))
+              (pstate (print-astring " : " pstate))
+              (pstate (print-hash-if/elif-expr expr.else pstate)))
+           pstate)
+   :defined (b* ((pstate (print-astring "defined(" pstate))
+                 (pstate (print-ident expr.name pstate))
+                 (pstate (print-astring ")" pstate)))
+              pstate))
+  :measure (hash-if/elif-expr-count expr)
+  :verify-guards nil ; done below
   :hooks (:fix)
 
   ///
 
-  (defret-rec-same-version print-trans-item-list))
+  (defret-rec-same-version print-hash-if/elif-expr)
+
+  (verify-guards print-hash-if/elif-expr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-hash-if/ifdef/ifndef ((if/ifdef/ifndef hash-if/ifdef/ifndef-p)
+                                    (pstate pristatep))
+  :guard (and (hash-if/ifdef/ifndef-unambp if/ifdef/ifndef)
+              (hash-if/ifdef/ifndef-aidentp if/ifdef/ifndef
+                                            (pristate->version pstate)))
+  :returns (new-pstate pristatep)
+  :short "Print a @('#if') or @('#ifdef') or @('#ifndef')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We always print a blank line after the directive line,
+     because a conditional preprocessing construct
+     always has other parts to be printed after this,
+     and the blank line provides separation."))
+  (hash-if/ifdef/ifndef-case
+   if/ifdef/ifndef
+   :if (b* ((pstate (print-astring "#if " pstate))
+            (pstate (print-hash-if/elif-expr if/ifdef/ifndef.expr pstate))
+            (pstate (print-new-line pstate))
+            (pstate (print-new-line pstate))) ; blank line
+         pstate)
+   :ifdef (b* ((pstate (print-astring "#ifdef " pstate))
+               (pstate (print-ident if/ifdef/ifndef.name pstate))
+               (pstate (print-new-line pstate))
+               (pstate (print-new-line pstate))) ; blank line
+            pstate)
+   :ifndef (b* ((pstate (print-astring "#ifndef " pstate))
+                (pstate (print-ident if/ifdef/ifndef.name pstate))
+                (pstate (print-new-line pstate))
+                (pstate (print-new-line pstate))) ; blank line
+             pstate))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-version print-hash-if/ifdef/ifndef))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines print-trans-items
+  :short "Print translation items and related entities."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-trans-item ((item trans-itemp) (pstate pristatep))
+    :guard (and (trans-item-unambp item)
+                (trans-item-aidentp item (pristate->version pstate)))
+    :returns (new-pstate pristatep)
+    :parents (printer print-trans-items)
+    :short "Print a translation item."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For a conditional preprocessing construct,
+       first we print the opening directive, followed by a blank line,
+       via a separate function.
+       Then, if there are translation items under this first condition,
+       we print them, followed by another blank line.
+       Then we use separate functions
+       to print any @('#elif')s and any @('#else').
+       We conclude with a @('#endif') line."))
+    (trans-item-case
+     item
+     :declon (print-ext-declon item.declon pstate)
+     :include (print-include-directive item.header pstate)
+     :cond (b* ((pstate (print-hash-if/ifdef/ifndef item.if/ifdef/ifndef
+                                                    pstate))
+                (pstate (if item.items
+                            (b* ((pstate (print-trans-item-list item.items
+                                                                pstate))
+                                 (pstate (print-new-line pstate))) ; blank line
+                              pstate)
+                          pstate))
+                (pstate (print-hash-elif-list item.elifs pstate))
+                (pstate (print-hash-else-option item.else pstate))
+                (pstate (print-astring "#endif" pstate))
+                (pstate (print-new-line pstate)))
+             pstate)
+     :line-comment (print-line-comment item.content pstate))
+    :measure (trans-item-count item))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-trans-item-list ((items trans-item-listp) (pstate pristatep))
+    :guard (and (trans-item-list-unambp items)
+                (trans-item-list-aidentp items (pristate->version pstate)))
+    :returns (new-pstate pristatep)
+    :parents (printer print-trans-items)
+    :short "Print a list of translation items."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We separate them with blank lines."))
+    (b* (((when (endp items)) (pristate-fix pstate))
+         (pstate (print-trans-item (car items) pstate))
+         ((when (endp (cdr items))) pstate)
+         (pstate (print-new-line pstate)))
+      (print-trans-item-list (cdr items) pstate))
+    :measure (trans-item-list-count items))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-hash-elif ((elif hash-elifp) (pstate pristatep))
+    :guard (and (hash-elif-unambp elif)
+                (hash-elif-aidentp elif (pristate->version pstate)))
+    :returns (new-pstate pristatep)
+    :parents (printer print-trans-items)
+    :short "Print a @('#elif')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "When we get here, we have always printed a blank line just before.
+       We print the @('#elif') line, followed by a blank line.
+       If there are items under this condition,
+       we print them, followed by another blank line.
+       Note that we always end with a blank line,
+       because this is never the end of the conditional,
+       as there is at least a @('#endif'),
+       if not another @('#elif') or a @('#else')."))
+    (b* (((hash-elif elif) elif)
+         (pstate (print-astring "#elif " pstate))
+         (pstate (print-hash-if/elif-expr elif.expr pstate))
+         (pstate (print-new-line pstate))
+         (pstate (print-new-line pstate)) ; blank line
+         (pstate (if elif.items
+                     (b* ((pstate (print-trans-item-list elif.items pstate))
+                          (pstate (print-new-line pstate))) ; blank line
+                       pstate)
+                   pstate)))
+      pstate)
+    :measure (hash-elif-count elif))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-hash-elif-list ((elifs hash-elif-listp) (pstate pristatep))
+    :guard (and (hash-elif-list-unambp elifs)
+                (hash-elif-list-aidentp elifs (pristate->version pstate)))
+    :returns (new-pstate pristatep)
+    :parents (printer print-trans-items)
+    :short "Print a list of @('#elif')s."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Since each always ends with a blank line (see @(tsee print-hash-elif)),
+       we do not need to print separating blank lines between them."))
+    (b* (((when (endp elifs)) (pristate-fix pstate))
+         (pstate (print-hash-elif (car elifs) pstate)))
+      (print-hash-elif-list (cdr elifs) pstate))
+    :measure (hash-elif-list-count elifs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-hash-else ((else hash-elsep) (pstate pristatep))
+    :guard (and (hash-else-unambp else)
+                (hash-else-aidentp else (pristate->version pstate)))
+    :returns (new-pstate pristatep)
+    :parents (printer print-trans-items)
+    :short "Print a @('#else')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "When we get here, we have always printed a blank line just before.
+       We print the @('#else') line, followed by a blank line.
+       If there are items under this condition,
+       we print them, followed by another blank line.
+       Note that we always end with a blank line,
+       because this is never the end of the conditional,
+       as there is a @('#endif')."))
+    (b* (((hash-else else) else)
+         (pstate (print-astring "#else" pstate))
+         (pstate (print-new-line pstate))
+         (pstate (print-new-line pstate)) ; blank line
+         (pstate (if else.items
+                     (b* ((pstate (print-trans-item-list else.items pstate))
+                          (pstate (print-new-line pstate))) ; blank line
+                       pstate)
+                   pstate)))
+      pstate)
+    :measure (hash-else-count else))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-hash-else-option ((else? hash-else-optionp) (pstate pristatep))
+    :guard (and (hash-else-option-unambp else?)
+                (hash-else-option-aidentp else? (pristate->version pstate)))
+    :returns (new-pstate pristatep)
+    :parents (printer print-trans-items)
+    :short "Print an optional @('#else')."
+    (hash-else-option-case
+     else?
+     :some (print-hash-else else?.val pstate)
+     :none (pristate-fix pstate))
+    :measure (hash-else-option-count else?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards nil ; done below
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deffixequiv-mutual print-trans-items)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mut-same-version pristate->version-of-print-trans-items
+    (print-trans-item
+     print-trans-item-list
+     print-hash-elif
+     print-hash-elif-list
+     print-hash-else
+     print-hash-else-option))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards print-trans-item))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

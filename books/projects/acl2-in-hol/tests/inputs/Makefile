@@ -1,4 +1,4 @@
-TMPFILE = /tmp/workxxx
+TMPFILE = $(CURDIR)/workxxx-Makefile
 
 top: pkg-check.txt
 

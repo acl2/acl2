@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -497,7 +497,7 @@
        (fn-term `(,field-type-suffix (,accessor ,type) ,@extra-args-names))
        (thm-term `(,field-type-suffix ,name ,@extra-args-names))
        (field-type-suffix-of-accessor
-        (acl2::packn-pos (list field-type suffix '-of- accessor) suffix))
+        (acl2::packn-pos (list field-type-suffix '-of- accessor) suffix))
        (thm-events
         (and (eq combine 'and)
              (eq default t)
@@ -735,7 +735,9 @@
            :returns (result ,result)
            :parents (,(deffoldred-gen-topic-name suffix))
            ,fn-body
-           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (or mutrecp recp)
+                  `(:measure (,type-count ,type)
+                    :hints (("Goal" :in-theory (enable o< o-finp)))))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix))))))
     (mv fn-event thm-events)))
@@ -807,7 +809,9 @@
            :returns (result ,result)
            :parents (,(deffoldred-gen-topic-name suffix))
            ,body
-           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (or mutrecp recp)
+                  `(:measure (,type-count ,type)
+                    :hints (("Goal" :in-theory (enable o< o-finp)))))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix))))))
     (mv fn-event thm-events)))
@@ -858,7 +862,9 @@
            :returns (result ,result)
            :parents (,(deffoldred-gen-topic-name suffix))
            ,body
-           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (or mutrecp recp)
+                  `(:measure (,type-count ,type)
+                    :hints (("Goal" :in-theory (enable o< o-finp)))))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix)))))
        (type-suffix-when-base-type-suffix
@@ -981,7 +987,9 @@
            :returns (result ,result)
            :parents (,(deffoldred-gen-topic-name suffix))
            ,body
-           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (or mutrecp recp)
+                  `(:measure (,type-count ,type)
+                    :hints (("Goal" :in-theory (enable o< o-finp)))))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix)))))
        (elt-type-suffix (deffoldred-gen-fold-name elt-type suffix))
@@ -1109,7 +1117,9 @@
            :returns (result ,result)
            :parents (,(deffoldred-gen-topic-name suffix))
            ,body
-           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (or mutrecp recp)
+                  `(:measure (,type-count ,type)
+                    :hints (("Goal" :in-theory (enable o< o-finp)))))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix)))))
        (type-suffix-when-emptyp

@@ -1210,11 +1210,12 @@
   (xdoc::topstring
    (xdoc::p
     "We accept external declarations with formal semantics,
-     but not yet @('#include') directives and comments."))
+     but not yet preprocessing constructs and comments."))
   (trans-item-case
    item
    :declon (ext-declon-formalp item.declon)
    :include nil
+   :cond nil
    :line-comment nil)
   :hooks (:fix))
 
