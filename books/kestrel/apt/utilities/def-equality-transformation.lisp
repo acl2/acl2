@@ -1,6 +1,6 @@
 ; A generator for equality-preserving transformations
 ;
-; Copyright (C) 2016-2022 Kestrel Institute
+; Copyright (C) 2016-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -58,7 +58,7 @@
 
 ;; Returns an event
 (defun def-equality-transformation-fn (name
-                                       function-body-transformer ; args must be exactly: fn, untranslated-body, state, and then the transform-specific-args
+                                       function-body-transformer ; args must be exactly: fn, untranslated-body, state, then the transform-specific-required-args, then the transform-specific-keyword-args
                                        transform-specific-required-args ;arguments to function-body-transformer
                                        transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
@@ -67,9 +67,9 @@
                                        make-becomes-theorem-name
                                        make-becomes-theorems-name
                                        make-becomes-theorem-extra-args
-                                       parents
+                                       parents ; usually should include apt::apt
                                        short ; a form that evaluates to a string or to nil?
-                                       transform-specific-arg-descriptions
+                                       transform-specific-arg-descriptions ; defxdoc-for-macro ensures these cover everything
                                        description ; a form that evaluates to a string or to nil?
                                        wrld
                                        )
@@ -107,10 +107,11 @@
             make-becomes-theorem-extra-args
             transform-specific-arg-names)))
     `(progn
-       ;; Returns a new defun.
+       ;; Builds a new defun by transforming FN.  Calls FUNCTION-BODY-TRANSFORMER to transform the body.
+       ;; Returns the new defun.
        ;; When function-body-transformer is an identity, this generates a function that just copies FN and fixes up recursive calls as appropriate.
        ;; TODO: What if more than simple renaming is needed to fix up recursive calls (e.g., re-ordering params)?
-       (defun ,apply-to-defun-name (fn ;the old function (possibly in a mut-rec) to handle
+       (defun ,apply-to-defun-name (fn ;the old function to transform (possibly one function in a mutual-recursion)
                                     ,@transform-specific-arg-names
                                     fn-event ; the event that introduced FN
                                     function-renaming
@@ -119,7 +120,7 @@
                                     measure ; either :auto or an (untranslated) term
                                     measure-hints ; either :auto or a list of hints like (("Goal" :in-theory (enable car-cons)))
                                     normalize
-                                    state ; todo: can we avoid taking state?
+                                    state ; in general, we may need state
                                     )
          (declare (xargs :stobjs state
                          :guard (and (symbolp fn)
@@ -205,7 +206,7 @@
                                declares))))
                 ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
                 ;; We should clear them out here and set them if needed in ,event-generator-name
-                ;; Here we actually make the change to the body:
+                ;; Here we actually make the new body:
                 (body (,function-body-transformer fn body state ,@transform-specific-arg-names))
                 ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
                 ;;                                (fn-arities (strip-cars function-renaming) wrld)))
