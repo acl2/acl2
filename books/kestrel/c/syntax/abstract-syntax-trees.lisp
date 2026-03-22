@@ -3955,7 +3955,7 @@
        are preserved by our preprocessor,
        and make their way into @(':cond') translation items.")
      (xdoc::p
-      "This is quite analogous to @(tsee pselse),
+      "This is quite analogous to @(tsee pelse),
        but for ASTs after preprocessing and parsing."))
     ((items trans-item-list))
     :pred hash-elsep
