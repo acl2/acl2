@@ -171,10 +171,14 @@
       (convert-bibtex-diacritics (strip-brackets author-str))
     "Unknown Author"))
 
-(defun format-title (title-str)
+(defun format-title (title-str doi)
   "Format title for display"
   (if (stringp title-str)
-      (convert-bibtex-diacritics (convert-math-syntax (strip-brackets title-str)))
+      (let ((title-str (convert-bibtex-diacritics (convert-math-syntax (strip-brackets title-str)))))
+        (if doi
+            ;; If a doi is present, use it to make the title a link:
+            (concatenate 'string "<a href=\"https://doi.org/" doi "\">" title-str "</a>")
+          title-str))
     "Untitled"))
 
 (defun get-field-value (field-name fields)
@@ -225,10 +229,11 @@
          (booktitle (get-field-value "booktitle" fields))
          (month (get-field-value "month" fields))
          (isbn (get-field-value "isbn" fields))
-         (doi (get-field-value "doi" fields)))
+         (doi (get-field-value "doi" fields))
+         (doi (and doi (strip-brackets doi))))
 
     (concatenate 'string
-                 "<li><b>" (format-title title) "</b>, "
+                 "<li><b>" (format-title title doi) "</b>, "
                  (format-author-names author)
                  (if booktitle
                      (concatenate 'string ", in <i>" (strip-brackets booktitle) "</i>")
@@ -249,7 +254,7 @@
                      (concatenate 'string ", ISBN: " (strip-brackets isbn))
                    "")
                  (if doi
-                     (concatenate 'string ", DOI: " (strip-brackets doi))
+                     (concatenate 'string ", DOI: " doi)
                    "")
                  ". [" (format-entry-type entry-type) "]"
                  "</li>")))

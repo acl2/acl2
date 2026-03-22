@@ -608,7 +608,8 @@ SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert \
   demos/ppr1-experiments-thm-1-ppr1.cert \
-  kestrel/acl2data/gather/tests/run-tests.cert
+  kestrel/acl2data/gather/tests/run-tests.cert \
+  projects/aleo/vm/circuits/axe/blake2s-proof2.cert
 
 # The following could well be considered as slow books, too.
 # top.cert

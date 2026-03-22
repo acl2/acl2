@@ -540,7 +540,9 @@
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (or mutrecp recp)
+              `(:measure (,type-count ,type)
+                :hints (("Goal" :in-theory (enable o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
@@ -606,7 +608,9 @@
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (or mutrecp recp)
+              `(:measure (,type-count ,type)
+                :hints (("Goal" :in-theory (enable o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
@@ -672,7 +676,9 @@
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (or mutrecp recp)
+              `(:measure (,type-count ,type)
+                :hints (("Goal" :in-theory (enable o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
@@ -851,7 +857,9 @@
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (or mutrecp recp)
+              `(:measure (,type-count ,type)
+                :hints (("Goal" :in-theory (enable o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
@@ -969,7 +977,9 @@
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (or mutrecp recp)
+              `(:measure (,type-count ,type)
+                :hints (("Goal" :in-theory (enable o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
