@@ -28,6 +28,9 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "kestrel/bibtex/xdoc-generation" :dir :system)
 
+;; Arranges to copy the contents of images/ to res/doc/ in the manual.
+(xdoc::add-resource-directory "doc" "images")
+
 (defun docpath (s)
 
 ; This function is used for replacing relative pathnames.  However, absolute
@@ -98,54 +101,56 @@
 
 (defxdoc pubs-books
   :parents (publications)
-  :short "Books Published"
-  :long "
- <h3>Books about ACL2 and Its Applications</h3>
+  :short "Books published about ACL2 and related topics"
+  :long
+ "<h3>Book about how to use ACL2</h3>
 
- <ul>
+ <img src='res/doc/car-book-cover.jpg'/>
 
- <li>How to use ACL2:<br/>
-     <i><a href='@(`(:raw (docpath \"acl2-books/car/index.html\"))`)'>Computer-Aided Reasoning:  An Approach</a></i>, Matt Kaufmann,
+ <p><em><a href='@(`(:raw (docpath \"acl2-books/car/index.html\"))`)'>Computer-Aided Reasoning: An Approach</a></em>,
+ Matt Kaufmann,
  Panagiotis Manolios, and J Strother Moore,
  Kluwer Academic Publishers,
- June, 2000.  (ISBN 0-7923-7744-3)</li>
+ June, 2000.  (ISBN 0-7923-7744-3)</p>
 
- <li>What can be done with ACL2:<br/>
- <i><a href='@(`(:raw (docpath \"acl2-books/acs/index.html\"))`)'>Computer-Aided Reasoning:  ACL2 Case Studies</a></i>, Matt Kaufmann,
- Panagiotis Manolios, and J Strother Moore (eds.),
- Kluwer Academic Publishers,
- June, 2000.  (ISBN 0-7923-7849-0)</li>
+ <p>This book and its companion book, <i>Computer-Aided Reasoning: ACL2 Case
+ Studies</i> (see below), came out of the <a
+ href='http://www.cs.utexas.edu/users/moore/acl2/workshop-1999/'>1999 ACL2
+ Wizard's Workshop</a>, the first of the ACL2 @(see acl2::workshops).</p>
 
- </ul>
-
- <p>
- Using the techniques described in these two books, users of the ACL2 system
+ <p> Using the techniques described in these two books, users of the ACL2 system
  have modeled and proved properties of hardware designs, microprocessors,
  microcode programs, and software.  In addition, many theorems in mathematics
- and meta-mathematics have been proved with ACL2.
- </p>
+ and meta-mathematics have been proved with ACL2.</p>
 
- <p>Details:</p>
+ <p>The <a href='@(`(:raw (docpath \"acl2-books/car/index.html\"))`)'>book
+ website</a> contains a description, excerpts, errata, and solutions to
+ exercises.</p>
 
- <ul>
+ <p>To order the book, <a
+ href='https://www.lulu.com/shop/j-moore-and-panagiotis-manolios-and-matt-kaufmann/computer-aided-reasoning-an-approach/paperback/product-1p52nnn.html'>click here</a>
+ or see <a href='@(`(:raw (docpath
+ \"acl2-books/OrderingInformation.html\"))`)'>Ordering Information</a>.</p>
 
- <li><i><a href='@(`(:raw (docpath
- \"acl2-books/car/index.html\"))`)'>Computer-Aided Reasoning: An
- Approach</a></i>: description, excerpts, errata, solutions to exercises.</li>
+ <h3>Book about what can be done with ACL2</h3>
 
- <li><i><a href='@(`(:raw (docpath \"acl2-books/acs/index.html\"))`)'>Computer-Aided Reasoning:  ACL2 Case Studies</a></i>: description, list of contributors, excerpts, errata,
- full scripts for case studies, solutions to exercises.</li>
+ <img src='res/doc/acs-book-cover.jpg'/>
 
- <li><a href='http://www.cs.utexas.edu/users/moore/acl2/index.html'>ACL2 Home Page</a>: tours of the system, documentation, technical papers,
- source code, installation guide, mailing lists.</li>
+ <p><em><a href='@(`(:raw (docpath \"acl2-books/acs/index.html\"))`)'>Computer-Aided Reasoning: ACL2 Case Studies</a></em>, Matt Kaufmann,
+ Panagiotis Manolios, and J Strother Moore (eds.),
+ Kluwer Academic Publishers,
+ June, 2000.  (ISBN 0-7923-7849-0)</p>
 
- <li><a href='@(`(:raw (docpath \"acl2-books/OrderingInformation.html\"))`)'>Ordering Information</a></li>
+ <p>This is the companion book to <i>Computer-Aided Reasoning: An Approach</i> (see above).</p>
 
- <li><a href='http://www.cs.utexas.edu/users/moore/acl2/workshop-1999/'>1999
- ACL2 Wizard's Workshop</a>: this was the meeting that produced the two books above; it
- was the first in a planned series of workshops for the ACL2 community.</li>
+ <p>The <a href='@(`(:raw (docpath \"acl2-books/acs/index.html\"))`)'>book
+ website</a> contains a description, list of contributors, excerpts, errata,
+ full scripts for case studies, and solutions to exercises.</p>
 
- </ul>
+ <p>To order the book, <a
+ href='https://www.lulu.com/shop/j-moore-and-panagiotis-manolios-and-matt-kaufmann/computer-aided-reasoning-acl2-case-studies/paperback/product-1jj9qqv.html'>click here</a>
+ or see <a href='@(`(:raw (docpath
+ \"acl2-books/OrderingInformation.html\"))`)'>Ordering Information</a>.</p>
 
  <h3>Book about logic in computing using ACL2</h3>
 
