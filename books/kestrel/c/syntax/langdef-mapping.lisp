@@ -1769,6 +1769,7 @@
      item
      :declon (ldm-ext-declon item.declon)
      :include (reterr (msg "Unsupported #include directives."))
+     :define (reterr (msg "Unsupported #define directives."))
      :cond (reterr (msg "Unsupported conditional directives."))
      :line-comment (reterr (msg "Unsupported line comment."))))
   :hooks (:fix)

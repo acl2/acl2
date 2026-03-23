@@ -1076,7 +1076,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist trans-item-list-declon/directive-p (x)
+(std::deflist trans-item-list-declon/include-p (x)
   :guard (trans-item-listp x)
   :short "Check if all the translation items in a list
           are external declarations or @('#include') directives."

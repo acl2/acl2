@@ -3854,15 +3854,16 @@
        it consists of the entities that may appear
        at the top level of a translation unit.
        These are external declarations,
-       but also @('#include') directives,
+       @('#include') directives (in direct form),
+       @('#define') directives (of a particular form),
        preprocessing conditionals (which recursively contain translation items),
        and line comments;
-       we also plan to add more directives and more forms of comments.")
+       we also plan to add more forms of directives and comments.")
      (xdoc::p
       "An alternative approach is to extend our ASTs for external declarations
        with these additional constructs.
-       But it seems a bit of a terminological abuse,
-       and would give external declaration
+       But it seems an excessive terminological abuse,
+       and would give external declarations
        a recursive structure that does not match
        the normal notion of external declaration.
        Thus, it seems best to introduce this new notion.")
@@ -3875,7 +3876,19 @@
        since we do not need to repeat @('unit') there.")
      (xdoc::p
       "A @('#include') directive, as a translation item,
-       is represented by the header name.")
+       is represented by the header name.
+       So we do not represent indirect @('#include') directives,
+       i.e. ones whose header name is obtained from macro replacement,
+       which has already happened by the time we parse the ASTs.")
+     (xdoc::p
+      "A @('#define') directive, as a translation item,
+       is represented by the macro name;
+       implicitly, the body is also the macro name,
+       e.g. @('#define N N').
+       The reason is that, as discussed in @(see preservable-inclusions),
+       that is the form in which our preprocessor retains
+       the necessary information about @('#define') directives,
+       at least for now (we may be more liberal in the future).")
      (xdoc::p
       "For now the only comments that we allow as translation items
        are line comments, represented by their content (character codes).
@@ -3888,6 +3901,7 @@
        i.e. the @(':cond') summand of @(tsee ppart)."))
     (:declon ((declon ext-declon)))
     (:include ((header header-name)))
+    (:define ((macro ident)))
     (:cond ((if/ifdef/ifndef hash-if/ifdef/ifndef)
             (items trans-item-list)
             (elifs hash-elif-list)

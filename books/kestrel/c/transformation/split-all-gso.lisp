@@ -98,6 +98,7 @@
    item
    :declon (ext-declon-find-first-field-name item.declon struct-tag)
    :include (raise "Unsupported #include directive.")
+   :define (raise "Unsupported #define directive.")
    :cond (raise "Unsupported conditional directive.")
    :line-comment nil))
 
@@ -211,6 +212,7 @@
    item
    :declon (ext-declon-find-gso-candidate item.declon blacklist)
    :include (raise "Unsupported #include directive.")
+   :define (raise "Unsupported #define directive.")
    :cond (raise "Unsupported conditional directive.")
    :line-comment nil))
 

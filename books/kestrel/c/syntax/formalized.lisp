@@ -1215,6 +1215,7 @@
    item
    :declon (ext-declon-formalp item.declon)
    :include nil
+   :define nil
    :cond nil
    :line-comment nil)
   :hooks (:fix))

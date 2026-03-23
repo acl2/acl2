@@ -1995,6 +1995,8 @@
    :declon (trans-item-declon (const-prop-ext-declon item.declon env))
    :include (prog2$ (raise "Unsupported #include directives.")
                     (irr-trans-item))
+   :define (prog2$ (raise "Unsupported #define directives.")
+                   (irr-trans-item))
    :cond (prog2$ (raise "Unsupported conditional directives.")
                  (irr-trans-item))
    :line-comment (trans-item-fix item)))
