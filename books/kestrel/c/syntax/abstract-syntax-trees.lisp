@@ -3856,6 +3856,7 @@
        These are external declarations,
        @('#include') directives (in direct form),
        @('#define') directives (of a particular form),
+       @('#undef') directives,
        preprocessing conditionals (which recursively contain translation items),
        and line comments;
        we also plan to add more forms of directives and comments.")
@@ -3902,6 +3903,7 @@
     (:declon ((declon ext-declon)))
     (:include ((header header-name)))
     (:define ((macro ident)))
+    (:undef ((macro ident)))
     (:cond ((if/ifdef/ifndef hash-if/ifdef/ifndef)
             (items trans-item-list)
             (elifs hash-elif-list)

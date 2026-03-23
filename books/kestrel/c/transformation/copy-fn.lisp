@@ -147,6 +147,8 @@
                     (mv nil nil))
    :define (prog2$ (raise "#define directives not supported.")
                    (mv nil nil))
+   :undef (prog2$ (raise "#undef directives not supported.")
+                  (mv nil nil))
    :cond (prog2$ (raise "Conditional directives not supported.")
                  (mv nil nil))
    :line-comment (mv nil (list (trans-item-fix item)))))

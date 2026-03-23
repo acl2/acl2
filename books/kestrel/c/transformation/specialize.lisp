@@ -196,6 +196,9 @@
    :define (prog2$
             (raise "#define directives not supported.")
             (mv nil (irr-trans-item)))
+   :undef (prog2$
+           (raise "#undef directives not supported.")
+           (mv nil (irr-trans-item)))
    :cond (prog2$
           (raise "Conditional directives not supported.")
           (mv nil (irr-trans-item)))

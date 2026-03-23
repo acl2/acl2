@@ -3061,6 +3061,8 @@
                       (mv (trans-item-fix item) (irr-gout)))
      :define (prog2$ (raise "Unsupported #define directive.")
                      (mv (trans-item-fix item) (irr-gout)))
+     :undef (prog2$ (raise "Unsupported #undef directive.")
+                    (mv (trans-item-fix item) (irr-gout)))
      :cond (prog2$ (raise "Unsupported conditional directive.")
                    (mv (trans-item-fix item) (irr-gout)))
      :line-comment (mv (trans-item-fix item) (gout-no-thm gin))))

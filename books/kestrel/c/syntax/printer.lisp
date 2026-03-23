@@ -4498,6 +4498,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-undef-directive ((name identp) (pstate pristatep))
+  :guard (ident-aidentp name (pristate->version pstate))
+  :returns (new-pstate pristatep)
+  :short "Print a @('#undef') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently we do not have ASTs for @('#undef') directives,
+     but we use identifiers to represent such directives:
+     see @(tsee trans-item).
+     So this function takes as input an identifier.
+     We print it as a @('#undef') directive, in its own line.
+     Since this is only used at the top level,
+     no indentation is needed."))
+  (b* ((pstate (print-astring "#undef " pstate))
+       (pstate (print-ident name pstate))
+       (pstate (print-new-line pstate)))
+    pstate)
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-version print-undef-directive))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-line-comment ((content nat-listp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a line comment."
@@ -4717,6 +4743,7 @@
      :declon (print-ext-declon item.declon pstate)
      :include (print-include-directive item.header pstate)
      :define (print-define-directive item.macro pstate)
+     :undef (print-undef-directive item.macro pstate)
      :cond (b* ((pstate (print-hash-if/ifdef/ifndef item.if/ifdef/ifndef
                                                     pstate))
                 (pstate (if item.items

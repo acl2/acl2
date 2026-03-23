@@ -414,6 +414,7 @@
                        (c$::trans-item-list-declon extdecls)))
       :include (retmsg$ "#include directives not supported.")
       :define (retmsg$ "#define directives not supported.")
+      :undef (retmsg$ "#undef directives not supported.")
       :cond (retmsg$ "Conditional directives not supported.")
       :line-comment (retok nil nil (list (trans-item-fix item)))))
   ///
@@ -840,6 +841,7 @@
                        (c$::trans-item-list-declon extdecls)))
       :include (retmsg$ "#include directives not supported.")
       :define (retmsg$ "#define directives not supported.")
+      :undef (retmsg$ "#undef directives not supported.")
       :cond (retmsg$ "Conditional directives not supported.")
       :line-comment (retok nil (list (trans-item-fix item)))))
   ///

@@ -1997,6 +1997,8 @@
                     (irr-trans-item))
    :define (prog2$ (raise "Unsupported #define directives.")
                    (irr-trans-item))
+   :undef (prog2$ (raise "Unsupported #undef directives.")
+                  (irr-trans-item))
    :cond (prog2$ (raise "Unsupported conditional directives.")
                  (irr-trans-item))
    :line-comment (trans-item-fix item)))

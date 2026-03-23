@@ -40,6 +40,7 @@
    :declon (ext-declon-find-fundef ident item.declon)
    :include (mv nil (c$::irr-fundef))
    :define (mv nil (c$::irr-fundef))
+   :undef (mv nil (c$::irr-fundef))
    :cond (mv nil (c$::irr-fundef))
    :line-comment (mv nil (C$::irr-fundef))))
 
