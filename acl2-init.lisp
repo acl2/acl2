@@ -932,7 +932,7 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
 ;   (2) More generally, see the release instructions stored in the repository:
 ;       https://github.com/acl2/maintenance
 
-  t)
+  nil)
 
 (defun acl2-snapshot-info ()
   (let* ((var "ACL2_SNAPSHOT_INFO")
