@@ -883,7 +883,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection abstract-syntax-anno-additional-theroems
+(defsection abstract-syntax-anno-additional-theorems
   :short "Additional theorems about the annotation predicates."
   :long
   (xdoc::topstring
