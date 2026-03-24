@@ -56,9 +56,36 @@
    (implies (symbol-listp syms)
             (eqlable-listp syms))))
 
+;; Maps function names to infos (which are alists).
+(defund def-equality-transformation-info-alistp (info)
+  (declare (xargs :guard t))
+  (if (not (consp info))
+      (null info)
+    (let ((entry (first info)))
+      (and (consp entry)
+           (symbolp (car entry)) ; name of the first function
+           (alistp (cdr entry)) ; info for the first function
+           (def-equality-transformation-info-alistp (rest info))))))
+
+;; for now, we combine the info for all functions
+(defun def-equality-transformation-enables-from-info-alist (info)
+  (declare (xargs :guard (def-equality-transformation-info-alistp info)
+                  :guard-hints (("Goal" :in-theory (enable def-equality-transformation-info-alistp)))))
+  (if (endp info)
+      nil
+    (append (let* ((entry (first info))
+                   (fn (car entry))
+                   (alist (cdr entry))
+                   (enables (lookup-eq :enables alist)))
+              (if (not (true-listp enables))
+                  (er hard? 'def-equality-transformation-enables-from-info-alist "Bad enables for ~x0: ~x1." fn enables)
+                enables))
+            (def-equality-transformation-enables-from-info-alist (rest info)))))
+
 ;; Returns an event
 (defun def-equality-transformation-fn (name
                                        function-body-transformer ; args must be exactly: fn, untranslated-body, state, then the transform-specific-required-args, then the transform-specific-keyword-args
+                                       infop
                                        transform-specific-required-args ;arguments to function-body-transformer
                                        transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
@@ -75,6 +102,7 @@
                                        )
   (declare (xargs :guard (and (symbolp name)
                               (symbolp function-body-transformer)
+                              (booleanp infop)
                               (symbol-listp transform-specific-required-args)
                               (no-duplicatesp transform-specific-required-args)
                               (keyword-args-and-defaultsp transform-specific-keyword-args-and-defaults)
@@ -108,7 +136,7 @@
             transform-specific-arg-names)))
     `(progn
        ;; Builds a new defun by transforming FN.  Calls FUNCTION-BODY-TRANSFORMER to transform the body.
-       ;; Returns the new defun.
+       ;; Returns (mv new-defun info).
        ;; When function-body-transformer is an identity, this generates a function that just copies FN and fixes up recursive calls as appropriate.
        ;; TODO: What if more than simple renaming is needed to fix up recursive calls (e.g., re-ordering params)?
        (defun ,apply-to-defun-name (fn ;the old function to transform (possibly one function in a mutual-recursion)
@@ -133,7 +161,7 @@
                                      (booleanp normalize))
                          :mode :program ; because we call rename-functions-in-untranslated-term
                          ))
-         (let* ((body (get-body-from-event fn fn-event)) ; untranslated
+         (b* ((body (get-body-from-event fn fn-event)) ; untranslated
                 (wrld (w state))
                 (formals (fn-formals fn wrld))
                 (non-executable (non-executablep fn wrld))
@@ -207,7 +235,10 @@
                 ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
                 ;; We should clear them out here and set them if needed in ,event-generator-name
                 ;; Here we actually make the new body:
-                (body (,function-body-transformer fn body state ,@transform-specific-arg-names))
+                ,@(if infop
+                      `(((mv body info) (,function-body-transformer fn body state ,@transform-specific-arg-names)))
+                    `((body (,function-body-transformer fn body state ,@transform-specific-arg-names))
+                      (info nil)))
                 ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
                 ;;                                (fn-arities (strip-cars function-renaming) wrld)))
                 ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
@@ -230,12 +261,12 @@
                 (defun (if (eq rec :mutual)
                             defun ; irrelevant declares for mutual recursions must be handled at a higher level
                          (fixup-irrelevants-in-defun-form defun state))))
-           defun))
+           (mv defun info)))
 
        ;; Go through all the functions in the clique. For each, if it is in
        ;; TARGET-FNS, we both transform it and update rec calls in it (yes, for
        ;; copy-function the transform part is a no-op).  Otherwise, we just update rec
-       ;; calls.  Returns a list of new defuns.
+       ;; calls.  Returns (mv new-defuns info-alist) where the INFO-ALIST associates old function names with info (alists).
        (defun ,apply-to-defuns-name (fns
                                      ,@transform-specific-arg-names
                                      target-fns ;; the functions to which the transformation is being applied (a no-op for copy-function but not in general)
@@ -257,31 +288,35 @@
                                      (booleanp normalize))
                          :mode :program))
          (if (endp fns)
-             nil
-           (let ((fn (first fns)))
-             (cons (if (member-eq fn target-fns)
-                       ;; transform the function:
-                       (,apply-to-defun-name fn
-                                             ,@transform-specific-arg-names
-                                             fn-event function-renaming :mutual function-disabled
-                                             (lookup-eq fn measure-alist)
-                                             (if firstp measure-hints :auto) ; attach measure hints to only the first function
-                                             normalize
-                                             state)
-                     ;; Just copy the function and update rec calls:
-                     ;; (For copy-function only, this happens to be the same as the branch above.)
-                     (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
-                                             (lookup-eq fn measure-alist)
-                                             (if firstp measure-hints :auto) ; attach measure hints to only the first function
-                                             normalize
-                                             state))
-                   (,apply-to-defuns-name (rest fns)
-                                          ,@transform-specific-arg-names
-                                          target-fns fn-event function-renaming function-disabled
-                                          measure-alist measure-hints
-                                          normalize
-                                          nil ;no longer the first function
-                                          state)))))
+             (mv nil nil)
+           (b* ((fn (first fns))
+                ((mv new-defun fn-info)
+                 (if (member-eq fn target-fns)
+                     ;; transform the function:
+                     (,apply-to-defun-name fn
+                                           ,@transform-specific-arg-names
+                                           fn-event function-renaming :mutual function-disabled
+                                           (lookup-eq fn measure-alist)
+                                           (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                           normalize
+                                           state)
+                   ;; Just copy the function and update rec calls:
+                   ;; (For copy-function only, this happens to be the same as the branch above.)
+                   (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
+                                           (lookup-eq fn measure-alist)
+                                           (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                           normalize
+                                           state)))
+                ((mv new-defuns rest-info)
+                 (,apply-to-defuns-name (rest fns)
+                                        ,@transform-specific-arg-names
+                                        target-fns fn-event function-renaming function-disabled
+                                        measure-alist measure-hints
+                                        normalize
+                                        nil ;no longer the first function
+                                        state)))
+             (mv (cons new-defun new-defuns)
+                 (acons fn fn-info rest-info)))))
 
        ;; Generates the event that the transformation will submit.
        ;; Returns (mv erp result state), where result is usually an event but in the erp case might contain other useful info.
@@ -329,18 +364,19 @@
               )
            (if (not recursivep)
                ;; we are operating on a single, non-recursive function:
-               (let* ((new-fn (pick-new-name fn new-name state))
-                      (function-renaming (acons fn new-fn nil))
-                      (new-defun (,apply-to-defun-name fn
-                                                       ,@transform-specific-arg-names
-                                                       fn-event
-                                                       function-renaming
-                                                       nil ; rec=nil means non-recursive
-                                                       function-disabled
-                                                       measure
-                                                       measure-hints ;todo: not appropriate to pass since non-recursive?
-                                                       normalize
-                                                       state))
+               (b* ((new-fn (pick-new-name fn new-name state))
+                    (function-renaming (acons fn new-fn nil))
+                    ((mv new-defun ?info)
+                     (,apply-to-defun-name fn
+                                           ,@transform-specific-arg-names
+                                           fn-event
+                                           function-renaming
+                                           nil ; rec=nil means non-recursive
+                                           function-disabled
+                                           measure
+                                           measure-hints ;todo: not appropriate to pass since non-recursive?
+                                           normalize
+                                           state))
                       ;;extra enables needed for the proof (TODO: This is a bit brittle because the original definition also gets enabled):
                       (enables (append (list ;; (install-not-normalized-name fn)
                                         ;; (install-not-normalized-name new-fn)
@@ -348,7 +384,9 @@
                                        ,enables))
                       ;; Drop the :verify-guards nil if needed, and add :verify-guards t if appropriate:
                       (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
-                      (becomes-theorem (,make-becomes-theorem-name fn new-fn nil (not theorem-disabled) enables
+                    (becomes-theorem (,make-becomes-theorem-name fn new-fn nil (not theorem-disabled)
+                                                                 (append (def-equality-transformation-enables-from-info-alist (acons fn info nil))
+                                                                         enables)
                                                                    '(theory 'minimal-theory)
                                                                    ;; TODO: Why can't I use t here (and below)?:
                                                                    t ; use not-normalized definition rules
@@ -369,18 +407,19 @@
                      state))
              (if (fn-singly-recursivep fn state)
                  ;;we are operating on a single, recursive function:
-                 (let* ((new-fn (pick-new-name fn new-name state))
+                 (b* ((new-fn (pick-new-name fn new-name state))
                         (function-renaming (acons fn new-fn nil))
-                        (new-defun (,apply-to-defun-name fn
-                                                         ,@transform-specific-arg-names
-                                                         fn-event
-                                                         function-renaming
-                                                         :single ;rec
-                                                         function-disabled
-                                                         measure
-                                                         measure-hints
-                                                         normalize
-                                                         state))
+                        ((mv new-defun ?info)
+                         (,apply-to-defun-name fn
+                                               ,@transform-specific-arg-names
+                                               fn-event
+                                               function-renaming
+                                               :single ;rec
+                                               function-disabled
+                                               measure
+                                               measure-hints
+                                               normalize
+                                               state))
                         (enables (append (list ;; (install-not-normalized-name fn)
                                           ;; (install-not-normalized-name new-fn)
                                           )
@@ -388,7 +427,8 @@
                         (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                         (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
                         (becomes-theorem (,make-becomes-theorem-name fn new-fn :single (not theorem-disabled)
-                                                                     enables '(theory 'minimal-theory)
+                                                                     (append (def-equality-transformation-enables-from-info-alist (acons fn info nil)) enables)
+                                                                     '(theory 'minimal-theory)
                                                                      t ; use not-normalized definition rules
                                                                      ,@make-becomes-theorem-extra-args
                                                                      state))
@@ -417,17 +457,18 @@
                      (elaborate-mut-rec-option2 measure :measure fns ctx))
                     ;; (new-fns (strip-cdrs function-renaming))
                     ;; (new-fn (lookup-eq-safe fn function-renaming))
-                    (new-defuns (,apply-to-defuns-name fns
-                                                       ,@transform-specific-arg-names
-                                                       fns ;we'll say all the functions in the nest are targets (though for copy-function it doesn't matter)
-                                                       fn-event
-                                                       function-renaming
-                                                       function-disabled ;TODO: Add :map support
-                                                       measure-alist
-                                                       measure-hints
-                                                       normalize
-                                                       t ; first function in the clique
-                                                       state))
+                    ((mv new-defuns ?info-alist)
+                     (,apply-to-defuns-name fns
+                                            ,@transform-specific-arg-names
+                                            fns ;we'll say all the functions in the nest are targets (though for copy-function it doesn't matter)
+                                            fn-event
+                                            function-renaming
+                                            function-disabled ;TODO: Add :map support
+                                            measure-alist
+                                            measure-hints
+                                            normalize
+                                            t ; first function in the clique
+                                            state))
                     (mutual-recursion `(mutual-recursion ,@new-defuns))
                     (mutual-recursion (fixup-ignores-in-mutual-recursion-form mutual-recursion wrld))
                     (mutual-recursion (fixup-irrelevants-in-mutual-recursion-form mutual-recursion state))
@@ -460,7 +501,7 @@
                                                                    fns
                                                                    function-renaming
                                                                    ;;TODO: Add the $not-normalized rules for all functions?
-                                                                   ,enables
+                                                                   (append (def-equality-transformation-enables-from-info-alist info-alist) ,enables)
                                                                    '(theory 'minimal-theory)
                                                                    wrld))
                     (becomes-theorems-to-export (clean-up-defthms becomes-theorems)))
@@ -516,17 +557,18 @@
     ))
 
 (defmacro def-equality-transformation (name ; name of the transformation to create
-                                       function-body-transformer ; args should be: function name, untranslated body, state, and then the transform-specific-args
+                                       function-body-transformer ; args should be: function name, untranslated body, state, and then the transform-specific-args.  should return either the new-defun or (mv new-defun info) according to infop
                                        transform-specific-required-args
                                        transform-specific-keyword-args-and-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
                                        ;; All of these are baked into the generated transformation, not passed into each call of the transformation:
+                                       (infop 'nil) ; whether the function body transformer returns additional info, which then is (currently) used to create more enables for the proofs.
                                        (enables 'nil) ; enables to use in all equivalence proofs, a form to be spliced into the generated code, can mention FN and state
                                        (measure-enables 'nil) ; for when :measure-hints is :auto
                                        (guard-enables 'nil) ; for when :guard-hints is :auto
                                        (make-becomes-theorem-name 'make-becomes-theorem)
                                        (make-becomes-theorems-name 'make-becomes-theorems)
-                                       (make-becomes-theorem-extra-args 'nil)
+                                       (make-becomes-theorem-extra-args 'nil) ; a subset of the transform-specific arg names
                                        (parents '(apt::apt))
                                        (short ':auto)
                                        (transform-specific-arg-descriptions 'nil)
@@ -534,6 +576,7 @@
   `(make-event (def-equality-transformation-fn
                  ',name
                  ',function-body-transformer
+                 ',infop
                  ',transform-specific-required-args
                  ',transform-specific-keyword-args-and-defaults
                  ',enables

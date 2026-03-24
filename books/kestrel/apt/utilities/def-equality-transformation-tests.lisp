@@ -1,6 +1,6 @@
 ; Tests for def-equality-transformation
 ;
-; Copyright (C) 2016-2021 Kestrel Institute
+; Copyright (C) 2016-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,12 +37,12 @@
                                (booleanp normalize))
                    :mode :program ; because we call rename-functions-in-untranslated-term
                    ))
-   (let* ((body (get-body-from-event fn fn-event)) ; untranslated
+   (b* ((body (get-body-from-event fn fn-event)) ; untranslated
           (wrld (w state))
           (formals (fn-formals fn wrld))
           (non-executable (non-executablep fn wrld))
           (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
-          ;; Chose between defun, defund, defun-nx, etc.:
+          ;; Chooses between defun, defund, defun-nx, etc.:
           (defun-variant (defun-variant fn non-executable function-disabled state))
           ;; TODO: Pull out the handling of declares into a utility:
           (declares (get-declares-from-event fn fn-event)) ;TODO: Think about all the kinds of declares that get passed through.
@@ -110,7 +110,8 @@
           ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
           ;; We should clear them out here and set them if needed in copy-function-event.
           ;; Here we would change the body if fn is in target-fns, but we are just copying it so there is nothing do:
-          (body (copy-function-function-body-transformer fn body state))
+        (body (copy-function-function-body-transformer fn body state))
+        (info nil)
           ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
           ;;                                (fn-arities (strip-cars function-renaming) wrld)))
           ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
@@ -132,7 +133,7 @@
           (defun (if (eq rec :mutual)
                      defun ; irrelevant declares for mutual recursions must be handled at a higher level
                    (fixup-irrelevants-in-defun-form defun state))))
-     defun))
+     (mv defun info)))
 
  ;; Go through all the functions in the clique. For each, if it is in
  ;; TARGET-FNS, we both transform it and update rec calls in it (yes, for
@@ -158,27 +159,31 @@
                                (booleanp normalize))
                    :mode :program))
    (if (endp fns)
-       nil
-     (let ((fn (first fns)))
-       (cons (if (member-eq fn target-fns)
-                 ;; transform the function:
-                 (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
-                                         (lookup-eq fn measure-alist)
-                                         (if firstp measure-hints :auto) ; attach measure hints to only the first function
-                                         normalize
-                                         state)
-               ;; Just copy the function and update rec calls:
-               ;; (For copy-function only, this happens to be the same as the branch above.)
+       (mv nil nil)
+     (b* ((fn (first fns))
+          ((mv new-defun fn-info)
+           (if (member-eq fn target-fns)
+               ;; transform the function:
                (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
                                        (lookup-eq fn measure-alist)
                                        (if firstp measure-hints :auto) ; attach measure hints to only the first function
                                        normalize
-                                       state))
-             (copy-function-in-defuns (rest fns) target-fns fn-event function-renaming function-disabled
-                                      measure-alist measure-hints
-                                      normalize
-                                      nil ;no longer the first function
-                                      state)))))
+                                       state)
+             ;; Just copy the function and update rec calls:
+             ;; (For copy-function only, this happens to be the same as the branch above.)
+             (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
+                                     (lookup-eq fn measure-alist)
+                                     (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                     normalize
+                                     state)))
+          ((mv new-defuns rest-info)
+           (copy-function-in-defuns (rest fns) target-fns fn-event function-renaming function-disabled
+                                    measure-alist measure-hints
+                                    normalize
+                                    nil ;no longer the first function
+                                    state)))
+       (mv (cons new-defun new-defuns)
+           (acons fn fn-info rest-info)))))
 
  ;; Generates the event that copy-function will submit.
  ;; Returns (mv erp result state), where result is usually an event but in the erp case might contain other useful info.
@@ -224,9 +229,9 @@
         )
      (if (not recursivep)
          ;; we are operating on a single, non-recursive function:
-         (let* ((new-fn (pick-new-name fn new-name state))
+         (b* ((new-fn (pick-new-name fn new-name state))
                 (function-renaming (acons fn new-fn nil))
-                (new-defun (copy-function-in-defun fn
+                ((mv new-defun ?info) (copy-function-in-defun fn
                                                    fn-event
                                                    function-renaming
                                                    nil ; rec=nil means non-recursive
@@ -241,7 +246,9 @@
                                   )
                                  nil))
                 (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
-                (becomes-theorem (make-becomes-theorem fn new-fn nil (not theorem-disabled) enables '(theory 'minimal-theory)
+              (becomes-theorem (make-becomes-theorem fn new-fn nil (not theorem-disabled)
+                                                     (append (def-equality-transformation-enables-from-info-alist (acons fn info nil)) enables)
+                                                     '(theory 'minimal-theory)
                                                        t
                                                        state))
                 ;; Remove :hints from the theorem before exporting it:
@@ -259,9 +266,9 @@
                state))
        (if (fn-singly-recursivep fn state)
            ;;we are operating on a single, recursive function:
-           (let* ((new-fn (pick-new-name fn new-name state))
+           (b* ((new-fn (pick-new-name fn new-name state))
                   (function-renaming (acons fn new-fn nil))
-                  (new-defun (copy-function-in-defun fn
+                  ((mv new-defun ?info) (copy-function-in-defun fn
                                                      fn-event
                                                      function-renaming
                                                      :single ;rec
@@ -276,7 +283,9 @@
                                    nil))
                   (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                   (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
-                  (becomes-theorem (make-becomes-theorem fn new-fn :single (not theorem-disabled) enables '(theory 'minimal-theory)
+                (becomes-theorem (make-becomes-theorem fn new-fn :single (not theorem-disabled)
+                                                       (append (def-equality-transformation-enables-from-info-alist (acons fn info nil)) enables)
+                                                       '(theory 'minimal-theory)
                                                          t
                                                          state))
                   ;; Remove :hints from the theorem before exporting it:
@@ -305,7 +314,7 @@
                (elaborate-mut-rec-option2 measure :measure fns ctx))
               ;; (new-fns (strip-cdrs function-renaming))
               ;; (new-fn (lookup-eq-safe fn function-renaming))
-              (new-defuns (copy-function-in-defuns fns
+              ((mv new-defuns ?info-alist) (copy-function-in-defuns fns
                                                    fns ;we'll say all the functions in the nest are targets (though for copy-function it doesn't matter)
                                                    fn-event
                                                    function-renaming
@@ -346,7 +355,7 @@
                                                              fns
                                                              function-renaming
                                                              ;;TODO: Add the $not-normalized rules for all functions?
-                                                             nil
+                                                             (append (def-equality-transformation-enables-from-info-alist info-alist) nil)
                                                              '(theory 'minimal-theory)
                                                              wrld))
               (becomes-theorems-to-export (clean-up-defthms becomes-theorems))
