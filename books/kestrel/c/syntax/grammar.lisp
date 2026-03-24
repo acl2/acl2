@@ -37,13 +37,13 @@
      and combined into full grammars parameterized by the versions.
      This parameterization is work in progress:
      currently there is a single grammar file,
-     but we plan to split and differentiate it soon.")
+     but we plan to split and differentiate it.")
    (xdoc::p
     "The ABNF notation can capture well
-     the notation described in [C23:6.1].
+     the notation described in [C23:6.1], which is the same in [C17:6.1].
      Our ABNF grammar rules are as similar as possible to
      the grammar rules in [C17] and [C23], for the standard constructs.
-     The GCC constructs are captured based on [GCCM] [GCCL],
+     The GCC constructs are captured based on [GCCM] and [GCCL],
      but these documents do not use a grammar notation,
      so the relationship is less direct than for the standard constructs.
      Currently the grammar only mentions GCC extensions,
@@ -73,7 +73,8 @@
    (xdoc::p
     "Our ABNF grammar rules doe not consider
      the translation of trigraph sequences
-     handled in the first phase in [C23:5.2.1.2]
+     handled in the first phase in [C17:5.1.1.2]
+     (which, incidentally, has been removed in [C23:5.2.1.2]),
      and the splicing of lines in the second phase in [C23:5.2.1.2].
      These are simple transformations that can be performed
      prior to the language recognition described by our ABNF grammar rules,
