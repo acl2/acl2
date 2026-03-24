@@ -462,6 +462,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun bfc-core (msb rd lsb arm)
+  (declare (xargs :guard (and (register-numberp rd)
+                              (unsigned-byte-p 5 msb)
+                              (unsigned-byte-p 5 lsb))
+                  :stobjs arm))
+  (b* (;; EncodingSpecificOperations:
+       (d (uint 4 rd))
+       (msbit (uint 5 msb))
+       (lsbit (uint 5 lsb))
+       ((when (== d 15))
+        (update-error *unpredictable* arm))
+       ;; end EncodingSpecificOperations
+       )
+    (if (>= msbit lsbit)
+        (let* ((arm (set-reg d (putbits 32 msbit lsbit (replicate 0 (+ (- msbit lsbit) 1)) (reg d arm)) arm))
+               (arm (advance-pc arm)))
+          arm)
+      (update-error *unpredictable* arm))))
+
+(def-inst :bfc
+    (bfc-core msb rd lsb arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :bfi
+    (b* (;; EncodingSpecificOperations:
+         ((when (== rn #b1111))
+          (bfc-core msb rd lsb arm))
+         (d (uint 4 rd))
+         (n (uint 4 rn))
+         (msbit (uint 5 msb))
+         (lsbit (uint 5 lsb))
+         ((when (== d 15))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         )
+      (if (>= msbit lsbit)
+          (let* ((arm (set-reg d (putbits 32 msbit lsbit (slice (- msbit lsbit) 0 (reg n arm)) (reg d arm)) arm))
+                 (arm (advance-pc arm)))
+            arm)
+        (update-error *unpredictable* arm))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst :bic-immediate
     (b* (;; EncodingSpecificOperations:
          ((when (and (== rd #b1111)

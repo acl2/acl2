@@ -72,10 +72,11 @@
     (:asr-immediate (cond 4) 0 0 _ 0 _ 1 1 0 1 _ s (0) (0) (0) (0) (rd 4) (imm5 5) 1 0 0 (rm 4))
     (:asr-register (cond 4) 0 0 _ 0 _ 1 1 0 1 _ s 0 0 0 0 (rd 4) (rm 4) 0 1 0 1 (rn 4))
 
-    (:b  (cond 4) 1 0 1 0 (imm24 24))
+    (:b (cond 4) 1 0 1 0 (imm24 24))
 
-    ;; todo: bfc
-    ;; todo: bfi
+    (:bfc (cond 4) 0 1 1 1 1 1 0 (msb 5) (rd 4) (lsb 5) 0 0 1 _ 1 1 1 1)
+
+    (:bfi (cond 4) 0 1 1 1 1 1 0 (msb 5) (rd 4) (lsb 5) 0 0 1 _ (rn 4))
 
     (:bic-immediate (cond 4) 0 0 _ 1 _ 1 1 1 0 s (rn 4) (rd 4) (imm12 12))
     (:bic-register (cond 4) 0 0 _ 0 _ 1 1 1 0 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
@@ -494,6 +495,7 @@
 ;; For most of these, the one listed first has a special case that refers to the second.
 (defconst *allowed-encoding-overlaps*
   '((:add-immediate :adr-encoding-a1)
+    (:bfc :bfi)
     (:sub-immediate :adr-encoding-a2)
     (:str-immediate :push-encoding-a2)
     (:str-immediate :strt-encoding-a1)

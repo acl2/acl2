@@ -401,6 +401,9 @@
      arm::write_mema
      arm::!=$inline
      arm::zeros
+     arm::ones
+     arm::replicate
+     acl2::repeatbit-of-0-arg2 ; add to core-rules-bv?
 
      arm::unalignedsupport ; why?
 

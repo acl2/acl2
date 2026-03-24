@@ -1018,10 +1018,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun Zeros (n)
-  (declare (xargs :guard (posp n))
-           (ignore n))
-  0)
+;; todo: generalize to allow x to be longer than 1 bit
+(defund Replicate (x n)
+  (declare (xargs :guard (and (bitp x)
+                              (posp n))))
+  (repeatbit n x))
+
+(defund Zeros (n)
+  (declare (xargs :guard (posp n)))
+  (Replicate 0 n))
+
+(defund Ones (n)
+  (declare (xargs :guard (posp n)))
+  (Replicate 1 n))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
