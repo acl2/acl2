@@ -22,17 +22,18 @@
 ;; The core function for simplify-conjunctions.  Such functions always take:
 ;; fn, untranslated-body, state, and then transformation-specific args (none
 ;; for simplify-conjunctions).
+;; Returns (mv new-body info).
+;; TODO: Check that the rule-names are non-Axe-specific rules (since we need them in the proof).
 (defun simplify-conjunctions-function-body-transformer (fn
                                                         untranslated-body
                                                         state
                                                         ;; extra-function-renaming
                                                         untranslate
-                                                        ;; rule-names
-                                                        )
+                                                        rule-names)
   (declare (xargs :guard (and (symbolp fn)
                               ;; (doublet-listp extra-function-renaming)
                               (member-eq untranslate '(t nil :nice))
-                              )
+                              (symbol-listp rule-names))
                   :stobjs state
                   :mode :program ;; because of translate
                   )
@@ -42,7 +43,7 @@
        (conjuncts (get-conjuncts-of-term2 translated-body))
        ;; todo: handle conjunctions not at the top level:
        ((mv erp new-conjuncts &) (simplify-conjunction-basic conjuncts
-                                                             nil ;; (make-rule-alist! rule-names (w state))
+                                                             (make-rule-alist! rule-names (w state))
                                                              (known-booleans wrld)
                                                              nil ; monitored-symbols
                                                              nil ; no-warn-ground-functions
@@ -50,7 +51,9 @@
                                                              nil ; count-hits
                                                              t ; warn-missingp
                                                              ))
-       ((when erp) (er hard? 'simplify-conjunctions-function-body-transformer "Error simplifying conjunctions: ~x0." erp))
+       ((when erp)
+        (er hard? 'simplify-conjunctions-function-body-transformer "Error simplifying conjunctions: ~x0." erp)
+        (mv nil nil))
        (new-body (if nil ;; (perm new-conjuncts conjuncts) ;todo: get this to work, but consider duplicate removal when getting conjuncts
                      (prog2$ (cw "No change!~%")
                              untranslated-body ; no change! todo: support making this an error
@@ -61,7 +64,8 @@
                        (if (eq t untranslate)
                            (untranslate new-body nil wrld)
                          (directed-untranslate$ new-body untranslated-body wrld)))))))
-    new-body))
+    ;; todo: consider returning only those rule-names that got used:
+    (mv new-body (acons :enables rule-names nil))))
 
 (defund simplify-conjunctions-enables (fn wrld)
   (declare (xargs :guard (and (symbolp fn)
@@ -79,8 +83,8 @@
    )
   ;; transform-specific-keyword-args-and-defaults:
   ((untranslate 't)
-   ;;   (rule-names 'nil)
-   )
+   (rule-names 'nil))
+  :infop t ; because we return the rule-names as extra enables for the proof
   :enables (simplify-conjunctions-enables fn (w state)) ; form to compute the enables for the 'becomes theorem' ; TODO: Allow the function-body-transformer to return pre-events and hints?
   :short "Simplify conjunctions in a function using the Axe Rewriter."
   ;; todo: put this sort of thing in automatically?:
@@ -90,5 +94,5 @@ arguments.</p>"
   ;; TODO: Think about the best way to specify which functions to rename, what they get renamed to (if mulitple options exist) and how to find the corresponding rules.
   (;; (extra-function-renaming "The renaming to apply to called functions (each entry should have a corresponding entry in the renaming-rule-table).")
    (untranslate "How to untranslate the function body after changing it.")
-   ;; (rule-names "Names of rules to use when simplifying.  These should be usable both as ACL2 rules and as Axe rules.")
+   (rule-names "Names of rules to use when simplifying.  These should be usable both as ACL2 rules and as Axe rules.")
    ))
