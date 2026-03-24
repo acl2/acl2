@@ -56,9 +56,93 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; See D16.5.3 (Bitstring manipulation)
+;; D16.5.3 (Bitstring manipulation, Bitstring concatenation and replication)
 
-;; See "Zero-extension and sign-extension of bitstrings"
+;; todo: generalize to allow x to be longer than 1 bit
+(defund Replicate (x n)
+  (declare (xargs :guard (and (bitp x)
+                              (posp n))))
+  (repeatbit n x))
+
+(defund Zeros (n)
+  (declare (xargs :guard (posp n)))
+  (Replicate 0 n))
+
+(defund Ones (n)
+  (declare (xargs :guard (posp n)))
+  (Replicate 1 n))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; D16.5.3 (Bitstring manipulation, Bitstring count)
+
+(defund BitCount (n x)
+  (declare (xargs :guard (unsigned-byte-p n x)))
+  (bvcount n x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; D16.5.3 (Bitstring manipulation, Testing a bitstring for being all zero or all ones)
+
+(defun IsZero (n x)
+  (declare (xargs :guard (unsigned-byte-p n x))
+           (ignore n))
+  (equal 0 x) ; todo: phrase using bitcount
+  )
+
+(defund IsZeroBit (n x)
+  (declare (xargs :guard (unsigned-byte-p n x)))
+  (if (IsZero n x) 1 0))
+
+;; can avoid a case split
+(defthm IsZeroBit-alt-def
+  (equal (IsZeroBit n x)
+         (bool-to-bit (equal x 0)))
+  :rule-classes :definition
+  :hints (("Goal" :in-theory (enable IsZeroBit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; D16.5.3 (Bitstring manipulation, Lowest and highest set bits of a bitstring)
+
+(defun LowestSetBit-aux (n size x)
+  (declare (xargs :guard (and (natp n)
+                              (unsigned-byte-p size x)
+                              (<= n (+ 1 size)))
+                  :measure (nfix (+ 1 (- size n)))))
+  (if (or (not (mbt (natp n)))
+          (not (mbt (natp size)))
+          (<= size n))
+      size
+    (if (= 1 (getbit n x))
+        n
+      (LowestSetBit-aux (+ 1 n) size x))))
+
+(defund LowestSetBit (size x)
+  (declare (xargs :guard (unsigned-byte-p size x)))
+  (LowestSetBit-aux 0 size x))
+
+;; (assert-equal (LowestSetBit 32 1) 0)
+;; (assert-equal (LowestSetBit 32 8) 3)
+;; (assert-equal (LowestSetBit 32 0) 32)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; D16.5.3 (Bitstring manipulation, Zero-extension and sign-extension of bitstrings)
+
+;;todo: could pass the old size too?
+(defund ZeroExtend (x n)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x) ; could require n-1
+                              )))
+  (mbe :logic (bvchop n x)
+       :exec x))
+
+(defthm unsigned-byte-p-of-ZeroExtend
+  (implies (natp n)
+           (unsigned-byte-p n (ZeroExtend x n)))
+  :hints (("Goal" :in-theory (enable ZeroExtend))))
+
 ;; We add the "xsize" parameter here because we can't ask x for its size.
 ;todo: reorder args?
 (defun SignExtend (x xsize i)
@@ -91,18 +175,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;todo: could pass the old size too?
-(defund ZeroExtend (x n)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x) ; could require n-1
-                              )))
-  (mbe :logic (bvchop n x)
-       :exec x))
+;; D16.5.3 (Bitstring manipulation, Converting bitstrings to integers)
 
-(defthm unsigned-byte-p-of-ZeroExtend
+(defund sint (n x)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x))))
+  (logext n x))
+
+;; for us, a bitstring is already an unsigned integer, but we chop to make an
+;; unconditional return type.
+(defund uint (n x)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x))))
+  (bvchop n x))
+
+(local (in-theory (enable uint sint)))
+
+(defthm uint-bound-linear
   (implies (natp n)
-           (unsigned-byte-p n (ZeroExtend x n)))
-  :hints (("Goal" :in-theory (enable ZeroExtend))))
+           (<= (uint n x) (+ -1 (expt 2 n))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable uint))))
+
+(defund int (n x unsigned)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x)
+                              (booleanp unsigned))))
+  (if unsigned (uint n x) (sint n x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -527,34 +626,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund sint (n x)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x))))
-  (logext n x))
-
-;; for us, a bitstring is already an unsigned integer, but we chop to make an
-;; unconditional return type.
-(defund uint (n x)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x))))
-  (bvchop n x))
-
-(local (in-theory (enable uint sint)))
-
-(defthm uint-bound-linear
-  (implies (natp n)
-           (<= (uint n x) (+ -1 (expt 2 n))))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable uint))))
-
-(defund int (n x unsigned)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x)
-                              (booleanp unsigned))))
-  (if unsigned (uint n x) (sint n x)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns (mv result carry_out overflow).
 (defund AddWithCarry (n x y carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n x)
@@ -779,26 +850,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund BitCount (n x)
-  (declare (xargs :guard (unsigned-byte-p n x)))
-  (bvcount n x))
 
-(defun IsZero (n x)
-  (declare (xargs :guard (unsigned-byte-p n x))
-           (ignore n))
-  (equal 0 x) ; todo: phrase using bitcount
-  )
 
-(defund IsZeroBit (n x)
-  (declare (xargs :guard (unsigned-byte-p n x)))
-  (if (IsZero n x) 1 0))
 
-;; can avoid a case split
-(defthm IsZeroBit-alt-def
-  (equal (IsZeroBit n x)
-         (bool-to-bit (equal x 0)))
-  :rule-classes :definition
-  :hints (("Goal" :in-theory (enable IsZeroBit))))
 
 ;; (local
 ;;   (defthm integerp-when-unsigned-byte-p-32
@@ -1017,43 +1071,6 @@
   :hints (("Goal" :in-theory (enable PCStoreValue))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; todo: generalize to allow x to be longer than 1 bit
-(defund Replicate (x n)
-  (declare (xargs :guard (and (bitp x)
-                              (posp n))))
-  (repeatbit n x))
-
-(defund Zeros (n)
-  (declare (xargs :guard (posp n)))
-  (Replicate 0 n))
-
-(defund Ones (n)
-  (declare (xargs :guard (posp n)))
-  (Replicate 1 n))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun LowestSetBit-aux (n size x)
-  (declare (xargs :guard (and (natp n)
-                              (unsigned-byte-p size x)
-                              (<= n (+ 1 size)))
-                  :measure (nfix (+ 1 (- size n)))))
-  (if (or (not (mbt (natp n)))
-          (not (mbt (natp size)))
-          (<= size n))
-      size
-    (if (= 1 (getbit n x))
-        n
-      (LowestSetBit-aux (+ 1 n) size x))))
-
-(defund LowestSetBit (size x)
-  (declare (xargs :guard (unsigned-byte-p size x)))
-  (LowestSetBit-aux 0 size x))
-
-;; (assert-equal (LowestSetBit 32 1) 0)
-;; (assert-equal (LowestSetBit 32 8) 3)
-;; (assert-equal (LowestSetBit 32 0) 32)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
