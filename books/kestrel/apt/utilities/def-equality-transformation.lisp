@@ -162,105 +162,105 @@
                          :mode :program ; because we call rename-functions-in-untranslated-term
                          ))
          (b* ((body (get-body-from-event fn fn-event)) ; untranslated
-                (wrld (w state))
-                (formals (fn-formals fn wrld))
-                (non-executable (non-executablep fn wrld))
-                (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
-                ;; Chooses between defun, defund, defun-nx, etc.:
-                (defun-variant (defun-variant fn non-executable function-disabled state))
-                ;; TODO: Pull out the handling of declares into a utility:
-                (declares (get-declares-from-event fn fn-event)) ;TODO: Think about all the kinds of declares that get passed through.
-                ;; Handle the :normalize xarg (we don't need :normalize nil because install-not-normalized solves that issue (TODO: But should we pass it through anyway?)
-                (declares (remove-xarg-in-declares :normalize declares))
-                (declares (if (not normalize)
-                              (add-xarg-in-declares :normalize nil declares)
-                            declares))
-                ;; Handle the :mode xarg:
-                (declares (remove-xarg-in-declares :mode declares)) ;todo: handle this better.  this is needed because the event might have :mode :program even if the function was later lifted to logic.  Obviously we shouldn't do this once we support transforming :program mode functions.
-                ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then perhaps
-                ;; do verify-guards later, in case the function appears in its own guard-theorem (meaning the guard proof needs the becomes-theorem)
-                (declares (set-verify-guards-in-declares nil declares))
-                (declares (remove-xarg-in-declares :guard-hints declares)) ; verify-guards is done separately
-                (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
-                (declares (remove-xarg-in-declares :guard-simplify declares)) ; verify-guards is done separately
-                ;; Handle the :well-founded-relation xarg (it should always be the case that fn's :well-founded-relation is already among
-                ;; the known well-founded relations).
-                (declares (remove-xarg-in-declares :well-founded-relation declares))
-                (declares (if (not rec)
-                              declares ; no well-founded-relation if non-recursive
-                            (let ((well-founded-relation (get-well-founded-relation fn wrld)))
-                              (if (eq 'o< well-founded-relation)
-                                  declares ; it's the default, so omit
-                                (replace-xarg-in-declares :well-founded-relation well-founded-relation declares)))))
-                ;; Handle the :measure xarg:
-                (declares (if (not rec)
-                              declares ;no :measure needed and one should not already be present
-                            (if (eq :auto measure)
-                                ;; :auto means try to adapt the previous measure (TODO: Think about how it might need to change after the xform).  Note that it might not already be in the declares if the
-                                ;; function was initially in :program mode (the measure could have been provided in the call of
-                                ;; verify-termination):
-                                (let ((measure (fn-measure fn state)))
-                                  ;; TODO: Consider omitting the :measure if it's what ACL2 would use by default?
-                                  (replace-xarg-in-declares :measure measure declares))
-                              ;; Use the measure explicitly provided by the user:
-                              (if (not (translatable-termp measure wrld))
-                                  (er hard ',apply-to-defun-name "Measure, ~x0, is not a recognized term." measure)
-                                (replace-xarg-in-declares :measure measure declares)))))
-                ;; Handle the (termination) :hints xarg:
-                (measure-enables ',measure-enables)
-                (declares (if (not rec)
-                              declares ; no termination since not recursive
-                            ;; single or mutual recursion:
+              (wrld (w state))
+              (formals (fn-formals fn wrld))
+              (non-executable (non-executablep fn wrld))
+              (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
+              ;; Chooses between defun, defund, defun-nx, etc.:
+              (defun-variant (defun-variant fn non-executable function-disabled state))
+              ;; TODO: Pull out the handling of declares into a utility:
+              (declares (get-declares-from-event fn fn-event)) ;TODO: Think about all the kinds of declares that get passed through.
+              ;; Handle the :normalize xarg (we don't need :normalize nil because install-not-normalized solves that issue (TODO: But should we pass it through anyway?)
+              (declares (remove-xarg-in-declares :normalize declares))
+              (declares (if (not normalize)
+                            (add-xarg-in-declares :normalize nil declares)
+                          declares))
+              ;; Handle the :mode xarg:
+              (declares (remove-xarg-in-declares :mode declares)) ;todo: handle this better.  this is needed because the event might have :mode :program even if the function was later lifted to logic.  Obviously we shouldn't do this once we support transforming :program mode functions.
+              ;; Deal with the :verify-guards xarg.  We always do :verify-guards nil and then perhaps
+              ;; do verify-guards later, in case the function appears in its own guard-theorem (meaning the guard proof needs the becomes-theorem)
+              (declares (set-verify-guards-in-declares nil declares))
+              (declares (remove-xarg-in-declares :guard-hints declares)) ; verify-guards is done separately
+              (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
+              (declares (remove-xarg-in-declares :guard-simplify declares)) ; verify-guards is done separately
+              ;; Handle the :well-founded-relation xarg (it should always be the case that fn's :well-founded-relation is already among
+              ;; the known well-founded relations).
+              (declares (remove-xarg-in-declares :well-founded-relation declares))
+              (declares (if (not rec)
+                            declares ; no well-founded-relation if non-recursive
+                          (let ((well-founded-relation (get-well-founded-relation fn wrld)))
+                            (if (eq 'o< well-founded-relation)
+                                declares ; it's the default, so omit
+                              (replace-xarg-in-declares :well-founded-relation well-founded-relation declares)))))
+              ;; Handle the :measure xarg:
+              (declares (if (not rec)
+                            declares ;no :measure needed and one should not already be present
+                          (if (eq :auto measure)
+                              ;; :auto means try to adapt the previous measure (TODO: Think about how it might need to change after the xform).  Note that it might not already be in the declares if the
+                              ;; function was initially in :program mode (the measure could have been provided in the call of
+                              ;; verify-termination):
+                              (let ((measure (fn-measure fn state)))
+                                ;; TODO: Consider omitting the :measure if it's what ACL2 would use by default?
+                                (replace-xarg-in-declares :measure measure declares))
+                            ;; Use the measure explicitly provided by the user:
+                            (if (not (translatable-termp measure wrld))
+                                (er hard ',apply-to-defun-name "Measure, ~x0, is not a recognized term." measure)
+                              (replace-xarg-in-declares :measure measure declares)))))
+              ;; Handle the (termination) :hints xarg:
+              (measure-enables ',measure-enables)
+              (declares (if (not rec)
+                            declares ; no termination since not recursive
+                          ;; single or mutual recursion:
+                          (replace-xarg-in-declares
+                           :hints
+                           (if (eq :auto measure-hints)
+                               `(("Goal" :in-theory ',measure-enables
+                                         ;; ACL2 automatically replaces the old functions with the new ones in this:
+                                         :use (:instance (:termination-theorem ,fn))))
+                             measure-hints)
+                           declares)))
+              ;; Handle the :stobjs xarg:
+              (declares (set-stobjs-in-declares-to-match declares fn wrld))
+              ;; Handle the :type-prescription xarg:
+              (declares (mv-let (foundp type-prescription)
+                            (get-xarg-from-declares :type-prescription declares)
+                          (if (not foundp)
+                              declares
                             (replace-xarg-in-declares
-                             :hints
-                             (if (eq :auto measure-hints)
-                                 `(("Goal" :in-theory ',measure-enables
-                                    ;; ACL2 automatically replaces the old functions with the new ones in this:
-                                    :use (:instance (:termination-theorem ,fn))))
-                               measure-hints)
-                             declares)))
-                ;; Handle the :stobjs xarg:
-                (declares (set-stobjs-in-declares-to-match declares fn wrld))
-                ;; Handle the :type-prescription xarg:
-                (declares (mv-let (foundp type-prescription)
-                              (get-xarg-from-declares :type-prescription declares)
-                            (if (not foundp)
-                                declares
-                              (replace-xarg-in-declares
-                               :type-prescription
-                               (rename-functions-in-untranslated-term type-prescription
-                                                                      (acons fn new-fn nil) ; or use function-renaming?
-                                                                      state)
-                               declares))))
-                ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
-                ;; We should clear them out here and set them if needed in ,event-generator-name
-                ;; Here we actually make the new body:
-                ,@(if infop
-                      `(((mv body info) (,function-body-transformer fn body state ,@transform-specific-arg-names)))
-                    `((body (,function-body-transformer fn body state ,@transform-specific-arg-names))
-                      (info nil)))
-                ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
-                ;;                                (fn-arities (strip-cars function-renaming) wrld)))
-                ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
-                ;; (fake-wrld (add-fake-fns-to-world new-fns-arity-alist wrld))
-                ;; todo: can we get the arities by analyzing the body?
-                ;; Fix up recursive calls:
-                (body (if (not rec) ;; no recursive calls to fix up:
-                          body
-                        ;; We could optimize this a bit by avoiding recomputing the fake-wrld in this:
-                        (rename-functions-in-untranslated-term body
-                                                               function-renaming
-                                                               state)))
+                             :type-prescription
+                             (rename-functions-in-untranslated-term type-prescription
+                                                                    (acons fn new-fn nil) ; or use function-renaming?
+                                                                    state)
+                             declares))))
+              ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
+              ;; We should clear them out here and set them if needed in ,event-generator-name
+              ;; Here we actually make the new body:
+              ,@(if infop
+                    `(((mv body info) (,function-body-transformer fn body state ,@transform-specific-arg-names)))
+                  `((body (,function-body-transformer fn body state ,@transform-specific-arg-names))
+                    (info nil)))
+              ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
+              ;;                                (fn-arities (strip-cars function-renaming) wrld)))
+              ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
+              ;; (fake-wrld (add-fake-fns-to-world new-fns-arity-alist wrld))
+              ;; todo: can we get the arities by analyzing the body?
+              ;; Fix up recursive calls:
+              (body (if (not rec) ;; no recursive calls to fix up:
+                        body
+                      ;; We could optimize this a bit by avoiding recomputing the fake-wrld in this:
+                      (rename-functions-in-untranslated-term body
+                                                             function-renaming
+                                                             state)))
 
-                (defun `(,defun-variant ,new-fn ,formals
-                          ,@declares
-                          ,body))
-                (defun (if (eq :mutual rec)
-                           defun ; has to be done at a higher level
-                         (fixup-ignores-in-defun-form defun nil wrld)))
-                (defun (if (eq rec :mutual)
-                            defun ; irrelevant declares for mutual recursions must be handled at a higher level
-                         (fixup-irrelevants-in-defun-form defun state))))
+              (defun `(,defun-variant ,new-fn ,formals
+                        ,@declares
+                        ,body))
+              (defun (if (eq :mutual rec)
+                         defun ; has to be done at a higher level
+                       (fixup-ignores-in-defun-form defun nil wrld)))
+              (defun (if (eq rec :mutual)
+                         defun ; irrelevant declares for mutual recursions must be handled at a higher level
+                       (fixup-irrelevants-in-defun-form defun state))))
            (mv defun info)))
 
        ;; Go through all the functions in the clique. For each, if it is in
@@ -339,7 +339,7 @@
          (declare (xargs :stobjs state
                          ;; :verify-guards nil
                          :mode :program ;because of my-get-event and get-clique
-                         :guard t ;; inputs are checked below
+                         :guard t       ;; inputs are checked below
                          ))
          (b* ((- (and verbose (cw "Now in the expansion phase of ~x0 for ~x1.~%" ',name fn)))
               (description (msg "The target function"))
@@ -377,26 +377,26 @@
                                            measure-hints ;todo: not appropriate to pass since non-recursive?
                                            normalize
                                            state))
-                      ;;extra enables needed for the proof (TODO: This is a bit brittle because the original definition also gets enabled):
-                      (enables (append (list ;; (install-not-normalized-name fn)
-                                        ;; (install-not-normalized-name new-fn)
-                                        )
-                                       ,enables))
-                      ;; Drop the :verify-guards nil if needed, and add :verify-guards t if appropriate:
-                      (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
+                    ;;extra enables needed for the proof (TODO: This is a bit brittle because the original definition also gets enabled):
+                    (enables (append (list ;; (install-not-normalized-name fn)
+                                      ;; (install-not-normalized-name new-fn)
+                                      )
+                                     ,enables))
+                    ;; Drop the :verify-guards nil if needed, and add :verify-guards t if appropriate:
+                    (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
                     (becomes-theorem (,make-becomes-theorem-name fn new-fn nil (not theorem-disabled)
                                                                  (append (def-equality-transformation-enables-from-info-alist (acons fn info nil))
                                                                          enables)
-                                                                   '(theory 'minimal-theory)
-                                                                   ;; TODO: Why can't I use t here (and below)?:
-                                                                   t ; use not-normalized definition rules
-                                                                   ,@make-becomes-theorem-extra-args
-                                                                   state))
-                      ;; Remove :hints from the theorem before exporting it (:guard-hints have already been removed since the verify-guards is now separate):
-                      (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
+                                                                 '(theory 'minimal-theory)
+                                                                 ;; TODO: Why can't I use t here (and below)?:
+                                                                 t ; use not-normalized definition rules
+                                                                 ,@make-becomes-theorem-extra-args
+                                                                 state))
+                    ;; Remove :hints from the theorem before exporting it (:guard-hints have already been removed since the verify-guards is now separate):
+                    (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
                  (mv nil
                      `(encapsulate ()
-                        ,@prologue         ;; contains only local stuff
+                          ,@prologue       ;; contains only local stuff
                         (local ,new-defun) ; has :verify-guards nil
                         (local (install-not-normalized ,new-fn))
                         (local ,becomes-theorem)
@@ -408,35 +408,35 @@
              (if (fn-singly-recursivep fn state)
                  ;;we are operating on a single, recursive function:
                  (b* ((new-fn (pick-new-name fn new-name state))
-                        (function-renaming (acons fn new-fn nil))
-                        ((mv new-defun ?info)
-                         (,apply-to-defun-name fn
-                                               ,@transform-specific-arg-names
-                                               fn-event
-                                               function-renaming
-                                               :single ;rec
-                                               function-disabled
-                                               measure
-                                               measure-hints
-                                               normalize
-                                               state))
-                        (enables (append (list ;; (install-not-normalized-name fn)
-                                          ;; (install-not-normalized-name new-fn)
-                                          )
-                                         ,enables))
-                        (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
-                        (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
-                        (becomes-theorem (,make-becomes-theorem-name fn new-fn :single (not theorem-disabled)
-                                                                     (append (def-equality-transformation-enables-from-info-alist (acons fn info nil)) enables)
-                                                                     '(theory 'minimal-theory)
-                                                                     t ; use not-normalized definition rules
-                                                                     ,@make-becomes-theorem-extra-args
-                                                                     state))
-                        ;; Remove :hints from the theorem before exporting it:
-                        (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
+                      (function-renaming (acons fn new-fn nil))
+                      ((mv new-defun ?info)
+                       (,apply-to-defun-name fn
+                                             ,@transform-specific-arg-names
+                                             fn-event
+                                             function-renaming
+                                             :single ;rec
+                                             function-disabled
+                                             measure
+                                             measure-hints
+                                             normalize
+                                             state))
+                      (enables (append (list ;; (install-not-normalized-name fn)
+                                        ;; (install-not-normalized-name new-fn)
+                                        )
+                                       ,enables))
+                      (new-defun-to-export (if verify-guards (ensure-defun-demands-guard-verification new-defun) new-defun))
+                      (new-defun-to-export (remove-hints-from-defun new-defun-to-export))
+                      (becomes-theorem (,make-becomes-theorem-name fn new-fn :single (not theorem-disabled)
+                                                                   (append (def-equality-transformation-enables-from-info-alist (acons fn info nil)) enables)
+                                                                   '(theory 'minimal-theory)
+                                                                   t ; use not-normalized definition rules
+                                                                   ,@make-becomes-theorem-extra-args
+                                                                   state))
+                      ;; Remove :hints from the theorem before exporting it:
+                      (becomes-theorem-to-export (clean-up-defthm becomes-theorem)))
                    (mv nil ; no error
                        `(encapsulate ()
-                          ,@prologue         ;; contains only local stuff
+                            ,@prologue       ;; contains only local stuff
                           (local ,new-defun) ; has :verify-guards nil
                           (local (install-not-normalized ,new-fn))
                           (local ,becomes-theorem)
@@ -507,7 +507,7 @@
                     (becomes-theorems-to-export (clean-up-defthms becomes-theorems)))
                  (mv nil
                      `(encapsulate ()
-                        ,@prologue         ;; contains only local stuff
+                          ,@prologue ;; contains only local stuff
                         (local ,mutual-recursion)
                         (local (install-not-normalized ,(lookup-eq-safe fn function-renaming))) ;TODO: Is there any interaction between this and make-flag?
                         ;; make-flag helps with the proof about mutually recursive functions:
@@ -523,13 +523,13 @@
 
        ;; To see what this expands to, see, e.g., copy-function-expansion.lisp:
        (deftransformation ,name
-         ;;required args:
-         (fn ;;the name of a defined function (TODO: :logic mode only?)
-          ,@transform-specific-required-args
-          )
+           ;;required args:
+           (fn ;;the name of a defined function (TODO: :logic mode only?)
+            ,@transform-specific-required-args
+            )
          ;; keyword args, *not* including :show-only or :verbose (deftransformation puts those in):
          ((new-name ':auto)
-          (theorem-disabled 'nil) ;;TODO:  Call this :disable-theorem?
+          (theorem-disabled 'nil)    ;;TODO:  Call this :disable-theorem?
           (function-disabled ':auto) ;;TODO:  Call this :disable-function?
           ;;(non-executable 'nil) ;todo: just check the existing function? avoid double negative?
           (verify-guards ':auto)
