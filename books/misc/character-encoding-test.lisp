@@ -21,7 +21,8 @@
 
 ; The following comment applies to an old version of SBCL. It no longer seems
 ; to apply to modern versions, and so we have added a .acl2 file as described
-; here.
+; here.  [ADDED 3/22/2026: That .acl2 file has been moved to
+; character-encoding-test.acl2.moved.  See comments there.]
 ;   We have considered defining a function test-1 in file
 ;   character-encoding-test.acl2, with the same body as test-2 below.  However,
 ;   in SBCL 1.0.49 we found that our attempt to set the external format to

@@ -3795,6 +3795,10 @@
                (retok (trans-item-declon declon) table))
      :include (reterr
                (msg "Disambiguator does not support #include directives yet."))
+     :define (reterr
+              (msg "Disambiguator does not support #define directives yet."))
+     :undef (reterr
+             (msg "Disambiguator does not support #undef directives yet."))
      :cond (reterr
             (msg "Disambiguator does not support conditional directives yet."))
      :line-comment (retok (trans-item-fix item) (dimb-table-fix table))))

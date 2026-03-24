@@ -34,17 +34,19 @@
   (xdoc::topstring
    (xdoc::p
     "We define fixtypes for constructs that closely correspond to
-     the grammar in [C17], which is summarized in [C17:A].
-     For now we cover all the constructs after preprocessing,
-     but we are working on adding some preprocessing constructs.")
+     the grammar in [C17], which is summarized in [C17:A].")
    (xdoc::p
-    "We also include certain GCC extensions,
+    "We also include certain GCC and Clang extensions,
      as mentioned in @(see syntax-for-tools).")
    (xdoc::p
     "According to the rationale explained in @(see syntax-for-tools),
      here we capture much of the information from the concrete syntax,
      e.g. the distinction between
-     the @('0x') and @('0X') hexadecimal prefixes.")
+     the @('0x') and @('0X') hexadecimal prefixes.
+     Importantly, we also capture some preprocessing constructs,
+     most notably @('#include') directives that are "
+    (xdoc::seetopic "preservable-inclusions" "preservable")
+    ".")
    (xdoc::p
     "We try and pick short yet clear names for these fixtypes,
      so that code that manipulates these fixtypes
@@ -55,7 +57,7 @@
      but uses no qualifications for certain decimal entities,
      our fixtype names are more symmetric,
      using @('dec') and @('hex') and @('bin') qualifiers
-     for certain ``parallel'' entities.")
+     for certain ``parallel'' entities in different numerical bases.")
    (xdoc::p
     "Some library fixtypes already correspond to
      certain nonterminals in the grammar in [C17]
@@ -72,7 +74,7 @@
      generates conflicting theorems if used
      both with @(':non-emptyp t') and with (default) @(':non-emptyp nil')
      (although this could be remedied).
-     It is fine (and common) for the abstract syntax
+     It is acceptable (and common) for the abstract syntax
      to be more general than the concrete syntax.
      Restrictions on well-formed code can be formulated
      via separate predicates on the abstract syntax.
@@ -88,7 +90,8 @@
      which include ASCII codes as a subset.
      Although natural numbers are more general that Unicode code points,
      and also more general than <i>c-char</i> and <i>s-char</i>,
-     it is fine for abstract syntax to be more general than concrete syntax.")
+     it is fine for abstract syntax to be more general than concrete syntax.
+     However, we should probably switch to using @(tsee uchar).")
    (xdoc::p
     "The syntax of C has some known ambiguities,
      which cannot be disambiguated purely syntactically,
@@ -3851,15 +3854,17 @@
        it consists of the entities that may appear
        at the top level of a translation unit.
        These are external declarations,
-       but also @('#include') directives,
+       @('#include') directives (in direct form),
+       @('#define') directives (of a particular form),
+       @('#undef') directives,
        preprocessing conditionals (which recursively contain translation items),
        and line comments;
-       we also plan to add more directives and more forms of comments.")
+       we also plan to add more forms of directives and comments.")
      (xdoc::p
       "An alternative approach is to extend our ASTs for external declarations
        with these additional constructs.
-       But it seems a bit of a terminological abuse,
-       and would give external declaration
+       But it seems an excessive terminological abuse,
+       and would give external declarations
        a recursive structure that does not match
        the normal notion of external declaration.
        Thus, it seems best to introduce this new notion.")
@@ -3872,7 +3877,19 @@
        since we do not need to repeat @('unit') there.")
      (xdoc::p
       "A @('#include') directive, as a translation item,
-       is represented by the header name.")
+       is represented by the header name.
+       So we do not represent indirect @('#include') directives,
+       i.e. ones whose header name is obtained from macro replacement,
+       which has already happened by the time we parse the ASTs.")
+     (xdoc::p
+      "A @('#define') directive, as a translation item,
+       is represented by the macro name;
+       implicitly, the body is also the macro name,
+       e.g. @('#define N N').
+       The reason is that, as discussed in @(see preservable-inclusions),
+       that is the form in which our preprocessor retains
+       the necessary information about @('#define') directives,
+       at least for now (we may be more liberal in the future).")
      (xdoc::p
       "For now the only comments that we allow as translation items
        are line comments, represented by their content (character codes).
@@ -3885,6 +3902,8 @@
        i.e. the @(':cond') summand of @(tsee ppart)."))
     (:declon ((declon ext-declon)))
     (:include ((header header-name)))
+    (:define ((macro ident)))
+    (:undef ((macro ident)))
     (:cond ((if/ifdef/ifndef hash-if/ifdef/ifndef)
             (items trans-item-list)
             (elifs hash-elif-list)
