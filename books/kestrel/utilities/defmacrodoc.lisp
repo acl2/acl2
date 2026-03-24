@@ -499,7 +499,7 @@
 
 ;; Returns a progn including the defmacro form and a defxdoc form.
 (defun defmacrodoc-fn (name macro-args
-                       rest ; has the declares, the body, and xdoc stuff
+                       rest ; has the declares, the body, and xdoc stuff (:parents, :short, :description, :args)
                        state)
   (declare (xargs :guard (and (symbolp name)
                               (macro-arg-listp macro-args))
@@ -517,7 +517,7 @@
        (parents (lookup-keyword :parents xdoc-stuff))
        (short (lookup-keyword :short xdoc-stuff))
        (description (lookup-keyword :description xdoc-stuff))
-       (arg-descriptions (lookup-keyword :args xdoc-stuff)) ;; repetitions of the pattern: symbol followed by 1 or more strings describing it
+       (arg-descriptions (lookup-keyword :args xdoc-stuff)) ;; satisfies macro-arg-descriptionsp
        ((when (not (symbol-alistp arg-descriptions)))
         (er hard? 'defmacrodoc "Ill-formed :args: ~x0." arg-descriptions))
        ((when (not (no-duplicatesp-equal (strip-cars arg-descriptions))))
