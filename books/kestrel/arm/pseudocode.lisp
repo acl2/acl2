@@ -118,13 +118,76 @@
         n
       (LowestSetBit-aux (+ 1 n) size x))))
 
+(defthm LowestSetBit-aux-of-0
+  (equal (LowestSetBit-aux n size 0)
+         size)
+  :hints (("Goal" :in-theory (enable LowestSetBit-aux))))
+
 (defund LowestSetBit (size x)
   (declare (xargs :guard (unsigned-byte-p size x)))
   (LowestSetBit-aux 0 size x))
 
+;; proves the claim "If all of its bits are zeros, ..."
+(thm (equal (LowestSetBit size 0) size) :hints (("Goal" :in-theory (enable LowestSetBit))))
+
 ;; (assert-equal (LowestSetBit 32 1) 0)
 ;; (assert-equal (LowestSetBit 32 8) 3)
 ;; (assert-equal (LowestSetBit 32 0) 32)
+
+(defun HighestSetBit-aux (n size x)
+  (declare (xargs :guard (and (integerp n)
+                              (<= -1 n)
+                              (unsigned-byte-p size x)
+                              (<= n (+ -1 size)))
+                  :measure (nfix (+ 1 n))))
+  (if (not (natp n))
+      -1
+    (if (= 1 (getbit n x))
+        n
+      (HighestSetBit-aux (+ -1 n) size x))))
+
+(defthm HighestSetBit-aux-of-0
+  (equal (HighestSetBit-aux n size 0)
+         -1)
+  :hints (("Goal" :in-theory (enable HighestSetBit-aux))))
+
+(defthm HighestSetBit-aux-linear
+  (implies  (<= -1 n)
+            (and (<= (HighestSetBit-aux n size x) n)
+                 (<= -1 (HighestSetBit-aux n size x))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable HighestSetBit-aux))))
+
+(defund HighestSetBit (size x)
+  (declare (xargs :guard (unsigned-byte-p size x)))
+  (HighestSetBit-aux (+ -1 size) size x))
+
+(defthm HighestSetBit-linear
+  (implies (natp size)
+           (and (<= (HighestSetBit size x) (+ -1 size))
+                (<= -1 (HighestSetBit size x))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable HighestSetBit))))
+
+;; proves the claim "If all of its bits are zeros, ..."
+(thm (equal (HighestSetBit size 0) -1) :hints (("Goal" :in-theory (enable HighestSetBit))))
+
+(defund CountLeadingZeroBits (n x)
+  (declare (xargs :guard (unsigned-byte-p n x)))
+  (+ n -1 (- (HighestSetBit n x))))
+
+(defthm integerp-of-CountLeadingZeroBits-type
+  (implies (integerp n)
+           (integerp (CountLeadingZeroBits n x)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable CountLeadingZeroBits))))
+
+;; proves "in the range 0 to N"
+(thm
+ (implies (natp n)
+          (and (<= 0 (CountLeadingZeroBits n x))
+               (<= (CountLeadingZeroBits n x) n)))
+ :hints (("Goal" :in-theory (enable CountLeadingZeroBits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -994,6 +1057,14 @@
 (defthm armp-of-advance-pc
   (implies (armp arm)
            (armp (advance-pc arm)))
+  :hints (("Goal" :in-theory (enable advance-pc))))
+
+(defthm reg-of-advance-pc
+  (implies (register-numberp reg)
+           (equal (reg reg (advance-pc arm))
+                  (if (equal 15 reg)
+                      (add-to-address 4 (reg *pc* arm))
+                    (reg reg arm))))
   :hints (("Goal" :in-theory (enable advance-pc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

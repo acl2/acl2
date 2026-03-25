@@ -102,8 +102,11 @@
             arm::cmp-register-argsp
             arm::cmp-register-shifted-register-argsp
             )
-          '(arm::mov-common
+          '(arm::bl-blx-common ; todo: package for the functions
+            arm::blx-core
+            arm::mov-common
             arm::mov-register-core
+            arm::nop-core
             arm::pop-encoding-a2-core
             arm::pop-common
             arm::pop-loop-base
