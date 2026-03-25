@@ -20,8 +20,7 @@
 
 ; Lexical Rules
 
-; These rules (partially) describe how
-; a finite sequence of Unicode characters
+; These rules describe how a sequence of Unicode characters
 ; is organized into a sequence of lexemes.
 ; The description provided by the rules alone is partial
 ; because the rules do not capture things like
@@ -942,6 +941,17 @@ preprocessing-token = header-name
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Preprocessing Lexemes
+
+; These are the lexical units during preprocessing.
+; [C17] and [C23] have no rule for preprocessing lexemes, but our grammar does.
+
+preprocessing-lexeme = preprocessing-token
+                     / comment
+                     / white-space
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Tokens [C17:A.1.1] [C17:6.4]
 
 ; We add header names (which in [C17] are preprocessing tokens, not tokens)
@@ -958,37 +968,24 @@ token = keyword
 
 ; Lexemes
 
-; These are the lexical units that the code is organized into.
-; [C17] has no rule for lexemes, but our grammar does.
+; These are the lexical units after preprocessing.
+; [C17] and [C23] have no rule for lexemes, but our grammar does.
 
 lexeme = token
        / comment
        / white-space
-       / control-line
-
-; The alternative for control lines
-; (which are defined later, as part of the preprocessing constructs)
-; is motivated by the fact that we have found that in some cases
-; certain preprocessing directives (grammatically, control lines)
-; survive the preprocessing by (popular) external preprocessors,
-; i.e. we find those directives in the code after preprocessing.
-; This only applies to the control lines that we do not otherwise cover
-; as part of our phrase structure grammar rules (given below).
-; Given the nature of those directives that survive preprocessing,
-; they can be just ignored, and we treat them like comments and white space.
-; This is not the case for our own preprocessor,
-; which purposely leaves some directives after preprocessing,
-; but those are all meant to be parsed according to the phrase structure rules.
-; Eventually, we might eliminate this control line alternative
-; from the grammar rule for lexemes above.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Preprocessing Rules
 
-; As mentioned in the section about lexical rules,
-; the preprocessing rules are also relevant to
-; organizing Unicode characters into lexemes.
+; These rules describe how a sequence of preprocessing lexemes
+; is organized into preprocessing constructs,
+; corresponding to the preprocessing directives [C17:A.3] [C23:A.4].
+; The description provided by the rules is partial
+; because there are requirements not explicitly captured by the rules,
+; such as the fact that 'paren' is not immediately preceded by white space
+; (indicated in a comment below).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1053,12 +1050,15 @@ on-off-switch = %s"ON" / %s"OFF" / %s"DEFAULT"
 
 ; Phrase Structure Rules
 
-; These rules (partially) describe how a sequence of lexemes
+; These rules describe how a sequence of lexemes
 ; is organized into higher-level constructs,
-; corresponding to the phase structure grammar in [C17:A.2].
-; Currently we only use tokens,
-; discarding comments, white space, and control lines;
-; in the future, we plan to retain at least some forms of comments.
+; corresponding to the phase structure grammar in [C17:A.2],
+; but with the addition of some preprocessing constructs
+; which our C preprocessor preserves to keep the code more modular
+; (see :doc syntax-for-tools).
+; The description provided by the rules alone is partial
+; because the rules do not capture things like
+; the association of a dangling 'else' with the closest 'if'.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
