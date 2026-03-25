@@ -3152,6 +3152,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst :swp/swpb
+    (b* (;; EncodingSpecificOperations:
+         (tval (uint 4 rt)) ; can't call this 't'
+         (t2val (uint 4 rt2))
+         (n (uint 4 rn))
+         (size (if (== b #b1) 1 4))
+         ((when (or (== tval 15)
+                    (== t2val 15)
+                    (== n 15)
+                    (== n tval)
+                    (== n t2val)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         ((when (CurrentModeIsHyp)) (update-error *undefined* arm))
+         (data (ZeroExtend (memA (reg n arm) size arm) 32))
+         (arm (write_MemA (reg n arm) size (slice (* 8 (- size 1)) 0 (reg t2val arm)) arm))
+         (arm (if (== size #b1)
+                  (set-reg tval data arm)
+                (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 (reg n arm))))) arm)))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst :teq-immediate
     (b* (;; EncodingSpecificOperations:
          (n (uint 4 rn))
@@ -3916,11 +3940,11 @@
           (< 14 i))
       (mv address arm)
     (b* (((mv address arm)
-          (if (== (getbit i registers) 1)
+          (if (== (getbit i registers) #b1)
               (let* ((arm (if (and (== i n)
                                    wback
                                    (!= i (LowestSetBit 16 registers)))
-                              (write_MemA address 4 (unknown-bits 32 :stm-loop arm) arm) ; distinguish from the STMDB case?
+                              (write_MemA address 4 (unknown-bits 32 :stm-loop arm) arm) ; distinguish each case?
                             (write_MemA address 4 (reg i arm) arm)))
                      (address (bvplus 32 address 4)))
                 (mv address arm))
@@ -4466,12 +4490,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst :stmda/stmed
+    (b* (;; EncodingSpecificOperations:
+         (n (uint 4 rn))
+         (registers register_list)
+         (wback (== w #b1))
+         ((when (or (== n 15)
+                    (< (BitCount 16 registers) 1)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (address (bvplus 32 (reg n arm) (bvplus 32 (bvuminus 32 (* 4 (bitcount 16 registers))) 4)))
+         ((mv address arm) (stm-loop 0 registers address wback n arm))
+         (arm (if (== (getbit 15 registers) #b1)
+                  (write_MemA address 4 (PCStoreValue inst-address) arm)
+                arm))
+         (arm (if wback
+                  (set-reg n (bvminus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
+                arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst :stmdb/stmfd
     (if (and (== w #b1)
              (== rn #b1101)
              (>= (BitCount 16 register_list) 2))
         (push-encoding-a1-core register_list inst-address arm)
       (stmdb-core w rn register_list inst-address arm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :stmib/stmfa
+    (b* (;; EncodingSpecificOperations:
+         (n (uint 4 rn))
+         (registers register_list)
+         (wback (== w #b1))
+         ((when (or (== n 15)
+                    (< (BitCount 16 registers) 1)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (address (bvplus 32 (reg n arm) 4))
+         ((mv address arm) (stm-loop 0 registers address wback n arm))
+
+         (arm (if (== (getbit 15 registers) #b1)
+                  (write_MemA address 4 (PCStoreValue inst-address) arm)
+                arm))
+         (arm (if wback
+                  (set-reg n (bvplus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
+                arm))
+         (arm (advance-pc arm)))
+      arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

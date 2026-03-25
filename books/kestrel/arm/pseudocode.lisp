@@ -53,6 +53,7 @@
 
 (defconst *unpredictable* :unpredictable)
 (defconst *unsupported* :unsupported)
+(defconst *undefined* :undefined)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

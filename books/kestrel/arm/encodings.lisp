@@ -86,9 +86,7 @@
 
     (:bl (cond 4) 1 0 1 1 (imm24 24)) ;; Encoding A1 of BL/BLX (immediate)
     (:blx-immediate  1 1 1 1 _ 1 0 1 h (imm24 24)) ;; Encoding A2 of BL/BLX (immediate)
-    (:blx-register (cond 4) 0 0 0 1 0 0 1 0 (1) (1) (1) (1) _ (1) (1) (1) (1)_ (1) (1) (1) (1) 0 0 1 1 (rm 4))
-
-;;;    (:blx-register  (cond 4) 0 0 0 1 0 0 1 0 _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ 0 0 1 1 (rm 4))
+    (:blx-register (cond 4) 0 0 0 1 0 0 1 0 (1) (1) (1) (1) _ (1) (1) (1) (1) _ (1) (1) (1) (1) 0 0 1 1 (rm 4))
 
     (:bx (cond 4) 0 0 0 1 0 0 1 0 _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ 0 0 0 1 (rm 4))
 
@@ -294,12 +292,9 @@
     ;; todo: stc/stc2
 
     (:stm/stmia/stmea (cond 4) 1 0 0 0 1 0 w 0 (rn 4) (register_list 16))
-
-    ;; todo: stmda
-
-    (:stmdb/stmfd (cond 4) 1 0 0 1 0 0 w 0 (rn 4) (register_list 16))
-
-    ;; todo: stmib
+    (:stmda/stmed     (cond 4) 1 0 0 0 0 0 w 0 (rn 4) (register_list 16))
+    (:stmdb/stmfd     (cond 4) 1 0 0 1 0 0 w 0 (rn 4) (register_list 16))
+    (:stmib/stmfa     (cond 4) 1 0 0 1 1 0 w 0 (rn 4) (register_list 16))
 
     (:str-immediate   (cond 4) 0 1 0 p u 0 w 0 (rn 4) (rt 4) (imm12 12))
     (:str-register    (cond 4) 0 1 1 p u 0 w 0 (rn 4) (rt 4) (imm5 5) (type 2) 0 (rm 4))
@@ -334,7 +329,8 @@
 
 ;;;    (:svc (cond 4) 1 1 1 1 (imm24 24)) ; supervisor call
 
-    ;; todo: swp, swpb
+    (:swp/swpb (cond 4) 0 0 0 1 0 b 0 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 0 1 (rt2 4))
+
     ;; todo: sxtab
     ;; todo: sxtab16
     ;; todo: sxtah
@@ -593,16 +589,16 @@
                   ;; any other symbol is considered a single-bit item, so we
                   ;; can write s instead of (s 1):
                   (cons `(,item 1) (desugar-pattern (rest pat)))
-                (er hard? "Bad item in pattern: ~x0." item))))
+                (er hard? 'desugar-pattern "Bad item in pattern: ~x0." item))))
         ;; it's a cons:
         (if (not (true-listp item))
-            (er hard? "Bad item in pattern: ~x0." item)
+            (er hard? 'desugar-pattern "Bad item in pattern: ~x0." item)
           (if (symbolp (first item)) ; (<var> <size>)
               (if (and (= 2 (len item))
                        (posp (second item)) ; item size can't be 0
                        )
                   (cons item (desugar-pattern (rest pat)))
-                (er hard? "Bad item in pattern: ~x0." item))
+                (er hard? 'desugar-pattern "Bad item in pattern: ~x0." item))
             (if (or (eql 0 (first item))
                     (eql 1 (first item)))
                 (if (= 1 (len item))
@@ -610,8 +606,8 @@
                     ;; now, we treat these just like other (mandatory) bits,
                     ;; but we could relax that in the future.
                     (cons (first item) (desugar-pattern (rest pat)))
-                  (er hard? "Bad item in pattern: ~x0." item))
-              (er hard? "Bad item in pattern: ~x0." item))))))))
+                  (er hard? 'desugar-pattern "Bad item in pattern: ~x0." item))
+              (er hard? 'desugar-pattern "Bad item in pattern: ~x0." item))))))))
 
 (defthm encoding-patternp-of-desugar-pattern
   (implies (true-listp pat)
