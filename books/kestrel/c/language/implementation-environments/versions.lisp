@@ -36,31 +36,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum version
-  :short "Fixtype of C versions."
+(fty::deftagsum standard
+  :short "Fixtype of C standards."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We model six choices for now:")
+    "We model two choices for now:")
    (xdoc::ul
     (xdoc::li
      "C17 standard [C17].")
     (xdoc::li
-     "C23 standard [C23].")
-    (xdoc::li
-     "C17 standard with GCC extensions [C17] [GCCM] [GCCL].")
-    (xdoc::li
-     "C23 standard with GCC extensions [C23] [GCCM] [GCCL].")
-    (xdoc::li
-     "C17 standard with Clang extensions [C17] [CLE].")
-    (xdoc::li
-     "C23 standard with Clang extensions [C17] [CLE].")))
+     "C23 standard [C23].")))
   (:c17 ())
   (:c23 ())
-  (:c17+gcc ())
-  (:c23+gcc ())
-  (:c17+clang ())
-  (:c23+clang ())
+  :pred standardp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod version
+  :short "Fixtype of C versions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We model versions as a product of the @(see standard)
+     and several optional extensions.
+     The current extensions are:")
+   (xdoc::ul
+    (xdoc::li
+     "GCC extensions [GCCM] [GCCL].")
+    (xdoc::li
+     "Clang extensions [C17] [CLE].")
+    (xdoc::li
+     "CHERI extensions [CHERI]."))
+   (xdoc::p
+    "Not all combinations of extensions are valid.
+     We therefore constrain @('version') to disallow such combinations.
+     Currently, the only constraint is that
+     GCC and Clang extensions cannot both be enabled.")
+   (xdoc::p
+    "Among those versions which are considered valid,
+     some may be unsupported or only partially supported by our tools.
+     For instance, it is valid (i.e. non-contradictory)
+     to apply the CHERI extensions to a base standard
+     without Clang or GCC extensions,
+     but this is not to our knowledge a dialect that is ever used in practice,
+     and so receives very little support and testing."))
+  ((std standard)
+   (gcc booleanp
+        :reqfix (if (and gcc clang)
+                    nil
+                  gcc)
+        :default nil)
+   (clang booleanp
+          :reqfix (if (and gcc clang)
+                      nil
+                    clang)
+          :default nil)
+   (cheri booleanp
+          :default nil))
+  :require (or (not gcc) (not clang))
   :pred versionp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -68,53 +102,9 @@
 (defirrelevant irr-version
   :short "An irrelevant C version"
   :type versionp
-  :body (version-c17))
+  :body (make-version :std (standard-c17)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define version-std-c17p ((version versionp))
-  :returns (yes/no booleanp)
-  :short "Check if the C standard for this C version is C17."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, check whether the C version is C17,
-     with or without GCC/Clang extensions."))
-  (or (version-case version :c17)
-      (version-case version :c17+gcc)
-      (version-case version :c17+clang)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define version-std-c23p ((version versionp))
-  :returns (yes/no booleanp)
-  :short "Check if the C standard for this C version is C23."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, check whether the C version is C23,
-     with or without GCC/Clang extensions."))
-  (or (version-case version :c23)
-      (version-case version :c23+gcc)
-      (version-case version :c23+clang)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define version-gccp ((version versionp))
-  :returns (yes/no booleanp)
-  :short "Check if this C version includes GCC extensions or not."
-  (or (version-case version :c17+gcc)
-      (version-case version :c23+gcc)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define version-clangp ((version versionp))
-  :returns (yes/no booleanp)
-  :short "Check if this C version includes Clang extensions or not."
-  (or (version-case version :c17+clang)
-      (version-case version :c23+clang)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define version-gcc/clangp ((version versionp))
   :returns (yes/no booleanp)
@@ -126,5 +116,5 @@
      supported by GCC and by Clang.
      Therefore, it is most often sufficient to check
      if the version includes either."))
-  (or (version-gccp version)
-      (version-clangp version)))
+  (or (version->gcc version)
+      (version->clang version)))

@@ -157,7 +157,8 @@
 (input-files :files '("macro_test1.c" "macro_test2.c")
              :preprocess :auto
              :preprocess-args *preprocess-args-macro-tests*
-             :ienv (ienv-default :extensions :gcc)
+             :ienv (ienv-default
+                     :version (c::make-version :std (c::standard-c17) :gcc t))
              :const *macro-tests2*)
 
 (acl2::assert! (code-ensemblep *macro-tests2*))
@@ -211,7 +212,8 @@
              :process :disambiguate
              ;; We need GCC (or Clang) extensions because
              ;; stdint.h brings in __buildin_va_list.
-             :ienv (ienv-default :extensions :gcc)
+             :ienv (ienv-default
+                     :version (c::make-version :std (c::standard-c17) :gcc t))
              :const *ppext-disamb-simple/stdbool/stdint*)
 
 (acl2::assert! (code-ensemblep *ppext-disamb-simple/stdbool/stdint*))
@@ -239,7 +241,8 @@
              :process :validate
              ;; We need GCC (or Clang) extensions because
              ;; stdint.h brings in __buildin_va_list.
-             :ienv (ienv-default :extensions :gcc)
+             :ienv (ienv-default
+                     :version (c::make-version :std (c::standard-c17) :gcc t))
              :const *valid-simple/stdbool/stdint*)
 
 (acl2::assert! (code-ensemblep *valid-simple/stdbool/stdint*))

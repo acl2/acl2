@@ -512,7 +512,7 @@
       (tokens-unread :type (integer 0 *)
                      :initially 0)
       (version :type (satisfies c::versionp)
-               :initially ,(c::version-c23))
+               :initially ,(c::make-version :std (c::standard-c23)))
       (size :type (integer 0 *)
             :initially 0)
       (skip-control-lines :type (satisfies booleanp)
@@ -713,7 +713,7 @@
     :returns (version c::versionp)
     (mbe :logic (if (parstatep parstate)
                     (raw-parstate->version parstate)
-                  (c::version-c23))
+                  (c::make-version :std (c::standard-c23)))
          :exec (raw-parstate->version parstate))
     :inline t
     :hooks nil)

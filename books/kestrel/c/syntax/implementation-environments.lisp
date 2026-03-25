@@ -887,14 +887,14 @@
 (define ienv->gcc ((ienv ienvp))
   :returns (yes/no booleanp)
   :short "Flag saying whether GCC extensions are enabled or not."
-  (c::version-gccp (ienv->version ienv)))
+  (c::version->gcc (ienv->version ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->clang ((ienv ienvp))
   :returns (yes/no booleanp)
   :short "Flag saying whether Clang extensions are enabled or not."
-  (c::version-clangp (ienv->version ienv)))
+  (c::version->clang (ienv->version ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -913,28 +913,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->std ((ienv ienvp))
-  :returns (number posp
-                   :rule-classes (:rewrite :type-prescription)
-                   :hints (("Goal" :in-theory (enable c::version-std-c17p
-                                                      c::version-std-c23p))))
-  :short "Numeric version of the C standard (regardless of GCC extensions)."
-  (b* (((ienv ienv) ienv))
-    (cond ((c::version-std-c17p ienv.version) 17)
-          ((c::version-std-c23p ienv.version) 23)))
-  :guard-hints (("Goal" :in-theory (enable c::version-std-c17p
-                                           c::version-std-c23p))))
+  :returns (std c::standardp)
+  :short "The base C standard (regardless of extensions)."
+  (c::version->std (ienv->version ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ienv-default (&key
-                      ((std (or (eq std :auto)
-                                (equal std 17)
-                                (equal std 23)))
-                       ':auto)
-                      ((extensions (or (eq extensions nil)
-                                       (eq extensions :gcc)
-                                       (eq extensions :clang)))
-                       'nil))
+(define ienv-default (&key ((version (or (eq version :auto)
+                                         (c::versionp version)))
+                            ':auto))
   :short "A default implementation environment."
   :long
   (xdoc::topstring
@@ -943,28 +930,19 @@
      In particular, it could be used as default for tests
      that do not necessarily involve @(tsee input-files).")
    (xdoc::p
-    "We default to the C17 standard without GCC extensions.
+    "We default to the C17 standard without any extensions.
      This is the C version with the strongest support.
      Optionally, this can be overridden
-     with the @(':std') and @(':extensions') keyword arguments.
-     The legal arguments for @(':std') are @(':auto'), @('17'), and @('23').
-     The legal arguments for @(':extensions') are
-     @('nil'), @(':gcc'), and @(':clang').")
+     with the @(':version') keyword argument.
+     The argument provided for the @(':version') keyword, if provided,
+     must be @(':auto') or a @(see c::version).")
    (xdoc::p
     "For the type sizes and signedness options,
      we use values which have anecdotally appeared common
      on 64-bit machines."))
-  (b* ((std (if (eq std :auto) 17 std))
-       (version (if (int= std 17)
-                    (cond ((eq extensions nil) (c::version-c17))
-                          ((eq extensions :gcc) (c::version-c17+gcc))
-                          (t ; :clang
-                           (c::version-c17+clang)))
-                  (cond
-                   ((eq extensions nil) (c::version-c23))
-                   ((eq extensions :gcc) (c::version-c23+gcc))
-                   (t ; :clang
-                    (c::version-c23+clang))))))
+  (b* ((version (if (eq version :auto)
+                    (c::make-version :std (c::standard-c17))
+                  version)))
     (make-ienv :version version
                :bool-bytes 1
                :short-bytes 2

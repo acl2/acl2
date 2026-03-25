@@ -8,15 +8,30 @@ int main(void) {
     long stdc = 0;
   #endif
 
-  // Note: clang also defines __GNUC__
-  #if defined(__GNUC__) && !defined(__STRICT_ANSI__)
+  // Note: Clang also defines __GNUC__
+  #if defined(__GNUC__) && defined(__clang__) && !defined(__STRICT_ANSI__)
     _Bool gcc_extensions = 1;
   #else
     _Bool gcc_extensions = 0;
   #endif
 
+  #if defined(__clang__) && !defined(__STRICT_ANSI__)
+    _Bool clang_extensions = 1;
+  #else
+    _Bool clang_extensions = 0;
+  #endif
+
+  // See [CHERI:Table 4.3]
+  #if defined(__CHERI__) || defined(_MIPS_ARCH_CHERI)
+    _Bool cheri_extensions = 1;
+  #else
+    _Bool cheri_extensions = 0;
+  #endif
+
   printf("%ld\n", stdc);                 // version -> c standard
   printf("%d\n", gcc_extensions);        // version -> gcc extensions
+  printf("%d\n", clang_extensions);      // version -> clang extensions
+  printf("%d\n", cheri_extensions);      // version -> cheri extensions
   printf("%d\n", sizeof(_Bool));         // bool-bytes
   printf("%d\n", sizeof(short));         // short-bytes
   printf("%d\n", sizeof(int));           // int-bytes

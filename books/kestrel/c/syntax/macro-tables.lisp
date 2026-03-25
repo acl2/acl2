@@ -441,6 +441,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define predefined-macros-cheri ()
+  :returns (macros string-macro-info-alistp)
+  :short "Predefined macros for CHERI extensions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are in addition to the standard ones.
+     We have none for now,
+     because we have only tested standard and Clang code for now.
+     But we should add them, in a systematic way."))
+  nil
+
+  ///
+
+  (defret no-duplicatesp-equal-of-predefined-macros-cheri
+    (no-duplicatesp-equal (strip-cars macros))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define predefined-macros ((version c::versionp))
   :returns (macros string-macro-info-alistp)
   :short "Predefined macros for the given C version."
@@ -448,18 +467,16 @@
   (xdoc::topstring
    (xdoc::p
     "We compose the macros according to the version."))
-  (c::version-case
-   version
-   :c17 (predefined-macros-c17)
-   :c23 (predefined-macros-c23)
-   :c17+gcc (append (predefined-macros-c17)
-                    (predefined-macros-gcc))
-   :c23+gcc (append (predefined-macros-c23)
-                    (predefined-macros-gcc))
-   :c17+clang (append (predefined-macros-c17)
-                      (predefined-macros-clang))
-   :c23+clang (append (predefined-macros-c23)
-                      (predefined-macros-clang)))
+  (b* (((c::version version) version)
+       (macros (c::standard-case version.std
+                                 :c17 (predefined-macros-c17)
+                                 :c23 (predefined-macros-c23)))
+       (macros (cond (version.gcc (append macros (predefined-macros-gcc)))
+                     (version.clang (append macros (predefined-macros-clang)))
+                     (t macros))))
+    (if version.cheri
+        (append macros (predefined-macros-cheri))
+      macros))
 
   ///
 

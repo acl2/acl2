@@ -15,40 +15,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-dimb (input &key std gcc cond)
+(defmacro test-dimb (input &key version cond)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; VERSION indicates the C standard version.
   ;; Optional COND may be over variable AST.
   `(assert-event
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     version
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ast) (dimb-transunit ast ,gcc)))
+         ((mv erp2 ast) (dimb-transunit ast (c::version-gcc/clangp version))))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
             (t (and ,(or cond t)
                     (prog2$ (cw "~%Output:~%~x0~|" ast) t)))))))
 
-(defmacro test-dimb-fail (input &key std gcc)
+(defmacro test-dimb-fail (input &key version)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; VERSION indicates the C standard version.
   `(assert-event
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     version
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ?ast) (dimb-transunit ast ,gcc)))
+         ((mv erp2 ?ast) (dimb-transunit ast (c::version-gcc/clangp version))))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))
             (t nil)))))
@@ -98,7 +92,7 @@
   int y = _Alignof(x);
   }
 "
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-dimb
  "typedef char x;
@@ -106,7 +100,7 @@
   int y = _Alignof(x);
   }
 "
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-dimb
  "int x;
@@ -439,7 +433,7 @@
   return (x->y >= (f()) && x->y < (g()));
 }
 "
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (not (cw "~x0" ast)))
 
 (test-dimb
@@ -448,7 +442,7 @@
    goto mylabel;
 }
 "
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-dimb-fail
  "typedef union __attribute__((transparent_union))

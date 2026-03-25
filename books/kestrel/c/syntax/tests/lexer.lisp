@@ -21,19 +21,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-lex (fn input &key pos more-inputs std gcc cond)
+(defmacro test-lex (fn input &key pos more-inputs version cond)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; VERSION indicates the C standard version.
   ;; Optional COND may be over variables AST, POS/SPAN, PARSTATE,
   ;; and also POS/SPAN2 for LEX-*-DIGIT and LEX-*-HEXADECIMAL-DIGIT.
   `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (parstate (init-parstate ""
                                   (if (stringp ,input)
                                       (acl2::string=>nats ,input)
@@ -55,17 +52,14 @@
        parstate))
     parstate))
 
-(defmacro test-lex-fail (fn input &key pos more-inputs std gcc)
+(defmacro test-lex-fail (fn input &key pos more-inputs version)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; VERSION indicates the C standard version.
   `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (parstate (init-parstate ""
                                   (if (stringp ,input)
                                       (acl2::string=>nats ,input)
@@ -400,7 +394,7 @@
 (test-lex
  lex-escape-sequence
  "%"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (escape-simple (simple-escape-percent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -877,114 +871,114 @@
 (test-lex
  lex-?-floating-suffix
  "f16"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f16 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "f32"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f32 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "f64"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f64 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "f128"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f128 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "f16x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f16 t)))
 
 (test-lex
  lex-?-floating-suffix
  "f32x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f32 t)))
 
 (test-lex
  lex-?-floating-suffix
  "f64x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f64 t)))
 
 (test-lex
  lex-?-floating-suffix
  "f128x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f128 t)))
 
 (test-lex
  lex-?-floating-suffix
  "F16"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f16 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "F32"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f32 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "F64"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f64 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "F128"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f128 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "F16x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f16 t)))
 
 (test-lex
  lex-?-floating-suffix
  "F32x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f32 t)))
 
 (test-lex
  lex-?-floating-suffix
  "F64x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f64 t)))
 
 (test-lex
  lex-?-floating-suffix
  "F128x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f128 t)))
 
 (test-lex
  lex-?-floating-suffix
  "f32y"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f32 nil)))
 
 (test-lex-fail
  lex-?-floating-suffix
  "f33"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-lex-fail
  lex-?-floating-suffix
  "f168"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
