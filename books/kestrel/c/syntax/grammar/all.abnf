@@ -1829,29 +1829,7 @@ attributed-return-statement = attribute-specifier %s"return" expression ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Directives
-
-; Here we single out the #include directives,
-; but with a slightly different rule than presented in [C17:A.3] [C17:6.10]
-; and formalized above in the section for preprocesing rules.
-; We define the #include directive as containing a header name,
-; while the rule in [C17:A.3] [C17:6.10] is more general;
-; this is because the following rule is for the phrase structure,
-; after lexical analysis and preprocessing have taken place.
-; Note that only our preprocessor generates
-; #include directives for the phrase structure grammar;
-; external preprocessors expand them away.
-
-include-directive = "#" %s"include" header-name
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; External Definitions [C17:A.2.4]
-
-; We allow a translation unit to start with #include directives.
-; We plan to extend this to allow #include directives
-; to be intermixed with external declarations;
-; we also plan to allow conditional directives (i.e. #if etc.).
 
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a function definition.
@@ -1861,7 +1839,7 @@ include-directive = "#" %s"include" header-name
 ; this is similar to initializer declarators.
 
 ; We also allow a lone semicolon as an external declaration.
-; This is definitely not grammatical according to [C17],
+; This is definitely not grammatical according to [C17] or [C23],
 ; and we did not find it anywhere in the GCC documentation;
 ; nonetheless, we encountered it in practical code.
 ; Presumably, it may make it easier to write certain macros.
@@ -1874,17 +1852,6 @@ include-directive = "#" %s"include" header-name
 ; We could not find a place in the GCC documentation saying that
 ; assembler statements can occur at the top level,
 ; but we encountered that in practical code.
-
-; As a GCC extension, we allow empty translation units,
-; i.e. with no external declarations.
-; We combine this requirement with the rule from [C17]
-; by using a simpler ABNF rule.
-; We could not find a specific place in the GCC documentation
-; that explicitly says that empty translation units are allowed,
-; but we found that they are allowed when running GCC on them.
-
-translation-unit = *include-directive ; from our preprocessor
-                   *external-declaration ; none only as GCC extension
 
 external-declaration = function-definition
                      / declaration
@@ -1901,3 +1868,58 @@ function-definition = [ %s"__extension__" ] ; GCC extension
 
 declaration-list = declaration
                  / declaration-list declaration
+
+; Although [C17:6.9] and [C23:6.9] present the rule for translation units
+; together with the ones above, we present it below,
+; because it is more elaborate for us.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Translation Units
+
+; Since our preprocessor preserves certain preprocessing constructs,
+; our grammar rule for translation units
+; is more complicated than [C17] and [C23].
+; In particular, we introduce a notion of translation item,
+; absent from [C17] and [C23],
+; as the entity whose sequences form translation units.
+
+; Although [C17] and [C23] forbid empty translation units,
+; we have found that GCC and Clang allow them.
+; So here we allow empty ones as well.
+
+translation-unit = *translation-item
+
+; A translation item is an external declaration,
+; or a directive picked from a subset of all directives,
+; or a conditional construct that may recursively contain translation items.
+; The allowed directives are #include's with explicit header names
+; (the preprocessor has already expanded indirect #include's),
+; identity #define's for object-like macros
+; (see :doc preservable-inclusions for motivation for this form),
+; and #undef's.
+; The conditional constructs start with any of #if, #ifdef, and #ifndef,
+; may contain any number of #elif's, an optional #else, and a mandatory #endif.
+; We also allow line comments as translation items;
+; this only concerns like comments that appear at the top level,
+; while others are discarded along with white space.
+
+translation-item = external-declaration
+                 / "#" %s"include" header-name
+                 / "#" %s"define" identifier identifier
+                 / "#" %s"undef" identifier
+                 / conditional-item
+                 / line-comment
+
+conditional-item = hash-if-or-ifdef-or-ifndef
+                   *hash-elif
+                   [ hash-else ]
+                   "#" %s"endif"
+
+hash-if-or-ifdef-or-ifndef = "#" %s"if" constant-expression
+                           / "#" %s"ifdef" identifier
+                           / "#" %s"ifndef" identifier
+
+hash-elif = "#" %s"elif" constant-expression *translation-item
+
+hash-else = "#" %s"else" *translation-item
