@@ -235,12 +235,15 @@
 (defund apsr.c (arm) (declare (xargs :stobjs arm)) (getbit 29 (apsr arm)))
 (defund apsr.v (arm) (declare (xargs :stobjs arm)) (getbit 28 (apsr arm)))
 (defund apsr.q (arm) (declare (xargs :stobjs arm)) (getbit 27 (apsr arm)))
+;; This one is 4 bits:
+(defund apsr.ge (arm) (declare (xargs :stobjs arm)) (slice 19 16 (apsr arm)))
 
 (defund set-apsr.n (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 31 bit (apsr arm)) arm))
 (defund set-apsr.z (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 30 bit (apsr arm)) arm))
 (defund set-apsr.c (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 29 bit (apsr arm)) arm))
 (defund set-apsr.v (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 28 bit (apsr arm)) arm))
 (defund set-apsr.q (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 27 bit (apsr arm)) arm))
+(defund set-apsr.ge (bits arm) (declare (xargs :guard (unsigned-byte-p 4 bits) :stobjs arm)) (update-apsr (putbits 32 19 16 bits (apsr arm)) arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
