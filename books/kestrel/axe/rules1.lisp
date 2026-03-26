@@ -1,7 +1,7 @@
 ; Mixed rules 1
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -864,11 +864,6 @@
                                   (unsigned-byte-p-of-+-of-minus-alt
                                    unsigned-byte-p-of-+-of-minus)))))
 
-;; (thm
-;;  (equal (repeatbit 1 bit)
-;;         (getbit 0 bit))
-;;  :hints (("Goal" :in-theory (enable repeatbit))))
-
 (defthm getbit-list-of-bv-array-write
   (implies (and (< n esize) ;other case (all zeros)?
                 (equal len (len lst)) ;drop?
@@ -911,23 +906,23 @@
 ;;   :hints (("Goal" :in-theory (enable bvnth all-integerp-when-all-natp
 ;;                                      ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4-ALT))))
 
-;needed for 2d arrays - BOZO gen!
-(defthm split-nth-access-hack
-  (equal (nth (bvcat 1 a 1 b) vals)
-         (if (equal 0 (getbit 0 a))
-             (if (equal 0 (getbit 0 b))
-                 (nth 0 vals)
-               (nth 1 vals))
-           (if (equal 0 (getbit 0 b))
-               (nth 2 vals)
-             (nth 3 vals))))
-  :hints (("Goal"
-           :cases ((and (equal 1 (getbit 0 a)) (equal 1 (getbit 0 b)))
-                   (and (not (equal 1 (getbit 0 a))) (equal 1 (getbit 0 b)))
-                   (and (equal 1 (getbit 0 a)) (not (equal 1 (getbit 0 b)))))
-           :in-theory (disable ;GETBIT-WHEN-NOT-0
-                       ;;GETBIT-WHEN-NOT-1
-                               ))))
+;; ;needed for 2d arrays - BOZO gen!
+;; (defthmd split-nth-access-hack
+;;   (equal (nth (bvcat 1 a 1 b) vals)
+;;          (if (equal 0 (getbit 0 a))
+;;              (if (equal 0 (getbit 0 b))
+;;                  (nth 0 vals)
+;;                (nth 1 vals))
+;;            (if (equal 0 (getbit 0 b))
+;;                (nth 2 vals)
+;;              (nth 3 vals))))
+;;   :hints (("Goal"
+;;            :cases ((and (equal 1 (getbit 0 a)) (equal 1 (getbit 0 b)))
+;;                    (and (not (equal 1 (getbit 0 a))) (equal 1 (getbit 0 b)))
+;;                    (and (equal 1 (getbit 0 a)) (not (equal 1 (getbit 0 b)))))
+;;            :in-theory (disable ;GETBIT-WHEN-NOT-0
+;;                        ;;GETBIT-WHEN-NOT-1
+;;                                ))))
 
 (defthmd nth-of-if-arg2
   (equal (nth n (if test a b))
