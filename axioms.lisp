@@ -9998,10 +9998,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; as (er soft ctx msg x y z), where msg was bound to the error message str
 ; (because the same string was used many times).
 
-; The special form (er hard "..." &...) expands into a call of illegal on "..."
-; and an alist built from &....  Since illegal has a guard of nil, the attempt
-; to prove the correctness of a fn producing a hard error will require proving
-; that the error can never occur.  At runtime, illegal causes a CLTL error.
+; The special form (er hard ctx "..." &...) expands into a call of illegal on
+; "..."  and an alist built from &....  Since illegal has a guard of nil, the
+; attempt to prove the correctness of a fn producing a hard error will require
+; proving that the error can never occur.  At runtime, illegal causes a CLTL
+; error.
 
 ; The form (er soft ctx "..." &...) expands into a call of error1 on ctx, "..."
 ; and an alist built from &....  At runtime error1 builds an error object and
