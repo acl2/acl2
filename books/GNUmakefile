@@ -360,6 +360,11 @@ ${info Excluding books that are CCL-only: [$(CERT_PL_CCL_ONLY)]}
 OK_CERTS := $(filter-out $(CERT_PL_CCL_ONLY), $(OK_CERTS))
 endif
 
+ifneq (SBCL, $(ACL2_HOST_LISP))
+${info Excluding books that are SBCL-only: [$(CERT_PL_SBCL_ONLY)]}
+OK_CERTS := $(filter-out $(CERT_PL_SBCL_ONLY), $(OK_CERTS))
+endif
+
 ifeq (ALLEGRO, $(ACL2_HOST_LISP))
 ${info Excluding non-Allegro books: [$(CERT_PL_NON_ALLEGRO)]}
 OK_CERTS := $(filter-out $(CERT_PL_NON_ALLEGRO), $(OK_CERTS))
