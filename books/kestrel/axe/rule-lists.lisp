@@ -3516,7 +3516,7 @@
 ;    bvuminus-when-smaller-bind-free-dag
              commutativity-2-of-+-when-constant
              rationalp-of--
-             rationalp-of-+
+             rationalp-+
              bvlt-of-1
              max
              bvchop-of-times-of-/-32
