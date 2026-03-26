@@ -1,7 +1,7 @@
 ; A function to read from an array of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +11,13 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
+(include-book "kestrel/arithmetic-light/ceiling-of-lg-def" :dir :system)
+(include-book "kestrel/arithmetic-light/lg-def" :dir :system)
+(include-book "kestrel/arithmetic-light/power-of-2p-def" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
 (include-book "unsigned-byte-listp-def")
 (include-book "kestrel/bv/bvlt-def" :dir :system)
+(local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -75,24 +78,23 @@
                   t))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
-(defthm bv-array-read-of-bvchop-helper
-  (implies (and (<= m n)
-                (natp n)
-                (natp m))
-           (equal (BV-ARRAY-READ size (expt 2 m) (BVCHOP n INDEX) VALS)
-                  (BV-ARRAY-READ size (expt 2 m) INDEX VALS)))
-  :hints (("Goal" :in-theory (enable bv-array-read ceiling-of-lg))))
+(local
+ (defthm bv-array-read-of-bvchop-helper
+   (implies (and (<= m n)
+                 (natp n)
+                 (natp m))
+            (equal (bv-array-read size (expt 2 m) (bvchop n index) vals)
+                   (bv-array-read size (expt 2 m) index vals)))
+   :hints (("Goal" :in-theory (enable bv-array-read ceiling-of-lg)))))
 
 (defthm bv-array-read-of-bvchop
-  (implies (and (equal len (expt 2 (+ -1 (integer-length len)))) ;len is a power of 2
-                (<= (+ -1 (integer-length len)) n)
-                (natp len)
+  (implies (and (power-of-2p len)
+                (<= (lg len) n)
                 (natp n))
            (equal (bv-array-read size len (bvchop n index) vals)
                   (bv-array-read size len index vals)))
-  :hints (("Goal" :in-theory (disable bv-array-read-of-bvchop-helper
-                                      ;collect-constants-times-equal ;fixme
-                                      )
+  :hints (("Goal" :in-theory (e/d (lg)
+                                  (bv-array-read-of-bvchop-helper))
            :use (:instance bv-array-read-of-bvchop-helper (m (+ -1 (integer-length len)))))))
 
 (defthm bv-array-read-of-bvchop-gen
@@ -145,10 +147,10 @@
 ;; Reading from an array of length 1 always gives the 0th element (and is in
 ;; fact independent from the index).
 ;drop this one?
-(defthmd bv-array-read-of-1-arg2
-  (equal (bv-array-read element-size 1 index data)
-         (bvchop element-size (nth 0 data)))
-  :hints (("Goal" :in-theory (enable bv-array-read))))
+;; (defthmd bv-array-read-of-1-arg2
+;;   (equal (bv-array-read element-size 1 index data)
+;;          (bvchop element-size (nth 0 data)))
+;;   :hints (("Goal" :in-theory (enable bv-array-read))))
 
 ;; unusual case: when the array has size 1, the only valid index is 0 (because
 ;; the index gets chopped down to 0 bits).  Thus, the index is irrelevant.

@@ -555,7 +555,6 @@
                             ;NTH-OF-BVNOT-LIST
                             ;BV-ARRAY-READ-OF-TAKE
                             ;BV-ARRAY-READ-OF-BVCHOP
-                            ;BV-ARRAY-READ-OF-BVCHOP-HELPER
                               ))))))
 
 (local
@@ -635,7 +634,6 @@
              :cases ((equal 0 (getbit 0 x)))
              :in-theory (e/d (nth-sum-when-nthcdr-known bvcat-special-opener bv-array-read ceiling-of-lg subrange)
                              (NTH-OF-NTHCDR
-                              BV-ARRAY-READ-OF-BVCHOP-HELPER
                               BV-ARRAY-READ-OF-BVCHOP
                               BV-ARRAY-READ-OF-TAKE))))))
 

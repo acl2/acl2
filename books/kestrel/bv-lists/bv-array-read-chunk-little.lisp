@@ -1,6 +1,6 @@
 ; Reading a chunk of bytes from a bv-array
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "unsigned-byte-listp")
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
+(local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
