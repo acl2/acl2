@@ -448,7 +448,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvsx-of-bv-array-read-constant-array
-  (implies (and (syntaxp (quotep data))
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep new-size)
+                              (quotep old-size)))
                 (equal len (len data))
                 (natp new-size)
                 (natp old-size))
