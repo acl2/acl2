@@ -101,9 +101,8 @@
                              :ldouble-bytes ,ldouble-bytes
                              :pointer-bytes ,pointer-bytes
                              :plain-char-signedp ,plain-char-signedp))
-            (gcc/clang (c::version-gcc/clangp ,version))
             ((mv erp1 ast) (parse-fileset ',fileset ,version t nil))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast gcc/clang nil))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,version nil))
             ((mv erp3 ?ast) (valid-transunit-ensemble ast ienv nil)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
@@ -144,9 +143,8 @@
                              :ldouble-bytes ,ldouble-bytes
                              :pointer-bytes ,pointer-bytes
                              :plain-char-signedp ,plain-char-signedp))
-            (gcc/clang (c::version-gcc/clangp ,version))
             ((mv erp1 ast) (parse-fileset ',fileset ,version t nil))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast gcc/clang nil))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,version nil))
             ((mv erp3 ?ast) (valid-transunit-ensemble ast ienv nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
                (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))

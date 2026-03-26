@@ -26,7 +26,7 @@
                                     version
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ast) (dimb-transunit ast (c::version-gcc/clangp version))))
+         ((mv erp2 ast) (dimb-transunit ast version)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
             (t (and ,(or cond t)
@@ -42,7 +42,7 @@
                                     version
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ?ast) (dimb-transunit ast (c::version-gcc/clangp version))))
+         ((mv erp2 ?ast) (dimb-transunit ast version)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))
             (t nil)))))
