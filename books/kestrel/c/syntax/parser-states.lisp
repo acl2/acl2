@@ -15,11 +15,13 @@
 (include-book "spans")
 
 (include-book "../language/implementation-environments/versions")
+(include-book "../language/keywords")
 
 (include-book "kestrel/fty/byte-list" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
 
@@ -517,6 +519,10 @@
             :initially 0)
       (skip-control-lines :type (satisfies booleanp)
                           :initially nil)
+      ;; Expected invariant: (equal keywords (c::keywords-for version))
+      (keywords :type (satisfies string-listp)
+                :initially ,(c::keywords-for
+                              (c::make-version :std (c::standard-c23))))
       :renaming (;; field recognizers:
                  (bytesp raw-parstate->bytes-p)
                  (positionp raw-parstate->position-p)
@@ -529,6 +535,7 @@
                  (versionp raw-parstate->version-p)
                  (sizep raw-parstate->size-p)
                  (skip-control-linesp raw-parstate->skip-control-lines-p)
+                 (keywordsp raw-parstate->keywords-p)
                  ;; field readers:
                  (bytes raw-parstate->bytes)
                  (position raw-parstate->position)
@@ -543,6 +550,7 @@
                  (version raw-parstate->version)
                  (size raw-parstate->size)
                  (skip-control-lines raw-parstate->skip-control-lines)
+                 (keywords raw-parstate->keywords)
                  ;; field writers:
                  (update-bytes raw-update-parstate->bytes)
                  (update-position raw-update-parstate->position)
@@ -557,7 +565,8 @@
                  (update-version raw-update-parstate->version)
                  (update-size raw-update-parstate->size)
                  (update-skip-control-lines
-                  raw-update-parstate->skip-control-lines))
+                  raw-update-parstate->skip-control-lines)
+                 (update-keywords raw-update-parstate->keywords))
       :inline t))
 
   ;; fixer:
@@ -599,6 +608,13 @@
     :induct t
     :enable (raw-parstate->tokens-p
              token+span-listp))
+
+  (defrule raw-parstate->keywords-p-becomes-string-listp
+    (equal (raw-parstate->keywords-p x)
+           (string-listp x))
+    :induct t
+    :enable (raw-parstate->keywords-p
+             string-listp))
 
   ;; needed for reader/writer proofs:
 
@@ -735,6 +751,17 @@
          :exec (raw-parstate->skip-control-lines parstate))
     :inline t
     :hooks nil)
+
+  (define parstate->keywords (parstate)
+    :returns (keywords string-listp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->keywords parstate)
+                  (c::keywords-for (c::make-version :std (c::standard-c23))))
+         :exec (raw-parstate->keywords parstate))
+    :inline t
+    ///
+    (more-returns
+     (keywords true-listp :rule-classes :type-prescription)))
 
   ;; writers:
 
@@ -874,6 +901,13 @@
     :inline t
     :hooks nil)
 
+  (define update-parstate->keywords ((keywords string-listp) parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->keywords (string-list-fix keywords) parstate))
+    :inline t
+    :hooks nil)
+
   ;; readers over writers:
 
   (defrule parstate->size-of-update-parstate->bytes
@@ -949,6 +983,16 @@
            (parstate->size parstate))
     :enable (parstate->size
              update-parstate->skip-control-lines
+             parstatep
+             parstate-fix
+             length
+             nfix))
+
+  (defrule parstate->size-of-update-parstate->keywords
+    (equal (parstate->size (update-parstate->keywords keywords parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->keywords
              parstatep
              parstate-fix
              length
@@ -1038,7 +1082,9 @@
        (parstate (update-parstate->version version parstate))
        (parstate (update-parstate->size (len data) parstate))
        (parstate
-        (update-parstate->skip-control-lines skip-control-lines parstate)))
+        (update-parstate->skip-control-lines skip-control-lines parstate))
+       (parstate
+        (update-parstate->keywords (c::keywords-for version) parstate)))
     parstate)
   :hooks nil)
 
@@ -1069,7 +1115,7 @@
 
 ; Fixtype version of PARSTATE stobj (useful for debugging and testing).
 ; This is how the parser state was originally defined,
-; before using a stobj and before caching the size.
+; before using a stobj and before caching the size and keywords.
 (fty::defprod parstate$
   ((bytes byte-list)
    (position position)
