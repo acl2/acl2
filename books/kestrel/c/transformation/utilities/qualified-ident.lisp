@@ -165,6 +165,14 @@
                         with internal linkage in translation unit ~x1."
                        qual-ident.ident
                        qual-ident.filepath?)
+     :define (retmsg$ "~x0 is not an object or function ~
+                       with internal linkage in translation unit ~x1."
+                      qual-ident.ident
+                      qual-ident.filepath?)
+     :undef (retmsg$ "~x0 is not an object or function ~
+                      with internal linkage in translation unit ~x1."
+                     qual-ident.ident
+                     qual-ident.filepath?)
      :cond (retmsg$ "~x0 is not an object or function ~
                      with internal linkage in translation unit ~x1."
                     qual-ident.ident

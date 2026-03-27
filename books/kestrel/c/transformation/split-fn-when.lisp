@@ -181,6 +181,8 @@
                                                   transunits)))
                 (retok found (c$::trans-item-list-declon extdecls)))
       :include (retmsg$ "Unsupported #include directive.")
+      :define (retmsg$ "Unsupported #define directive.")
+      :undef (retmsg$ "Unsupported #undef directive.")
       :cond (retmsg$ "Unsupported conditional directive.")
       :line-comment (retok nil (list (trans-item-fix item)))))
   ///

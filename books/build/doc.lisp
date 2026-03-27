@@ -1393,6 +1393,8 @@ certification using @('make')."
 
  <li>@('ccl-only'): only certify when the host Lisp is CCL</li>
 
+ <li>@('sbcl-only'): only certify when the host Lisp is SBCL</li>
+
  <li>@('non-acl2r'): only certify when the @(see real) numbers are NOT
  supported, i.e., when NOT using ACL2(r)</li>
 
@@ -1451,6 +1453,7 @@ certification using @('make')."
 (acl2::defpointer acl2xskip cert_param)
 (acl2::defpointer ansi-only cert_param)
 (acl2::defpointer ccl-only cert_param)
+(acl2::defpointer sbcl-only cert_param)
 (acl2::defpointer non-acl2r cert_param)
 (acl2::defpointer non-acl2p cert_param)
 (acl2::defpointer non-allegro cert_param)

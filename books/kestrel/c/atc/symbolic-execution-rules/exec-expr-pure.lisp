@@ -14,6 +14,7 @@
 (include-book "../../proof-support/test-star")
 (include-book "../../proof-support/pure-expression-execution")
 (include-book "../../proof-support/exec-expr-pure-openers")
+(include-book "../../proof-support/exec-expr-pure-list-openers")
 
 (include-book "../../representation/integer-operations")
 
@@ -50,25 +51,6 @@
 
 (defsection atc-exec-expr-pure-list-rules
   :short "Rules for @(tsee exec-expr-pure-list)."
-
-  (defruled exec-expr-pure-list-of-nil
-    (equal (exec-expr-pure-list nil compst)
-           nil)
-    :enable exec-expr-pure-list)
-
-  (defruled exec-expr-pure-list-when-consp
-    (implies (and (syntaxp (quotep es))
-                  (consp es)
-                  (equal eval (exec-expr-pure (car es) compst))
-                  (expr-valuep eval)
-                  (equal eval1 (apconvert-expr-value eval))
-                  (expr-valuep eval1)
-                  (equal val (expr-value->value eval1))
-                  (equal vals (exec-expr-pure-list (cdr es) compst))
-                  (value-listp vals))
-             (equal (exec-expr-pure-list es compst)
-                    (cons val vals)))
-    :enable exec-expr-pure-list)
 
   (defval *atc-exec-expr-pure-list-rules*
     '(exec-expr-pure-list-of-nil

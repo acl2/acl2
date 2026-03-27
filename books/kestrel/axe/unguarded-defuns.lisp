@@ -21,8 +21,8 @@
 ;; foo-unguarded and foo.
 
 (include-book "kestrel/bv/trim" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
 (include-book "kestrel/bv/bvplus-def" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)

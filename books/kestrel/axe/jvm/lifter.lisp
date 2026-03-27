@@ -67,7 +67,7 @@
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for right-cancellation-for-+

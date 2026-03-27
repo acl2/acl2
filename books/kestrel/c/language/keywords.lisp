@@ -188,7 +188,7 @@
     "__declspec"
     "__extension__"
     "__float80"
-    "__floar128"
+    "__float128"
     "_Float16"
     "_Float16x"
     "_Float32"
@@ -268,7 +268,7 @@
     (set-difference-equal
       *keywords-gcc*
       '("__float80"
-        "__floar128"
+        "__float128"
         "_Float16x"
         "_Float32"
         "_Float32x"

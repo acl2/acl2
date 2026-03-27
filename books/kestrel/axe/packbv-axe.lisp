@@ -17,7 +17,7 @@
 (include-book "axe-syntax") ;for work-hard
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/map-packbv" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
 (local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))

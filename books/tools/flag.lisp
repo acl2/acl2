@@ -650,7 +650,7 @@ one such form may affect what you might think of as the proof of another.</p>
       (if (eq (car args) kwd)
           (if (consp (cdr args))
               (cadr args)
-            (er hard "Expected something to follow ~s0.~%" kwd))
+            (er hard 'extract-keyword-from-args "Expected something to follow ~s0.~%" kwd))
         (extract-keyword-from-args kwd (cdr args)))
     nil))
 

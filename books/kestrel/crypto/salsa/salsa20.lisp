@@ -14,7 +14,7 @@
 ;; See tests (from the specification) in salsa20-tests.lisp.
 
 (include-book "portcullis")
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/packbv-little" :dir :system)
 (include-book "kestrel/bv-lists/unpackbv-little" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)

@@ -50,7 +50,7 @@
 (include-book "arithmetic-rules-axe")
 (include-book "bv-array-rules-axe") ; not all are needed, but we need integerp-of-bv-array-read
 (include-book "bv-intro-rules")
-(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
+(include-book "kestrel/bv-arrays/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BVCHOP, etc?

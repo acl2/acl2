@@ -20,7 +20,7 @@
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/bv/trim-elim-rules-non-bv" :dir :system) ; these rules complement the rules in this book
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system) ; todo: just get the def?
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system) ; todo: just get the def?
 ;(local (include-book "kestrel/bv/rules" :dir :system));drop?
 (local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))

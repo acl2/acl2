@@ -27,7 +27,7 @@
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrayp" :dir :system) ; todo: split out def
+(include-book "kestrel/bv-arrays/bv-arrayp" :dir :system) ; todo: split out def
 
 ;; TODO: Add more functions!  Add more bv functions.
 (defconst *axe-evaluator-basic-fns-and-aliases*

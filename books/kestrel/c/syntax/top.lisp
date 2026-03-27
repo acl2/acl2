@@ -49,8 +49,7 @@
      in IDE-like tools.")
    (xdoc::p
     "Currently this abstract syntax covers all of C after preprocessing,
-     but it also includes some initial forms of preprocessing constructs,
-     which we plan to extend.
+     but it also includes some forms of preprocessing constructs.
      Preserving preprocessing constructs from the original concrete syntax
      is also important,
      since preprocessed code can be fairly distant from the original one.

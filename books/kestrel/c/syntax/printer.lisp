@@ -4452,9 +4452,9 @@
    (xdoc::p
     "Currently we do not have ASTs for @('#include') directives,
      but we use header names to represent such directives:
-     see @(tsee transunit).
+     see @(tsee trans-item).
      So this function takes as input a header name.
-     We print it as an include directive, in its own line.
+     We print it as a @('include') directive, in its own line.
      Since this is only used at the top level,
      no indentation is needed."))
   (b* ((pstate (print-astring "#include " pstate))
@@ -4466,6 +4466,61 @@
   ///
 
   (defret-same-version print-include-directive))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-define-directive ((name identp) (pstate pristatep))
+  :guard (ident-aidentp name (pristate->version pstate))
+  :returns (new-pstate pristatep)
+  :short "Print a @('#define') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently we do not have ASTs for @('#define') directives,
+     but we use identifiers to represent such directives:
+     see @(tsee trans-item).
+     So this function takes as input an identifier.
+     We print it as a @('#define') directive, in its own line;
+     as explained in @(tsee trans-item), the body is the same as the name.
+     Since this is only used at the top level,
+     no indentation is needed."))
+  (b* ((pstate (print-astring "#define " pstate))
+       (pstate (print-ident name pstate))
+       (pstate (print-astring " " pstate))
+       (pstate (print-ident name pstate))
+       (pstate (print-new-line pstate)))
+    pstate)
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-version print-define-directive))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-undef-directive ((name identp) (pstate pristatep))
+  :guard (ident-aidentp name (pristate->version pstate))
+  :returns (new-pstate pristatep)
+  :short "Print a @('#undef') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently we do not have ASTs for @('#undef') directives,
+     but we use identifiers to represent such directives:
+     see @(tsee trans-item).
+     So this function takes as input an identifier.
+     We print it as a @('#undef') directive, in its own line.
+     Since this is only used at the top level,
+     no indentation is needed."))
+  (b* ((pstate (print-astring "#undef " pstate))
+       (pstate (print-ident name pstate))
+       (pstate (print-new-line pstate)))
+    pstate)
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-version print-undef-directive))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4687,6 +4742,8 @@
      item
      :declon (print-ext-declon item.declon pstate)
      :include (print-include-directive item.header pstate)
+     :define (print-define-directive item.macro pstate)
+     :undef (print-undef-directive item.macro pstate)
      :cond (b* ((pstate (print-hash-if/ifdef/ifndef item.if/ifdef/ifndef
                                                     pstate))
                 (pstate (if item.items
