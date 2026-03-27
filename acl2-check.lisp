@@ -297,6 +297,10 @@ is using two characters to indicate a new line?"))
                         (char-upcase ch))
                        ch))
       (setq bad 3))
+    (unless (<= (char-code (char-downcase ch)) 255)
+      (setq bad 4))
+    (unless (<= (char-code (char-upcase ch)) 255)
+      (setq bad 5))
     (when bad
       (exit-with-build-error
        "This Common Lisp is unsuitable for ACL2 because the~%~
@@ -315,6 +319,10 @@ is using two characters to indicate a new line?"))
                  (equal (char-downcase
                          (char-upcase ch))
                         ch)))
+         (4 '(unless (<= (char-code (char-downcase ch)) 255)
+               (setq bad 4)))
+         (5 '(unless (<= (char-code (char-upcase ch)) 255)
+               (setq bad 5)))
          (otherwise
           "Implementation Error!   Please contact the ACL2 implementors."))
        #-cmucl ""

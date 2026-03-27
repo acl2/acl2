@@ -2431,3 +2431,54 @@ compiler::
 (eval-when
     (compile load eval)
   (proclaim '(ftype (function (t t *) t) compiler::c2funcall-new)))
+
+; We have found that in all Lisps that host ACL2 except for GCL, the expression
+; (char-code (char-upcase (code-char 255))) evaluates to 376.  Thus, (code-char
+; 255) represents an ACL2 character whose char-upcase is not an ACL2 character!
+; So we avoid uppercasing this character for all Lisps except GCL.  (We would
+; do so for GCL as well, in case it is changed in the future to behave as the
+; others; but compile-file complains about our use of funcall in GCL
+; Version_2_7_2pre12.)
+
+; Starting with Version 8.1.0 of Lispworks, character 223 also is treated
+; as lower-case but its upper-casing produces a non-ACL2 character, e.g.,
+; (char-code (char-upcase (code-char 223))) evalutes to 7838.  We fix that
+; issue here as well.
+
+; The code below was originally only for LispWorks, but Eric McCarthy noted
+; that for the character with code 255 it is needed for SBCL has well.  We have
+; left it in file acl2.lisp, but it might make sense to move it to
+; acl2-fns.lisp and avoid the separate calls to COMPILE.  It might even make
+; sense simply to redefine the relevant functions rather than to modify their
+; symbol-functions.  But for now, as we extend from just LispWorks, we prefer
+; to adhere closely to the original well-tested code.
+
+#-gcl
+(progn
+#+lispworks
+(defconstant *char-223* (code-char 223))
+(defconstant *char-255* (code-char 255))
+(defconstant *lower-case-p-old* (symbol-function 'lower-case-p))
+(defconstant *char-upcase-old* (symbol-function 'char-upcase))
+(defconstant *string-upcase-old* (symbol-function 'string-upcase))
+(defun lower-case-p-new (c)
+  (declare (type character c))
+  (if (or #+lispworks (eql c *char-223*)
+          (eql c *char-255*))
+      nil
+    (funcall *lower-case-p-old* c)))
+(defun char-upcase-new (c)
+  (declare (type character c))
+  (if (or #+lispworks (eql c *char-223*)
+          (eql c *char-255*))
+      c
+    (funcall *char-upcase-old* c)))
+(defun string-upcase-new (s)
+  (declare (type string s))
+  (if (or #+lispworks (position *char-223* s)
+          (position *char-255* s))
+      (coerce (loop for i from 0 to (1- (length s))
+                    collect (char-upcase-new (char s i)))
+              'string)
+    (funcall *string-upcase-old* s)))
+)
