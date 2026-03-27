@@ -1,7 +1,7 @@
 ; If-then-else on bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,15 +11,15 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop-list")
+(include-book "kestrel/bv-lists/bvchop-list" :dir :system)
 (include-book "bv-arrayp")
-(include-book "width-of-widest-int")
+(include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(local (include-book "bvchop-list2"))
+(local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
 
 (defund bv-array-if (element-size len test array1 array2)
   (declare (xargs :guard (and (natp len)

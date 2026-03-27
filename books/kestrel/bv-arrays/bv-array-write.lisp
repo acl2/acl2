@@ -1,7 +1,7 @@
 ; A function to write to an array of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,7 @@
 
 (include-book "kestrel/lists-light/update-nth2" :dir :system)
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
-(include-book "bvchop-list")
+(include-book "kestrel/bv-lists/bvchop-list" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))

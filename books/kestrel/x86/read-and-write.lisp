@@ -917,7 +917,7 @@
 
 ;; Often N and PADDR and BYTES are constants
 ;(include-book "kestrel/bv-lists/packbv-little" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 ;todo: delete the specializations above..

@@ -15,7 +15,7 @@
 (include-book "kestrel/arithmetic-light/lg-def" :dir :system)
 (include-book "kestrel/arithmetic-light/power-of-2p-def" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
-(include-book "unsigned-byte-listp-def")
+(include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
 (include-book "kestrel/bv/bvlt-def" :dir :system)
 (local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
@@ -24,7 +24,7 @@
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-(local (include-book "unsigned-byte-listp"))
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 
 ;; Read the element at position INDEX of the array DATA, which should be a
 ;; bv-array of length LEN and have elements that are bit-vectors of size

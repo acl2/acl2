@@ -31,8 +31,8 @@
 (include-book "arithmetic-rules-axe")
 (include-book "list-rules") ; for EQUAL-CONS-NTH-0-SELF and maybe others
 (include-book "kestrel/bv-lists/map-packbv-and-map-unpackbv" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system)
-(include-book "kestrel/bv-lists/array-patterns" :dir :system)
+(include-book "kestrel/bv-arrays/bv-arrays" :dir :system)
+(include-book "kestrel/bv-arrays/array-patterns" :dir :system)
 (include-book "kestrel/booleans/not" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system) ; for equal-of-t-when-booleanp-arg1
 (include-book "kestrel/arithmetic-light/less-than" :dir :system) ;for not-<-same
@@ -81,7 +81,7 @@
 (include-book "kestrel/lists-light/union-equal" :dir :system)  ;for UNION-EQUAL-OF-NIL-ARG1
 ;(include-book "kestrel/alists-light/assoc-equal" :dir :system) ;only needed by axe prover?
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)  ;drop?  ;for LIST-TO-BV-ARRAY
+(include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)  ;drop?  ;for LIST-TO-BV-ARRAY
 (include-book "kestrel/bv/rightrotate32" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 (include-book "list-rules-axe")

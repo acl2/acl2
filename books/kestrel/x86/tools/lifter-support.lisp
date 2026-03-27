@@ -13,7 +13,7 @@
 
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system) ; mentioned below
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "../read-and-write")

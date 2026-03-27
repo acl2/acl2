@@ -1,7 +1,7 @@
 ; Making an array of zeros
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,7 @@
 
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "bv-arrayp")
-(local (include-book "all-unsigned-byte-p2"))
+(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 ;todo: use in the JVM model

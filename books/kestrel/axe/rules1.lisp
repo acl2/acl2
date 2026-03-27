@@ -24,10 +24,10 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system) ; why?
 ;(include-book "kestrel/bv-lists/bvnth" :dir :system) ; todo: split out
-(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-read-of-bvchop-list?
-(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-clear-range" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-rules" :dir :system) ;drop?
+(include-book "kestrel/bv-arrays/bv-arrays" :dir :system) ; for bv-array-read-of-bvchop-list?
+(include-book "kestrel/bv-arrays/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-clear-range" :dir :system)
 ;(include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/lists-light/update-subrange" :dir :system)

@@ -36,7 +36,7 @@
 (include-book "../axe-syntax-functions-bv") ; for term-should-be-trimmed-axe
 (include-book "../axe-syntax-functions")
 (include-book "axe-syntax-functions-x86")
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
 (local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
 ;; Register a bunch of x86-related functions as known booleans:

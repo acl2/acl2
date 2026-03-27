@@ -15,7 +15,7 @@
 (include-book "kestrel/lists-light/subrange-def" :dir :system)
 (include-book "bv-array-write")
 (local (include-book "kestrel/bv/bvchop" :dir :system))
-(local (include-book "all-unsigned-byte-p2"))
+(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))

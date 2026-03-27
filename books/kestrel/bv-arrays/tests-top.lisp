@@ -1,4 +1,4 @@
-; Tests of the bv-list functions
+; Tests of the bv-array functions
 ;
 ; Copyright (C) 2020-2026 Kestrel Institute
 ;
@@ -10,5 +10,4 @@
 
 (in-package "ACL2")
 
-(include-book "packbv-tests")
-(include-book "map-packbv-tests")
+(include-book "bv-array-conversions2-tests")

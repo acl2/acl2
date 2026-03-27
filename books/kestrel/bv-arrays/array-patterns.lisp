@@ -13,8 +13,8 @@
 ;; TODO: These aren't really "array patterns"
 
 (include-book "bv-array-read")
-(include-book "map-bvsx")
-(include-book "map-bvplus-val")
+(include-book "kestrel/bv-lists/map-bvsx" :dir :system)
+(include-book "kestrel/bv-lists/map-bvplus-val" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)

@@ -12,7 +12,7 @@
 
 (include-book "kestrel/bv/bvcat-def" :dir :system)
 (include-book "bv-array-read")
-(include-book "unsigned-byte-listp")
+(include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
@@ -92,7 +92,7 @@
            :in-theory (disable unsigned-byte-p-of-bv-array-read-chunk-little))))
 
 ;; (include-book "kestrel/bv/bvmult" :dir :system)
-(include-book "packbvs-little")
+(include-book "kestrel/bv-lists/packbvs-little" :dir :system)
 ;; (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -101,7 +101,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-;; (local (include-book "packbv-theorems"))
+;; (local (include-book "kestrel/bv-lists/packbv-theorems"))
 
 ;todo: use this for the :exec part of an mbe, or even for the main def!
 (defthmd bv-array-read-chunk-little-alt-def
