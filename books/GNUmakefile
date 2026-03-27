@@ -435,7 +435,8 @@ endif # ifeq ($(ACL2_HAS_REALS), )
 
 CERT_PL_ACL2R_AND_NON_ACL2R := $(filter $(CERT_PL_USES_ACL2R), $(CERT_PL_NON_ACL2R))
 ifneq ($(CERT_PL_ACL2R_AND_NON_ACL2R), )
-${info Books appear that both require ACL2(r) but that do not work with ACL2(r): $(CERT_PL_ACL2R_AND_NON_ACL2R)}
+# Note that contradictions like this may be due to cert_params in included-books:
+${error Some books require ACL2(r) but also cannot be used with ACL2(r): $(CERT_PL_ACL2R_AND_NON_ACL2R)}
 endif
 
 .PHONY: uses-acl2r
