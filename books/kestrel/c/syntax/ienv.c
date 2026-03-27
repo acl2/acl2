@@ -9,7 +9,7 @@ int main(void) {
   #endif
 
   // Note: Clang also defines __GNUC__
-  #if defined(__GNUC__) && defined(__clang__) && !defined(__STRICT_ANSI__)
+  #if defined(__GNUC__) && !defined(__clang__) && !defined(__STRICT_ANSI__)
     _Bool gcc_extensions = 1;
   #else
     _Bool gcc_extensions = 0;
