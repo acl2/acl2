@@ -65,7 +65,7 @@
     (xdoc::li
      "GCC extensions [GCCM] [GCCL].")
     (xdoc::li
-     "Clang extensions [C17] [CLE].")
+     "Clang extensions [CLE] [CLA].")
     (xdoc::li
      "CHERI extensions [CHERI]."))
    (xdoc::p

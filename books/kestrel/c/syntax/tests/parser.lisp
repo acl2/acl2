@@ -25,7 +25,7 @@
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; VERSION indicates the C standard version.
+  ;; VERSION indicates the C version.
   ;; Optional COND may be over variables AST, SPAN, PARSTATE
   ;; and also EOF-POS for PARSE-*-EXTERNAL-DECLARATION.
   `(assert!-stobj
@@ -54,7 +54,7 @@
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; VERSION indicates the C standard version.
+  ;; VERSION indicates the C version.
   `(assert!-stobj
     (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (parstate (init-parstate ""
@@ -1283,7 +1283,8 @@ error (int __status, int __errnum, const char *__format, ...)
 
 (test-parse
  parse-*-external-declaration
- "#pragma onceint x;
+ "#pragma once
+int x;
 "
  :cond (equal (len ast) 1))
 

@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; INPUT is an ACL2 string with the text to parse and validate.
-;; VERSION indicates the C standard version.
+;; VERSION indicates the C version.
 ;; SHORT-BYTES is the number of bytes of shorts (default 2).
 ;; INT-BYTES is the number of bytes of ints (default 4).
 ;; LONG-BYTES is the number of bytes of longs (default 8).

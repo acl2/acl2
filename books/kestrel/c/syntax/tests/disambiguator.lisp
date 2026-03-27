@@ -17,7 +17,7 @@
 
 (defmacro test-dimb (input &key version cond)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
-  ;; VERSION indicates the C standard version.
+  ;; VERSION indicates the C version.
   ;; Optional COND may be over variable AST.
   `(assert-event
     (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
@@ -34,7 +34,7 @@
 
 (defmacro test-dimb-fail (input &key version)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
-  ;; VERSION indicates the C standard version.
+  ;; VERSION indicates the C version.
   `(assert-event
     (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
