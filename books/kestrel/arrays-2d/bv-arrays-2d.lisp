@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
+(include-book "kestrel/bv-arrays/bv-arrayp" :dir :system)
 (include-book "arrays-2d")
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/subrange" :dir :system)

@@ -3,7 +3,7 @@
 ;; todo: file all these rules
 
 (include-book "kestrel/axe/axe-syntax" :dir :system) ; for axe-smt
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvmod" :dir :system)
 (include-book "kestrel/bv/bvdiv" :dir :system)

@@ -20,7 +20,7 @@
 (include-book "kestrel/bv/bvshr" :dir :system)
 (include-book "kestrel/bv/slice-def" :dir :system)
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

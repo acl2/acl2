@@ -1,6 +1,6 @@
 ; A book about discarding irrelevant array values
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,13 +13,14 @@
 ;; TODO: These aren't really "array patterns"
 
 (include-book "bv-array-read")
-(include-book "map-bvsx")
-(include-book "map-bvplus-val")
+(include-book "kestrel/bv-lists/map-bvsx" :dir :system)
+(include-book "kestrel/bv-lists/map-bvplus-val" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/lists-light/every-nth" :dir :system)
+(local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
 (local (include-book "kestrel/bv/logapp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
@@ -37,8 +38,6 @@
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
-
-(local (in-theory (disable take)))
 
 ;; (defun keep-vals-with-congruent-indices (index vals residue modulus)
 ;;   (declare (xargs :measure (len vals)))
@@ -290,20 +289,6 @@
   :hints (("Goal" :use (:instance bv-array-read-shorten-when-bvlt-gen-helper
                                   (index (bvchop (ceiling-of-lg len) index))))))
 
-;; here we guess that the index may be < ~half the array size.  if so, we can
-;; discard the latter ~half of the values.
-(defthmd bv-array-read-shorten-when-in-first-half
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep len)))
-                (bvlt (ceiling-of-lg len) index (ceiling len 2))
-                (< (ceiling len 2) len) ; avoid loops (gets evaluated) ; todo: simplify
-                (natp len))
-           (equal (bv-array-read element-size len index data)
-                  (bv-array-read element-size (ceiling len 2) index (take (ceiling len 2) data))))
-  :hints (("Goal" :use (:instance bv-array-read-shorten-when-bvlt-gen
-                                  (size2 (ceiling-of-lg len))
-                                  (k (ceiling len 2))))))
-
 ;; When the index is < k, we discard all but the first k array elements,
 ;; because later elements cannot be accessed.
 ; compare to the gen one above
@@ -339,8 +324,6 @@
   :hints (("Goal" :in-theory (e/d (bvlt <=-of-bvchop-same-linear)
                                   (bv-array-read-of-cons-both)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (local
  (defthm <-when-power-of-2p-and-unsigned-byte-p
    (implies (and (power-of-2p len)
@@ -365,6 +348,24 @@
            (equal (bv-array-read element-size len index data)
                   (bv-array-read element-size (- len k) (- index k) (nthcdr k data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvlt bvchop-of-sum-cases))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; here we guess that the index may be < ~half the array size.  if so, we can
+;; discard the latter ~half of the values.
+(defthmd bv-array-read-shorten-when-in-first-half
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (bvlt (ceiling-of-lg len) index (ceiling len 2))
+                (< (ceiling len 2) len) ; avoid loops (gets evaluated) ; todo: simplify
+                (natp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (ceiling len 2) index (take (ceiling len 2) data))))
+  :hints (("Goal" :use (:instance bv-array-read-shorten-when-bvlt-gen
+                                  (size2 (ceiling-of-lg len))
+                                  (k (ceiling len 2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 
@@ -447,7 +448,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvsx-of-bv-array-read-constant-array
-  (implies (and (syntaxp (quotep data))
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep new-size)
+                              (quotep old-size)))
                 (equal len (len data))
                 (natp new-size)
                 (natp old-size))
@@ -607,11 +610,13 @@
             (equal (bvplus size x (+ y (expt 2 size)))
                    (bvplus size x y)))))
 
-(local (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system))
+(local (include-book "bv-array-read-rules"))
 
+;; Discards the first element when the index cannot be 0
 (defthmd bv-array-read-shorten-when-not-zero
   (implies (and (syntaxp (and (quotep data)
                               (quotep len)))
+                ;; (ceiling-of-lg len) here gets evaluated:
                 (bvlt (ceiling-of-lg len) 0 index) ; index is not 0
                 ;; (chopped) index is in bounds:
                 (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds

@@ -31,7 +31,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
-;(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
+;(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
 ;(include-book "known-booleans")
 (local (include-book "kestrel/bv/intro" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))

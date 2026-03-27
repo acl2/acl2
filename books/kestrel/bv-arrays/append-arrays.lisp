@@ -13,7 +13,7 @@
 
 (include-book "bv-arrayp")
 (include-book "bv-array-read")
-(include-book "bvchop-list")
+(include-book "kestrel/bv-lists/bvchop-list" :dir :system)
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))

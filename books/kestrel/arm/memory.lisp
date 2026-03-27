@@ -22,8 +22,8 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvminus-def" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/logtail" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
@@ -625,7 +625,7 @@
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
-;(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+;(include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 (include-book "kestrel/bv-lists/bv-list-read-chunk-little" :dir :system)
 
 (local (include-book "kestrel/lists-light/take" :dir :system))

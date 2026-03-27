@@ -1,7 +1,7 @@
 ; Rules about bv-array operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,8 +18,8 @@
 (include-book "bv-array-write")
 (include-book "bv-array-if")
 (include-book "append-arrays")
-(include-book "width-of-widest-int")
-(include-book "bvxor-list")
+(include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
+(include-book "kestrel/bv-lists/bvxor-list" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/bitnot" :dir :system)
@@ -44,7 +44,7 @@
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/getbit" :dir :system))
-(local (include-book "all-unsigned-byte-p2"))
+(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 
 ;move
 (in-theory (disable len))
