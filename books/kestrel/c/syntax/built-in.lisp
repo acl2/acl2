@@ -46,33 +46,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (defxdoc+ gcc-builtins
-;;   :parents (syntax-for-tools)
-;;   :short "Constants for identifiers ``built-in'' to GCC C."
-;;   :long
-;;   (xdoc::topstring
-;;    (xdoc::p
-;;      "These constants enumerate a subset of the built-in functions and
-;;       variables implicitly defined in GCC C.
-;;       New values are generally added on demand as they are encountered in real
-;;       code.")
-;;    (xdoc::p
-;;      "See the GCC manual, ``Built-in Functions Provided by GCC'' "
-;;      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Built-in-Functions.html"
-;;                   "[GCCM:7]")
-;;      ".")
-;;    (xdoc::p
-;;      "Currently, we do not differentiate between GCC and Clang built-ins.
-;;       If either GCC or Clang language extensions are enabled,
-;;       we consider all the @(see gcc-builtins) to be defined
-;;       for the purpose of validation.
-;;       In the future, it may become necessary to differentiate
-;;       the built-ins recognized by Clang as opposed to GCC."))
-;;   :order-subtopics t
-;;   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defval *gcc-built-in-functions*
   :parents (*gcc-built-in*)
   :short "A partial list of functions built-in to GCC."
