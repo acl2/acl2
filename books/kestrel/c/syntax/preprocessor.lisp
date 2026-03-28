@@ -1497,11 +1497,11 @@
     "The rationale for this identity definition
      is explained in @(see preservable-inclusions)."))
   `(,(plexeme-punctuator "#")
-    ,(plexeme-ident "define")
+    ,(make-plexeme-ident :ident "define" :provenance nil)
     ,(plexeme-spaces 1)
-    ,(plexeme-ident name)
+    ,(make-plexeme-ident :ident name :provenance nil)
     ,(plexeme-spaces 1)
-    ,(plexeme-ident name)
+    ,(make-plexeme-ident :ident name :provenance nil)
     ,@(and newline-at-end? (list (plexeme-option-fix newline-at-end?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1656,9 +1656,9 @@
   :returns (lexemes plexeme-listp)
   :short "Rebuild a @('#undef') directive from its name."
   `(,(plexeme-punctuator "#")
-    ,(plexeme-ident "undef")
+    ,(make-plexeme-ident :ident "undef" :provenance nil)
     ,(plexeme-spaces 1)
-    ,(plexeme-ident name)
+    ,(make-plexeme-ident :ident name :provenance nil)
     ,@(and newline-at-end? (list (plexeme-option-fix newline-at-end?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2760,8 +2760,9 @@
                     (pproc-lexemes mode
                                    (revappend lexmarks
                                               (cons (make-lexmark-lexeme
-                                                     :lexeme (plexeme-ident
-                                                              "defined")
+                                                     :lexeme (make-plexeme-ident
+                                                              :ident "defined"
+                                                              :provenance nil)
                                                      :span (irr-span))
                                                     rev-lexmarks))
                                    paren-level
@@ -3823,7 +3824,7 @@
   `(,@(plexeme-list-fix nontoknls-before-hash)
     ,(plexeme-punctuator "#")
     ,@(plexeme-list-fix nontoknls-after-hash)
-    ,(plexeme-ident "include")
+    ,(make-plexeme-ident :ident "include" :provenance nil)
     ,@(plexeme-list-fix nontoknls-before-header)
     ,(plexeme-header header)
     ,@(plexeme-list-fix nontoknls-after-header)

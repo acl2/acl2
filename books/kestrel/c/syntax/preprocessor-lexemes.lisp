@@ -145,6 +145,15 @@
      some different character set than Unicode,
      we should be able to map that characte set to Unicode.")
    (xdoc::p
+    "A preprocessing lexeme for an identifier also includes
+     a list of identifiers that describe the ``provenance'' of the identifier,
+     namely the names of the macros whose expansion has led to
+     the generation of this lexeme.
+     Adding this slot to this data type is actually just an initial step
+     towards a more general and robust approach
+     to prevent recursive macro expansion;
+     we will document the approach as it gets implemented.")
+   (xdoc::p
     "The @(':other') summand corresponds to
      the last alternative in the ABNF grammar rule for @('preprocessing-token'),
      as well as the prose description of the rule in [C17].
@@ -164,7 +173,8 @@
      Since spaces (code 32) often occur in consecutive chunks,
      we represent them more efficiently as chunks, via positive counts."))
   (:header ((name header-name)))
-  (:ident ((ident string)))
+  (:ident ((ident string)
+           (provenance string-list)))
   (:number ((number pnumber)))
   (:char ((const cconst)))
   (:string ((literal stringlit)))
@@ -184,7 +194,7 @@
 (defirrelevant irr-plexeme
   :short "An irrelevant preprocessing lexeme."
   :type plexemep
-  :body (plexeme-ident "irrelevant"))
+  :body (plexeme-ident "irrelevant" nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

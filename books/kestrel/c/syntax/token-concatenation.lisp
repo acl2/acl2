@@ -260,11 +260,15 @@
      token1
      :ident (plexeme-case
              token2
-             :ident (retok (plexeme-ident (str::cat token1.ident token2.ident)))
+             :ident (retok (make-plexeme-ident
+                            :ident (str::cat token1.ident token2.ident)
+                            :provenance nil))
              :number (b* (((erp ident)
                            (concatenate-ident-pnumber token1.ident
                                                       token2.number)))
-                       (retok (plexeme-ident ident)))
+                       (retok (make-plexeme-ident
+                               :ident ident
+                               :provenance nil)))
              :otherwise (reterr (msg "Cannot concatenate ~x0 and ~x1."
                                      (plexeme-fix token1)
                                      (plexeme-fix token2))))
