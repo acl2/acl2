@@ -1,6 +1,6 @@
 ; Cryptocurrency Hierarchical Deterministic Wallet Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1544,7 +1544,7 @@
   :returns (mv (msg msgp
                     :hints (("Goal" :in-theory (enable command-error-message))))
                state)
-  :short "Process a command to initialize the wallet from a mnenonic."
+  :short "Process a command to initialize the wallet from a mnemonic."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1692,7 +1692,7 @@
   (b* (((unless (= (len arguments) 0))
         (mv (command-error-message *command-name-next-key*
                                    (command-error-wrong-number-of-arguments
-                                    2 (len arguments)))
+                                    0 (len arguments)))
             state))
        ((mv error? state) (check-stat-file-present state))
        ((when error?)

@@ -401,7 +401,7 @@
           ;; TODO: prove that split-gso preserves unambiguity and validity
           ;;   (it likely doesn't preserve the latter currently).
           ((erp tunits$)
-           (c$::dimb-transunit-ensemble tunits$ (c$::ienv->gcc ienv) nil))
+           (c$::dimb-transunit-ensemble tunits$ (c$::ienv->version ienv) nil))
           ((erp tunits$)
            (c$::valid-transunit-ensemble tunits$ ienv nil))
           ;; TODO: c$::valid-transunit-ensemble should return an annop
