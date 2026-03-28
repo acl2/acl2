@@ -1692,7 +1692,7 @@
   (b* (((unless (= (len arguments) 0))
         (mv (command-error-message *command-name-next-key*
                                    (command-error-wrong-number-of-arguments
-                                    2 (len arguments)))
+                                    0 (len arguments)))
             state))
        ((mv error? state) (check-stat-file-present state))
        ((when error?)
