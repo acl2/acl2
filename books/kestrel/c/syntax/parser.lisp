@@ -11815,84 +11815,178 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-*-external-declaration ((parstate parstatep))
-  :returns (mv erp
-               (extdecls ext-declon-listp)
-               (span spanp)
-               (eof-pos positionp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a list of zero or more external declarations."
+(define expr-to-hash-if/elif-expr ((expr exprp))
+  :returns (hexpr hash-if/elif-exprp)
+  :short "Map a normal expression to
+          an expression in @('#if') and @('#elif') conditions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called by @(tsee parse-translation-unit)
-     to parse all the external declarations in a file.
-     If successful, we return the list of external declarations.")
-   (xdoc::p
-    "We also return the position just past the end of the file.
-     The latter is used for a check performed by the caller."))
-  (b* (((reterr) nil (irr-span) (irr-position) parstate)
-       ((erp token span parstate) (read-token parstate))
-       ((when (not token)) ; EOF
-        (retok nil span (span->start span) parstate))
-       (parstate (unread-token parstate))
-       ((erp extdecl first-span parstate) ; extdecl
-        (parse-external-declaration parstate))
-       ((erp extdecls last-span eof-pos parstate) ; extdecl [extdecls]
-        (parse-*-external-declaration parstate)))
-    (retok (cons extdecl extdecls)
-           (span-join first-span last-span)
-           eof-pos
-           parstate))
-  :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable fix)))
-  :verify-guards :after-returns
-
-  ///
-
-  (more-returns
-   (extdecls true-listp :rule-classes :type-prescription))
-
-  (defret parsize-of-parse-*-external-declaration-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
+    "Our ABNF grammar, in line with [C17] and [C23],
+     uses @('constant-expression') for the expressions
+     in @('#if') and @('#elif') conditions.
+     This is not quite adequate, because those expressions may include
+     the construct @('defined <ident>') (without parentheses),
+     which does not fit the syntax of normal expressions.
+     However, currently our preprocessor
+     normalizes @('defined <ident>') to @('defined(<ident>)'),
+     which syntactically looks like a function call.
+     Thus, we can use our parsing functions for normal expressions
+     after a @('#if') or @('#elif'),
+     and then convert the resulting expression of type @(tsee expr)
+     to an expression of type @(tsee hash-if/elif-expr).
+     The conversion does not work for all expressions,
+     but it does for the ones produced by our preprocessor."))
+  (expr-case
+   expr
+   :const
+   (const-case
+    expr.const
+    :int (hash-if/elif-expr-number expr.const.iconst)
+    :otherwise (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+                       (irr-hash-if/elif-expr)))
+   :paren
+   (hash-if/elif-expr-paren (expr-to-hash-if/elif-expr expr.inner))
+   :funcall
+   (if (and (equal expr.fun (ident "defined"))
+            (consp expr.args)
+            (endp (cdr expr.args))
+            (expr-case (car expr.args) :ident))
+       (hash-if/elif-expr-defined (expr-ident->ident (car expr.args)))
+     (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+             (irr-hash-if/elif-expr)))
+   :unary
+   (unop-case
+    expr.op
+    :plus (hash-if/elif-expr-plus (expr-to-hash-if/elif-expr expr.arg))
+    :minus (hash-if/elif-expr-minus (expr-to-hash-if/elif-expr expr.arg))
+    :bitnot (hash-if/elif-expr-bitnot (expr-to-hash-if/elif-expr expr.arg))
+    :lognot (hash-if/elif-expr-lognot (expr-to-hash-if/elif-expr expr.arg))
+    :otherwise (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+                       (irr-hash-if/elif-expr)))
+   :binary
+   (binop-case
+    expr.op
+    :mul (hash-if/elif-expr-mul (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :div (hash-if/elif-expr-div (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :rem (hash-if/elif-expr-rem (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :add (hash-if/elif-expr-add (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :sub (hash-if/elif-expr-sub (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :shl (hash-if/elif-expr-shl (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :shr (hash-if/elif-expr-shr (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :lt (hash-if/elif-expr-lt (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :gt (hash-if/elif-expr-gt (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :le (hash-if/elif-expr-le (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :ge (hash-if/elif-expr-ge (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :eq (hash-if/elif-expr-eq (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :ne (hash-if/elif-expr-ne (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :bitand (hash-if/elif-expr-bitand (expr-to-hash-if/elif-expr expr.arg1)
+                                      (expr-to-hash-if/elif-expr expr.arg2))
+    :bitxor (hash-if/elif-expr-bitxor (expr-to-hash-if/elif-expr expr.arg1)
+                                      (expr-to-hash-if/elif-expr expr.arg2))
+    :bitior (hash-if/elif-expr-bitior (expr-to-hash-if/elif-expr expr.arg1)
+                                      (expr-to-hash-if/elif-expr expr.arg2))
+    :logand (hash-if/elif-expr-logand (expr-to-hash-if/elif-expr expr.arg1)
+                                      (expr-to-hash-if/elif-expr expr.arg2))
+    :logor (hash-if/elif-expr-logor (expr-to-hash-if/elif-expr expr.arg1)
+                                    (expr-to-hash-if/elif-expr expr.arg2))
+    :otherwise (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+                       (irr-hash-if/elif-expr)))
+   :cond
+   (expr-option-case
+    expr.then
+    :some (hash-if/elif-expr-cond (expr-to-hash-if/elif-expr expr.test)
+                                  (expr-to-hash-if/elif-expr expr.then.val)
+                                  (expr-to-hash-if/elif-expr expr.else))
+    :none (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+                  (irr-hash-if/elif-expr)))
+   :otherwise (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+                      (irr-hash-if/elif-expr)))
+  :measure (expr-count expr)
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-include-directive ((hash-span spanp) (parstate parstatep))
+(define parse-hash-if-or-ifdef-or-ifndef ((hash-span spanp)
+                                          (parstate parstatep))
   :returns (mv erp
-               (include header-namep)
+               (if/ifdef/ifndef hash-if/ifdef/ifndef-p)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a @('#include') directive."
+  :short "Parse a @('#if') or @('#ifdef') or @('#ifndef') directive."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called after parsing the initial @('#').
-     The next token must be the @('include') identifier,
-     and the one after that must be a header name,
-     which we return, because we represent
-     @('#include') directives as header names."))
-  (b* (((reterr) (irr-header-name) (irr-span) parstate)
-       ((erp ident span parstate) (read-identifier parstate))
-       ((unless (equal (ident->unwrap ident) "include"))
-        (reterr-msg :where (span->start span)
-                    :expected "the 'include' identifier"
-                    :found (msg "the '~s0' identifier"
-                                (ident->unwrap ident))))
-       ((erp hname last-span parstate) (read-header-name parstate)))
-    (retok hname (span-join hash-span last-span) parstate))
+    "This is called after parsing the @('#'),
+     so we proceed to parse an identifier,
+     which must be one of @('if'), @('ifdef'), or @('ifndef').")
+   (xdoc::p
+    "For @('#if'), we parse a normal expression
+     and then we convert to the more restricted form.
+     This is not expected to fail if we run our parser on
+     either a file that has been externally preprocessed
+     (in which case we do not even get to this code here)
+     or a file that has been preprocessed by our preprocessor.
+     So it is justified to throw a hard error in the conversion function,
+     should the conversion fail.")
+   (xdoc::p
+    "The use of @(tsee parse-expression) may not be always correct,
+     because that function does not stop at the end of the line,
+     and could potentially continue to parser subsequent lines.
+     However, this should be rare, but more importantly we plan to
+     revise our parser to operate not on bytes/characters
+     (which leads to the current code duplication in the reader and lexer),
+     but instead on higher-level lexeme structures
+     to be produced by our preprocessor."))
+  (b* (((reterr) (irr-hash-if/ifdef/ifndef) (irr-span) parstate)
+       ;; #
+       ((erp ident span parstate) (read-identifier parstate)))
+    (cond
+     ((equal (ident->unwrap ident) "if") ; # if
+      (b* (((erp expr span2 parstate) (parse-expression parstate)) ; # if expr
+           (hexpr (expr-to-hash-if/elif-expr expr)))
+        (retok (hash-if/ifdef/ifndef-if hexpr)
+               (span-join hash-span span2)
+               parstate)))
+     ((equal (ident->unwrap ident) "ifdef") ; # ifdef
+      (b* (((erp macro span2 parstate) ; # ifdef macro
+            (read-identifier parstate)))
+        (retok (hash-if/ifdef/ifndef-ifdef macro)
+               (span-join hash-span span2)
+               parstate)))
+     ((equal (ident->unwrap ident) "ifndef") ; # ifndef
+      (b* (((erp macro span2 parstate) ; # ifndef macro
+            (read-identifier parstate)))
+        (retok (hash-if/ifdef/ifndef-ifndef macro)
+               (span-join hash-span span2)
+               parstate)))
+     (t ; # other
+      (reterr-msg :where (span->start span)
+                  :expected "an identifier among ~
+                             'if', 'ifdef', and 'ifndef'"
+                  :found (msg "the identifier ~x0" ident)))))
 
   ///
 
-  (defret parsize-of-parse-include-directive-uncond
+  (defret parsize-of-parse-hash-if-or-ifdef-or-ifndef-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-parse-include-directive-cond
+  (defret parsize-of-parse-hash-if-or-ifdef-or-ifndef-cond
     (implies (not erp)
              (<= (parsize new-parstate)
                  (1- (parsize parstate))))
@@ -11900,33 +11994,375 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-*-include-directive ((parstate parstatep))
-  :returns (mv erp
-               (includes header-name-listp)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse zero or more @('#include') directives."
-  (b* (((reterr) nil (irr-span) parstate)
-       ((erp token span parstate) (read-token parstate))
-       ((unless (token-punctuatorp token "#"))
-        (b* ((parstate (if token (unread-token parstate) parstate)))
-          (retok nil (irr-span) parstate)))
-       ((erp include first-span parstate) (parse-include-directive span parstate))
-       ((erp includes last-span parstate) (parse-*-include-directive parstate)))
-    (retok (cons include includes) (span-join first-span last-span) parstate))
-  :measure (parsize parstate)
-  :verify-guards :after-returns
+(defines parse-translation-items
+  :short "Parse translation items and related entities."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-translation-item ((parstate parstatep))
+    :returns (mv erp
+                 (item trans-itemp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-translation-items)
+    :short "Parse a translation item."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called when we expect a translation item,
+       so it is an error if we do not find one.")
+     (xdoc::p
+      "All the directives start with @('#'),
+       otherwise we must parse an external declaration.
+       We do not parse line comments for now.")
+     (xdoc::p
+      "In line with the ABNF grammar,
+       the only accepted directives are
+       @('#include'), @('#define'), @('#undef'),
+       and the opening ones for conditional translation items,
+       namely @('#if'), @('#ifdef'), and @('#ifndef');
+       however, the latter are handled in a separate function.
+       We reject @('#elif'), @('#else'), and @('#endif') here,
+       because those are parsed in a different context."))
+    (b* (((reterr) (irr-trans-item) (irr-span) parstate)
+         ((erp token span parstate) (read-token parstate))
+         ((unless token) ; EOF
+          (reterr-msg :where (span->start span)
+                      :expected "an external declaration or a directive"
+                      :found (token-to-msg token))))
+      (cond
+       ((token-punctuatorp token "#") ; #
+        (b* (((erp ident & parstate) (read-identifier parstate)))
+          (cond
+           ((equal (ident->unwrap ident) "include") ; # include
+            (b* (((erp hname last-span parstate) (read-header-name parstate)))
+              (retok (trans-item-include hname)
+                     (span-join span last-span)
+                     parstate)))
+           ((equal (ident->unwrap ident) "define") ; # define
+            (b* (((erp ident & parstate) (read-identifier parstate))
+                 ((erp ident1 last-span parstate) (read-identifier parstate))
+                 ((unless (equal ident1 ident))
+                  (reterr-msg :where (span->start last-span)
+                              :expected (msg "the identifier ~x0" ident)
+                              :found (msg "the identifier ~x0" ident1))))
+              (retok (trans-item-define ident)
+                     (span-join span last-span)
+                     parstate)))
+           ((equal (ident->unwrap ident) "undef") ; # undef
+            (b* (((erp ident last-span parstate) (read-identifier parstate)))
+              (retok (trans-item-undef ident)
+                     (span-join span last-span)
+                     parstate)))
+           (t ; # other
+            (b* (((erp if/ifdef/ifndef & parstate)
+                  ;; # if/ifdef/ifndef expr/ident
+                  (parse-hash-if-or-ifdef-or-ifndef span parstate))
+                 (psize (parsize parstate))
+                 ((erp items & parstate)
+                  ;; # if/ifdef/ifndef expr/ident
+                  ;; transitems
+                  (parse-*-translation-item parstate))
+                 ((unless (mbt (<= (parsize parstate) psize)))
+                  (reterr :impossible))
+                 (psize (parsize parstate))
+                 ((erp elifs & parstate)
+                  ;; # if/ifdef/ifndef expr/ident
+                  ;; transitems
+                  ;; # elif ... transitems
+                  ;; ...
+                  ;; # elif ... transitems
+                  (parse-*-hash-elif parstate))
+                 ((unless (mbt (<= (parsize parstate) psize)))
+                  (reterr :impossible))
+                 ((erp & parstate)
+                  ;; # if/ifdef/ifndef expr/ident
+                  ;; transitems
+                  ;; # elif ... transitems
+                  ;; ...
+                  ;; # elif ... transitems
+                  ;; #
+                  (read-punctuator "#" parstate))
+                 ((erp ident span-ident parstate) (read-identifier parstate)))
+              (cond
+               ((equal (ident->unwrap ident) "else")
+                ;; # if/ifdef/ifndef expr/ident
+                ;; transitems
+                ;; # elif ... transitems
+                ;; ...
+                ;; # elif ... transitems
+                ;; # else
+                (b* ((psize (parsize parstate))
+                     ((erp else-items & parstate)
+                      ;; # if/ifdef/ifndef expr/ident
+                      ;; transitems
+                      ;; # elif ... transitems
+                      ;; ...
+                      ;; # elif ... transitems
+                      ;; # else
+                      ;; transitems
+                      (parse-*-translation-item parstate))
+                     ((unless (<= (parsize parstate) psize))
+                      (reterr :impossible))
+                     ((erp & parstate)
+                      ;; # if/ifdef/ifndef expr/ident
+                      ;; transitems
+                      ;; # elif ... transitems
+                      ;; ...
+                      ;; # elif ... transitems
+                      ;; # else
+                      ;; transitems
+                      ;; #
+                      (read-punctuator "#" parstate))
+                     ((erp must-be-endif last-span parstate)
+                      (read-identifier parstate))
+                     ((unless (equal (ident->unwrap must-be-endif) "endif"))
+                      (reterr-msg :where (span->start last-span)
+                                  :expected "the identifier 'endif'"
+                                  :found (msg "the identifier ~x0"
+                                              must-be-endif))))
+                  ;; # if/ifdef/ifndef expr/ident
+                  ;; transitems
+                  ;; # elif ... transitems
+                  ;; ...
+                  ;; # elif ... transitems
+                  ;; # else
+                  ;; transitems
+                  ;; # endif
+                  (retok (make-trans-item-cond
+                          :if/ifdef/ifndef if/ifdef/ifndef
+                          :items items
+                          :elifs elifs
+                          :else (hash-else-option-some (hash-else else-items)))
+                         (span-join span last-span)
+                         parstate)))
+               ((equal (ident->unwrap ident) "endif")
+                ;; # if/ifdef/ifndef expr/ident
+                ;; transitems
+                ;; # elif ... transitems
+                ;; ...
+                ;; # elif ... transitems
+                ;; # endif
+                (retok (make-trans-item-cond
+                        :if/ifdef/ifndef if/ifdef/ifndef
+                        :items items
+                        :elifs elifs
+                        :else (hash-else-option-none))
+                       (span-join span span-ident)
+                       parstate))
+               (t
+                ;; # if/ifdef/ifndef expr/ident
+                ;; transitems
+                ;; # elif ... transitems
+                ;; ...
+                ;; # elif ... transitems
+                ;; # other
+                (reterr-msg :where (span->start span-ident)
+                            :expected "the identifier 'else' or 'endif'"
+                            :found (msg "the identifier ~x0" ident)))))))))
+       (t ; not-#
+        (b* ((parstate (unread-token parstate))
+             ((erp declon span parstate) ; extdeclon
+              (parse-external-declaration parstate)))
+          (retok (trans-item-declon declon) span parstate)))))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-*-translation-item ((parstate parstatep))
+    :returns (mv erp
+                 (items trans-item-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-translation-items)
+    :short "Parse a list of zero or more translation items."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We stop when we reach the end of the file,
+       which is the case when this function is called at the top level,
+       i.e. to parse a whole translation unit.
+       We also stop when we reach a @('#elif') or @('#else') or @('#endif'),
+       which happens when we parse nested translation items;
+       when we encounter these directives,
+       we put back tokens including the @('#')."))
+    (b* (((reterr) nil (irr-span) parstate)
+         ((erp token span parstate) (read-token parstate))
+         ((when (not token)) ; EOF
+          (retok nil span parstate)))
+      (cond
+       ((token-punctuatorp token "#") ; #
+        (b* (((erp ident & parstate) (read-identifier parstate)))
+          (cond
+           ((member-equal (ident->unwrap ident) ; # elif/else/endif
+                          '("elif" "else" "endif"))
+            (b* ((parstate (unread-token parstate)) ; #
+                 (parstate (unread-token parstate))) ;
+              (retok nil span parstate)))
+           (t ; # other
+            (b* ((parstate (unread-token parstate)) ; #
+                 (parstate (unread-token parstate)) ;
+                 (psize (parsize parstate))
+                 ((erp item span parstate) ; item
+                  (parse-translation-item parstate))
+                 ((unless (<= (parsize parstate) (1- psize)))
+                  (reterr :impossible))
+                 ((erp items last-span parstate) ; items
+                  (parse-*-translation-item parstate)))
+              (retok (cons item items) (span-join span last-span) parstate))))))
+       (t ; not-#
+        (b* ((parstate (unread-token parstate)) ;
+             (psize (parsize parstate))
+             ((erp item span parstate) ; item
+              (parse-translation-item parstate))
+             ((unless (<= (parsize parstate) (1- psize)))
+              (reterr :impossible))
+             ((erp items last-span parstate) ; items
+              (parse-*-translation-item parstate)))
+          (retok (cons item items) (span-join span last-span) parstate)))))
+    :measure (two-nats-measure (parsize parstate) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-hash-elif ((hash-span spanp)
+                           (parstate parstatep))
+    :returns (mv erp
+                 (elif hash-elifp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-translation-items)
+    :short "Parse a @('#elif')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called when we expect a @('#elif'),
+       and after we have already parsed the @('#') and the @('elif') identifier.
+       So it remains to parse the expression and the translation items.")
+     (xdoc::p
+      "We handle the expression in the same way as in
+       @(tsee parse-hash-if-or-ifdef-or-ifndef):
+       see that function's documentation."))
+    (b* (((reterr) (irr-hash-elif) (irr-span) parstate)
+         ;; # elif
+         ((erp expr & parstate) (parse-expression parstate)) ; # eliif expr
+         (hexpr (expr-to-hash-if/elif-expr expr))
+         ((erp items items-span parstate) ; # elif expr transitems
+          (parse-*-translation-item parstate)))
+      (retok (make-hash-elif :expr hexpr :items items)
+             (span-join hash-span items-span)
+             parstate))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-*-hash-elif ((parstate parstatep))
+    :returns (mv erp
+                 (elifs hash-elif-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-translation-items)
+    :short "Parse a list of zero or more @('#elif')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "When we call this function, we must always find a @('#'),
+       either for @('#elif'),
+       or for a @('#else') or @('#endif') that must follow.
+       Then we must have an identifier:
+       if it is @('elif'), we proceed to parse a @('#elif'),
+       and then recursively zero or more @('#elif')s;
+       otherwise, we put back the tokens and we return."))
+    (b* (((reterr) nil (irr-span) parstate)
+         ((erp span parstate) (read-punctuator "#" parstate)) ; #
+         ((erp ident span2 parstate) (read-identifier parstate))) ; # ident
+      (cond
+       ((equal (ident->unwrap ident) "elif") ; # elif
+        (b* ((psize (parsize parstate))
+             ((erp elif span3 parstate) ; # elif transitems
+              (parse-hash-elif span parstate))
+             ((unless (<= (parsize parstate) (1- psize)))
+              (reterr :impossible))
+             ((erp elifs span4 parstate)
+              ;; # elif transitems ... # elif transitems
+              (parse-*-hash-elif parstate)))
+          (retok (cons elif elifs)
+                 (span-join span (if elifs span4 span3))
+                 parstate)))
+       ((member-equal (ident->unwrap ident) '("else" "endif")) ; # else/endif
+        (b* ((parstate (unread-token parstate)) ; #
+             (parstate (unread-token parstate))) ;
+          (retok nil span parstate)))
+       (t ; # other
+        (reterr-msg :where (span->start span2)
+                    :expected "an identifier among ~
+                               'elif', 'else', and 'endif'"
+                    :found (msg "the identifier ~x0" ident)))))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :hints (("Goal" :in-theory (enable nfix fix)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards nil ; done below
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ///
 
-  (more-returns
-   (includes true-listp :rule-classes :type-prescription))
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret parsize-of-parse-*-include-directive-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
+  (defret-mutual parsize-of-parse-translation-items-uncond
+    (defret parsize-of-parse-translation-item-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-translation-item
+      :hints ('(:expand (parse-translation-item parstate))))
+    (defret parsize-of-parse-*-translation-item-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-*-translation-item
+      :hints ('(:expand (parse-*-translation-item parstate))))
+    (defret parsize-of-parse-hash-elif-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-hash-elif
+      :hints ('(:expand (parse-hash-elif hash-span parstate))))
+    (defret parsize-of-parse-*-hash-elif-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-*-hash-elif
+      :hints ('(:expand (parse-*-hash-elif parstate)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual parsize-of-parse-translation-items-cond
+    (defret parsize-of-parse-translation-item-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-translation-item
+      :hints ('(:expand (parse-translation-item parstate))))
+    (defret parsize-of-parse-hash-elif-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-hash-elif
+      :hints ('(:expand (parse-hash-elif hash-span parstate))))
+    :skip-others t
+    :hints (("Goal" :in-theory (enable fix))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards parse-translation-item
+    :hints (("Goal" :in-theory (enable fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11941,21 +12377,7 @@
     "This is called, by @(tsee parse-file),
      on the initial parsing state,
      which contains all the file data bytes.
-     Unless we must skip control lines,
-     we parse zero or more @('#include') directives.
-     Then we parse zero or more external declarations.
-     Unless GCC/Clang extensions are enabled,
-     we reject input with no @('#include') declarations
-     and no external declarations.")
-   (xdoc::p
-    "This is more limited than our ASTs allow,
-     namely @('#include') directives and external declarations in any order.
-     We plan to extend the ABNF, and the parser,
-     to match the ASTs for translation units.")
-   (xdoc::p
-    "Since our tokenizer filters out all comments,
-     our parser never generates any translation items that are comments.
-     This may change in the future.")
+     We parse zero or more translation items.")
    (xdoc::p
     "We also ensure that the file ends in new-line,
      as prescribed in [C17:5.1.1.2/1/2].
@@ -11966,26 +12388,12 @@
      the last character is a new-line,
      otherwise that position would be at a non-zero column."))
   (b* (((reterr) (irr-transunit) parstate)
-       ((erp includes & parstate)
-        (if (parstate->skip-control-lines parstate)
-            (mv nil nil nil parstate)
-          (parse-*-include-directive parstate)))
-       ((erp extdecls & eof-pos parstate)
-        (parse-*-external-declaration parstate))
-       ((when (and (endp includes)
-                   (endp extdecls)
-                   (not (parstate->gcc/clang parstate))))
-        (reterr (msg "The translation unit has no external declarations, ~
-                      ~s0 ~
-                      but GCC/Clang extensions (which allow that) ~
-                      are not enabled."
-                     (if (parstate->skip-control-lines parstate)
-                         ""
-                       "and no #include directives"))))
-       ((unless (= (position->column eof-pos) 0))
-        (reterr (msg "The file does not end in new-line.")))
-       (items (append (trans-item-list-include includes)
-                      (trans-item-list-declon extdecls))))
+       ((erp items & parstate) (parse-*-translation-item parstate))
+       ((unless (or items
+                    (parstate->gcc/clang parstate)))
+        (reterr (msg "The file does not contain any translation items.")))
+       ((unless (= (position->column (parstate->position parstate)) 0))
+        (reterr (msg "The file does not end in new-line."))))
     (retok (make-transunit :items items
                            :info nil)
            parstate))
