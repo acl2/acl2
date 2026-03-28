@@ -1912,6 +1912,7 @@ translation-item = external-declaration
                  / line-comment
 
 conditional-item = hash-if-or-ifdef-or-ifndef
+                   *translation-item
                    *hash-elif
                    [ hash-else ]
                    "#" %s"endif"
@@ -1920,6 +1921,8 @@ hash-if-or-ifdef-or-ifndef = "#" %s"if" constant-expression
                            / "#" %s"ifdef" identifier
                            / "#" %s"ifndef" identifier
 
-hash-elif = "#" %s"elif" constant-expression *translation-item
+hash-elif = "#" %s"elif" constant-expression
+            *translation-item
 
-hash-else = "#" %s"else" *translation-item
+hash-else = "#" %s"else"
+            *translation-item
