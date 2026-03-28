@@ -912,7 +912,7 @@
                              (pprint-expr expr.arg
                                           (expr-grade-unary)
                                           options))
-                :predec (msg "--~@0)"
+                :predec (msg "--~@0"
                              (pprint-expr expr.arg
                                           (expr-grade-unary)
                                           options))
