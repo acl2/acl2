@@ -91,10 +91,12 @@
   :returns (mv (er? maybe-msgp)
                (ienv ienvp))
   (b* (((reterr) (irr-ienv))
-       ((unless (= (len lines) 12))
+       ((unless (= (len lines) 14))
         (retmsg$ "Ill-formed ienv.c output"))
        ((list std-c-str
               gcc-extensions-str
+              clang-extensions-str
+              cheri-extensions-str
               bool-bytes-str
               short-bytes-str
               int-bytes-str
@@ -116,13 +118,15 @@
                  (retmsg$ "Unrecognized or unsupported standard: ~x0"
                           std-c-str)))))
        (gcc-extensions (not (equal gcc-extensions-str "0")))
-       (version (if gcc-extensions
-                    (if (= std-c 17)
-                        (c::version-c17+gcc)
-                      (c::version-c23+gcc))
-                  (if (= std-c 17)
-                      (c::version-c17)
-                    (c::version-c23))))
+       (clang-extensions (not (equal clang-extensions-str "0")))
+       (cheri-extensions (not (equal cheri-extensions-str "0")))
+       ((when (and gcc-extensions clang-extensions))
+        (retmsg$ "Both GCC and Clang extensions appear to be enabled."))
+       (version (c::make-version
+                  :std (if (= std-c 17) (c::standard-c17) (c::standard-c23))
+                  :gcc gcc-extensions
+                  :clang clang-extensions
+                  :cheri cheri-extensions))
        (bool-bytes? (str::strval bool-bytes-str))
        ((unless bool-bytes?)
         (retmsg$ "Could not parse a natural number from bool-bytes: ~x0"
