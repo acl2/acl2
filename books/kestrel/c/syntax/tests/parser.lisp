@@ -20,7 +20,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key pos more-inputs std gcc clang cond)
+(defmacro test-parse (fn
+                      input
+                      &key
+                      pos
+                      more-inputs
+                      std
+                      gcc
+                      clang
+                      skip-control-lines
+                      cond)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
@@ -28,6 +37,7 @@
   ;; STD indicates the C standard version (17 or 23; default 17).
   ;; GCC flag says whether GCC extensions are enabled (default NIL).
   ;; CLANG flag says whether Clang extensions are enabled (default NIL).
+  ;; SKIP-CONTROL-LINES flag says to skip #... control lines.
   ;; Optional COND may be over variables AST, SPAN, PARSTATE.
   `(assert!-stobj
     (b* ((version (if (eql ,std 23)
@@ -40,7 +50,7 @@
          (parstate (init-parstate ""
                                   (acl2::string=>nats ,input)
                                   version
-                                  t
+                                  ,skip-control-lines
                                   parstate))
          (,(cond ((eq fn 'parse-translation-unit)
                   '(mv erp ?ast parstate))
@@ -54,7 +64,15 @@
           parstate))
     parstate))
 
-(defmacro test-parse-fail (fn input &key pos more-inputs std gcc clang)
+(defmacro test-parse-fail (fn
+                           input
+                           &key
+                           pos
+                           more-inputs
+                           std
+                           gcc
+                           clang
+                           skip-control-lines)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
@@ -62,6 +80,7 @@
   ;; STD indicates the C standard version (17 or 23; default 17).
   ;; GCC flag says whether GCC extensions are enabled (default NIL).
   ;; CLANG flag says whether Clang extensions are enabled (default NIL).
+  ;; SKIP-CONTROL-LINES flag says to skip #... control lines.
   `(assert!-stobj
     (b* ((version (if (eql ,std 23)
                       (cond (,gcc (c::version-c23+gcc))
@@ -73,7 +92,7 @@
          (parstate (init-parstate ""
                                   (acl2::string=>nats ,input)
                                   version
-                                  t
+                                  ,skip-control-lines
                                   parstate))
          (,(cond ((eq fn 'parse-translation-unit)
                   '(mv erp ?ast parstate))
@@ -990,6 +1009,140 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-hash-if-or-ifdef-or-ifndef
+
+(test-parse
+ parse-hash-if-or-ifdef-or-ifndef
+ "if defined(M)"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-if
+               (hash-if/elif-expr-defined (ident "M")))))
+
+(test-parse
+ parse-hash-if-or-ifdef-or-ifndef
+ "if 2 + 3"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-if
+               (hash-if/elif-expr-add
+                (hash-if/elif-expr-number
+                 (iconst (dec/oct/hex-const-dec 2) nil nil))
+                (hash-if/elif-expr-number
+                 (iconst (dec/oct/hex-const-dec 3) nil nil))))))
+
+(test-parse
+ parse-hash-if-or-ifdef-or-ifndef
+ "ifdef X"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-ifdef (ident "X"))))
+
+(test-parse
+ parse-hash-if-or-ifdef-or-ifndef
+ "ifndef X"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-ifndef (ident "X"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-translation-item
+
+(test-parse
+ parse-translation-item
+ "#include \"f.c\"")
+
+(test-parse
+ parse-translation-item
+ "#include <f.h>")
+
+(test-parse
+ parse-translation-item
+ "#define X X")
+
+(test-parse-fail
+ parse-translation-item
+ "#define X Y")
+
+(test-parse
+ parse-translation-item
+ "#undef X")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #else
+  int y;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #elif defined (N)
+  int y;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #else
+  int w;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#ifdef X
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #else
+  int w;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#ifndef Y
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #else
+  int w;
+  #endif")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-*-translation-item
 
 (test-parse
@@ -1261,7 +1414,8 @@ error (int __status, int __errnum, const char *__format, ...)
   return (void *) x;
 #pragma GCC diagnostic pop
 }
-")
+"
+ :skip-control-lines t)
 
 (test-parse-fail
  parse-*-translation-item
@@ -1272,31 +1426,36 @@ error (int __status, int __errnum, const char *__format, ...)
   return (void *) x;
 #pragma GCC diagnostic pop
 }
-")
+"
+ :skip-control-lines t)
 
 (test-parse
  parse-*-translation-item
  "#pragma once
   int x;
-")
+"
+ :skip-control-lines t)
 
 (test-parse
  parse-*-translation-item
  " #pragma once
   int x;
-")
+"
+ :skip-control-lines t)
 
 (test-parse
  parse-*-translation-item
  "#pragma once
   int x;
-")
+"
+ :skip-control-lines t)
 
 (test-parse
  parse-*-translation-item
  "#pragma onceint x;
 "
- :cond (equal (len ast) 1))
+ :cond (equal (len ast) 1)
+ :skip-control-lines t)
 
 (test-parse
  parse-*-translation-item
