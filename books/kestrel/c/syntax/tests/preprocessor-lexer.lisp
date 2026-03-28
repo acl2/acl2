@@ -23,18 +23,10 @@
                     more-inputs ; additional inputs to lexing function
                     (index '0) ; where to start lexing
                     (cond 't) ; condition on AST for success
-                    (std '17)
-                    (gcc 'nil)
-                    (clang 'nil)
+                    (version 'nil)
                     (fail 'nil)) ; test must fail
   `(assert!-stobj
-    (b* ((version (case ,std
-                    (17 (cond (,gcc (c::version-c17+gcc))
-                              (,clang (c::version-c17+clang))
-                              (t (c::version-c17))))
-                    (23 (cond (,gcc (c::version-c23+gcc))
-                              (,clang (c::version-c23+clang))
-                              (t (c::version-c23))))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (ienv (change-ienv (ienv-default) :version version))
          (macros (macro-init version))
          (options (make-ppoptions :full-expansion nil
@@ -64,35 +56,27 @@
 (defmacro test-lex-lexeme (input
                            &key
                            (cond 't)
-                           (std '17)
-                           (gcc 'nil)
-                           (clang 'nil)
+                           (version 'nil)
                            (fail 'nil))
   `(test-lex plex-lexeme
              ,input
              :more-inputs (nil)
              :index 0
              :cond ,cond
-             :std ,std
-             :gcc ,gcc
-             :clang ,clang
+             :version ,version
              :fail ,fail))
 
 (defmacro test-lex-lexeme-headerp (input
                                    &key
                                    (cond 't)
-                                   (std '17)
-                                   (gcc 'nil)
-                                   (clang 'nil)
+                                   (version 'nil)
                                    (fail 'nil))
   `(test-lex plex-lexeme
              ,input
              :more-inputs (t)
              :index 0
              :cond ,cond
-             :std ,std
-             :gcc ,gcc
-             :clang ,clang
+             :version ,version
              :fail ,fail))
 
 (defmacro pos (line column)
@@ -621,7 +605,7 @@
 (test-lex
  plex-escape-sequence
  "%"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal ast (escape-simple (simple-escape-percent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

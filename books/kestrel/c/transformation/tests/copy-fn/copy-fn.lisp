@@ -132,7 +132,9 @@ int fib(int x) {
 
 (acl2::must-succeed*
   (c$::input-files :files '("generic-selection.c")
-                   :ienv (c$::ienv-default :extensions :gcc)
+                   :ienv (c$::ienv-default
+                           :version (c::make-version :std (c::standard-c17)
+                                                     :gcc t))
                    :const *old*)
 
   (defconst *new*

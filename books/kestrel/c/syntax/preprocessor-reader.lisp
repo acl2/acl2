@@ -271,7 +271,8 @@
         (retok 10 pos (position-inc-line 1 pos) bytes))
        ;; trigraph sequences, or just '?':
        ((when (utf8-= byte (char-code #\?))) ; ?
-        (if (c::version-std-c23p (ienv->version ienv)) ; C23
+        (if (equal (ienv->std ienv)
+                   (c::standard-c23))
             (retok (char-code #\?) pos pos+1 bytes) ; ?
           ;; consider trigraph sequences:
           (if (and (consp bytes)
