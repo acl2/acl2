@@ -1167,7 +1167,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-label ((lab labelp))
+(define pprint-label ((lab labelp) (options pprint-options-p))
   :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print a label."
   :long
@@ -1177,7 +1177,8 @@
   (label-case lab
               :name (msg "~@0: "
                          (pprint-ident lab.get))
-              :cas "case: "
+              :cas (msg "case ~@0: "
+                        (pprint-expr lab.get (expr-grade-top) options))
               :default "default: ")
   :hooks (:fix))
 
@@ -1203,7 +1204,7 @@
     (stmt-case
      stmt
      :labeled (append (pprint-one-line (msg "~@0 {"
-                                            (pprint-label stmt.label))
+                                            (pprint-label stmt.label options))
                                        level)
                       (pprint-stmt stmt.body (1+ level) options)
                       (pprint-one-line "}" level))
