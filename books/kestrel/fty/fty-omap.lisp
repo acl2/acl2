@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -251,12 +251,12 @@
                name))
        (key-type (getarg :key-type nil kwd-alist))
        ((unless (symbolp key-type))
-        (raise "Bad flexalist ~x0: Element type must be a symbol" name))
+        (raise "Bad flexomap ~x0: Element type must be a symbol" name))
        ((mv key-type key-fix key-equiv key-recp)
         (get-pred/fix/equiv (getarg :key-type nil kwd-alist) our-fixtypes fixtypes))
        (val-type (getarg :val-type nil kwd-alist))
        ((unless (symbolp val-type))
-        (raise "Bad flexalist ~x0: Element type must be a symbol" name))
+        (raise "Bad flexomap ~x0: Element type must be a symbol" name))
        ((mv val-type val-fix val-equiv val-recp)
         (get-pred/fix/equiv (getarg :val-type nil kwd-alist) our-fixtypes fixtypes))
        (pred  (getarg! :pred  (intern-in-package-of-symbol (cat (symbol-name name) "-P") name) kwd-alist))

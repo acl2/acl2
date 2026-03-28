@@ -203,7 +203,7 @@
                             *output-files-printer-options*))
         (reterr (msg "The list of keywords in the :PRINTER-OPTIONS input ~
                       must be among ~&0, ~
-                      but the supplied :PRINTER-OPTIONS input ~x0 ~
+                      but the supplied :PRINTER-OPTIONS input ~x1 ~
                       violates that requirement."
                      *output-files-printer-options*
                      printer-options)))
