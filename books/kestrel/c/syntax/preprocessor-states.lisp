@@ -301,7 +301,8 @@
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
                  (update-options raw-update-ppstate->options)
-                 (update-ienv raw-update-ppstate->ienv))))
+                 (update-ienv raw-update-ppstate->ienv))
+      :non-executable t))
 
   ;; fixer:
 

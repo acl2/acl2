@@ -558,7 +558,8 @@
                  (update-size raw-update-parstate->size)
                  (update-skip-control-lines
                   raw-update-parstate->skip-control-lines))
-      :inline t))
+      :inline t
+      :non-executable t))
 
   ;; fixer:
 
