@@ -809,7 +809,7 @@
               :bitand (mv (expr-grade-and) (expr-grade-equality))
               :bitxor (mv (expr-grade-xor) (expr-grade-and))
               :bitior (mv (expr-grade-ior) (expr-grade-xor))
-              :logand (mv (expr-grade-ior) (expr-grade-logical-and))
+              :logand (mv (expr-grade-logical-and) (expr-grade-ior))
               :logor (mv (expr-grade-logical-or) (expr-grade-logical-and))
               :asg (mv (expr-grade-unary) (expr-grade-assignment))
               :asg-mul (mv (expr-grade-unary) (expr-grade-assignment))
