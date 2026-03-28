@@ -907,7 +907,7 @@
               (reterr
                (msg "A call ~x0 of the function ~x1, which returns void, ~
                      is being used where ~
-                     an expression term returning a a non-void C type ~
+                     an expression term returning a non-void C type ~
                      is expected."
                     term called-fn)))
              ((unless (equal affect gin.affect))

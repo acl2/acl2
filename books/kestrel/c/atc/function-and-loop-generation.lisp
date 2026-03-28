@@ -3702,7 +3702,7 @@
                ((mv okp subst) (one-way-unify$ meas-gen meas-inst state))
                ((when (not okp))
                 (reterr
-                 (msg "Failed to match istantiated measure ~x0 ~
+                 (msg "Failed to match instantiated measure ~x0 ~
                        to general measure ~x1 of function ~x2."
                       meas-inst meas-gen fn)))
                (measure-args (fty-fsublis-var-lst subst measure-formals)))

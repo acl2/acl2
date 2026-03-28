@@ -165,7 +165,7 @@
                                'o<))))
         (reterr (msg "The well-founded relation ~
                       of the recursive target function ~x0 ~
-                      must be O<, but it ~x1 instead. ~
+                      must be O<, but it is ~x1 instead. ~
                       Only recursive functions with well-founded relation O< ~
                       are currently supported by ATC."
                      fn (get-well-founded-relation+ fn wrld))))
