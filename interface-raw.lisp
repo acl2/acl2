@@ -11851,15 +11851,19 @@ such that feature :acl2-loop-only is true."))
 ; Returns nil or else a keyword -- currently :darwin, :linux, or :freebsd -- to
 ; indicate the result of shell command "uname".
 
-  (multiple-value-bind
-   (exit-code val)
-   (system-call+ "uname" nil)
-   (and (eql exit-code 0)
-        (stringp val)
-        (<= 6 (length val))
-        (cond ((string-equal (subseq val 0 6) "Darwin") :darwin)
-              ((string-equal (subseq val 0 5) "Linux") :linux)
-              ((string-equal (subseq val 0 7) "FreeBSD") :freebsd)))))
+; The memory allocation created by the use of string-upcase could be avoided by
+; defining a case-insensitive version of string-prefixp, but we don't expect
+; heavy use of our-uname, so we prefer not to complicate things by adding such
+; code.
+
+  (multiple-value-bind (exit-code val)
+      (system-call+ "uname" nil)
+    (and (eql exit-code 0)
+         (stringp val)
+         (let ((val (string-upcase val)))
+           (cond ((string-prefixp "DARWIN" val) :darwin)
+                 ((string-prefixp "LINUX" val) :linux)
+                 ((string-prefixp "FREEBSD" val) :freebsd))))))
 
 (defun meminfo (&optional arg)
 

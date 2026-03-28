@@ -2505,11 +2505,6 @@
 (defun lmi-techs (lmi)
   (cond
    ((atom lmi) nil)
-   ((eq (car lmi) '(:theorem
-                    :termination-theorem
-                    :termination-theorem!
-                    :guard-theorem))
-    nil)
    ((eq (car lmi) :instance)
     (add-to-set-equal "in~-stan~-ti~-a~-tion"
                       (lmi-techs (cadr lmi))))
@@ -5893,8 +5888,7 @@
                                    (t (caddr cd)))
                              (cond ((null (cddr cd)) 0)
                                    (t (cadddr cd)))
-                             pat
-                             cd))
+                             pat))
                         (t (value ans)))))))
          (t (er soft ctx msg cd))))
        (otherwise
@@ -18950,7 +18944,7 @@
                        ", none of them STATE, other stobjs, or :DF values")
                      term
                      (if (cdr stobjs-out)
-                         (msg "has output signature"
+                         (msg "has output signature ~x0"
                               (cons 'mv stobjs-out))
 ; See comment above about stobj creators.
                        (msg "returns ~#0~[a :DF value~/STATE~]"

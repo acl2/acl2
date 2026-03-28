@@ -612,11 +612,11 @@
          ""))
       ((do-not-induct do-not-induct-otf-flg-override)
        (msg "Normally we would attempt to prove ~@0 by induction.  However, a ~
-             :DO-NOT-INDUCT hint was supplied to abort the proof attempt.~|"
+             ~x1 hint was supplied to abort the proof attempt.~|"
             cl-id-phrase
             (if (eq temp 'do-not-induct)
-                t
-              :otf-flg-override)))
+                :DO-NOT-INDUCT
+              :OTF-FLG-OVERRIDE)))
       (induction-depth-limit-exceeded
        (msg "Normally we would attempt to prove ~@0 by induction.  However, ~
              that would cause the induction-depth-limit of ~x1 to be ~
@@ -4446,7 +4446,7 @@
                        (cond
                         ((eq abort-cause
                              'subgoal-path-length-violation)
-                         (msg "The maximum subgoal depth has of ~x0 has been ~
+                         (msg "The maximum subgoal depth of ~x0 has been ~
                                reached.  The proof attempt has failed.  See ~
                                :DOC set-subgoal-loop-limits."
                               (car subgoal-loop-limits)))

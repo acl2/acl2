@@ -6915,7 +6915,7 @@
                              name
                              (msg "the variables ~x0 and ~x1 occur at ~
                                    different positions in the first and ~
-                                   second arguments, respectively, of ~x3 in ~
+                                   second arguments, respectively, of ~x2 in ~
                                    the conclusion of the proposed rule"
                                   xk yk equiv2))))
                    ((not (equal args2 (subst-var-lst yk xk args1)))
