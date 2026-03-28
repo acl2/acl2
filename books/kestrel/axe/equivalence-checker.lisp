@@ -1,7 +1,7 @@
 ; The Axe equivalence checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1140,7 +1140,7 @@
                               (test-case-array-alistp test-case-array-alist (+ 1 bignodenum))
                               (<= (len test-cases) (len test-case-array-alist)))))
   (if (equal smallnodenum bignodenum)
-      (er hard? 'get-traces-for-two-nodes "the two nodes should not be the same" nil)
+      (er hard? 'get-traces-for-two-nodes "the two nodes should not be the same")
     (prog2$
      (cw "(Getting traces from ~x0 test cases:~%" (len test-cases))
      (let ((traces-pair (get-traces-for-two-nodes-aux test-cases ;can this be too many? used to use 100 (if we are taking just a few, choose a better sample?)
@@ -7575,7 +7575,7 @@
            (evaluated-term (sublis-var-and-eval (enquote-cdrs test-case) ;gross?
                                                   term interpreted-function-alist)))
       (if (not (myquotep evaluated-term))
-          (prog2$ (er hard? 'partition-test-cases "Unable to evaluate test case: ~x0.  Got: ~x1." (acons #\0 test-case (acons #\1 evaluated-term nil)))
+          (prog2$ (er hard? 'partition-test-cases "Unable to evaluate test case: ~x0.  Got: ~x1." test-case evaluated-term)
                   (mv nil nil))
         (if (unquote evaluated-term)
             (partition-test-cases (rest test-cases) term interpreted-function-alist (cons test-case true-acc) false-acc)
