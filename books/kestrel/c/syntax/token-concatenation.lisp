@@ -160,7 +160,7 @@
        (pnumber-case
         number
         :digit (retok (list number.digit))
-        :dot-digit (reterr (msg "Cannot concatenate an identiifer ~x0 ~
+        :dot-digit (reterr (msg "Cannot concatenate an identifier ~x0 ~
                                  and a preprocessing number with dots ~x1."
                                 (str-fix ident) (pnumber-fix number)))
         :number-digit (b* (((erp rev-chars)
@@ -173,21 +173,21 @@
                            (retok (cons number.nondigit rev-chars)))
         :number-locase-e-sign (reterr
                                (msg "Cannot concatenate an identifier ~x0 ~
-                                     and a prrprocessing number with signs ~x1."
+                                     and a preprocessing number with signs ~x1."
                                     (str-fix ident) (pnumber-fix number)))
         :number-upcase-e-sign (reterr
                                (msg "Cannot concatenate an identifier ~x0 ~
-                                     and a prrprocessing number with signs ~x1."
+                                     and a preprocessing number with signs ~x1."
                                     (str-fix ident) (pnumber-fix number)))
         :number-locase-p-sign (reterr
                                (msg "Cannot concatenate an identifier ~x0 ~
-                                     and a prrprocessing number with signs ~x1."
+                                     and a preprocessing number with signs ~x1."
                                     (str-fix ident) (pnumber-fix number)))
         :number-upcase-p-sign (reterr
                                (msg "Cannot concatenate an identifier ~x0 ~
-                                     and a prrprocessing number with signs ~x1."
+                                     and a preprocessing number with signs ~x1."
                                     (str-fix ident) (pnumber-fix number)))
-        :number-dot (reterr (msg "Cannot concatenate an identiifer ~x0 ~
+        :number-dot (reterr (msg "Cannot concatenate an identifier ~x0 ~
                                   and a preprocessing number with dots ~x1."
                                  (str-fix ident) (pnumber-fix number)))))
      :measure (pnumber-count number))))
