@@ -11931,8 +11931,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is called after parsing the @('#'),
-     so we proceed to parse an identifier,
-     which must be one of @('if'), @('ifdef'), or @('ifndef').")
+     so we proceed to parse a token,
+     which must be the keyword @('if'),
+     or the identifier @('ifdef'),
+     or the identifier @('ifndef').")
    (xdoc::p
     "For @('#if'), we parse a normal expression
      and then we convert to the more restricted form.
@@ -11953,21 +11955,27 @@
      to be produced by our preprocessor."))
   (b* (((reterr) (irr-hash-if/ifdef/ifndef) (irr-span) parstate)
        ;; #
-       ((erp ident span parstate) (read-identifier parstate)))
+       ((erp token span parstate) (read-token parstate)))
     (cond
-     ((equal (ident->unwrap ident) "if") ; # if
+     ((token-keywordp token "if") ; # if
       (b* (((erp expr span2 parstate) (parse-expression parstate)) ; # if expr
            (hexpr (expr-to-hash-if/elif-expr expr)))
         (retok (hash-if/ifdef/ifndef-if hexpr)
                (span-join hash-span span2)
                parstate)))
-     ((equal (ident->unwrap ident) "ifdef") ; # ifdef
+     ((and token ; # ifdef
+           (token-case token :ident)
+           (equal (ident->unwrap (token-ident->ident token))
+                  "ifdef"))
       (b* (((erp macro span2 parstate) ; # ifdef macro
             (read-identifier parstate)))
         (retok (hash-if/ifdef/ifndef-ifdef macro)
                (span-join hash-span span2)
                parstate)))
-     ((equal (ident->unwrap ident) "ifndef") ; # ifndef
+     ((and token ; # ifndef
+           (token-case token :ident)
+           (equal (ident->unwrap (token-ident->ident token))
+                  "ifndef"))
       (b* (((erp macro span2 parstate) ; # ifndef macro
             (read-identifier parstate)))
         (retok (hash-if/ifdef/ifndef-ifndef macro)
@@ -11975,9 +11983,9 @@
                parstate)))
      (t ; # other
       (reterr-msg :where (span->start span)
-                  :expected "an identifier among ~
-                             'if', 'ifdef', and 'ifndef'"
-                  :found (msg "the identifier ~x0" ident)))))
+                  :expected "the keyword 'if' or~
+                             the identifier 'ifdef' or 'ifndef'"
+                  :found (token-to-msg token)))))
 
   ///
 
@@ -12032,14 +12040,18 @@
                       :found (token-to-msg token))))
       (cond
        ((token-punctuatorp token "#") ; #
-        (b* (((erp ident & parstate) (read-identifier parstate)))
+        (b* (((erp token & parstate) (read-token parstate)))
           (cond
-           ((equal (ident->unwrap ident) "include") ; # include
+           ((and token ; # include
+                 (token-case token :ident)
+                 (equal (ident->unwrap (token-ident->ident token)) "include"))
             (b* (((erp hname last-span parstate) (read-header-name parstate)))
               (retok (trans-item-include hname)
                      (span-join span last-span)
                      parstate)))
-           ((equal (ident->unwrap ident) "define") ; # define
+           ((and token ; # define
+                 (token-case token :ident)
+                 (equal (ident->unwrap (token-ident->ident token)) "define"))
             (b* (((erp ident & parstate) (read-identifier parstate))
                  ((erp ident1 last-span parstate) (read-identifier parstate))
                  ((unless (equal ident1 ident))
@@ -12049,7 +12061,9 @@
               (retok (trans-item-define ident)
                      (span-join span last-span)
                      parstate)))
-           ((equal (ident->unwrap ident) "undef") ; # undef
+           ((and token ; # undef
+                 (token-case token :ident)
+                 (equal (ident->unwrap (token-ident->ident token)) "undef"))
             (b* (((erp ident last-span parstate) (read-identifier parstate)))
               (retok (trans-item-undef ident)
                      (span-join span last-span)
@@ -12083,9 +12097,9 @@
                   ;; # elif ... transitems
                   ;; #
                   (read-punctuator "#" parstate))
-                 ((erp ident span-ident parstate) (read-identifier parstate)))
+                 ((erp token2 span2 parstate) (read-token parstate)))
               (cond
-               ((equal (ident->unwrap ident) "else")
+               ((token-keywordp token2 "else")
                 ;; # if/ifdef/ifndef expr/ident
                 ;; transitems
                 ;; # elif ... transitems
@@ -12136,7 +12150,10 @@
                           :else (hash-else-option-some (hash-else else-items)))
                          (span-join span last-span)
                          parstate)))
-               ((equal (ident->unwrap ident) "endif")
+               ((and token2
+                     (token-case token2 :ident)
+                     (equal (ident->unwrap (token-ident->ident token2))
+                            "endif"))
                 ;; # if/ifdef/ifndef expr/ident
                 ;; transitems
                 ;; # elif ... transitems
@@ -12148,7 +12165,7 @@
                         :items items
                         :elifs elifs
                         :else (hash-else-option-none))
-                       (span-join span span-ident)
+                       (span-join span span2)
                        parstate))
                (t
                 ;; # if/ifdef/ifndef expr/ident
@@ -12157,9 +12174,10 @@
                 ;; ...
                 ;; # elif ... transitems
                 ;; # other
-                (reterr-msg :where (span->start span-ident)
-                            :expected "the identifier 'else' or 'endif'"
-                            :found (msg "the identifier ~x0" ident)))))))))
+                (reterr-msg :where (span->start span2)
+                            :expected "the keyword 'else' ~
+                                       or the identifier 'endif'"
+                            :found (token-to-msg token2)))))))))
        (t ; not-#
         (b* ((parstate (unread-token parstate))
              ((erp declon span parstate) ; extdeclon
@@ -12192,15 +12210,18 @@
           (retok nil span parstate)))
       (cond
        ((token-punctuatorp token "#") ; #
-        (b* (((erp ident & parstate) (read-identifier parstate)))
+        (b* (((erp token2 & parstate) (read-token parstate)))
           (cond
-           ((member-equal (ident->unwrap ident) ; # elif/else/endif
-                          '("elif" "else" "endif"))
+           ((or (token-keywordp token2 "else") ; # else
+                (and token2 ; # elif/endif
+                     (token-case token2 :ident)
+                     (member-equal (ident->unwrap (token-ident->ident token2))
+                                   '("elif" "endif"))))
             (b* ((parstate (unread-token parstate)) ; #
                  (parstate (unread-token parstate))) ;
               (retok nil span parstate)))
            (t ; # other
-            (b* ((parstate (unread-token parstate)) ; #
+            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; #
                  (parstate (unread-token parstate)) ;
                  (psize (parsize parstate))
                  ((erp item span parstate) ; item
@@ -12274,9 +12295,11 @@
        otherwise, we put back the tokens and we return."))
     (b* (((reterr) nil (irr-span) parstate)
          ((erp span parstate) (read-punctuator "#" parstate)) ; #
-         ((erp ident span2 parstate) (read-identifier parstate))) ; # ident
+         ((erp token span2 parstate) (read-token parstate)))
       (cond
-       ((equal (ident->unwrap ident) "elif") ; # elif
+       ((and token ; # elif
+             (token-case token :ident)
+             (equal (ident->unwrap (token-ident->ident token)) "elif"))
         (b* ((psize (parsize parstate))
              ((erp elif span3 parstate) ; # elif transitems
               (parse-hash-elif span parstate))
@@ -12288,15 +12311,18 @@
           (retok (cons elif elifs)
                  (span-join span (if elifs span4 span3))
                  parstate)))
-       ((member-equal (ident->unwrap ident) '("else" "endif")) ; # else/endif
+       ((or (token-keywordp token "else") ; # else
+            (and token ; # endif
+                 (token-case token :ident)
+                 (equal (ident->unwrap (token-ident->ident token)) "endif")))
         (b* ((parstate (unread-token parstate)) ; #
              (parstate (unread-token parstate))) ;
           (retok nil span parstate)))
        (t ; # other
         (reterr-msg :where (span->start span2)
-                    :expected "an identifier among ~
-                               'elif', 'else', and 'endif'"
-                    :found (msg "the identifier ~x0" ident)))))
+                    :expected "the keyword 'else' or ~
+                               the identifier 'elif' or 'endif'"
+                    :found (token-to-msg token)))))
     :measure (two-nats-measure (parsize parstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
