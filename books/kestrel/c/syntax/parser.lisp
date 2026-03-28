@@ -11848,7 +11848,8 @@
    :paren
    (hash-if/elif-expr-paren (expr-to-hash-if/elif-expr expr.inner))
    :funcall
-   (if (and (equal expr.fun (ident "defined"))
+   (if (and (expr-case expr.fun :ident)
+            (equal (ident->unwrap (expr-ident->ident expr.fun)) "defined")
             (consp expr.args)
             (endp (cdr expr.args))
             (expr-case (car expr.args) :ident))
@@ -11983,7 +11984,7 @@
                parstate)))
      (t ; # other
       (reterr-msg :where (span->start span)
-                  :expected "the keyword 'if' or~
+                  :expected "the keyword 'if' or ~
                              the identifier 'ifdef' or 'ifndef'"
                   :found (token-to-msg token)))))
 
@@ -12069,7 +12070,8 @@
                      (span-join span last-span)
                      parstate)))
            (t ; # other
-            (b* (((erp if/ifdef/ifndef & parstate)
+            (b* ((parstate (if token (unread-token parstate) parstate)) ; #
+                 ((erp if/ifdef/ifndef & parstate)
                   ;; # if/ifdef/ifndef expr/ident
                   (parse-hash-if-or-ifdef-or-ifndef span parstate))
                  (psize (parsize parstate))
