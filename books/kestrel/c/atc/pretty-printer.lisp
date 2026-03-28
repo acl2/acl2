@@ -384,7 +384,7 @@
    :none ""
    :pointer (msg "*~@0" (pprint-obj-adeclor declor.decl))
    :array (b* ((sub (pprint-obj-adeclor declor.decl)))
-            (if (obj-adeclor-case declor.decl :array)
+            (if (obj-adeclor-case declor.decl :pointer)
                 (msg "(~@0)[~@1]"
                      sub
                      (if declor.size
