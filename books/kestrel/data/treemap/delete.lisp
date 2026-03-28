@@ -3,8 +3,6 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Grant Jurgensen (grant@kestrel.edu)
-;
-; Some rules in this book are "ported" from std/osets/top.lisp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,7 +72,7 @@
     (xdoc::section
       "General form"
       (xdoc::codeblock
-        "(delete x-0 x-1 ... x-n map :test test)")
+        "(delete key-0 key-1 ... key-n map :test test)")
       (xdoc::desc
         "@(':test') &mdash; optional"
         (xdoc::p
@@ -342,13 +340,8 @@
   :parents (delete)
   :short "Remove the @(see head) from a nonempty @(see treemap)."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "This is slightly faster than calling @(tsee delete) on the head.")
-   (xdoc::p
-     "Note: it is <emph>not</emph> recommended to iterate over a @(see treemap)
-      using @(tsee tail) (unless you need to maintain a map of the remaining
-      key-value pairs)."))
+  (xdoc::topstring-p
+   "This is slightly faster than calling @(tsee delete) on the head.")
   (mbe :logic (delete (head-key map) map)
        :exec (tree-join (tree->left map)
                         (tree->right map)))
