@@ -46,12 +46,3 @@
      '(expr-valuep-of-expr-value
        expr-value->value-of-expr-value
        (:e member-equal)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection atc-exec-expr-pure-list-rules
-  :short "Rules for @(tsee exec-expr-pure-list)."
-
-  (defval *atc-exec-expr-pure-list-rules*
-    '(exec-expr-pure-list-of-nil
-      exec-expr-pure-list-when-consp)))

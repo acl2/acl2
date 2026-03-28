@@ -689,7 +689,7 @@
        (msg? (acl2::fresh-namep-msg-weak prog-const 'acl2::const wrld))
        ((when msg?)
         (reterr (msg "The constant name ~x0 ~
-                      determined by the :CONST-NAME input ~x0 ~
+                      determined by the :CONST-NAME input ~x1 ~
                       is invalid: ~@2"
                      prog-const const-name msg?)))
        (wf-thm (add-suffix prog-const "-WELL-FORMED"))

@@ -161,7 +161,7 @@
           *atc-exec-binary-strict-pure-rules*
           *atc-test-value-rules*
           *atc-exec-expr-pure-rules*
-          *atc-exec-expr-pure-list-rules*
+          *exec-expr-pure-list-openers*
           *atc-exec-expr-when-call-rules*
           *atc-exec-expr-when-asg-rules*
           *atc-exec-expr-when-pure-rules*
