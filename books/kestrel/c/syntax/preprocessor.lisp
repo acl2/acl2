@@ -1180,11 +1180,17 @@
      which are not part of the replacement list [C17:6.10.3/7].
      We ensure that @('##') does not occur
      at the start or end of the replacement list [C17:6.10.3.3/1].
-     We also return the final new line lexeme, if present."))
+     We also return the final new line lexeme, if present.")
+   (xdoc::p
+    "For each identifier that we read,
+     we set its provenance list to the singleton of the macro name.
+     This way, when we expand the macro,
+     the identifiers in the replacement list already contain
+     the information about the provenance from the macro."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil nil ppstate)
        ((erp replist newline? ppstate)
-        (read-macro-object-replist-loop t ppstate))
+        (read-macro-object-replist-loop name t ppstate))
        ((when (and (consp replist)
                    (or (plexeme-hashhashp (car replist))
                        (plexeme-hashhashp (car (last replist))))))
@@ -1193,7 +1199,9 @@
     (retok replist newline? ppstate))
 
   :prepwork
-  ((define read-macro-object-replist-loop ((startp booleanp) (ppstate ppstatep))
+  ((define read-macro-object-replist-loop ((name stringp)
+                                           (startp booleanp)
+                                           (ppstate ppstatep))
      :returns (mv erp
                   (replist plexeme-listp)
                   (newline? plexeme-optionp)
@@ -1207,8 +1215,11 @@
          (retok nil toknl? ppstate))
         ((plexeme?-tokenp toknl?) ; token
          (b* (((erp replist newline? ppstate) ; token replist
-               (read-macro-object-replist-loop nil ppstate))
-              (replist (cons toknl? replist))
+               (read-macro-object-replist-loop name nil ppstate))
+              (token (if (plexeme-case toknl? :ident)
+                         (change-plexeme-ident toknl? :provenance (list name))
+                       toknl?))
+              (replist (cons token replist))
               (replist (if (and nontoknls
                                 (not startp))
                            (cons (plexeme-spaces 1) replist)
@@ -1300,7 +1311,15 @@
     "We also ensure that @('__VA_ARGS__') occurs in the replacement list
      only if the macro has ellipsis.")
    (xdoc::p
-    "We also return the final new line lexeme, if present."))
+    "We also return the final new line lexeme, if present.")
+   (xdoc::p
+    "For each non-parameter identifier that we read,
+     we set its provenance list to the singleton of the macro name.
+     This way, when we expand the macro,
+     the identifiers in the replacement list already contain
+     the information about the provenance from the macro.
+     The parameters do not need that provenance
+     because they are substituted when the macro is expanded."))
   (read-macro-function-replist-loop name nil params ellipsis ppstate)
 
   :prepwork
@@ -1360,7 +1379,10 @@
                                  paramp)))
                    (add-to-set-equal ident hash-params)
                  hash-params))
-              (replist (cons toknl? replist))
+              (token (if paramp
+                         toknl?
+                       (change-plexeme-ident toknl? :provenance (list name))))
+              (replist (cons token replist))
               (replist (if (and previous nontoknls)
                            (cons (plexeme-spaces 1) replist)
                          replist)))
@@ -1495,13 +1517,16 @@
   (xdoc::topstring
    (xdoc::p
     "The rationale for this identity definition
-     is explained in @(see preservable-inclusions)."))
+     is explained in @(see preservable-inclusions).")
+   (xdoc::p
+    "We set the provenance list for the replacement list,
+     although it may be irrelevant."))
   `(,(plexeme-punctuator "#")
     ,(make-plexeme-ident :ident "define" :provenance nil)
     ,(plexeme-spaces 1)
     ,(make-plexeme-ident :ident name :provenance nil)
     ,(plexeme-spaces 1)
-    ,(make-plexeme-ident :ident name :provenance nil)
+    ,(make-plexeme-ident :ident name :provenance (list name))
     ,@(and newline-at-end? (list (plexeme-option-fix newline-at-end?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1924,7 +1949,10 @@
      which macros have been expanded where in the arguments,
      to prevent re-expansion when we rescan
      the substituted replacement list of the macro.
-     Those lexmarks are already normalized via @(tsee normalize-macro-arg).")
+     Those lexmarks are already normalized via @(tsee normalize-macro-arg).
+     Furthermore, the identifier lexemes in the values of @('subst')
+     already contain the information about the function-like macro
+     that the substitution pertains to.")
    (xdoc::p
     "We go through the replacement list.
      When we encounter a parameter of the macro,
