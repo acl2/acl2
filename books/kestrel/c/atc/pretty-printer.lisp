@@ -282,7 +282,7 @@
                                (pprint-ident tss.tag))
                   :union (msg "union ~@0"
                               (pprint-ident tss.tag))
-                  :enum (msg "union ~@0"
+                  :enum (msg "enum ~@0"
                              (pprint-ident tss.tag))
                   :typedef (pprint-ident tss.name))
   :hooks (:fix)
