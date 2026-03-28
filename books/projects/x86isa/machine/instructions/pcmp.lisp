@@ -168,7 +168,7 @@
 
   :parents (two-byte-opcodes)
 
-  :short "Compare packed data for equal (MMX variants)."
+  :short "Compare packed data for equal (SSE variants)."
 
   :long
   "<code>
@@ -490,7 +490,7 @@
 
   :parents (two-byte-opcodes)
 
-  :short "Compare packed data for greater than (MMX variants)."
+  :short "Compare packed data for greater than (SSE variants)."
 
   :long
   "<code>
