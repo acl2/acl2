@@ -1450,8 +1450,7 @@
 ;   :rule-classes nil)
 
          (er soft ctx
-             "The empty string is not a legal package name for defpkg."
-             name))
+             "The empty string is not a legal package name for defpkg."))
         ((not (equal (string-upcase name) name))
          (er soft ctx
              "~x0 is not a legal package name for defpkg, which disallows ~
@@ -15934,7 +15933,7 @@
                                   (value nil))
                                  (t (er soft ctx
                                         "Obtained non-zero exit status ~x0 ~
-                                         when attempting to touch file ~x0 ."
+                                         when attempting to touch file ~x1 ."
                                         status filename))))))
                 (t (value nil))))))))
 
@@ -17335,7 +17334,7 @@
   (cond ((and write-acl2x pcert)
          (er soft ctx
              "It is illegal to specify the writing  of a .acl2x file when a ~
-              non-nil value for :pcert (here, ~x1) is specified~@0."
+              non-nil value for :pcert (here, ~x0) is specified~@1."
              pcert
              (cond (pcert-env
                     " (even when the :pcert argument is supplied, as in this ~
@@ -26069,12 +26068,11 @@
                  (or (eq (cadr notinline-tail) :fncall)
                      (and memo-entry
                           (er hard ctx
-                              "It is illegal to specify a value for ~
-                                      trace$ option :NOTINLINE other than ~
-                                      :FNCALL for a memoized function.  The ~
-                                      suggested trace spec for ~x0, which ~
-                                      specifies :NOTINLINE ~x0, is thus ~
-                                      illegal."
+                              "It is illegal to specify a value for trace$ ~
+                               option :NOTINLINE other than :FNCALL for a ~
+                               memoized function.  The suggested trace spec ~
+                               for ~x0, which specifies :NOTINLINE ~x1, is ~
+                               thus illegal."
                               fn
                               (cadr notinline-tail)))))
                 (memo-entry
@@ -35240,8 +35238,7 @@
        ((and error-triple-p+ (car replaced-val))
         (er soft ctx
             "Evaluation failed: Result was of the form (mv t _ state).  See ~
-             :DOC error-triple."
-            (car replaced-val)))
+             :DOC error-triple."))
        (check (cond ((and (car stobjs-out)
                           (not (eq (car stobjs-out) :df)))
                      (er soft ctx

@@ -511,7 +511,7 @@
    ((and (eq (car form) 'quote)
          (consp (cdr form)))
     (cond ((integerp (cadr form))
-           `(integerp ,(cadr form) ,(cadr form)))
+           `(integer ,(cadr form) ,(cadr form)))
           ((rationalp (cadr form))
            `rational)
           ((numberp (cadr form))
