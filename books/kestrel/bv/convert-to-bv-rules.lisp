@@ -1,6 +1,6 @@
 ; Trim-based rules to convert functions to BV functions
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -266,7 +266,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvsx-convert-arg3-to-bv
+(defthmd bvsx-convert-arg3-to-bv
   (implies (syntaxp (convertible-to-bvp x))
            (equal (bvsx new-size old-size x)
                   (bvsx new-size old-size (trim old-size x))))

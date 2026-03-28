@@ -155,7 +155,7 @@
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg2
   (implies (and (unsigned-byte-p size y) ;size is a free var
                 ;(unsigned-byte-p size x)
-                (integerp y))
+                )
            (equal (logand x y)
                   (bvand size x y)))
   :hints (("Goal" :use logand-becomes-bvand-alt
