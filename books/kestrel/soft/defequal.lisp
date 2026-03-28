@@ -1,10 +1,10 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -173,7 +173,7 @@
        ((unless (= left-arity right-arity))
         (er-soft+ ctx t 0
                   "The function ~x0 specified by the :LEFT input ~
-                   and the function ~x1 specified by :RIGHT input ~
+                   and the function ~x1 specified by the :RIGHT input ~
                    must have the same arity, but they do not: ~
                    the first has arity ~x2 and the second has arity ~x3."
                   left right left-arity right-arity))
@@ -198,7 +198,7 @@
         (if (eq verify-guards t)
             (b* (((unless (equal left-guard *t*))
                   (er-soft+ ctx t 0
-                            "Since the :VERIFY-GUARD input ~
+                            "Since the :VERIFY-GUARDS input ~
                              is (perhaps by default) T, ~
                              the guard of the function ~x0 ~
                              specified by the :LEFT input ~
@@ -206,7 +206,7 @@
                             left left-guard))
                  ((unless (equal right-guard *t*))
                   (er-soft+ ctx t 0
-                            "Since the :VERIFY-GUARD input ~
+                            "Since the :VERIFY-GUARDS input ~
                              is (perhaps by default) T, ~
                              the guard of the function ~x0 ~
                              specified by the :RIGHT input ~
@@ -214,7 +214,7 @@
                             right right-guard))
                  ((unless (guard-verified-p+ left wrld))
                   (er-soft+ ctx t 0
-                            "Since the :VERIFY-GUARD input ~
+                            "Since the :VERIFY-GUARDS input ~
                              is (perhaps by default) T, ~
                              the function ~x0 ~
                              specified by the :LEFT input ~
@@ -222,7 +222,7 @@
                             left))
                  ((unless (guard-verified-p+ right wrld))
                   (er-soft+ ctx t 0
-                            "Since the :VERIFY-GUARD input ~
+                            "Since the :VERIFY-GUARDS input ~
                              is (perhaps by default) T, ~
                              the function ~x0 ~
                              specified by the :RIGHT input ~
