@@ -189,10 +189,19 @@
 
 ; Check directive-preserving expansion against full expansion.
 
+(defun strip-provenance (lexemes)
+  (b* (((when (endp lexemes)) nil)
+       (lexeme (car lexemes))
+       (lexeme (if (plexeme-case lexeme :ident)
+                   (change-plexeme-ident lexeme :provenance nil)
+                 lexeme))
+       (lexemes (strip-provenance (cdr lexemes))))
+    (cons lexeme lexemes)))
+
 (defun ppart-to-tokens (part)
   (ppart-case
    part
-   :line (plexemes-without-nontokens part.lexemes)
+   :line (strip-provenance (plexemes-without-nontokens part.lexemes))
    :cond (er hard? 'ppart-to-tokens "Found conditional section ~x0." part)))
 
 (defun ppart-list-to-tokens (parts)
