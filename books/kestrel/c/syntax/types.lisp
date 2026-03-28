@@ -1363,7 +1363,7 @@
             y
             :struct
             (if (and x.tunit? y.tunit? (equal x.tunit? y.tunit?))
-                (if (c::version-std-c23p (ienv->version ienv))
+                (if (equal (ienv->std ienv) (c::standard-c23))
                     (type-struni-tag/members-case
                       x.tag/members
                       :tagged
@@ -1434,7 +1434,7 @@
             y
             :union
             (if (and x.tunit? y.tunit? (equal x.tunit? y.tunit?))
-                (if (c::version-std-c23p (ienv->version ienv))
+                (if (equal (ienv->std ienv) (c::standard-c23))
                     (type-struni-tag/members-case
                       x.tag/members
                       :tagged (type-struni-tag/members-case

@@ -478,15 +478,11 @@
   :returns (preprocess-arg stringp)
   :short "Return the @('-std=') flag reflecting the implementation
           environment."
-  (b* (((ienv ienv) ienv))
-    (c::version-case
-      ienv.version
-      :c17 "-std=c17"
-      :c23 "-std=c23"
-      :c17+gcc "-std=gnu17"
-      :c23+gcc "-std=gnu23"
-      :c17+clang "-std=gnu17"
-      :c23+clang "-std=gnu23")))
+  (b* (((c::version version) (ienv->version ienv)))
+    (c::standard-case
+      version.std
+      :c17 (if (c::version-gcc/clangp version) "-std=gnu17" "-std=c17")
+      :c23 (if (c::version-gcc/clangp version) "-std=gnu23" "-std=c23"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -645,7 +641,7 @@
           (retok events code state)))
        ;; Disambiguation is required, if we get here.
        ((erp tunits)
-        (dimb-transunit-ensemble tunits (ienv->gcc/clang ienv) keep-going))
+        (dimb-transunit-ensemble tunits (ienv->version ienv) keep-going))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))

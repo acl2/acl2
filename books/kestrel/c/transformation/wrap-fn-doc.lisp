@@ -96,7 +96,7 @@
         (xdoc::li
           "For a wrapper to be defined, a declaration must be found in the
            translation unit. "
-          (xdoc::seetopic "c$::gcc-builtins" "Built-in")
+          (xdoc::seetopic "c$::built-ins" "Built-in")
           " functions which are used without declaration are unsupported.")
         (xdoc::li
           "No mechanism is provided to differentiate functions of the same

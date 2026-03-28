@@ -172,10 +172,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This does not depend on the GCC or Clang extensions,
+    "This does not depend on the GCC, Clang, or CHERI extensions,
      but just on the C standard."))
-  (cond ((version-std-c17p version) *punctuators-c17*)
-        ((version-std-c23p version) *punctuators-c23*))
+  (b* ((std (version->std version)))
+    (standard-case
+      std
+      :c17 *punctuators-c17*
+      :c23 *punctuators-c23*))
 
   ///
 

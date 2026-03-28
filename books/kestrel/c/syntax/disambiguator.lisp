@@ -11,7 +11,7 @@
 
 (in-package "C$")
 
-(include-book "builtin")
+(include-book "built-in")
 (include-book "unambiguity")
 
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -3836,7 +3836,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-transunit ((tunit transunitp) (gcc/clang booleanp))
+(define dimb-transunit ((tunit transunitp) (version c::versionp))
   :returns (mv (erp maybe-msgp) (new-tunit transunitp))
   :short "Disambiguate a translation unit."
   :long
@@ -3846,18 +3846,16 @@
      we disambiguate all the translation items in order,
      and we discard the final disambiguation table.")
    (xdoc::p
-    "If the GCC/Clang flag is @('nil') (i.e. no GCC/Clang extensions),
+    "If the C version does not have any extensions,
      the initial disambiguation table is empty.
-     If the flag is @('t'), for now the only difference is that
-     we initialize the disambiguation table with some "
-    (xdoc::seetopic "gcc-builtins" "GCC built-ins")
-    ". For now we only add some built-ins
+     Otherwise, we initialize the disambiguation table
+     with some @(see built-ins). For now we only add some built-ins
      that we have observed in some preprocessed files.
-     We should revisit this, adding all the "
-    (xdoc::seetopic "gcc-builtins" "GCC built-ins")
-    ", with clear and accurate references.")
+     We should revisit this, adding all the @(see built-ins),
+     with clear and accurate references.")
    (xdoc::p
-    "We also add entries for certain built-in variables
+    "If GCC/Clang extensions are enabled,
+     we also add entries for certain built-in variables
      corresponding to the x86 registers, i.e. @('__eax') etc.
      We could not find those documented in the GCC manual,
      but we found them in practical code.
@@ -3896,12 +3894,10 @@
      a richer description of the C implementation."))
   (b* (((reterr) (irr-transunit))
        (items (transunit->items tunit))
-       (table (dimb-init-table))
-       (table
-         (if gcc/clang
-             (dimb-add-idents-objfun *gcc-builtin* table)
-           table))
-       ((erp new-items &) (dimb-trans-item-list items table gcc/clang)))
+       (table (dimb-add-idents-objfun (built-ins-for version)
+                                      (dimb-init-table)))
+       ((erp new-items &)
+        (dimb-trans-item-list items table (c::version-gcc/clangp version))))
     (retok (make-transunit :items new-items
                            :info nil)))
   :hooks (:fix)
@@ -3915,22 +3911,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-transunit-ensemble ((tuens transunit-ensemblep)
-                                 (gcc/clang booleanp)
+                                 (version c::versionp)
                                  (keep-going booleanp))
   :returns (mv (erp maybe-msgp) (new-tuens transunit-ensemblep))
   :short "Disambiguate a translation unit ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also pass a flag saying
-     whether GCC/Clang extensions should be accepted.")
+    "We pass an indication of the C version to use.")
    (xdoc::p
     "We disambiguate all the translation units, independently.
      We leave the file path mapping unchanged."))
   (b* (((reterr) (irr-transunit-ensemble))
        (tumap (transunit-ensemble->units tuens))
        ((erp new-tumap)
-        (dimb-transunit-ensemble-loop tumap gcc/clang keep-going))
+        (dimb-transunit-ensemble-loop tumap version keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
                    (len-new-tumap (omap::size new-tumap))
@@ -3947,7 +3942,7 @@
   :prepwork
 
   ((define dimb-transunit-ensemble-loop ((tumap filepath-transunit-mapp)
-                                         (gcc/clang booleanp)
+                                         (version c::versionp)
                                          (keep-going booleanp))
      :returns (mv (erp maybe-msgp)
                   (new-tumap filepath-transunit-mapp
@@ -3956,21 +3951,21 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp tumap)) (retok nil))
           ((mv path tunit) (omap::head tumap))
-          ((mv erp new-tunit) (dimb-transunit tunit gcc/clang))
+          ((mv erp new-tunit) (dimb-transunit tunit version))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
                            (filepath->unwrap path)
                            erp)
                        (dimb-transunit-ensemble-loop (omap::tail tumap)
-                                                     gcc/clang
+                                                     version
                                                      keep-going))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->unwrap path)
                       erp)))
           ((erp new-tumap)
            (dimb-transunit-ensemble-loop (omap::tail tumap)
-                                         gcc/clang
+                                         version
                                          keep-going)))
        (retok (omap::update path new-tunit new-tumap)))
      :verify-guards :after-returns
@@ -3978,7 +3973,7 @@
      ///
 
      (fty::deffixequiv dimb-transunit-ensemble-loop
-       :args ((gcc/clang booleanp)
+       :args ((version c::versionp)
               (keep-going booleanp)))
 
      (defret filepath-transunit-map-unambp-of-dimb-transunit-ensemble-loop
