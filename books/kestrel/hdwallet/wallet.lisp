@@ -1544,7 +1544,7 @@
   :returns (mv (msg msgp
                     :hints (("Goal" :in-theory (enable command-error-message))))
                state)
-  :short "Process a command to initialize the wallet from a mnenonic."
+  :short "Process a command to initialize the wallet from a mnemonic."
   :long
   (xdoc::topstring
    (xdoc::p
