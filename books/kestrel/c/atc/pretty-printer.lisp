@@ -1056,7 +1056,7 @@
                                    (lnfix level))
                   (pprint-struct-declon-list declon.members (1+ (lnfix level)))
                   (pprint-one-line "};" (lnfix level)))
-   :enum (pprint-one-line (msg "enum ~@0 {,@1};"
+   :enum (pprint-one-line (msg "enum ~@0 {~@1};"
                                (pprint-ident declon.tag)
                                (pprint-comma-sep
                                 (pprint-ident-list declon.enumerators)))
