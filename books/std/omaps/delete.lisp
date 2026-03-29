@@ -16,11 +16,10 @@
 (local (acl2::controlled-configuration :hooks nil))
 
 (include-book "core")
-(include-book "with-fixing-theorems")
-(include-book "assoc")
-(include-book "submap")
-(include-book "extensionality")
-(include-book "compatiblep")
+(local (include-book "assoc"))
+(local (include-book "submap"))
+(local (include-book "extensionality"))
+(local (include-book "compatiblep"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

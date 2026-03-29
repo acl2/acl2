@@ -6,26 +6,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "DATA")
+(in-package "TREEMAP")
+
+(include-book "internal/keys-defs")
+(include-book "map-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
-(local (include-book "std/lists/list-defuns" :dir :system))
-
-(local (include-book "list"))
+(local (include-book "keys"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (list-fix
-          llist-fix
-          acl2::fast-list-equiv
-          list-equiv
-          list-equal
-          set-equiv
+  :names (keys
+          map-keys-acl2-numberp
+          map-keys-symbolp
+          map-keys-eqlablep
+          acl2-number-mapp
+          symbol-mapp
+          eqlable-mapp
           ))
-
-(defequiv list-equiv
-  :package :equiv)
-
-(defequiv set-equiv
-  :package :equiv)
