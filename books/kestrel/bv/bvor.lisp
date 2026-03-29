@@ -1,7 +1,7 @@
 ; Bitwise or
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -78,7 +78,8 @@
            (equal (bvor size x y) 0))
   :hints (("Goal" :in-theory (enable bvor))))
 
-(defthm bvor-when-size-is-0
+;; Disabled since we have bvor-when-size-is-not-positive.
+(defthmd bvor-when-size-is-0
   (equal (bvor 0 x y)
          0)
   :hints (("Goal" :in-theory (enable bvor))))
@@ -396,7 +397,8 @@
   (equal (equal (bvor size x y) (bvor size y x))
          t))
 
-;weird rule
+;; Somewhat unsual.  Works regardless of n being smaller or larger than n.
+;bozo move hyps to conclusion?
 (defthm unsigned-byte-p-of-bvor-2
   (implies (and (unsigned-byte-p n x)
                 (unsigned-byte-p n y)
@@ -434,16 +436,6 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvor (size 1))
            :in-theory (disable unsigned-byte-p-of-bvor
                                unsigned-byte-p-of-bvor-gen))))
-
-;bozo move hyps to conclusion?
-; a bit odd
-(defthm unsigned-byte-p-of-bvor2
-  (implies (and (unsigned-byte-p n a)
-                (unsigned-byte-p n b)
-                (natp n)
-                (natp size))
-           (unsigned-byte-p n (bvor size a b)))
-  :hints (("Goal" :in-theory (enable bvor))))
 
 ;kind of a weird rule..
 (defthm unsigned-byte-p-of-bvor3

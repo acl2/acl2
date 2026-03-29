@@ -358,6 +358,7 @@
                   0))
   :hints (("Goal" :in-theory (enable getbit-too-high))))
 
+;; todo: subsumed by getbit-of-bvand
 (defthm getbit-of-bvand-eric
   (implies (and (< 1 size) ;if size is 0 or 1, other rules should fire?
                 (< n size) ;other case?

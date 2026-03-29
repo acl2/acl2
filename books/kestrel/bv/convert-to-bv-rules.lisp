@@ -216,7 +216,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bitnot-convert-arg2-to-bv
+(defthmd bitnot-convert-arg1-to-bv
   (implies (syntaxp (convertible-to-bvp x))
            (equal (bitnot x)
                   (bitnot (trim 1 x))))
