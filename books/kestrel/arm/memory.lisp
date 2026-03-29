@@ -357,7 +357,7 @@
                            (read 1 addr arm)
                            (read 1 0 arm)))))
 
-;; todo: take off 4 bytes at a a time
+;; todo: take off 4 bytes at a time
 (defthmd read-opener-to-4
   (implies (and (syntaxp (quotep n))
                 (< 4 n) ; prevents loops with read-byte-becomes-read ; todo: gen the 4

@@ -189,7 +189,7 @@ boilerplate code inserted by @('def-inst') does the following:"
        special value of @('#b1111'), which requires special handling for almost
        all instructions.
 
-       Optionally handles the other possible values of the the @('cond') field,
+       Optionally handles the other possible values of the @('cond') field,
        which determine whether the instruction should execute (for almost all
        instructions).
 

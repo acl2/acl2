@@ -456,7 +456,7 @@
     ;; todo: vraddhn
     ;; todo: vrecpe
     ;; todo: vrecps
-    ;; todo: verv16, vrev32, vrev64
+    ;; todo: vrev16, vrev32, vrev64
     ;; todo: vrhadd
     ;; todo: vrshl
     ;; todo: vrshr
@@ -568,7 +568,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This does the following:
-;; - drops underscores (just used as seperators)
+;; - drops underscores (just used as separators)
 ;; - replaces VAR with (VAR 1)
 ;; - replaces (0) with 0 -- for now
 ;; - replaces (1) with 1 -- for now

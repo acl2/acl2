@@ -113,7 +113,7 @@
 
 ;; The body can refer to all the field names in the encoding of the instruction.
 ;; The :alt-body can be an alternate body that is better for rewriting (e.g., one that uses BV functions or avoids case splits).
-;; The :algt-body-hints should suffice to show that the body and alt body are equivalent (in context).
+;; The :alt-body-hints should suffice to show that the body and alt body are equivalent (in context).
 (defmacro def-inst (mnemonic body &key
                                     (check-condition ':auto) ; whether we put in the ConditionPassed check
                                     (check-condition-all-ones ':auto) ; whether we put in the check for condition=1111, which indicates an unconditional instruction
