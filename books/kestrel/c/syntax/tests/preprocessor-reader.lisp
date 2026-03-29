@@ -23,18 +23,10 @@
                                     input
                                     chars ; expected
                                     poss ; expected
-                                    (std '17)
-                                    (gcc 'nil)
-                                    (clang 'nil)
+                                    (version 'nil)
                                     (fail 'nil))
   `(assert!
-    (b* ((version (case ,std
-                    (17 (cond (,gcc (c::version-c17+gcc))
-                              (,clang (c::version-c17+clang))
-                              (t (c::version-c17))))
-                    (23 (cond (,gcc (c::version-c23+gcc))
-                              (,clang (c::version-c23+clang))
-                              (t (c::version-c23))))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (ienv (change-ienv (ienv-default) :version version))
          ((mv erp chars poss) (read-chars+positions "" ,input ienv)))
       (if ,fail

@@ -85,7 +85,13 @@
      "The "
      (xdoc::ahref "https://clang.llvm.org/docs/AttributeReference.html"
                   "Attributes in Clang")
-     "document, which we reference as `[CLA]'."))
+     "document, which we reference as `[CLA]'.")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-877.pdf"
+                  "Capability Hardware Enhanced RISC Instructions:
+                   CHERI Programmer's guide")
+     " technical report, which we reference as `[CHERI]'."))
    (xdoc::p
     "Sections of the above sources are referenced
      by appending their designations separated by colon,

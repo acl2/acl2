@@ -32,28 +32,18 @@
                       &key
                       pos
                       more-inputs
-                      std
-                      gcc
-                      clang
+                      version
                       skip-control-lines
                       cond)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
-  ;; CLANG flag says whether Clang extensions are enabled (default NIL).
+  ;; VERSION indicates the C version.
   ;; SKIP-CONTROL-LINES flag says to skip #... control lines.
   ;; Optional COND may be over variables AST, SPAN, PARSTATE.
   `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (cond (,gcc (c::version-c23+gcc))
-                            (,clang (c::version-c23+clang))
-                            (t (c::version-c23)))
-                    (cond (,gcc (c::version-c17+gcc))
-                          (,clang (c::version-c17+clang))
-                          (t (c::version-c17)))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (parstate (init-parstate ""
                                   (acl2::string=>nats ,input)
                                   version
@@ -76,26 +66,16 @@
                            &key
                            pos
                            more-inputs
-                           std
-                           gcc
-                           clang
+                           version
                            skip-control-lines)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
-  ;; CLANG flag says whether Clang extensions are enabled (default NIL).
+  ;; VERSION indicates the C version.
   ;; SKIP-CONTROL-LINES flag says to skip #... control lines.
   `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (cond (,gcc (c::version-c23+gcc))
-                            (,clang (c::version-c23+clang))
-                            (t (c::version-c23)))
-                    (cond (,gcc (c::version-c17+gcc))
-                          (,clang (c::version-c17+clang))
-                          (t (c::version-c17)))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (parstate (init-parstate ""
                                   (acl2::string=>nats ,input)
                                   version
@@ -158,7 +138,7 @@
 (test-parse
  parse-cast-expression
  "(T) && x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :cast/logand-ambig))
 
 (test-parse
@@ -227,7 +207,7 @@
 (test-parse
  parse-unary-expression
  "_Alignof y"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :unary))
 
 (test-parse
@@ -246,38 +226,38 @@
 (test-parse
  parse-unary-expression
  "_Alignof (x+y)"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :unary))
 
 (test-parse
  parse-unary-expression
  "__alignof__ (_Atomic(int))"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :alignof))
 
 (test-parse
  parse-unary-expression
  "_Alignof (var_or_tydef)"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :alignof-ambig))
 
 (test-parse
  parse-unary-expression
  "__alignof(also(ambig))"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :alignof-ambig))
 
 (test-parse
  parse-unary-expression
  "__alignof__(x).m"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :unary)
             (expr-case (expr-unary->arg ast) :member)))
 
 (test-parse
  parse-unary-expression
  "_Alignof(x)->m"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :unary)
             (expr-case (expr-unary->arg ast) :memberp)))
 
@@ -288,7 +268,7 @@
 (test-parse
  parse-unary-expression
  "&&label"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :label-addr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -319,7 +299,7 @@
 (test-parse
  parse-postfix-expression
  "(int) {}.x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :member))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -333,23 +313,23 @@
 (test-parse
  parse-expression
  "__builtin_types_compatible_p(typeof(a), signed long long)"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "__builtin_offsetof(struct pt_regs, ss)"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "__builtin_va_arg(args, ngx_str_t *)"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "({x = 0;})(x)"
- :cond (expr-case ast :funcall)
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t)
+ :cond (expr-case ast :funcall))
 
 (test-parse
  parse-expression
@@ -360,61 +340,61 @@
 (test-parse
  parse-expression
  "__extension__ x"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "__extension__ x + y"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "__extension__ (x + y)"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "((int) {}.x)"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :paren)
             (expr-case (expr-paren->inner ast) :member)))
 
 (test-parse
  parse-expression
  "sizeof ((struct s) {}.x)"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :unary))
 
 (test-parse
  parse-expression
  "((struct s) {}.x)"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :paren)
             (expr-case (expr-paren->inner ast) :member)))
 
 (test-parse
  parse-expression
  "(struct s) {}.x"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :member))
 
 (test-parse
  parse-expression
  "((struct s) {})"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :paren)
             (expr-case (expr-paren->inner ast) :complit)))
 
 (test-parse
  parse-expression
  "(id) {}.x)"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :member))
 
 (test-parse
  parse-expression
  "((id) {}.x))"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :paren)
             (expr-case (expr-paren->inner ast) :member)))
 
@@ -426,31 +406,31 @@
 (test-parse
  parse-expression
  "(x->y >= (f()) && x->y < (g()))"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "true"
- :std 17
+ :version (c::make-version :std (c::standard-c17))
  :cond (expr-case ast :ident))
 
 (test-parse
  parse-expression
  "false"
- :std 17
+ :version (c::make-version :std (c::standard-c17))
  :cond (expr-case ast :ident))
 
 (test-parse
  parse-expression
  "true"
- :std 23
+ :version (c::make-version :std (c::standard-c23))
  :cond (and (expr-case ast :const)
             (const-case (expr-const->const ast) :int)))
 
 (test-parse
  parse-expression
  "false"
- :std 23
+ :version (c::make-version :std (c::standard-c23))
  :cond (and (expr-case ast :const)
             (const-case (expr-const->const ast) :int)))
 
@@ -465,7 +445,7 @@
 (test-parse
  parse-designator
  "[0 ... 9]"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse-fail
  parse-designator
@@ -484,7 +464,7 @@
  "empty {}"
  :pos (position "" 1 7)
  :more-inputs (t (span (position "" 1 0) (position "" 1 6)))
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (type-spec-case ast :struct-empty))
 
 (test-parse
@@ -492,7 +472,7 @@
  "{}"
  :pos (position "" 1 7)
  :more-inputs (t (span (position "" 1 0) (position "" 1 6)))
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (type-spec-case ast :struct-empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -747,7 +727,7 @@
 (test-parse
  parse-type-name
  "bool"
- :std 17
+ :version (c::make-version :std (c::standard-c17))
  :cond (and (equal (tyname->specquals ast)
                    (list (spec/qual-typespec
                           (type-spec-typedef (ident "bool")))))
@@ -757,7 +737,7 @@
 (test-parse
  parse-type-name
  "bool"
- :std 23
+ :version (c::make-version :std (c::standard-c23))
  :cond (and (equal (tyname->specquals ast)
                    (list (spec/qual-typespec (type-spec-bool))))
             (equal (tyname->declor? ast)
@@ -845,37 +825,37 @@
  parse-declaration
  "extern int remove (const char *__filename)
     __attribute__ ((__nothrow__ , __leaf__));"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-declaration
  "int __seg_fs *x;"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-declaration
  "int __seg_gs *x;"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-declaration
  "int * _Nonnull ptr = 0;"
- :clang t)
+ :version (c::make-version :std (c::standard-c17) :clang t))
 
 (test-parse
  parse-declaration
  "int * _Null_unspecified ptr = 0;"
- :clang t)
+ :version (c::make-version :std (c::standard-c17) :clang t))
 
 (test-parse
  parse-declaration
  "int * _Nullable ptr = 0;"
- :clang t)
+ :version (c::make-version :std (c::standard-c17) :clang t))
 
 (test-parse
  parse-declaration
  "int * _Nullable_result f();"
- :clang t)
+ :version (c::make-version :std (c::standard-c17) :clang t))
 
 (test-parse-fail
  parse-declaration
@@ -884,7 +864,7 @@
 (test-parse-fail
  parse-declaration
  "int * _Nonnull ptr = 0;"
- :gcc t) ; Clang-only extension
+ :version (c::make-version :std (c::standard-c17) :gcc t)) ; Clang-only extension
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -903,12 +883,12 @@
 (test-parse
  parse-statement
  "return (*(const volatile typeof( _Generic((*(unsigned long *)addr), char: (char)0, unsigned char: (unsigned char)0, signed char: (signed char)0, unsigned short: (unsigned short)0, signed short: (signed short)0, unsigned int: (unsigned int)0, signed int: (signed int)0, unsigned long: (unsigned long)0, signed long: (signed long)0, unsigned long long: (unsigned long long)0, signed long long: (signed long long)0, default: (*(unsigned long *)addr))) *)&(*(unsigned long *)addr));"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-statement
  "case 'a' ... 'z': return;"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-statement
@@ -926,7 +906,7 @@
   __label__ lab;
   int x = 0;
 }"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (stmt-case ast :compound)
             (equal (comp-stmt->labels (stmt-compound->stmt ast))
                    (list (list (ident "lab"))))))
@@ -937,7 +917,7 @@
   __label__ lab1, lab2;
   int x = 0;
 }"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (stmt-case ast :compound)
             (equal (comp-stmt->labels (stmt-compound->stmt ast))
                    (list (list (ident "lab1")
@@ -950,7 +930,7 @@
   __label__ lab3;
   int x = 0;
 }"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (stmt-case ast :compound)
             (equal (comp-stmt->labels (stmt-compound->stmt ast))
                    (list (list (ident "lab1")
@@ -960,19 +940,19 @@
 (test-parse
  parse-statement
  "__attribute__((fallthrough));"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (stmt-case ast :null-attrib))
 
 (test-parse
  parse-statement
  "__attribute__((assume(x == 42)));"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (stmt-case ast :null-attrib))
 
 (test-parse
  parse-statement
  "__attribute__((musttail)) return bar();"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (stmt-case ast :return-attrib))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -986,21 +966,21 @@
 (test-parse
  parse-block-item
  "__attribute__((fallthrough));"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (block-item-case ast :stmt)
             (stmt-case (block-item-stmt->stmt ast) :null-attrib)))
 
 (test-parse
  parse-block-item
  "__attribute__((assume(x == 42)));"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (block-item-case ast :stmt)
             (stmt-case (block-item-stmt->stmt ast) :null-attrib)))
 
 (test-parse
  parse-block-item
  "__attribute__((musttail)) return bar();"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (and (block-item-case ast :stmt)
             (stmt-case (block-item-stmt->stmt ast) :return-attrib)))
 
@@ -1012,7 +992,7 @@
  parse-external-declaration
  ";"
  :cond (ext-declon-case ast :empty)
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1325,17 +1305,17 @@ struct bar
 (test-parse
  parse-*-translation-item
  "extern int remove (const char *__filename) __attribute__ ((__nothrow__ , __leaf__));"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
  "typedef int register_t __attribute__ ((__mode__ (__word__)));"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
  "extern int fscanf (FILE *__restrict __stream, const char *__restrict __format, ...) __asm__ (\"\" \"__isoc99_fscanf\") ;"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
@@ -1362,37 +1342,37 @@ error (int __status, int __errnum, const char *__format, ...)
  else
    __error_alias (__status, __errnum, __format, __builtin_va_arg_pack ());
 }"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
  "int foo asm (\"myfoo\") = 2;"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
  "extern struct static_call_key __SCK__might_resched; extern typeof(__cond_resched) __SCT__might_resched;;"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
  "static ngx_thread_value_t __stdcall ngx_iocp_timer(void *data);"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
  "__declspec(thread) int nevents = 0;"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
  "__declspec(thread) WSAEVENT events[WSA_MAXIMUM_WAIT_EVENTS + 1];"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
  "__declspec(thread) ngx_connection_t *conn[WSA_MAXIMUM_WAIT_EVENTS + 1];"
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-block-item-list
@@ -1401,7 +1381,7 @@ error (int __status, int __errnum, const char *__format, ...)
     : \"=a\" (eax), \"=b\" (ebx), \"=c\" (ecx), \"=d\" (edx) : \"a\" (i) );
   buf[0] = eax;
   }"
- :gcc t
+ :version (c::make-version :std (c::standard-c17) :gcc t)
  :cond (equal (len ast) 2))
 
 (test-parse
@@ -1470,13 +1450,13 @@ error (int __status, int __errnum, const char *__format, ...)
   return 0;
 }
 "
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
  "struct s x = {};
 "
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
@@ -1484,7 +1464,7 @@ error (int __status, int __errnum, const char *__format, ...)
   return __hypot (__real__ z, __imag__ z);
 }
 "
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
@@ -1493,7 +1473,7 @@ error (int __status, int __errnum, const char *__format, ...)
   return 1;
 }
 "
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-*-translation-item
@@ -1507,7 +1487,7 @@ error (int __status, int __errnum, const char *__format, ...)
   char secret_bot_str[20];
 };
 "
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1520,7 +1500,7 @@ error (int __status, int __errnum, const char *__format, ...)
 (test-parse
  parse-translation-unit
  ""
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-translation-unit
@@ -1537,7 +1517,7 @@ error (int __status, int __errnum, const char *__format, ...)
  __alignof__ x;
 }
 "
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-translation-unit
@@ -1551,4 +1531,4 @@ error (int __status, int __errnum, const char *__format, ...)
   }
 }
 "
- :gcc t)
+ :version (c::make-version :std (c::standard-c17) :gcc t))
