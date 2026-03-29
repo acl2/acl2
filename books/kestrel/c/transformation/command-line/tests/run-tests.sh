@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 set -e # Stop on errors
 
 OS=`uname -s`

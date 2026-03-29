@@ -141,14 +141,17 @@
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
-        (handle-common-args kv-list ctx)))
+        (handle-common-args kv-list ctx))
+       (version (c::make-version :std (c::standard-c17)
+                                 :gcc (eq extensions :gcc)
+                                 :clang (eq extensions :clang))))
     `(progn
        (c$::input-files :files ',files
                         :base-dir ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :extensions ,extensions))
+                        :ienv (c$::ienv-default :version ',version))
        (c2c::split-gso *old-const*
                        *new-const*
                        ;; Pass through all other args:
@@ -171,14 +174,17 @@
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
-        (handle-common-args kv-list ctx)))
+        (handle-common-args kv-list ctx))
+       (version (c::make-version :std (c::standard-c17)
+                                 :gcc (eq extensions :gcc)
+                                 :clang (eq extensions :clang))))
     `(progn
        (c$::input-files :files ',files
                         :base-dir ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :extensions ,extensions))
+                        :ienv (c$::ienv-default :version ',version))
        (c2c::simpadd0 :const-old *old-const*
                       :const-new *new-const*
                       ;; Pass through all other args (currently, none):
@@ -201,14 +207,17 @@
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
-        (handle-common-args kv-list ctx)))
+        (handle-common-args kv-list ctx))
+       (version (c::make-version :std (c::standard-c17)
+                                 :gcc (eq extensions :gcc)
+                                 :clang (eq extensions :clang))))
     `(progn
        (c$::input-files :files ',files
                         :base-dir ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :extensions ,extensions))
+                        :ienv (c$::ienv-default :version ',version))
        (c2c::split-fn *old-const*
                       *new-const*
                       ;; Pass through all other args:
@@ -231,14 +240,17 @@
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
-        (handle-common-args kv-list ctx)))
+        (handle-common-args kv-list ctx))
+       (version (c::make-version :std (c::standard-c17)
+                                 :gcc (eq extensions :gcc)
+                                 :clang (eq extensions :clang))))
     `(progn
        (c$::input-files :files ',files
                         :base-dir ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :extensions ,extensions))
+                        :ienv (c$::ienv-default :version ',version))
        (c2c::wrap-fn *old-const*
                      *new-const*
                      ;; Pass through all other args (currently, :targets):
@@ -297,18 +309,22 @@
 ;; Returns an event.
 ;; todo: error checking
 (defun add-section-attr-wrapper (kv-list whole-form)
-  (declare (xargs :guard (keyword-value-listp kv-list)))
+  (declare (xargs :guard (keyword-value-listp kv-list)
+                  :guard-debug t))
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
-        (handle-common-args kv-list ctx)))
+        (handle-common-args kv-list ctx))
+       (version (c::make-version :std (c::standard-c17)
+                                 :gcc (eq extensions :gcc)
+                                 :clang (eq extensions :clang))))
     `(progn
        (c$::input-files :files ',files
                         :base-dir ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :extensions ,extensions))
+                        :ienv (c$::ienv-default :version ',version))
        (c2c::add-section-attr *old-const*
                               *new-const*
                               ;; The only transformation-specific option is :attrs (todo: check for any other args):
