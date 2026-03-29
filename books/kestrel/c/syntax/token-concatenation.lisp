@@ -19,6 +19,7 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -254,17 +255,29 @@
      two punctuators (under conditions),
      an identifier with a preprocessing number (under conditions),
      and a preprocessing number with an identifier.
-     All other combinations do not yield tokens."))
+     All other combinations do not yield tokens.")
+   (xdoc::p
+    "When concatenating two identifiers,
+     we union the provenance lists,
+     because the resulting identifier comes from both identifiers.
+     When concatenating an identifier with a number,
+     the resulting identifier has the same provenance as
+     the identifier to which the number is added."))
   (b* (((reterr) (irr-plexeme)))
     (plexeme-case
      token1
      :ident (plexeme-case
              token2
-             :ident (retok (plexeme-ident (str::cat token1.ident token2.ident)))
+             :ident (retok (make-plexeme-ident
+                            :ident (str::cat token1.ident token2.ident)
+                            :provenance (append token1.provenance
+                                                token2.provenance)))
              :number (b* (((erp ident)
                            (concatenate-ident-pnumber token1.ident
                                                       token2.number)))
-                       (retok (plexeme-ident ident)))
+                       (retok (make-plexeme-ident
+                               :ident ident
+                               :provenance token1.provenance)))
              :otherwise (reterr (msg "Cannot concatenate ~x0 and ~x1."
                                      (plexeme-fix token1)
                                      (plexeme-fix token2))))
