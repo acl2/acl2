@@ -138,7 +138,7 @@
                          n (bvxor n x y))))
   :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
 
-;we currently prefer bvnot for mutli-bit opens and bitxor with 1 for single bit ops <- a bit weird
+;we currently prefer bvnot for multi-bit opens and bitxor with 1 for single bit ops <- a bit weird
 ;not sure that's a good choice..  bvnot can interfere with the bvxor cancel rules..
 (defthmd bvxor-all-ones-helper
   (equal (bvxor size (+ -1 (expt 2 size)) x)
@@ -161,7 +161,7 @@
   :hints (("Goal" :use bvxor-all-ones-helper
            :in-theory (disable bvxor-all-ones-helper))))
 
-;we currently prefer bvnot for mutli-bit opens and bitxor with 1 for single bit ops <- a bit weird
+;we currently prefer bvnot for multi-bit opens and bitxor with 1 for single bit ops <- a bit weird
 ;not sure that's a good choice..  bvnot can interfere with the bvxor cancel rules..
 (defthmd bvxor-all-ones
   (implies (and (syntaxp (and (quotep mask)

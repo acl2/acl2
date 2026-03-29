@@ -247,7 +247,7 @@
 
 (theory-invariant (incompatible (:rewrite rewrite-unsigned-byte-p-when-term-size-is-larger) (:rewrite logtail-equal-0)))
 
-;; essentialy, we are subtracting 1, chopping, and then adding 1 back
+;; essentially, we are subtracting 1, chopping, and then adding 1 back
 (defthm +-of-1-and-bvchop-of-ones-and-x
   (implies (integerp x)
            (equal (+ 1 (bvchop 31 (+ 2147483647 x)))

@@ -260,7 +260,7 @@
               (this-step-increment (this-step-increment step-increment steps-done))
               (desired-steps-for-this-iteration (min (- step-limit steps-done) this-step-increment))
               ((when (not (posp desired-steps-for-this-iteration))) ; todo: add MBT
-               (er hard? ',name "Temination problem: Desired steps is ~x0." desired-steps-for-this-iteration)
+               (er hard? ',name "Termination problem: Desired steps is ~x0." desired-steps-for-this-iteration)
                (mv :termination-problem nil nil state))
               (- (cw "(Running (up to ~x0 steps):~%" desired-steps-for-this-iteration))
               ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
