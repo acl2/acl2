@@ -433,7 +433,7 @@
    (xdoc::p
     "We also temporarily include @('bool') as a synonym of @('_Bool').
      We plan to parameterize this and other functions
-     over the specific version of C,
+     over the specific dialect of C,
      including choice of GCC/Clang extensions."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
@@ -522,7 +522,7 @@
     "We also compare the token against the GCC and Clang keywords.
      Note that these are keywords only if GCC/Clang extensions are supported:
      @(tsee lex-identifier/keyword) checks grammatical identifiers
-     against keywords depending on the C version."))
+     against keywords depending on the C dialect."))
   (or (token-keywordp token? "const")
       (token-keywordp token? "restrict")
       (token-keywordp token? "__restrict")
@@ -2834,8 +2834,8 @@
                  ;; no larger than the initial one,
                  ;; so we just return the initial parser state.
                  ;; This is just logical: execution stops at the RAISE above.
-                 (b* ((version (c::make-version :std (c::standard-c17)))
-                      (parstate (init-parstate "" nil version nil parstate)))
+                 (b* ((dialect (c::make-dialect :std (c::standard-c17)))
+                      (parstate (init-parstate "" nil dialect nil parstate)))
                    (reterr t)))
                 (parstate (unread-token parstate))) ;
              (parse-postfix-expression parstate))
@@ -3031,10 +3031,10 @@
                          ;; so we just return the empty parser state.
                          ;; This is just logical:
                          ;; execution stops at the RAISE above.
-                         (b* ((version
-                               (c::make-version :std (c::standard-c17)))
+                         (b* ((dialect
+                               (c::make-dialect :std (c::standard-c17)))
                               (parstate
-                               (init-parstate "" nil version nil parstate)))
+                               (init-parstate "" nil dialect nil parstate)))
                            (reterr t)))
                         (parstate (unread-token parstate))) ;
                      (parse-postfix-expression parstate))))))
@@ -3097,9 +3097,9 @@
                      ;; so we just return the empty parser state.
                      ;; This is just logical:
                      ;; execution stops at the RAISE above.
-                     (b* ((version (c::make-version :std (c::standard-c17)))
+                     (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                           (parstate
-                           (init-parstate "" nil version nil parstate)))
+                           (init-parstate "" nil dialect nil parstate)))
                        (reterr t)))
                     (parstate (unread-token parstate))) ;
                  (parse-postfix-expression parstate))))))))
@@ -3816,7 +3816,7 @@
       "We temporarily allow @('true') and @('false')
        as synonyms of the expressions (constants) @('1') and @('0').
        We plan to parameterize this and other functions
-       over the specific C version,
+       over the specific C dialect,
        including choice of GCC/Clang extensions."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
@@ -7279,9 +7279,9 @@
                     ;; no larger than the initial one,
                     ;; so we just return the empty parser state.
                     ;; This is just logical: execution stops at the RAISE above.
-                    (b* ((version (c::make-version :std (c::standard-c17)))
+                    (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                          (parstate
-                          (init-parstate "" nil version nil parstate)))
+                          (init-parstate "" nil dialect nil parstate)))
                       (reterr t)))
                    ((erp tyname span parstate) (parse-type-name parstate))
                    ;; Ensure there is a closed parenthesis,
@@ -7317,9 +7317,9 @@
                         ;; so we just return the empty parser state.
                         ;; This is just logical:
                         ;; execution stops at the RAISE above.
-                        (b* ((version (c::make-version :std (c::standard-c17)))
+                        (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                              (parstate
-                              (init-parstate "" nil version nil parstate)))
+                              (init-parstate "" nil dialect nil parstate)))
                           (reterr t)))
                        ((mv erp tyname span-tyname parstate)
                         (parse-type-name parstate)))
@@ -7360,11 +7360,11 @@
                               ;; so we just return the empty parser state.
                               ;; This is just logical:
                               ;; execution stops at the RAISE above.
-                              (b* ((version
-                                    (c::make-version :std (c::standard-c17)))
+                              (b* ((dialect
+                                    (c::make-dialect :std (c::standard-c17)))
                                    (parstate
                                     (init-parstate
-                                     "" nil version nil parstate)))
+                                     "" nil dialect nil parstate)))
                                 (reterr t)))
                              ;; Put back the closing parenthesis,
                              ;; which is not part of the expression.
@@ -7433,11 +7433,11 @@
                                 ;; so we just return the empty parser state.
                                 ;; This is just logical:
                                 ;; execution stops at the RAISE above.
-                                (b* ((version
-                                      (c::make-version :std (c::standard-c17)))
+                                (b* ((dialect
+                                      (c::make-dialect :std (c::standard-c17)))
                                      (parstate
                                       (init-parstate
-                                       "" nil version nil parstate)))
+                                       "" nil dialect nil parstate)))
                                   (reterr t)))
                                ;; Put back the closing parenthesis,
                                ;; which is not part of the expression.
@@ -7465,9 +7465,9 @@
                       ;; no larger than the initial one,
                       ;; so we just return the empty parser state.
                       ;; This is just logical: execution stops at the RAISE above.
-                      (b* ((version (c::make-version :std (c::standard-c17)))
+                      (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                            (parstate
-                            (init-parstate "" nil version nil parstate)))
+                            (init-parstate "" nil dialect nil parstate)))
                         (reterr t)))
                      ((erp tyname span parstate) (parse-type-name parstate))
                      ;; Ensure there is a closed parenthesis,
@@ -7564,9 +7564,9 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t)))
                ((erp first-span parstate) ; (
                 (read-punctuator "(" parstate))
@@ -7597,8 +7597,8 @@
           ;; so we just return the empty parser state.
           ;; This is just logical:
           ;; execution stops at the RAISE above.
-          (b* ((version (c::make-version :std (c::standard-c17)))
-               (parstate (init-parstate "" nil version nil parstate)))
+          (b* ((dialect (c::make-dialect :std (c::standard-c17)))
+               (parstate (init-parstate "" nil dialect nil parstate)))
             (reterr t)))
          ;; If the parsing of any part of the parenthesized type name fails,
          ;; we have an unambiguous expression, already parsed.
@@ -7636,9 +7636,9 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ((mv erp-tyname tyname & parstate) ; ( tyname
@@ -7662,9 +7662,9 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ((mv erp-close-paren & parstate) ; ( tyname )
@@ -7688,9 +7688,9 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ;; If the parsing of the parenthesized type name succeeds,
@@ -7720,9 +7720,9 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate))))
       ;; If the expression is a parenthesized one,
@@ -7796,9 +7796,9 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t)))
                ((erp absdeclor span parstate)
                 (parse-abstract-declarator parstate)))
@@ -7823,9 +7823,9 @@
               ;; so we just return the empty parser state.
               ;; This is just logical:
               ;; execution stops at the RAISE above.
-              (b* ((version (c::make-version :std (c::standard-c17)))
+              (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                    (parstate
-                    (init-parstate "" nil version nil parstate)))
+                    (init-parstate "" nil dialect nil parstate)))
                 (reterr t)))
              ((mv erp absdeclor span-absdeclor parstate)
               (parse-abstract-declarator parstate)))
@@ -7863,9 +7863,9 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
-                    (b* ((version (c::make-version :std (c::standard-c17)))
+                    (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                          (parstate
-                          (init-parstate "" nil version nil parstate)))
+                          (init-parstate "" nil dialect nil parstate)))
                       (reterr t))))
                 (retok (amb?-declor/absdeclor-declor declor)
                        span-declor
@@ -7926,9 +7926,9 @@
                       ;; so we just return the empty parser state.
                       ;; This is just logical:
                       ;; execution stops at the RAISE above.
-                      (b* ((version (c::make-version :std (c::standard-c17)))
+                      (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                            (parstate
-                            (init-parstate "" nil version nil parstate)))
+                            (init-parstate "" nil dialect nil parstate)))
                         (reterr t))))
                   (retok (amb?-declor/absdeclor-declor declor)
                          span-declor
@@ -8394,9 +8394,9 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t)))
                ((erp decl span parstate) (parse-declaration parstate)))
             (retok (amb?-declon/stmt-declon decl) span parstate))
@@ -8430,9 +8430,9 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
-                    (b* ((version (c::make-version :std (c::standard-c17)))
+                    (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                          (parstate
-                          (init-parstate "" nil version nil parstate)))
+                          (init-parstate "" nil dialect nil parstate)))
                       (reterr t)))
                    ((mv erp decl span-decl parstate)
                     (parse-declaration parstate)))
@@ -8470,10 +8470,10 @@
                           ;; so we just return the empty parser state.
                           ;; This is just logical:
                           ;; execution stops at the RAISE above.
-                          (b* ((version
-                                (c::make-version :std (c::standard-c17)))
+                          (b* ((dialect
+                                (c::make-dialect :std (c::standard-c17)))
                                (parstate
-                                (init-parstate "" nil version nil parstate)))
+                                (init-parstate "" nil dialect nil parstate)))
                             (reterr t))))
                       (retok (amb?-declon/stmt-stmt expr)
                              (span-join span-expr span-semicolon)
@@ -8509,9 +8509,9 @@
                   ;; so we just return the empty parser state.
                   ;; This is just logical:
                   ;; execution stops at the RAISE above.
-                  (b* ((version (c::make-version :std (c::standard-c17)))
+                  (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                        (parstate
-                        (init-parstate "" nil version nil parstate)))
+                        (init-parstate "" nil dialect nil parstate)))
                     (reterr t)))
                  ((erp decl span parstate) (parse-declaration parstate)))
               (retok (amb?-declon/stmt-declon decl) span parstate))))))
@@ -9953,9 +9953,9 @@
                   ;; no larger than the initial one,
                   ;; so we just return the initial parser state.
                   ;; This is just logical: execution stops at the RAISE above.
-                  (b* ((version (c::make-version :std (c::standard-c17)))
+                  (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                        (parstate
-                        (init-parstate "" nil version nil parstate)))
+                        (init-parstate "" nil dialect nil parstate)))
                     (reterr t)))
                  (parstate (unread-token parstate)) ;
                  ((erp declon span parstate) ; declon
@@ -12457,14 +12457,14 @@
 
 (define parse-file ((path filepathp)
                     (data byte-listp)
-                    (version c::versionp)
+                    (dialect c::dialectp)
                     (skip-control-lines booleanp))
   :returns (mv erp (tunit transunitp))
   :short "Parse (the data bytes of) a file."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also pass an indication of the C version.")
+    "We also pass an indication of the C dialect.")
    (xdoc::p
     "If successful, the result is a translation unit.
      We create a local stobj with the parser state,
@@ -12487,7 +12487,7 @@
                      (filepath-fix path))
               (mv t (irr-transunit) parstate))
              (parstate
-              (init-parstate file data version skip-control-lines parstate))
+              (init-parstate file data dialect skip-control-lines parstate))
              ((mv erp tunit parstate) (parse-translation-unit parstate)))
           (if erp
               (if (msgp erp)
@@ -12504,7 +12504,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-fileset ((fileset filesetp)
-                       (version c::versionp)
+                       (dialect c::dialectp)
                        (skip-control-lines booleanp)
                        (keep-going booleanp))
   :returns (mv erp (tunits transunit-ensemblep))
@@ -12512,7 +12512,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pass an indication of the C version to use,
+    "We pass an indication of the C dialect to use,
      and a flag saying whether to keep parsing other translation units
      after a parsing failure.")
    (xdoc::p
@@ -12526,7 +12526,7 @@
   (b* (((reterr) (irr-transunit-ensemble))
        (filemap (fileset->unwrap fileset))
        ((erp tunitmap)
-        (parse-fileset-loop filemap version skip-control-lines keep-going))
+        (parse-fileset-loop filemap dialect skip-control-lines keep-going))
        (- (if keep-going
               (b* ((len-filemap (omap::size filemap))
                    (len-tunitmap (omap::size tunitmap))
@@ -12540,7 +12540,7 @@
 
   :prepwork
   ((define parse-fileset-loop ((filemap filepath-filedata-mapp)
-                               (version c::versionp)
+                               (dialect c::dialectp)
                                (skip-control-lines booleanp)
                                (keep-going booleanp))
      :returns (mv erp (tunitmap filepath-transunit-mapp))
@@ -12550,19 +12550,19 @@
           ((mv erp tunit)
            (parse-file filepath
                        (filedata->unwrap filedata)
-                       version
+                       dialect
                        skip-control-lines))
           ((when erp)
            (if keep-going
                (prog2$ (cw "~@0~%" erp)
                        (parse-fileset-loop (omap::tail filemap)
-                                           version
+                                           dialect
                                            skip-control-lines
                                            keep-going))
              (reterr erp)))
           ((erp tunitmap)
            (parse-fileset-loop (omap::tail filemap)
-                               version
+                               dialect
                                skip-control-lines
                                keep-going)))
        (retok (omap::update (filepath-fix filepath) tunit tunitmap)))

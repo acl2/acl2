@@ -30,12 +30,12 @@
                     more-inputs ; additional inputs to lexing function
                     (index '0) ; where to start lexing
                     (cond 't) ; condition on AST for success
-                    (version 'nil)
+                    (dialect 'nil)
                     (fail 'nil)) ; test must fail
   `(assert!-stobj
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
-         (ienv (change-ienv (ienv-default) :version version))
-         (macros (macro-init version))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
+         (macros (macro-init dialect))
          (options (make-ppoptions :full-expansion nil
                                   :keep-comments t
                                   :trace-expansion t
@@ -63,27 +63,27 @@
 (defmacro test-lex-lexeme (input
                            &key
                            (cond 't)
-                           (version 'nil)
+                           (dialect 'nil)
                            (fail 'nil))
   `(test-lex plex-lexeme
              ,input
              :more-inputs (nil)
              :index 0
              :cond ,cond
-             :version ,version
+             :dialect ,dialect
              :fail ,fail))
 
 (defmacro test-lex-lexeme-headerp (input
                                    &key
                                    (cond 't)
-                                   (version 'nil)
+                                   (dialect 'nil)
                                    (fail 'nil))
   `(test-lex plex-lexeme
              ,input
              :more-inputs (t)
              :index 0
              :cond ,cond
-             :version ,version
+             :dialect ,dialect
              :fail ,fail))
 
 (defmacro pos (line column)
@@ -612,7 +612,7 @@
 (test-lex
  plex-escape-sequence
  "%"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (escape-simple (simple-escape-percent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

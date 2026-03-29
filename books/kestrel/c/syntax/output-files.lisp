@@ -344,7 +344,7 @@
        (tunits (code-ensemble->transunits code))
        (files (print-fileset tunits
                              options
-                             (ienv->version (code-ensemble->ienv code))))
+                             (ienv->dialect (code-ensemble->ienv code))))
        ;; Write the files to the file system.
        ((erp state)
         (output-files-gen-files-loop (fileset->unwrap files) base-dir state)))
