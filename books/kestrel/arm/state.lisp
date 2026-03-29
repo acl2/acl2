@@ -8,12 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Remove this restriction for GCL (after testing) since we now use
-;; :non-executable for the stobj:
-; Matt K. mod: An array is too big for GCL 2.7.1 (and probably any version of
-; GCL starting with 2.7.0).  It is also too big for 32-bit CMUCL (compilation
-; error, apparently).
-; cert_param: (non-gcl , non-cmucl)
 
 (in-package "ARM")
 
@@ -65,9 +59,14 @@
   ;; ARMv7).  A real CPU would not have this field, of course, but this field
   ;; allows the user to make an assumption about the version when lifting.
   (arch-version :type (integer 4 7) :initially 7)
+
   ;; This avoids actually allocating 4GB of memory for the MEMORY field (even
   ;; though that only takes a few seconds).  See add-global-stobj if you want
   ;; execution for this stobj.  See also the "large stobj" discussion on Zulip.
+  ;; WARNING: If you remove this, consider adding cert_params to exclude this
+  ;; book from GCL and CMUCL builds.  (Matt K said: [The] array is too big for
+  ;; GCL 2.7.1 (and probably any version of GCL starting with 2.7.0).  It is
+  ;; also too big for 32-bit CMUCL (compilation error, apparently).
   :non-executable t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
