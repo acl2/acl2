@@ -450,7 +450,7 @@
   (b* (((mv erp dag) (wrap-term-around-dag '(rsp :x86) :x86 state-dag))
        ((when erp) (mv erp nil nil nil))
        ((when (quotep dag))
-        (er hard? 'extract-rsp-dag "Unexpected constant RSP extraction term: ~x0.")
+        (er hard? 'extract-rsp-dag "Unexpected constant RSP extraction term: ~x0." dag)
         (mv :unexpected-term nil nil nil)))
     (simplify-dag-basic dag
                             assumptions
@@ -480,7 +480,7 @@
   (b* (((mv erp dag) (wrap-term-around-dag '(rbp :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
        ((when erp) (mv erp nil nil nil))
        ((when (quotep dag))
-        (er hard? 'extract-rbp-dag "Unexpected constant RBP extraction term: ~x0.")
+        (er hard? 'extract-rbp-dag "Unexpected constant RBP extraction term: ~x0." dag)
         (mv :unexpected-term nil nil nil)))
     (simplify-dag-basic dag
                             assumptions
@@ -510,7 +510,7 @@
   (b* (((mv erp dag) (wrap-term-around-dag '(rip :x86) :x86 state-dag))
        ((when erp) (mv erp nil nil nil))
        ((when (quotep dag))
-        (er hard? 'extract-pc-dag "Unexpected constant PC extraction term: ~x0.")
+        (er hard? 'extract-pc-dag "Unexpected constant PC extraction term: ~x0." dag)
         (mv :unexpected-term nil nil nil)))
     (simplify-dag-basic dag
                             assumptions ;need to know that text offset is reasonable

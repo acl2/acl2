@@ -783,7 +783,7 @@
                 (natp free))
            (not (equal 0 x))))
 
-;; todo; prove via a rule about slice
+;; todo: prove via a rule about slice
 (defthm getbit-of-floor-of-2
   (implies (and (integerp n)
                 (integerp x))

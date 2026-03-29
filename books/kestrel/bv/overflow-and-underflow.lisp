@@ -36,8 +36,8 @@
 ;if one addend is a constant, it's best to make x the constant
 (defun signed-addition-overflowsp (size x y)
   (declare (xargs :guard (and (posp size)
-                              (unsigned-byte-p size x) ;but interpred as signed
-                              (unsigned-byte-p size y) ;but interpred as signed
+                              (unsigned-byte-p size x) ;but interpreted as signed
+                              (unsigned-byte-p size y) ;but interpreted as signed
                               )))
   (and (sbvlt size 0 x)
        ;; if x is positive, the addition might overflow:
@@ -108,8 +108,8 @@
 ;if one addend is a constant, it's best to make x the constant
 (defun signed-addition-underflowsp (size x y)
   (declare (xargs :guard (and (posp size)
-                              (unsigned-byte-p size x) ;but interpred as signed
-                              (unsigned-byte-p size y) ;but interpred as signed
+                              (unsigned-byte-p size x) ;but interpreted as signed
+                              (unsigned-byte-p size y) ;but interpreted as signed
                               )))
   (and (sbvlt size x 0)
        ;; if x is negative, the addition might underflow:
@@ -121,8 +121,8 @@
 ;testing for underflow should be symmetric
 (defthmd signed-addition-underflowsp-symmetric
   (implies (posp size)
-           (iff (signed-addition-underflowsp size x y)
-                (signed-addition-underflowsp size y x)))
+           (equal (signed-addition-underflowsp size x y)
+                  (signed-addition-underflowsp size y x)))
   :hints (("Goal" :in-theory (e/d ( ;bvplus
                                    bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                    logext-cases

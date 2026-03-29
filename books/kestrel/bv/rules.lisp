@@ -2139,7 +2139,7 @@
   :hints (("Goal" :in-theory (enable truncate logtail ifloor floor))))
 
 ;bozo when exactly do we want to do this? whenever the thing being shifted is a bit vector function?
-;see rule fro slice below, we use the size info...
+;see rule for slice below, we use the size info...
 (defthm times-4-becomes-logapp
   (implies (natp x)
            (equal (* 4 (LOGTAIL n x))

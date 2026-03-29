@@ -1,6 +1,6 @@
 ; A formal model of the EVM (Ethereum Virtual Machine)
 ;
-; Copyright (C) 2019-2025 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1268,7 +1268,7 @@
                     (stack-item 1 mu))
                  (stack-item 2 mu))))
 
-;; The semantic function for :mulmod.
+;; The semantic function for :exp.
 (def-simple-op :exp
   (bvchop 256
                  (expt (stack-item 0 mu)
@@ -1635,7 +1635,7 @@
       ;; (#xfd (execute-REVERT sigma mu a i))
       ;; (#xfe (execute-INVALID sigma mu a i))
       ;; (#xff (execute-SELFDESTRUCT sigma mu a i))
-      (otherwise (prog2$ (er hard? 'step-machine "Unrecognzied instruction ~x0." opcode)
+      (otherwise (prog2$ (er hard? 'step-machine "Unrecognized instruction ~x0." opcode)
                          (mv sigma mu a i))))))
 
 (defun initial-machine-state (gas)
