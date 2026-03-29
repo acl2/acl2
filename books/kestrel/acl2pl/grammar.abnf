@@ -22,17 +22,19 @@
 ; Notes on portability:
 ; - ACL2 inherits parts of its reader from the host Common Lisp implementation.
 ;   The behavior of bare (unescaped) non-ASCII constituent characters
-;   (bytes 128-255) in symbol names depends on the host Lisp's char-upcase.
-;   For example, SBCL upcases some ISO-8859-1 characters (e.g., byte 255,
-;   Latin small letter y with diaeresis) to characters with codes > 255,
-;   which ACL2 then rejects.
+;   (bytes 128-255) in symbol names depends on the host Lisp's char-upcase
+;   and other reader behavior. On ACL2/SBCL, all 128 non-ASCII bytes are
+;   valid bare constituents (as of commit 045c9b28). Other host Lisps
+;   may differ (e.g., CCL treats byte 160 as whitespace).
+;   Non-ASCII bytes can always be used in symbol names via escape syntax
+;   (backslash or vertical bars), regardless of host Lisp.
 ; - This grammar specifies the SBCL-specific behavior as the primary
 ;   definition, since it is currently the most commonly used host Lisp.
 ;   There are some notes on CCL as well.
-;   A portable-constituent rule is also provided for reference;
-;   it covers the ASCII-only subset that works identically across
-;   all supported host Lisps.  More work is needed on what is portable
-;   in practice.
+;   A portable-graphic-constituent rule is also provided for reference;
+;   it covers the ASCII graphic subset that should work identically across
+;   all supported host Lisps. More work is needed on what is portable
+;   in practice for non-graphic and non-ASCII bytes.
 ; - ACL2 requires the host Lisp to be case-insensitive-upper.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,7 +50,7 @@
 ; Any byte (ISO-8859-1 character)
 byte = %x00-FF
 
-; Whitespace characters that terminate tokens and are discarded.
+; Whitespace characters that separate tokens and are discarded.
 ; The whitespace-char rule here reflects SBCL behavior.
 ;   (ACL2 on other Common Lisps can treat additional bytes as
 ;    whitespace;  CCL treats as whitespace at least bytes
@@ -91,8 +93,6 @@ line-comment = ";" *not-newline
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Block comment: #| ... |#, nestable.
-; Following the Yul block-comment pattern, the terminator |#
-; is consumed by the recursive rules.
 
 not-bar-or-hash = %x00-22 / %x24-7B / %x7D-FF
                   ; anything except # (%x23) or | (%x7C)
@@ -113,16 +113,21 @@ rest-of-block-comment-after-bar = "#"
                                 / not-bar-or-hash rest-of-block-comment
 
 ; After seeing # inside a block comment:
-;   | = start of nested block comment; after the nested comment
-;       closes (consuming its own |#), continue with the outer comment
+;   | = start of nested block comment; then require two instances
+;       of rest-of-block-comment, each of which contains |#
 ;   # = another #, stay in this state
-;   other = back to normal
+;   other = back to normal block comment contents state
 rest-of-block-comment-after-hash =
-    "|" rest-of-block-comment rest-of-block-comment  ; nested #|...|# then continue
+    "|" rest-of-block-comment rest-of-block-comment
   / "#" rest-of-block-comment-after-hash
   / not-bar-or-hash rest-of-block-comment
 
 comment = line-comment / block-comment
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Intertoken space: whitespace and/or comments between tokens.
+intertoken-space = *( whitespace / comment )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,9 +158,6 @@ string-literal = dquote *string-char dquote
 ; in the string, write """\}: one backslash is consumed and }
 ; becomes content. Similarly """\\} includes \} in content, etc.
 ; All 256 bytes are allowed in content.
-;
-; Following the Yul block-comment pattern, the terminator """}
-; is consumed by the recursive rules (not split out separately).
 
 not-dquote = %x00-21 / %x23-FF
 
@@ -164,6 +166,7 @@ not-dquote-rbrace-backslash = %x00-21 / %x23-5B / %x5D-7C / %x7E-FF
 
 fancy-string = "#{" dquote dquote dquote rest-of-fancy-string
 
+; rest-of-fancy-string includes the fancy body and closing """}
 rest-of-fancy-string = dquote rest-of-fancy-after-q1
                      / not-dquote rest-of-fancy-string
 
@@ -347,8 +350,8 @@ number = decimal-integer
 ; on ACL2 on any supported Common Lisp. They are upcased by the reader.
 ; Excludes the macro chars, escape chars, and invalid chars listed above.
 ; Note: non-graphic ASCII bytes (0-31) are constituents on SBCL but
-; likely whitespace on CCL, so they are NOT portable. See sbcl-non-graphic-
-; ascii-constituent below.
+; likely whitespace on CCL, so they are likely not portable.
+; See sbcl-non-graphic-ascii-constituent below.
 
 portable-graphic-constituent = "!" ; %x21
                              / "$" / "%" / "&" ; %x24-26
@@ -364,12 +367,13 @@ portable-graphic-constituent = "!" ; %x21
 
 ; SBCL-specific non-graphic ASCII constituent characters.
 ;
-; On SBCL, bytes 0-7, 11, and 14-31 are constituents.
+; On ACL2/SBCL, bytes 0-7, 11, and 14-31 are constituents.
 ; These characters are not upcased by the symbol reader (they have no case).
-;;
+;
 ; Portability note:
-; On CCL, we think all bytes 0-31 (except 8, which is invalid) are whitespace.
-; So there would be no portable non-graphic ASCII constituents.
+; On ACL2/CCL, we think all bytes 0-31 (except 8, which is invalid) are
+; treated as whitespace, so there would be no portable non-graphic ASCII
+; constituents.  However, that might be incorrect and needs to be revisted.
 
 sbcl-non-graphic-ascii-constituent = %x00-07  ; NUL through BEL
                                    / %x0B     ; VT (vertical tab)
@@ -377,34 +381,28 @@ sbcl-non-graphic-ascii-constituent = %x00-07  ; NUL through BEL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; SBCL-specific non-ASCII constituent characters.
+; Non-ASCII constituent characters on ACL2/SBCL.
 
-; On SBCL, non-ASCII bytes 128-255 are also constituent characters,
-; except for those whose char-upcase maps to a character with code > 255,
-; which ACL2 rejects via bad-lisp-objectp. The rejected bytes on SBCL are:
-;   168 (diaeresis), 175 (macron), 180 (acute accent), 181 (micro sign),
-;   184 (cedilla), 188 (one quarter), 189 (one half),
-;   190 (three quarters), 255 (y with diaeresis).
-; The remaining non-ASCII bytes are valid constituents on SBCL
-; and are upcased by the symbol reader according to SBCL's char-upcase
-; (which follows ISO-8859-1 case mappings for bytes 192-254).
+; All non-ASCII bytes 128-255 are constituent characters.
+; The symbol reader upcases two ranges following ISO-8859-1:
+;   224-246 -> 192-214 and 248-254 -> 216-222.
+; The other non-ASCII bytes (128-223, 247, 255) are not upcased.
+;
+; Historical note: In ACL2 8.7, SBCL's NFKC Unicode normalization
+; caused 9 bytes (168, 175, 180, 181, 184, 188, 189, 190, 255) to be
+; rejected. This was fixed in commit 045c9b28 by disabling readtable
+; normalization and overriding char-upcase for byte 255.
+; See Note 1 at the end of this file for details.
 ;
 ; Portability note:
-; On CCL, the non-ASCII constituent set is different; see Note 2
+; On ACL2/CCL, the non-ASCII constituent set may differ; see Note 2
 ; at the end of this file.
 
-; Valid non-ASCII constituent bytes on SBCL are 128-255 except
-; {168, 175, 180, 181, 184, 188, 189, 190, 255}:
-sbcl-non-ascii-constituent = %x80-A7  ; 128-167
-                           / %xA9-AE  ; 169-174
-                           / %xB0-B3  ; 176-179
-                           / %xB6-B7  ; 182-183
-                           / %xB9-BB  ; 185-187
-                           / %xBF-FE  ; 191-254
+sbcl-non-ascii-constituent = %x80-FF  ; 128-255
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Constituent characters for SBCL.
+; Constituent characters for ACL2/SBCL.
 
 ; This is the primary definition used by the grammar.
 ; On other host Lisps, the constituent set differs
@@ -587,9 +585,6 @@ list = "(" intertoken-space ")"
        intertoken-space "." intertoken-space s-expression
        intertoken-space ")"
 
-; Intertoken space: whitespace and/or comments between tokens.
-intertoken-space = *( whitespace / comment )
-
 ; Quote: 'x reads as (QUOTE x)
 quoted = "'" intertoken-space s-expression
 
@@ -633,42 +628,33 @@ file = intertoken-space *( s-expression intertoken-space )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Note 1: SBCL char-upcase and non-ASCII constituent characters
-; (Tested with SBCL 2.6.0 on macOS/ARM64)
+; Note 1: Historical note on SBCL NFKC normalization issue
+; (Fixed in commit 045c9b28cba1422dc2c45234f6e8171a344ccc76)
 ;
-; The 9 non-ASCII bytes excluded from sbcl-non-ascii-constituent
-; (168, 175, 180, 181, 184, 188, 189, 190, 255) are rejected because
-; SBCL's char-upcase maps them to characters with codes > 255,
-; which ACL2's bad-lisp-objectp rejects. These map to three categories:
+; In ACL2 8.7 on SBCL, 9 non-ASCII bytes (168, 175, 180, 181, 184,
+; 188, 189, 190, 255) could not be used as bare symbol constituents.
+; The root cause was SBCL's NFKC Unicode normalization of symbol names
+; during reading (controlled by sb-ext:readtable-normalization, which
+; defaults to T on SBCL with Unicode support).
 ;
-; Combining characters (SBCL prepends a space as a base character):
-;   168 (diaeresis)     -> 776  (COMBINING DIAERESIS)
-;   175 (macron)        -> 772  (COMBINING MACRON)
-;   180 (acute accent)  -> 769  (COMBINING ACUTE ACCENT)
-;   184 (cedilla)       -> 807  (COMBINING CEDILLA)
+; On SBCL, base-char covers only codes 0-127. Characters 128-255 are
+; extended-char, which triggered the NFKC normalization path in the
+; reader. NFKC normalization mapped ISO-8859-1 compatibility characters
+; to their Unicode canonical equivalents (e.g., micro sign 181 to
+; Greek small mu 956, then upcased to Greek capital mu 924).
+; ACL2's bad-lisp-objectp then rejected symbols whose names contained
+; characters with codes > 255.
 ;
-; Regular uppercase letters that happen to be outside 0-255:
-;   181 (micro sign)    -> 924  (GREEK CAPITAL LETTER MU)
-;   255 (y-diaeresis)   -> 376  (LATIN CAPITAL LETTER Y WITH DIAERESIS)
+; The fix had two parts:
+; 1. Disable readtable normalization for *acl2-readtable*:
+;    (setf (sb-ext:readtable-normalization *acl2-readtable*) nil)
+; 2. Override char-upcase for byte 255 (y with diaeresis) on SBCL,
+;    since SBCL's char-upcase maps it to code 376 (> 255).
+;    (This parallels an existing fix for LispWorks.)
 ;
-; Questionable mappings (these are not letters):
-;   188 (one quarter)   -> 8260 (FRACTION SLASH)
-;   189 (one half)      -> 8260 (FRACTION SLASH)
-;   190 (three quarters)-> 8260 (FRACTION SLASH)
-;
-; None of these mappings is useful for ACL2. ACL2 could avoid this
-; problem entirely by using its own char-upcase function that:
-;   - Upcases ASCII a-z to A-Z (standard)
-;   - Upcases ISO-8859-1 lowercase letters 224-254 (except 247)
-;     to their uppercase counterparts 192-222 (except 215)
-;   - Returns all other bytes unchanged
-; This would make all 256 bytes usable as bare constituents with
-; predictable, portable behavior across host Lisps. This would be
-; consistent with ACL2's existing approach of taking control of
-; reader behavior (custom character reader, custom backquote, etc.)
-; and aligns with the aspiration noted in acl2.lisp:
-;   "Eventually, it will be best to define a read function for ACL2
-;    solely in terms of ACL2 character reading primitives."
+; With these fixes, all 256 bytes are valid bare symbol constituents
+; on ACL2/SBCL, with only the standard ISO-8859-1 lowercase-to-
+; uppercase mappings (224-246 -> 192-214, 248-254 -> 216-222).
 ;
 ; Note 2: CCL comparison
 ; (Tested with CCL 1.12.1 on Linux/x86-64)
@@ -679,20 +665,22 @@ file = intertoken-space *( s-expression intertoken-space )
 ; believed correct. The whitespace/constituent classification needs
 ; re-verification via file-based testing on CCL.
 ;
-; CCL char-upcase is better behaved than SBCL for non-ASCII bytes.
-; CCL only upcases:
+; CCL char-upcase for non-ASCII bytes:
 ;   - ASCII a-z to A-Z (same as SBCL)
 ;   - ISO-8859-1 lowercase letters 224-254 (except 247) to 192-222
 ;     (same as SBCL)
 ;   - Byte 255 (y with diaeresis) to 376 (Y with diaeresis)
-;     (same as SBCL, and the only mapping outside 0-255)
+;     (Note: SBCL used to do this too, but the fix in commit 045c9b28
+;     overrides char-upcase for byte 255 on SBCL so it stays 255.
+;     CCL may still upcase 255 to 376.)
 ; CCL does NOT map diacritical marks to combining characters,
 ; micro sign to Greek Mu, or fractions to fraction slash.
+; (SBCL no longer does either, after the NFKC fix.)
 ;
 ; CCL whitespace (needs re-verification):
 ; File-based testing showed that CCL treats ALL bytes 0-31
 ; (except 8, which is invalid) as whitespace, plus byte 160 (NBSP).
 ; This means there are NO non-graphic ASCII constituents on CCL.
-; Earlier read-string tests suggested only bytes 0, 1, 11, and 160
-; were whitespace, but this was not confirmed by certification testing.
+; Earlier read-string tests suggested only bytes 0, 1, 11, and 160 were
+; whitespace, but this was not yet confirmed by file certification testing.
 ; The non-ASCII constituent set on CCL also needs re-verification.
