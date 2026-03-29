@@ -39,34 +39,34 @@
 
 @({
      (include-book \"centaur/misc/seed-random\" :dir :system)
-     (seed-random name
-                  [:freshp t/nil]  ;; default t
-                  )
+     (seed-random$ name
+                   [:freshp t/nil]  ;; default t
+                   )
 })
 
 <p>Hypothetical example:</p>
 
 @({
-   (seed-random 'foo) ;; randomly seed the generator, name this seed 'foo
+   (seed-random$ 'foo) ;; randomly seed the generator, name this seed 'foo
    (random$ 50 state) --> (mv 31 state)
    (random$ 50 state) --> (mv 49 state)
    (random$ 50 state) --> (mv 2 state)
    (random$ 50 state) --> (mv 23 state)
    (random$ 50 state) --> (mv 15 state)
 
-   (seed-random 'foo) ;; return to the seed named 'foo
+   (seed-random$ 'foo) ;; return to the seed named 'foo
    (random$ 50 state) --> (mv 31 state)
    (random$ 50 state) --> (mv 49 state)
    (random$ 50 state) --> (mv 2 state)
 
-   (seed-random 'bar :freshp nil) ;; copy current seed, name it 'bar
+   (seed-random$ 'bar :freshp nil) ;; copy current seed, name it 'bar
    (random$ 50 state) --> (mv 23 state)
    (random$ 50 state) --> (mv 15 state)
 
-   (seed-random 'foo) ;; return to 'foo
+   (seed-random$ 'foo) ;; return to 'foo
    (random$ 50 state) --> (mv 31 state)
 
-   (seed-random 'bar) ;; return to 'bar
+   (seed-random$ 'bar) ;; return to 'bar
    (random$ 50 state) --> (mv 23 state)
    (random$ 50 state) --> (mv 15 state)
 })
@@ -122,12 +122,12 @@ current @('*random-state*').  It appears that, at least on CCL, the
 you launch ACL2 and then immediately invoke</p>
 
 @({
-    (seed-random 'seed :freshp nil)
+    (seed-random$ 'seed :freshp nil)
 })
 
 <p>you can obtain a sequence of random numbers that you can return to even
 after restarting ACL2, and which can be returned to at any time during the
-session by just calling @('(seed-random 'seed)').</p>")
+session by just calling @('(seed-random$ 'seed)').</p>")
 
 (defun seed-random$-fn (name freshp)
   (declare (xargs :guard t)
