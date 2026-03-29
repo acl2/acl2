@@ -18,7 +18,7 @@
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
-; (depends-on "grammar/all.abnf")
+; (depends-on "grammar/grammar.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,14 +115,14 @@
   (xdoc::topstring
    (xdoc::p
     "We use our verified grammar parser and our abstractor
-     to turn the grammar in the @('grammar/all.abnf') file
+     to turn the grammar in the @('grammar/grammar.abnf') file
      into an ACL2 representation.")
    (xdoc::p
     "We use @(tsee acl2::add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output.")
    (xdoc::p
     "We show that the grammar is well-formed, closed, and Unicode."))
-  :file "grammar/all.abnf"
+  :file "grammar/grammar.abnf"
   :untranslate t
   :well-formed t
   :closed t
