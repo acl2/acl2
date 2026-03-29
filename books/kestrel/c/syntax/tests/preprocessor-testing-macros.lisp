@@ -58,19 +58,10 @@
                         full-expansion
                         (keep-comments 't)
                         (trace-expansion 't)
-                        std
-                        gcc
-                        clang
+                        version
                         expected)
   `(assert!-stobj
-    (b* ((version (if (or (not ,std)
-                          (= ,std 17))
-                      (cond (,gcc (c::version-c17+gcc))
-                            (,clang (c::version-c17+clang))
-                            (t (c::version-c17)))
-                    (cond (,gcc (c::version-c23+gcc))
-                          (,clang (c::version-c23+clang))
-                          (t (c::version-c23)))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -105,18 +96,14 @@
                           full-expansion
                           (keep-comments 't)
                           (trace-expansion 't)
-                          std
-                          gcc
-                          clang)
+                          version)
   `(test-preproc '(,file)
                  :base-dir ,base-dir
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
                  :trace-expansion ,trace-expansion
-                 :std ,std
-                 :gcc ,gcc
-                 :clang ,clang
+                 :version ,version
                  :expected (fileset-of ,file ,expected)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -129,18 +116,9 @@
                               full-expansion
                               (keep-comments 't)
                               (trace-expansion 't)
-                              std
-                              gcc
-                              clang)
+                              version)
   `(assert!-stobj
-    (b* ((version (if (or (not ,std)
-                          (= ,std 17))
-                      (cond (,gcc (c::version-c17+gcc))
-                            (,clang (c::version-c17+clang))
-                            (t (c::version-c17)))
-                    (cond (,gcc (c::version-c23+gcc))
-                          (,clang (c::version-c23+clang))
-                          (t (c::version-c23)))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -172,18 +150,14 @@
                           full-expansion
                           (keep-comments 't)
                           (trace-expansion 't)
-                          std
-                          gcc
-                          clang)
+                          version)
   `(show-preproc '(,file)
                  :base-dir ,base-dir
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
                  :trace-expansion ,trace-expansion
-                 :std ,std
-                 :gcc ,gcc
-                 :clang ,clang))
+                 :version ,version))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -257,19 +231,10 @@
                                 (out-dir-prefix '"tmp") ; relative to base-dir
                                 (keep-comments 't)
                                 (trace-expansion 't)
-                                std
-                                gcc
-                                clang)
+                                version)
   `(assert!-stobj
     (b* (;; Setup.
-         (version (if (or (not ,std)
-                          (= ,std 17))
-                      (cond (,gcc (c::version-c17+gcc))
-                            (,clang (c::version-c17+clang))
-                            (t (c::version-c17)))
-                    (cond (,gcc (c::version-c23+gcc))
-                          (,clang (c::version-c23+clang))
-                          (t (c::version-c23)))))
+         (version (or ,version (c::make-version :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -348,18 +313,9 @@
                          (keep-comments 't)
                          (trace-expansion 't)
                          (full-expansion 'nil)
-                         std
-                         gcc
-                         clang)
+                         version)
   `(assert!-stobj
-    (b* ((version (if (or (not ,std)
-                          (= ,std 17))
-                      (cond (,gcc (c::version-c17+gcc))
-                            (,clang (c::version-c17+clang))
-                            (t (c::version-c17)))
-                    (cond (,gcc (c::version-c23+gcc))
-                          (,clang (c::version-c23+clang))
-                          (t (c::version-c23)))))
+    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)

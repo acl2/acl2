@@ -3236,7 +3236,7 @@
                     (equal directive "error") ; # error
                     (and (equal directive "warning") ; # warning
                          (b* ((ienv (ppstate->ienv ppstate)))
-                           (or (= (ienv->std ienv) 23)
+                           (or (equal (ienv->std ienv) (c::standard-c23))
                                (ienv->gcc/clang ienv))))
                     (equal directive "pragma")) ; # pragma
                 (b* (((erp ppstate) ; # ... EOL
@@ -3650,7 +3650,7 @@
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
        (ienv (ppstate->ienv ppstate))
-       ((unless (or (= (ienv->std ienv) 23)
+       ((unless (or (equal (ienv->std ienv) (c::standard-c23))
                     (ienv->gcc/clang ienv)))
         (reterr (msg "#warning directive disallowed in ~
                       C17 without GCC or Clang extensions.")))

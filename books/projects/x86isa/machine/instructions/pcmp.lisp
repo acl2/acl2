@@ -168,7 +168,7 @@
 
   :parents (two-byte-opcodes)
 
-  :short "Compare packed data for equal (MMX variants)."
+  :short "Compare packed data for equal (SSE variants)."
 
   :long
   "<code>
@@ -490,7 +490,7 @@
 
   :parents (two-byte-opcodes)
 
-  :short "Compare packed data for greater than (MMX variants)."
+  :short "Compare packed data for greater than (SSE variants)."
 
   :long
   "<code>
@@ -667,10 +667,10 @@
 
        ;; Calculate the result.
        (result (case opcode
-                 (#x74 (pcmpgt (* 8 operand-size) 08 src1 src2))
-                 (#x75 (pcmpgt (* 8 operand-size) 16 src1 src2))
-                 (#x76 (pcmpgt (* 8 operand-size) 32 src1 src2))
-                 (#x29 (pcmpgt (* 8 operand-size) 64 src1 src2))
+                 (#x64 (pcmpgt (* 8 operand-size) 08 src1 src2))
+                 (#x65 (pcmpgt (* 8 operand-size) 16 src1 src2))
+                 (#x66 (pcmpgt (* 8 operand-size) 32 src1 src2))
+                 (#x37 (pcmpgt (* 8 operand-size) 64 src1 src2))
                  (t 0))) ; unreachable
 
        ;; Store the result into the destination register.
