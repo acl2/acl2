@@ -12429,11 +12429,9 @@
    (xdoc::p
     "We also ensure that the file ends in new-line,
      as prescribed in [C17:5.1.1.2/1/2].
-     We check that the end-of-file position,
-     returned by @(tsee parse-*-external-declaration),
-     is at column 0:
-     this means that, since the file is not empty,
-     the last character is a new-line,
+     We check that the final position in the parser state is at column 0:
+     this means that, if the file is not empty,
+     then the last character is a new-line,
      otherwise that position would be at a non-zero column."))
   (b* (((reterr) (irr-transunit) parstate)
        ((erp items & parstate) (parse-*-translation-item parstate))
