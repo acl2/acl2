@@ -58,16 +58,16 @@
          (tree-fix y))
         ((tree-empty-p y)
          (tree-fix x))
-        ((heap<-with-tagged-element (tree->head x) (tree->head y))
+        ((heap<-with-tree-element (tree->head x) (tree->head y))
          (mv-let (in left right)
-                 (tree-split (tagged-element->elem (tree->head y)) x)
+                 (tree-split (tree-element->val (tree->head y)) x)
            (declare (ignore in))
            (tree-node (tree->head y)
                       (tree-union left (tree->left y))
                       (tree-union right (tree->right y)))))
         (t
          (mv-let (in left right)
-                 (tree-split (tagged-element->elem (tree->head x)) y)
+                 (tree-split (tree-element->val (tree->head x)) y)
            (declare (ignore in))
            (tree-node (tree->head x)
                       (tree-union (tree->left x) left)
@@ -167,8 +167,8 @@
                 (heapp y))
            (heapp (tree-union x y)))
   :induct t
-  :hints ('(:cases ((equal (tagged-element->elem (tree->head x))
-                           (tagged-element->elem (tree->head y))))))
+  :hints ('(:cases ((equal (tree-element->val (tree->head x))
+                           (tree-element->val (tree->head y))))))
   :enable (tree-union
            heap<-all-l-extra-rules
            tree-split-extra-rules
@@ -185,10 +185,10 @@
               y)
              ((tree-empty-p y)
               x)
-             ((heap<-with-tagged-element (tree->head x) (tree->head y))
+             ((heap<-with-tree-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (acl2-number-tree-split
-                        (tagged-element->elem (tree->head y)) x)
+                        (tree-element->val (tree->head y)) x)
                 (declare (ignore in))
                 (tree-node (tree->head y)
                            (acl2-number-tree-union left (tree->left y))
@@ -196,7 +196,7 @@
              (t
               (mv-let (in left right)
                       (acl2-number-tree-split
-                        (tagged-element->elem (tree->head x)) y)
+                        (tree-element->val (tree->head x)) y)
                 (declare (ignore in))
                 (tree-node (tree->head x)
                            (acl2-number-tree-union (tree->left x) left)
@@ -217,10 +217,10 @@
               y)
              ((tree-empty-p y)
               x)
-             ((heap<-with-tagged-element (tree->head x) (tree->head y))
+             ((heap<-with-tree-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (symbol-tree-split
-                        (tagged-element->elem (tree->head y)) x)
+                        (tree-element->val (tree->head y)) x)
                 (declare (ignore in))
                 (tree-node (tree->head y)
                            (symbol-tree-union left (tree->left y))
@@ -228,7 +228,7 @@
              (t
               (mv-let (in left right)
                       (symbol-tree-split
-                        (tagged-element->elem (tree->head x)) y)
+                        (tree-element->val (tree->head x)) y)
                 (declare (ignore in))
                 (tree-node (tree->head x)
                            (symbol-tree-union (tree->left x) left)
@@ -249,10 +249,10 @@
               y)
              ((tree-empty-p y)
               x)
-             ((heap<-with-tagged-element (tree->head x) (tree->head y))
+             ((heap<-with-tree-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (eqlable-tree-split
-                        (tagged-element->elem (tree->head y)) x)
+                        (tree-element->val (tree->head y)) x)
                 (declare (ignore in))
                 (tree-node (tree->head y)
                            (eqlable-tree-union left (tree->left y))
@@ -260,7 +260,7 @@
              (t
               (mv-let (in left right)
                       (eqlable-tree-split
-                        (tagged-element->elem (tree->head x)) y)
+                        (tree-element->val (tree->head x)) y)
                 (declare (ignore in))
                 (tree-node (tree->head x)
                            (eqlable-tree-union (tree->left x) left)

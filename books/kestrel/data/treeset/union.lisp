@@ -15,12 +15,15 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/utilities/oset-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/min-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/max-defs" :dir :system)
 
 (include-book "internal/tree-defs")
 (include-book "internal/union-defs")
 (include-book "set-defs")
 (include-book "to-oset-defs")
 (include-book "in-defs")
+(include-book "min-max-defs")
 (include-book "subset-defs")
 (include-book "insert-defs")
 (include-book "delete-defs")
@@ -34,6 +37,9 @@
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
+(local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
+(local (include-book "kestrel/data/utilities/total-order/min" :dir :system))
+(local (include-book "kestrel/data/utilities/total-order/max" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -46,6 +52,7 @@
 (local (include-book "to-oset"))
 (local (include-book "cardinality"))
 (local (include-book "in"))
+(local (include-book "min-max"))
 (local (include-book "insert"))
 (local (include-book "delete"))
 (local (include-book "subset"))
@@ -154,8 +161,8 @@
 
 (defrule union-when-equiv-of-arg1-congruence
   (implies (equiv x0 x1)
-           (equal (union x0 z)
-                  (union x1 z)))
+           (equal (union x0 y)
+                  (union x1 y)))
   :rule-classes :congruence
   :enable union)
 
@@ -229,6 +236,11 @@
 (defrule commutativity-of-union
   (equal (union y x)
          (union x y))
+  :enable extensionality)
+
+(defrule commutativity-2-of-union
+  (equal (union y x z)
+         (union x y z))
   :enable extensionality)
 
 (defrule idempotence-of-union
@@ -383,6 +395,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defrule min-of-union
+  (equal (min (union x y))
+         (cond ((emptyp x) (min y))
+               ((emptyp y) (min x))
+               (t (min-<< (min x) (min y)))))
+  ;; TODO: improve proof
+  :use ((:instance <<-of-arg1-and-min-when-in
+                   (x (not-<<-all-l-sk-witness (union x y) (min x)))
+                   (set x))
+        (:instance <<-of-arg1-and-min-when-in
+                   (x (not-<<-all-l-sk-witness (union x y) (min x)))
+                   (set y))
+        (:instance <<-of-arg1-and-min-when-in
+                   (x (not-<<-all-l-sk-witness (union x y) (min y)))
+                   (set x))
+        (:instance <<-of-arg1-and-min-when-in
+                   (x (not-<<-all-l-sk-witness (union x y) (min y)))
+                   (set y)))
+  :enable (equal-of-min-becomes-sk
+           not-<<-all-l-sk
+           min-<<
+           data::<<-rules)
+  :disable <<-of-arg1-and-min-when-in)
+
+(defrule max-of-union
+  (equal (max (union x y))
+         (cond ((emptyp x) (max y))
+               ((emptyp y) (max x))
+               (t (max-<< (max x) (max y)))))
+  ;; TODO: improve proof
+  :use ((:instance <<-of-max-when-in
+                   (x (not-<<-all-r-sk-witness (max x) (union x y)))
+                   (set x))
+        (:instance <<-of-max-when-in
+                   (x (not-<<-all-r-sk-witness (max x) (union x y)))
+                   (set y))
+        (:instance <<-of-max-when-in
+                   (x (not-<<-all-r-sk-witness (max y) (union x y)))
+                   (set x))
+        (:instance <<-of-max-when-in
+                   (x (not-<<-all-r-sk-witness (max y) (union x y)))
+                   (set y)))
+  :enable (equal-of-max-becomes-sk
+           not-<<-all-r-sk
+           max-<<
+           data::<<-rules)
+  :disable (<<-of-max-when-in
+            <<-of-arg1-and-max-when-in))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (defrule set-all-genericp-of-union
   (equal (set-all-genericp (union x y))
          (and (set-all-genericp x)
@@ -419,17 +482,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule oset-union-of-to-oset
-  (equal (set::union (to-oset x)
-                     (to-oset y))
-         (to-oset (union x y)))
+(defrule to-oset-of-union
+  (equal (to-oset (union x y))
+         (set::union (to-oset x)
+                     (to-oset y)))
   :enable (to-oset
            union
            fix
            setp
            empty))
 
-(add-to-ruleset from-oset-theory '(oset-union-of-to-oset))
+(add-to-ruleset to-oset-theory '(to-oset-of-union))
 
 (defrule from-oset-of-oset-union
   (equal (from-oset (set::union x y))
@@ -439,6 +502,13 @@
 
 (add-to-ruleset from-oset-theory '(from-oset-of-oset-union))
 
+(defruled union-becomes-oset-union
+  (equal (union x y)
+         (from-oset (set::union (to-oset x)
+                                (to-oset y)))))
+
+(add-to-ruleset to-oset-theory '(union-becomes-oset-union))
+
 (defruled oset-union-becomes-union
   (equal (set::union x y)
          (to-oset (union (from-oset x)
@@ -446,13 +516,6 @@
   :enable set::expensive-rules)
 
 (add-to-ruleset from-oset-theory '(oset-union-becomes-union))
-
-(defruled union-becomes-oset-union
-  (equal (union x y)
-         (from-oset (set::union (to-oset x)
-                                (to-oset y)))))
-
-(add-to-ruleset to-oset-theory '(union-becomes-oset-union))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

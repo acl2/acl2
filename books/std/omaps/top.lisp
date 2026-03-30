@@ -11,7 +11,6 @@
 (in-package "OMAP")
 
 (include-book "core")
-(include-book "with-fixing-theorems")
 (include-book "assoc")
 (include-book "submap")
 (include-book "extensionality")

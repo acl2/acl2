@@ -60,10 +60,10 @@
                (tree$ treep))
   (if (tree-empty-p tree)
       (mv nil
-          (tree-node (tagged-element hash x) nil nil))
+          (tree-node (tree-element hash x) nil nil))
     (let* ((hash (mbe :logic (hash x) :exec hash))
            (head (tree->head tree))
-           (head-elem (tagged-element->elem head)))
+           (head-elem (tree-element->val head)))
       (cond ((equal x head-elem)
              (mv t
                  (tree-fix tree)))
@@ -79,9 +79,9 @@
                    (mv nil
                        (if (heap<-with-hashes
                              head-elem
-                             (tagged-element->elem head-left$)
-                             (tagged-element->hash head)
-                             (tagged-element->hash head-left$))
+                             (tree-element->val head-left$)
+                             (tree-element->hash head)
+                             (tree-element->hash head-left$))
                            (rotate-right tree$)
                          tree$))))))
             (t
@@ -96,9 +96,9 @@
                    (mv nil
                        (if (heap<-with-hashes
                              head-elem
-                             (tagged-element->elem head-right$)
-                             (tagged-element->hash head)
-                             (tagged-element->hash head-right$))
+                             (tree-element->val head-right$)
+                             (tree-element->hash head)
+                             (tree-element->hash head-right$))
                            (rotate-left tree$)
                          tree$)))))))))
   ;; Verified below
@@ -193,7 +193,7 @@
   :enable (<<-all-r
            tree-insert))
 
-(defrule bst-of-tree-insert.tree$-when-bst
+(defrule bstp-of-tree-insert.tree$-when-bstp
   (implies (bstp tree)
            (bstp (mv-nth 1 (tree-insert x hash tree))))
   :induct t
@@ -222,18 +222,18 @@
            heap<-rules
            heap<-of-tree->head-when-heap<-all-l)
   :hints ('(:use ((:instance tree-insert-hmax-heap-invariants
-                             (a (tagged-element->elem (tree->head tree)))
+                             (a (tree-element->val (tree->head tree)))
                              (tree (tree->left tree)))
                   (:instance tree-insert-hmax-heap-invariants
-                             (a (tagged-element->elem (tree->head tree)))
+                             (a (tree-element->val (tree->head tree)))
                              (tree (tree->right tree))))))
   :prep-lemmas
   ((defruled tree-insert-hmax-heap-invariants
      (implies (and (heapp tree)
                    (heap<-all-l tree a))
               (if (or (tree-empty-p tree)
-                      (heap< (tagged-element->elem (tree->head tree)) x))
-                  (and (equal (tagged-element->elem (tree->head (mv-nth 1 (tree-insert x hash tree))))
+                      (heap< (tree-element->val (tree->head tree)) x))
+                  (and (equal (tree-element->val (tree->head (mv-nth 1 (tree-insert x hash tree))))
                               x)
                        (heap<-all-l (tree->left (mv-nth 1 (tree-insert x hash tree)))
                                     a)
@@ -279,7 +279,7 @@
                       (tree-insert x nil nil)
                 (declare (ignore inp))
                 tree)
-       :exec (tree-node (tagged-element hash x) nil nil))
+       :exec (tree-node (tree-element hash x) nil nil))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable data::u32-equal
@@ -297,10 +297,10 @@
        :exec
        (if (tree-empty-p tree)
            (mv nil
-               (tree-node (tagged-element hash x) nil nil))
+               (tree-node (tree-element hash x) nil nil))
          (let* ((hash (mbe :logic (hash x) :exec hash))
                 (head (tree->head tree))
-                (head-elem (tagged-element->elem head)))
+                (head-elem (tree-element->val head)))
            (cond ((= x head-elem)
                   (mv t
                       (tree-fix tree)))
@@ -316,9 +316,9 @@
                         (mv nil
                             (if (heap<-with-hashes
                                   head-elem
-                                  (tagged-element->elem head-left$)
-                                  (tagged-element->hash head)
-                                  (tagged-element->hash head-left$))
+                                  (tree-element->val head-left$)
+                                  (tree-element->hash head)
+                                  (tree-element->hash head-left$))
                                 (rotate-right tree$)
                               tree$))))))
                  (t
@@ -333,9 +333,9 @@
                         (mv nil
                             (if (heap<-with-hashes
                                   head-elem
-                                  (tagged-element->elem head-right$)
-                                  (tagged-element->hash head)
-                                  (tagged-element->hash head-right$))
+                                  (tree-element->val head-right$)
+                                  (tree-element->hash head)
+                                  (tree-element->hash head-right$))
                                 (rotate-left tree$)
                               tree$))))))))))
   :enabled t
@@ -358,10 +358,10 @@
        :exec
        (if (tree-empty-p tree)
            (mv nil
-               (tree-node (tagged-element hash x) nil nil))
+               (tree-node (tree-element hash x) nil nil))
          (let* ((hash (mbe :logic (hash x) :exec hash))
                 (head (tree->head tree))
-                (head-elem (tagged-element->elem head)))
+                (head-elem (tree-element->val head)))
            (cond ((eq x head-elem)
                   (mv t
                       (tree-fix tree)))
@@ -377,9 +377,9 @@
                         (mv nil
                             (if (heap<-with-hashes
                                   head-elem
-                                  (tagged-element->elem head-left$)
-                                  (tagged-element->hash head)
-                                  (tagged-element->hash head-left$))
+                                  (tree-element->val head-left$)
+                                  (tree-element->hash head)
+                                  (tree-element->hash head-left$))
                                 (rotate-right tree$)
                               tree$))))))
                  (t
@@ -394,9 +394,9 @@
                         (mv nil
                             (if (heap<-with-hashes
                                   head-elem
-                                  (tagged-element->elem head-right$)
-                                  (tagged-element->hash head)
-                                  (tagged-element->hash head-right$))
+                                  (tree-element->val head-right$)
+                                  (tree-element->hash head)
+                                  (tree-element->hash head-right$))
                                 (rotate-left tree$)
                               tree$))))))))))
   :enabled t
@@ -419,10 +419,10 @@
        :exec
        (if (tree-empty-p tree)
            (mv nil
-               (tree-node (tagged-element hash x) nil nil))
+               (tree-node (tree-element hash x) nil nil))
          (let* ((hash (mbe :logic (hash x) :exec hash))
                 (head (tree->head tree))
-                (head-elem (tagged-element->elem head)))
+                (head-elem (tree-element->val head)))
            (cond ((eql x head-elem)
                   (mv t
                       (tree-fix tree)))
@@ -438,9 +438,9 @@
                         (mv nil
                             (if (heap<-with-hashes
                                   head-elem
-                                  (tagged-element->elem head-left$)
-                                  (tagged-element->hash head)
-                                  (tagged-element->hash head-left$))
+                                  (tree-element->val head-left$)
+                                  (tree-element->hash head)
+                                  (tree-element->hash head-left$))
                                 (rotate-right tree$)
                               tree$))))))
                  (t
@@ -455,9 +455,9 @@
                         (mv nil
                             (if (heap<-with-hashes
                                   head-elem
-                                  (tagged-element->elem head-right$)
-                                  (tagged-element->hash head)
-                                  (tagged-element->hash head-right$))
+                                  (tree-element->val head-right$)
+                                  (tree-element->hash head)
+                                  (tree-element->hash head-right$))
                                 (rotate-left tree$)
                               tree$))))))))))
   :enabled t

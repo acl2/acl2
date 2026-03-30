@@ -15,8 +15,10 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
-(include-book "kestrel/data/utilities/list-defs" :dir :system)
+(include-book "kestrel/data/utilities/lists/defs" :dir :system)
 (include-book "kestrel/data/utilities/oset-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/min-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/max-defs" :dir :system)
 
 (include-book "internal/insert-defs")
 (include-book "hash-defs")
@@ -24,6 +26,7 @@
 (include-book "to-oset-defs")
 (include-book "cardinality-defs")
 (include-book "in-defs")
+(include-book "min-max-defs")
 (include-book "subset-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -36,6 +39,9 @@
 
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
+(local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
+(local (include-book "kestrel/data/utilities/total-order/min" :dir :system))
+(local (include-book "kestrel/data/utilities/total-order/max" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -53,6 +59,7 @@
 (local (include-book "to-oset"))
 (local (include-book "cardinality"))
 (local (include-book "in"))
+(local (include-book "min-max"))
 (local (include-book "subset"))
 (local (include-book "extensionality"))
 
@@ -87,14 +94,11 @@
 (define insert-macro-loop
   (insert
    (list true-listp))
-  :guard (and (consp list)
-              (consp (rest list))
+  :guard (and (consp (rest list))
               (member-eq insert
                          '(insert$inline insert-= insert-eq insert-eql)))
   (if (endp (rest (rest list)))
-      (list insert
-            (first list)
-            (second list))
+      (cons insert list)
     (list insert
           (first list)
           (insert-macro-loop insert (rest list))))
@@ -152,7 +156,7 @@
 
 (in-theory (disable (:t insert)))
 
-(defrule insert-when-set-equiv-congruence
+(defrule insert-when-equiv-congruence
   (implies (equiv set0 set1)
            (equal (insert x set0)
                   (insert x set1)))
@@ -185,7 +189,7 @@
            setp
            empty))
 
-(defrule insert-commutative
+(defrule commutativity-of-insert
   (equal (insert y x set)
          (insert x y set))
   :enable extensionality)
@@ -207,6 +211,11 @@
                   (fix set)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by insert-when-in)
+
+(defrule equal-of-insert
+  (equal (equal (insert x set) set)
+         (and (setp set)
+              (in x set))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -254,22 +263,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule oset-insert-of-arg1-and-to-oset
-  (equal (set::insert x (to-oset set))
-         (to-oset (insert x set)))
+;; TODO: enable in general?
+(defrule min-of-insert
+  (equal (min (insert x set))
+         (if (emptyp set)
+             x
+           (min-<< x (min set))))
+  ;; TODO: improve proof
+  :use ((:instance <<-of-arg1-and-min-when-in
+                   (x (not-<<-all-l-sk-witness (insert x set) x)))
+        (:instance <<-of-arg1-and-min-when-in
+                   (x (not-<<-all-l-sk-witness (insert x set) (min set)))))
+  :enable (equal-of-min-becomes-sk
+           not-<<-all-l-sk
+           min-<<
+           data::<<-rules)
+  :disable <<-of-arg1-and-min-when-in)
+
+(defrule max-of-insert
+  (equal (max (insert x set))
+         (if (emptyp set)
+             x
+           (max-<< x (max set))))
+  :use ((:instance <<-of-max-when-in
+                   (x (not-<<-all-r-sk-witness x (insert x set))))
+        (:instance <<-of-max-when-in
+                   (x (not-<<-all-r-sk-witness (max set) (insert x set)))))
+  :enable (equal-of-max-becomes-sk
+           not-<<-all-r-sk
+           max-<<
+           data::<<-rules)
+  :disable <<-of-max-when-in)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule to-oset-of-insert
+  (equal (to-oset (insert x set))
+         (set::insert x (to-oset set)))
   :enable (to-oset
            insert
            fix
            setp
            empty))
 
-(add-to-ruleset from-oset-theory '(oset-insert-of-arg1-and-to-oset))
-
-(defruled to-oset-of-insert
-  (equal (to-oset (insert x set))
-         (set::insert x (to-oset set))))
-
 (add-to-ruleset to-oset-theory '(to-oset-of-insert))
+
+(defruled insert-of-arg1-and-to-oset
+  (equal (set::insert x (to-oset set))
+         (to-oset (insert x set))))
+
+(add-to-ruleset from-oset-theory '(insert-of-arg1-and-to-oset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -373,6 +416,11 @@
            (equal (insert-all list0 set)
                   (insert-all list1 set)))
   :rule-classes :congruence
+  :enable extensionality)
+
+(defrule insert-all-of-insert
+  (equal (insert-all list (insert x set))
+         (insert x (insert-all list set)))
   :enable extensionality)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -525,6 +573,13 @@
 
 (add-to-ruleset from-oset-theory '(oset-emptyp-becomes-emptyp))
 
+(defrule from-oset-of-nil
+  (equal (treeset::from-oset nil)
+         (treeset::empty))
+  :enable ((:e treeset::empty)))
+
+(add-to-ruleset from-oset-theory '(from-oset-of-nil))
+
 (defrule in-of-from-oset
   (equal (in x (from-oset oset))
          (set::in x oset))
@@ -620,7 +675,7 @@
    (set acl2-number-setp))
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
-                     (acl2-number-tree-insert x (acl2-number-hash x) (fix set))
+                     (acl2-number-tree-insert x (acl2-number-hash x) set)
                (declare (ignore inp))
                set$))
   :enabled t
@@ -634,7 +689,7 @@
    (set symbol-setp))
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
-                     (symbol-tree-insert x (symbol-hash x) (fix set))
+                     (symbol-tree-insert x (symbol-hash x) set)
                (declare (ignore inp))
                set$))
   :enabled t
@@ -644,10 +699,11 @@
                                             insert))))
 (define insert-eql
   ((x eqlablep)
+
    (set eqlable-setp))
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
-                     (eqlable-tree-insert x (eqlable-hash x) (fix set))
+                     (eqlable-tree-insert x (eqlable-hash x) set)
                (declare (ignore inp))
                set$))
   :enabled t

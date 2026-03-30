@@ -43,9 +43,9 @@
   :parents (extensionality)
   :returns (yes/no booleanp)
   (forall (elem)
-          (equal (in elem x)
-                 (in elem y)))
-  :verify-guards nil)
+    (non-exec
+      (equal (in elem x)
+             (in elem y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
