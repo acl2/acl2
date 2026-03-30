@@ -36,8 +36,17 @@
      which contain various components which are parsed into ACL2 representations
      and combined into full grammars parameterized by the versions.
      This parameterization is work in progress:
-     currently there is a single grammar file,
-     but we plan to split and differentiate it.")
+     currently we have only some of the needed component files.")
+   (xdoc::p
+    "[C17:5.2.1] provides requirements on the source character set,
+     i.e. the character set used to write the C code,
+     but the details of this character set are implementation-dependent;
+     see @('[books]/kestrel/c/language/character-sets.lisp')
+     for a formalization of the requirements in [C17:5.2.1].
+     In particular, [C17:5.2.1] does not prescribe ASCII or Unicode.
+     Our grammar assumes Unicode, which is a very general assumption these days;
+     other (uncommon) character sets should be also easily encodable in Unicode,
+     should our tools ever need to handle such character sets.")
    (xdoc::p
     "The ABNF notation can capture well
      the notation described in [C23:6.1], which is the same in [C17:6.1].
@@ -71,7 +80,7 @@
      and one for a phrase structure that includes some preprocessing constructs.
      The details are in the documentation that accompanies the grammar rules.")
    (xdoc::p
-    "Our ABNF grammar rules doe not consider
+    "Our ABNF grammar rules does not consider
      the translation of trigraph sequences
      handled in the first phase in [C17:5.1.1.2]
      (which, incidentally, has been removed in [C23:5.2.1.2]),
@@ -109,37 +118,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(abnf::defgrammar *grammar-characters-all*
+  :short "Grammar rules for the source character set
+          that are common to all the C dialects."
+  :file "grammar/characters-all.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-characters-c17*
+  :short "Grammar rules for the source character set
+          that are specific to the C17 standard."
+  :file "grammar/characters-c17.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-characters-c23*
+  :short "Grammar rules for the source character set
+          that are specific to the C23 standard."
+  :file "grammar/characters-c23.abnf"
+  :untranslate t
+  :well-formed t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar*
-  :short "The ABNF grammar represented in ACL2."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We use our verified grammar parser and our abstractor
-     to turn the grammar in the @('grammar/grammar.abnf') file
-     into an ACL2 representation.")
-   (xdoc::p
-    "We use @(tsee acl2::add-const-to-untranslate-preprocess)
-     to keep this constant unexpanded in output.")
-   (xdoc::p
-    "We show that the grammar is well-formed, closed, and Unicode."))
+  :short "Rest of the grammar rules."
   :file "grammar/grammar.abnf"
   :untranslate t
-  :well-formed t
-  :closed t
-  ///
-
-  (defruled unicode-only-*grammar*
-    (abnf::rulelist-in-termset-p *grammar*
-                                 (acl2::integers-from-to 0 #x10ffff))
-    :enable (abnf::rule-in-termset-p
-             abnf::repetition-in-termset-p
-             abnf::element-in-termset-p
-             abnf::num-val-in-termset-p
-             abnf::char-val-in-termset-p
-             abnf::char-insensitive-in-termset-p
-             abnf::char-sensitive-in-termset-p)
-    :disable ((:e acl2::integers-from-to))))
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(abnf::deftreeops *grammar* :prefix cst)
