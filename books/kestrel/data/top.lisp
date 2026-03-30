@@ -10,4 +10,5 @@
 
 (include-book "hash/top")
 (include-book "treeset/top")
+(include-book "treemap/top")
 (include-book "utilities/top")

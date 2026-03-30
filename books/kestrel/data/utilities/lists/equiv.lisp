@@ -9,7 +9,6 @@
 (in-package "DATA")
 
 (include-book "std/util/define" :dir :system)
-(include-book "std/util/defrule" :dir :system)
 
 (include-book "std/lists/equiv" :dir :system)
 
