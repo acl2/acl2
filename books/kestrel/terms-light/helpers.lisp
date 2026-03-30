@@ -1,6 +1,6 @@
 ; Helper rules for the proofs in this directory
 ;
-; Copyright (C) 2023-2025 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -201,7 +201,7 @@
                                      bad-guy-for-alists-equiv-on
                                      alists-equiv-on-when-agree-on-bad-guy-helper))))
 
-(defthm member-equal-of-bad-guy-for-alists-equiv-on-sam
+(defthm member-equal-of-bad-guy-for-alists-equiv-on-same
   (implies (consp keys)
            (member-equal (bad-guy-for-alists-equiv-on keys a1 a2) keys))
   :hints (("Goal" :in-theory (enable bad-guy-for-alists-equiv-on))))

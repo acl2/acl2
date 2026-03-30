@@ -298,7 +298,7 @@
 ;;          (UNSIGNED-BYTE-P 7 (SLICE 31 24 X)))
 
 (defthmd bvand-open-to-bvcat-high-bit-special-case-for-bvmult
-  (implies (and (syntaxp (quotep x)) ;bozo restrcit to when x is sparse (lots of zeros)
+  (implies (and (syntaxp (quotep x)) ;bozo restrict to when x is sparse (lots of zeros)
                 (< 1 size)
                 (natp size)
                 (integerp x)

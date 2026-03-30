@@ -38,7 +38,7 @@
        (result-term (dag-or-constant-to-term dag-or-quotep)))
     (if (equal result-term expected-result-term)
         t
-      (er hard? 'prunes-to "Term ~x0 did not prune to ~x1.  Instead, as we got ~x2." term expected-result-term result-term))))
+      (er hard? 'prunes-to "Term ~x0 did not prune to ~x1.  Instead, we got ~x2." term expected-result-term result-term))))
 
 (assert-event (prunes-to 'a 'a))
 (assert-event (prunes-to '(cons '1 '2) '(cons '1 '2)))

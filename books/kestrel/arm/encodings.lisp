@@ -456,7 +456,7 @@
     ;; todo: vraddhn
     ;; todo: vrecpe
     ;; todo: vrecps
-    ;; todo: verv16, vrev32, vrev64
+    ;; todo: vrev16, vrev32, vrev64
     ;; todo: vrhadd
     ;; todo: vrshl
     ;; todo: vrshr
@@ -498,7 +498,6 @@
 (defconst *allowed-encoding-overlaps*
   '((:add-immediate :adr-encoding-a1)
     (:bfc :bfi)
-    (:bl :blx-immediate)
     (:sub-immediate :adr-encoding-a2)
     (:str-immediate :push-encoding-a2)
     (:str-immediate :strt-encoding-a1)
@@ -527,7 +526,7 @@
     (:ldr-literal :ldrt-encoding-a1)
     (:ldr-register :ldrt-encoding-a2)
     (:b :blx-immediate) ; for the case of cond=1111 in B
-    (:bl-immediate :blx-immediate) ; for the case of cond=1111 in BL
+    (:bl :blx-immediate) ; for the case of cond=1111 in BL
     (:mov-register :lsl-immediate) ; for the shift=0 case in LSL
     (:mcr :mcr2)
     (:mrc :mrc2)
@@ -568,7 +567,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This does the following:
-;; - drops underscores (just used as seperators)
+;; - drops underscores (just used as separators)
 ;; - replaces VAR with (VAR 1)
 ;; - replaces (0) with 0 -- for now
 ;; - replaces (1) with 1 -- for now

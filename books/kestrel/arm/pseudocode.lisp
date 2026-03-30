@@ -369,11 +369,8 @@
 
 ;drop?
 (defthm integerp-of-lsr
-  (implies (and (unsigned-byte-p n x)
-                 (integerp shift)
-                 ;; the assert:
-                 (>= shift 0))
-            (integerp (lsr n x hift)))
+  (implies (integerp x)
+           (integerp (lsr n x shift)))
   :hints (("Goal" :in-theory (enable lsr lsr_c))))
 
 (defthm lsr-becomes-bvshr
@@ -564,7 +561,7 @@
                   (acl2::rightrotate n shift x)))
   :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
 
-;; could try to complify the RHS but that would involve a case split
+;; could try to simplify the RHS but that would involve a case split
 (defthm mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
   (implies (and (unsigned-byte-p n x)
                 (integerp shift))
@@ -1086,7 +1083,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: think about this
-;; Val should contain enough informaion to distinguish different unknown bits (e.g., opcode, flag, etc.)
+;; Val should contain enough information to distinguish different unknown bits (e.g., opcode, flag, etc.)
 (encapsulate (((unknown-bits * * arm) => *))
     (local (defun unknown-bits (n val arm)
              (declare (xargs :guard (posp n) :stobjs arm)

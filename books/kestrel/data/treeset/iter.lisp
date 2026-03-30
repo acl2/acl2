@@ -26,6 +26,7 @@
 (local (include-book "set"))
 (local (include-book "min-max"))
 (local (include-book "cardinality"))
+(local (include-book "in"))
 (local (include-book "delete"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

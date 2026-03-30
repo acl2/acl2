@@ -1,7 +1,7 @@
 ; Syntactic utilities for bit-vector terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,7 +51,7 @@
 ;; (defconst *non-trimmable-bv-operators*
 ;;   '(sbvdiv sbvrem
 ;;     bvdiv bvmod
-;;     bv-array-read ;added since we are not trimming reads any more ; todo: this is not even a bv opoerator
+;;     bv-array-read ;added since we are not trimming reads any more ; todo: this is not even a bv operator
 ;;     ;; todo: add bvshr?
 ;;     ))
 

@@ -251,8 +251,7 @@
 ;dup
 (local
  (defthm equal-of-+-of-bvchop-same-31-32-linear
-   (implies (and (unsigned-byte-p 32 x)
-                 (integerp y))
+   (implies (unsigned-byte-p 32 x)
             (equal x (+ (bvchop 31 x) (* (expt 2 31) (getbit 31 x)))))
    :rule-classes :linear
    :hints (("Goal" :use (:instance acl2::split-bv
@@ -346,7 +345,6 @@
                 (unsigned-byte-p 32 (bvplus 33 carry_in y))
                 (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y)
-                (unsigned-byte-p 32 (bvplus 33 carry_in y))
                 (bitp carry_in))
            (equal (mv-nth '1 (addwithcarry '32 x y carry_in))
                   (if (if (sbvle 32 0 x) ; todo: generalize?

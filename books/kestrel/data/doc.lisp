@@ -10,6 +10,7 @@
 
 (include-book "hash/top")
 (include-book "treeset/doc")
+(include-book "treemap/doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

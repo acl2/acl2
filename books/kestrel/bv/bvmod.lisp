@@ -1,7 +1,7 @@
 ; An analogue of mod for bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -215,7 +215,7 @@
   :hints (("Goal" :in-theory (enable bvmod))))
 
 ;gen
-(defthm bvchop-of-256-arg3
+(defthm bvmod-of-256-arg3
   (implies (natp size)
            (equal (bvmod size x 256)
                   (if (<= 8 size)

@@ -1,0 +1,29 @@
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TREEMAP")
+
+(include-book "map-defs")
+(include-book "to-omap-defs")
+(include-book "keys-defs")
+(include-book "in-defs")
+(include-book "size-defs")
+(include-book "lookup-defs")
+(include-book "values-defs")
+(include-book "rlookup-defs")
+(include-book "submap-defs")
+(include-book "min-max-defs")
+(include-book "update-defs")
+(include-book "delete-defs")
+(include-book "update-star-defs")
+(include-book "restrict-defs")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This books contains all the relevant treemap definitions without the
+;; theorems.

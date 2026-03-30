@@ -920,7 +920,7 @@
        (imm32 (ARMExpandImm imm12 arm))
        ;; end EncodingSpecificOperations
        ;; ((mv & & &) (AddWithCarry 32 (reg n arm) (bvnot 32 imm32) 1))
-       (arm (set-apsr.n (cmp-sign (reg n arm) imm32) arm)) ; note the call of cmp-csign
+       (arm (set-apsr.n (cmp-sign (reg n arm) imm32) arm)) ; note the call of cmp-sign
        (arm (set-apsr.z (cmp-zero (reg n arm) imm32) arm))
        (arm (set-apsr.c (cmp-carry (reg n arm) imm32) arm))
        (arm (set-apsr.v (cmp-overflow (reg n arm) imm32) arm)) ; note the call of cmp-overflow
@@ -1468,7 +1468,7 @@
                               (set-reg tval data arm)
                             (if (== (CurrentInstrSet arm) *InstrSet_ARM*)
                                 (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)
-                              (set-reg tval (unknown-bits 32 :ldrt-literal-core arm) arm))))
+                              (set-reg tval (unknown-bits 32 :ldr-literal-core arm) arm))))
                      (arm (advance-pc arm)))
                 arm))))
     arm))
@@ -1708,12 +1708,6 @@
          ((when (and (== p #b0)
                      (== w #b1)))
           (ldrbt-encoding-a1-core u rn rt imm12 arm))
-         ((when (and (== rn #b1101)
-                     (== p #b0)
-                     (== u #b1)
-                     (== w #b0)
-                     (== imm12 #b000000000100)))
-          (pop-encoding-a2-core rt arm))
          (tval (uint 4 rt))
          (n (uint 4 rn))
          (imm32 (ZeroExtend imm12 32))
@@ -1782,7 +1776,7 @@
                               (unsigned-byte-p 4 imm4H)
                               (unsigned-byte-p 4 imm4L)
                               (addressp inst-address))
-                  ::guard-hints (("Goal" :in-theory (enable uint)))
+                  :guard-hints (("Goal" :in-theory (enable uint)))
                   :stobjs arm))
   (b* (;; EncodingSpecificOperations:
        ((when (== (getbit 0 rt) #b1))
@@ -1947,7 +1941,8 @@
        (arm (if (or (UnalignedSupport)
                     (== (getbit 0 address) #b0))
                 (set-reg tval (ZeroExtend data 32) arm)
-              (set-reg tval (unknown-bits 32 :ldrht-common arm) arm))))
+              (set-reg tval (unknown-bits 32 :ldrht-common arm) arm)))
+       (arm (advance-pc arm)))
     arm))
 
 ;; Also called by ldr-literal and ldr-immediate.
@@ -2308,7 +2303,7 @@
          (operand2 (sint 32 (reg m arm)))
          (addend (sint 32 (reg a arm)))
          (result (- addend (* operand1 operand2)))
-         (arm (set-reg rd (slice 31 0 result) arm))
+         (arm (set-reg d (slice 31 0 result) arm))
          (arm (advance-pc arm)))
       arm))
 
@@ -2477,7 +2472,7 @@
          (operand1 (sint 32 (reg n arm)))
          (operand2 (sint 32 (reg m arm)))
          (result (* operand1 operand2))
-         (arm (set-reg rd (slice 31 0 result) arm))
+         (arm (set-reg d (slice 31 0 result) arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 (slice 31 0 result)) arm))
@@ -2506,7 +2501,7 @@
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
        (my-result (bvmult 32 (reg n arm) (reg m arm)))
-       (arm (set-reg rd my-result arm))
+       (arm (set-reg d my-result arm))
        (arm (if setflags
                 (let* ((arm (set-apsr.n (getbit 31 my-result) arm))
                        (arm (set-apsr.z (IsZeroBit 32 my-result) arm))
@@ -2715,7 +2710,7 @@
          (m (uint 4 rm))
          (setflags (== s #b1))
          ;; end EncodingSpecificOperations
-         ((mv result carry) (shift_c 32 (reg m arm) :SRType_RRX 1 (apsr.c arm))))
+         ((mv result carry) (shift_c 32 (reg m arm) *SRType_RRX* 1 (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))
@@ -3416,7 +3411,7 @@
        )
     (ldrsbt-common n tval postindex add register_form imm32 m arm)))
 
-;; Also called by ldr-register ;; toso: update these and all similar comments
+;; Also called by ldr-register ;; todo: update these and all similar comments
 (defund ldrsbt-encoding-a2-core (u rn rt rm arm)
   (declare (xargs :guard (and (bitp u)
                               (register-numberp rn)
@@ -3549,7 +3544,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; LDRHT has been moved here (out of alphabetical order) because other
+;; LDRSHT has been moved here (out of alphabetical order) because other
 ;; instructions refer to it.
 
 (defun ldrsht-common (n tval postindex add register_form imm32 m arm)
@@ -3976,7 +3971,7 @@
                 (write_MemA address 4 (PCStoreValue inst-address) arm)
               arm))
        (arm (if wback
-                (set-reg n (bvplus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
+                (set-reg n (bvminus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
               arm))
        (arm (advance-pc arm)))
     arm))

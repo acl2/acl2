@@ -188,7 +188,7 @@
            :in-theory (disable read-byte-of-bvchop-arg1))))
 
 ;dup!
-(defthm bvchop-of-+-of-bvimunus-arg3
+(defthm bvchop-of-+-of-bvuminus-arg3
   (implies (and (integerp x)
                 (integerp y)
                 (integerp z))
@@ -267,9 +267,9 @@
 (defthm car-of-read-bytes
   (implies (and (posp n)
                 (integerp addr))
-           (equal (car (read-bytes n addr x86))
-                  (read-byte addr x86)))
-  :hints (("Goal" :expand (read-bytes n addr x86))))
+           (equal (car (read-bytes n addr arm))
+                  (read-byte addr arm)))
+  :hints (("Goal" :expand (read-bytes n addr arm))))
 
 (local
  (defun inc-dec-dec-induct (x y z)
@@ -282,10 +282,10 @@
                 (natp n1)
                 (natp n2)
                 (integerp addr))
-           (equal (nth n1 (read-bytes n2 addr x86))
-                  (read-byte (bvplus 32 addr n1) x86)))
+           (equal (nth n1 (read-bytes n2 addr arm))
+                  (read-byte (bvplus 32 addr n1) arm)))
   :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
-           :expand (read-bytes n2 addr x86)
+           :expand (read-bytes n2 addr arm)
            :in-theory (enable read-bytes
                               acl2::bvplus-of-+-arg3))))
 
@@ -357,7 +357,7 @@
                            (read 1 addr arm)
                            (read 1 0 arm)))))
 
-;; todo: take off 4 bytes at a a time
+;; todo: take off 4 bytes at a time
 (defthmd read-opener-to-4
   (implies (and (syntaxp (quotep n))
                 (< 4 n) ; prevents loops with read-byte-becomes-read ; todo: gen the 4

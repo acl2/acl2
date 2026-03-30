@@ -1,6 +1,6 @@
 ; A simple JSON parser
 ;
-; Copyright (C) 2019-2025 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,7 +26,7 @@
 ;; decode the entire input to create a sequence of Unicode code points, then
 ;; process those code points as JSON, re-encoding any strings/names encountered
 ;; as UTF-8.  However, it seems that UTF-8 encodings would then simply pass
-;; through our implementation unchanged, so we don't so that.
+;; through our implementation unchanged, so we don't do that.
 
 ;; This parser does not check that its input is valid UTF-8.  So characters,
 ;; and sequences of characters, that are not allowed in UTF-8 (such as any
@@ -81,7 +81,7 @@
   (declare (xargs :guard (character-listp chars)))
   (if (prefixp '(#\t #\r #\u #\e) chars) ; todo: consider a variant of prefixp that uses eql as the test
       (mv nil :true (nthcdr 4 chars))
-    (mv :bad-true-literal nil chars)))
+    (mv (cons :bad-true-literal chars) nil chars)))
 
 (defthm len-of-mv-nth-2-of-parse-json-true-literal
   (implies (not (mv-nth 0 (parse-json-true-literal chars)))
@@ -101,7 +101,7 @@
   (declare (xargs :guard (character-listp chars)))
   (if (prefixp '(#\f #\a #\l #\s #\e) chars)
       (mv nil :false (nthcdr 5 chars))
-    (mv :bad-false-literal nil chars)))
+    (mv (cons :bad-false-literal chars) nil chars)))
 
 (defthm len-of-mv-nth-2-of-parse-json-false-literal
   (implies (not (mv-nth 0 (parse-json-false-literal chars)))
@@ -306,7 +306,7 @@
         ;; Normal case:
         (mv nil (list first-char) rest-chars)))))
 
-(defthm mv-nth-2-of-parse-json-string-char-bound
+(defthm len-of-mv-nth-2-of-parse-json-string-char-bound
   (implies (and (not (mv-nth 0 (parse-json-string-char chars)))
                 (consp chars))
            (< (len (mv-nth 2 (parse-json-string-char chars)))
@@ -323,14 +323,6 @@
   (implies (and (character-listp chars)
                 (consp chars))
            (character-listp (mv-nth 1 (parse-json-string-char chars))))
-  :hints (("Goal" :in-theory (enable parse-json-string-char))))
-
-(defthm len-of-mv-nth-2-of-parse-json-string-char-bound
-  (implies (and (not (mv-nth 0 (parse-json-string-char chars)))
-                (consp chars))
-           (< (len (mv-nth 2 (parse-json-string-char chars)))
-              (len chars)))
-  :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable parse-json-string-char))))
 
 ;; Returns (mv erp parsed-chars remaining-chars).
@@ -740,19 +732,19 @@
          ((eql char #\]) (tokenize-json-chars-aux (rest chars) (cons :right-bracket acc)))
          ((eql char #\:) (tokenize-json-chars-aux (rest chars) (cons :colon acc)))
          ((eql char #\,) (tokenize-json-chars-aux (rest chars) (cons :comma acc)))
-         ((eql char #\t) ;; is the character is t, the token must be "true"
+         ((eql char #\t) ;; if the character is t, the token must be "true"
           (mv-let (erp tok chars)
             (parse-json-true-literal chars)
             (if erp
                 (mv erp nil)
               (tokenize-json-chars-aux chars (cons tok acc)))))
-         ((eql char #\f) ;; is the character is t, the token must be "false"
+         ((eql char #\f) ;; if the character is f, the token must be "false"
           (mv-let (erp tok chars)
             (parse-json-false-literal chars)
             (if erp
                 (mv erp nil)
               (tokenize-json-chars-aux chars (cons tok acc)))))
-         ((eql char #\n) ;; is the character is n, the token must be "null"
+         ((eql char #\n) ;; if the character is n, the token must be "null"
           (mv-let (erp tok chars)
             (parse-json-null-literal chars)
             (if erp
@@ -916,15 +908,15 @@
 (make-flag parse-json-object)
 
 (defthm-flag-parse-json-object
-  (defthm true-list-of-mv-nth-2-of-parse-json-object
+  (defthm true-listp-of-mv-nth-2-of-parse-json-object
     (implies (true-listp tokens)
              (true-listp (mv-nth 2 (parse-json-object tokens acc))))
     :flag parse-json-object)
-  (defthm true-list-of-mv-nth-2-of-parse-json-array
+  (defthm true-listp-of-mv-nth-2-of-parse-json-array
     (implies (true-listp tokens)
              (true-listp (mv-nth 2 (parse-json-array tokens acc))))
     :flag parse-json-array)
-  (defthm true-list-of-mv-nth-2-of-parse-json-value
+  (defthm true-listp-of-mv-nth-2-of-parse-json-value
     (implies (true-listp tokens)
              (true-listp (mv-nth 2 (parse-json-value tokens))))
     :flag parse-json-value)

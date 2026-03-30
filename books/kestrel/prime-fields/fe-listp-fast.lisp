@@ -21,7 +21,7 @@
                               (consp vars))))
   `(fe-listp ,(acl2::make-append-with-key-nest vars) ,prime))
 
-;; test: (gen-fe-listp-assumption '(x1 x2 x3 x4 x5 x6 x7 x8 x9 x10))
+;; test: (gen-fe-listp-assumption '(x1 x2 x3 x4 x5 x6 x7 x8 x9 x10) 7)
 
 ;move:
 ;test:
