@@ -260,7 +260,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-*-letter/decimaldigit/underscore ((trees abnf::tree-listp))
-  :returns (chars character-list-resultp :hints (("Goal" :induct t)))
+  :returns (chars character-list-resultp)
   :short "Abstract a @('*( letter / digit / \"_\" )')
           to a list of ACL2 characters."
   (b* (((when (endp trees)) nil)
@@ -273,8 +273,7 @@
   (defret letter/digit/uscore-char-listp-of-abs-*-letter/decimaldigit/underscore
     (implies (not (reserrp chars))
              (str::letter/digit/uscore-charlist-p chars))
-    :hints (("Goal"
-             :induct t))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,7 +304,7 @@
     (abs-identifier tree)))
 
 (define abs-*-comma-identifier ((trees abnf::tree-listp))
-  :returns (ids name-list-resultp :hints (("Goal" :induct t)))
+  :returns (ids name-list-resultp)
   :short "Abstract a @('*( \",\" identifier )') to a list of identifiers."
   (b* (((when (endp trees)) nil)
        ((okf id) (abs-comma-identifier (car trees)))
@@ -504,7 +503,7 @@
     (abs-expression tree)))
 
 (define abs-*-comma-expression ((trees abnf::tree-listp))
-  :returns (exprs expression-list-resultp :hints (("Goal" :induct t)))
+  :returns (exprs expression-list-resultp)
   :short "Abstract a @('*( \",\" expression )') to a list of expressions."
   (b* (((when (endp trees)) nil)
        ((okf expr) (abs-comma-expression (car trees)))
@@ -602,7 +601,7 @@
 ; Syntax around abs-constraint used for other rules
 
 (define abs-*-constraint ((trees abnf::tree-listp))
-  :returns (constraints constraint-list-resultp :hints (("Goal" :induct t)))
+  :returns (constraints constraint-list-resultp)
   :short "Abstract a @('*constraint') to a list of constraints."
   (b* (((when (endp trees)) nil)
        ((okf constraint) (abs-constraint (car trees)))
@@ -629,7 +628,7 @@
     (abs-constraint tree)))
 
 (define abs-*-comma-constraint ((trees abnf::tree-listp))
-  :returns (constraints constraint-list-resultp :hints (("Goal" :induct t)))
+  :returns (constraints constraint-list-resultp)
   :short "Abstract a @('*( \",\" constraint )') to a list of constraints."
   (b* (((when (endp trees)) nil)
        ((okf constraint) (abs-comma-constraint (car trees)))
@@ -703,7 +702,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-*-definition ((trees abnf::tree-listp))
-  :returns (definitions definition-list-resultp :hints (("Goal" :induct t)))
+  :returns (definitions definition-list-resultp)
   :short "Abstract a @('*definition') to a list of definitions."
   (b* (((when (endp trees)) nil)
        ((okf definition) (abs-definition (car trees)))
