@@ -3318,7 +3318,7 @@
                      (:rewrite alist-suitable-for-hypsp-of-append-and-cdr-when-axe-bind-free)
                      (:rewrite alist-suitable-for-hypsp-of-cdr-of-car-when-normal)
                      (:rewrite alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep)
-                     (:rewrite alist-suitable-for-hypsp-when-axe-sytaxp-car)
+                     (:rewrite alist-suitable-for-hypsp-when-axe-syntaxp-car)
                      (:rewrite alist-suitable-for-hypsp-of-append-and-cdr-when-axe-binding-hyp)
                      ;; (:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2)
                      (:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2-special)

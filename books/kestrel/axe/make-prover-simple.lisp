@@ -2561,7 +2561,7 @@
                                 ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-no-free-vars-name)
                                 ,@*make-prover-simple-rules*
                                 alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep
-                                alist-suitable-for-hypsp-when-axe-sytaxp-car
+                                alist-suitable-for-hypsp-when-axe-syntaxp-car
                                 alist-suitable-for-hypsp-of-append-and-cdr-when-axe-bind-free
                                 alist-suitable-for-hypsp-of-append-and-cdr-when-free-vars
                                 alist-suitable-for-hypsp-after-matching
@@ -3096,7 +3096,7 @@
                                  ,(pack$ try-to-apply-rules-name '-return-type-corollary)
                                  ,(pack$ try-to-apply-rules-name '-return-type-corollary-linear)
                                  alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep
-                                 alist-suitable-for-hypsp-when-axe-sytaxp-car
+                                 alist-suitable-for-hypsp-when-axe-syntaxp-car
                                  alist-suitable-for-hypsp-of-append-and-cdr-when-axe-bind-free
                                  alist-suitable-for-hypsp-of-append-and-cdr-when-free-vars
                                  alist-suitable-for-hypsp-after-matching

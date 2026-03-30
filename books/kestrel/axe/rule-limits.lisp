@@ -90,7 +90,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns t, ni, or :not-yet.
+;; Returns t, nil, or :not-yet.
 ;; This part is not inlined but is only called if there are limits.
 ;; TODO: Optimize (avoid the assoc-eq by just walking down the list)
 (defund limit-reached-aux (stored-rule limits print)

@@ -1,7 +1,7 @@
 ; Tests of the DAG machinery
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 ;; Note that currently this tests fairly sophisticated utils that depend on
-;; skip-proofs, whereas it may be better in general to use simpler dag utlis.
+;; skip-proofs, whereas it may be better in general to use simpler dag utils.
 
 (include-book "dagify0") ;for dagify-term!
 (include-book "evaluator") ; for dag-val-with-axe-evaluator, brings in skip-proofs
