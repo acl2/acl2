@@ -1,6 +1,6 @@
 ; Getting the conjuncts and disjuncts of untranslated terms
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,11 +18,14 @@
 
 (include-book "kestrel/terms-light/negate-terms" :dir :system)
 (include-book "kestrel/lists-light/union-equal-alt" :dir :system)
+(include-book "tools/flag" :dir :system)
 
 (mutual-recursion
  ;; Returns a list of conjuncts (uterms) whose conjunction is boolean-equivalent to UTERM.
  (defund conjuncts-of-uterm2 (uterm)
-   (declare (xargs :guard t))
+   (declare (xargs :guard t
+                   :verify-guards nil ; done below
+                   ))
    (if (not (consp uterm))
        (list uterm)
      (let ((fn (ffn-symb uterm)))
@@ -59,9 +62,7 @@
 
   ;; Returns a list of conjuncts (uterms) whose disjunction is boolean-equivalent to UTERM.
  (defund disjuncts-of-uterm2 (uterm)
-   (declare (xargs :guard t
-                   :verify-guards nil ; done below
-                   ))
+   (declare (xargs :guard t))
    (if (not (consp uterm))
        (list uterm)
      (let ((fn (ffn-symb uterm)))
@@ -99,3 +100,6 @@
        nil
      (union-equal-alt (disjuncts-of-uterm2 (first uterms))
                       (disjuncts-of-uterms2 (rest uterms))))))
+
+;; (make-flag conjuncts-of-uterm2)
+;; (verify-guards conjuncts-of-uterm2) ;; todo: not true?
