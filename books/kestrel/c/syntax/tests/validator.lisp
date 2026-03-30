@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; INPUT is an ACL2 string with the text to parse and validate.
-;; VERSION indicates the C version.
+;; DIALECT indicates the C dialect.
 ;; SHORT-BYTES is the number of bytes of shorts (default 2).
 ;; INT-BYTES is the number of bytes of ints (default 4).
 ;; LONG-BYTES is the number of bytes of longs (default 8).
@@ -27,7 +27,7 @@
 ;; Optional COND may be over variables AST.
 
 (defconst *test-valid-allowed-options*
-  '(:version
+  '(:dialect
     :short-bytes
     :int-bytes
     :long-bytes
@@ -36,7 +36,7 @@
     :cond))
 
 (defconst *test-valid-fail-allowed-options*
-  '(:version
+  '(:dialect
     :short-bytes
     :int-bytes
     :long-bytes
@@ -80,8 +80,8 @@
        (long-bytes (or (cdr (assoc-eq :long-bytes options)) 4))
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
-       (version (or (cdr (assoc-eq :version options))
-                    '(c::make-version :std (c::standard-c17))))
+       (dialect (or (cdr (assoc-eq :dialect options))
+                    '(c::make-dialect :std (c::standard-c17))))
        (cond (cdr (assoc-eq :cond options)))
        (bool-bytes 1)
        (float-bytes 4)
@@ -90,7 +90,7 @@
        (pointer-bytes 8)
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* ((ienv (make-ienv :version ,version
+       (b* ((ienv (make-ienv :dialect ,dialect
                              :bool-bytes ,bool-bytes
                              :short-bytes ,short-bytes
                              :int-bytes ,int-bytes
@@ -101,8 +101,8 @@
                              :ldouble-bytes ,ldouble-bytes
                              :pointer-bytes ,pointer-bytes
                              :plain-char-signedp ,plain-char-signedp))
-            ((mv erp1 ast) (parse-fileset ',fileset ,version t nil))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,version nil))
+            ((mv erp1 ast) (parse-fileset ',fileset ,dialect t nil))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,dialect nil))
             ((mv erp3 ?ast) (valid-transunit-ensemble ast ienv nil)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
@@ -123,8 +123,8 @@
        (long-bytes (or (cdr (assoc-eq :long-bytes options)) 4))
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
-       (version (or (cdr (assoc-eq :version options))
-                    '(c::make-version :std (c::standard-c17))))
+       (dialect (or (cdr (assoc-eq :dialect options))
+                    '(c::make-dialect :std (c::standard-c17))))
        (bool-bytes 1)
        (float-bytes 4)
        (double-bytes 8)
@@ -132,7 +132,7 @@
        (pointer-bytes 8)
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* ((ienv (make-ienv :version ,version
+       (b* ((ienv (make-ienv :dialect ,dialect
                              :bool-bytes ,bool-bytes
                              :short-bytes ,short-bytes
                              :int-bytes ,int-bytes
@@ -143,8 +143,8 @@
                              :ldouble-bytes ,ldouble-bytes
                              :pointer-bytes ,pointer-bytes
                              :plain-char-signedp ,plain-char-signedp))
-            ((mv erp1 ast) (parse-fileset ',fileset ,version t nil))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,version nil))
+            ((mv erp1 ast) (parse-fileset ',fileset ,dialect t nil))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,dialect nil))
             ((mv erp3 ?ast) (valid-transunit-ensemble ast ienv nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
                (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
@@ -218,7 +218,7 @@ void f() {
   if (0 < &a) {}
 }
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "int * x;
@@ -606,7 +606,7 @@ __bswap_16 (__uint16_t __bsx)
   return 0;
 }
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "typedef unsigned char uint8_t;
@@ -616,41 +616,41 @@ static uint8_t g_2[2][1][1] = {{{0UL}},{{0UL}}};
 (test-valid
  "__int128 x;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "unsigned __int128 x;
 __int128 unsigned y;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "__int128 x;
 signed __int128 y;
 __int128 signed z;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "__int128 x;
 __signed __int128 y;
 __int128 __signed z;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "__int128 x;
 __signed__ __int128 y;
 __int128 __signed__ z;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "__int128_t x;
 __int128 y;
 unsigned __int128_t z;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "void main(void) {
@@ -658,21 +658,21 @@ unsigned __int128_t z;
   int y = ({ int a = 1; a; });
 }
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "int foo (void);
 int bar (void);
 typeof(bar) foo;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "int foo (void);
 typeof(foo) bar;
 int bar (void);
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "_Thread_local int x;
@@ -681,7 +681,7 @@ int bar (void);
 (test-valid
  "_Thread_local int x;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid-fail
  "__thread int x;
@@ -690,7 +690,7 @@ int bar (void);
 (test-valid
  "__thread int x;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid-fail
   "int foo(void) {
@@ -1184,12 +1184,12 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
 (test-valid
  "_Complex _Float128 x;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "_Float128 x;
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "void (*f(float x, double y))(int z) {
@@ -1282,7 +1282,7 @@ void bar() {
   foo(y);
 }
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid-fail
  "typedef union __attribute__((transparent_union))
@@ -1300,7 +1300,7 @@ void bar() {
 (test-valid
  "register int *foo asm (\"r12\");
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
   "typedef float _Float32;
@@ -1309,17 +1309,17 @@ void bar() {
 (test-valid-fail
   "typedef float _Float32;
 "
-  :version (c::make-version :std (c::standard-c17) :gcc t))
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
   "typedef float _Float32;
 "
-  :version (c::make-version :std (c::standard-c17) :clang t))
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
 
 (test-valid-fail
   "typedef float _Float16;
 "
-  :version (c::make-version :std (c::standard-c17) :clang t))
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
 
 (test-valid
   "int f(void) {
@@ -1333,7 +1333,7 @@ foo:
    return 0;
 }
 "
-  :version (c::make-version :std (c::standard-c17) :gcc t))
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
   "struct s {
@@ -1472,7 +1472,7 @@ void g(void) {
    f(x);
 }
 "
-  :version (c::make-version :std (c::standard-c23)))
+  :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-valid
   "struct s;

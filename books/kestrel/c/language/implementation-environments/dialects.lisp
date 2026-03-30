@@ -20,15 +20,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ versions
+(defxdoc+ dialects
   :parents (implementation-environments)
-  :short "Versions of C."
+  :short "Dialects of C."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We introduce a data structure to indicate the specific version of C.
+    "We introduce a data structure to indicate the specific dialect of C.
      This includes the standards (e.g. C17 [C17] and C23 [C23]),
-     but also GCC extensions, and possibly other variants.
+     but also GCC, Clang, CHERI, and possibly other extensions.
      We start with only some choices,
      but we will add more choices in the future as needed."))
   :order-subtopics t
@@ -53,12 +53,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod version
-  :short "Fixtype of C versions."
+(fty::defprod dialect
+  :short "Fixtype of C dialects."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We model versions as a product of the @(see standard)
+    "We model dialects as a product of the @(see standard)
      and several optional extensions.
      The current extensions are:")
    (xdoc::ul
@@ -70,11 +70,11 @@
      "CHERI extensions [CHERI]."))
    (xdoc::p
     "Not all combinations of extensions are valid.
-     We therefore constrain @('version') to disallow such combinations.
+     We therefore constrain @('dialect') to disallow such combinations.
      Currently, the only constraint is that
      GCC and Clang extensions cannot both be enabled.")
    (xdoc::p
-    "Among those versions which are considered valid,
+    "Among those dialects which are considered valid,
      some may be unsupported or only partially supported by our tools.
      For instance, it is valid (i.e. non-contradictory)
      to apply the CHERI extensions to a base standard
@@ -95,26 +95,26 @@
    (cheri booleanp
           :default nil))
   :require (or (not gcc) (not clang))
-  :pred versionp)
+  :pred dialectp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-version
-  :short "An irrelevant C version"
-  :type versionp
-  :body (make-version :std (standard-c17)))
+(defirrelevant irr-dialect
+  :short "An irrelevant C dialect"
+  :type dialectp
+  :body (make-dialect :std (standard-c17)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define version-gcc/clangp ((version versionp))
+(define dialect-gcc/clangp ((dialect dialectp))
   :returns (yes/no booleanp)
-  :short "Check if this C version includes either GCC or Clang extensions."
+  :short "Check if this C dialect includes either GCC or Clang extensions."
   :long
   (xdoc::topstring
    (xdoc::p
     "There is very large overlap between the of extensions
      supported by GCC and by Clang.
      Therefore, it is most often sufficient to check
-     if the version includes either."))
-  (or (version->gcc version)
-      (version->clang version)))
+     if the dialect includes either."))
+  (or (dialect->gcc dialect)
+      (dialect->clang dialect)))

@@ -1,0 +1,193 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for the source character set
+; that are common to all the C dialect.
+; Together with the rules in characters-c17.abnf or characters-c23.abnf,
+; they define the source character set of the C17 or C23 dialect.
+; None of these rules have counterparts in the grammars in [C17] and [C23],
+; except for the rule 'digit' [C17:6.4.2.1/1] [C23:6.4.3.1].
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The basic characters [C17:5.2.1/3] [C23:5.3.1].
+
+uppercase-letter = %x41-5a ; A-Z
+
+lowercase-letter = %x61-7a ; a-z
+
+letter = uppercase-letter / lowercase-letter
+
+digit = %x30-39 ; 0-9
+
+double-quote = %x22 ; "
+
+space = %x20 ; SP
+
+horizontal-tab = %x09 ; HT
+
+vertical-tab = %x0B ; VT
+
+form-feed = %x0C ; FF
+
+control-character = horizontal-tab
+                  / vertical-tab
+                  / form-feed
+
+basic-character = letter
+                / digit
+                / graphic-character
+                / space
+                / control-character
+
+; The graphic characters depend on the C standard:
+; see characters-c17.abnf and characters-c23.abnf.
+; The only difference is the absence vs. presence of $ and @ and `:
+; these three characters were added in [C23].
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; As part of the extended characters [C17:5.2.1/1] [C23:5.3.1],
+; we support almost all non-ASCII Unicode characters,
+; except for the bidirectional formatting characters,
+; which may lead to the Trojan Source vulnerability.
+; These are the format characters in the ranges %x202A-202E and %x2066-2069.
+; We also exclude high and low surrogates, which are in the range %xD800-DFFF:
+; these never result from UTF-8 decoding,
+; but are only used in UFT-16 encoding;
+; they are Unicode code points, but not Unicode scalar values.
+; So the following are the "safe" non-ASCII characters that we support.
+
+safe-nonascii = %x80-2029
+              ; omit format characters %x202A-202E
+              / %x202F-2065
+              ; omit format characters %x2066-2069
+              / %x206A-D7FF
+              ; omit high and low surrogates
+              / %xE000-10FFFF
+
+; As part of the extended characters,
+; we also support line feed and carriage return,
+; to express new-line characters [C17:5.1.1.2] [C23:5.2.1.2].
+
+line-feed = %x0a ; LF
+
+carriage-return = %x0d ; CR
+
+; Our definition of extended characters depends on the C standard:
+; see characters-c17.abnf and characters-c23.abnf.
+; The only difference is the presence vs. absence of $ and @ and `:
+; for C17, we consider them extended characters
+; to compensate for their absence in the basic character set,
+; but in C23 that is unnecessary;
+; whether basic or extended characters,
+; those three characters are part of the source character set
+; in both C17 and C23.
+
+; ASCII control characters like backspace (%x08) are potentially dangerous
+; because they may make code appear different from what it is,
+; depending on where it is displayed (editor, shell, etc.).
+; These dangers are similar to Trojan Source,
+; which is based on Unicode bidirectional format characters,
+; described above.
+; [C17] and [C23] are silent on the matter.
+; For now we exclude all those characters in our extended characters.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following is our (source) character set.
+; This rule name is not used in the rest of our ABNF grammar,
+; but it serves to clarify the character set.
+
+character = basic-character
+          / extended-character
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [C17] and [C23] do not prescribe how lines should be terminated,
+; but assume a new-line character
+; [C17:5.1.1.2/1] [C17:5.2.1] [C23:5.2.1.2] [C23:5.3.1].
+; Given that we commit to ASCII/Unicode,
+; it seems reasonable to define a new-line character as
+; line feed, or carriage return, or carriage return and line feed;
+; this is consistent with GCC [CPPM:1.2].
+; Note that this is not necessarily a single character,
+; but it follows the nomenclature of 'new-line character' in [C17] and [C23].
+
+new-line = line-feed
+         / carriage-return
+         / carriage-return line-feed
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Rules that exclude certain characters, used by other rules in the grammar.
+
+basic-character-not-star = letter
+                         / digit
+                         / graphic-character-not-star
+                         / space
+                         / control-character
+
+basic-character-not-greater-than = letter
+                                 / digit
+                                 / graphic-character-not-greater-than
+                                 / space
+                                 / control-character
+
+basic-character-not-double-quote = letter
+                                 / digit
+                                 / graphic-character-not-double-quote
+                                 / space
+                                 / control-character
+
+basic-character-not-star-or-slash = letter
+                                  / digit
+                                  / graphic-character-not-star-or-slash
+                                  / space
+                                  / control-character
+
+basic-character-not-single-quote-or-backslash =
+      letter
+    / digit
+    / graphic-character-not-single-quote-or-backslash
+    / space
+    / control-character
+
+basic-character-not-double-quote-or-backslash =
+      letter
+    / digit
+    / graphic-character-not-double-quote-or-backslash
+    / space
+    / control-character
+
+character-not-new-line = basic-character
+                       / extended-character-not-new-line
+
+character-not-star = basic-character-not-star
+                   / extended-character
+
+character-not-star-or-slash = basic-character-not-star-or-slash
+                            / extended-character
+
+character-not-greater-than-or-new-line = basic-character-not-greater-than
+                                       / extended-character-not-new-line
+
+character-not-double-quote-or-new-line = basic-character-not-double-quote
+                                       / extended-character-not-new-line
+
+character-not-single-quote-or-backslash-or-new-line =
+      basic-character-not-single-quote-or-backslash
+    / extended-character-not-new-line
+
+character-not-double-quote-or-backslash-or-new-line =
+      basic-character-not-double-quote-or-backslash
+    / extended-character-not-new-line

@@ -171,7 +171,7 @@
      They are set when the printing state is initially created,
      and they never change.")
    (xdoc::p
-    "We include a field specifying the C version.
+    "We include a field specifying the C dialect.
      This printer state component is set at the beginning and never changes.")
    (xdoc::p
     "In the future, we may make printer states richer,
@@ -185,67 +185,67 @@
   ((bytes-rev byte-list)
    (indent-level nat)
    (options priopt)
-   (version c::version))
+   (dialect c::dialect))
   :pred pristatep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-pristate ((options prioptp) (version c::versionp))
+(define init-pristate ((options prioptp) (dialect c::dialectp))
   :returns (pstate pristatep)
   :short "Initial printer state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pass the printing options and the C version,
+    "We pass the printing options and the C dialect,
      which must be provided externally.")
    (xdoc::p
     "Initially, no data has been printed, and the indentation level is 0."))
   (make-pristate :bytes-rev nil
                  :indent-level 0
                  :options options
-                 :version version)
+                 :dialect dialect)
   :hooks (:fix)
 
   ///
 
-  (defret pristate->version-of-init-pristate
-    (equal (pristate->version pstate)
-           (c::version-fix version))))
+  (defret pristate->dialect-of-init-pristate
+    (equal (pristate->dialect pstate)
+           (c::dialect-fix dialect))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Macros to concisely express theorems saying that
 ; the printing functions do not modify
-; the version component of the printer state.
+; the dialect component of the printer state.
 
 (local ; for non-recursive FN
- (defmacro defret-same-version (fn)
-   `(defret ,(packn-pos (list 'pristate->version-of- fn) fn)
-      (equal (pristate->version new-pstate)
-             (pristate->version pstate)))))
+ (defmacro defret-same-dialect (fn)
+   `(defret ,(packn-pos (list 'pristate->dialect-of- fn) fn)
+      (equal (pristate->dialect new-pstate)
+             (pristate->dialect pstate)))))
 
 (local ; for singly recursive FN
- (defmacro defret-rec-same-version (fn)
-   `(defret ,(packn-pos (list 'pristate->version-of- fn) fn)
-      (equal (pristate->version new-pstate)
-             (pristate->version pstate))
+ (defmacro defret-rec-same-dialect (fn)
+   `(defret ,(packn-pos (list 'pristate->dialect-of- fn) fn)
+      (equal (pristate->dialect new-pstate)
+             (pristate->dialect pstate))
       :hints (("Goal" :induct t)))))
 
 (local ; used by the macro below
- (defun defret-mut-same-version-fn (fns)
+ (defun defret-mut-same-dialect-fn (fns)
    (b* (((when (endp fns)) nil)
         (fn (car fns))
-        (event `(defret ,(packn-pos (list 'pristate->version-of- fn) fn)
-                  (equal (pristate->version new-pstate)
-                         (pristate->version pstate))
+        (event `(defret ,(packn-pos (list 'pristate->dialect-of- fn) fn)
+                  (equal (pristate->dialect new-pstate)
+                         (pristate->dialect pstate))
                   :fn ,fn))
-        (events (defret-mut-same-version-fn (cdr fns))))
+        (events (defret-mut-same-dialect-fn (cdr fns))))
      (cons event events))))
 
 (local  ; for mutually recursive FNS
- (defmacro defret-mut-same-version (name fns &key hints)
+ (defmacro defret-mut-same-dialect (name fns &key hints)
    `(defret-mutual ,name
-      ,@(defret-mut-same-version-fn fns)
+      ,@(defret-mut-same-dialect-fn fns)
       ,@(and hints (list :hints hints)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -258,7 +258,7 @@
 
   ///
 
-  (defret-same-version inc-pristate-ident))
+  (defret-same-dialect inc-pristate-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,7 +283,7 @@
 
   ///
 
-  (defret-same-version dec-pristate-ident))
+  (defret-same-dialect dec-pristate-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -340,7 +340,7 @@
   (fty::deffixequiv print-char
     :args ((pstate pristatep)))
 
-  (defret-same-version print-char))
+  (defret-same-dialect print-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -362,7 +362,7 @@
   (fty::deffixequiv print-chars
     :args ((pstate pristatep)))
 
-  (defret-rec-same-version print-chars))
+  (defret-rec-same-dialect print-chars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -384,7 +384,7 @@
 
   ///
 
-  (defret-same-version print-new-line))
+  (defret-same-dialect print-new-line))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -410,7 +410,7 @@
 
   ///
 
-  (defret-same-version print-indent))
+  (defret-same-dialect print-indent))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -438,7 +438,7 @@
   (fty::deffixequiv print-astring
     :args ((pstate pristatep)))
 
-  (defret-same-version print-atring))
+  (defret-same-dialect print-atring))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -465,7 +465,7 @@
   (fty::deffixequiv print-dec-digit-achar
     :args ((pstate pristatep)))
 
-  (defret-same-version print-dec-digit-achar))
+  (defret-same-dialect print-dec-digit-achar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -482,7 +482,7 @@
   (fty::deffixequiv print-dec-digit-achars
     :args ((pstate pristatep)))
 
-  (defret-rec-same-version print-dec-digit-achars))
+  (defret-rec-same-dialect print-dec-digit-achars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -509,7 +509,7 @@
   (fty::deffixequiv print-oct-digit-achar
     :args ((pstate pristatep)))
 
-  (defret-same-version print-oct-digit-achar))
+  (defret-same-dialect print-oct-digit-achar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -526,7 +526,7 @@
   (fty::deffixequiv print-oct-digit-achars
     :args ((pstate pristatep)))
 
-  (defret-rec-same-version print-oct-digit-achars))
+  (defret-rec-same-dialect print-oct-digit-achars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -553,7 +553,7 @@
   (fty::deffixequiv print-hex-digit-achar
     :args ((pstate pristatep)))
 
-  (defret-same-version print-hex-digit-achar))
+  (defret-same-dialect print-hex-digit-achar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -570,12 +570,12 @@
   (fty::deffixequiv print-hex-digit-achars
     :args ((pstate pristatep)))
 
-  (defret-rec-same-version print-hex-digit-achars))
+  (defret-rec-same-dialect print-hex-digit-achars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-ident ((ident identp) (pstate pristatep))
-  :guard (ident-aidentp ident (pristate->version pstate))
+  :guard (ident-aidentp ident (pristate->dialect pstate))
   :returns (new-pstate pristatep)
   :short "Print an identifier."
   :long
@@ -599,13 +599,13 @@
 
   ///
 
-  (defret-same-version print-ident))
+  (defret-same-dialect print-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-ident-list ((idents ident-listp) (pstate pristatep))
   :guard (and (consp idents)
-              (ident-list-aidentp idents (pristate->version pstate)))
+              (ident-list-aidentp idents (pristate->dialect pstate)))
   :returns (new-pstate pristatep)
   :short "Print a list of one or more identifiers, separated by commas."
   :long
@@ -624,7 +624,7 @@
 
   ///
 
-  (defret-rec-same-version print-ident-list))
+  (defret-rec-same-dialect print-ident-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -641,7 +641,7 @@
 
   ///
 
-  (defret-same-version print-lsuffix))
+  (defret-same-dialect print-lsuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -656,7 +656,7 @@
 
   ///
 
-  (defret-same-version print-usuffix))
+  (defret-same-dialect print-usuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -677,7 +677,7 @@
 
   ///
 
-  (defret-same-version print-isuffix))
+  (defret-same-dialect print-isuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -696,7 +696,7 @@
 
   ///
 
-  (defret-same-version print-isuffix-option))
+  (defret-same-dialect print-isuffix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -711,7 +711,7 @@
 
   ///
 
-  (defret-same-version print-hprefix))
+  (defret-same-dialect print-hprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -761,7 +761,7 @@
 
   ///
 
-  (defret-same-version print-dec/oct/hex-const))
+  (defret-same-dialect print-dec/oct/hex-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -776,7 +776,7 @@
 
   ///
 
-  (defret-same-version print-iconst))
+  (defret-same-dialect print-iconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -817,7 +817,7 @@
 
   ///
 
-  (defret-same-version print-fsuffix))
+  (defret-same-dialect print-fsuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -836,7 +836,7 @@
 
   ///
 
-  (defret-same-version print-fsuffix-option))
+  (defret-same-dialect print-fsuffix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -851,7 +851,7 @@
 
   ///
 
-  (defret-same-version print-sign))
+  (defret-same-dialect print-sign))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -870,7 +870,7 @@
 
   ///
 
-  (defret-same-version print-sign-option))
+  (defret-same-dialect print-sign-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -885,7 +885,7 @@
 
   ///
 
-  (defret-same-version print-dexprefix))
+  (defret-same-dialect print-dexprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -900,7 +900,7 @@
 
   ///
 
-  (defret-same-version print-bexprefix))
+  (defret-same-dialect print-bexprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -924,7 +924,7 @@
 
   ///
 
-  (defret-same-version print-dexpo))
+  (defret-same-dialect print-dexpo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -943,7 +943,7 @@
 
   ///
 
-  (defret-same-version print-dexpo-option))
+  (defret-same-dialect print-dexpo-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -967,7 +967,7 @@
 
   ///
 
-  (defret-same-version print-bexpo))
+  (defret-same-dialect print-bexpo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -993,7 +993,7 @@
 
   ///
 
-  (defret-same-version print-dec-frac-const))
+  (defret-same-dialect print-dec-frac-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1019,7 +1019,7 @@
 
   ///
 
-  (defret-same-version print-hex-frac-const))
+  (defret-same-dialect print-hex-frac-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1049,7 +1049,7 @@
 
   ///
 
-  (defret-same-version print-dec-core-fconst))
+  (defret-same-dialect print-dec-core-fconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1079,7 +1079,7 @@
 
   ///
 
-  (defret-same-version print-hex-core-fconst))
+  (defret-same-dialect print-hex-core-fconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1099,7 +1099,7 @@
 
   ///
 
-  (defret-same-version print-fconst))
+  (defret-same-dialect print-fconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1124,7 +1124,7 @@
 
   ///
 
-  (defret-same-version print-simple-escape))
+  (defret-same-dialect print-simple-escape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1148,7 +1148,7 @@
 
   ///
 
-  (defret-same-version print-oct-escape))
+  (defret-same-dialect print-oct-escape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1165,7 +1165,7 @@
 
   ///
 
-  (defret-same-version print-hex-quad))
+  (defret-same-dialect print-hex-quad))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1185,7 +1185,7 @@
 
   ///
 
-  (defret-same-version print-univ-char-name))
+  (defret-same-dialect print-univ-char-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1213,7 +1213,7 @@
 
   ///
 
-  (defret-same-version print-escape))
+  (defret-same-dialect print-escape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1253,7 +1253,7 @@
 
   ///
 
-  (defret-same-version print-c-char))
+  (defret-same-dialect print-c-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1268,7 +1268,7 @@
 
   ///
 
-  (defret-rec-same-version print-c-char-list))
+  (defret-rec-same-dialect print-c-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1284,7 +1284,7 @@
 
   ///
 
-  (defret-same-version print-cprefix))
+  (defret-same-dialect print-cprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1303,7 +1303,7 @@
 
   ///
 
-  (defret-same-version print-cprefix-option))
+  (defret-same-dialect print-cprefix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1328,12 +1328,12 @@
 
   ///
 
-  (defret-same-version print-cconst))
+  (defret-same-dialect print-cconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-const ((const constp) (pstate pristatep))
-  :guard (const-aidentp const (pristate->version pstate))
+  :guard (const-aidentp const (pristate->dialect pstate))
   :returns (new-pstate pristatep)
   :short "Print a constant."
   (const-case
@@ -1346,7 +1346,7 @@
 
   ///
 
-  (defret-same-version print-const))
+  (defret-same-dialect print-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1386,7 +1386,7 @@
 
   ///
 
-  (defret-same-version print-s-char))
+  (defret-same-dialect print-s-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1401,7 +1401,7 @@
 
   ///
 
-  (defret-rec-same-version print-s-char-list))
+  (defret-rec-same-dialect print-s-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1418,7 +1418,7 @@
 
   ///
 
-  (defret-same-version print-eprefix))
+  (defret-same-dialect print-eprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1437,7 +1437,7 @@
 
   ///
 
-  (defret-same-version print-eprefix-option))
+  (defret-same-dialect print-eprefix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1454,7 +1454,7 @@
 
   ///
 
-  (defret-same-version print-stringlit))
+  (defret-same-dialect print-stringlit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1471,7 +1471,7 @@
 
   ///
 
-  (defret-rec-same-version print-stringlit-list))
+  (defret-rec-same-dialect print-stringlit-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1508,7 +1508,7 @@
 
   ///
 
-  (defret-same-version print-h-char))
+  (defret-same-dialect print-h-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1523,7 +1523,7 @@
 
   ///
 
-  (defret-rec-same-version print-h-char-list))
+  (defret-rec-same-dialect print-h-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1560,7 +1560,7 @@
 
   ///
 
-  (defret-same-version print-q-char))
+  (defret-same-dialect print-q-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1575,7 +1575,7 @@
 
   ///
 
-  (defret-rec-same-version print-q-char-list))
+  (defret-rec-same-dialect print-q-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1596,7 +1596,7 @@
 
   ///
 
-  (defret-same-version print-header-name))
+  (defret-same-dialect print-header-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1627,7 +1627,7 @@
 
   ///
 
-  (defret-same-version print-unop))
+  (defret-same-dialect print-unop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1669,7 +1669,7 @@
 
   ///
 
-  (defret-same-version print-binop))
+  (defret-same-dialect print-binop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1684,7 +1684,7 @@
 
   ///
 
-  (defret-same-version print-inc/dec-op))
+  (defret-same-dialect print-inc/dec-op))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1704,7 +1704,7 @@
 
   ///
 
-  (defret-rec-same-version print-inc/dec-op-list))
+  (defret-rec-same-dialect print-inc/dec-op-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1725,7 +1725,7 @@
 
   ///
 
-  (defret-same-version print-stor-spec))
+  (defret-same-dialect print-stor-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1756,7 +1756,7 @@
 
   ///
 
-  (defret-same-version print-type-qual))
+  (defret-same-dialect print-type-qual))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1775,7 +1775,7 @@
 
   ///
 
-  (defret-same-version print-fun-spec))
+  (defret-same-dialect print-fun-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1803,7 +1803,7 @@
 
   ///
 
-  (defret-same-version print-asm-name-spec))
+  (defret-same-dialect print-asm-name-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1827,7 +1827,7 @@
 
   ///
 
-  (defret-same-version print-asm-qual))
+  (defret-same-dialect print-asm-qual))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1844,7 +1844,7 @@
 
   ///
 
-  (defret-rec-same-version print-asm-qual-list))
+  (defret-rec-same-dialect print-asm-qual-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1861,7 +1861,7 @@
 
   ///
 
-  (defret-same-version print-asm-clobber))
+  (defret-same-dialect print-asm-clobber))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1878,12 +1878,12 @@
 
   ///
 
-  (defret-rec-same-version print-asm-clobber-list))
+  (defret-rec-same-dialect print-asm-clobber-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-attrib-name ((attrname attrib-namep) (pstate pristatep))
-  :guard (attrib-name-aidentp attrname (pristate->version pstate))
+  :guard (attrib-name-aidentp attrname (pristate->dialect pstate))
   :returns (new-pstate pristatep)
   :short "Print an attribute name."
   (attrib-name-case
@@ -1902,13 +1902,13 @@
 
   ///
 
-  (defret-same-version print-attrib-name))
+  (defret-same-dialect print-attrib-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-label-declaration ((labels ident-listp) (pstate pristatep))
   :guard (and (consp labels)
-              (ident-list-aidentp labels (pristate->version pstate)))
+              (ident-list-aidentp labels (pristate->dialect pstate)))
   :returns (new-pstate pristatep)
   :short "Print a label declaration consisting of one or more labels."
   (b* ((pstate (print-indent pstate))
@@ -1921,13 +1921,13 @@
 
   ///
 
-  (defret-same-version print-label-declaration))
+  (defret-same-dialect print-label-declaration))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-label-declaration-list ((labelss ident-list-listp)
                                       (pstate pristatep))
-  :guard (ident-list-list-aidentp labelss (pristate->version pstate))
+  :guard (ident-list-list-aidentp labelss (pristate->dialect pstate))
   :returns (new-pstate pristatep)
   :short "Print zero or more label declarations."
   (b* (((when (endp labelss)) (pristate-fix pstate))
@@ -1942,7 +1942,7 @@
 
   ///
 
-  (defret-rec-same-version print-label-declaration-list))
+  (defret-rec-same-dialect print-label-declaration-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1955,7 +1955,7 @@
                       (expected-prio expr-priorityp)
                       (pstate pristatep))
     :guard (and (expr-unambp expr)
-                (expr-aidentp expr (pristate->version pstate)))
+                (expr-aidentp expr (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an expression."
@@ -2365,7 +2365,7 @@
   (define print-expr-list ((exprs expr-listp) (pstate pristatep))
     :guard (and (consp exprs)
                 (expr-list-unambp exprs)
-                (expr-list-aidentp exprs (pristate->version pstate)))
+                (expr-list-aidentp exprs (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more expressions, separated by commas."
@@ -2395,7 +2395,7 @@
 
   (define print-const-expr ((cexpr const-exprp) (pstate pristatep))
     :guard (and (const-expr-unambp cexpr)
-                (const-expr-aidentp cexpr (pristate->version pstate)))
+                (const-expr-aidentp cexpr (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a constant expression."
@@ -2412,7 +2412,7 @@
 
   (define print-genassoc ((genassoc genassocp) (pstate pristatep))
     :guard (and (genassoc-unambp genassoc)
-                (genassoc-aidentp genassoc (pristate->version pstate)))
+                (genassoc-aidentp genassoc (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a generic association."
@@ -2434,7 +2434,7 @@
   (define print-genassoc-list ((genassocs genassoc-listp) (pstate pristatep))
     :guard (and (consp genassocs)
                 (genassoc-list-unambp genassocs)
-                (genassoc-list-aidentp genassocs (pristate->version pstate)))
+                (genassoc-list-aidentp genassocs (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more generic associations,
@@ -2455,7 +2455,7 @@
 
   (define print-member-designor ((memdes member-designorp) (pstate pristatep))
     :guard (and (member-designor-unambp memdes)
-                (member-designor-aidentp memdes (pristate->version pstate)))
+                (member-designor-aidentp memdes (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a member designator."
@@ -2478,7 +2478,7 @@
                            (inlinep booleanp)
                            (pstate pristatep))
     :guard (and (type-spec-unambp tyspec)
-                (type-spec-aidentp tyspec (pristate->version pstate)))
+                (type-spec-aidentp tyspec (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type specifier."
@@ -2574,7 +2574,7 @@
 
   (define print-spec/qual ((specqual spec/qual-p) (pstate pristatep))
     :guard (and (spec/qual-unambp specqual)
-                (spec/qual-aidentp specqual (pristate->version pstate)))
+                (spec/qual-aidentp specqual (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a specifier or qualifier."
@@ -2591,7 +2591,7 @@
   (define print-spec/qual-list ((specquals spec/qual-listp) (pstate pristatep))
     :guard (and (consp specquals)
                 (spec/qual-list-unambp specquals)
-                (spec/qual-list-aidentp specquals (pristate->version pstate)))
+                (spec/qual-list-aidentp specquals (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more specifiers and qualifiers,
@@ -2607,7 +2607,7 @@
 
   (define print-align-spec ((alignspec align-specp) (pstate pristatep))
     :guard (and (align-spec-unambp alignspec)
-                (align-spec-aidentp alignspec (pristate->version pstate)))
+                (align-spec-aidentp alignspec (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an alignment specifier."
@@ -2628,7 +2628,7 @@
                            (inlinep booleanp)
                            (pstate pristatep))
     :guard (and (decl-spec-unambp declspec)
-                (decl-spec-aidentp declspec (pristate->version pstate)))
+                (decl-spec-aidentp declspec (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration specifier."
@@ -2662,7 +2662,7 @@
     :guard (and (consp declspecs)
                 (decl-spec-list-unambp declspecs)
                 (decl-spec-list-aidentp declspecs
-                                        (pristate->version pstate)))
+                                        (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declaration specifiers,
@@ -2686,7 +2686,7 @@
   (define print-typequal/attribspec ((tyqualattrib typequal/attribspec-p)
                                      (pstate pristatep))
     :guard (typequal/attribspec-aidentp tyqualattrib
-                                        (pristate->version pstate))
+                                        (pristate->dialect pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type qualifier or attribute specifier."
@@ -2703,7 +2703,7 @@
      (pstate pristatep))
     :guard (and (consp tyqualattribs)
                 (typequal/attribspec-list-aidentp
-                  tyqualattribs (pristate->version pstate)))
+                  tyqualattribs (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more
@@ -2723,7 +2723,7 @@
      (pstate pristatep))
     :guard (and (consp tyqualattribss)
                 (typequal/attribspec-list-list-aidentp
-                  tyqualattribss (pristate->version pstate)))
+                  tyqualattribss (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list or one or more lists of
@@ -2774,7 +2774,7 @@
 
   (define print-initer ((initer initerp) (pstate pristatep))
     :guard (and (initer-unambp initer)
-                (initer-aidentp initer (pristate->version pstate)))
+                (initer-aidentp initer (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer."
@@ -2805,7 +2805,7 @@
 
   (define print-desiniter ((desiniter desiniterp) (pstate pristatep))
     :guard (and (desiniter-unambp desiniter)
-                (desiniter-aidentp desiniter (pristate->version pstate)))
+                (desiniter-aidentp desiniter (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer with optional designations."
@@ -2827,7 +2827,7 @@
     :guard (and (consp desiniters)
                 (desiniter-list-unambp desiniters)
                 (desiniter-list-aidentp desiniters
-                                        (pristate->version pstate)))
+                                        (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more initializers with optional designations,
@@ -2843,7 +2843,7 @@
 
   (define print-designor ((designor designorp) (pstate pristatep))
     :guard (and (designor-unambp designor)
-                (designor-aidentp designor (pristate->version pstate)))
+                (designor-aidentp designor (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a designator."
@@ -2872,7 +2872,7 @@
                                (pstate pristatep))
     :guard (and (consp designors)
                 (designor-list-unambp designors)
-                (designor-list-aidentp designors (pristate->version pstate)))
+                (designor-list-aidentp designors (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more designators."
@@ -2890,7 +2890,7 @@
 
   (define print-declor ((declor declorp) (pstate pristatep))
     :guard (and (declor-unambp declor)
-                (declor-aidentp declor (pristate->version pstate)))
+                (declor-aidentp declor (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declarator."
@@ -2907,7 +2907,7 @@
 
   (define print-dirdeclor ((dirdeclor dirdeclorp) (pstate pristatep))
     :guard (and (dirdeclor-unambp dirdeclor)
-                (dirdeclor-aidentp dirdeclor (pristate->version pstate)))
+                (dirdeclor-aidentp dirdeclor (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a direct declarator."
@@ -3014,7 +3014,7 @@
 
   (define print-absdeclor ((absdeclor absdeclorp) (pstate pristatep))
     :guard (and (absdeclor-unambp absdeclor)
-                (absdeclor-aidentp absdeclor (pristate->version pstate)))
+                (absdeclor-aidentp absdeclor (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an abstract declarator."
@@ -3047,7 +3047,7 @@
   (define print-dirabsdeclor ((dirabsdeclor dirabsdeclorp) (pstate pristatep))
     :guard (and (dirabsdeclor-unambp dirabsdeclor)
                 (dirabsdeclor-aidentp dirabsdeclor
-                                      (pristate->version pstate)))
+                                      (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a direct abstract declarator."
@@ -3147,7 +3147,7 @@
 
   (define print-param-declon ((param param-declonp) (pstate pristatep))
     :guard (and (param-declon-unambp param)
-                (param-declon-aidentp param (pristate->version pstate)))
+                (param-declon-aidentp param (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declaration."
@@ -3177,7 +3177,7 @@
     :guard (and (consp params)
                 (param-declon-list-unambp params)
                 (param-declon-list-aidentp params
-                                           (pristate->version pstate)))
+                                           (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more parameter declarations,
@@ -3193,7 +3193,7 @@
 
   (define print-param-declor ((paramdeclor param-declorp) (pstate pristatep))
     :guard (and (param-declor-unambp paramdeclor)
-                (param-declor-aidentp paramdeclor (pristate->version pstate)))
+                (param-declor-aidentp paramdeclor (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declarator."
@@ -3221,7 +3221,7 @@
 
   (define print-tyname ((tyname tynamep) (pstate pristatep))
     :guard (and (tyname-unambp tyname)
-                (tyname-aidentp tyname (pristate->version pstate)))
+                (tyname-aidentp tyname (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type name."
@@ -3247,7 +3247,7 @@
                              (inlinep booleanp)
                              (pstate pristatep))
     :guard (and (struni-spec-unambp struni-spec)
-                (struni-spec-aidentp struni-spec (pristate->version pstate)))
+                (struni-spec-aidentp struni-spec (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure or union specifier."
@@ -3306,7 +3306,7 @@
                                (pstate pristatep))
     :guard (and (struct-declon-unambp structdeclon)
                 (struct-declon-aidentp structdeclon
-                                       (pristate->version pstate)))
+                                       (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure declaration."
@@ -3365,7 +3365,7 @@
     :guard (and (consp structdeclons)
                 (struct-declon-list-unambp structdeclons)
                 (struct-declon-list-aidentp structdeclons
-                                            (pristate->version pstate)))
+                                            (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more structure declarations,
@@ -3390,7 +3390,7 @@
   (define print-struct-declor ((structdeclor struct-declorp) (pstate pristatep))
     :guard (and (struct-declor-unambp structdeclor)
                 (struct-declor-aidentp structdeclor
-                                       (pristate->version pstate)))
+                                       (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure declarator."
@@ -3430,7 +3430,7 @@
     :guard (and (consp structdeclors)
                 (struct-declor-list-unambp structdeclors)
                 (struct-declor-list-aidentp structdeclors
-                                            (pristate->version pstate)))
+                                            (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more structure declarators,
@@ -3446,7 +3446,7 @@
 
   (define print-enum-spec ((enumspec enum-specp) (pstate pristatep))
     :guard (and (enum-spec-unambp enumspec)
-                (enum-spec-aidentp enumspec (pristate->version pstate)))
+                (enum-spec-aidentp enumspec (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an enueration specifier."
@@ -3481,7 +3481,7 @@
 
   (define print-enumer ((enumer enumerp) (pstate pristatep))
     :guard (and (enumer-unambp enumer)
-                (enumer-aidentp enumer (pristate->version pstate)))
+                (enumer-aidentp enumer (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an enumerator."
@@ -3499,7 +3499,7 @@
   (define print-enumer-list ((enumers enumer-listp) (pstate pristatep))
     :guard (and (consp enumers)
                 (enumer-list-unambp enumers)
-                (enumer-list-aidentp enumers (pristate->version pstate)))
+                (enumer-list-aidentp enumers (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more enumerators, separated by commas."
@@ -3514,7 +3514,7 @@
 
   (define print-statassert ((statassert statassertp) (pstate pristatep))
     :guard (and (statassert-unambp statassert)
-                (statassert-aidentp statassert (pristate->version pstate)))
+                (statassert-aidentp statassert (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a static assertion declaration."
@@ -3534,7 +3534,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib ((attr attribp) (pstate pristatep))
-    :guard (attrib-aidentp attr (pristate->version pstate))
+    :guard (attrib-aidentp attr (pristate->dialect pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a GCC attribute."
@@ -3564,7 +3564,7 @@
 
   (define print-attrib-list ((attrs attrib-listp) (pstate pristatep))
     :guard (and (consp attrs)
-                (attrib-list-aidentp attrs (pristate->version pstate)))
+                (attrib-list-aidentp attrs (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more GCC attributes, comma-separated."
@@ -3578,7 +3578,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib-spec ((attrspec attrib-specp) (pstate pristatep))
-    :guard (attrib-spec-aidentp attrspec (pristate->version pstate))
+    :guard (attrib-spec-aidentp attrspec (pristate->dialect pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an attribute specifier."
@@ -3599,7 +3599,7 @@
                                   (pstate pristatep))
     :guard (and (consp attrspecs)
                 (attrib-spec-list-aidentp attrspecs
-                                          (pristate->version pstate)))
+                                          (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more attribute specifiers,
@@ -3615,7 +3615,7 @@
 
   (define print-init-declor ((initdeclor init-declorp) (pstate pristatep))
     :guard (and (init-declor-unambp initdeclor)
-                (init-declor-aidentp initdeclor (pristate->version pstate)))
+                (init-declor-aidentp initdeclor (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer declarator."
@@ -3646,7 +3646,7 @@
     :guard (and (consp initdeclors)
                 (init-declor-list-unambp initdeclors)
                 (init-declor-list-aidentp initdeclors
-                                          (pristate->version pstate)))
+                                          (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more initializer declarators,
@@ -3662,7 +3662,7 @@
 
   (define print-declon ((declon declonp) (inlinep booleanp) (pstate pristatep))
     :guard (and (declon-unambp declon)
-                (declon-aidentp declon (pristate->version pstate)))
+                (declon-aidentp declon (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration."
@@ -3717,7 +3717,7 @@
   (define print-declon-list ((declons declon-listp) (pstate pristatep))
     :guard (and (consp declons)
                 (declon-list-unambp declons)
-                (declon-list-aidentp declons (pristate->version pstate)))
+                (declon-list-aidentp declons (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declarations,
@@ -3732,7 +3732,7 @@
 
   (define print-label ((label labelp) (pstate pristatep))
     :guard (and (label-unambp label)
-                (label-aidentp label (pristate->version pstate)))
+                (label-aidentp label (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a label."
@@ -3760,7 +3760,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-output ((output asm-outputp) (pstate pristatep))
-    :guard (asm-output-aidentp output (pristate->version pstate))
+    :guard (asm-output-aidentp output (pristate->dialect pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler output operand."
@@ -3793,7 +3793,7 @@
 
   (define print-asm-output-list ((outputs asm-output-listp) (pstate pristatep))
     :guard (and (consp outputs)
-                (asm-output-list-aidentp outputs (pristate->version pstate)))
+                (asm-output-list-aidentp outputs (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more assembler output operands,
@@ -3808,7 +3808,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-input ((input asm-inputp) (pstate pristatep))
-    :guard (asm-input-aidentp input (pristate->version pstate))
+    :guard (asm-input-aidentp input (pristate->dialect pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler input operand."
@@ -3841,7 +3841,7 @@
 
   (define print-asm-input-list ((inputs asm-input-listp) (pstate pristatep))
     :guard (and (consp inputs)
-                (asm-input-list-aidentp inputs (pristate->version pstate)))
+                (asm-input-list-aidentp inputs (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more assembler input operands,
@@ -3856,7 +3856,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-stmt ((asm asm-stmtp) (pstate pristatep))
-    :guard (asm-stmt-aidentp asm (pristate->version pstate))
+    :guard (asm-stmt-aidentp asm (pristate->dialect pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler statement."
@@ -3952,7 +3952,7 @@
 
   (define print-stmt ((stmt stmtp) (pstate pristatep))
     :guard (and (stmt-unambp stmt)
-                (stmt-aidentp stmt (pristate->version pstate)))
+                (stmt-aidentp stmt (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a statement, in one or more lines, with proper indentation."
@@ -4219,7 +4219,7 @@
 
   (define print-comp-stmt ((cstmt comp-stmtp) (pstate pristatep))
     :guard (and (comp-stmt-unambp cstmt)
-                (comp-stmt-aidentp cstmt (pristate->version pstate)))
+                (comp-stmt-aidentp cstmt (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a compound statement."
@@ -4256,7 +4256,7 @@
 
   (define print-block-item ((item block-itemp) (pstate pristatep))
     :guard (and (block-item-unambp item)
-                (block-item-aidentp item (pristate->version pstate)))
+                (block-item-aidentp item (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a block item."
@@ -4271,7 +4271,7 @@
 
   (define print-block-item-list ((items block-item-listp) (pstate pristatep))
     :guard (and (block-item-list-unambp items)
-                (block-item-list-aidentp items (pristate->version pstate)))
+                (block-item-list-aidentp items (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of zero or more block items."
@@ -4300,7 +4300,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mut-same-version pristate->version-of-print-exprs/decls/stmts
+  (defret-mut-same-dialect pristate->dialect-of-print-exprs/decls/stmts
     (print-expr
      print-expr-list
      print-const-expr
@@ -4368,7 +4368,7 @@
 
 (define print-fundef ((fundef fundefp) (pstate pristatep))
   :guard (and (fundef-unambp fundef)
-              (fundef-aidentp fundef (pristate->version pstate)))
+              (fundef-aidentp fundef (pristate->dialect pstate)))
   :returns (new-pstate pristatep)
   :short "Print a function definition."
   :long
@@ -4419,13 +4419,13 @@
 
   ///
 
-  (defret-same-version print-fundef))
+  (defret-same-dialect print-fundef))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-ext-declon ((extdecl ext-declonp) (pstate pristatep))
   :guard (and (ext-declon-unambp extdecl)
-              (ext-declon-aidentp extdecl (pristate->version pstate)))
+              (ext-declon-aidentp extdecl (pristate->dialect pstate)))
   :returns (new-pstate pristatep)
   :short "Print an external declaration."
   (ext-declon-case
@@ -4440,7 +4440,7 @@
 
   ///
 
-  (defret-same-version print-ext-declon))
+  (defret-same-dialect print-ext-declon))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4465,12 +4465,12 @@
 
   ///
 
-  (defret-same-version print-include-directive))
+  (defret-same-dialect print-include-directive))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-define-directive ((name identp) (pstate pristatep))
-  :guard (ident-aidentp name (pristate->version pstate))
+  :guard (ident-aidentp name (pristate->dialect pstate))
   :returns (new-pstate pristatep)
   :short "Print a @('#define') directive."
   :long
@@ -4494,12 +4494,12 @@
 
   ///
 
-  (defret-same-version print-define-directive))
+  (defret-same-dialect print-define-directive))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-undef-directive ((name identp) (pstate pristatep))
-  :guard (ident-aidentp name (pristate->version pstate))
+  :guard (ident-aidentp name (pristate->dialect pstate))
   :returns (new-pstate pristatep)
   :short "Print a @('#undef') directive."
   :long
@@ -4520,7 +4520,7 @@
 
   ///
 
-  (defret-same-version print-undef-directive))
+  (defret-same-dialect print-undef-directive))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4540,13 +4540,13 @@
 
   ///
 
-  (defret-same-version print-line-comment))
+  (defret-same-dialect print-line-comment))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-hash-if/elif-expr ((expr hash-if/elif-exprp) (pstate pristatep))
   :guard (and (hash-if/elif-expr-unambp expr)
-              (hash-if/elif-expr-aidentp expr (pristate->version pstate)))
+              (hash-if/elif-expr-aidentp expr (pristate->dialect pstate)))
   :returns (new-pstate pristatep)
   :short "Print an expression in @('#if') and @('#elif') conditions."
   :long
@@ -4671,7 +4671,7 @@
 
   ///
 
-  (defret-rec-same-version print-hash-if/elif-expr)
+  (defret-rec-same-dialect print-hash-if/elif-expr)
 
   (verify-guards print-hash-if/elif-expr))
 
@@ -4681,7 +4681,7 @@
                                     (pstate pristatep))
   :guard (and (hash-if/ifdef/ifndef-unambp if/ifdef/ifndef)
               (hash-if/ifdef/ifndef-aidentp if/ifdef/ifndef
-                                            (pristate->version pstate)))
+                                            (pristate->dialect pstate)))
   :returns (new-pstate pristatep)
   :short "Print a @('#if') or @('#ifdef') or @('#ifndef')."
   :long
@@ -4712,7 +4712,7 @@
 
   ///
 
-  (defret-same-version print-hash-if/ifdef/ifndef))
+  (defret-same-dialect print-hash-if/ifdef/ifndef))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4723,7 +4723,7 @@
 
   (define print-trans-item ((item trans-itemp) (pstate pristatep))
     :guard (and (trans-item-unambp item)
-                (trans-item-aidentp item (pristate->version pstate)))
+                (trans-item-aidentp item (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-trans-items)
     :short "Print a translation item."
@@ -4764,7 +4764,7 @@
 
   (define print-trans-item-list ((items trans-item-listp) (pstate pristatep))
     :guard (and (trans-item-list-unambp items)
-                (trans-item-list-aidentp items (pristate->version pstate)))
+                (trans-item-list-aidentp items (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-trans-items)
     :short "Print a list of translation items."
@@ -4783,7 +4783,7 @@
 
   (define print-hash-elif ((elif hash-elifp) (pstate pristatep))
     :guard (and (hash-elif-unambp elif)
-                (hash-elif-aidentp elif (pristate->version pstate)))
+                (hash-elif-aidentp elif (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-trans-items)
     :short "Print a @('#elif')."
@@ -4815,7 +4815,7 @@
 
   (define print-hash-elif-list ((elifs hash-elif-listp) (pstate pristatep))
     :guard (and (hash-elif-list-unambp elifs)
-                (hash-elif-list-aidentp elifs (pristate->version pstate)))
+                (hash-elif-list-aidentp elifs (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-trans-items)
     :short "Print a list of @('#elif')s."
@@ -4833,7 +4833,7 @@
 
   (define print-hash-else ((else hash-elsep) (pstate pristatep))
     :guard (and (hash-else-unambp else)
-                (hash-else-aidentp else (pristate->version pstate)))
+                (hash-else-aidentp else (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-trans-items)
     :short "Print a @('#else')."
@@ -4863,7 +4863,7 @@
 
   (define print-hash-else-option ((else? hash-else-optionp) (pstate pristatep))
     :guard (and (hash-else-option-unambp else?)
-                (hash-else-option-aidentp else? (pristate->version pstate)))
+                (hash-else-option-aidentp else? (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-trans-items)
     :short "Print an optional @('#else')."
@@ -4887,7 +4887,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mut-same-version pristate->version-of-print-trans-items
+  (defret-mut-same-dialect pristate->dialect-of-print-trans-items
     (print-trans-item
      print-trans-item-list
      print-hash-elif
@@ -4903,7 +4903,7 @@
 
 (define print-transunit ((tunit transunitp) (pstate pristatep))
   :guard (and (transunit-unambp tunit)
-              (transunit-aidentp tunit (pristate->version pstate)))
+              (transunit-aidentp tunit (pristate->dialect pstate)))
   :returns (new-pstate pristatep)
   :short "Print a translation unit."
   :long
@@ -4920,13 +4920,13 @@
 
   ///
 
-  (defret-same-version print-transunit))
+  (defret-same-dialect print-transunit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-file ((tunit transunitp) (options prioptp) (version c::versionp))
+(define print-file ((tunit transunitp) (options prioptp) (dialect c::dialectp))
   :guard (and (transunit-unambp tunit)
-              (transunit-aidentp tunit version))
+              (transunit-aidentp tunit dialect))
   :returns (data byte-listp)
   :short "Print (the data bytes of) a file."
   :long
@@ -4938,7 +4938,7 @@
      We print the translation unit,
      we extract the data bytes from the final printing state,
      and we reverse them (see @(tsee pristate))."))
-  (b* ((pstate (init-pristate options version))
+  (b* ((pstate (init-pristate options dialect))
        (pstate (print-transunit tunit pstate))
        (bytes-rev (pristate->bytes-rev pstate)))
     (rev bytes-rev))
@@ -4948,9 +4948,9 @@
 
 (define print-filepath-transunit-map ((tunitmap filepath-transunit-mapp)
                                       (options prioptp)
-                                      (version c::versionp))
+                                      (dialect c::dialectp))
   :guard (and (filepath-transunit-map-unambp tunitmap)
-              (filepath-transunit-map-aidentp tunitmap version))
+              (filepath-transunit-map-aidentp tunitmap dialect))
   :returns (filemap filepath-filedata-mapp)
   :short "Print the files in a file set."
   :long
@@ -4966,10 +4966,10 @@
      The two maps have the same keys."))
   (b* (((when (omap::emptyp tunitmap)) nil)
        ((mv filepath tunit) (omap::head tunitmap))
-       (data (print-file tunit options version))
+       (data (print-file tunit options dialect))
        (filemap (print-filepath-transunit-map (omap::tail tunitmap)
                                               options
-                                              version)))
+                                              dialect)))
     (omap::update (filepath-fix filepath) (filedata data) filemap))
   :verify-guards :after-returns
 
@@ -4982,15 +4982,15 @@
     :hints (("Goal" :induct t)))
 
   (fty::deffixequiv print-filepath-transunit-map
-    :args ((options prioptp) (version c::versionp))))
+    :args ((options prioptp) (dialect c::dialectp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-fileset ((tunits transunit-ensemblep)
                        (options prioptp)
-                       (version c::versionp))
+                       (dialect c::dialectp))
   :guard (and (transunit-ensemble-unambp tunits)
-              (transunit-ensemble-aidentp tunits version))
+              (transunit-ensemble-aidentp tunits dialect))
   :returns (fileset filesetp)
   :short "Print a file set."
   :long
@@ -5004,7 +5004,7 @@
   (fileset
    (print-filepath-transunit-map (transunit-ensemble->units tunits)
                                  options
-                                 version))
+                                 dialect))
   :hooks (:fix)
 
   ///

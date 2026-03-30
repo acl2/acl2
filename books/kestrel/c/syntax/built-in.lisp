@@ -13,7 +13,7 @@
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
-(include-book "../language/implementation-environments/versions")
+(include-book "../language/implementation-environments/dialects")
 
 (include-book "abstract-syntax-trees")
 
@@ -282,18 +282,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define built-in-functions-for ((version c::versionp))
+(define built-in-functions-for ((dialect c::dialectp))
   :returns (built-ins ident-listp)
-  :short "List of built-ins functions according to the C version."
+  :short "List of built-ins functions according to the C dialect."
   :long
   (xdoc::topstring-p
    "Currently, we use the GCC built-ins for Clang as well.
     We have not yet observed any case where they differ.")
-  (b* (((c::version version) version)
-       (gcc/clang-built-ins (if (or version.gcc version.clang)
+  (b* (((c::dialect dialect) dialect)
+       (gcc/clang-built-ins (if (or dialect.gcc dialect.clang)
                                 *gcc-built-in-functions*
                               nil)))
-    (if version.cheri
+    (if dialect.cheri
         (append *cheri-built-in-functions* gcc/clang-built-ins)
       gcc/clang-built-ins))
 
@@ -304,14 +304,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define built-in-vars-for ((version c::versionp))
+(define built-in-vars-for ((dialect c::dialectp))
   :returns (built-ins ident-listp)
-  :short "List of built-ins variables according to the C version."
+  :short "List of built-ins variables according to the C dialect."
   :long
   (xdoc::topstring-p
    "Currently, we use the GCC built-ins for Clang as well.
     We have not yet observed any case where they differ.")
-  (if (c::version-gcc/clangp version)
+  (if (c::dialect-gcc/clangp dialect)
       *gcc-built-in-vars*
     nil)
 
@@ -322,15 +322,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define built-ins-for ((version c::versionp))
+(define built-ins-for ((dialect c::dialectp))
   :returns (built-ins ident-listp)
-  :short "List of built-ins according to the C version."
+  :short "List of built-ins according to the C dialect."
   :long
   (xdoc::topstring-p
    "Currently, we use the GCC built-ins for Clang as well.
     We have not yet observed any case where they differ.")
-  (append (built-in-vars-for version)
-          (built-in-functions-for version))
+  (append (built-in-vars-for dialect)
+          (built-in-functions-for dialect))
 
   ///
   (more-returns

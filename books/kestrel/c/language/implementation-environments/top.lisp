@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "versions")
+(include-book "dialects")
 (include-book "uchar-formats")
 (include-book "signed-formats")
 (include-book "schar-formats")
@@ -76,7 +76,7 @@
     "For now this only contains the following information:")
    (xdoc::ul
     (xdoc::li
-     "The version of C.")
+     "The dialect of C.")
     (xdoc::li
      "The formats of the three character types.")
     (xdoc::li
@@ -90,7 +90,7 @@
      is the same as explained in @(tsee integer-format)
      about the ``intermediate'' fixtype used there.
      We may eliminate this at some point."))
-  ((version versionp)
+  ((dialect dialectp)
    (char+short+int+long+llong+bool-format
     char+short+int+long+llong+bool-format
     :reqfix (if (char+short+int+long+llong+bool-format-wfp

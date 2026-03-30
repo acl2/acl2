@@ -1,7 +1,7 @@
 ; C Library
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "implementation-environments/versions")
+(include-book "implementation-environments/dialects")
 
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -27,11 +27,11 @@
   (xdoc::topstring
    (xdoc::p
     "These depend on the "
-    (xdoc::seetopic "versions" "C version")
+    (xdoc::seetopic "dialects" "C dialect")
     ", but they are all readily representable as ACL2 strings.")
    (xdoc::p
     "We introduce lists of ACL2 strings representing C keywords,
-     parameterized over the C version."))
+     parameterized over the C dialect."))
   :order-subtopics t
   :default-parent t)
 
@@ -307,17 +307,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define keywords-for ((version versionp))
+(define keywords-for ((dialect dialectp))
   :returns (list string-listp)
-  :short "List of keywords according to the C version."
-  (b* (((version version) version)
-       (keywords (standard-case version.std
+  :short "List of keywords according to the C dialect."
+  (b* (((dialect dialect) dialect)
+       (keywords (standard-case dialect.std
                                 :c17 *keywords-c17*
                                 :c23 *keywords-c23*))
-       (keywords (cond (version.gcc (union-equal *keywords-gcc* keywords))
-                       (version.clang (union-equal *keywords-clang* keywords))
+       (keywords (cond (dialect.gcc (union-equal *keywords-gcc* keywords))
+                       (dialect.clang (union-equal *keywords-clang* keywords))
                        (t keywords))))
-    (if version.cheri
+    (if dialect.cheri
         (append *keywords-cheri* keywords)
       keywords))
 

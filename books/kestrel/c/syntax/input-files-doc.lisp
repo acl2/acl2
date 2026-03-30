@@ -141,22 +141,22 @@
        the input files are preprocessed using an external preprocessor.
        For each file, we provide the @('-E') flag to that preprocessor,
        as well as some instantiation of the @('-std=') flag.
-       This latter flag is based on the @('version') field of the "
+       This latter flag is based on the @('dialect') field of the "
       (xdoc::seetopic "implementation-environments"
                       "implementation environment")
        ", as indicated by the following table.")
      (xdoc::table_
-      (xdoc::tr (xdoc::th "@(see c::Version)")
+      (xdoc::tr (xdoc::th "@(see c::Dialect)")
                 (xdoc::th "Standard Flag"))
-      (xdoc::tr (xdoc::td "@('(c::version-c17)')")
+      (xdoc::tr (xdoc::td "@('(c::dialect-c17)')")
                 (xdoc::td "@('-std=c17')"))
-      (xdoc::tr (xdoc::td "@('(c::version-c23)')")
+      (xdoc::tr (xdoc::td "@('(c::dialect-c23)')")
                 (xdoc::td "@('-std=c23')"))
-      (xdoc::tr (xdoc::td "@('(c::version-c17+gcc)') /
-                           @('(c::version-c17+clang)')")
+      (xdoc::tr (xdoc::td "@('(c::dialect-c17+gcc)') /
+                           @('(c::dialect-c17+clang)')")
                 (xdoc::td "@('-std=gnu17')"))
-      (xdoc::tr (xdoc::td "@('(c::version-c23+gcc)') /
-                           @('(c::version-c23+clang)')")
+      (xdoc::tr (xdoc::td "@('(c::dialect-c23+gcc)') /
+                           @('(c::dialect-c23+clang)')")
                 (xdoc::td "@('-std=gnu23')")))
      (xdoc::p
       "The @(':preprocess-args') input specifies additional arguments
