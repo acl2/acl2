@@ -1188,7 +1188,7 @@
 (defthm bvchop-equal-expt-2-hack
   (not (EQUAL (BVCHOP N A) (EXPT 2 N))))
 
-(defthm integer-of-bvchop-divided-by-expt
+(defthm integerp-of-bvchop-divided-by-expt
   (equal (INTEGERP (* (/ (EXPT 2 N)) (BVCHOP N A)))
          (equal 0 (BVCHOP N A)))
   :hints (("Goal"
