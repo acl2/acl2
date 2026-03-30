@@ -55,7 +55,7 @@
       (and (mbe :logic (and (treep (first x))
                             (not (tree-empty-p (first x))))
                 :exec (and (consp (first x))
-                           (tagged-element-p (car (first x)))
+                           (tree-element-p (car (first x)))
                            (consp (cdr (first x)))
                            (treep (cadr (first x)))
                            (treep (cddr (first x)))))
@@ -296,8 +296,8 @@
   (if (endp iter)
       nil
     (mv-let (in tree)
-            (tree-insert (tagged-element->elem (tree->head (first iter)))
-                         (tagged-element->hash (tree->head (first iter)))
+            (tree-insert (tree-element->val (tree->head (first iter)))
+                         (tree-element->hash (tree->head (first iter)))
                          (tree-union (tree->right (first iter))
                                      (tree-iter-to-tree (rest iter))))
       (declare (ignore in))
@@ -347,7 +347,7 @@
   (implies (all-well-formed-p trees)
            (equal (tree-in elem (tree-iter-to-tree trees))
                   (and (consp trees)
-                       (or (equal elem (tagged-element->elem
+                       (or (equal elem (tree-element->val
                                          (tree->head (car trees))))
                            (tree-in elem (tree->right (car trees)))
                            (tree-in elem (tree-iter-to-tree (cdr trees)))))))
@@ -358,7 +358,7 @@
   (implies (and (bstp tree)
                 (all-well-formed-p trees))
            (equal (tree-in elem (tree-iter-to-tree (cons tree trees)))
-                  (or (equal elem (tagged-element->elem (tree->head tree)))
+                  (or (equal elem (tree-element->val (tree->head tree)))
                       (tree-in elem (tree->right tree))
                       (tree-in elem (tree-iter-to-tree trees)))))
   :enable (tree-iter-to-tree
@@ -537,7 +537,7 @@
 
 (define tree-iter-value ((iter tree-iter-p))
   :guard (not (endp iter))
-  (tagged-element->elem (tree->head (first iter)))
+  (tree-element->val (tree->head (first iter)))
   :inline t
   :guard-hints (("Goal" :in-theory (enable tree-iter-p))))
 
@@ -554,7 +554,7 @@
   (implies (and (tree-iter-p iter)
                 (all-well-formed-p iter)
                 (pairwise-tree-subset-p-of-left iter))
-           (<<-all-r (tagged-element->elem (tree->head (car iter)))
+           (<<-all-r (tree-element->val (tree->head (car iter)))
                      (tree-iter-to-tree (cdr iter))))
   :induct t
   :enable (tree-iter-p

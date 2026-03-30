@@ -11,7 +11,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/utilities/list-defs" :dir :system)
+(include-book "kestrel/data/utilities/lists/defs" :dir :system)
 (include-book "kestrel/data/utilities/oset-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 
@@ -37,8 +37,8 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
+(local (include-book "kestrel/data/utilities/lists/equiv" :dir :system))
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
-(local (include-book "kestrel/data/utilities/list" :dir :system))
 
 (local (include-book "tree"))
 (local (include-book "bst"))
@@ -60,7 +60,7 @@
   (if (tree-empty-p tree)
       (llist-fix acc)
     (tree-in-order-acc (tree->left tree)
-                       (cons (tagged-element->elem (tree->head tree))
+                       (cons (tree-element->val (tree->head tree))
                              (tree-in-order-acc (tree->right tree)
                                                 acc)))))
 
@@ -118,7 +118,7 @@
   (mbe :logic (if (tree-empty-p tree)
                   nil
                 (append (tree-in-order (tree->left tree))
-                        (cons (tagged-element->elem (tree->head tree))
+                        (cons (tree-element->val (tree->head tree))
                               (tree-in-order (tree->right tree)))))
        :exec (tree-in-order-acc tree nil))
   ;; Verified below
@@ -164,7 +164,7 @@
   :induct t
   :expand ((tree-in-order tree))
   :enable (tree-leftmost
-           irr-tagged-element))
+           irr-tree-element))
 
 (defrule car-of-last-of-tree-in-order
   (equal (car (last (tree-in-order tree)))
@@ -172,7 +172,7 @@
   :induct t
   :expand ((tree-in-order tree))
   :enable (tree-rightmost
-           irr-tagged-element))
+           irr-tree-element))
 
 (defruled tree-in-order-when-tree-empty-p
   (implies (tree-empty-p tree)
@@ -194,6 +194,12 @@
   :enable (tree-in-order
            tree-nodes-count))
 
+(defrule member-equal-of-tree-in-order-under-iff
+  (iff (member-equal x (tree-in-order tree))
+       (tree-in x tree))
+  :induct t
+  :enable tree-in-order)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule osetp-of-tree-in-order-when-bstp
@@ -205,60 +211,7 @@
            data::osetp-of-append
            data::osetp-of-cons))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruledl expand-in-of-tree-in-order-when-bstp
-  (implies (bstp tree)
-           (equal (set::in x (tree-in-order tree))
-                  (and (not (tree-empty-p tree))
-                       (or (equal x (tagged-element->elem (tree->head tree)))
-                           (set::in x (tree-in-order (tree->left tree)))
-                           (set::in x (tree-in-order (tree->right tree))))
-                       t)))
-  ;; TODO: Improve proof. Right now, this rule needs to be both used and
-  ;; enabled, which is obviously fragile.
-  :use osetp-of-tree-in-order-when-bstp
-  :enable (set::in-to-member
-           tree-in-order))
-
-(defruled tree-in-order-definition-when-bstp
-  (implies (bstp tree)
-           (equal (tree-in-order tree)
-                  (if (tree-empty-p tree)
-                      nil
-                    (set::insert
-                      (tagged-element->elem (tree->head tree))
-                      (set::union (tree-in-order (tree->left tree))
-                                  (tree-in-order (tree->right tree)))))))
-  :rule-classes :definition
-  :enable (set::double-containment-no-backchain-limit
-           set::pick-a-point-subset-strategy)
-
-  :prep-lemmas
-  ((defrule lemma0
-     (implies (and (not (tree-empty-p tree))
-                   (bstp tree)
-                   (set::in x (tree-in-order tree)))
-              (set::in x
-                       (set::insert
-                         (tagged-element->elem (tree->head tree))
-                         (set::union (tree-in-order (tree->left tree))
-                                     (tree-in-order (tree->right tree))))))
-     :use expand-in-of-tree-in-order-when-bstp
-     :enable tree-in-order)
-
-   (defrule lemma1
-     (implies (and (not (tree-empty-p tree))
-                   (bstp tree)
-                   (set::in x (set::insert
-                                (tagged-element->elem (tree->head tree))
-                                (set::union (tree-in-order (tree->left tree))
-                                            (tree-in-order (tree->right tree))))))
-              (set::in x (tree-in-order tree)))
-     :use expand-in-of-tree-in-order-when-bstp
-     :enable tree-in-order)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (defrule in-of-tree-in-order-when-bstp
   (implies (bstp tree)
@@ -266,7 +219,7 @@
                   (tree-in x tree)))
   :induct t
   :enable (tree-in
-           tree-in-order-definition-when-bstp))
+           set::in-to-member))
 
 ;;;;;;;;;;;;;;;;;;;;
 
