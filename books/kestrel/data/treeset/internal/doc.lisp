@@ -25,4 +25,5 @@
 (include-book "union")
 (include-book "diff")
 (include-book "intersect")
+(include-book "in-order")
 (include-book "iter")
