@@ -1,6 +1,6 @@
 ; Utilities to upcase characters and strings
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,15 +16,15 @@
 ;; Note that STD provides a function, UPCASE-STRING, but it is much more
 ;; heavyweight than this book.
 
-;; Convert CHAR from upper to lower case, if it is an upper-case letter.
-;; Otherwise, return CHAR unchanged.
+;; Converts CHAR from lower to upper case, if it is a lower-case letter.
+;; Otherwise, returns CHAR unchanged.
 (defund char-upcase-gen (char)
   (declare (xargs :guard (characterp char)))
   (if (standard-char-p char)
       (char-upcase char)
     char))
 
-;; Convert the CHARS from upper to lower case, leaving non-upper-case-letters
+;; Converts the CHARS from lower to upper case, leaving non-lower-case-letters
 ;; unchanged.
 (defund chars-upcase-gen (chars acc)
   (declare (xargs :guard (and (character-listp chars)
@@ -40,8 +40,8 @@
            (character-listp (chars-upcase-gen chars acc)))
   :hints (("Goal" :in-theory (enable chars-upcase-gen))))
 
-;; Convert the characters in STR from upper to lower case, leaving
-;; non-upper-case-letters unchanged.
+;; Converts the characters in STR from lower to upper case, leaving
+;; non-lower-case-letters unchanged.
 (defund string-upcase-gen (str)
   (declare (xargs :guard (stringp str)))
   (coerce (chars-upcase-gen (coerce str 'list) nil) 'string))
