@@ -1,6 +1,6 @@
 ; Prime fields library: Exponentiation
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -67,7 +67,9 @@
   (equal (pow 0 n p)
          (if (posp n)
              0
-           1))
+           1
+            ; 0^0 = 1
+           ))
   :hints (("Goal" :in-theory (enable pow))))
 
 (defthm pow-of-0-arg2
@@ -121,14 +123,6 @@
                               (not (quotep x)))))
            (equal (pow x n p)
                   (pow k n p)))
-  :hints (("Goal" :in-theory (enable pow))))
-
-(defthm pow-of-0-arg1
-  (equal (pow 0 n p)
-         (if (posp n)
-             0
-           1 ; 0^0 = 1
-           ))
   :hints (("Goal" :in-theory (enable pow))))
 
 (defthm pow-when-not-integerp-arg1-cheap

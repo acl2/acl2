@@ -49,8 +49,7 @@
            (<= (count-ifs-in-then-and-else-branches-list (fargs term))
                (count-ifs-in-then-and-else-branches term)))
   :rule-classes :linear
-  :hints (("Goal" :expand (count-ifs-in-then-and-else-branches term)
-           :in-theory (enable COUNT-IFS))))
+  :hints (("Goal" :expand (count-ifs-in-then-and-else-branches term))))
 
 (defthm <=-of-count-ifs-in-then-and-else-branches-of-lambda-body-of-car
   (implies (and (consp (car term))

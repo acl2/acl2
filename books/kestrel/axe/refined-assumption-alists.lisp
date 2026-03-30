@@ -185,7 +185,7 @@
            (darg-list-listp items))
   :hints (("Goal" :in-theory (enable bounded-darg-list-listp))))
 
-(defthmd true-list-of-car-when-bounded-darg-list-listp
+(defthmd true-listp-of-car-when-bounded-darg-list-listp
   (implies (and (bounded-darg-list-listp assumption-arg-lists dag-len)
                 (consp assumption-arg-lists))
            (true-listp (car assumption-arg-lists))))
