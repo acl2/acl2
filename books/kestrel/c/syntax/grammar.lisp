@@ -10,6 +10,8 @@
 
 (in-package "C$")
 
+(include-book "../language/implementation-environments/dialects")
+
 (include-book "projects/abnf/grammar-definer/defgrammar" :dir :system)
 (include-book "projects/abnf/grammar-definer/deftreeops" :dir :system)
 (include-book "projects/abnf/operations/in-terminal-set" :dir :system)
@@ -148,3 +150,31 @@
   :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define grammar-for ((dialect c::dialectp))
+  :returns (grammar abnf::rulelistp)
+  :short "Grammar for a given C dialect."
+  (b* ((std (c::dialect->std dialect)))
+    (append *grammar-characters-all*
+            (c::standard-case std
+                              :c17 *grammar-characters-c17*
+                              :c23 *grammar-characters-c23*)
+            *grammar*))
+
+  ///
+
+  (defruled rulelist-closedp-of-grammar-for
+    (abnf::rulelist-closedp (grammar-for dialect))
+    :enable abnf::rulelist-closedp)
+
+  (defruled unicode-only-grammar-for
+    (abnf::rulelist-in-termset-p (grammar-for dialect)
+                                 (acl2::integers-from-to 0 #x10ffff))
+    :enable (abnf::rule-in-termset-p
+             abnf::repetition-in-termset-p
+             abnf::element-in-termset-p
+             abnf::num-val-in-termset-p
+             abnf::char-val-in-termset-p
+             abnf::char-insensitive-in-termset-p
+             abnf::char-sensitive-in-termset-p)
+    :disable ((:e acl2::integers-from-to))))
