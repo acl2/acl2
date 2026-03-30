@@ -29,12 +29,12 @@
   (xdoc::topstring
    (xdoc::p
     "Since the conrete syntax varies slightly based on "
-    (xdoc::seetopic "c::versions" "the C version")
+    (xdoc::seetopic "c::dialects" "the C dialect")
     ", we actually define a family of grammars,
-     parameterized over the C version.
+     parameterized over the C dialect.
      The grammar family is defined using the files @('grammar/*.abnf'),
      which contain various components which are parsed into ACL2 representations
-     and combined into full grammars parameterized by the versions.
+     and combined into full grammars parameterized by the dialects.
      This parameterization is work in progress:
      currently we have only some of the needed component files.")
    (xdoc::p

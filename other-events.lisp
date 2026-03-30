@@ -3110,27 +3110,24 @@
   nil)
 
 (defmacro incompatible (rune1 rune2 &optional strictp)
-  (let ((active-fn (if strictp 'active-or-non-runep 'active-runep)))
-    (cond ((and (consp rune1)
-                (consp (cdr rune1))
-                (symbolp (cadr rune1))
-                (consp rune2)
-                (consp (cdr rune2))
-                (symbolp (cadr rune2)))
+  (let ((active-fn (if strictp 'active-or-non-runep 'active-runep))
+        (caller (if strictp 'incompatible! 'incompatible)))
+    (cond ((and (weak-runep rune1)
+                (weak-runep rune2))
 
 ; The above condition is similar to conditions in runep and active-runep.
 
            `(not (and (,active-fn ',rune1)
                       (,active-fn ',rune2))))
-          (t (er hard 'incompatible
+          (t (er hard caller
                  "Each argument to ~x0 should have the shape of a rune, ~
-                  (:KEYWORD BASE-SYMBOL), unlike ~x1."
-                 'incompatible
-                 (or (and (consp rune1)
-                          (consp (cdr rune1))
-                          (symbolp (cadr rune1))
-                          rune2)
-                     rune1))))))
+                  (:KEYWORD BASE-SYMBOL) or (:KEYWORD BASE-SYMBOL . N), as ~
+                  defined by ~x1.  But ~&2 ~#2~[does~/do~] not meet this ~
+                  criterion."
+                 caller
+                 'weak-runep
+                 (append (if (weak-runep rune1) nil (list rune1))
+                         (if (weak-runep rune2) nil (list rune2))))))))
 
 (defmacro incompatible! (rune1 rune2)
   `(incompatible ,rune1 ,rune2 t))
@@ -8510,8 +8507,8 @@
 ; encapsulation quickly if we process one while skipping proofs.  That is,
 ; suppose the user has produced a script of some session, including some
 ; encapsulations, and the whole thing has been processed with ld-skip-proofsp
-; nil, once upon a time.  Now the user wants to assume that script and and
-; continue -- i.e., he is loading a "book".
+; nil, once upon a time.  Now the user wants to assume that script and continue
+; -- i.e., he is loading a "book".
 
 ; Suppose we hit the encapsulation when skipping proofs.  Suppose we are
 ; again in wrld1 (i.e., processing the previous events of this script
@@ -21865,7 +21862,7 @@
 ; Recalling that (ev+ u a_E A c) = (mv erp r_E c') by hypothesis, we can state
 ; our goal as follows.
 
-; (*)     r_E E-corresponds to r_L with respect to A and and s0.
+; (*)     r_E E-corresponds to r_L with respect to A and s0.
 
 ; Let s0$c be the foundational stobj name for s0 and make the following
 ; definitions.

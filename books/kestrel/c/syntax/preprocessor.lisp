@@ -2130,7 +2130,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define evaluate-triple-hash ((lexmarks/placemarkers lexmark-option-listp)
-                              (version c::versionp))
+                              (dialect c::dialectp))
   :returns (mv erp (lexmarks lexmark-listp))
   :short "Evaluate the @('##') operator, represented as @('###'),
           in the list produced by @(tsee replace-macro-args)."
@@ -2182,7 +2182,7 @@
                        (not (plexeme-tokenp ; i.e. space
                              (lexmark-lexeme->lexeme lexmark/placemarker))))))
         (b* (((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers
-                                                   version)))
+                                                   dialect)))
           (retok (cons (lexmark-fix lexmark/placemarker) lexmarks))))
        ;; Otherwise, the next lexmark or placemarker
        ;; is either a token or a placemarker.
@@ -2194,9 +2194,9 @@
                                         lexmark/placemarker))
                                   nil
                                   lexmarks/placemarkers
-                                  version))
+                                  dialect))
        ;; Process the rest of the lexmarks and placemarkers.
-       ((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers version)))
+       ((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers dialect)))
     ;; Add the token from the recursive companion function to the output,
     ;; or otherwise discard the placemarker.
     ;; Also add any markers in between any ### operations.
@@ -2214,7 +2214,7 @@
      ((token/placemarker plexeme-optionp)
       (markers lexmark-listp)
       (lexmarks/placemarkers lexmark-option-listp)
-      (version c::versionp))
+      (dialect c::dialectp))
      :guard (or (not token/placemarker)
                 (plexeme-tokenp token/placemarker))
      :returns (mv erp
@@ -2250,7 +2250,7 @@
           ((erp token/placemarker)
            (concatenate-tokens/placemarkers token/placemarker
                                             next-token/placemarker
-                                            version))
+                                            dialect))
           ;; Join all the markers.
           (markers (append markers markers1 markers2)))
        ;; Recursively combine the new token or placemarker
@@ -2258,7 +2258,7 @@
        (evaluate-triple-hash-aux token/placemarker
                                  markers
                                  lexmarks/placemarkers
-                                 version))
+                                 dialect))
      :no-function nil
      :measure (len lexmarks/placemarkers)
      :guard-hints (("Goal" :in-theory (enable true-listp-when-lexmark-listp)))
@@ -2273,7 +2273,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define evaluate-double-hash ((lexemes plexeme-listp) (version c::versionp))
+(define evaluate-double-hash ((lexemes plexeme-listp) (dialect c::dialectp))
   :returns (mv erp (new-lexemes plexeme-listp))
   :short "Evaluate the @('##') operator in
           the replacement list of an object-like macro."
@@ -2299,14 +2299,14 @@
        ;; If the next lexeme is a space,
        ;; pass it on, i.e. continue processing and add it to the output.
        ((when (not (plexeme-tokenp lexeme))) ; i.e. space
-        (b* (((erp lexemes) (evaluate-double-hash lexemes version)))
+        (b* (((erp lexemes) (evaluate-double-hash lexemes dialect)))
           (retok (cons (plexeme-fix lexeme) lexemes))))
        ;; Otherwise, the next lexeme is a token.
        ;; Call the recursive companion function to concatenate it
        ;; with any subsequent token with ## in between.
-       ((erp token lexemes) (evaluate-double-hash-aux lexeme lexemes version))
+       ((erp token lexemes) (evaluate-double-hash-aux lexeme lexemes dialect))
        ;; Process the rest of the lexemes.
-       ((erp lexemes) (evaluate-double-hash lexemes version)))
+       ((erp lexemes) (evaluate-double-hash lexemes dialect)))
     ;; Add the token from the recursive companion function to the output.
     (retok (cons token lexemes)))
   :measure (len lexemes)
@@ -2315,7 +2315,7 @@
   :prepwork
   ((define evaluate-double-hash-aux ((token plexemep)
                                      (lexemes plexeme-listp)
-                                     (version c::versionp))
+                                     (dialect c::dialectp))
      :guard (plexeme-tokenp token)
      :returns (mv erp
                   (new-token plexemep)
@@ -2357,10 +2357,10 @@
            (reterr t))
           ;; Combine the next token with the input one.
           ((erp token)
-           (concatenate-tokens/placemarkers token next-token version)))
+           (concatenate-tokens/placemarkers token next-token dialect)))
        ;; Recursively combine the new token
        ;; with any subsequent ones if there are more ## operators.
-       (evaluate-double-hash-aux token lexemes version))
+       (evaluate-double-hash-aux token lexemes dialect))
      :no-function nil
      :measure (len lexemes)
      :hooks nil
@@ -2823,7 +2823,7 @@
                info
                :object
                (b* (((erp replist) (evaluate-double-hash info.replist
-                                                         (ienv->version
+                                                         (ienv->dialect
                                                           (ppstate->ienv
                                                            ppstate))))
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
@@ -2883,7 +2883,7 @@
                            (retok subst disabled ppstate)))))
                     (replist (replace-macro-args info.replist subst))
                     ((erp replist) (evaluate-triple-hash replist
-                                                         (ienv->version
+                                                         (ienv->dialect
                                                           (ppstate->ienv
                                                            ppstate))))
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
@@ -3174,7 +3174,7 @@
        @('#define'), @('#undef'), @('#line'), @('#error') and @('#pragma')
        identically, by skipping through the next end of line.
        We also treat @('#warning') in the same way
-       if the C standard version is C23 [C23:6.10.1]
+       if the C standard dialect is C23 [C23:6.10.1]
        or if GCC or Clang extensions are enabled."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate)
@@ -3629,7 +3629,7 @@
    (xdoc::p
     "This is called just after the @('warning') identifier has been parsed.")
    (xdoc::p
-    "This is allowed only if the C version is C23,
+    "This is allowed only if the C dialect is C23,
      or the GCC or Clang extensions are enabled;
      otherwise we return an error.")
    (xdoc::p
@@ -4937,7 +4937,7 @@
                                 include-dirs
                                 pfiles
                                 pending
-                                (macro-init (ienv->version ienv))
+                                (macro-init (ienv->dialect ienv))
                                 (change-ppoptions options
                                                   :no-errors/warnings t)
                                 ienv
@@ -5408,7 +5408,7 @@
                        include-dirs
                        pfiles
                        pending
-                       (macro-init (ienv->version ienv))
+                       (macro-init (ienv->dialect ienv))
                        options
                        ienv
                        state
