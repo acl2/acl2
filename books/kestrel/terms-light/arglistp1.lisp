@@ -1,6 +1,6 @@
-; A lightweight book about the build-in function arglistp1
+; A lightweight book about the built-in function arglistp1
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;

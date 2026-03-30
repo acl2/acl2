@@ -1,6 +1,6 @@
 ; A variant of write-bytes-to-file for use during make-event, etc.
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,7 +28,7 @@
 ;; expansion, clause-processors, etc.
 (defund write-bytes-to-file! (bytes filename ctx state)
   (declare (xargs :stobjs state
-                  :guard (and (all-bytep bytes)
+                  :guard (and (unsigned-byte-listp 8 bytes)
                               (stringp filename))))
   (mv-let (channel state)
     (open-output-channel! filename :byte state)
@@ -40,12 +40,12 @@
               (mv nil state)))))
 
 (defthm state-p1-of-mv-nth-1-of-write-bytes-to-file!
-  (implies (and (all-bytep bytes) ; rephrase?
+  (implies (and (unsigned-byte-listp 8 bytes)
                 (state-p1 state))
            (state-p1 (mv-nth 1 (write-bytes-to-file! bytes filename ctx state))))
   :hints (("Goal" :in-theory (enable write-bytes-to-file!))))
 
 (defthm state-p-of-mv-nth-1-of-write-bytes-to-file!
-  (implies (and (all-bytep bytes) ;  rephrase?
+  (implies (and (unsigned-byte-listp 8 bytes)
                 (state-p state))
            (state-p (mv-nth 1 (write-bytes-to-file! bytes filename ctx state)))))
