@@ -4975,7 +4975,7 @@
                              ;; (axe-treep tree)
                              (myquotep tree)
                              (quotep tree))
-                    :in-theory (e/d (true-list-of-car-when-bounded-darg-list-listp
+                    :in-theory (e/d (true-listp-of-car-when-bounded-darg-list-listp
                                      darg-listp-of-car-when-bounded-darg-list-listp
                                      all-myquotep-when-darg-listp
                                      axe-bind-free-result-okayp-rewrite
