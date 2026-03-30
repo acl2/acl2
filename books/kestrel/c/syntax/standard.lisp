@@ -33,9 +33,9 @@
      Here we define predicates that characterize the standard subset.")
    (xdoc::p
     "We plan to extend this predicate to one that takes a "
-    (xdoc::seetopic "c::version" "C version")
+    (xdoc::seetopic "c::dialect" "C dialect")
     " as an additional argument,
-     and says whether the syntax conforms to that version.")
+     and says whether the syntax conforms to that dialect.")
    (xdoc::p
     "The current definition is a bit out of date
      with respect to all the GCC and Clang extensions in our ASTs.
@@ -110,8 +110,9 @@
           fundef
           ext-declon
           ext-declon-list
-          trans-item
-          trans-item-list
+          hash-if/elif-expr
+          hash-if/ifdef/ifndef
+          trans-items
           transunit
           filepath-transunit-map
           transunit-ensemble)

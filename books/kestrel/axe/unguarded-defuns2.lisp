@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "unguarded-defuns")
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
 (include-book "centaur/bitops/part-select" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
 ;(local (include-book "kestrel/bv/logext" :dir :system))

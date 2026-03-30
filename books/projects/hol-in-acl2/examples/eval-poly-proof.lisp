@@ -194,7 +194,9 @@
   (("Goal"
     :in-theory (disable hpp-monotone-for-alist-subsetp)
     :do-not '(eliminate-destructors) ; necessary
-    :induct (eval_poly-reduction-induction x xa))))
+    :induct (eval_poly-reduction-induction x xa))
+; The following became necessary when forcing hypotheses in hpp-hap.
+   ("[1]Subgoal 1'''" :in-theory (enable hpp-monotone-for-alist-subsetp))))
 
 (defun sum_polys-reduction-induction (x xa y ya)
   (declare (xargs :measure (+ (len xa) (len ya))))

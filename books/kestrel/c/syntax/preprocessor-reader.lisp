@@ -75,7 +75,7 @@
      are read into the source character set, which for us is Unicode,
      and how lines ending in backslash are spliced.
      The mapping of bytes to characters is UTF-8 decoding,
-     but if the C version is C17,
+     but if the C standard is C17,
      we also map trigraph sequences to the single characters they represent;
      although our tools aim at preserving concrete syntax information,
      trigraph sequences are a legacy feature that no longer seems useful
@@ -137,11 +137,11 @@
    (xdoc::p
     "A character can take one, two, three, or four bytes,
      according to the UTF8-decoding.
-     Additionally, if the C version is C17,
+     Additionally, if the C standard is C17,
      we turn three bytes that form three ASCII characters
      that form a trigraph sequence [C17:5.2.1.1]
      into the single ASCII character that they represent.
-     This is not done if the C version is C23.")
+     This is not done if the C standard is C23.")
    (xdoc::p
     "For most characters, the position is incremented by one column.
      For trigraph sequences, by three columns,
@@ -271,7 +271,8 @@
         (retok 10 pos (position-inc-line 1 pos) bytes))
        ;; trigraph sequences, or just '?':
        ((when (utf8-= byte (char-code #\?))) ; ?
-        (if (c::version-std-c23p (ienv->version ienv)) ; C23
+        (if (equal (ienv->std ienv)
+                   (c::standard-c23))
             (retok (char-code #\?) pos pos+1 bytes) ; ?
           ;; consider trigraph sequences:
           (if (and (consp bytes)

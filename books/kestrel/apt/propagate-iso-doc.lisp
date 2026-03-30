@@ -72,7 +72,7 @@
 
         (xdoc::p
           "where @('iso-fn') is the isomorphic version of @('fn') and @('fn-->iso-fn--thm') is a
-           theorem for rewriting @('fn') to @('iso-fn'), and and @('iso-fn-->fn--thm') is a
+           theorem for rewriting @('fn') to @('iso-fn'), and @('iso-fn-->fn--thm') is a
            theorem for rewriting @('iso-fn') to @('fn').  @('arg-sig') gives the signature of
            the argument list of @('fn') with respect to the isomorphism, i.e. if an argument of
            @('fn') is of one of the isomorphism types (predicate) then the corresponding element

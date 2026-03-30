@@ -17,6 +17,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; for ASSERT!-STOBJ
+(make-event (er-progn (add-global-stobj 'parstate state)
+                      (value '(value-triple nil)))
+            :check-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Test operations on positions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -79,12 +86,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-init-parstate (list std gcc)
+(defmacro test-init-parstate (list dialect)
   `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate "" ,list version t parstate)))
+    (b* ((parstate (init-parstate "" ,list ,dialect t parstate)))
       (mv (and (equal (parstate->bytes parstate) ,list)
                (equal (parstate->position parstate) (irr-position))
                (equal (parstate->chars-length parstate) (len ,list))
@@ -92,49 +96,66 @@
                (equal (parstate->chars-unread parstate) 0)
                (equal (parstate->tokens-read parstate) 0)
                (equal (parstate->tokens-unread parstate) 0)
-               (equal (parstate->gcc/clang parstate) ,gcc)
+               (equal (parstate->gcc/clang parstate)
+                      (c::dialect-gcc/clangp ,dialect))
                (equal (parstate->size parstate) (len ,list)))
           parstate))
     parstate))
 
-(test-init-parstate nil 17 nil)
+(test-init-parstate nil (c::make-dialect :std (c::standard-c17)))
 
-(test-init-parstate nil 17 t)
+(test-init-parstate nil (c::make-dialect :std (c::standard-c17) :gcc t))
 
-(test-init-parstate (list 1) 17 nil)
+(test-init-parstate (list 1) (c::make-dialect :std (c::standard-c17)))
 
-(test-init-parstate (list 1) 17 t)
+(test-init-parstate (list 1)
+                    (c::make-dialect :std (c::standard-c17) :gcc t))
 
-(test-init-parstate (list 1 2 3) 17 nil)
+(test-init-parstate (list 1 2 3) (c::make-dialect :std (c::standard-c17)))
 
-(test-init-parstate (list 1 2 3) 17 t)
+(test-init-parstate (list 1 2 3)
+                    (c::make-dialect :std (c::standard-c17) :gcc t))
 
-(test-init-parstate (acl2::string=>nats "abc") 17 nil)
+(test-init-parstate (acl2::string=>nats "abc")
+                    (c::make-dialect :std (c::standard-c17)))
 
-(test-init-parstate (acl2::string=>nats "abc") 17 t)
+(test-init-parstate (acl2::string=>nats "abc")
+                    (c::make-dialect :std (c::standard-c17) :gcc t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert!-stobj
- (b* ((parstate (init-parstate "" nil (c::version-c17) t parstate)))
+ (b* ((parstate
+        (init-parstate
+          "" nil (c::make-dialect :std (c::standard-c17)) t parstate)))
    (mv (equal (parsize parstate) 0)
        parstate))
  parstate)
 
 (assert!-stobj
- (b* ((parstate (init-parstate "" nil (c::version-c17+gcc) t parstate)))
+ (b* ((parstate
+        (init-parstate
+          "" nil (c::make-dialect :std (c::standard-c17) :gcc t) t parstate)))
    (mv (equal (parsize parstate) 0)
        parstate))
  parstate)
 
 (assert!-stobj
- (b* ((parstate (init-parstate "" (list 72 99 21) (c::version-c17) t parstate)))
+ (b* ((parstate (init-parstate ""
+                               (list 72 99 21)
+                               (c::make-dialect :std (c::standard-c17))
+                               t
+                               parstate)))
    (mv (equal (parsize parstate) 3)
        parstate))
  parstate)
 
 (assert!-stobj
- (b* ((parstate (init-parstate "" (list 72 99 21) (c::version-c17+gcc) t parstate)))
+ (b* ((parstate (init-parstate ""
+                               (list 72 99 21)
+                               (c::make-dialect :std (c::standard-c17) :gcc t)
+                               t
+                               parstate)))
    (mv (equal (parsize parstate) 3)
        parstate))
  parstate)

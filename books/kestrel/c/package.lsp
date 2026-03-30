@@ -33,6 +33,8 @@
                                   preprocess
                                   read-object
                                   schar
+                                  standard
+                                  standardp
                                   type
                                   typep
                                   value

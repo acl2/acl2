@@ -20,13 +20,13 @@
 ;(include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "axe-syntax")
 (include-book "axe-syntax-functions-bv")
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system)
+(include-book "kestrel/bv-arrays/bv-arrays" :dir :system)
 (include-book "kestrel/bv/trim" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
+(include-book "kestrel/bv-arrays/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/map-bvplus-val" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
 (include-book "kestrel/bv-lists/bv-list-read-chunk-little" :dir :system) ; is this really an array op?
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 ;(include-book "kestrel/bv/bvplus" :dir :system)
@@ -43,7 +43,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
-(local (include-book "kestrel/bv-lists/array-patterns" :dir :system)) ; reduce?
+(local (include-book "kestrel/bv-arrays/array-patterns" :dir :system)) ; reduce?
 
 (add-known-boolean bv-arrayp)
 

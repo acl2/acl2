@@ -1188,7 +1188,7 @@
 (defthm bvchop-equal-expt-2-hack
   (not (EQUAL (BVCHOP N A) (EXPT 2 N))))
 
-(defthm integer-of-bvchop-divided-by-expt
+(defthm integerp-of-bvchop-divided-by-expt
   (equal (INTEGERP (* (/ (EXPT 2 N)) (BVCHOP N A)))
          (equal 0 (BVCHOP N A)))
   :hints (("Goal"
@@ -2139,7 +2139,7 @@
   :hints (("Goal" :in-theory (enable truncate logtail ifloor floor))))
 
 ;bozo when exactly do we want to do this? whenever the thing being shifted is a bit vector function?
-;see rule fro slice below, we use the size info...
+;see rule for slice below, we use the size info...
 (defthm times-4-becomes-logapp
   (implies (natp x)
            (equal (* 4 (LOGTAIL n x))

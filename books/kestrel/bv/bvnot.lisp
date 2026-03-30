@@ -182,12 +182,6 @@
 ;bvchop-of-logtail
                                   )))))
 
-(defthm bvnot-of-all-ones
-  (implies (natp width)
-           (equal (bvnot width (+ -1 (expt 2 width)))
-                  0))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
 ;can loop
 (defthmd bvnot-of-0
   (implies (natp width)

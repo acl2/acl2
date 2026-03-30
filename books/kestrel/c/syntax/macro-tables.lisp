@@ -12,11 +12,13 @@
 
 (include-book "preprocessor-lexemes")
 
-(include-book "../language/implementation-environments/versions")
+(include-book "../language/implementation-environments/dialects")
 
+(include-book "std/strings/eqv" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -78,24 +80,24 @@
                                  replist
                                nil)))
    :require (plexeme-list-token/space-p replist))
-  (:function ((params ident-list)
+  (:function ((params string-list)
               (ellipsis bool)
               (replist plexeme-list
                        :reqfix (if (plexeme-list-token/space-p replist)
                                    replist
                                  nil))
-              (hash-params ident-list
+              (hash-params str::string-list
                            :reqfix (if (subsetp-equal
                                         hash-params
                                         (if ellipsis
-                                            (cons (ident "__VA_ARGS__") params)
+                                            (cons "__VA_ARGS__" params)
                                           params))
                                        hash-params
                                      nil)))
    :require (and (plexeme-list-token/space-p replist)
                  (subsetp-equal hash-params
                                 (if ellipsis
-                                    (cons (ident "__VA_ARGS__") params)
+                                    (cons "__VA_ARGS__" params)
                                   params))))
   :pred macro-infop)
 
@@ -108,45 +110,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist ident-macro-info-alist
-  :short "Fixtype of alists from identifiers to macro information."
-  :key-type ident
+(fty::defalist string-macro-info-alist
+  :short "Fixtype of alists
+          from strings (representing identifiers)
+          to macro information."
+  :key-type string
   :val-type macro-info
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil nil
-  :pred ident-macro-info-alistp
+  :pred string-macro-info-alistp
   :prepwork ((set-induction-depth-limit 1))
 
   ///
 
-  (defruled macro-infop-of-cdr-of-assoc-equal-when-ident-macro-info-alistp
-    (implies (and (ident-macro-info-alistp macros)
+  (defruled macro-infop-of-cdr-of-assoc-equal-when-string-macro-info-alistp
+    (implies (and (string-macro-info-alistp macros)
                   (assoc-equal name macros))
              (macro-infop (cdr (assoc-equal name macros))))
     :induct t
-    :enable ident-macro-info-alistp))
+    :enable string-macro-info-alistp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist ident-macro-info-option-alist
-  :short "Fixtype of alists from identifiers to optional macro information."
-  :key-type ident
+(fty::defalist string-macro-info-option-alist
+  :short "Fixtype of alists
+          from strings (representing identifiers)
+          to optional macro information."
+  :key-type string
   :val-type macro-info-option
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil t
-  :pred ident-macro-info-option-alistp
+  :pred string-macro-info-option-alistp
   :prepwork ((set-induction-depth-limit 1))
 
   ///
 
   (defruled
     macro-info-optionp-of-cdr-of-assoc-equal-when-macro-info-option-alistp
-    (implies (ident-macro-info-option-alistp macros)
+    (implies (string-macro-info-option-alistp macros)
              (macro-info-optionp (cdr (assoc-equal name macros))))
     :induct t
-    :enable ident-macro-info-option-alistp))
+    :enable string-macro-info-option-alistp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +168,7 @@
      [C17:6.10.8.1].
      We represent them as having empty replacement list,
      but handle their actual replacement specially in code.
-     The exact predefined macros depend on the version:
+     The exact predefined macros depend on the dialect:
      see @(tsee predefined-macros).
      The predefined macros never change,
      i.e. that component of the macro table stays constant.")
@@ -200,15 +206,15 @@
      Definitions and undefinitions are added with @(tsee acons),
      and looked up with @(tsee assoc-equal),
      so the latest one is always found."))
-  ((predefined ident-macro-info-alist
+  ((predefined string-macro-info-alist
                :reqfix (if (no-duplicatesp-equal (strip-cars predefined))
                            predefined
                          nil))
-   (dynamic ident-macro-info-option-alist))
+   (dynamic string-macro-info-option-alist))
   :require (no-duplicatesp-equal (strip-cars predefined))
   :pred macro-tablep
   :prepwork
-  ((local (in-theory (enable alistp-when-ident-macro-info-alistp-rewrite)))))
+  ((local (in-theory (enable alistp-when-string-macro-info-alistp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -220,17 +226,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros-c17 ()
-  :returns (macros ident-macro-info-alistp)
+  :returns (macros string-macro-info-alistp)
   :short "Predefined macros for C17 (without GCC or Clang extensions)."
   :long
   (xdoc::topstring
    (xdoc::p
     "We start with just a few macros from [C17:6.10.8].
      We should add all of them."))
-  (list (cons (ident "__STDC__")
+  (list (cons "__STDC__"
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\1)))))
-        (cons (ident "__STDC_VERSION__")
+        (cons "__STDC_VERSION__"
               (macro-info-object
                (list (plexeme-number
                       (pnumber-number-nondigit
@@ -251,17 +257,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros-c23 ()
-  :returns (macros ident-macro-info-alistp)
+  :returns (macros string-macro-info-alistp)
   :short "Predefined macros for C17 (without GCC or Clang extensions)."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are similar to @(tsee predefined-macros-c17).
      See [C23:6.10.10]."))
-  (list (cons (ident "__STDC__")
+  (list (cons "__STDC__"
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\1)))))
-        (cons (ident "__STDC_VERSION__")
+        (cons "__STDC_VERSION__"
               (macro-info-object
                (list (plexeme-number
                       (pnumber-number-nondigit
@@ -282,7 +288,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros-gcc ()
-  :returns (macros ident-macro-info-alistp)
+  :returns (macros string-macro-info-alistp)
   :short "Predefined macros for GCC extensions."
   :long
   (xdoc::topstring
@@ -301,7 +307,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros-clang ()
-  :returns (macros ident-macro-info-alistp)
+  :returns (macros string-macro-info-alistp)
   :short "Predefined macros for Clang extensions."
   :long
   (xdoc::topstring
@@ -370,60 +376,60 @@
      Our preprocessor does that, but fails when parsing the expression,
      because of the extra tokens after the @('F'),
      or after the @('__has_feature') before we predefine it here."))
-  (list (cons (ident "__arm64__")
+  (list (cons "__arm64__"
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\1)))))
-        (cons (ident "__GNUC__")
+        (cons "__GNUC__"
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\4)))))
-        (cons (ident "__GNUC_MINOR__")
+        (cons "__GNUC_MINOR__"
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\2)))))
-        (cons (ident "__has_attribute")
+        (cons "__has_attribute"
               (make-macro-info-function
-               :params (list (ident "x"))
+               :params (list "x")
                :ellipsis nil
                :replist (list (plexeme-number (pnumber-digit #\0)))
                :hash-params nil))
-        (cons (ident "__has_builtin")
+        (cons "__has_builtin"
               (make-macro-info-function
-               :params (list (ident "x"))
+               :params (list "x")
                :ellipsis nil
                :replist (list (plexeme-number (pnumber-digit #\0)))
                :hash-params nil))
-        (cons (ident "__has_c_attribute")
+        (cons "__has_c_attribute"
               (make-macro-info-function
-               :params (list (ident "x"))
+               :params (list "x")
                :ellipsis nil
                :replist (list (plexeme-number (pnumber-digit #\0)))
                :hash-params nil))
-        (cons (ident "__has_cpp_attribute")
+        (cons "__has_cpp_attribute"
               (make-macro-info-function
-               :params (list (ident "x"))
+               :params (list "x")
                :ellipsis nil
                :replist (list (plexeme-number (pnumber-digit #\0)))
                :hash-params nil))
-        (cons (ident "__has_extension")
+        (cons "__has_extension"
               (make-macro-info-function
-               :params (list (ident "x"))
+               :params (list "x")
                :ellipsis nil
                :replist (list (plexeme-number (pnumber-digit #\0)))
                :hash-params nil))
-        (cons (ident "__has_feature")
+        (cons "__has_feature"
               (make-macro-info-function
-               :params (list (ident "x"))
+               :params (list "x")
                :ellipsis nil
                :replist (list (plexeme-number (pnumber-digit #\0)))
                :hash-params nil))
-        (cons (ident "__has_include")
+        (cons "__has_include"
               (make-macro-info-function
-               :params (list (ident "x"))
+               :params (list "x")
                :ellipsis nil
                :replist (list (plexeme-number (pnumber-digit #\0)))
                :hash-params nil))
-        (cons (ident "__has_include_next")
+        (cons "__has_include_next"
               (make-macro-info-function
-               :params (list (ident "x"))
+               :params (list "x")
                :ellipsis nil
                :replist (list (plexeme-number (pnumber-digit #\0)))
                :hash-params nil)))
@@ -435,25 +441,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define predefined-macros ((version c::versionp))
-  :returns (macros ident-macro-info-alistp)
-  :short "Predefined macros for the given C version."
+(define predefined-macros-cheri ()
+  :returns (macros string-macro-info-alistp)
+  :short "Predefined macros for CHERI extensions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We compose the macros according to the version."))
-  (c::version-case
-   version
-   :c17 (predefined-macros-c17)
-   :c23 (predefined-macros-c23)
-   :c17+gcc (append (predefined-macros-c17)
-                    (predefined-macros-gcc))
-   :c23+gcc (append (predefined-macros-c23)
-                    (predefined-macros-gcc))
-   :c17+clang (append (predefined-macros-c17)
-                      (predefined-macros-clang))
-   :c23+clang (append (predefined-macros-c23)
-                      (predefined-macros-clang)))
+    "These are in addition to the standard ones.
+     We have none for now,
+     because we have only tested standard and Clang code for now.
+     But we should add them, in a systematic way."))
+  nil
+
+  ///
+
+  (defret no-duplicatesp-equal-of-predefined-macros-cheri
+    (no-duplicatesp-equal (strip-cars macros))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predefined-macros ((dialect c::dialectp))
+  :returns (macros string-macro-info-alistp)
+  :short "Predefined macros for the given C dialect."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We compose the macros according to the dialect."))
+  (b* (((c::dialect dialect) dialect)
+       (macros (c::standard-case dialect.std
+                                 :c17 (predefined-macros-c17)
+                                 :c23 (predefined-macros-c23)))
+       (macros (cond (dialect.gcc (append macros (predefined-macros-gcc)))
+                     (dialect.clang (append macros (predefined-macros-clang)))
+                     (t macros))))
+    (if dialect.cheri
+        (append macros (predefined-macros-cheri))
+      macros))
 
   ///
 
@@ -462,7 +485,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-lookup ((name identp) (table macro-tablep))
+(define macro-lookup ((name stringp) (table macro-tablep))
   :returns
   (info?
    macro-info-optionp
@@ -471,7 +494,7 @@
      :in-theory
      (enable
       macro-info-optionp
-      macro-infop-of-cdr-of-assoc-equal-when-ident-macro-info-alistp))))
+      macro-infop-of-cdr-of-assoc-equal-when-string-macro-info-alistp))))
   :short "Look up a macro in a macro table."
   :long
   (xdoc::topstring
@@ -485,18 +508,18 @@
      Either way, @('nil') means that no definition,
      possibly due to undefinition,
      is found."))
-  (b* ((name+info? (assoc-equal (ident-fix name)
+  (b* ((name+info? (assoc-equal (str-fix name)
                                 (macro-table->dynamic table)))
        ((when name+info?) (cdr name+info?)))
-    (cdr (assoc-equal (ident-fix name) (macro-table->predefined table))))
+    (cdr (assoc-equal (str-fix name) (macro-table->predefined table))))
   :guard-hints
   (("Goal"
-    :in-theory (enable alistp-when-ident-macro-info-alistp-rewrite
-                       alistp-when-ident-macro-info-option-alistp-rewrite))))
+    :in-theory (enable alistp-when-string-macro-info-alistp-rewrite
+                       alistp-when-string-macro-info-option-alistp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-init ((version c::versionp))
+(define macro-init ((dialect c::dialectp))
   :returns (table macro-tablep)
   :short "Initial macro table."
   :long
@@ -505,12 +528,12 @@
     "This is the table before we preprocess any file,
      so there are no macros int the dynamic alist.
      But we have the predefined macros."))
-  (make-macro-table :predefined (predefined-macros version)
+  (make-macro-table :predefined (predefined-macros dialect)
                     :dynamic nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-define ((name identp) (info macro-infop) (table macro-tablep))
+(define macro-define ((name stringp) (info macro-infop) (table macro-tablep))
   :returns (mv erp (new-table macro-tablep))
   :short "Add a macro definition to the macro table."
   :long
@@ -520,7 +543,7 @@
      we give an error outright,
      because [C:6.10.8/2] prohibits redefinition of predefined macros.
      We may need to relax this check at some point,
-     based on the C version,
+     based on the C dialect,
      because GCC allows redefinition of predefined macros.")
    (xdoc::p
     "If the table already contains, in the dynamic alist,
@@ -537,38 +560,39 @@
      because, as explained in @(tsee macro-info),
      we normalize all white space to single spaces.
      We may need to relax this check at some point,
-     based on the C version, because GCC allows redefinition.")
+     based on the C dialect, because GCC allows redefinition.")
    (xdoc::p
     "If the above checks pass, we add the macro to the table,
      at the beginning of the dynamic alist.
      This shadows any other undefinition and definition."))
   (b* (((reterr) (irr-macro-table))
        ((macro-table table) table)
-       ((when (assoc-equal (ident-fix name) table.predefined))
+       ((when (assoc-equal (str-fix name) table.predefined))
         (reterr (msg "Cannot re-define the predefined macro ~x0."
-                     (ident-fix name))))
-       (info? (cdr (assoc-equal (ident-fix name) table.dynamic)))
+                     (str-fix name))))
+       (info? (cdr (assoc-equal (str-fix name) table.dynamic)))
        ((erp &)
         (if info?
             (if (equal info? (macro-info-fix info))
                 (retok nil)
               (reterr (msg "Duplicate macro ~x0 ~
                             with incompatible definitions ~x1 and ~x2."
-                           (ident-fix name)
+                           (str-fix name)
                            (macro-info-fix info)
                            info?)))
           (retok nil)))
        (new-dynamic
-        (acons (ident-fix name) (macro-info-fix info) table.dynamic)))
+        (acons (str-fix name) (macro-info-fix info) table.dynamic)))
     (retok (change-macro-table table :dynamic new-dynamic)))
   :guard-hints
-  (("Goal" :in-theory (enable alistp-when-ident-macro-info-alistp-rewrite
-                              alistp-when-ident-macro-info-option-alistp-rewrite
-                              acons))))
+  (("Goal"
+    :in-theory (enable alistp-when-string-macro-info-alistp-rewrite
+                       alistp-when-string-macro-info-option-alistp-rewrite
+                       acons))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-undefine ((name identp) (table macro-tablep))
+(define macro-undefine ((name stringp) (table macro-tablep))
   :returns (mv erp (new-table macro-tablep))
   :short "Add a macro undefinition to the macro table."
   :long
@@ -587,12 +611,13 @@
      so we may need to optionally relax this."))
   (b* (((reterr) (irr-macro-table))
        ((macro-table table) table)
-       ((when (assoc-equal (ident-fix name) table.predefined))
+       ((when (assoc-equal (str-fix name) table.predefined))
         (reterr (msg "Cannot undefine the predefined macro ~x0."
-                     (ident-fix name))))
-       (new-dynamic (acons (ident-fix name) nil table.dynamic)))
+                     (str-fix name))))
+       (new-dynamic (acons (str-fix name) nil table.dynamic)))
     (retok (change-macro-table table :dynamic new-dynamic)))
   :guard-hints
-  (("Goal" :in-theory (enable alistp-when-ident-macro-info-alistp-rewrite
-                              alistp-when-ident-macro-info-option-alistp-rewrite
-                              acons))))
+  (("Goal"
+    :in-theory (enable alistp-when-string-macro-info-alistp-rewrite
+                       alistp-when-string-macro-info-option-alistp-rewrite
+                       acons))))

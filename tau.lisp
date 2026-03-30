@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -8957,7 +8957,7 @@
 
 ; Term is a bounder correctness theorem of form 1 or 2 (depending on form), j
 ; is the form 2 slot, and bc is the bounder-correctness record that represents
-; term.  We add it to the list of of bounder-correctness records for the
+; term.  We add it to the list of bounder-correctness records for the
 ; subject-fn.
 
        (mv nil (add-tau-bounder-rule rune form j bc wrld0)))

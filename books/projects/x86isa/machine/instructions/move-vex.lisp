@@ -191,7 +191,7 @@
    <p>
    This semantic function covers the two VEX-encoded variants
    (of each of VMOVUPS, MOVUPD, and VMOVDQU)
-   that move from register to to register or memory (i.e. Op/En B).
+   that move from register to register or memory (i.e. Op/En B).
    </p>
    <p>
    The three instructions behave in the same way at the ISA level,
@@ -446,7 +446,7 @@
    <p>
    This semantic function covers the two VEX-encoded variants
    (of each of VMOVAPS, MOVAPD, and VMOVDQA)
-   that move from register to to register or memory (i.e. Op/En B).
+   that move from register to register or memory (i.e. Op/En B).
    </p>
    <p>
    The three instructions behave in the same way at the ISA level,

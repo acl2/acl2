@@ -98,6 +98,9 @@
    item
    :declon (ext-declon-find-first-field-name item.declon struct-tag)
    :include (raise "Unsupported #include directive.")
+   :define (raise "Unsupported #define directive.")
+   :undef (raise "Unsupported #undef directive.")
+   :cond (raise "Unsupported conditional directive.")
    :line-comment nil))
 
 (define trans-item-list-find-first-field-name
@@ -210,6 +213,9 @@
    item
    :declon (ext-declon-find-gso-candidate item.declon blacklist)
    :include (raise "Unsupported #include directive.")
+   :define (raise "Unsupported #define directive.")
+   :undef (raise "Unsupported #undef directive.")
+   :cond (raise "Unsupported conditional directive.")
    :line-comment nil))
 
 (define trans-item-list-find-gso-candidate
@@ -395,7 +401,7 @@
           ;; TODO: prove that split-gso preserves unambiguity and validity
           ;;   (it likely doesn't preserve the latter currently).
           ((erp tunits$)
-           (c$::dimb-transunit-ensemble tunits$ (c$::ienv->gcc ienv) nil))
+           (c$::dimb-transunit-ensemble tunits$ (c$::ienv->dialect ienv) nil))
           ((erp tunits$)
            (c$::valid-transunit-ensemble tunits$ ienv nil))
           ;; TODO: c$::valid-transunit-ensemble should return an annop

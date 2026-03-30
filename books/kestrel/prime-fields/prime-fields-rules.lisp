@@ -435,7 +435,7 @@
                         (:instance mul-of-inv-mul-of-inv (a x) (x z)))
            :in-theory (disable mul-of-inv-mul-of-inv))))
 
-;; Similar to turining (- (* 3 x)) into (* -3 x).
+;; Similar to turning (- (* 3 x)) into (* -3 x).
 (defthm neg-of-mul-when-constant
   (implies (syntaxp (and (quotep k)
                          (quotep p)))
@@ -615,7 +615,7 @@
                 (mod (ifix x2) (pos-fix p))))
   :hints (("Goal" :in-theory (enable neg sub))))
 
-;; Since some of the string rules introduce mod
+;; Since some of the strong rules introduce mod
 (defthm mod-when-fep
   (implies (fep x p)
            (equal (mod x p)

@@ -20,10 +20,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *ienv-gcc*
+  (c$::ienv-default :dialect (c::make-dialect :std (c::standard-c17)
+                                              :gcc t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (acl2::must-succeed*
   (c$::input-files :files '("test1.c")
                    :const *old*
-                   :ienv (c$::ienv-default :extensions :gcc))
+                   :ienv *ienv-gcc*)
 
   (add-section-attr *old*
                     *new*
@@ -50,7 +56,7 @@
 (acl2::must-succeed*
   (c$::input-files :files '("test2.c")
                    :const *old*
-                   :ienv (c$::ienv-default :extensions :gcc))
+                   :ienv *ienv-gcc*)
 
   (add-section-attr *old*
                     *new*
@@ -77,7 +83,7 @@ __attribute__ ((section(\"my_section\"))) __attribute__ ((noinline)) int foo(int
 (acl2::must-succeed*
   (c$::input-files :files '("test3.c")
                    :const *old*
-                   :ienv (c$::ienv-default :extensions :gcc))
+                   :ienv *ienv-gcc*)
 
   (add-section-attr *old*
                     *new*
@@ -115,7 +121,7 @@ __attribute__ ((section(\"my_section\"))) int bar(int y, int z) {
 (acl2::must-succeed*
   (c$::input-files :files '("internal-foo.c" "external-foo.c")
                    :const *old*
-                   :ienv (c$::ienv-default :extensions :gcc))
+                   :ienv *ienv-gcc*)
 
   (add-section-attr *old*
                     *new*
@@ -159,7 +165,7 @@ int main(void) {
 (acl2::must-succeed*
   (c$::input-files :files '("internal-foo.c" "external-foo.c")
                    :const *old*
-                   :ienv (c$::ienv-default :extensions :gcc))
+                   :ienv *ienv-gcc*)
 
   (add-section-attr *old*
                     *new*
@@ -204,7 +210,7 @@ int main(void) {
 (acl2::must-succeed*
   (c$::input-files :files '("internal-foo.c" "external-foo.c")
                    :const *old*
-                   :ienv (c$::ienv-default :extensions :gcc))
+                   :ienv *ienv-gcc*)
 
   (add-section-attr *old*
                     *new*

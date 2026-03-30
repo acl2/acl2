@@ -28,6 +28,9 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "kestrel/bibtex/xdoc-generation" :dir :system)
 
+;; Arranges to copy the contents of images/ to res/doc/ in the manual.
+(xdoc::add-resource-directory "doc" "images")
+
 (defun docpath (s)
 
 ; This function is used for replacing relative pathnames.  However, absolute
@@ -98,54 +101,56 @@
 
 (defxdoc pubs-books
   :parents (publications)
-  :short "Books Published"
-  :long "
- <h3>Books about ACL2 and Its Applications</h3>
+  :short "Books published about ACL2 and related topics"
+  :long
+ "<h3>Book about how to use ACL2</h3>
 
- <ul>
+ <img src='res/doc/car-book-cover.jpg'/>
 
- <li>How to use ACL2:<br/>
-     <i><a href='@(`(:raw (docpath \"acl2-books/car/index.html\"))`)'>Computer-Aided Reasoning:  An Approach</a></i>, Matt Kaufmann,
+ <p><em><a href='@(`(:raw (docpath \"acl2-books/car/index.html\"))`)'>Computer-Aided Reasoning: An Approach</a></em>,
+ Matt Kaufmann,
  Panagiotis Manolios, and J Strother Moore,
  Kluwer Academic Publishers,
- June, 2000.  (ISBN 0-7923-7744-3)</li>
+ June, 2000.  (ISBN 0-7923-7744-3)</p>
 
- <li>What can be done with ACL2:<br/>
- <i><a href='@(`(:raw (docpath \"acl2-books/acs/index.html\"))`)'>Computer-Aided Reasoning:  ACL2 Case Studies</a></i>, Matt Kaufmann,
- Panagiotis Manolios, and J Strother Moore (eds.),
- Kluwer Academic Publishers,
- June, 2000.  (ISBN 0-7923-7849-0)</li>
+ <p>This book and its companion book, <i>Computer-Aided Reasoning: ACL2 Case
+ Studies</i> (see below), came out of the <a
+ href='http://www.cs.utexas.edu/users/moore/acl2/workshop-1999/'>1999 ACL2
+ Wizard's Workshop</a>, the first of the ACL2 @(see acl2::workshops).</p>
 
- </ul>
-
- <p>
- Using the techniques described in these two books, users of the ACL2 system
+ <p> Using the techniques described in these two books, users of the ACL2 system
  have modeled and proved properties of hardware designs, microprocessors,
  microcode programs, and software.  In addition, many theorems in mathematics
- and meta-mathematics have been proved with ACL2.
- </p>
+ and meta-mathematics have been proved with ACL2.</p>
 
- <p>Details:</p>
+ <p>The <a href='@(`(:raw (docpath \"acl2-books/car/index.html\"))`)'>book
+ website</a> contains a description, excerpts, errata, and solutions to
+ exercises.</p>
 
- <ul>
+ <p>To order the book, <a
+ href='https://www.lulu.com/shop/j-moore-and-panagiotis-manolios-and-matt-kaufmann/computer-aided-reasoning-an-approach/paperback/product-1p52nnn.html'>click here</a>
+ or see <a href='@(`(:raw (docpath
+ \"acl2-books/OrderingInformation.html\"))`)'>Ordering Information</a>.</p>
 
- <li><i><a href='@(`(:raw (docpath
- \"acl2-books/car/index.html\"))`)'>Computer-Aided Reasoning: An
- Approach</a></i>: description, excerpts, errata, solutions to exercises.</li>
+ <h3>Book about what can be done with ACL2</h3>
 
- <li><i><a href='@(`(:raw (docpath \"acl2-books/acs/index.html\"))`)'>Computer-Aided Reasoning:  ACL2 Case Studies</a></i>: description, list of contributors, excerpts, errata,
- full scripts for case studies, solutions to exercises.</li>
+ <img src='res/doc/acs-book-cover.jpg'/>
 
- <li><a href='http://www.cs.utexas.edu/users/moore/acl2/index.html'>ACL2 Home Page</a>: tours of the system, documentation, technical papers,
- source code, installation guide, mailing lists.</li>
+ <p><em><a href='@(`(:raw (docpath \"acl2-books/acs/index.html\"))`)'>Computer-Aided Reasoning: ACL2 Case Studies</a></em>, Matt Kaufmann,
+ Panagiotis Manolios, and J Strother Moore (eds.),
+ Kluwer Academic Publishers,
+ June, 2000.  (ISBN 0-7923-7849-0)</p>
 
- <li><a href='@(`(:raw (docpath \"acl2-books/OrderingInformation.html\"))`)'>Ordering Information</a></li>
+ <p>This is the companion book to <i>Computer-Aided Reasoning: An Approach</i> (see above).</p>
 
- <li><a href='http://www.cs.utexas.edu/users/moore/acl2/workshop-1999/'>1999
- ACL2 Wizard's Workshop</a>: this was the meeting that produced the two books above; it
- was the first in a planned series of workshops for the ACL2 community.</li>
+ <p>The <a href='@(`(:raw (docpath \"acl2-books/acs/index.html\"))`)'>book
+ website</a> contains a description, list of contributors, excerpts, errata,
+ full scripts for case studies, and solutions to exercises.</p>
 
- </ul>
+ <p>To order the book, <a
+ href='https://www.lulu.com/shop/j-moore-and-panagiotis-manolios-and-matt-kaufmann/computer-aided-reasoning-acl2-case-studies/paperback/product-1jj9qqv.html'>click here</a>
+ or see <a href='@(`(:raw (docpath
+ \"acl2-books/OrderingInformation.html\"))`)'>Ordering Information</a>.</p>
 
  <h3>Book about logic in computing using ACL2</h3>
 
@@ -1756,37 +1761,106 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun generate-workshop-documentation-xdoc (entries)
+;; Returns (mv this-group-entry-pairs remaining-entry-pairs).
+(defund group-bibtex-entries-aux (entry-pairs headers)
+  (if (endp entry-pairs)
+      (mv nil nil)
+    (let* ((entry-pair (first entry-pairs))
+           ;; the car of the pair seems to always be the same as the key
+           (alist (cdr entry-pair))
+           (key (acl2::get-entry-field "key" alist)))
+      (if (assoc-equal key headers) ; we expect it to the first key in headers, so we could just check that
+          ;; we've reached the start of the next group
+          (mv nil entry-pairs)
+        (mv-let (this-group-entry-pairs rest-entry-pairs)
+          (group-bibtex-entries-aux (rest entry-pairs) headers)
+          (mv (cons entry-pair this-group-entry-pairs)
+              rest-entry-pairs))))))
+
+(local
+  (defthm <=-of-len-of-mv-nth-1-of-group-bibtex-entries-aux
+    (<= (len (mv-nth 1 (group-bibtex-entries-aux entry-pairs headers)))
+        (len entry-pairs))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable group-bibtex-entries-aux)))))
+
+(defun group-bibtex-entries (entry-pairs headers)
+  (declare (xargs :measure (len entry-pairs)))
+  (if (endp entry-pairs)
+      (if (not (endp headers))
+          (er hard? 'group-bibtex-entries "Extra headers found: ~x0." headers)
+        nil)
+    (let* ((entry-pair (first entry-pairs))
+           ;; the car of the pair seems to always be the same as the key
+           (alist (cdr entry-pair))
+           (key (acl2::get-entry-field "key" alist)))
+      (if (not (and (consp headers)
+                    (equal key (car (first headers)))))
+          (er hard? 'group-bibtex-entries "No header found for entry ~x0." key)
+        (mv-let (rest-this-group-entry-pairs rest-entry-pairs)
+          (group-bibtex-entries-aux (rest entry-pairs) (rest headers))
+          (acons (cdr (first headers)) ; description of this group
+                 (cons entry-pair rest-this-group-entry-pairs)
+                 (group-bibtex-entries rest-entry-pairs (rest headers))))))))
+
+(defun generate-workshop-documentation-xdoc (entries headers)
   "Generate single XDOC documentation for all workshop entries"
-  (let ((entry-count (len entries))
-        (entries (acl2::generate-bibtex-entries-XDOC entries)))
+  (let* ((entry-count (len entries))
+         (groups (group-bibtex-entries entries headers))
+         (xdoc-for-entries (acl2::generate-bibtex-groups-XDOC groups)))
     `(defxdoc pubs-workshops
-       :parents (pubs-papers)
-       :short "ACL2 Workshop Papers and Publications"
+       :parents (pubs-papers acl2::workshops)
+       :short "ACL2 Workshop Papers"
        :long ,(concatenate 'string
-                           "<p>This section contains documentation for papers and publications related to ACL2 workshops and conferences.</p>"
+                           "<p>This topic lists the papers presented at the ACL2 Workshops, which have taken place approximately every 18 months since 1999.</p>"
                            "<p><b>Total number of entries:</b> "(if (natp entry-count)
                                                                     (coerce (explode-atom entry-count 10) 'string)
                                                                   "unknown")
                            "</p>"
-                           "<ul>"
-                           entries
-                           "</ul>"))))
+                           xdoc-for-entries))))
 
 ; generate XDOC documentation from BibTeX file along with the state
-(defun generate-workshop-documentation-fn (bibtex-filename state)
+(defun generate-workshop-documentation-fn (bibtex-filename headers state)
   (declare (xargs :stobjs state
                   :verify-guards nil))
   (mv-let (entries state)
     (acl2::parse-bibtex-file bibtex-filename state)
     (if entries
-        (let ((xdoc-form (generate-workshop-documentation-xdoc entries)))
+        (let ((xdoc-form (generate-workshop-documentation-xdoc entries headers)))
           (mv nil xdoc-form state))
       (mv "no-entries-found" nil state))))
 
-(defmacro generate-workshop-documentation (bibtex-filename)
+(defmacro generate-workshop-documentation (bibtex-filename headers)
   `(make-event
-    (generate-workshop-documentation-fn ,bibtex-filename state)))
+    (generate-workshop-documentation-fn ,bibtex-filename ,headers state)))
+
+;; This supports grouping the entries by workshop.  It associates the (key of)
+;; the first bibtex entry in each workshop with a description to be printed
+;; before that group of entries:
+(defconst *workshop-headers*
+  '(("99-moore-graph" . "ACL2 Workshop 1999")
+    ("00-lusk-parallel" . "ACL2 Workshop 2000")
+    ("02-barrione-vhdl" . "ACL2 Workshop 2002")
+    ("03-kaufmann-simplifying" . "ACL2 Workshop 2003")
+    ("04-sumners-invariant" . "ACL2 Workshop 2004")
+    ("06-pike-cryptol" . "ACL2 Workshop 2006")
+    ("07-dillinger-hacking" . "ACL2 Workshop 2007")
+    ("09-sumners-simplifier" . "ACL2 Workshop 2009")
+    ("10-klein-what" . "ACL2 Workshop 2010")
+    ("11-chamarthi-testing" . "ACL2 Workshop 2011")
+    ("13-davis-embedding" . "ACL2 Workshop 2013")
+    ("14-kaufmann-enhancements" . "ACL2 Workshop 2014")
+    ("15-rager-fp" . "ACL2 Workshop 2015")
+    ("17-goel-x86isa" . "ACL2 Workshop 2017")
+    ("18-coglio-java" . "ACL2 Workshop 2018")
+    ("20-russinoff-rtl" . "ACL2 Workshop 2020")
+    ("22-kaufmann-tables" . "ACL2 Workshop 2022")
+    ("23-kwan-lu" . "ACL2 Workshop 2023")
+    ("25-russinoff-linear-one" . "ACL2 Workshop 2025")
+    ;; Extend this for an additional workshop by finding the first reference
+    ;; for that workshop in books/workshops/references/workshops.bib.
+    ))
 
 ;Submit documentation for ACL2 workshops file
-(generate-workshop-documentation "../workshops/references/workshops.bib")
+; (depends-on "../workshops/references/workshops.bib")
+(generate-workshop-documentation "../workshops/references/workshops.bib" *workshop-headers*)

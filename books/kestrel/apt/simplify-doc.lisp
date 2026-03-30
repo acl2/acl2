@@ -24,7 +24,7 @@
   :parents (apt)
   :short "Simplify the definition of a given function."
   :long "<p>For any function symbol @('f') defined using @(tsee defun), @(tsee
- defun-sk), or the the @(see soft::SOFT) tool, @('defun-sk2'), @('simplify')
+ defun-sk), or the @(see soft::SOFT) tool, @('defun-sk2'), @('simplify')
  defines a corresponding new function whose body results from simplifying the
  body of the definition of @('f').  @('Simplify') may also be used to simplify
  a given term.</p>

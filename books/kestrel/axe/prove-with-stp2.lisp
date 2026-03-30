@@ -1,7 +1,7 @@
 ; Calling STP to prove things about DAGs and terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -41,7 +41,7 @@
 (local (include-book "kestrel/typed-lists-light/decreasingp" :dir :system))
 (local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
-(local (include-book "kestrel/bv-lists/bv-arrays" :dir :system))
+(local (include-book "kestrel/bv-arrays/bv-arrays" :dir :system))
 (local (include-book "kestrel/bv/bvlt" :dir :system))
 
 (local (in-theory (e/d (rationalp-when-natp)
@@ -1007,7 +1007,7 @@
                                  nil
                                  state)))
     (if (eq result *error*)
-        (prog2$ (er hard? 'try-aggressively-cut-equivalence-proof "Error calling STP." nil)
+        (prog2$ (er hard? 'try-aggressively-cut-equivalence-proof "Error calling STP.")
                 (mv :error-calling-stp
                     nil ;not proved
                     nodenums-to-translate
@@ -1325,7 +1325,7 @@
                                          nil
                                          state))
          ((when (eq result *error*))
-          (er hard? 'try-cut-equivalence-proofs "Error calling STP." nil)
+          (er hard? 'try-cut-equivalence-proofs "Error calling STP.")
           (mv nil ; did not prove it
               state)))
       (if (eq result *valid*)

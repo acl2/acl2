@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -612,11 +612,11 @@
          ""))
       ((do-not-induct do-not-induct-otf-flg-override)
        (msg "Normally we would attempt to prove ~@0 by induction.  However, a ~
-             :DO-NOT-INDUCT hint was supplied to abort the proof attempt.~|"
+             ~x1 hint was supplied to abort the proof attempt.~|"
             cl-id-phrase
             (if (eq temp 'do-not-induct)
-                t
-              :otf-flg-override)))
+                :DO-NOT-INDUCT
+              :OTF-FLG-OVERRIDE)))
       (induction-depth-limit-exceeded
        (msg "Normally we would attempt to prove ~@0 by induction.  However, ~
              that would cause the induction-depth-limit of ~x1 to be ~
@@ -3832,8 +3832,8 @@
               (t (mv@par nil val nil state))))))
      (t (mv@par nil nil nil state)))))
 
-; Before we can can complete the definition of waterfall-step, we need support
-; for rw-cache operations (see the Essay on Rw-cache) at the pspv level.
+; Before we can complete the definition of waterfall-step, we need support for
+; rw-cache operations (see the Essay on Rw-cache) at the pspv level.
 
 (defun set-rw-cache-state-in-pspv (pspv val)
   (declare (xargs :guard (member-eq val *legal-rw-cache-states*)))
@@ -4426,8 +4426,7 @@
       (cond
        ((or erp bad-historyp)
 
-; We will act like an error occurred.  We have to decided which kind of
-; error.
+; We will act like an error occurred.  We have to decide which kind of error.
 
         (mv-let (error-string abort-cause)
           (cond
@@ -4446,7 +4445,7 @@
                        (cond
                         ((eq abort-cause
                              'subgoal-path-length-violation)
-                         (msg "The maximum subgoal depth has of ~x0 has been ~
+                         (msg "The maximum subgoal depth of ~x0 has been ~
                                reached.  The proof attempt has failed.  See ~
                                :DOC set-subgoal-loop-limits."
                               (car subgoal-loop-limits)))

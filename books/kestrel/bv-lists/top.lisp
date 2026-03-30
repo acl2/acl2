@@ -81,23 +81,7 @@
 (include-book "packbvs")
 (include-book "packbvs-little")
 
-(include-book "bv-arrayp")
-(include-book "bv-array-read")
-(include-book "bv-array-read-rules")
-(include-book "bv-array-write")
-(include-book "bv-array-clear")
-(include-book "bv-array-clear-range")
-(include-book "bv-array-if")
-(include-book "append-arrays")
-(include-book "array-of-zeros")
-(include-book "bv-arrays")
-(include-book "bv-array-conversions")
-(include-book "bv-array-conversions2")
-(include-book "bv-array-conversions-gen")
-(include-book "array-patterns")
-
 (include-book "bv-list-read-chunk-little")
-(include-book "bv-array-read-chunk-little")
 
 (include-book "bvnth")
 

@@ -12,7 +12,7 @@
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 
 (include-book "../hash-defs")
-(include-book "heap-order")
+(include-book "heap-order-defs")
 (include-book "rotate-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))

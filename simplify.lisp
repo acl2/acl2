@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -1865,18 +1865,18 @@
 ;     interrupted before we stored the final values.
 
 ; (1) :BLOCKED-FALSE-SATISFYING-ACTIVATIONS - every time we abandon a
-;      satisfying activation because its hyp is false, we add it to this list;
-;      note that we will have to do some work to install inst-hyp, etc. into
-;      the activation act0 just detected by advance-fc-activationi.
+;     satisfying activation because its hyp is false, we add it to this list;
+;     note that we will have to do some work to install inst-hyp, etc. into
+;     the activation act0 just detected by advance-fc-activationi.
 
 ; (2) :ALL-SATISFYING-FC-DERIVATIONS - every time we make an fc derivation from a
-;      satisfying activation, we save the fc-derivation here.
+;     satisfying activation, we save the fc-derivation here.
 
 ; (3) :APPROVED-SATISFYING-FC-DERIVATIONS - every time we approve a satisfying
 ;     fc-derivation we save the fc-derivation here.
 
 ; (4) :LEFTOVER-ACTIVATIONS - all activations still suspended at the
-;      termination of of forward chaining
+;     termination of forward chaining
 
 ; (5) :REDUNDANT-APPROVED-FC-DERIVATIONS - every time we assume an approved
 ;     derived conclusion true, we check to see whether it changes the
@@ -8890,7 +8890,7 @@
 ; If the specification of rewrite is correct, then tail biting cannot happen
 ; except via the involvement of linear arithmetic.  To see this, consider the
 ; assumptions governing the rewriting of each literal in the clause and ask
-; whether the literal being rewritten in in rewrite-clause is assumed false via
+; whether the literal being rewritten in rewrite-clause is assumed false via
 ; any of those assumptions.  There are five sources of assumptions in the
 ; specification of rewrite: (a) the type-alist (which is constructed so as to
 ; avoid that literal), (b) the assumptions in ancestors (which is initially

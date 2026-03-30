@@ -73,11 +73,12 @@
 
 (defmacro test-free-vars (input &key fun vars)
   `(assert-event
-    (b* (((mv erp1 ast) (c$::parse-file (filepath "test")
+    (b* ((dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+         ((mv erp1 ast) (c$::parse-file (filepath "test")
                                         (acl2::string=>nats ,input)
-                                        (c::version-c17+gcc)
+                                        dialect
                                         t))
-         ((mv erp2 ast) (c$::dimb-transunit ast t))
+         ((mv erp2 ast) (c$::dimb-transunit ast dialect))
          ((mv erp3 fundef) (transunit-find-fundef (c$::ident ,fun) ast))
          (free-vars (free-vars-fundef fundef nil))
          (expected (mergesort (ident-map (list ,@vars)))))

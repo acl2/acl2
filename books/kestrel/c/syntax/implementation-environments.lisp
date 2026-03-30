@@ -60,7 +60,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We include an indication of the version of C; see @(tsee c::version).
+    "We include an indication of the dialect of C; see @(tsee c::dialect).
      Currently we mainly support C17,
      with and without GCC and Clang extensions,
      but we are starting to adding some support for C23 as well.")
@@ -97,7 +97,7 @@
      alignment and padding policies,
      endianness,
      and so on."))
-  ((version c::version)
+  ((dialect c::dialect)
    (bool-bytes pos)
    (short-bytes pos
                 :reqfix (if (and (<= short-bytes int-bytes)
@@ -167,7 +167,7 @@
    (xdoc::p
     "This can be used as a dummy value of the type."))
   :type ienvp
-  :body (make-ienv :version (c::irr-version)
+  :body (make-ienv :dialect (c::irr-dialect)
                    :bool-bytes 1
                    :short-bytes 2
                    :int-bytes 2
@@ -225,7 +225,7 @@
                                                   llong-format
                                                   bool-format)))
     (c::make-ienv
-     :version ienv.version
+     :dialect ienv.dialect
      :char+short+int+long+llong+bool-format
      char+short+int+long+llong+bool-format))
   :guard-hints (("Goal" :in-theory (enable ldm-ienv-wfp-lemma)))
@@ -887,14 +887,14 @@
 (define ienv->gcc ((ienv ienvp))
   :returns (yes/no booleanp)
   :short "Flag saying whether GCC extensions are enabled or not."
-  (c::version-gccp (ienv->version ienv)))
+  (c::dialect->gcc (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->clang ((ienv ienvp))
   :returns (yes/no booleanp)
   :short "Flag saying whether Clang extensions are enabled or not."
-  (c::version-clangp (ienv->version ienv)))
+  (c::dialect->clang (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -907,34 +907,21 @@
     "There is very large overlap between the of extensions
      supported by GCC and by Clang.
      Therefore, it is most often sufficient to check
-     if the version includes either."))
-  (c::version-gcc/clangp (ienv->version ienv)))
+     if the dialect includes either."))
+  (c::dialect-gcc/clangp (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->std ((ienv ienvp))
-  :returns (number posp
-                   :rule-classes (:rewrite :type-prescription)
-                   :hints (("Goal" :in-theory (enable c::version-std-c17p
-                                                      c::version-std-c23p))))
-  :short "Numeric version of the C standard (regardless of GCC extensions)."
-  (b* (((ienv ienv) ienv))
-    (cond ((c::version-std-c17p ienv.version) 17)
-          ((c::version-std-c23p ienv.version) 23)))
-  :guard-hints (("Goal" :in-theory (enable c::version-std-c17p
-                                           c::version-std-c23p))))
+  :returns (std c::standardp)
+  :short "The base C standard (regardless of extensions)."
+  (c::dialect->std (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ienv-default (&key
-                      ((std (or (eq std :auto)
-                                (equal std 17)
-                                (equal std 23)))
-                       ':auto)
-                      ((extensions (or (eq extensions nil)
-                                       (eq extensions :gcc)
-                                       (eq extensions :clang)))
-                       'nil))
+(define ienv-default (&key ((dialect (or (eq dialect :auto)
+                                         (c::dialectp dialect)))
+                            ':auto))
   :short "A default implementation environment."
   :long
   (xdoc::topstring
@@ -943,29 +930,20 @@
      In particular, it could be used as default for tests
      that do not necessarily involve @(tsee input-files).")
    (xdoc::p
-    "We default to the C17 standard without GCC extensions.
-     This is the C version with the strongest support.
+    "We default to the C17 standard without any extensions.
+     This is the C dialect with the strongest support.
      Optionally, this can be overridden
-     with the @(':std') and @(':extensions') keyword arguments.
-     The legal arguments for @(':std') are @(':auto'), @('17'), and @('23').
-     The legal arguments for @(':extensions') are
-     @('nil'), @(':gcc'), and @(':clang').")
+     with the @(':dialect') keyword argument.
+     The argument provided for the @(':dialect') keyword, if provided,
+     must be @(':auto') or a @(see c::dialect).")
    (xdoc::p
     "For the type sizes and signedness options,
      we use values which have anecdotally appeared common
      on 64-bit machines."))
-  (b* ((std (if (eq std :auto) 17 std))
-       (version (if (int= std 17)
-                    (cond ((eq extensions nil) (c::version-c17))
-                          ((eq extensions :gcc) (c::version-c17+gcc))
-                          (t ; :clang
-                           (c::version-c17+clang)))
-                  (cond
-                   ((eq extensions nil) (c::version-c23))
-                   ((eq extensions :gcc) (c::version-c23+gcc))
-                   (t ; :clang
-                    (c::version-c23+clang))))))
-    (make-ienv :version version
+  (b* ((dialect (if (eq dialect :auto)
+                    (c::make-dialect :std (c::standard-c17))
+                  dialect)))
+    (make-ienv :dialect dialect
                :bool-bytes 1
                :short-bytes 2
                :int-bytes 4

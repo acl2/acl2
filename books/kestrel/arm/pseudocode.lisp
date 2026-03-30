@@ -53,12 +53,160 @@
 
 (defconst *unpredictable* :unpredictable)
 (defconst *unsupported* :unsupported)
+(defconst *undefined* :undefined)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; See D16.5.3 (Bitstring manipulation)
+;; D16.5.3 (Bitstring manipulation, Bitstring concatenation and replication)
 
-;; See "Zero-extension and sign-extension of bitstrings"
+;; todo: generalize to allow x to be longer than 1 bit
+(defund Replicate (x n)
+  (declare (xargs :guard (and (bitp x)
+                              (posp n))))
+  (repeatbit n x))
+
+(defund Zeros (n)
+  (declare (xargs :guard (posp n)))
+  (Replicate 0 n))
+
+(defund Ones (n)
+  (declare (xargs :guard (posp n)))
+  (Replicate 1 n))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; D16.5.3 (Bitstring manipulation, Bitstring count)
+
+(defund BitCount (n x)
+  (declare (xargs :guard (unsigned-byte-p n x)))
+  (bvcount n x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; D16.5.3 (Bitstring manipulation, Testing a bitstring for being all zero or all ones)
+
+(defun IsZero (n x)
+  (declare (xargs :guard (unsigned-byte-p n x))
+           (ignore n))
+  (equal 0 x) ; todo: phrase using bitcount
+  )
+
+(defund IsZeroBit (n x)
+  (declare (xargs :guard (unsigned-byte-p n x)))
+  (if (IsZero n x) 1 0))
+
+;; can avoid a case split
+(defthm IsZeroBit-alt-def
+  (equal (IsZeroBit n x)
+         (bool-to-bit (equal x 0)))
+  :rule-classes :definition
+  :hints (("Goal" :in-theory (enable IsZeroBit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; D16.5.3 (Bitstring manipulation, Lowest and highest set bits of a bitstring)
+
+(defun LowestSetBit-aux (n size x)
+  (declare (xargs :guard (and (natp n)
+                              (unsigned-byte-p size x)
+                              (<= n (+ 1 size)))
+                  :measure (nfix (+ 1 (- size n)))))
+  (if (or (not (mbt (natp n)))
+          (not (mbt (natp size)))
+          (<= size n))
+      size
+    (if (= 1 (getbit n x))
+        n
+      (LowestSetBit-aux (+ 1 n) size x))))
+
+(defthm LowestSetBit-aux-of-0
+  (equal (LowestSetBit-aux n size 0)
+         size)
+  :hints (("Goal" :in-theory (enable LowestSetBit-aux))))
+
+(defund LowestSetBit (size x)
+  (declare (xargs :guard (unsigned-byte-p size x)))
+  (LowestSetBit-aux 0 size x))
+
+;; proves the claim "If all of its bits are zeros, ..."
+(thm (equal (LowestSetBit size 0) size) :hints (("Goal" :in-theory (enable LowestSetBit))))
+
+;; (assert-equal (LowestSetBit 32 1) 0)
+;; (assert-equal (LowestSetBit 32 8) 3)
+;; (assert-equal (LowestSetBit 32 0) 32)
+
+(defun HighestSetBit-aux (n size x)
+  (declare (xargs :guard (and (integerp n)
+                              (<= -1 n)
+                              (unsigned-byte-p size x)
+                              (<= n (+ -1 size)))
+                  :measure (nfix (+ 1 n))))
+  (if (not (natp n))
+      -1
+    (if (= 1 (getbit n x))
+        n
+      (HighestSetBit-aux (+ -1 n) size x))))
+
+(defthm HighestSetBit-aux-of-0
+  (equal (HighestSetBit-aux n size 0)
+         -1)
+  :hints (("Goal" :in-theory (enable HighestSetBit-aux))))
+
+(defthm HighestSetBit-aux-linear
+  (implies  (<= -1 n)
+            (and (<= (HighestSetBit-aux n size x) n)
+                 (<= -1 (HighestSetBit-aux n size x))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable HighestSetBit-aux))))
+
+(defund HighestSetBit (size x)
+  (declare (xargs :guard (unsigned-byte-p size x)))
+  (HighestSetBit-aux (+ -1 size) size x))
+
+(defthm HighestSetBit-linear
+  (implies (natp size)
+           (and (<= (HighestSetBit size x) (+ -1 size))
+                (<= -1 (HighestSetBit size x))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable HighestSetBit))))
+
+;; proves the claim "If all of its bits are zeros, ..."
+(thm (equal (HighestSetBit size 0) -1) :hints (("Goal" :in-theory (enable HighestSetBit))))
+
+(defund CountLeadingZeroBits (n x)
+  (declare (xargs :guard (unsigned-byte-p n x)))
+  (+ n -1 (- (HighestSetBit n x))))
+
+(defthm integerp-of-CountLeadingZeroBits-type
+  (implies (integerp n)
+           (integerp (CountLeadingZeroBits n x)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable CountLeadingZeroBits))))
+
+;; proves "in the range 0 to N"
+(thm
+ (implies (natp n)
+          (and (<= 0 (CountLeadingZeroBits n x))
+               (<= (CountLeadingZeroBits n x) n)))
+ :hints (("Goal" :in-theory (enable CountLeadingZeroBits))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; D16.5.3 (Bitstring manipulation, Zero-extension and sign-extension of bitstrings)
+
+;;todo: could pass the old size too?
+(defund ZeroExtend (x n)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x) ; could require n-1
+                              )))
+  (mbe :logic (bvchop n x)
+       :exec x))
+
+(defthm unsigned-byte-p-of-ZeroExtend
+  (implies (natp n)
+           (unsigned-byte-p n (ZeroExtend x n)))
+  :hints (("Goal" :in-theory (enable ZeroExtend))))
+
 ;; We add the "xsize" parameter here because we can't ask x for its size.
 ;todo: reorder args?
 (defun SignExtend (x xsize i)
@@ -91,18 +239,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;todo: could pass the old size too?
-(defund ZeroExtend (x n)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x) ; could require n-1
-                              )))
-  (mbe :logic (bvchop n x)
-       :exec x))
+;; D16.5.3 (Bitstring manipulation, Converting bitstrings to integers)
 
-(defthm unsigned-byte-p-of-ZeroExtend
+(defund sint (n x)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x))))
+  (logext n x))
+
+;; for us, a bitstring is already an unsigned integer, but we chop to make an
+;; unconditional return type.
+(defund uint (n x)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x))))
+  (bvchop n x))
+
+(local (in-theory (enable uint sint)))
+
+(defthm uint-bound-linear
   (implies (natp n)
-           (unsigned-byte-p n (ZeroExtend x n)))
-  :hints (("Goal" :in-theory (enable ZeroExtend))))
+           (<= (uint n x) (+ -1 (expt 2 n))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable uint))))
+
+(defund int (n x unsigned)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x)
+                              (booleanp unsigned))))
+  (if unsigned (uint n x) (sint n x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,11 +369,8 @@
 
 ;drop?
 (defthm integerp-of-lsr
-  (implies (and (unsigned-byte-p n x)
-                 (integerp shift)
-                 ;; the assert:
-                 (>= shift 0))
-            (integerp (lsr n x hift)))
+  (implies (integerp x)
+           (integerp (lsr n x shift)))
   :hints (("Goal" :in-theory (enable lsr lsr_c))))
 
 (defthm lsr-becomes-bvshr
@@ -401,7 +561,7 @@
                   (acl2::rightrotate n shift x)))
   :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
 
-;; could try to complify the RHS but that would involve a case split
+;; could try to simplify the RHS but that would involve a case split
 (defthm mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
   (implies (and (unsigned-byte-p n x)
                 (integerp shift))
@@ -524,34 +684,6 @@
                 (bitp carry_in))
            (unsigned-byte-p n (shift n value type amount carry_in)))
   :hints (("Goal" :in-theory (enable shift))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund sint (n x)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x))))
-  (logext n x))
-
-;; for us, a bitstring is already an unsigned integer, but we chop to make an
-;; unconditional return type.
-(defund uint (n x)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x))))
-  (bvchop n x))
-
-(local (in-theory (enable uint sint)))
-
-(defthm uint-bound-linear
-  (implies (natp n)
-           (<= (uint n x) (+ -1 (expt 2 n))))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable uint))))
-
-(defund int (n x unsigned)
-  (declare (xargs :guard (and (posp n)
-                              (unsigned-byte-p n x)
-                              (booleanp unsigned))))
-  (if unsigned (uint n x) (sint n x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -779,26 +911,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund BitCount (n x)
-  (declare (xargs :guard (unsigned-byte-p n x)))
-  (bvcount n x))
 
-(defun IsZero (n x)
-  (declare (xargs :guard (unsigned-byte-p n x))
-           (ignore n))
-  (equal 0 x) ; todo: phrase using bitcount
-  )
 
-(defund IsZeroBit (n x)
-  (declare (xargs :guard (unsigned-byte-p n x)))
-  (if (IsZero n x) 1 0))
 
-;; can avoid a case split
-(defthm IsZeroBit-alt-def
-  (equal (IsZeroBit n x)
-         (bool-to-bit (equal x 0)))
-  :rule-classes :definition
-  :hints (("Goal" :in-theory (enable IsZeroBit))))
 
 ;; (local
 ;;   (defthm integerp-when-unsigned-byte-p-32
@@ -942,6 +1057,14 @@
            (armp (advance-pc arm)))
   :hints (("Goal" :in-theory (enable advance-pc))))
 
+(defthm reg-of-advance-pc
+  (implies (register-numberp reg)
+           (equal (reg reg (advance-pc arm))
+                  (if (equal 15 reg)
+                      (add-to-address 4 (reg *pc* arm))
+                    (reg reg arm))))
+  :hints (("Goal" :in-theory (enable advance-pc))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; See "Rounding and aligning" in D16.5.4 Arithmetic
@@ -960,7 +1083,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: think about this
-;; Val should contain enough informaion to distinguish different unknown bits (e.g., opcode, flag, etc.)
+;; Val should contain enough information to distinguish different unknown bits (e.g., opcode, flag, etc.)
 (encapsulate (((unknown-bits * * arm) => *))
     (local (defun unknown-bits (n val arm)
              (declare (xargs :guard (posp n) :stobjs arm)
@@ -1017,34 +1140,6 @@
   :hints (("Goal" :in-theory (enable PCStoreValue))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun Zeros (n)
-  (declare (xargs :guard (posp n))
-           (ignore n))
-  0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun LowestSetBit-aux (n size x)
-  (declare (xargs :guard (and (natp n)
-                              (unsigned-byte-p size x)
-                              (<= n (+ 1 size)))
-                  :measure (nfix (+ 1 (- size n)))))
-  (if (or (not (mbt (natp n)))
-          (not (mbt (natp size)))
-          (<= size n))
-      size
-    (if (= 1 (getbit n x))
-        n
-      (LowestSetBit-aux (+ 1 n) size x))))
-
-(defund LowestSetBit (size x)
-  (declare (xargs :guard (unsigned-byte-p size x)))
-  (LowestSetBit-aux 0 size x))
-
-;; (assert-equal (LowestSetBit 32 1) 0)
-;; (assert-equal (LowestSetBit 32 8) 3)
-;; (assert-equal (LowestSetBit 32 0) 32)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

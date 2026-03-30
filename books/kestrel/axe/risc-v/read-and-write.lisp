@@ -21,11 +21,11 @@
 (include-book "risc-v-rules")
 (include-book "support") ; for write32-mem-ubyte32-lendian-alt-def
 (include-book "kestrel/bv/bvcat-def" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
-(include-book "kestrel/bv-lists/array-of-zeros" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
-(local (include-book "kestrel/bv-lists/bv-arrays" :dir :system))
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
+(include-book "kestrel/bv-arrays/array-of-zeros" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
+(local (include-book "kestrel/bv-arrays/bv-arrays" :dir :system))
 ;(local (include-book "kestrel/bv/logapp" :dir :system)) ; reduce
 ;(local (include-book "kestrel/lists-light/nth" :dir :system))
 ;(local (include-book "kestrel/lists-light/take" :dir :system))
@@ -798,7 +798,7 @@
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
-;(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+;(include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 (include-book "kestrel/bv-lists/bv-list-read-chunk-little" :dir :system)
 
 (local (include-book "kestrel/lists-light/take" :dir :system))

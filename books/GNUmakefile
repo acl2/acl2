@@ -360,6 +360,11 @@ ${info Excluding books that are CCL-only: [$(CERT_PL_CCL_ONLY)]}
 OK_CERTS := $(filter-out $(CERT_PL_CCL_ONLY), $(OK_CERTS))
 endif
 
+ifneq (SBCL, $(ACL2_HOST_LISP))
+${info Excluding books that are SBCL-only: [$(CERT_PL_SBCL_ONLY)]}
+OK_CERTS := $(filter-out $(CERT_PL_SBCL_ONLY), $(OK_CERTS))
+endif
+
 ifeq (ALLEGRO, $(ACL2_HOST_LISP))
 ${info Excluding non-Allegro books: [$(CERT_PL_NON_ALLEGRO)]}
 OK_CERTS := $(filter-out $(CERT_PL_NON_ALLEGRO), $(OK_CERTS))
@@ -430,7 +435,8 @@ endif # ifeq ($(ACL2_HAS_REALS), )
 
 CERT_PL_ACL2R_AND_NON_ACL2R := $(filter $(CERT_PL_USES_ACL2R), $(CERT_PL_NON_ACL2R))
 ifneq ($(CERT_PL_ACL2R_AND_NON_ACL2R), )
-${info Books appear that both require ACL2(r) but that do not work with ACL2(r): $(CERT_PL_ACL2R_AND_NON_ACL2R)}
+# Note that contradictions like this may be due to cert_params in included-books:
+${error Some books require ACL2(r) but also cannot be used with ACL2(r): $(CERT_PL_ACL2R_AND_NON_ACL2R)}
 endif
 
 .PHONY: uses-acl2r
@@ -608,7 +614,8 @@ SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert \
   demos/ppr1-experiments-thm-1-ppr1.cert \
-  kestrel/acl2data/gather/tests/run-tests.cert
+  kestrel/acl2data/gather/tests/run-tests.cert \
+  projects/aleo/vm/circuits/axe/blake2s-proof2.cert
 
 # The following could well be considered as slow books, too.
 # top.cert

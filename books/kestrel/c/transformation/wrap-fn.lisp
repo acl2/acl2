@@ -564,6 +564,9 @@
      :declon (ext-declon-wrap-fn-add-wrapper-def
               item.declon target-name wrapper-name? blacklist)
      :include (retmsg$ "Unsupported #include directives.")
+     :define (retmsg$ "Unsupported #define directives.")
+     :undef (retmsg$ "Unsupported #undef directives.")
+     :cond (retmsg$ "Unsupported conditional directives.")
      :line-comment (retok nil nil nil)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///

@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -908,7 +908,7 @@
 ; (defun fn (x y z) (if (endp x) nil (fn (cdr x) z y))).
 
 ; Alist maps the variables we've seen so far to one of the three known ilks,
-; NIL, :FN, or :EXPR.  If a variable is not bound in alist, it it as though it
+; NIL, :FN, or :EXPR.  If a variable is not bound in alist, it is as though it
 ; is bound to :UNKNOWN.  Thus, the nil alist is the appropriate initial value.
 ; When we're done with the first pass we complete the alist by assigning nil to
 ; all variables not otherwise bound.  Once the alist binds every formal to a

@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -297,6 +297,10 @@ is using two characters to indicate a new line?"))
                         (char-upcase ch))
                        ch))
       (setq bad 3))
+    (unless (<= (char-code (char-downcase ch)) 255)
+      (setq bad 4))
+    (unless (<= (char-code (char-upcase ch)) 255)
+      (setq bad 5))
     (when bad
       (exit-with-build-error
        "This Common Lisp is unsuitable for ACL2 because the~%~
@@ -315,6 +319,10 @@ is using two characters to indicate a new line?"))
                  (equal (char-downcase
                          (char-upcase ch))
                         ch)))
+         (4 '(unless (<= (char-code (char-downcase ch)) 255)
+               (setq bad 4)))
+         (5 '(unless (<= (char-code (char-upcase ch)) 255)
+               (setq bad 5)))
          (otherwise
           "Implementation Error!   Please contact the ACL2 implementors."))
        #-cmucl ""

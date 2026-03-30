@@ -80,8 +80,9 @@
           fundef-option
           ext-declon
           ext-declon-list
-          trans-item
-          trans-item-list
+          hash-if/elif-expr
+          hash-if/ifdef/ifndef
+          trans-items
           transunit
           filepath-transunit-map
           transunit-ensemble
@@ -239,8 +240,9 @@
              (ext-declon-unambp ext-declon))
     :enable ext-declon-unambp)
 
-  (defruled trans-item-unambp-when-not-declon
-    (implies (not (trans-item-case item :declon))
+  (defruled trans-item-unambp-when-not-declon/cond
+    (implies (and (not (trans-item-case item :declon))
+                  (not (trans-item-case item :cond)))
              (trans-item-unambp item))
     :enable trans-item-unambp)
 
@@ -330,23 +332,6 @@
     :rule-classes :forward-chaining
     :enable block-item-unambp)
 
-  ;; These were found necessary at some point,
-  ;; but they should be re-assessed.
-
-  (defruled expr-unambp-of-type-spec-typeof-expr->expr
-    (implies (and (type-spec-unambp tyspec)
-                  (equal (type-spec-kind tyspec) :typeof-expr))
-             (expr-unambp (type-spec-typeof-expr->expr tyspec)))
-    :rule-classes :forward-chaining
-    :enable type-spec-unambp)
-
-  (defruled tyname-unambp-of-type-spec-typeof-type->type
-    (implies (and (type-spec-unambp tyspec)
-                  (equal (type-spec-kind tyspec) :typeof-type))
-             (tyname-unambp (type-spec-typeof-type->type tyspec)))
-    :rule-classes :forward-chaining
-    :enable type-spec-unambp)
-
   ;; Add the above theorems to the rule set.
 
   (add-to-ruleset abstract-syntax-unambp-rules
@@ -370,7 +355,7 @@
                     trans-item-unambp-when-line-comment
                     decl-spec-unambp-when-not-tyspec/align
                     ext-declon-unambp-when-not-fundef/declon
-                    trans-item-unambp-when-not-declon
+                    trans-item-unambp-when-not-declon/cond
                     expr-not-sizeof-when-unambp
                     expr-not-alignof-when-unambp
                     expr-not-cast/call-ambig-when-unambp
@@ -384,9 +369,7 @@
                     param-declor-not-ambig-when-unambp
                     dirabsdeclor-not-dummy-base-when-unambp
                     stmt-not-for-ambig-when-unambp
-                    block-item-not-ambig-when-unambp
-                    expr-unambp-of-type-spec-typeof-expr->expr
-                    tyname-unambp-of-type-spec-typeof-type->type)))
+                    block-item-not-ambig-when-unambp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

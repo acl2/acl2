@@ -14,7 +14,7 @@
 
 (in-package "C$")
 
-(include-book "builtin")
+(include-book "built-in")
 (include-book "unambiguity")
 (include-book "type-specifier-lists")
 (include-book "storage-specifier-lists")
@@ -1727,7 +1727,7 @@
      so it is probably a GCC extension.
      We therefore accept this when the "
     (xdoc::seetopic "implementation-environments" "implementation-environment")
-    " version indicates GCC/Clang extensions.
+    " dialect indicates GCC/Clang extensions.
      Since we do not have code yet to recognize null pointer constants,
      we accept any integer expression;
      that is, we allow one pointer operand and one integer operand.")
@@ -7354,6 +7354,12 @@
                (retok (trans-item-declon new-declon) table))
      :include (reterr
                (msg "Validator does not support #include directives yet."))
+     :define (reterr
+              (msg "Validator does not support #define directives yet."))
+     :undef (reterr
+             (msg "Validator does not support #undef directives yet."))
+     :cond (reterr
+            (msg "Validator does not support conditional directives yet."))
      :line-comment (retok (trans-item-fix item) (valid-table-fix table))))
   :hooks (:fix)
 
@@ -7406,11 +7412,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If GCC/Clang extensions are not enabled,
+    "If the C dialect does not have any extensions,
      the initial validation table is the one
      returned by @(tsee valid-init-table).
-     If GCC/Clang extensions are enabled,
-     we add a number of objects and functions
+     Otherwise, we add a number of objects and functions
      that we have encountered in practical code;
      we should eventually have a comprehensive list here.")
    (xdoc::p
@@ -7425,36 +7430,30 @@
      the information slot of the translation unit,
      i.e. we annotate the translation unit with its final validation table.")
    (xdoc::p
-    "For each GCC function, the associated information consists of
+    "For each built-in function, the associated information consists of
      an unknown function type, external linkage, and defined status.
      The latter two seem reasonable, given that these identifiers
      are visible and have the same meaning in every translation unit,
      and have their own (built-in) definitions.
-     For each GCC object, the associated information consists of
+     For each built-in object, the associated information consists of
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-transunit) (irr-valid-table))
-       (gcc/clang (ienv->gcc/clang ienv))
+       (dialect (ienv->dialect ienv))
        (table (valid-init-table filepath externals completions next-uid))
-       (table
-         (if gcc/clang
-             (b* ((table
-                    (valid-add-ord-objfuns-file-scope
-                     *gcc-builtin-functions*
-                     (make-type-function :ret (type-unknown)
-                                         :params (type-params-unspecified))
-                     (linkage-external)
-                     (valid-defstatus-defined)
-                     table))
-                  (table
-                    (valid-add-ord-objfuns-file-scope
-                     *gcc-builtin-vars*
-                     (type-unknown)
-                     (linkage-external)
-                     (valid-defstatus-defined)
-                     table)))
-               table)
-           table))
+       (table (valid-add-ord-objfuns-file-scope
+                (built-in-functions-for dialect)
+                (make-type-function :ret (type-unknown)
+                                    :params (type-params-unspecified))
+                (linkage-external)
+                (valid-defstatus-defined)
+                table))
+       (table (valid-add-ord-objfuns-file-scope
+                (built-in-vars-for dialect)
+                (type-unknown)
+                (linkage-external)
+                (valid-defstatus-defined)
+                table))
        ((erp new-items table)
         (valid-trans-item-list (transunit->items tunit) table ienv))
        (info (make-transunit-info :table-end table)))

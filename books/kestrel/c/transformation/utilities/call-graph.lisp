@@ -624,6 +624,12 @@
    :declon (call-graph-ext-declon item.declon filepath valid-table call-graph)
    :include (prog2$ (raise "Unsupported #include directives.")
                     (call-graph-fix call-graph))
+   :define (prog2$ (raise "Unsupported #define directives.")
+                   (call-graph-fix call-graph))
+   :undef (prog2$ (raise "Unsupported #undef directives.")
+                  (call-graph-fix call-graph))
+   :cond (prog2$ (raise "Unsupported conditional directives.")
+                 (call-graph-fix call-graph))
    :line-comment (call-graph-fix call-graph)))
 
 (define call-graph-trans-item-list

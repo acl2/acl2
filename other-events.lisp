@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -1450,8 +1450,7 @@
 ;   :rule-classes nil)
 
          (er soft ctx
-             "The empty string is not a legal package name for defpkg."
-             name))
+             "The empty string is not a legal package name for defpkg."))
         ((not (equal (string-upcase name) name))
          (er soft ctx
              "~x0 is not a legal package name for defpkg, which disallows ~
@@ -3111,27 +3110,24 @@
   nil)
 
 (defmacro incompatible (rune1 rune2 &optional strictp)
-  (let ((active-fn (if strictp 'active-or-non-runep 'active-runep)))
-    (cond ((and (consp rune1)
-                (consp (cdr rune1))
-                (symbolp (cadr rune1))
-                (consp rune2)
-                (consp (cdr rune2))
-                (symbolp (cadr rune2)))
+  (let ((active-fn (if strictp 'active-or-non-runep 'active-runep))
+        (caller (if strictp 'incompatible! 'incompatible)))
+    (cond ((and (weak-runep rune1)
+                (weak-runep rune2))
 
 ; The above condition is similar to conditions in runep and active-runep.
 
            `(not (and (,active-fn ',rune1)
                       (,active-fn ',rune2))))
-          (t (er hard 'incompatible
+          (t (er hard caller
                  "Each argument to ~x0 should have the shape of a rune, ~
-                  (:KEYWORD BASE-SYMBOL), unlike ~x1."
-                 'incompatible
-                 (or (and (consp rune1)
-                          (consp (cdr rune1))
-                          (symbolp (cadr rune1))
-                          rune2)
-                     rune1))))))
+                  (:KEYWORD BASE-SYMBOL) or (:KEYWORD BASE-SYMBOL . N), as ~
+                  defined by ~x1.  But ~&2 ~#2~[does~/do~] not meet this ~
+                  criterion."
+                 caller
+                 'weak-runep
+                 (append (if (weak-runep rune1) nil (list rune1))
+                         (if (weak-runep rune2) nil (list rune2))))))))
 
 (defmacro incompatible! (rune1 rune2)
   `(incompatible ,rune1 ,rune2 t))
@@ -8511,8 +8507,8 @@
 ; encapsulation quickly if we process one while skipping proofs.  That is,
 ; suppose the user has produced a script of some session, including some
 ; encapsulations, and the whole thing has been processed with ld-skip-proofsp
-; nil, once upon a time.  Now the user wants to assume that script and and
-; continue -- i.e., he is loading a "book".
+; nil, once upon a time.  Now the user wants to assume that script and continue
+; -- i.e., he is loading a "book".
 
 ; Suppose we hit the encapsulation when skipping proofs.  Suppose we are
 ; again in wrld1 (i.e., processing the previous events of this script
@@ -15934,7 +15930,7 @@
                                   (value nil))
                                  (t (er soft ctx
                                         "Obtained non-zero exit status ~x0 ~
-                                         when attempting to touch file ~x0 ."
+                                         when attempting to touch file ~x1 ."
                                         status filename))))))
                 (t (value nil))))))))
 
@@ -17335,7 +17331,7 @@
   (cond ((and write-acl2x pcert)
          (er soft ctx
              "It is illegal to specify the writing  of a .acl2x file when a ~
-              non-nil value for :pcert (here, ~x1) is specified~@0."
+              non-nil value for :pcert (here, ~x0) is specified~@1."
              pcert
              (cond (pcert-env
                     " (even when the :pcert argument is supplied, as in this ~
@@ -21866,7 +21862,7 @@
 ; Recalling that (ev+ u a_E A c) = (mv erp r_E c') by hypothesis, we can state
 ; our goal as follows.
 
-; (*)     r_E E-corresponds to r_L with respect to A and and s0.
+; (*)     r_E E-corresponds to r_L with respect to A and s0.
 
 ; Let s0$c be the foundational stobj name for s0 and make the following
 ; definitions.
@@ -26069,12 +26065,11 @@
                  (or (eq (cadr notinline-tail) :fncall)
                      (and memo-entry
                           (er hard ctx
-                              "It is illegal to specify a value for ~
-                                      trace$ option :NOTINLINE other than ~
-                                      :FNCALL for a memoized function.  The ~
-                                      suggested trace spec for ~x0, which ~
-                                      specifies :NOTINLINE ~x0, is thus ~
-                                      illegal."
+                              "It is illegal to specify a value for trace$ ~
+                               option :NOTINLINE other than :FNCALL for a ~
+                               memoized function.  The suggested trace spec ~
+                               for ~x0, which specifies :NOTINLINE ~x1, is ~
+                               thus illegal."
                               fn
                               (cadr notinline-tail)))))
                 (memo-entry
@@ -35240,8 +35235,7 @@
        ((and error-triple-p+ (car replaced-val))
         (er soft ctx
             "Evaluation failed: Result was of the form (mv t _ state).  See ~
-             :DOC error-triple."
-            (car replaced-val)))
+             :DOC error-triple."))
        (check (cond ((and (car stobjs-out)
                           (not (eq (car stobjs-out) :df)))
                      (er soft ctx

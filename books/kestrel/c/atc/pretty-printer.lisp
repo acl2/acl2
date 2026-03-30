@@ -282,7 +282,7 @@
                                (pprint-ident tss.tag))
                   :union (msg "union ~@0"
                               (pprint-ident tss.tag))
-                  :enum (msg "union ~@0"
+                  :enum (msg "enum ~@0"
                              (pprint-ident tss.tag))
                   :typedef (pprint-ident tss.name))
   :hooks (:fix)
@@ -384,7 +384,7 @@
    :none ""
    :pointer (msg "*~@0" (pprint-obj-adeclor declor.decl))
    :array (b* ((sub (pprint-obj-adeclor declor.decl)))
-            (if (obj-adeclor-case declor.decl :array)
+            (if (obj-adeclor-case declor.decl :pointer)
                 (msg "(~@0)[~@1]"
                      sub
                      (if declor.size
@@ -809,7 +809,7 @@
               :bitand (mv (expr-grade-and) (expr-grade-equality))
               :bitxor (mv (expr-grade-xor) (expr-grade-and))
               :bitior (mv (expr-grade-ior) (expr-grade-xor))
-              :logand (mv (expr-grade-ior) (expr-grade-logical-and))
+              :logand (mv (expr-grade-logical-and) (expr-grade-ior))
               :logor (mv (expr-grade-logical-or) (expr-grade-logical-and))
               :asg (mv (expr-grade-unary) (expr-grade-assignment))
               :asg-mul (mv (expr-grade-unary) (expr-grade-assignment))
@@ -912,7 +912,7 @@
                              (pprint-expr expr.arg
                                           (expr-grade-unary)
                                           options))
-                :predec (msg "--~@0)"
+                :predec (msg "--~@0"
                              (pprint-expr expr.arg
                                           (expr-grade-unary)
                                           options))
@@ -1056,7 +1056,7 @@
                                    (lnfix level))
                   (pprint-struct-declon-list declon.members (1+ (lnfix level)))
                   (pprint-one-line "};" (lnfix level)))
-   :enum (pprint-one-line (msg "enum ~@0 {,@1};"
+   :enum (pprint-one-line (msg "enum ~@0 {~@1};"
                                (pprint-ident declon.tag)
                                (pprint-comma-sep
                                 (pprint-ident-list declon.enumerators)))
@@ -1167,7 +1167,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-label ((lab labelp))
+(define pprint-label ((lab labelp) (options pprint-options-p))
   :returns (part msgp :hints (("Goal" :in-theory (enable character-alistp))))
   :short "Pretty-print a label."
   :long
@@ -1177,7 +1177,8 @@
   (label-case lab
               :name (msg "~@0: "
                          (pprint-ident lab.get))
-              :cas "case: "
+              :cas (msg "case ~@0: "
+                        (pprint-expr lab.get (expr-grade-top) options))
               :default "default: ")
   :hooks (:fix))
 
@@ -1203,7 +1204,7 @@
     (stmt-case
      stmt
      :labeled (append (pprint-one-line (msg "~@0 {"
-                                            (pprint-label stmt.label))
+                                            (pprint-label stmt.label options))
                                        level)
                       (pprint-stmt stmt.body (1+ level) options)
                       (pprint-one-line "}" level))

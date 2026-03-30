@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -3059,13 +3059,20 @@
                                 :vartys gout-declon.vartys)))
      :include (prog2$ (raise "Unsupported #include directive.")
                       (mv (trans-item-fix item) (irr-gout)))
+     :define (prog2$ (raise "Unsupported #define directive.")
+                     (mv (trans-item-fix item) (irr-gout)))
+     :undef (prog2$ (raise "Unsupported #undef directive.")
+                    (mv (trans-item-fix item) (irr-gout)))
+     :cond (prog2$ (raise "Unsupported conditional directive.")
+                   (mv (trans-item-fix item) (irr-gout)))
      :line-comment (mv (trans-item-fix item) (gout-no-thm gin))))
   :hooks (:fix)
 
   ///
 
   (defret trans-item-unambp-of-simpadd0-trans-item
-    (trans-item-unambp new-item))
+    (trans-item-unambp new-item)
+    :hyp (trans-item-unambp item))
 
   (defret trans-item-annop-of-simpadd0-trans-item
     (trans-item-annop new-item)
@@ -3103,6 +3110,7 @@
 
   (defret trans-item-list-unambp-of-simpadd0-trans-item-list
     (trans-item-list-unambp new-items)
+    :hyp (trans-item-list-unambp items)
     :hints (("Goal" :induct t)))
 
   (defret trans-item-list-annop-of-simpadd0-trans-item-list
@@ -3150,7 +3158,8 @@
   ///
 
   (defret transunit-unambp-of-simpadd0-transunit
-    (transunit-unambp new-tunit))
+    (transunit-unambp new-tunit)
+    :hyp (transunit-unambp tunit))
 
   (defret transunit-annop-of-simpadd0-transunit
     (transunit-annop new-tunit)
@@ -3206,7 +3215,8 @@
 
   (defret filepath-transunit-map-unambp-of-simpadd0-filepath-transunit-map
     (filepath-transunit-map-unambp new-map)
-    :hyp (filepath-transunit-mapp map)
+    :hyp (and (filepath-transunit-mapp map)
+              (filepath-transunit-map-unambp map))
     :hints (("Goal" :induct t)))
 
   (defret filepath-transunit-map-annop-of-simpadd0-filepath-transunit-map
@@ -3245,7 +3255,8 @@
   ///
 
   (defret transunit-ensemble-unambp-of-simpadd0-transunit-ensemble
-    (transunit-ensemble-unambp new-tunits))
+    (transunit-ensemble-unambp new-tunits)
+    :hyp (transunit-ensemble-unambp tunits))
 
   (defret transunit-ensemble-annop-of-simpadd0-transunit-ensemble
     (transunit-ensemble-annop new-tunits)
@@ -3275,7 +3286,8 @@
   ///
 
   (defret code-ensemble-unambp-of-simpadd0-code-ensemble
-    (code-ensemble-unambp new-code))
+    (code-ensemble-unambp new-code)
+    :hyp (code-ensemble-unambp code))
 
   (defret code-ensemble-annop-of-simpadd0-code-ensemble
     (code-ensemble-annop new-code)

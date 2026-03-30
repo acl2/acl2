@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -4374,7 +4374,7 @@
       (value-cmp (cons :term term)))))))
 
 (defun guard-simplify-msg (x)
-  (msg "The only legal values for :GUARD-SIMPIFY are ~x0 and ~x1.  The value ~
+  (msg "The only legal values for :GUARD-SIMPLIFY are ~x0 and ~x1.  The value ~
         ~x2 is thus illegal.~@3"
        t :limited x
        (if (eq x nil)
@@ -6921,7 +6921,8 @@
                                              all-but-body2)))
                (msg "although the proposed and existing definitions for ~x0 ~
                      agree on the their type and :guard declarations, they ~
-                     disagree on the combined orders of those declarations.")))))
+                     disagree on the combined orders of those declarations."
+                    (car def1))))))
      ((let ((split-types1 (fetch-dcl-field :split-types all-but-body1))
             (split-types2 (fetch-dcl-field :split-types all-but-body2)))
         (or (not (eq (all-nils split-types1) (all-nils split-types2)))

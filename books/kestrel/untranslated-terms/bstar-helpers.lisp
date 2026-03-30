@@ -1,6 +1,6 @@
 ; Helper functions for manipulating calls of b*
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; See tests of b* in /data/ewsmithb/acl2/books/kestrel/tests/bstar-tests.lisp.
+;; See tests of b* in books/kestrel/tests/bstar.lisp.
 
 (include-book "kestrel/utilities/forms" :dir :system) ; for farg1, etc.
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -20,7 +20,7 @@
 
 ;; Recognizes a "supported" b* binding, of the form (<binder> ...<expressions>...)
 ;; where the number of allowed expressions depends on the binder.  Tools should
-;; know how to properly handle the supprted bindings.
+;; know how to properly handle the supported bindings.
 ;; NOTE: Keep this in sync with the functions below
 (defund supported-b*-bindingp (binding)
   (declare (xargs :guard t))

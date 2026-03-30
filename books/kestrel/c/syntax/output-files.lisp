@@ -36,9 +36,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel all-bytep-when-byte-listp
+(defrulel unsigned-byte-listp-8-when-byte-listp
   (implies (byte-listp x)
-           (acl2::all-bytep x))
+           (acl2::unsigned-byte-listp 8 x))
   :induct t
   :enable (byte-listp bytep unsigned-byte-p))
 
@@ -203,7 +203,7 @@
                             *output-files-printer-options*))
         (reterr (msg "The list of keywords in the :PRINTER-OPTIONS input ~
                       must be among ~&0, ~
-                      but the supplied :PRINTER-OPTIONS input ~x0 ~
+                      but the supplied :PRINTER-OPTIONS input ~x1 ~
                       violates that requirement."
                      *output-files-printer-options*
                      printer-options)))
@@ -344,7 +344,7 @@
        (tunits (code-ensemble->transunits code))
        (files (print-fileset tunits
                              options
-                             (ienv->version (code-ensemble->ienv code))))
+                             (ienv->dialect (code-ensemble->ienv code))))
        ;; Write the files to the file system.
        ((erp state)
         (output-files-gen-files-loop (fileset->unwrap files) base-dir state)))

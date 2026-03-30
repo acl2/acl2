@@ -124,7 +124,7 @@
      just ignores symbols that do not name any clique."))
   (b* (((reterr) nil nil)
        ((unless (symbol-listp types))
-        (reterr (msg "The :TYPES input must be a alist of symbols, ~
+        (reterr (msg "The :TYPES input must be an alist of symbols, ~
                       but it is ~x0 instead."
                      types))))
     (retok types
@@ -141,7 +141,7 @@
   (xdoc::topstring
    (xdoc::p
     "The @(':override') input must be a list.
-     We go through each eleemnt,
+     We go through each element,
      which must be a 2-tuple or a 3-tuple.
      In that tuple, the first element must be always a type name,
      which we must find in the FTY table.
@@ -540,7 +540,9 @@
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (or mutrecp recp)
+              `(:measure (,type-count ,type)
+                :hints (("Goal" :in-theory (enable o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
@@ -606,7 +608,9 @@
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (or mutrecp recp)
+              `(:measure (,type-count ,type)
+                :hints (("Goal" :in-theory (enable o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
@@ -672,7 +676,9 @@
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (or mutrecp recp)
+              `(:measure (,type-count ,type)
+                :hints (("Goal" :in-theory (enable o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
@@ -851,7 +857,9 @@
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (or mutrecp recp)
+              `(:measure (,type-count ,type)
+                :hints (("Goal" :in-theory (enable o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
@@ -969,7 +977,9 @@
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (or mutrecp recp)
+              `(:measure (,type-count ,type)
+                :hints (("Goal" :in-theory (enable o< o-finp)))))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///

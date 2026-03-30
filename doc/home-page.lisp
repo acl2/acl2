@@ -1,5 +1,5 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2024, Regents of the University of Texas
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -38,7 +38,7 @@
                  (topic-to-url-list url (cdr chars) (cdr names))))))
 
 (defconst *combined-manual*
-  "https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/")
+  "https://www.cs.utexas.edu/users/moore/acl2/v8-7/combined-manual/")
 
 (defconst *bleeding-edge-manual*
   "https://acl2.org/doc/")
@@ -50,7 +50,7 @@
     workshops                           ;;; d
     course-materials                    ;;; e
     books                               ;;; f
-    note-8-6                            ;;; g   ; current release notes
+    note-8-7                            ;;; g   ; current release notes
     the-method                          ;;; h
     git-quick-start                     ;;; i
     interesting-applications            ;;; j
@@ -257,7 +257,7 @@ Recent changes to this page</a>
 <tr>
 <td>&bull;</td>
 <td>
-<a href=\"~sg\">Differences from Version 8.5</a><a href=\"~sq\"> <img
+<a href=\"~sg\">Differences from Version 8.6</a><a href=\"~sq\"> <img
 src=\"HTML/twarning.gif\" alt=\"tiny warning icon\"></a>
 </td>
 <td>&bull;</td>
@@ -359,7 +359,7 @@ href=\"~ss\">DOCUMENTATION</a></CODE>.
 
 <ul>
 
-<li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.6)</li>
+<li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.7)</li>
 
 <li><a href=\"~s3\">ACL2+Books Manual</a> (for
 <a href=\"~si\">GitHub</a> distributions)</li>
@@ -391,7 +391,7 @@ developed by many users over the years.  These books contain definitions and
 theorems that you might find useful in your models and proofs.  In addition,
 some books contain ACL2 tools built by users to help with reasoning,
 programming, interfaces, debugging, and testing; see <a
-href='http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html'>
+href='http://www.cs.utexas.edu/users/moore/acl2/v8-7/combined-manual/index.html'>
 the documentation</a>.  Some relevant papers may be found by following links in
 the pages on <a href='~sx'> Books and Papers about ACL2 and Its
 Applications</a> and the <a href='~sd'>ACL2 Workshops Series</a>.  The <a

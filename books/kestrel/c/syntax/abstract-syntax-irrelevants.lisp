@@ -530,10 +530,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-hash-if/elif-expr
+  :short "An irrelevant expressions in @('#if') and @('#elif') conditions."
+  :type hash-if/elif-exprp
+  :body (hash-if/elif-expr-defined (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-hash-if/ifdef/ifndef
+  :short "An irrelevant @('#if') or @('#ifdef') or @('#ifndef')."
+  :type hash-if/ifdef/ifndef-p
+  :body (hash-if/ifdef/ifndef-ifdef (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-trans-item
   :short "An irrelevant translation item."
   :type trans-itemp
   :body (trans-item-declon (irr-ext-declon)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-hash-elif
+  :short "An irrelevant @('#elif')."
+  :type hash-elifp
+  :body (hash-elif (irr-hash-if/elif-expr) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -790,8 +790,9 @@
             fundef
             ext-declon
             ext-declon-list
-            trans-item
-            trans-item-list
+            hash-if/elif-expr
+            hash-if/ifdef/ifndef
+            trans-items
             transunit
             filepath-transunit-map
             transunit-ensemble
@@ -882,7 +883,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection abstract-syntax-anno-additional-theroems
+(defsection abstract-syntax-anno-additional-theorems
   :short "Additional theorems about the annotation predicates."
   :long
   (xdoc::topstring

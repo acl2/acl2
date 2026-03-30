@@ -1490,7 +1490,7 @@
     ;; unSIGNED-BYTE-P-OF-MYIF-strong ;slow?
     ;; BVCHOP-IDENTITY ;trying  - restrict to vars? ;trying without this since we have the dag one - what about vars? other terms?
 ;newest is without this:    getbit-identity ;restrict to vars? trying.. try without this, since we have the dag version?  or limit?
-    unsigned-byte-p-of-bvor2
+    unsigned-byte-p-of-bvor-2
     unsigned-byte-p-of-bvor3))
 
 (defun update-nth2-rules ()
@@ -3516,7 +3516,7 @@
 ;    bvuminus-when-smaller-bind-free-dag
              commutativity-2-of-+-when-constant
              rationalp-of--
-             rationalp-of-+
+             rationalp-+
              bvlt-of-1
              max
              bvchop-of-times-of-/-32

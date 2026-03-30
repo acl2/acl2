@@ -1,6 +1,6 @@
 ; A function to write a sequence of bytes to a channel
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
 (local (include-book "write-byte-dollar"))
 (local (include-book "channels"))
 (local (include-book "open-output-channel-p"))
@@ -20,22 +21,13 @@
                            open-output-channel-p1
                            )))
 
-;; todo: use something else?
-(defun all-bytep (lst)
-  (declare (xargs :guard t))
-  (if (consp lst)
-      (let ((item (first lst)))
-        (and (natp item)
-             (< item 256)
-             (all-bytep (rest lst))))
-    t))
-
 ;; Writes the BYTES to CHANNEL.  Returns STATE.
 (defund write-bytes-to-channel (bytes channel state)
   (declare (xargs :stobjs state
-                  :guard (and (all-bytep bytes)
+                  :guard (and (unsigned-byte-listp 8 bytes)
                               (symbolp channel)
-                              (open-output-channel-p channel :byte state))))
+                              (open-output-channel-p channel :byte state))
+                  :guard-hints (("Goal" :in-theory (enable unsigned-byte-listp)))))
   (if (atom bytes)
       state
     (pprogn (write-byte$ (car bytes) channel state)
@@ -64,13 +56,18 @@
 (defthm state-p1-of-write-bytes-to-channel
   (implies (and (open-output-channel-p1 channel :byte state)
                 (state-p1 state)
-                (all-bytep list))
+                (unsigned-byte-listp 8 list))
            (state-p1 (write-bytes-to-channel list channel state)))
-  :hints (("Goal" :in-theory (enable write-bytes-to-channel))))
+  :hints (("Goal" :in-theory (enable write-bytes-to-channel unsigned-byte-listp))))
 
 (defthm state-p-of-write-bytes-to-channel
   (implies (and (open-output-channel-p channel :byte state)
                 (state-p state)
-                (all-bytep list))
+                (unsigned-byte-listp 8 list))
            (state-p (write-bytes-to-channel list channel state)))
-  :hints (("Goal" :in-theory (enable write-bytes-to-channel))))
+  :hints (("Goal" :in-theory (enable write-bytes-to-channel unsigned-byte-listp))))
+
+(defthm w-of-write-bytes-to-channel
+  (equal (w (write-bytes-to-channel list channel state))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (write-bytes-to-channel) (w)))))

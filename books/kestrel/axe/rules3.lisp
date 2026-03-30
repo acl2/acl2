@@ -30,11 +30,11 @@
 (include-book "kestrel/bv/sbvdivdown" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system); reduce?
-;(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-arrays/bv-arrays" :dir :system); reduce?
+;(include-book "kestrel/bv-arrays/bv-array-clear" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
 ;(local (include-book "list-rules"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))

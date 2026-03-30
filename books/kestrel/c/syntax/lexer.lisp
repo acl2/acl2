@@ -13,8 +13,6 @@
 (include-book "reader")
 (include-book "abstract-syntax-irrelevants")
 
-(include-book "../language/keywords")
-
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -137,7 +135,7 @@
      we just lex grammatical identifiers,
      but return a keyword lexeme if the grammatical identifier
      matches a keyword.
-     We use the C version to determine the keywords to be matched.")
+     We use the C dialect to determine the keywords to be matched.")
    (xdoc::p
     "Given that the first character (a letter or underscore)
      has already been read,
@@ -165,7 +163,7 @@
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
-    (if (member-equal string (c::keywords-for (parstate->version parstate)))
+    (if (member-equal string (parstate->keywords parstate))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
@@ -2555,7 +2553,7 @@
            (reterr-msg :where pos
                        :expected "a character"
                        :found (char-to-msg char)
-                       :extra (msg "The block comment starting at (~@1) ~
+                       :extra (msg "The block comment starting at (~@0) ~
                                     never ends."
                                    (position-to-msg first-pos))))
           ((utf8-= char (char-code #\*)) ; *
@@ -2576,7 +2574,7 @@
            (reterr-msg :where pos
                        :expected "a character"
                        :found (char-to-msg char)
-                       :extra (msg "The block comment starting at (~@1) ~
+                       :extra (msg "The block comment starting at (~@0) ~
                                     never ends."
                                    (position-to-msg first-pos))))
           ((utf8-= char (char-code #\/)) ; /
@@ -2676,7 +2674,7 @@
          (reterr-msg :where pos
                      :expected "a character"
                      :found (char-to-msg char)
-                     :extra (msg "The line comment starting at (~@1) ~
+                     :extra (msg "The line comment starting at (~@0) ~
                                   never ends."
                                  (position-to-msg first-pos))))
         ((utf8-= char 10) ; new-line
@@ -2761,7 +2759,7 @@
          (reterr-msg :where pos
                      :expected "a character"
                      :found (char-to-msg char)
-                     :extra (msg "The preprocessing directive starting at (~@1) ~
+                     :extra (msg "The preprocessing directive starting at (~@0) ~
                                   never ends."
                                  (position-to-msg first-pos))))
         ((utf8-= char 10) ; new-line

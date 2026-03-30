@@ -16,7 +16,7 @@
 
 (include-book "../evaluator-basic")
 (include-book "../axe-syntax") ; for work-hard
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
 
 ;(local (in-theory (disable true-listp)))
 

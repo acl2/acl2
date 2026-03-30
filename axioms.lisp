@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -5476,7 +5476,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro throw-or-attach (fn formals &optional *1*-p)
 
 ; Warning: this macro assumes that (attachment-symbol fn) is special and, more
-; important, bound.  So it is probably best to lay down calls of of this macro
+; important, bound.  So it is probably best to lay down calls of this macro
 ; using throw-or-attach-call.
 
   (let ((at-fn (attachment-symbol fn))
@@ -9998,10 +9998,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; as (er soft ctx msg x y z), where msg was bound to the error message str
 ; (because the same string was used many times).
 
-; The special form (er hard "..." &...) expands into a call of illegal on "..."
-; and an alist built from &....  Since illegal has a guard of nil, the attempt
-; to prove the correctness of a fn producing a hard error will require proving
-; that the error can never occur.  At runtime, illegal causes a CLTL error.
+; The special form (er hard ctx "..." &...) expands into a call of illegal on
+; "..."  and an alist built from &....  Since illegal has a guard of nil, the
+; attempt to prove the correctness of a fn producing a hard error will require
+; proving that the error can never occur.  At runtime, illegal causes a CLTL
+; error.
 
 ; The form (er soft ctx "..." &...) expands into a call of error1 on ctx, "..."
 ; and an alist built from &....  At runtime error1 builds an error object and
@@ -14063,7 +14064,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; But if evaluation takes place in the top-level loop, raw-ev-fncall may not
 ; get a chance to update the user-stobj-alist, as illustrated by the following
-; example, which gave the indicated results through ACL2 Version  8.6.
+; example, which gave the indicated results through ACL2 Version  8.7.
 
 ;   (defstobj st1 fld1)
 ;   (defstobj st2 fld2 :congruent-to st1)
@@ -15058,7 +15059,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 8.6
+; ACL2 Version 8.7
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed in .cert files.
@@ -15083,7 +15084,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; reformatting :DOC comments.
 
                    ,(concatenate 'string
-                                 "ACL2 Version 8.6"
+                                 "ACL2 Version 8.7"
                                  #+non-standard-analysis
                                  "(r)"
                                  #+(and mcl (not ccl))
@@ -16610,7 +16611,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((null bindings) body)
    ((not (symbol-doublet-listp bindings))
 
-; This this is a raw Lisp Function, it is reasonable to call error here rather
+; Since this is a raw Lisp Function, it is reasonable to call error here rather
 ; than to use (er hard ...).  This way we avoid depending on the value of
 ; global *hard-error-is-error* for an error to be signaled.
 
