@@ -49,15 +49,15 @@
      and we define predicates on the abstract syntax
      that check that all the identifiers satisfy this property.
      More precisely, we define a family of predicates:
-     one for each supported version of C.
-     The non-standard versions have more keywords,
+     one for each supported dialect of C.
+     The non-standard dialects have more keywords,
      and thus (finitely) fewer identifiers."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ascii-ident-stringp (x (version c::versionp))
+(define ascii-ident-stringp (x (dialect c::dialectp))
   :returns (yes/no booleanp)
   :short "Recognize an ACL2 string that is a C ASCII identifier."
   :long
@@ -72,11 +72,11 @@
      consists of only letters, digits, and underscores,
      and be distinct from the standard C keywords.")
    (xdoc::p
-    "If the @('version') is not C17,
+    "If the @('dialect') is not C17,
      we adjust the keywords to be excluded accordingly."))
   (and (stringp x)
        (c::paident-char-listp (str::explode x))
-       (not (member-equal x (c::keywords-for version))))
+       (not (member-equal x (c::keywords-for dialect))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,13 +84,13 @@
 (fty::deffold-reduce aidentp
   :short "Definition of the predicates that check whether
           all the identifiers in the abstract syntax
-          are ASCII and valid, w.r.t a particular version of C."
+          are ASCII and valid, w.r.t a particular dialect of C."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
    (xdoc::p
-    "These predicates are all parameterized by the C version,
+    "These predicates are all parameterized by the C dialect,
      which changes the exact notion of valid ASCII identifier;
      see @(tsee ascii-ident-stringp).")
    (xdoc::p
@@ -118,11 +118,11 @@
           transunit
           filepath-transunit-map
           transunit-ensemble)
-  :extra-args ((version c::versionp))
+  :extra-args ((dialect c::dialectp))
   :result booleanp
   :default t
   :combine and
-  :override ((ident (ascii-ident-stringp (ident->unwrap ident) version))))
+  :override ((ident (ascii-ident-stringp (ident->unwrap ident) dialect))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,7 +134,7 @@
   (xdoc::topstring
    (xdoc::p
     "The condition is checked w.r.t.
-     the @(see c::version) in the implementation environment."))
+     the @(see c::dialect) in the implementation environment."))
   (transunit-ensemble-aidentp (code-ensemble->transunits code)
-                              (ienv->version (code-ensemble->ienv code)))
+                              (ienv->dialect (code-ensemble->ienv code)))
   :hooks (:fix))

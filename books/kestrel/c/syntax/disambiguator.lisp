@@ -3836,7 +3836,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-transunit ((tunit transunitp) (version c::versionp))
+(define dimb-transunit ((tunit transunitp) (dialect c::dialectp))
   :returns (mv (erp maybe-msgp) (new-tunit transunitp))
   :short "Disambiguate a translation unit."
   :long
@@ -3846,7 +3846,7 @@
      we disambiguate all the translation items in order,
      and we discard the final disambiguation table.")
    (xdoc::p
-    "If the C version does not have any extensions,
+    "If the C dialect does not have any extensions,
      the initial disambiguation table is empty.
      Otherwise, we initialize the disambiguation table
      with some @(see built-ins). For now we only add some built-ins
@@ -3894,10 +3894,10 @@
      a richer description of the C implementation."))
   (b* (((reterr) (irr-transunit))
        (items (transunit->items tunit))
-       (table (dimb-add-idents-objfun (built-ins-for version)
+       (table (dimb-add-idents-objfun (built-ins-for dialect)
                                       (dimb-init-table)))
        ((erp new-items &)
-        (dimb-trans-item-list items table (c::version-gcc/clangp version))))
+        (dimb-trans-item-list items table (c::dialect-gcc/clangp dialect))))
     (retok (make-transunit :items new-items
                            :info nil)))
   :hooks (:fix)
@@ -3911,21 +3911,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-transunit-ensemble ((tuens transunit-ensemblep)
-                                 (version c::versionp)
+                                 (dialect c::dialectp)
                                  (keep-going booleanp))
   :returns (mv (erp maybe-msgp) (new-tuens transunit-ensemblep))
   :short "Disambiguate a translation unit ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pass an indication of the C version to use.")
+    "We pass an indication of the C dialect to use.")
    (xdoc::p
     "We disambiguate all the translation units, independently.
      We leave the file path mapping unchanged."))
   (b* (((reterr) (irr-transunit-ensemble))
        (tumap (transunit-ensemble->units tuens))
        ((erp new-tumap)
-        (dimb-transunit-ensemble-loop tumap version keep-going))
+        (dimb-transunit-ensemble-loop tumap dialect keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
                    (len-new-tumap (omap::size new-tumap))
@@ -3942,7 +3942,7 @@
   :prepwork
 
   ((define dimb-transunit-ensemble-loop ((tumap filepath-transunit-mapp)
-                                         (version c::versionp)
+                                         (dialect c::dialectp)
                                          (keep-going booleanp))
      :returns (mv (erp maybe-msgp)
                   (new-tumap filepath-transunit-mapp
@@ -3951,21 +3951,21 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp tumap)) (retok nil))
           ((mv path tunit) (omap::head tumap))
-          ((mv erp new-tunit) (dimb-transunit tunit version))
+          ((mv erp new-tunit) (dimb-transunit tunit dialect))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
                            (filepath->unwrap path)
                            erp)
                        (dimb-transunit-ensemble-loop (omap::tail tumap)
-                                                     version
+                                                     dialect
                                                      keep-going))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->unwrap path)
                       erp)))
           ((erp new-tumap)
            (dimb-transunit-ensemble-loop (omap::tail tumap)
-                                         version
+                                         dialect
                                          keep-going)))
        (retok (omap::update path new-tunit new-tumap)))
      :verify-guards :after-returns
@@ -3973,7 +3973,7 @@
      ///
 
      (fty::deffixequiv dimb-transunit-ensemble-loop
-       :args ((version c::versionp)
+       :args ((dialect c::dialectp)
               (keep-going booleanp)))
 
      (defret filepath-transunit-map-unambp-of-dimb-transunit-ensemble-loop

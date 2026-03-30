@@ -8957,7 +8957,7 @@
 
 ; Term is a bounder correctness theorem of form 1 or 2 (depending on form), j
 ; is the form 2 slot, and bc is the bounder-correctness record that represents
-; term.  We add it to the list of of bounder-correctness records for the
+; term.  We add it to the list of bounder-correctness records for the
 ; subject-fn.
 
        (mv nil (add-tau-bounder-rule rune form j bc wrld0)))

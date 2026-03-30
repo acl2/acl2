@@ -158,7 +158,7 @@
              :preprocess :auto
              :preprocess-args *preprocess-args-macro-tests*
              :ienv (ienv-default
-                     :version (c::make-version :std (c::standard-c17) :gcc t))
+                     :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
              :const *macro-tests2*)
 
 (acl2::assert! (code-ensemblep *macro-tests2*))
@@ -213,7 +213,7 @@
              ;; We need GCC (or Clang) extensions because
              ;; stdint.h brings in __buildin_va_list.
              :ienv (ienv-default
-                     :version (c::make-version :std (c::standard-c17) :gcc t))
+                     :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
              :const *ppext-disamb-simple/stdbool/stdint*)
 
 (acl2::assert! (code-ensemblep *ppext-disamb-simple/stdbool/stdint*))
@@ -242,7 +242,7 @@
              ;; We need GCC (or Clang) extensions because
              ;; stdint.h brings in __buildin_va_list.
              :ienv (ienv-default
-                     :version (c::make-version :std (c::standard-c17) :gcc t))
+                     :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
              :const *valid-simple/stdbool/stdint*)
 
 (acl2::assert! (code-ensemblep *valid-simple/stdbool/stdint*))

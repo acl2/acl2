@@ -58,10 +58,10 @@
                         full-expansion
                         (keep-comments 't)
                         (trace-expansion 't)
-                        version
+                        dialect
                         expected)
   `(assert!-stobj
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -69,7 +69,7 @@
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
                                   :no-errors/warnings nil))
-         (ienv (change-ienv (ienv-default) :version version))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
          ((mv erp fileset state) (preprocess files
                                              base-dir
                                              include-dirs
@@ -96,14 +96,14 @@
                           full-expansion
                           (keep-comments 't)
                           (trace-expansion 't)
-                          version)
+                          dialect)
   `(test-preproc '(,file)
                  :base-dir ,base-dir
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
                  :trace-expansion ,trace-expansion
-                 :version ,version
+                 :dialect ,dialect
                  :expected (fileset-of ,file ,expected)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -116,9 +116,9 @@
                               full-expansion
                               (keep-comments 't)
                               (trace-expansion 't)
-                              version)
+                              dialect)
   `(assert!-stobj
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -126,7 +126,7 @@
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
                                   :no-errors/warnings nil))
-         (ienv (change-ienv (ienv-default) :version version))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
          ((mv erp fileset state) (preprocess files
                                              base-dir
                                              include-dirs
@@ -150,23 +150,32 @@
                           full-expansion
                           (keep-comments 't)
                           (trace-expansion 't)
-                          version)
+                          dialect)
   `(show-preproc '(,file)
                  :base-dir ,base-dir
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
                  :trace-expansion ,trace-expansion
-                 :version ,version))
+                 :dialect ,dialect))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Check directive-preserving expansion against full expansion.
 
+(defun strip-provenance (lexemes)
+  (b* (((when (endp lexemes)) nil)
+       (lexeme (car lexemes))
+       (lexeme (if (plexeme-case lexeme :ident)
+                   (change-plexeme-ident lexeme :provenance nil)
+                 lexeme))
+       (lexemes (strip-provenance (cdr lexemes))))
+    (cons lexeme lexemes)))
+
 (defun ppart-to-tokens (part)
   (ppart-case
    part
-   :line (plexemes-without-nontokens part.lexemes)
+   :line (strip-provenance (plexemes-without-nontokens part.lexemes))
    :cond (er hard? 'ppart-to-tokens "Found conditional section ~x0." part)))
 
 (defun ppart-list-to-tokens (parts)
@@ -222,10 +231,10 @@
                                 (out-dir-prefix '"tmp") ; relative to base-dir
                                 (keep-comments 't)
                                 (trace-expansion 't)
-                                version)
+                                dialect)
   `(assert!-stobj
     (b* (;; Setup.
-         (version (or ,version (c::make-version :std (c::standard-c17))))
+         (dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -233,7 +242,7 @@
          (out-dir-initial (str::cat base-dir "/" out-dir-prefix "-initial"))
          (out-dir-original (str::cat base-dir "/" out-dir-prefix "-original"))
          (out-dir-transformed (str::cat base-dir "/" out-dir-prefix "-transformed"))
-         (ienv (change-ienv (ienv-default) :version version))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
          (options-preserve (make-ppoptions :full-expansion nil
                                            :keep-comments ,keep-comments
                                            :trace-expansion ,trace-expansion
@@ -304,9 +313,9 @@
                          (keep-comments 't)
                          (trace-expansion 't)
                          (full-expansion 'nil)
-                         version)
+                         dialect)
   `(assert!-stobj
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -315,7 +324,7 @@
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
                                   :no-errors/warnings nil))
-         (ienv (change-ienv (ienv-default) :version version))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
          ((mv erp fileset state) (preprocess files
                                              base-dir
                                              include-dirs

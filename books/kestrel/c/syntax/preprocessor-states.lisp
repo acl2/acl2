@@ -301,7 +301,8 @@
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
                  (update-options raw-update-ppstate->options)
-                 (update-ienv raw-update-ppstate->ienv))))
+                 (update-ienv raw-update-ppstate->ienv))
+      :non-executable t))
 
   ;; fixer:
 
@@ -670,7 +671,7 @@
 (define ppstate->gcc/clang ((ppstate ppstatep))
   :returns (gcc booleanp)
   :short "Flag saying whether GCC/Clang extensions are supported or not."
-  (c::version-gcc/clangp (ienv->version (ppstate->ienv ppstate))))
+  (c::dialect-gcc/clangp (ienv->dialect (ppstate->ienv ppstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

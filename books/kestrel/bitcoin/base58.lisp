@@ -152,7 +152,7 @@
 
   (theory-invariant (incompatible
                      (:rewrite base58-valuep-rewrite-dab-digitp-58)
-                     (:rewite dab-digitp-58-rewrite-base58-valuep))))
+                     (:rewrite dab-digitp-58-rewrite-base58-valuep))))
 
 (define base58-value-fix ((x base58-valuep))
   :returns (fixed-x base58-valuep)

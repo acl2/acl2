@@ -10,7 +10,7 @@
 
 (in-package "C")
 
-(include-book "implementation-environments/versions")
+(include-book "implementation-environments/dialects")
 
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -26,11 +26,11 @@
   (xdoc::topstring
    (xdoc::p
     "These depend on the "
-    (xdoc::seetopic "versions" "C version")
+    (xdoc::seetopic "dialects" "C dialect")
     ", but they are all readily representable as ACL2 strings.")
    (xdoc::p
     "We introduce lists of ACL2 strings representing C punctuators,
-     parameterized over the C version."))
+     parameterized over the C dialect."))
   :order-subtopics t
   :default-parent t)
 
@@ -166,15 +166,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define punctuators-for ((version versionp))
+(define punctuators-for ((dialect dialectp))
   :returns (list string-listp)
-  :short "List of keywords according to the C version."
+  :short "List of keywords according to the C dialect."
   :long
   (xdoc::topstring
    (xdoc::p
     "This does not depend on the GCC, Clang, or CHERI extensions,
      but just on the C standard."))
-  (b* ((std (version->std version)))
+  (b* ((std (dialect->std dialect)))
     (standard-case
       std
       :c17 *punctuators-c17*

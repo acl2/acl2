@@ -135,7 +135,7 @@
      we just lex grammatical identifiers,
      but return a keyword lexeme if the grammatical identifier
      matches a keyword.
-     We use the C version to determine the keywords to be matched.")
+     We use the C dialect to determine the keywords to be matched.")
    (xdoc::p
     "Given that the first character (a letter or underscore)
      has already been read,

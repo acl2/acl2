@@ -115,9 +115,9 @@
 ; the very end, a 1500 line Essay on Admitting a Model for Apply$ and the
 ; Functions that Use It.  That essay is mentioned in the above cited paper,
 ; ``Limited Second Order Functionality in a First Order Setting,'' which
-; explains that we can can build a model of apply$ and all warranted functions
-; so that all warrants are valid, but the paper only sketches the proof that
-; the model can be admitted.  The essay contains the full proof.
+; explains that we can build a model of apply$ and all warranted functions so
+; that all warrants are valid, but the paper only sketches the proof that the
+; model can be admitted.  The essay contains the full proof.
 
 ; At the time apply$ was integrated (Version_8.0) the relevant definitions in
 ; the Source Code Group files were the same (modulo some bootstrapping issues

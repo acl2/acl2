@@ -15,34 +15,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-dimb (input &key version cond)
+(defmacro test-dimb (input &key dialect cond)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
-  ;; VERSION indicates the C version.
+  ;; DIALECT indicates the C dialect.
   ;; Optional COND may be over variable AST.
   `(assert-event
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
-                                    version
+                                    dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ast) (dimb-transunit ast version)))
+         ((mv erp2 ast) (dimb-transunit ast dialect)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
             (t (and ,(or cond t)
                     (prog2$ (cw "~%Output:~%~x0~|" ast) t)))))))
 
-(defmacro test-dimb-fail (input &key version)
+(defmacro test-dimb-fail (input &key dialect)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
-  ;; VERSION indicates the C version.
+  ;; DIALECT indicates the C dialect.
   `(assert-event
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
-                                    version
+                                    dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ?ast) (dimb-transunit ast version)))
+         ((mv erp2 ?ast) (dimb-transunit ast dialect)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))
             (t nil)))))
@@ -92,7 +92,7 @@
   int y = _Alignof(x);
   }
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-dimb
  "typedef char x;
@@ -100,7 +100,7 @@
   int y = _Alignof(x);
   }
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-dimb
  "int x;
@@ -433,7 +433,7 @@
   return (x->y >= (f()) && x->y < (g()));
 }
 "
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (not (cw "~x0" ast)))
 
 (test-dimb
@@ -442,7 +442,7 @@
    goto mylabel;
 }
 "
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-dimb-fail
  "typedef union __attribute__((transparent_union))
