@@ -36,9 +36,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel all-bytep-when-byte-listp
+(defrulel unsigned-byte-listp-8-when-byte-listp
   (implies (byte-listp x)
-           (acl2::all-bytep x))
+           (acl2::unsigned-byte-listp 8 x))
   :induct t
   :enable (byte-listp bytep unsigned-byte-p))
 
