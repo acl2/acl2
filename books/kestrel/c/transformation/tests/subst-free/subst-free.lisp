@@ -77,12 +77,12 @@
 
 (defmacro test-subst-free (input &key fun subst expected)
   `(assert-event
-    (b* ((version (c::make-version :std (c::standard-c17) :gcc t))
+    (b* ((dialect (c::make-dialect :std (c::standard-c17) :gcc t))
          ((mv erp1 ast) (c$::parse-file (filepath "test")
                                        (acl2::string=>nats ,input)
-                                       version
+                                       dialect
                                        t))
-         ((mv erp2 ast) (c$::dimb-transunit ast version))
+         ((mv erp2 ast) (c$::dimb-transunit ast dialect))
          ((mv erp3 fundef) (transunit-find-fundef (c$::ident ,fun) ast))
          ((mv fundef$ -)
           ;; (fundef-subst-free fundef (mergesort ',subst) nil))
@@ -90,10 +90,10 @@
          ((mv erp4 ast-expected)
           (c$::parse-file (filepath "test")
                           (acl2::string=>nats ,expected)
-                          (c::make-version :std (c::standard-c17)
+                          (c::make-dialect :std (c::standard-c17)
                                            :gcc t)
                           t))
-         ((mv erp5 ast-expected) (c$::dimb-transunit ast-expected version))
+         ((mv erp5 ast-expected) (c$::dimb-transunit ast-expected dialect))
          ((mv erp6 fundef-expected)
           (transunit-find-fundef (c$::ident ,fun) ast-expected)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))

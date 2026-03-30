@@ -122,7 +122,7 @@
        (cheri-extensions (not (equal cheri-extensions-str "0")))
        ((when (and gcc-extensions clang-extensions))
         (retmsg$ "Both GCC and Clang extensions appear to be enabled."))
-       (version (c::make-version
+       (dialect (c::make-dialect
                   :std (if (= std-c 17) (c::standard-c17) (c::standard-c23))
                   :gcc gcc-extensions
                   :clang clang-extensions
@@ -204,7 +204,7 @@
         (retmsg$ "pointer-bytes is not positive: ~x0"
                  pointer-bytes?)))
     (retok (make-ienv
-             :version version
+             :dialect dialect
              :bool-bytes bool-bytes?
              :short-bytes short-bytes?
              :int-bytes int-bytes?

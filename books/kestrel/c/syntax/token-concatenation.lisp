@@ -97,7 +97,7 @@
 
 (define concatenate-punctuators ((punct1 stringp)
                                  (punct2 stringp)
-                                 (version c::versionp))
+                                 (dialect c::dialectp))
   :returns (mv erp (punct stringp))
   :short "Concatenate two punctuators."
   :long
@@ -110,11 +110,11 @@
      we concanate the strings and see whether the result is a punctuator,
      returning an error if it is not.")
    (xdoc::p
-    "This function is parameterized over the C version,
+    "This function is parameterized over the C dialect,
      which affects the valid punctuators."))
   (b* (((reterr) "")
        (punct (str::cat punct1 punct2)))
-    (if (member-equal punct (c::punctuators-for version))
+    (if (member-equal punct (c::punctuators-for dialect))
         (retok punct)
       (reterr (msg "The concatenation of the punctuators ~s0 and ~s1 ~
                     yields the non-punctuator ~s2."
@@ -241,7 +241,7 @@
 
 (define concatenate-tokens ((token1 plexemep)
                             (token2 plexemep)
-                            (version c::versionp))
+                            (dialect c::dialectp))
   :guard (and (plexeme-tokenp token1)
               (plexeme-tokenp token2))
   :returns (mv erp (token plexemep))
@@ -298,7 +298,7 @@
                                     (concatenate-punctuators
                                      token1.punctuator
                                      token2.punctuator
-                                     version)))
+                                     dialect)))
                                 (retok (plexeme-punctuator punctuator)))
                   :otherwise (reterr (msg "Cannot concatenate ~x0 and ~x1."
                                           (plexeme-fix token1)
@@ -318,7 +318,7 @@
 
 (define concatenate-tokens/placemarkers ((token1? plexeme-optionp)
                                          (token2? plexeme-optionp)
-                                         (version c::versionp))
+                                         (dialect c::dialectp))
   :guard (and (or (not token1?) (plexeme-tokenp token1?))
               (or (not token2?) (plexeme-tokenp token2?)))
   :returns (mv erp (token? plexeme-optionp))
@@ -341,7 +341,7 @@
      token1?
      :some (plexeme-option-case
             token2?
-            :some (concatenate-tokens token1?.val token2?.val version)
+            :some (concatenate-tokens token1?.val token2?.val dialect)
             :none (retok (plexeme-option-fix token1?)))
      :none (retok (plexeme-option-fix token2?))))
   :guard-hints (("Goal" :in-theory (enable plexeme-option-some->val)))
