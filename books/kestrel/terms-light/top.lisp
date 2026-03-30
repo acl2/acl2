@@ -1,6 +1,6 @@
 ; Top file for terms-light library
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "logic-fnsp")
 (include-book "logic-termp")
 (include-book "all-fnnames1")
+;(include-book "all-vars1") ; todo: name clash
 (include-book "arglistp1")
 
 ;; Utilities:
@@ -42,6 +43,7 @@
 (include-book "negate-terms")
 (include-book "drop-clearly-implied-conjuncts")
 (include-book "term-is-conjunctionp")
+(include-book "term-is-disjunctionp")
 (include-book "clearly-implies-for-disjunctionp")
 (include-book "make-if-term")
 (include-book "make-if-term-proof")
@@ -60,6 +62,8 @@
 (include-book "classify-lambda-formals")
 (include-book "count-vars")
 (include-book "make-lambda-with-hint")
+(include-book "make-lambda-nest")
+(include-book "make-lambda-nest-proofs")
 
 (include-book "helpers")
 (include-book "empty-eval-helpers")

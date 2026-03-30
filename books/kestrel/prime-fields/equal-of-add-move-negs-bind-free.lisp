@@ -1,6 +1,6 @@
 ; Prime fields library: moving negated addends using bind-free
 ;
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -41,22 +41,6 @@
    (implies (pseudo-term-listp x)
             (pseudo-termp (car x)))
    :hints (("Goal" :in-theory (enable pseudo-term-listp)))))
-
-;; Extract the addends of TERM, where TERM is a nest of calls to ADD with P as
-;; the prime.
-(defund get-addends (term p)
-  (declare (xargs :guard (pseudo-termp term)
-                  :guard-hints (("Goal" :in-theory (enable pseudo-term-listp)))))
-  (if (and (acl2::call-of 'add term)
-           (equal p (acl2::farg3 term)))
-      (append (get-addends (acl2::farg1 term) p)
-              (get-addends (acl2::farg2 term) p))
-    (list term)))
-
-(defthm pseudo-term-listp-of-get-addends
-  (implies (pseudo-termp term)
-           (pseudo-term-listp (get-addends term p)))
-  :hints (("Goal" :in-theory (enable pseudo-term-listp get-addends))))
 
 ;; Extract the elements of TERMS that are calls of NEG with P as the prime
 (defun get-negated-addends (terms p exclude-fns)
@@ -144,7 +128,7 @@
 ;;; rule 2 (simpler)
 ;;;
 
-;; Returns a negated added (with the negation stripped) in a nest off adds with
+;; Returns a negated addend (with the negation stripped) in a nest of adds with
 ;; prime p, or nil to indicate failure.
 (defund find-negated-addend (term p)
   (declare (xargs :guard (pseudo-termp term)))
@@ -153,7 +137,7 @@
       (acl2::farg1 term) ; strip the neg
     (if (and (acl2::call-of 'add term)
              (equal p (acl2::farg3 term)))
-        ;; todo: consider assuming the nest is assocated right...
+        ;; todo: consider assuming the nest is associated right...
         (or (find-negated-addend (acl2::farg1 term) p)
             (find-negated-addend (acl2::farg2 term) p))
       nil ;fail
@@ -163,7 +147,7 @@
 (defund bind-a-negated-addend (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (not (acl2::call-of 'add term))
-      nil ;fail TODO: Consider allowing a single negated added (the argument to neg would give us the prime, I guess)
+      nil ;fail TODO: Consider allowing a single negated addend (the argument to neg would give us the prime, I guess)
     (if (member-eq 'bind-free-id (acl2::all-fnnames term))
         nil ; something has gone wrong with a previous bind-free attempt
       (let* ((p (acl2::farg3 term)) ; the prime in (add x y p)
