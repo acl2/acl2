@@ -459,7 +459,7 @@
                (x86 (write-*ip proc-mode temp-rip x86)))
               x86))
 
-(def-inst x86-bt-0F-BA
+(def-inst x86-bt/bts/btr/btc-0F-BA
 
           ;; 0F BA/4: BT r/m16/32/64, imm8
           ;; 0F BA/5: BTS r/m16/32/64, imm8
