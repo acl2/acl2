@@ -18,7 +18,28 @@
 
 (include-book "kestrel/terms-light/negate-terms" :dir :system)
 (include-book "kestrel/lists-light/union-equal-alt" :dir :system)
-(include-book "tools/flag" :dir :system)
+
+;; Negate TERM by adding or removing a call of not (avoids double negation)
+;; See also dumb-negate-lit.
+;; TODO: Handle constants?
+(defund negate-uterm (term)
+  (declare (xargs :guard t))
+  (if (and (call-of 'not term)
+           (consp (cdr term)) ;for guards
+           )
+      (farg1 term) ;negation of (not x) is just x
+    `(not ,term)))
+
+(defund negate-uterms (terms)
+  (declare (xargs :guard t))
+  (if (not (consp terms))
+      nil
+    (let ((term (first terms)))
+      (cons (negate-uterm term)
+            (negate-uterms (rest terms))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 (mutual-recursion
  ;; Returns a list of conjuncts (uterms) whose conjunction is boolean-equivalent to UTERM.
@@ -41,13 +62,13 @@
                  (if (or (equal nil (farg2 uterm))
                          (equal *nil* (farg2 uterm)))
                      ;; (if <x> nil <y>) is (and (not <x>) <y>)
-                     (union-equal-alt (negate-terms (disjuncts-of-uterm2 (farg1 uterm)))
+                     (union-equal-alt (negate-uterms (disjuncts-of-uterm2 (farg1 uterm)))
                                       (conjuncts-of-uterm2 (farg3 uterm)))
                    (list uterm)))))
          (not (if (not (= 1 (len (fargs uterm)))) ; for guards
                   (er hard? 'conjuncts-of-uterm2 "Bad arity for NOT term: ~x0." uterm)
                 ;; (not (or <x> <y> ...)) is (and (not <x>) (not <y>) ..):
-                (negate-terms (disjuncts-of-uterm2 (farg1 uterm)))))
+                (negate-uterms (disjuncts-of-uterm2 (farg1 uterm)))))
          (otherwise ;; no special handling:
           (list uterm))))))
 
@@ -82,13 +103,13 @@
                    (if (or (equal t (farg3 uterm))
                            (equal *t* (farg3 uterm)))
                        ;; (if <x> <y> t) is (or (not <x>) <y>):
-                       (union-equal-alt (negate-terms (conjuncts-of-uterm2 (farg1 uterm)))
+                       (union-equal-alt (negate-uterms (conjuncts-of-uterm2 (farg1 uterm)))
                                         (disjuncts-of-uterm2 (farg2 uterm)))
                      (list uterm))))))
          (not (if (not (= 1 (len (fargs uterm)))) ; for guards
                   (er hard? 'disjuncts-of-uterm2 "Bad arity for NOT term: ~x0." uterm)
                 ;; (not (and <x> <y> ...)) is (or (not <x>) (not <y>) ..):
-                (negate-terms (conjuncts-of-uterm2 (farg1 uterm)))))
+                (negate-uterms (conjuncts-of-uterm2 (farg1 uterm)))))
          (otherwise ;; no special handling:
           (list uterm))))))
 
@@ -101,5 +122,4 @@
      (union-equal-alt (disjuncts-of-uterm2 (first uterms))
                       (disjuncts-of-uterms2 (rest uterms))))))
 
-;; (make-flag conjuncts-of-uterm2)
-;; (verify-guards conjuncts-of-uterm2) ;; todo: not true?
+(verify-guards conjuncts-of-uterm2)
