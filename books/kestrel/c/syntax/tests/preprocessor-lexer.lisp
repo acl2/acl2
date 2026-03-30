@@ -17,6 +17,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; for ASSERT!-STOBJ
+(make-event (er-progn (add-global-stobj 'ppstate state)
+                      (value '(value-triple nil)))
+            :check-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro test-lex (fn ; lexing function
                     input ; ACL2 term with text to lex (string or bytes)
                     &key
@@ -91,42 +98,42 @@
  "w abc"
  :more-inputs ((char-code #\w) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident "w")))
+ :cond (equal ast (plexeme-ident "w" nil)))
 
 (test-lex
  plex-identifier
  "uabc456"
  :more-inputs ((char-code #\u) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident "uabc456")))
+ :cond (equal ast (plexeme-ident "uabc456" nil)))
 
 (test-lex
  plex-identifier
  "static"
  :more-inputs ((char-code #\s) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident "static")))
+ :cond (equal ast (plexeme-ident "static" nil)))
 
 (test-lex
  plex-identifier
  "include"
  :more-inputs ((char-code #\i) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident "include")))
+ :cond (equal ast (plexeme-ident "include" nil)))
 
 (test-lex
  plex-identifier
  "includ_"
  :more-inputs ((char-code #\i) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident "includ_")))
+ :cond (equal ast (plexeme-ident "includ_" nil)))
 
 (test-lex
  plex-identifier
  "includ+"
  :more-inputs ((char-code #\i) (pos 1 1))
  :index 1
- :cond (equal ast (plexeme-ident "includ")))
+ :cond (equal ast (plexeme-ident "includ" nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1148,35 +1155,35 @@
 
 (test-lex-lexeme
  "x"
- :cond (equal ast (plexeme-ident "x")))
+ :cond (equal ast (plexeme-ident "x" nil)))
 
 (test-lex-lexeme
  "an_identifier_88"
- :cond (equal ast (plexeme-ident "an_identifier_88")))
+ :cond (equal ast (plexeme-ident "an_identifier_88" nil)))
 
 (test-lex-lexeme
  "u"
- :cond (equal ast (plexeme-ident "u")))
+ :cond (equal ast (plexeme-ident "u" nil)))
 
 (test-lex-lexeme
  "u*"
- :cond (equal ast (plexeme-ident "u")))
+ :cond (equal ast (plexeme-ident "u" nil)))
 
 (test-lex-lexeme
  "U*"
- :cond (equal ast (plexeme-ident "U")))
+ :cond (equal ast (plexeme-ident "U" nil)))
 
 (test-lex-lexeme
  "L*"
- :cond (equal ast (plexeme-ident "L")))
+ :cond (equal ast (plexeme-ident "L" nil)))
 
 (test-lex-lexeme
  "u8*"
- :cond (equal ast (plexeme-ident "u8")))
+ :cond (equal ast (plexeme-ident "u8" nil)))
 
 (test-lex-lexeme
  "u8'"
- :cond (equal ast (plexeme-ident "u8")))
+ :cond (equal ast (plexeme-ident "u8" nil)))
 
 ; character constants
 

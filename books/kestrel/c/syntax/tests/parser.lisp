@@ -16,28 +16,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; for ASSERT!-STOBJ
+(make-event (er-progn (add-global-stobj 'parstate state)
+                      (value '(value-triple nil)))
+            :check-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Test parsing functions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key pos more-inputs version cond)
+(defmacro test-parse (fn
+                      input
+                      &key
+                      pos
+                      more-inputs
+                      version
+                      skip-control-lines
+                      cond)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
   ;; VERSION indicates the C version.
-  ;; Optional COND may be over variables AST, SPAN, PARSTATE
-  ;; and also EOF-POS for PARSE-*-EXTERNAL-DECLARATION.
+  ;; SKIP-CONTROL-LINES flag says to skip #... control lines.
+  ;; Optional COND may be over variables AST, SPAN, PARSTATE.
   `(assert!-stobj
     (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (parstate (init-parstate ""
                                   (acl2::string=>nats ,input)
                                   version
-                                  t
+                                  ,skip-control-lines
                                   parstate))
-         (,(cond ((eq fn 'parse-*-external-declaration)
-                  '(mv erp ?ast ?span ?eofpos parstate))
-                 ((eq fn 'parse-translation-unit)
+         (,(cond ((eq fn 'parse-translation-unit)
                   '(mv erp ?ast parstate))
                  (t '(mv erp ?ast ?span parstate)))
           (,fn ,@more-inputs parstate))
@@ -49,22 +61,27 @@
           parstate))
     parstate))
 
-(defmacro test-parse-fail (fn input &key pos more-inputs version)
+(defmacro test-parse-fail (fn
+                           input
+                           &key
+                           pos
+                           more-inputs
+                           version
+                           skip-control-lines)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
   ;; VERSION indicates the C version.
+  ;; SKIP-CONTROL-LINES flag says to skip #... control lines.
   `(assert!-stobj
     (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
          (parstate (init-parstate ""
                                   (acl2::string=>nats ,input)
                                   version
-                                  t
+                                  ,skip-control-lines
                                   parstate))
-         (,(cond ((eq fn 'parse-*-external-declaration)
-                  '(mv erp ?ast ?span ?eofpos parstate))
-                 ((eq fn 'parse-translation-unit)
+         (,(cond ((eq fn 'parse-translation-unit)
                   '(mv erp ?ast parstate))
                  (t '(mv erp ?ast ?span parstate)))
           (,fn ,@more-inputs parstate))
@@ -311,8 +328,8 @@
 (test-parse
  parse-expression
  "({x = 0;})(x)"
- :cond (expr-case ast :funcall)
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :version (c::make-version :std (c::standard-c17) :gcc t)
+ :cond (expr-case ast :funcall))
 
 (test-parse
  parse-expression
@@ -979,17 +996,151 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; parse-*-external-declaration
+; parse-hash-if-or-ifdef-or-ifndef
 
 (test-parse
- parse-*-external-declaration
+ parse-hash-if-or-ifdef-or-ifndef
+ "if defined(M)"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-if
+               (hash-if/elif-expr-defined (ident "M")))))
+
+(test-parse
+ parse-hash-if-or-ifdef-or-ifndef
+ "if 2 + 3"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-if
+               (hash-if/elif-expr-add
+                (hash-if/elif-expr-number
+                 (iconst (dec/oct/hex-const-dec 2) nil nil))
+                (hash-if/elif-expr-number
+                 (iconst (dec/oct/hex-const-dec 3) nil nil))))))
+
+(test-parse
+ parse-hash-if-or-ifdef-or-ifndef
+ "ifdef X"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-ifdef (ident "X"))))
+
+(test-parse
+ parse-hash-if-or-ifdef-or-ifndef
+ "ifndef X"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-ifndef (ident "X"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-translation-item
+
+(test-parse
+ parse-translation-item
+ "#include \"f.c\"")
+
+(test-parse
+ parse-translation-item
+ "#include <f.h>")
+
+(test-parse
+ parse-translation-item
+ "#define X X")
+
+(test-parse-fail
+ parse-translation-item
+ "#define X Y")
+
+(test-parse
+ parse-translation-item
+ "#undef X")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #else
+  int y;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #elif defined (N)
+  int y;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #else
+  int w;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#ifdef X
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #else
+  int w;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#ifndef Y
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #else
+  int w;
+  #endif")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-*-translation-item
+
+(test-parse
+ parse-*-translation-item
  "struct mystruct
 {
    int *val;
 };")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "typedef void foo;
 struct bar
 {
@@ -997,57 +1148,57 @@ struct bar
 };")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int ith(int *a) {
  return a[0];
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int ith(int a[]) {
  return a[0];
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo (int val) {
  printf(\"Val = %d\\n\", val);
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int main() { }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo (unsigned int v)
 {
  return (v >> 1);
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void encrypt (uint32_t* v) {
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void encrypt () {
   uint32_t v0=1;
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo () {
   gen_config_t gen_config = {100};
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int A [] = {0,1,2,3};")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int spec_int(unsigned int v)
 {
   unsigned int c;
@@ -1057,7 +1208,7 @@ struct bar
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int sum(int a[], int n) {
   int s = 0;
   for (int i = 1; i <= n; ++i)
@@ -1066,19 +1217,19 @@ struct bar
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo (char x, char y) { return x < y && y < x; }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo (int x, int y) { return x < y || y < x; }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo (int x) { int z = 0 ; z &= x; }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo () {
   while (x > y) {
     x++;
@@ -1086,94 +1237,94 @@ struct bar
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo () {
   int i = 0;
   i--;
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int main() {
  int a = 10, b = 5;
  a %= b;
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "char string[] = \"\";")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo () {
   managedtask * newtask = (managedtask *) malloc(sizeof(managedtask));
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo () {
  idx = (arr)[3];
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void test(int i)
 {
     y[i] = (i ? inv : src)[i];
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern char *tmpnam (char[20]);")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern int __uflow (FILE *);")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int c[1][2];")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "struct A
 {
   int c1, c2;
 };")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "long long foo () {
   return 1LL;
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern int sscanf (const char *__s, const char *__format, ...);")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern int remove (const char *__filename) __attribute__ ((__nothrow__ , __leaf__));"
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "typedef int register_t __attribute__ ((__mode__ (__word__)));"
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern int fscanf (FILE *__restrict __stream, const char *__restrict __format, ...) __asm__ (\"\" \"__isoc99_fscanf\") ;"
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo() {
   for (size_t bar; ; ) {}
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "static int func_1(void)
 {
    int i;
@@ -1182,7 +1333,7 @@ lbl_15:
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern __inline __attribute__ ((__always_inline__)) __attribute__ ((__gnu_inline__)) void
 error (int __status, int __errnum, const char *__format, ...)
 {
@@ -1194,32 +1345,32 @@ error (int __status, int __errnum, const char *__format, ...)
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo asm (\"myfoo\") = 2;"
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern struct static_call_key __SCK__might_resched; extern typeof(__cond_resched) __SCT__might_resched;;"
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "static ngx_thread_value_t __stdcall ngx_iocp_timer(void *data);"
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "__declspec(thread) int nevents = 0;"
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "__declspec(thread) WSAEVENT events[WSA_MAXIMUM_WAIT_EVENTS + 1];"
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "__declspec(thread) ngx_connection_t *conn[WSA_MAXIMUM_WAIT_EVENTS + 1];"
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
@@ -1234,7 +1385,7 @@ error (int __status, int __errnum, const char *__format, ...)
  :cond (equal (len ast) 2))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "const void *x = 0;
   // foo
   void *y = (void *) x;
@@ -1242,7 +1393,7 @@ error (int __status, int __errnum, const char *__format, ...)
 ")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void * foo(void) {
   const void *x = 0;
 #pragma GCC diagnostic push
@@ -1250,10 +1401,11 @@ error (int __status, int __errnum, const char *__format, ...)
   return (void *) x;
 #pragma GCC diagnostic pop
 }
-")
+"
+ :skip-control-lines t)
 
 (test-parse-fail
- parse-*-external-declaration
+ parse-*-translation-item
  "void * foo(void) {
   const #pragma GCC diagnostic push
     void *x = 0;
@@ -1261,35 +1413,39 @@ error (int __status, int __errnum, const char *__format, ...)
   return (void *) x;
 #pragma GCC diagnostic pop
 }
-")
+"
+ :skip-control-lines t)
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "#pragma once
   int x;
-")
+"
+ :skip-control-lines t)
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  " #pragma once
   int x;
-")
+"
+ :skip-control-lines t)
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "#pragma once
   int x;
-")
-
-(test-parse
- parse-*-external-declaration
- "#pragma once
-int x;
 "
- :cond (equal (len ast) 1))
+ :skip-control-lines t)
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
+ "#pragma onceint x;
+"
+ :cond (equal (len ast) 1)
+ :skip-control-lines t)
+
+(test-parse
+ parse-*-translation-item
  "int foo (int arg __attribute__((unused))) {
   return 0;
 }
@@ -1297,13 +1453,13 @@ int x;
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "struct s x = {};
 "
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "double __cabs (_Complex double z) {
   return __hypot (__real__ z, __imag__ z);
 }
@@ -1311,7 +1467,7 @@ int x;
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo(void) {
   my_label: __attribute__((unused))
   return 1;
@@ -1320,7 +1476,7 @@ int x;
  :version (c::make-version :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "struct __attribute__((aligned(64))) secret {
   char secret_top_str[20];
   union secret_data {

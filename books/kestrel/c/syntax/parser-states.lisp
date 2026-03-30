@@ -567,7 +567,8 @@
                  (update-skip-control-lines
                   raw-update-parstate->skip-control-lines)
                  (update-keywords raw-update-parstate->keywords))
-      :inline t))
+      :inline t
+      :non-executable t))
 
   ;; fixer:
 
