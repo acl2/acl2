@@ -369,11 +369,8 @@
 
 ;drop?
 (defthm integerp-of-lsr
-  (implies (and (unsigned-byte-p n x)
-                 (integerp shift)
-                 ;; the assert:
-                 (>= shift 0))
-            (integerp (lsr n x hift)))
+  (implies (integerp x)
+           (integerp (lsr n x shift)))
   :hints (("Goal" :in-theory (enable lsr lsr_c))))
 
 (defthm lsr-becomes-bvshr
