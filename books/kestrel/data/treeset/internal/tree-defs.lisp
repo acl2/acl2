@@ -18,13 +18,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (tagged-element-p
-          irr-tagged-element
-          tagged-element-fix
-          tagged-element-equiv
-          tagged-element->elem
-          tagged-element->hash
-          tagged-element
+  :names (tree-element-p
+          irr-tree-element
+          tree-element-fix
+          tree-element-equiv
+          tree-element->val
+          tree-element->hash
+          tree-element
           treep
           tree-fix
           tree-equiv
@@ -43,5 +43,5 @@
           eqlable-treep
           ))
 
-(defequiv tagged-element-equiv)
+(defequiv tree-element-equiv)
 (defequiv tree-equiv)
