@@ -44,13 +44,13 @@
       nil
     (if (tree-empty-p (tree->left tree))
         (if (tree-empty-p (tree->right tree))
-            (tagged-element->elem (tree->head tree))
-          (min-<< (tagged-element->elem (tree->head tree))
+            (tree-element->val (tree->head tree))
+          (min-<< (tree-element->val (tree->head tree))
                   (tree-min (tree->right tree))))
       (if (tree-empty-p (tree->right tree))
-          (min-<< (tagged-element->elem (tree->head tree))
+          (min-<< (tree-element->val (tree->head tree))
                   (tree-min (tree->left tree)))
-        (min-<< (tagged-element->elem (tree->head tree))
+        (min-<< (tree-element->val (tree->head tree))
                 (tree-min (tree->left tree))
                 (tree-min (tree->right tree)))))))
 
@@ -81,13 +81,13 @@
   (equal (tree-min (tree-node head left right))
          (if (tree-empty-p left)
              (if (tree-empty-p right)
-                 (tagged-element->elem head)
-               (min-<< (tagged-element->elem head)
+                 (tree-element->val head)
+               (min-<< (tree-element->val head)
                        (tree-min right)))
            (if (tree-empty-p right)
-               (min-<< (tagged-element->elem head)
+               (min-<< (tree-element->val head)
                        (tree-min left))
-             (min-<< (tagged-element->elem head)
+             (min-<< (tree-element->val head)
                      (tree-min left)
                      (tree-min right)))))
   :enable tree-min)
@@ -145,7 +145,7 @@
                   (cond ((tree-empty-p tree)
                          nil)
                         ((tree-empty-p (tree->left tree))
-                         (tagged-element->elem (tree->head tree)))
+                         (tree-element->val (tree->head tree)))
                         (t
                          (tree-min (tree->left tree))))))
   :rule-classes :definition
@@ -159,14 +159,14 @@
   ((defrule lemma0
      (implies (and (not (tree-empty-p (tree->left (tree->left tree))))
                    (<<-all-l (tree->left tree)
-                             (tagged-element->elem (tree->head tree)))
-                   (<<-all-r (tagged-element->elem (tree->head tree))
+                             (tree-element->val (tree->head tree)))
+                   (<<-all-r (tree-element->val (tree->head tree))
                              (tree->right tree)))
               (<<-all-r (tree-min (tree->left tree))
                         (tree->right tree)))
      :use ((:instance <<-all-r-weaken
                       (x (tree-min (tree->left tree)))
-                      (y (tagged-element->elem (tree->head tree)))
+                      (y (tree-element->val (tree->head tree)))
                       (tree (tree->right tree))))
      :enable <<-when-<<-all-l-and-tree-in)))
 
@@ -177,13 +177,13 @@
       nil
     (if (tree-empty-p (tree->left tree))
         (if (tree-empty-p (tree->right tree))
-            (tagged-element->elem (tree->head tree))
-          (max-<< (tagged-element->elem (tree->head tree))
+            (tree-element->val (tree->head tree))
+          (max-<< (tree-element->val (tree->head tree))
                   (tree-max (tree->right tree))))
       (if (tree-empty-p (tree->right tree))
-          (max-<< (tagged-element->elem (tree->head tree))
+          (max-<< (tree-element->val (tree->head tree))
                   (tree-max (tree->left tree)))
-        (max-<< (tagged-element->elem (tree->head tree))
+        (max-<< (tree-element->val (tree->head tree))
                 (tree-max (tree->left tree))
                 (tree-max (tree->right tree)))))))
 
@@ -263,7 +263,7 @@
                   (cond ((tree-empty-p tree)
                          nil)
                         ((tree-empty-p (tree->right tree))
-                         (tagged-element->elem (tree->head tree)))
+                         (tree-element->val (tree->head tree)))
                         (t
                          (tree-max (tree->right tree))))))
   :rule-classes :definition
@@ -279,7 +279,7 @@
 (define tree-leftmost ((tree treep))
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->left tree))
-      (tagged-element->elem (tree->head tree))
+      (tree-element->val (tree->head tree))
     (tree-leftmost (tree->left tree))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -297,7 +297,7 @@
            (equal (tree-leftmost tree)
                   nil))
   :enable (tree-leftmost
-           irr-tagged-element))
+           irr-tree-element))
 
 (defrule tree-leftmost-when-tree-empty-p-cheap
   (implies (tree-empty-p tree)
@@ -333,14 +333,14 @@
                   (tree-min tree)))
   :induct t
   :enable (tree-leftmost
-           irr-tagged-element))
+           irr-tree-element))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-rightmost ((tree treep))
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->right tree))
-      (tagged-element->elem (tree->head tree))
+      (tree-element->val (tree->head tree))
     (tree-rightmost (tree->right tree))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -358,7 +358,7 @@
            (equal (tree-rightmost tree)
                   nil))
   :enable (tree-rightmost
-           irr-tagged-element))
+           irr-tree-element))
 
 (defrule tree-rightmost-when-tree-empty-p-cheap
   (implies (tree-empty-p tree)
@@ -394,4 +394,4 @@
                   (tree-max tree)))
   :induct t
   :enable (tree-rightmost
-           irr-tagged-element))
+           irr-tree-element))

@@ -42,9 +42,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tagged-element-p (x)
+(define tree-element-p (x)
   :returns (yes/no booleanp :rule-classes :type-prescription)
-  :short "Recognizer for a hash-tagged element."
+  :short "Recognizer for a tree element."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -58,148 +58,148 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tagged-element-p)))
+(in-theory (disable (:t tree-element-p)))
 
-(defrule tagged-element-p-compound-recognizer
-  (implies (tagged-element-p x)
+(defrule tree-element-p-compound-recognizer
+  (implies (tree-element-p x)
            (consp x))
   :rule-classes :compound-recognizer
-  :enable tagged-element-p)
+  :enable tree-element-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-tagged-element ()
-  :returns (elem tagged-element-p)
+(define irr-tree-element ()
+  :returns (elem tree-element-p)
   (cons (hash nil) nil))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t irr-tagged-element) (:e irr-tagged-element)))
+(in-theory (disable (:t irr-tree-element) (:e irr-tree-element)))
 
-(defrule irr-tagged-element-type-prescription
-  (tagged-element-p (irr-tagged-element))
-  :rule-classes ((:type-prescription :typed-term (irr-tagged-element))))
+(defrule irr-tree-element-type-prescription
+  (tree-element-p (irr-tree-element))
+  :rule-classes ((:type-prescription :typed-term (irr-tree-element))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tagged-element-fix ((elem tagged-element-p))
-  :returns (elem$ tagged-element-p)
-  :short "Fixer for @(see tagged-element-p)s."
-  (mbe :logic (if (tagged-element-p elem) elem (irr-tagged-element))
+(define tree-element-fix ((elem tree-element-p))
+  :returns (elem$ tree-element-p)
+  :short "Fixer for @(see tree-element-p)s."
+  (mbe :logic (if (tree-element-p elem) elem (irr-tree-element))
        :exec (the cons elem))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tagged-element-p)))
+(in-theory (disable (:t tree-element-p)))
 
-(defrule tagged-element-fix-type-prescription
-  (tagged-element-p (tagged-element-fix elem))
-  :rule-classes ((:type-prescription :typed-term (tagged-element-fix elem))))
+(defrule tree-element-fix-type-prescription
+  (tree-element-p (tree-element-fix elem))
+  :rule-classes ((:type-prescription :typed-term (tree-element-fix elem))))
 
-(defrule tagged-element-fix-when-tagged-element-p
-  (implies (tagged-element-p elem)
-           (equal (tagged-element-fix elem)
+(defrule tree-element-fix-when-tree-element-p
+  (implies (tree-element-p elem)
+           (equal (tree-element-fix elem)
                   elem))
-  :enable tagged-element-fix)
+  :enable tree-element-fix)
 
-(defruled tagged-element-fix-when-not-tagged-element-p
-  (implies (not (tagged-element-p elem))
-           (equal (tagged-element-fix elem)
-                  (irr-tagged-element)))
-  :enable tagged-element-fix)
+(defruled tree-element-fix-when-not-tree-element-p
+  (implies (not (tree-element-p elem))
+           (equal (tree-element-fix elem)
+                  (irr-tree-element)))
+  :enable tree-element-fix)
 
-(defrule tagged-element-fix-when-not-tagged-element-p-cheap
-  (implies (not (tagged-element-p elem))
-           (equal (tagged-element-fix elem)
-                  (irr-tagged-element)))
+(defrule tree-element-fix-when-not-tree-element-p-cheap
+  (implies (not (tree-element-p elem))
+           (equal (tree-element-fix elem)
+                  (irr-tree-element)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by tagged-element-fix-when-not-tagged-element-p)
+  :by tree-element-fix-when-not-tree-element-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tagged-element-equiv
-  ((x tagged-element-p)
-   (y tagged-element-p))
-  :short "Equivalence up to @(tsee tagged-element-fix)."
+(define tree-element-equiv
+  ((x tree-element-p)
+   (y tree-element-p))
+  :short "Equivalence up to @(tsee tree-element-fix)."
   :returns (yes/no booleanp :rule-classes :type-prescription)
-  (equal (tagged-element-fix x)
-         (tagged-element-fix y))
+  (equal (tree-element-fix x)
+         (tree-element-fix y))
   :inline t
 
   ///
-  (defequiv tagged-element-equiv))
+  (defequiv tree-element-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tagged-element-equiv)))
+(in-theory (disable (:t tree-element-equiv)))
 
-(defrule tagged-element-fix-when-tagged-element-equiv-congruence
-  (implies (tagged-element-equiv elem0 elem1)
-           (equal (tagged-element-fix elem0)
-                  (tagged-element-fix elem1)))
+(defrule tree-element-fix-when-tree-element-equiv-congruence
+  (implies (tree-element-equiv elem0 elem1)
+           (equal (tree-element-fix elem0)
+                  (tree-element-fix elem1)))
   :rule-classes :congruence
-  :enable tagged-element-equiv)
+  :enable tree-element-equiv)
 
-(defrule tagged-element-fix-under-tagged-element-equiv
-  (tagged-element-equiv (tagged-element-fix elem)
+(defrule tree-element-fix-under-tree-element-equiv
+  (tree-element-equiv (tree-element-fix elem)
                         elem)
-  :enable tagged-element-equiv)
+  :enable tree-element-equiv)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tagged-element->elem ((elem tagged-element-p))
-  (cdr (tagged-element-fix elem))
+(define tree-element->val ((elem tree-element-p))
+  (cdr (tree-element-fix elem))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule tagged-element->elem-when-tagged-element-equiv-congruence
-  (implies (tagged-element-equiv elem0 elem1)
-           (equal (tagged-element->elem elem0)
-                  (tagged-element->elem elem1)))
+(defrule tree-element->val-when-tree-element-equiv-congruence
+  (implies (tree-element-equiv elem0 elem1)
+           (equal (tree-element->val elem0)
+                  (tree-element->val elem1)))
   :rule-classes :congruence
-  :enable (tagged-element->elem
-           tagged-element-equiv))
+  :enable (tree-element->val
+           tree-element-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tagged-element->hash ((elem tagged-element-p))
+(define tree-element->hash ((elem tree-element-p))
   :returns (hash (unsigned-byte-p 32 hash))
-  (mbe :logic (hash (tagged-element->elem elem))
+  (mbe :logic (hash (tree-element->val elem))
        :exec (car elem))
   :enabled t
   :inline t
-  :guard-hints (("Goal" :in-theory (enable tagged-element-p
-                                           tagged-element->elem
+  :guard-hints (("Goal" :in-theory (enable tree-element-p
+                                           tree-element->val
                                            data::u32-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tagged-element->hash)))
+(in-theory (disable (:t tree-element->hash)))
 
-(defrule tagged-element->hash-type-prescription
-  (natp (tagged-element->hash elem))
+(defrule tree-element->hash-type-prescription
+  (natp (tree-element->hash elem))
   :rule-classes :type-prescription)
 
-(defrule tagged-element->hash-when-tagged-element-equiv-congruence
-  (implies (tagged-element-equiv elem0 elem1)
-           (equal (tagged-element->hash elem0)
-                  (tagged-element->hash elem1)))
+(defrule tree-element->hash-when-tree-element-equiv-congruence
+  (implies (tree-element-equiv elem0 elem1)
+           (equal (tree-element->hash elem0)
+                  (tree-element->hash elem1)))
   :rule-classes :congruence
-  :enable (tagged-element-equiv
-           tagged-element->elem))
+  :enable (tree-element-equiv
+           tree-element->val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tagged-element
+(define tree-element
   ((hash (unsigned-byte-p 32 hash))
    x)
   :guard (mbe :logic (equal (hash x) hash)
               :exec (data::u32-equal (hash x) hash))
-  :returns (elem tagged-element-p
-                 :hints (("Goal" :in-theory (enable tagged-element-p))))
-  :short "Constructor for @(tsee tagged-element-p)s."
+  :returns (elem tree-element-p
+                 :hints (("Goal" :in-theory (enable tree-element-p))))
+  :short "Constructor for @(tsee tree-element-p)s."
   (cons (mbe :logic (hash x)
              :exec hash)
         x)
@@ -208,65 +208,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tagged-element)))
+(in-theory (disable (:t tree-element)))
 
-(defrule tagged-element-type-prescription
-  (tagged-element-p (tagged-element hash x))
-  :rule-classes ((:type-prescription :typed-term (tagged-element hash x))))
+(defrule tree-element-type-prescription
+  (tree-element-p (tree-element hash x))
+  :rule-classes ((:type-prescription :typed-term (tree-element hash x))))
 
-(defrule tagged-element-when-u32-equiv-congruence
+(defrule tree-element-when-u32-equiv-congruence
   (implies (data::u32-equal hash0 hash1)
-           (equal (tagged-element hash0 x)
-                  (tagged-element hash1 x)))
+           (equal (tree-element hash0 x)
+                  (tree-element hash1 x)))
   :rule-classes :congruence
-  :enable tagged-element)
+  :enable tree-element)
 
 ;; Logically, the first argument is ignored. We choose to arbitrarily normalize
 ;; it to nil.
-(defruled tagged-element-arg1-becomes-nil
-  (equal (tagged-element hash x)
-         (tagged-element nil x))
-  :enable tagged-element)
+(defruled tree-element-arg1-becomes-nil
+  (equal (tree-element hash x)
+         (tree-element nil x))
+  :enable tree-element)
 
-(defrule tagged-element-when-arg1-not-nil-syntaxp
+(defrule tree-element-when-arg1-not-nil-syntaxp
   (implies (syntaxp (not (equal hash ''nil)))
-           (equal (tagged-element hash x)
-                  (tagged-element nil x)))
-  :by tagged-element-arg1-becomes-nil)
+           (equal (tree-element hash x)
+                  (tree-element nil x)))
+  :by tree-element-arg1-becomes-nil)
 
-(defrule tagged-element->elem-of-tagged-element
-  (equal (tagged-element->elem (tagged-element hash x))
+(defrule tree-element->val-of-tree-element
+  (equal (tree-element->val (tree-element hash x))
          x)
-  :enable (tagged-element
-           tagged-element->elem
-           tagged-element-fix
-           tagged-element-p))
+  :enable (tree-element
+           tree-element->val
+           tree-element-fix
+           tree-element-p))
 
-(defrule tagged-element->hash-of-tagged-element
-  (equal (tagged-element->hash (tagged-element hash x))
+(defrule tree-element->hash-of-tree-element
+  (equal (tree-element->hash (tree-element hash x))
          (hash x))
-  :enable (tagged-element
-           tagged-element->elem
-           tagged-element-fix
-           tagged-element-p))
+  :enable (tree-element
+           tree-element->val
+           tree-element-fix
+           tree-element-p))
 
-(defrule tagged-element-elim
-  (implies (tagged-element-p elem)
-           (equal (tagged-element (tagged-element->hash elem)
-                                  (tagged-element->elem elem))
+(defrule tree-element-elim
+  (implies (tree-element-p elem)
+           (equal (tree-element (tree-element->hash elem)
+                                  (tree-element->val elem))
                   elem))
   :rule-classes :elim
-  :enable (tagged-element
-           tagged-element->hash
-           tagged-element->elem
-           tagged-element-p
+  :enable (tree-element
+           tree-element->hash
+           tree-element->val
+           tree-element-p
            data::u32-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tagged-element$ (x)
-  :returns (elem tagged-element-p)
-  (tagged-element (hash x) x)
+(define tree-element$ (x)
+  :returns (elem tree-element-p)
+  (tree-element (hash x) x)
   :enabled t
   :inline t)
 
@@ -276,7 +276,7 @@
   (declare (xargs :type-prescription (booleanp (treep x))))
   :short "Recognizer for @(see tree)s."
   (if (consp x)
-      (and (tagged-element-p (car x))
+      (and (tree-element-p (car x))
            (consp (cdr x))
            (treep (cadr x))
            (treep (cddr x)))
@@ -433,19 +433,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "For empty trees, this is logically @(tsee irr-tagged-element).")
+     "For empty trees, this is logically @(tsee irr-tree-element).")
    (xdoc::p
      "For a tree recognized by @(tsee heapp) (including @(see treeset)s), this
       is the largest element with respect to the @(tsee heap<) ordering. More
       precisely, it is the pair of the element along with its hash.
       @(tsee head) will project out just the element."))
   :guard (not (tree-empty-p tree))
-  :returns (elem tagged-element-p
+  :returns (elem tree-element-p
                  :hints (("Goal" :in-theory (enable tree-empty-p
                                                     tree-fix
                                                     treep))))
   (mbe :logic (if (tree-empty-p tree)
-                  (irr-tagged-element)
+                  (irr-tree-element)
                 (car tree))
        :exec (car tree))
   :inline t
@@ -457,7 +457,7 @@
 (in-theory (disable (:t tree->head)))
 
 (defrule tree->head-type-prescription
-  (tagged-element-p (tree->head tree))
+  (tree-element-p (tree->head tree))
   :rule-classes ((:type-prescription :typed-term (tree->head tree))))
 
 (defrule tree->head-when-tree-equiv-congruence
@@ -471,13 +471,13 @@
 (defruled tree->head-when-tree-empty-p
   (implies (tree-empty-p tree)
            (equal (tree->head tree)
-                  (irr-tagged-element)))
+                  (irr-tree-element)))
   :enable tree->head)
 
 (defrule tree->head-when-tree-empty-p-cheap
   (implies (tree-empty-p tree)
            (equal (tree->head tree)
-                  (irr-tagged-element)))
+                  (irr-tree-element)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :enable tree->head-when-tree-empty-p)
 
@@ -669,21 +669,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-node
-  ((head tagged-element-p)
+  ((head tree-element-p)
    (left treep)
    (right treep))
   (declare (xargs :type-prescription (consp (tree-node head left right))))
   :returns (tree treep
                 :hints (("Goal" :in-theory (enable treep))))
   :short "Construct a nonempty @(see tree)."
-  (cons (tagged-element-fix head)
+  (cons (tree-element-fix head)
         (cons (tree-fix left) (tree-fix right)))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule tree-node-when-tagged-element-equiv-congruence
-  (implies (tagged-element-equiv head0 head1)
+(defrule tree-node-when-tree-element-equiv-congruence
+  (implies (tree-element-equiv head0 head1)
            (equal (tree-node head0 left right)
                   (tree-node head1 left right)))
   :rule-classes :congruence
@@ -720,7 +720,7 @@
 
 (defrule tree->head-of-tree-node
   (equal (tree->head (tree-node head left right))
-         (tagged-element-fix head))
+         (tree-element-fix head))
   :enable (tree-node
            tree->head
            treep
@@ -749,7 +749,7 @@
 (defrule acl2-count-of-tree-node
   (equal (acl2-count (tree-node head left right))
          (+ 2
-            (acl2-count (tagged-element-fix head))
+            (acl2-count (tree-element-fix head))
             (acl2-count (tree-fix left))
             (acl2-count (tree-fix right))))
   :enable (tree-node
@@ -921,7 +921,7 @@
 (define tree-all-acl2-numberp ((tree treep))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
-      (and (acl2-numberp (tagged-element->elem (tree->head tree)))
+      (and (acl2-numberp (tree-element->val (tree->head tree)))
            (tree-all-acl2-numberp (tree->left tree))
            (tree-all-acl2-numberp (tree->right tree)))))
 
@@ -942,7 +942,7 @@
 (define tree-all-symbolp ((tree treep))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
-      (and (symbolp (tagged-element->elem (tree->head tree)))
+      (and (symbolp (tree-element->val (tree->head tree)))
            (tree-all-symbolp (tree->left tree))
            (tree-all-symbolp (tree->right tree)))))
 
@@ -963,7 +963,7 @@
 (define tree-all-eqlablep ((tree treep))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
-      (and (eqlablep (tagged-element->elem (tree->head tree)))
+      (and (eqlablep (tree-element->val (tree->head tree)))
            (tree-all-eqlablep (tree->left tree))
            (tree-all-eqlablep (tree->right tree)))))
 

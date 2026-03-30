@@ -32,7 +32,7 @@
   :parents (tree)
   :short "Check that all members of a tree are @(tsee <<) some value."
   (or (tree-empty-p tree)
-      (and (<< (tagged-element->elem (tree->head tree)) x)
+      (and (<< (tree-element->val (tree->head tree)) x)
            (<<-all-l (tree->left tree) x)
            (<<-all-l (tree->right tree) x))))
 
@@ -43,7 +43,7 @@
   :parents (tree)
   :short "Check that some value is @(tsee <<) all members of a tree."
   (or (tree-empty-p tree)
-      (and (<< x (tagged-element->elem (tree->head tree)))
+      (and (<< x (tree-element->val (tree->head tree)))
            (<<-all-r x (tree->left tree))
            (<<-all-r x (tree->right tree)))))
 
@@ -168,14 +168,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule <<-all-l-of-arg1-and-tree->head
-  (equal (<<-all-l tree (tagged-element->elem (tree->head tree)))
+  (equal (<<-all-l tree (tree-element->val (tree->head tree)))
          (tree-empty-p tree))
   :enable (<<-all-l
            tree->head
            data::<<-rules))
 
 (defrule <<-all-r-of-tree->head
-  (equal (<<-all-r (tagged-element->elem (tree->head tree)) tree)
+  (equal (<<-all-r (tree-element->val (tree->head tree)) tree)
          (tree-empty-p tree))
   :enable (<<-all-r
            tree->head
@@ -233,14 +233,14 @@
 
 (defrule <<-all-l-of-tree-node
   (equal (<<-all-l (tree-node head left right) x)
-         (and (<< (tagged-element->elem head) x)
+         (and (<< (tree-element->val head) x)
               (<<-all-l left x)
               (<<-all-l right x)))
   :enable <<-all-l)
 
 (defrule <<-all-r-of-arg1-and-tree-node
   (equal (<<-all-r x (tree-node head left right))
-         (and (<< x (tagged-element->elem head))
+         (and (<< x (tree-element->val head))
               (<<-all-r x left)
               (<<-all-r x right)))
   :enable <<-all-r)
@@ -284,14 +284,14 @@
 (defrule <<-of-tree->head-when-<<-all-l
   (implies (and (<<-all-l tree x)
                 (not (tree-empty-p tree)))
-           (<< (tagged-element->elem (tree->head tree)) x))
+           (<< (tree-element->val (tree->head tree)) x))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :enable <<-all-l)
 
 (defrule <<-of-arg1-and-tree->head-when-<<-all-r-arg1
   (implies (and (<<-all-r x tree)
                 (not (tree-empty-p tree)))
-           (<< x (tagged-element->elem (tree->head tree))))
+           (<< x (tree-element->val (tree->head tree))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :enable <<-all-r)
 
@@ -305,19 +305,19 @@
   (if (mbt (not (tree-empty-p tree)))
       (mv-let (bstp min)
               (if (tree-empty-p (tree->left tree))
-                  (mv t (tagged-element->elem (tree->head tree)))
+                  (mv t (tree-element->val (tree->head tree)))
                 (mv-let (bstp$ min$ max$)
                         (fast-bstp-nonempty (tree->left tree))
                   (mv (and bstp$
-                           (<< max$ (tagged-element->elem (tree->head tree))))
+                           (<< max$ (tree-element->val (tree->head tree))))
                       min$)))
         (if bstp
             (if (tree-empty-p (tree->right tree))
-                (mv t min (tagged-element->elem (tree->head tree)))
+                (mv t min (tree-element->val (tree->head tree)))
               (mv-let (bstp$ min$ max$)
                       (fast-bstp-nonempty (tree->right tree))
                 (mv (and bstp$
-                         (<< (tagged-element->elem (tree->head tree)) min$))
+                         (<< (tree-element->val (tree->head tree)) min$))
                     min
                     max$)))
           (mv nil nil nil)))
@@ -415,7 +415,7 @@
   (implies (and (not (tree-empty-p tree))
                 (mv-nth 0 (fast-bstp-nonempty tree)))
            (<<-all-l (tree->left tree)
-                     (tagged-element->elem (tree->head tree))))
+                     (tree-element->val (tree->head tree))))
   ;; TODO: ugly proof. Why is this disable necessary?
   ;; - Oh, this "forward chaining" rule is actually a "cheap" rewrite rule.
   ;;   Was that intentional? Maybe that was the problem?
@@ -426,7 +426,7 @@
 (defrule <<-all-r-of-head-and-right-when-fast-bstp-nonempty
   (implies (and (not (tree-empty-p tree))
                 (mv-nth 0 (fast-bstp-nonempty tree)))
-           (<<-all-r (tagged-element->elem (tree->head tree))
+           (<<-all-r (tree-element->val (tree->head tree))
                      (tree->right tree)))
   ;; Same comment as above
   :disable tree-empty-p-when-not-<<-all-r-forward-chaining
@@ -444,8 +444,8 @@
       (mbe :logic (and (bstp (tree->left tree))
                        (bstp (tree->right tree))
                        (<<-all-l (tree->left tree)
-                                 (tagged-element->elem (tree->head tree)))
-                       (<<-all-r (tagged-element->elem (tree->head tree))
+                                 (tree-element->val (tree->head tree)))
+                       (<<-all-r (tree-element->val (tree->head tree))
                                  (tree->right tree)))
            :exec (mv-let (bstp min max)
                          (fast-bstp-nonempty tree)
@@ -527,8 +527,8 @@
                   (and (bstp (tree->left tree))
                        (bstp (tree->right tree))
                        (<<-all-l (tree->left tree)
-                                   (tagged-element->elem (tree->head tree)))
-                       (<<-all-r (tagged-element->elem (tree->head tree))
+                                   (tree-element->val (tree->head tree)))
+                       (<<-all-r (tree-element->val (tree->head tree))
                                    (tree->right tree)))))
   :enable bstp)
 
@@ -538,8 +538,8 @@
                   (and (bstp (tree->left tree))
                        (bstp (tree->right tree))
                        (<<-all-l (tree->left tree)
-                                   (tagged-element->elem (tree->head tree)))
-                       (<<-all-r (tagged-element->elem (tree->head tree))
+                                   (tree-element->val (tree->head tree)))
+                       (<<-all-r (tree-element->val (tree->head tree))
                                    (tree->right tree)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by bstp-when-not-tree-empty-p)
@@ -550,8 +550,8 @@
   (equal (bstp (tree-node head left right))
          (and (bstp left)
               (bstp right)
-              (<<-all-l left (tagged-element->elem head))
-              (<<-all-r (tagged-element->elem head) right)))
+              (<<-all-l left (tree-element->val head))
+              (<<-all-r (tree-element->val head) right)))
   :enable bstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -559,25 +559,25 @@
 (defruled <<-of-tree->head-tree->left-and-tree->head
   (implies (and (bstp tree)
                 (not (tree-empty-p (tree->left tree))))
-           (<< (tagged-element->elem (tree->head (tree->left tree)))
-               (tagged-element->elem (tree->head tree)))))
+           (<< (tree-element->val (tree->head (tree->left tree)))
+               (tree-element->val (tree->head tree)))))
 
 (defruled <<-of-tree->head-and-tree->head-tree->right
   (implies (and (bstp tree)
                 (not (tree-empty-p (tree->right tree))))
-           (<< (tagged-element->elem (tree->head tree))
-               (tagged-element->elem (tree->head (tree->right tree))))))
+           (<< (tree-element->val (tree->head tree))
+               (tree-element->val (tree->head (tree->right tree))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule <<-all-l-of-tree->left-and-tree->head-when-bstp
   (implies (bstp set)
            (<<-all-l (tree->left set)
-                       (tagged-element->elem (tree->head set)))))
+                       (tree-element->val (tree->head set)))))
 
 (defrule <<-all-r-of-tree->head-and-tree->right-when-bstp
   (implies (bstp tree)
-           (<<-all-r (tagged-element->elem (tree->head tree))
+           (<<-all-r (tree-element->val (tree->head tree))
                        (tree->right tree))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
