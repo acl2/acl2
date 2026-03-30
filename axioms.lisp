@@ -5476,7 +5476,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro throw-or-attach (fn formals &optional *1*-p)
 
 ; Warning: this macro assumes that (attachment-symbol fn) is special and, more
-; important, bound.  So it is probably best to lay down calls of of this macro
+; important, bound.  So it is probably best to lay down calls of this macro
 ; using throw-or-attach-call.
 
   (let ((at-fn (attachment-symbol fn))
@@ -16611,7 +16611,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((null bindings) body)
    ((not (symbol-doublet-listp bindings))
 
-; This this is a raw Lisp Function, it is reasonable to call error here rather
+; Since this is a raw Lisp Function, it is reasonable to call error here rather
 ; than to use (er hard ...).  This way we avoid depending on the value of
 ; global *hard-error-is-error* for an error to be signaled.
 

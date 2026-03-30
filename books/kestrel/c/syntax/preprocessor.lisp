@@ -1180,11 +1180,17 @@
      which are not part of the replacement list [C17:6.10.3/7].
      We ensure that @('##') does not occur
      at the start or end of the replacement list [C17:6.10.3.3/1].
-     We also return the final new line lexeme, if present."))
+     We also return the final new line lexeme, if present.")
+   (xdoc::p
+    "For each identifier that we read,
+     we set its provenance list to the singleton of the macro name.
+     This way, when we expand the macro,
+     the identifiers in the replacement list already contain
+     the information about the provenance from the macro."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil nil ppstate)
        ((erp replist newline? ppstate)
-        (read-macro-object-replist-loop t ppstate))
+        (read-macro-object-replist-loop name t ppstate))
        ((when (and (consp replist)
                    (or (plexeme-hashhashp (car replist))
                        (plexeme-hashhashp (car (last replist))))))
@@ -1193,7 +1199,9 @@
     (retok replist newline? ppstate))
 
   :prepwork
-  ((define read-macro-object-replist-loop ((startp booleanp) (ppstate ppstatep))
+  ((define read-macro-object-replist-loop ((name stringp)
+                                           (startp booleanp)
+                                           (ppstate ppstatep))
      :returns (mv erp
                   (replist plexeme-listp)
                   (newline? plexeme-optionp)
@@ -1207,8 +1215,11 @@
          (retok nil toknl? ppstate))
         ((plexeme?-tokenp toknl?) ; token
          (b* (((erp replist newline? ppstate) ; token replist
-               (read-macro-object-replist-loop nil ppstate))
-              (replist (cons toknl? replist))
+               (read-macro-object-replist-loop name nil ppstate))
+              (token (if (plexeme-case toknl? :ident)
+                         (change-plexeme-ident toknl? :provenance (list name))
+                       toknl?))
+              (replist (cons token replist))
               (replist (if (and nontoknls
                                 (not startp))
                            (cons (plexeme-spaces 1) replist)
@@ -1300,7 +1311,15 @@
     "We also ensure that @('__VA_ARGS__') occurs in the replacement list
      only if the macro has ellipsis.")
    (xdoc::p
-    "We also return the final new line lexeme, if present."))
+    "We also return the final new line lexeme, if present.")
+   (xdoc::p
+    "For each non-parameter identifier that we read,
+     we set its provenance list to the singleton of the macro name.
+     This way, when we expand the macro,
+     the identifiers in the replacement list already contain
+     the information about the provenance from the macro.
+     The parameters do not need that provenance
+     because they are substituted when the macro is expanded."))
   (read-macro-function-replist-loop name nil params ellipsis ppstate)
 
   :prepwork
@@ -1360,7 +1379,10 @@
                                  paramp)))
                    (add-to-set-equal ident hash-params)
                  hash-params))
-              (replist (cons toknl? replist))
+              (token (if paramp
+                         toknl?
+                       (change-plexeme-ident toknl? :provenance (list name))))
+              (replist (cons token replist))
               (replist (if (and previous nontoknls)
                            (cons (plexeme-spaces 1) replist)
                          replist)))
@@ -1495,13 +1517,16 @@
   (xdoc::topstring
    (xdoc::p
     "The rationale for this identity definition
-     is explained in @(see preservable-inclusions)."))
+     is explained in @(see preservable-inclusions).")
+   (xdoc::p
+    "We set the provenance list for the replacement list,
+     although it may be irrelevant."))
   `(,(plexeme-punctuator "#")
-    ,(plexeme-ident "define")
+    ,(make-plexeme-ident :ident "define" :provenance nil)
     ,(plexeme-spaces 1)
-    ,(plexeme-ident name)
+    ,(make-plexeme-ident :ident name :provenance nil)
     ,(plexeme-spaces 1)
-    ,(plexeme-ident name)
+    ,(make-plexeme-ident :ident name :provenance (list name))
     ,@(and newline-at-end? (list (plexeme-option-fix newline-at-end?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1656,9 +1681,9 @@
   :returns (lexemes plexeme-listp)
   :short "Rebuild a @('#undef') directive from its name."
   `(,(plexeme-punctuator "#")
-    ,(plexeme-ident "undef")
+    ,(make-plexeme-ident :ident "undef" :provenance nil)
     ,(plexeme-spaces 1)
-    ,(plexeme-ident name)
+    ,(make-plexeme-ident :ident name :provenance nil)
     ,@(and newline-at-end? (list (plexeme-option-fix newline-at-end?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1924,7 +1949,10 @@
      which macros have been expanded where in the arguments,
      to prevent re-expansion when we rescan
      the substituted replacement list of the macro.
-     Those lexmarks are already normalized via @(tsee normalize-macro-arg).")
+     Those lexmarks are already normalized via @(tsee normalize-macro-arg).
+     Furthermore, the identifier lexemes in the values of @('subst')
+     already contain the information about the function-like macro
+     that the substitution pertains to.")
    (xdoc::p
     "We go through the replacement list.
      When we encounter a parameter of the macro,
@@ -2102,7 +2130,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define evaluate-triple-hash ((lexmarks/placemarkers lexmark-option-listp)
-                              (version c::versionp))
+                              (dialect c::dialectp))
   :returns (mv erp (lexmarks lexmark-listp))
   :short "Evaluate the @('##') operator, represented as @('###'),
           in the list produced by @(tsee replace-macro-args)."
@@ -2154,7 +2182,7 @@
                        (not (plexeme-tokenp ; i.e. space
                              (lexmark-lexeme->lexeme lexmark/placemarker))))))
         (b* (((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers
-                                                   version)))
+                                                   dialect)))
           (retok (cons (lexmark-fix lexmark/placemarker) lexmarks))))
        ;; Otherwise, the next lexmark or placemarker
        ;; is either a token or a placemarker.
@@ -2166,9 +2194,9 @@
                                         lexmark/placemarker))
                                   nil
                                   lexmarks/placemarkers
-                                  version))
+                                  dialect))
        ;; Process the rest of the lexmarks and placemarkers.
-       ((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers version)))
+       ((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers dialect)))
     ;; Add the token from the recursive companion function to the output,
     ;; or otherwise discard the placemarker.
     ;; Also add any markers in between any ### operations.
@@ -2186,7 +2214,7 @@
      ((token/placemarker plexeme-optionp)
       (markers lexmark-listp)
       (lexmarks/placemarkers lexmark-option-listp)
-      (version c::versionp))
+      (dialect c::dialectp))
      :guard (or (not token/placemarker)
                 (plexeme-tokenp token/placemarker))
      :returns (mv erp
@@ -2222,7 +2250,7 @@
           ((erp token/placemarker)
            (concatenate-tokens/placemarkers token/placemarker
                                             next-token/placemarker
-                                            version))
+                                            dialect))
           ;; Join all the markers.
           (markers (append markers markers1 markers2)))
        ;; Recursively combine the new token or placemarker
@@ -2230,7 +2258,7 @@
        (evaluate-triple-hash-aux token/placemarker
                                  markers
                                  lexmarks/placemarkers
-                                 version))
+                                 dialect))
      :no-function nil
      :measure (len lexmarks/placemarkers)
      :guard-hints (("Goal" :in-theory (enable true-listp-when-lexmark-listp)))
@@ -2245,7 +2273,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define evaluate-double-hash ((lexemes plexeme-listp) (version c::versionp))
+(define evaluate-double-hash ((lexemes plexeme-listp) (dialect c::dialectp))
   :returns (mv erp (new-lexemes plexeme-listp))
   :short "Evaluate the @('##') operator in
           the replacement list of an object-like macro."
@@ -2271,14 +2299,14 @@
        ;; If the next lexeme is a space,
        ;; pass it on, i.e. continue processing and add it to the output.
        ((when (not (plexeme-tokenp lexeme))) ; i.e. space
-        (b* (((erp lexemes) (evaluate-double-hash lexemes version)))
+        (b* (((erp lexemes) (evaluate-double-hash lexemes dialect)))
           (retok (cons (plexeme-fix lexeme) lexemes))))
        ;; Otherwise, the next lexeme is a token.
        ;; Call the recursive companion function to concatenate it
        ;; with any subsequent token with ## in between.
-       ((erp token lexemes) (evaluate-double-hash-aux lexeme lexemes version))
+       ((erp token lexemes) (evaluate-double-hash-aux lexeme lexemes dialect))
        ;; Process the rest of the lexemes.
-       ((erp lexemes) (evaluate-double-hash lexemes version)))
+       ((erp lexemes) (evaluate-double-hash lexemes dialect)))
     ;; Add the token from the recursive companion function to the output.
     (retok (cons token lexemes)))
   :measure (len lexemes)
@@ -2287,7 +2315,7 @@
   :prepwork
   ((define evaluate-double-hash-aux ((token plexemep)
                                      (lexemes plexeme-listp)
-                                     (version c::versionp))
+                                     (dialect c::dialectp))
      :guard (plexeme-tokenp token)
      :returns (mv erp
                   (new-token plexemep)
@@ -2329,10 +2357,10 @@
            (reterr t))
           ;; Combine the next token with the input one.
           ((erp token)
-           (concatenate-tokens/placemarkers token next-token version)))
+           (concatenate-tokens/placemarkers token next-token dialect)))
        ;; Recursively combine the new token
        ;; with any subsequent ones if there are more ## operators.
-       (evaluate-double-hash-aux token lexemes version))
+       (evaluate-double-hash-aux token lexemes dialect))
      :no-function nil
      :measure (len lexemes)
      :hooks nil
@@ -2760,8 +2788,9 @@
                     (pproc-lexemes mode
                                    (revappend lexmarks
                                               (cons (make-lexmark-lexeme
-                                                     :lexeme (plexeme-ident
-                                                              "defined")
+                                                     :lexeme (make-plexeme-ident
+                                                              :ident "defined"
+                                                              :provenance nil)
                                                      :span (irr-span))
                                                     rev-lexmarks))
                                    paren-level
@@ -2794,7 +2823,7 @@
                info
                :object
                (b* (((erp replist) (evaluate-double-hash info.replist
-                                                         (ienv->version
+                                                         (ienv->dialect
                                                           (ppstate->ienv
                                                            ppstate))))
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
@@ -2854,7 +2883,7 @@
                            (retok subst disabled ppstate)))))
                     (replist (replace-macro-args info.replist subst))
                     ((erp replist) (evaluate-triple-hash replist
-                                                         (ienv->version
+                                                         (ienv->dialect
                                                           (ppstate->ienv
                                                            ppstate))))
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
@@ -3145,7 +3174,7 @@
        @('#define'), @('#undef'), @('#line'), @('#error') and @('#pragma')
        identically, by skipping through the next end of line.
        We also treat @('#warning') in the same way
-       if the C standard version is C23 [C23:6.10.1]
+       if the C standard dialect is C23 [C23:6.10.1]
        or if GCC or Clang extensions are enabled."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate)
@@ -3600,7 +3629,7 @@
    (xdoc::p
     "This is called just after the @('warning') identifier has been parsed.")
    (xdoc::p
-    "This is allowed only if the C version is C23,
+    "This is allowed only if the C dialect is C23,
      or the GCC or Clang extensions are enabled;
      otherwise we return an error.")
    (xdoc::p
@@ -3823,7 +3852,7 @@
   `(,@(plexeme-list-fix nontoknls-before-hash)
     ,(plexeme-punctuator "#")
     ,@(plexeme-list-fix nontoknls-after-hash)
-    ,(plexeme-ident "include")
+    ,(make-plexeme-ident :ident "include" :provenance nil)
     ,@(plexeme-list-fix nontoknls-before-header)
     ,(plexeme-header header)
     ,@(plexeme-list-fix nontoknls-after-header)
@@ -4908,7 +4937,7 @@
                                 include-dirs
                                 pfiles
                                 pending
-                                (macro-init (ienv->version ienv))
+                                (macro-init (ienv->dialect ienv))
                                 (change-ppoptions options
                                                   :no-errors/warnings t)
                                 ienv
@@ -5379,7 +5408,7 @@
                        include-dirs
                        pfiles
                        pending
-                       (macro-init (ienv->version ienv))
+                       (macro-init (ienv->dialect ienv))
                        options
                        ienv
                        state

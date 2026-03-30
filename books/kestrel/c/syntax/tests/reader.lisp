@@ -17,6 +17,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; for ASSERT!-STOBJ
+(make-event (er-progn (add-global-stobj 'parstate state)
+                      (value '(value-triple nil)))
+            :check-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Test reading and unreading of characters.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -24,7 +31,7 @@
 (assert!-stobj ; empty file
  (b* ((parstate
        (init-parstate
-         "" nil (c::make-version :std (c::standard-c17)) t parstate))
+         "" nil (c::make-dialect :std (c::standard-c17)) t parstate))
       (pstate0 (to-parstate$ parstate))
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
@@ -38,7 +45,7 @@
 (assert!-stobj ; disallowed character 0
  (b* ((parstate
        (init-parstate
-         "" (list 0) (c::make-version :std (c::standard-c17)) t parstate))
+         "" (list 0) (c::make-dialect :std (c::standard-c17)) t parstate))
       ((mv erp & & parstate) (read-char parstate))
       (- (cw "~@0" erp)))
    (mv erp parstate))
@@ -47,7 +54,7 @@
 (assert!-stobj ; character 32
  (b* ((parstate
        (init-parstate
-         "" (list 32 1 2 3) (c::make-version :std (c::standard-c17)) t parstate))
+         "" (list 32 1 2 3) (c::make-dialect :std (c::standard-c17)) t parstate))
       (pstate0 (to-parstate$ parstate))
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
@@ -65,7 +72,7 @@
 (assert!-stobj ; line feed
  (b* ((parstate
        (init-parstate
-         "" (list 10 1 2 3) (c::make-version :std (c::standard-c17)) t parstate))
+         "" (list 10 1 2 3) (c::make-dialect :std (c::standard-c17)) t parstate))
       (pstate0 (to-parstate$ parstate))
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
@@ -83,7 +90,7 @@
 (assert!-stobj ; carriage return
  (b* ((parstate
        (init-parstate
-         "" (list 13 1 2 3) (c::make-version :std (c::standard-c17)) t parstate))
+         "" (list 13 1 2 3) (c::make-dialect :std (c::standard-c17)) t parstate))
       (pstate0 (to-parstate$ parstate))
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
@@ -101,7 +108,7 @@
 (assert!-stobj ; carriage return + line feed
  (b* ((parstate
        (init-parstate
-         "" (list 13 10 1 2 3) (c::make-version :std (c::standard-c17)) t parstate))
+         "" (list 13 10 1 2 3) (c::make-dialect :std (c::standard-c17)) t parstate))
       (pstate0 (to-parstate$ parstate))
       ((mv erp char? pos parstate) (read-char parstate)))
    (mv (and (not erp)
@@ -119,7 +126,7 @@
 (assert!-stobj ; disallowed byte 255
  (b* ((parstate
        (init-parstate
-         "" (list 255) (c::make-version :std (c::standard-c17)) t parstate))
+         "" (list 255) (c::make-dialect :std (c::standard-c17)) t parstate))
       ((mv erp & & parstate) (read-char parstate))
       (- (cw "~@0" erp)))
    (mv erp parstate))
@@ -128,7 +135,7 @@
 (assert!-stobj ; 2-byte UTF-8 encoding of Greek capital letter sigma
  (b* ((parstate (init-parstate ""
                                (acl2::string=>nats "Σ")
-                               (c::make-version :std (c::standard-c17))
+                               (c::make-dialect :std (c::standard-c17))
                                t
                                parstate))
       (pstate0 (to-parstate$ parstate))
@@ -148,7 +155,7 @@
 (assert!-stobj ; invalid 2-byte UTF-8 encoding of 0
  (b* ((parstate (init-parstate ""
                                (list #b11000000 #b10000000)
-                               (c::make-version :std (c::standard-c17))
+                               (c::make-dialect :std (c::standard-c17))
                                t
                                parstate))
       ((mv erp & & parstate) (read-char parstate))
@@ -159,7 +166,7 @@
 (assert!-stobj ; 3-byte UTF-8 encoding of anticlockwise top semicircle arrow
  (b* ((parstate (init-parstate ""
                                (acl2::string=>nats "↺")
-                               (c::make-version :std (c::standard-c17))
+                               (c::make-dialect :std (c::standard-c17))
                                t
                                parstate))
       (pstate0 (to-parstate$ parstate))
@@ -179,7 +186,7 @@
 (assert!-stobj ; disallowed 3-byte UTF-8 encoding
  (b* ((parstate (init-parstate ""
                                (list #b11100010 #b10000000 #b10101010) ; 202Ah
-                               (c::make-version :std (c::standard-c17))
+                               (c::make-dialect :std (c::standard-c17))
                                t
                                parstate))
       ((mv erp & & parstate) (read-char parstate))
@@ -190,7 +197,7 @@
 (assert!-stobj ; invalid 3-byte UTF-8 encoding of 0
  (b* ((parstate (init-parstate ""
                                (list #b11100000 #b10000000 #b10000000)
-                               (c::make-version :std (c::standard-c17))
+                               (c::make-dialect :std (c::standard-c17))
                                t
                                parstate))
       ((mv erp & & parstate) (read-char parstate))
@@ -201,7 +208,7 @@
 (assert!-stobj ; 4-byte UTF-8 encoding of musical symbol eighth note
  (b* ((parstate (init-parstate ""
                                (acl2::string=>nats "𝅘𝅥𝅮")
-                               (c::make-version :std (c::standard-c17))
+                               (c::make-dialect :std (c::standard-c17))
                                t
                                parstate))
       (pstate0 (to-parstate$ parstate))
@@ -221,7 +228,7 @@
 (assert!-stobj ; invalid 4-byte UTF-8 encoding of 0
  (b* ((parstate (init-parstate ""
                                (list #b11110000 #b10000000 #b10000000 #b10000000)
-                               (c::make-version :std (c::standard-c17))
+                               (c::make-dialect :std (c::standard-c17))
                                t
                                parstate))
       ((mv erp & & parstate) (read-char parstate))
@@ -233,7 +240,7 @@
  (b* ((parstate (init-parstate
                  ""
                  (list #b11110111 #b10111111 #b10111111 #b10111111)
-                 (c::make-version :std (c::standard-c17))
+                 (c::make-dialect :std (c::standard-c17))
                  t
                  parstate))
       ((mv erp & & parstate) (read-char parstate))
@@ -246,7 +253,7 @@
 (assert!-stobj
  (b* ((parstate (init-parstate ""
                                (list 65 66 67) ; A B C
-                               (c::make-version :std (c::standard-c17))
+                               (c::make-dialect :std (c::standard-c17))
                                t
                                parstate))
       (pstate0 (to-parstate$ parstate))
@@ -317,7 +324,7 @@
 (assert!-stobj
  (b* ((parstate (init-parstate ""
                                (list 65 10 66) ; A LF B
-                               (c::make-version :std (c::standard-c17))
+                               (c::make-dialect :std (c::standard-c17))
                                t
                                parstate))
       (pstate0 (to-parstate$ parstate))

@@ -2001,7 +2001,8 @@ the form
                             :CHANGE FIB2-CLOCK-CHANGE0-NEW2
                             :STABLE ...))
                  :CONDITION T),
-evaluation of the macro body caused the error below.
+evaluation of the macro body caused an error.  An explanation may be
+found above.
 
 Evaluation aborted.  To debug see :DOC print-gv, see :DOC trace, and
 see :DOC wet.
@@ -2193,7 +2194,8 @@ the form
                             :CONDITION ...)
                   . BAD-CDR)
                  :CONDITION T),
-evaluation of the macro body caused the error below.
+evaluation of the macro body caused an error.  An explanation may be
+found above.
 
 Evaluation aborted.  To debug see :DOC print-gv, see :DOC trace, and
 see :DOC wet.
@@ -2224,7 +2226,8 @@ the form
                             :CHANGE FIB2-CLOCK-CHANGE0-NEW
                             :STABLE FIB2-CLOCK-STABLE0-NEW ...))
                  :CONDITION T),
-evaluation of the macro body caused the error below.
+evaluation of the macro body caused an error.  An explanation may be
+found above.
 
 Evaluation aborted.  To debug see :DOC print-gv, see :DOC trace, and
 see :DOC wet.
@@ -2255,7 +2258,8 @@ the form
                             :CHANGE FIB2-CLOCK-CHANGE0-NEW :STABLE
                             FIB2-CLOCK-STABLE0-NEW :CONDITION))
                  :CONDITION T),
-evaluation of the macro body caused the error below.
+evaluation of the macro body caused an error.  An explanation may be
+found above.
 
 Evaluation aborted.  To debug see :DOC print-gv, see :DOC trace, and
 see :DOC wet.
@@ -2277,7 +2281,7 @@ See :DOC memoize-partial.
 
 ACL2 Error in HARD-ERROR-TO-SOFT-ERROR:  In the attempt to macroexpand
 the form (MEMOIZE-PARTIAL 'FIB), evaluation of the macro body caused
-the error below.
+an error.  An explanation may be found above.
 
 Evaluation aborted.  To debug see :DOC print-gv, see :DOC trace, and
 see :DOC wet.
@@ -2315,7 +2319,8 @@ the form
                             :STABLE FIB2-CLOCK-STABLE0-NEW
                             :CONDITION ...))
                  :CONDITION),
-evaluation of the macro body caused the error below.
+evaluation of the macro body caused an error.  An explanation may be
+found above.
 
 Evaluation aborted.  To debug see :DOC print-gv, see :DOC trace, and
 see :DOC wet.

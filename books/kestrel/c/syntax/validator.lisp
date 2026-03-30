@@ -1727,7 +1727,7 @@
      so it is probably a GCC extension.
      We therefore accept this when the "
     (xdoc::seetopic "implementation-environments" "implementation-environment")
-    " version indicates GCC/Clang extensions.
+    " dialect indicates GCC/Clang extensions.
      Since we do not have code yet to recognize null pointer constants,
      we accept any integer expression;
      that is, we allow one pointer operand and one integer operand.")
@@ -7412,7 +7412,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the C version does not have any extensions,
+    "If the C dialect does not have any extensions,
      the initial validation table is the one
      returned by @(tsee valid-init-table).
      Otherwise, we add a number of objects and functions
@@ -7439,17 +7439,17 @@
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-transunit) (irr-valid-table))
-       (version (ienv->version ienv))
+       (dialect (ienv->dialect ienv))
        (table (valid-init-table filepath externals completions next-uid))
        (table (valid-add-ord-objfuns-file-scope
-                (built-in-functions-for version)
+                (built-in-functions-for dialect)
                 (make-type-function :ret (type-unknown)
                                     :params (type-params-unspecified))
                 (linkage-external)
                 (valid-defstatus-defined)
                 table))
        (table (valid-add-ord-objfuns-file-scope
-                (built-in-vars-for version)
+                (built-in-vars-for dialect)
                 (type-unknown)
                 (linkage-external)
                 (valid-defstatus-defined)
