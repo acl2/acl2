@@ -10086,7 +10086,7 @@
           'NIL)
     (INST "BTS" (OP :OP #xFAB)
           (ARG :OP1 '(E V) :OP2 '(G V))
-          '(X86-BT-0F-AB)
+          '(X86-BTS-0F-AB)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "SHRD" (OP :OP #xFAC)
           (ARG :OP1 '(E V)

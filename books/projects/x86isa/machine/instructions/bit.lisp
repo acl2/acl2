@@ -187,7 +187,7 @@
     x86))
 
 
-(def-inst x86-bt-0F-AB
+(def-inst x86-bts-0F-AB
   ;; 0F AB /r: BTS r/m16, r16
   ;; 0F AB /r: BTS r/m32, r32
   ;; REX.W + 0F AB /r: BTS r/m64, r64
