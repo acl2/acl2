@@ -41,6 +41,7 @@
  (in-theory
   (enable
    namep-when-name-resultp-and-not-reserrp
+   reserrp-when-name-resultp-and-not-namep
    name-listp-when-name-list-resultp-and-not-reserrp
    expressionp-when-expression-resultp-and-not-reserrp
    expression-listp-when-expression-list-resultp-and-not-reserrp
@@ -51,6 +52,7 @@
    acl2::characterp-when-character-resultp-and-not-reserrp
    acl2::character-listp-when-character-list-resultp-and-not-reserrp
    acl2::natp-when-nat-resultp-and-not-reserrp
+   acl2::reserrp-when-nat-resultp-and-not-natp
    abnf::treep-when-tree-resultp-and-not-reserrp
    abnf::tree-listp-when-tree-list-resultp-and-not-reserrp
    abnf::tree-list-listp-when-tree-list-list-resultp-and-not-reserrp
@@ -478,8 +480,6 @@
     :measure (abnf::tree-count tree))
 
   :ruler-extenders :all
-
-  :returns-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   :verify-guards nil ; done below
 
