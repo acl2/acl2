@@ -1,6 +1,14 @@
-(in-package "R1CS")
+; Utilities for doing proofs about R1CSes
+;
+; Copyright (C) 2021-2026 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
 
-;; utilities for doing proofs about R1CSes
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "R1CS")
 
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system)
