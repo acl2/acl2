@@ -46,6 +46,6 @@
             (if (endp methods-matching-name)
                 (er hard? 'elaborate-method-indicator "No methods in ~x0 named ~x1." class-name method-name)
               (if (consp (cdr methods-matching-name))
-                  (er hard? 'elaborate-method-indicator "More than 1 method in ~x0 named ~x1: ~x0.  Matching methods: ~x2.  Disambiguate by adding a descriptor." class-name method-name methods-matching-name)
+                  (er hard? 'elaborate-method-indicator "More than 1 method in ~x0 named ~x1.  Matching methods: ~x2.  Disambiguate by adding a descriptor." class-name method-name methods-matching-name)
                 ;; exactly 1 matching method:
                 (first methods-matching-name)))))))))

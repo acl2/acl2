@@ -2430,8 +2430,8 @@
 ; Add-event-landmark is called in install-event, which is the standard (only)
 ; way to finish off an ACL2 event.  If you search for calls of install-event
 ; you will find the normal combinations of event types and namex.  There are
-; two other calls of add-event-landmark.  One, in in primordial-world where it
-; is called to create the enter-boot-strap-mode event type landmark with namex
+; two other calls of add-event-landmark.  One, in primordial-world where it is
+; called to create the enter-boot-strap-mode event type landmark with namex
 ; consisting of the primitive functions and known packages.  The other, in
 ; end-prehistoric-world, creates the exit-boot-strap-mode event type landmark
 ; with namex 0.
@@ -2639,7 +2639,7 @@
 
 ; When LD has executed a world-changing form, it stores a "command tuple" as
 ; the new 'global-value of 'command-landmark.  These landmarks divide the world
-; up into "command blocks" and each command block contains one or or event
+; up into "command blocks" and each command block contains one or more event
 ; blocks.  Command blocks are important when the user queries the system about
 ; his current state, wishes to undo, etc.  Commands are enumerated sequentially
 ; from 0 with "absolute command numbers."
@@ -5825,7 +5825,7 @@
 ;                   (xargs :guard (my-fn1 x y)))
 ;          (my-fn3 x y))
 
-; is is an example of a dirty lambda object:
+; is an example of a dirty lambda object:
 
 ;  '(LAMBDA (X Y)
 ;           (DECLARE (TYPE INTEGER X)
@@ -11257,7 +11257,7 @@
 ; they took both a world and a state as input.  The world supplied the
 ; definitions of the functions.  The state was used for nothing but a
 ; termination argument -- but we did slip into raw Lisp when that was
-; thought appropriate.  The code was was (supposed to be) sound when
+; thought appropriate.  The code was (supposed to be) sound when
 ; evaluated on states other than the live state.  This was imagined to
 ; be possible if ground calls of ev-fncall arose in terms being
 ; proved.  The raw lisp counterpart of ev verified that the world in
@@ -11967,10 +11967,25 @@
                                :boot-strap-flg)) ; safe-mode
                   gc-off nil nil)
                  (cond (erp
+
+; A way to get here is for macroexpansion to cause a hard error, as in the
+; following example.
+
+; (defmacro mac (x) (if (atom x) (er hard 'top "Expected cons: ~x0" x) x))
+; (defun foo (x) (mac x))
+
+; The hard error from macroexpansion presumably results in a message that is
+; printed above the message below, unless errors are are inhibited in which
+; case neither is printed.  In the message below, we say "may be found" to
+; suggest where to look for the hard error; but if the variable, expansion,
+; actually contains the real explanation, then we're covered because "may" can
+; mean "might"!
+
                         (er-cmp ctx
-                                "In the attempt to macroexpand the ~
-                                         form ~x0, evaluation of the macro ~
-                                         body caused the error below.~|~%~@1"
+                                "In the attempt to macroexpand the form ~x0, ~
+                                 evaluation of the macro body caused an ~
+                                 error. ~ An explanation may be found ~
+                                 above.~|~%~@1"
                                 x
                                 expansion))
                        (t (value-cmp expansion))))))))))))
@@ -13534,8 +13549,8 @@
 
 ; Let's put some numbers on that.  We first clear the cache by setting its size
 ; in raw Lisp.  The default size is 1000, but we set the size below to 6.
-; There are three lambdas in in the translation above, but each one gets into
-; the cache twice, probably because of the slightly different versions of each
+; There are three lambdas in the translation above, but each one gets into the
+; cache twice, probably because of the slightly different versions of each
 ; lambda being seen, some with the RETURN-LAST markers and some without those
 ; markers.  So 6 is the minimal size to hold every lambda evaluation will see;
 ; increasing the cache size seems unlikely to change anything.
@@ -14359,7 +14374,7 @@
 ; Finally, the guard conjectures generated for a DO loop$ are the normal guard
 ; conditions for the arguments (which thus includes the guard conditions for
 ; the three lambda$s), plus four ``Special Conjectures'' akin to the Special
-; Conjectures generated for for loop$s and discussed in Appendix A.
+; Conjectures generated for FOR loop$s and discussed in Appendix A.
 
 ; * Special Conjecture (d): the initial alist satisfies the guard of do-body
 
@@ -22293,8 +22308,7 @@
                                             flet-alist x ctx wrld
                                             state-vars)
                            (mv erp value-forms bindings
-; Known-dfs is irrelevant for for translation of the LET body when
-; stobjs-out = t.
+; Known-dfs is irrelevant for translation of the LET body when stobjs-out = t.
                                known-dfs-for-body0)))
                         (t (let ((stobjs-out-df?
                                   (compute-stobj-flags-df?-doublets

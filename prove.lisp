@@ -3832,8 +3832,8 @@
               (t (mv@par nil val nil state))))))
      (t (mv@par nil nil nil state)))))
 
-; Before we can can complete the definition of waterfall-step, we need support
-; for rw-cache operations (see the Essay on Rw-cache) at the pspv level.
+; Before we can complete the definition of waterfall-step, we need support for
+; rw-cache operations (see the Essay on Rw-cache) at the pspv level.
 
 (defun set-rw-cache-state-in-pspv (pspv val)
   (declare (xargs :guard (member-eq val *legal-rw-cache-states*)))
@@ -4426,8 +4426,7 @@
       (cond
        ((or erp bad-historyp)
 
-; We will act like an error occurred.  We have to decided which kind of
-; error.
+; We will act like an error occurred.  We have to decide which kind of error.
 
         (mv-let (error-string abort-cause)
           (cond

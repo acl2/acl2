@@ -326,8 +326,8 @@
        (fargs term) ens wrld
 
 ; The following call of ilks-per-argument-slot is responsible for considering
-; :FN? above, which it returns as a slot for for apply$.  So it might be nice
-; to have a version of ilks-per-argument-slot that does not make a special case
+; :FN? above, which it returns as a slot for apply$.  So it might be nice to
+; have a version of ilks-per-argument-slot that does not make a special case
 ; for apply$, using :FN in place of :FN?.  But the resulting trivial runtime
 ; benefit and code simplification didn't seem worth making another definition.
 
@@ -3829,7 +3829,7 @@
 
 (defun shallow-clausify (term)
 
-; We extract a set of clauses from term whose conjunction is is
+; We extract a set of clauses from term whose conjunction is
 ; propositionally equivalent to term.  This is like clausify except
 ; that we are very shallow and stupid.
 
@@ -4815,8 +4815,8 @@
   (cond
    ((and trp
 
-; A transparent function with no attachment gets ancestors as as through it's
-; not transparent.
+; A transparent function with no attachment gets ancestors as though it's not
+; transparent.
 
          (let ((pair (attachment-pair fn wrld)))
            (and pair
@@ -9604,6 +9604,42 @@
                                     corollary
                                     name x ctx ens wrld state))))))
 
+(defconst *rule-tokens*
+
+; The comments below are taken from the original occurrence of the list below
+; in the definition of translate-rule-class1.
+
+  '(:REWRITE
+    :REWRITE-QUOTED-CONSTANT
+    :LINEAR ; :TRIGGER-TERMS (optional)
+    :WELL-FOUNDED-RELATION
+    :BUILT-IN-CLAUSE
+    :COMPOUND-RECOGNIZER
+    :ELIM
+    :GENERALIZE
+    :META             ; :TRIGGER-FNS
+    :FORWARD-CHAINING ; :TRIGGER-TERMS (optional)
+    :EQUIVALENCE
+    :REFINEMENT
+    :CONGRUENCE
+    :TYPE-PRESCRIPTION ; :TYPED-TERM (optional)
+    :DEFINITION        ; :CLIQUE and :CONTROLLER-ALIST
+    :INDUCTION         ; :PATTERN, :CONDITION (optional), and :SCHEME
+    :TYPE-SET-INVERTER ; :TYPE-SET (optional)
+    :CLAUSE-PROCESSOR
+    :TAU-SYSTEM
+    ))
+
+(defun weak-runep (x)
+  (declare (xargs :guard t :mode :logic))
+  (case-match x
+    ((key sym . rest)
+     (and (member-eq key *rule-tokens*)
+          (symbolp sym)
+          (or (null rest)
+              (posp rest))))
+    (& nil)))
+
 (defun translate-rule-class1 (class tflg name x ctx ens wrld state)
 
 ; Class is a candidate rule class.  We know it is of the form (:key
@@ -9624,27 +9660,7 @@
 ; found in :DOC rule-classes.  It is hygienic to compare periodically the
 ; setting below to the form described there.
 
-  (let ((rule-tokens '(:REWRITE
-                       :REWRITE-QUOTED-CONSTANT
-                       :LINEAR            ; :TRIGGER-TERMS (optional)
-                       :WELL-FOUNDED-RELATION
-                       :BUILT-IN-CLAUSE
-                       :COMPOUND-RECOGNIZER
-                       :ELIM
-                       :GENERALIZE
-                       :META              ; :TRIGGER-FNS
-                       :FORWARD-CHAINING  ; :TRIGGER-TERMS (optional)
-                       :EQUIVALENCE
-                       :REFINEMENT
-                       :CONGRUENCE
-                       :TYPE-PRESCRIPTION ; :TYPED-TERM (optional)
-                       :DEFINITION        ; :CLIQUE and :CONTROLLER-ALIST
-                       :INDUCTION         ; :PATTERN, :CONDITION (optional),
-                                          ;   and :SCHEME
-                       :TYPE-SET-INVERTER ; :TYPE-SET (optional)
-                       :CLAUSE-PROCESSOR
-                       :TAU-SYSTEM
-                       )))
+  (let ((rule-tokens *rule-tokens*))
   (cond
    ((not (member-eq (car class) rule-tokens))
     (er soft ctx

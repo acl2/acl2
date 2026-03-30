@@ -339,7 +339,7 @@
   (b* ((fringe (abnf::tree->string tree))
        ((unless (unsigned-byte-listp 8 fringe))
         (prog2$ (er hard? 'top-level
-                    "unexpected type of leafterm nats when parsing idenntifier")
+                    "unexpected type of leafterm nats when parsing identifier")
                 nil))
        (decimal-number-string (nats=>string fringe))
        (maybe-nat (str::strval decimal-number-string)))

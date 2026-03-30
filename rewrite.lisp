@@ -1083,7 +1083,7 @@
 ; every input and output and reran it on the proof of the Nqthm package to
 ; collect all io pairs.  Analyzing the io pairs showed that we could reproduce
 ; the behavior of geneqv-lst on that series of proofs with the following code.
-; Note that this does does not look at the property lists nor at the enabled
+; Note that this does not look at the property lists nor at the enabled
 ; structure.  Nor does it do any consing.
 
 ;    (defun geneqv-lst (fn geneqv ens wrld)
@@ -7659,7 +7659,7 @@ its attachment is ignored during proofs"))))
 ; and exit (see exit-brr).
 
 ; (By the way, if you're looking at a brr-status and there is a binding for
-; WONP it means you're in brkpt2.  If you're in brkpt2 and the binding of of
+; WONP it means you're in brkpt2.  If you're in brkpt2 and the binding of
 ; FAILURE-REASON is NEAR-MISS then this brkpt2 closes a near-miss-brkpt1 and
 ; otherwise it closes a brkpt1.)
 

@@ -1,6 +1,6 @@
 ; Utilities related to theory-invariants
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,7 +20,7 @@
     (let* ((entry (first theory-invariant-table-alist))
            (inv-rec (cdr entry)))
       (if (not (weak-theory-invariant-record-p inv-rec))
-          (er hard? 'runes-incompatible-with-runes "Ill-formed theory invariant record: ~x0.")
+          (er hard? 'runes-incompatible-with-runes "Ill-formed theory invariant record: ~x0." inv-rec)
         (let ((form (access theory-invariant-record inv-rec :untrans-term)))
           (if (and (true-listp form)
                    (consp form)
@@ -79,7 +79,7 @@
                                           'runic-mapping-pairs
                                           nil wrld)))
                    (consp name-or-rune)))
-          (er hard? 'incompatible-runes-lst-aux "Bad name or rune: ~x0.")
+          (er hard? 'incompatible-runes-lst-aux "Bad name or rune: ~x0." name-or-rune)
         (incompatible-runes-lst-aux (rest names-or-runes) wrld (incompatible-runes name-or-rune wrld))))))
 
 ;; Returns a list of all the names declared to be incompatible with any of the NAMES-OR-RUNES.

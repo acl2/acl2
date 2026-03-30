@@ -234,7 +234,7 @@
 (defun too-many-polysp (var-lst pot-lst counter)
 
 ; Var-list is a list of pot-labels from pot-lst, and counter is initially
-; 1.  We we are about to multiply the polys from the pots in var-lst,
+; 1.  Since we are about to multiply the polys from the pots in var-lst,
 ; we first check whether doing so would generate too many polys.
 
 ; Note: This function has a magic number, 20, which probably should be

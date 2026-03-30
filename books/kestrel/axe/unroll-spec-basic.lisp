@@ -1,7 +1,7 @@
 ; A version of unroll-spec that uses rewriter-basic.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -260,7 +260,7 @@
                           ;; the function-params given should be a permutation of the dag-vars
                           (let ((diff1 (set-difference-eq dag-vars function-params))
                                 (diff2 (set-difference-eq function-params dag-vars)))
-                            (if (or diff1 diff1)
+                            (if (or diff1 diff2)
                                 (er hard? 'unroll-spec-basic-fn "Mismatch between supplied :function-params and the variables of the dag.  Dag has ~x0 vars.  :function-params has ~x1 vars.
 Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                     (len dag-vars)

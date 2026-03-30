@@ -1,7 +1,7 @@
 ; More DAG builders
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1568,7 +1568,7 @@
   (mv-let (erp dag-or-quotep)
     (compose-term-and-dag term var-to-replace dag)
     (if erp
-        (er hard? 'compose-term-and-dag! "Error composing term and DAG: ~x0.")
+        (er hard? 'compose-term-and-dag! "Error composing term and DAG: ~x0." erp)
       dag-or-quotep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,6 +1,6 @@
 ; A tool to read in a .jar file and register some or all of its classes
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -117,7 +117,7 @@
        ((mv erp events constant-pool count)
         (events-for-classes-from-alist path-to-decompressed-bytes-alist nil constant-pool 0))
        ((when erp) (mv erp nil state byte-array-stobj constant-pool))
-       (- (cw "Read ~x0 classes from ~x1~%." count jar-path)))
+       (- (cw "Read ~x0 classes from ~x1.~%" count jar-path)))
     (mv nil ; no error
         `(progn ,@events
                 ;; Record the fact that the containing book depends on this jar:

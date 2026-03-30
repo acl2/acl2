@@ -167,7 +167,7 @@
         (er-soft+ ctx t nil
                   "The matrix ~x0 of the target function ~x1, ~
                    after translation and LET expansion, ~
-                   must contains exactly one call of ~x2, ~
+                   must contain exactly one call of ~x2, ~
                    but it contains ~@3 instead."
                   imatrix
                   old
