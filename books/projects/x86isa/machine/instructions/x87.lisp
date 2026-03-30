@@ -290,8 +290,8 @@
        (val (fp-datai start-reg x86))
        ((mv kind & & & &) (fp-decode val 15 64))
        (tag-val (case kind
-                  ('zero #x01)
-                  ('normal #x00)
+                  (zero #x01)
+                  (normal #x00)
                   (otherwise #x10))))
       (set-fp-tag (logtail 1 ftw) x86 (1+ start-reg)
                   (part-install tag-val fp-tag :low (* 2 start-reg) :width 2))))

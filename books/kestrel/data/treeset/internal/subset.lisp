@@ -17,6 +17,7 @@
 
 (include-book "tree-defs")
 (include-book "in-defs")
+(include-book "split-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -27,6 +28,7 @@
 (local (include-book "bst"))
 (local (include-book "heap"))
 (local (include-book "in"))
+(local (include-book "split"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,17 +37,11 @@
    (y treep))
   :parents (implementation)
   :short "Check if one tree is a subset of the other."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "Time complexity: @($O(m\\log(n))$) (Note: the current implementation is
-      inefficient. This should eventually be @($O(m\\log(n/m))$), where
-      @($m < n$). This may be implemented similar to @(tsee diff).)"))
   :guard (bstp y)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p x)
-      (and (mbe :logic (tree-in (tagged-element->elem (tree->head x)) y)
-                :exec (tree-search-in (tagged-element->elem (tree->head x)) y))
+      (and (mbe :logic (tree-in (tree-element->val (tree->head x)) y)
+                :exec (tree-search-in (tree-element->val (tree->head x)) y))
            (tree-subset-p (tree->left x) y)
            (tree-subset-p (tree->right x) y))))
 
@@ -193,18 +189,36 @@
 
 (defruled tree-subset-p-when-not-tree-in-of-tree->head
   (implies (and (not (tree-empty-p x))
-                (not (tree-in (tagged-element->elem (tree->head x)) y)))
+                (not (tree-in (tree-element->val (tree->head x)) y)))
            (not (tree-subset-p x y)))
   :disable tree-in-when-tree-in-and-tree-subset-p
   :use ((:instance tree-in-when-tree-in-and-tree-subset-p
-                   (a (tagged-element->elem (tree->head x))))))
+                   (a (tree-element->val (tree->head x))))))
 
 (defrule tree-subset-p-when-not-tree-in-of-tree->head-cheap
-  (implies (and (not (tree-in (tagged-element->elem (tree->head x)) y))
+  (implies (and (not (tree-in (tree-element->val (tree->head x)) y))
                 (not (tree-empty-p x)))
            (not (tree-subset-p x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :by tree-subset-p-when-not-tree-in-of-tree->head)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule tree-subset-p-of-arg1-and-tree-split.left
+  (implies (and (bstp y)
+                (<<-all-l x a))
+           (equal (tree-subset-p x (mv-nth 1 (tree-split a y)))
+                  (tree-subset-p x y)))
+  :induct t
+  :enable tree-subset-p)
+
+(defrule tree-subset-p-of-arg1-and-tree-split.right
+  (implies (and (bstp y)
+                (<<-all-r a x))
+           (equal (tree-subset-p x (mv-nth 2 (tree-split a y)))
+                  (tree-subset-p x y)))
+  :induct t
+  :enable tree-subset-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -212,9 +226,9 @@
   :parents (implementation)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (elem)
-          (implies (tree-in elem x)
-                   (tree-in elem y)))
-  :verify-guards nil)
+    (non-exec
+      (implies (tree-in elem x)
+               (tree-in elem y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -252,7 +266,7 @@
               (tree-subset-p x y))
      :induct t
      :hints ('(:use (:instance tree-subset-p-sk-necc
-                               (elem (tagged-element->elem (tree->head x))))))
+                               (elem (tree-element->val (tree->head x))))))
      :enable (tree-subset-p
               tree-subset-p-sk-of-tree->left
               tree-subset-p-sk-of-tree->right))))
@@ -297,59 +311,112 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define acl2-number-tree-subset-p
+(define fast-tree-subset-p
+  ((x treep)
+   (y treep))
+  :returns (yes/no booleanp)
+  :parents (tree-subset-p)
+  :short "Fast subset check."
+  (cond ((tree-empty-p x) t)
+        ((tree-empty-p y) nil)
+        (t (mv-let (in left right)
+                   (tree-split (tree-element->val (tree->head x)) y)
+             (and in
+                  (fast-tree-subset-p (tree->left x) left)
+                  (fast-tree-subset-p (tree->right x) right)))))
+  :measure (acl2-count x))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule fast-tree-subset-p-when-tree-equiv-of-arg1-congruence
+  (implies (tree-equiv x0 x1)
+           (equal (fast-tree-subset-p x0 y)
+                  (fast-tree-subset-p x1 y)))
+  :rule-classes :congruence
+  :induct t
+  :enable fast-tree-subset-p)
+
+(defrule fast-tree-subset-p-when-tree-equiv-of-arg2-congruence
+  (implies (tree-equiv y0 y1)
+           (equal (fast-tree-subset-p x y0)
+                  (fast-tree-subset-p x y1)))
+  :rule-classes :congruence
+  :induct t
+  :enable fast-tree-subset-p)
+
+(defrule fast-tree-subset-p-when-bstp
+  (implies (and (bstp x)
+                (bstp y))
+           (equal (fast-tree-subset-p x y)
+                  (tree-subset-p x y)))
+  :induct (fast-tree-subset-p x y)
+  :enable (fast-tree-subset-p
+           tree-subset-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define acl2-number-fast-tree-subset-p
   ((x acl2-number-treep)
    (y acl2-number-treep))
   :guard (bstp y)
-  (mbe :logic (tree-subset-p x y)
+  (mbe :logic (fast-tree-subset-p x y)
        :exec
-       (or (tree-empty-p x)
-           (and (mbe :logic (tree-in (tagged-element->elem (tree->head x)) y)
-                     :exec (acl2-number-tree-search-in
-                             (tagged-element->elem (tree->head x)) y))
-                (acl2-number-tree-subset-p (tree->left x) y)
-                (acl2-number-tree-subset-p (tree->right x) y))))
+       (cond ((tree-empty-p x) t)
+             ((tree-empty-p y) nil)
+             (t (mv-let (in left right)
+                        (acl2-number-tree-split
+                          (tree-element->val (tree->head x))
+                          y)
+                  (and in
+                       (acl2-number-fast-tree-subset-p (tree->left x) left)
+                       (acl2-number-fast-tree-subset-p (tree->right x) right))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-subset-p
-                                           acl2-number-tree-subset-p
+  :guard-hints (("Goal" :in-theory (enable fast-tree-subset-p
+                                           acl2-number-fast-tree-subset-p
                                            tree-all-acl2-numberp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define symbol-tree-subset-p
+(define symbol-fast-tree-subset-p
   ((x symbol-treep)
    (y symbol-treep))
   :guard (bstp y)
-  (mbe :logic (tree-subset-p x y)
+  (mbe :logic (fast-tree-subset-p x y)
        :exec
-       (or (tree-empty-p x)
-           (and (mbe :logic (tree-in (tagged-element->elem (tree->head x)) y)
-                     :exec (symbol-tree-search-in
-                             (tagged-element->elem (tree->head x)) y))
-                (symbol-tree-subset-p (tree->left x) y)
-                (symbol-tree-subset-p (tree->right x) y))))
+       (cond ((tree-empty-p x) t)
+             ((tree-empty-p y) nil)
+             (t (mv-let (in left right)
+                        (symbol-tree-split
+                          (tree-element->val (tree->head x))
+                          y)
+                  (and in
+                       (symbol-fast-tree-subset-p (tree->left x) left)
+                       (symbol-fast-tree-subset-p (tree->right x) right))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-subset-p
-                                           symbol-tree-subset-p
+  :guard-hints (("Goal" :in-theory (enable fast-tree-subset-p
+                                           symbol-fast-tree-subset-p
                                            tree-all-symbolp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eqlable-tree-subset-p
+(define eqlable-fast-tree-subset-p
   ((x eqlable-treep)
    (y eqlable-treep))
   :guard (bstp y)
-  (mbe :logic (tree-subset-p x y)
+  (mbe :logic (fast-tree-subset-p x y)
        :exec
-       (or (tree-empty-p x)
-           (and (mbe :logic (tree-in (tagged-element->elem (tree->head x)) y)
-                     :exec (eqlable-tree-search-in
-                             (tagged-element->elem (tree->head x)) y))
-                (eqlable-tree-subset-p (tree->left x) y)
-                (eqlable-tree-subset-p (tree->right x) y))))
+       (cond ((tree-empty-p x) t)
+             ((tree-empty-p y) nil)
+             (t (mv-let (in left right)
+                        (eqlable-tree-split
+                          (tree-element->val (tree->head x))
+                          y)
+                  (and in
+                       (eqlable-fast-tree-subset-p (tree->left x) left)
+                       (eqlable-fast-tree-subset-p (tree->right x) right))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-subset-p
-                                           eqlable-tree-subset-p
+  :guard-hints (("Goal" :in-theory (enable fast-tree-subset-p
+                                           eqlable-fast-tree-subset-p
                                            tree-all-eqlablep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

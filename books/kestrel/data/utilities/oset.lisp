@@ -22,10 +22,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable <<-rules))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruled osetp-of-append
   (implies (and (setp x)
                 (setp y))
@@ -39,7 +35,7 @@
 
 (defruled osetp-of-cons
   (implies (setp y)
-           (equal (set::setp (cons x y))
+           (equal (setp (cons x y))
                   (or (not y)
                       (<< x (car y)))))
   :enable setp)

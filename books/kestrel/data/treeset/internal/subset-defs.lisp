@@ -10,6 +10,7 @@
 
 (include-book "tree-defs")
 (include-book "in-defs")
+(include-book "split-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "subset"))
@@ -20,7 +21,8 @@
   :names (tree-subset-p
           tree-subset-p-sk-witness
           tree-subset-p-sk
-          acl2-number-tree-subset-p
-          symbol-tree-subset-p
-          eqlable-tree-subset-p
+          fast-tree-subset-p
+          acl2-number-fast-tree-subset-p
+          symbol-fast-tree-subset-p
+          eqlable-fast-tree-subset-p
           ))

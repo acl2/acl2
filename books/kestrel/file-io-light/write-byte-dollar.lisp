@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function write-byte$
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "channels"))
 (local (include-book "open-output-channel-p"))
 
@@ -57,3 +58,8 @@
   (implies (open-output-channel-any-p channel state)
            (open-output-channel-any-p channel (write-byte$ byte channel2 state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+(defthm w-of-write-byte$
+  (equal (w (write-byte$ byte channel state))
+         (w state))
+  :hints (("Goal" :in-theory (enable write-byte$))))

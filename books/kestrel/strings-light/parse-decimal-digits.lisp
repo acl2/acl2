@@ -1,6 +1,6 @@
 ; Lightweight utilities for parsing decimal digits from strings
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -135,7 +135,7 @@
     (if res
         ;; At least one decimal digit is present:
         (parse-decimal-digits-from-chars chars res)
-      ;; No decimal digts present:
+      ;; No decimal digits present:
       (mv nil chars))))
 
 (defthm parse-decimal-number-from-chars-len-bound
@@ -194,7 +194,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Parses STR as a string of decimal digits and returns tha natural number represented.
+;; Parses STR as a string of decimal digits and returns the natural number represented.
 ;; Throws an error if STR is not a sequence of decimal digits.
 (defund parse-string-as-decimal-number (str)
   (declare (xargs :guard (stringp str)))

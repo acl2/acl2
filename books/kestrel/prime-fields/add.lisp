@@ -1,6 +1,6 @@
 ; Prime fields library: Addition
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -101,8 +101,9 @@
            (pseudo-termp (strip-invisible-fns-for-add x)))
   :hints (("Goal" :in-theory (enable strip-invisible-fns-for-add))))
 
-;; compare terms ignoring calls to inv and constant factors (so that terms that
+;; compare terms ignoring calls to neg and constant factors (so that terms that
 ;; can be combined are brought together)
+;; also strips bind-free-id ?
 (defund smaller-add-termp (x y)
   (declare (xargs :guard (and (pseudo-termp x)
                               (pseudo-termp y))))

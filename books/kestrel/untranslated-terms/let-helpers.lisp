@@ -1,6 +1,6 @@
 ; Utilities for dealing with lets
 ;
-; Copyright (C) 2015-2023 Kestrel Institute
+; Copyright (C) 2015-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -77,8 +77,8 @@
 (defund legal-let-bindingsp (bindings)
   (declare (xargs :guard t))
   (and (legal-let-bindingsp-aux bindings)
-       (equal (len (strip-cars bindings))
-              (len (strip-cadrs bindings)))))
+       ;; more checks here?
+       ))
 
 (defthm legal-let-bindingsp-forward-to-alistp
   (implies (legal-let-bindingsp bindings)

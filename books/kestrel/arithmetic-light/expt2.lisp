@@ -65,7 +65,7 @@
   :rule-classes :type-prescription)
 
 ;; Like the above but also includes x.
-(defthm integer-of-*-of-/-of-expt2-and-*-of-expt2
+(defthm integerp-of-*-of-/-of-expt2-and-*-of-expt2
   (implies (and (<= i j)
                 (integerp x)
                 (integerp i)

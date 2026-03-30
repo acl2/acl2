@@ -17,9 +17,9 @@
    if(!function_exists('sqlite_escape_string')){ 
        function sqlite_escape_string($string) {
        // only allow characters which we know occur in the keys
-           if (preg_match('/^[-._A-Za-z0-9]+$/',$string)===false)
-           // returns 0 on a match, which evaluates to false, so we need a
-           // check with three ='s
+           if (preg_match('/^[-._A-Za-z0-9]+$/',$string)!==1)
+           // preg_match returns 1 on match (safe), 0 on no-match (unsafe), false on error.
+           // Use !==1 to reject both unsafe input and errors.
              return '';
            else return $string; // the string is safe!
        }

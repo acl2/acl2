@@ -1,6 +1,6 @@
 ; A lightweight book about alists whose keys and values are all strings
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,4 +24,5 @@
 (defthm string-string-alistp-forward-to-alistp
   (implies (string-string-alistp x)
            (alistp x))
+  :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable string-string-alistp))))

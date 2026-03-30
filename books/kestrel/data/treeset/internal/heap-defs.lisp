@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (heap<-with-tagged-element
+  :names (heap<-with-tree-element
           heap<-all-l
           fast-nonempty-heapp
           heapp))

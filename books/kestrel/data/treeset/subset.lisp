@@ -47,9 +47,7 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "Time complexity: @($O(m\\log(n))$) (Note: the current implementation is
-       slightly inefficient. This should eventually be @($O(m\\log(n/m))$),
-       where @($n < m$). This may be implemented similar to @(tsee diff).)")
+      "Time complexity: @($O(m\\log(n/m))$) (where @($m < n$)).")
     (xdoc::section
       "General form"
       (xdoc::codeblock
@@ -79,7 +77,8 @@
   ((x setp)
    (y setp))
   :returns (yes/no booleanp)
-  (tree-subset-p (fix x) (fix y))
+  (mbe :logic (tree-subset-p (fix x) (fix y))
+       :exec (fast-tree-subset-p x y))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction)))
 
   ///
@@ -228,9 +227,9 @@
   :parents (subset)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (elem)
-          (implies (in elem x)
-                   (in elem y)))
-  :verify-guards nil)
+    (non-exec
+      (implies (in elem x)
+               (in elem y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -300,32 +299,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled oset-subset-of-to-oset-when-subset
-  (implies (subset x y)
-           (set::subset (to-oset x) (to-oset y)))
-  :enable set::pick-a-point-subset-strategy)
-
-(defruled subset-when-oset-subset-of-to-oset
-  (implies (set::subset (to-oset x) (to-oset y))
-           (subset x y))
-  :enable (pick-a-point
-           to-oset-theory
-           set::subset-in)
-  :disable from-oset-theory)
-
 (defrule oset-subset-of-to-oset
   (equal (set::subset (to-oset x) (to-oset y))
          (subset x y))
-  :use (oset-subset-of-to-oset-when-subset
-        subset-when-oset-subset-of-to-oset))
+  :use (lemma0 lemma1)
+
+  :prep-lemmas
+  ((defruled lemma0
+     (implies (subset x y)
+              (set::subset (to-oset x) (to-oset y)))
+     :enable set::pick-a-point-subset-strategy)
+
+   (defruled lemma1
+     (implies (set::subset (to-oset x) (to-oset y))
+              (subset x y))
+     :enable (pick-a-point
+              to-oset-theory
+              set::subset-in)
+     :disable from-oset-theory)))
 
 (add-to-ruleset from-oset-theory '(oset-subset-of-to-oset))
 
 (defruled subset-becomes-oset-subset
   (equal (subset x y)
-         (set::subset (to-oset x) (to-oset y)))
-  :use (oset-subset-of-to-oset-when-subset
-        subset-when-oset-subset-of-to-oset))
+         (set::subset (to-oset x) (to-oset y))))
 
 (add-to-ruleset to-oset-theory '(subset-becomes-oset-subset))
 
@@ -352,7 +349,7 @@
   ((x acl2-number-setp)
    (y acl2-number-setp))
   (mbe :logic (subset x y)
-       :exec (tree-subset-p x y))
+       :exec (acl2-number-fast-tree-subset-p x y))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -365,7 +362,7 @@
   ((x symbol-setp)
    (y symbol-setp))
   (mbe :logic (subset x y)
-       :exec (tree-subset-p x y))
+       :exec (symbol-fast-tree-subset-p x y))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -378,7 +375,7 @@
   ((x eqlable-setp)
    (y eqlable-setp))
   (mbe :logic (subset x y)
-       :exec (tree-subset-p x y))
+       :exec (eqlable-fast-tree-subset-p x y))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction

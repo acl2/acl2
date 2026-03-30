@@ -1,6 +1,6 @@
 ; A library for manipulating untranslated terms
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,7 +22,7 @@
 (include-book "case-match-helpers")
 (include-book "bstar-helpers")
 
-;; Exracting information from untranslated terms:
+;; Extracting information from untranslated terms:
 (include-book "free-vars")
 (include-book "conjuncts-of-uterm")
 (include-book "disjuncts-of-uterm")

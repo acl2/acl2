@@ -48,7 +48,7 @@
         (eq :object (car val))
         (parsed-json-object-pairsp (cadr val))))
 
- ;; Recogize a true-list of parsed JSON values.
+ ;; Recognize a true-list of parsed JSON values.
  (defund parsed-json-valuesp (vals)
    (declare (xargs :guard t
                    :measure (make-ord 1 (+ 1 (acl2-count vals)) 0)))
@@ -57,7 +57,7 @@
      (and (parsed-json-valuep (first vals))
           (parsed-json-valuesp (rest vals)))))
 
- ;; Recogize a parsed JSON value (in JSON parlance, a "value" can be a scalar,
+ ;; Recognize a parsed JSON value (in JSON parlance, a "value" can be a scalar,
  ;; an array, or an object).
  (defund parsed-json-valuep (val)
    (declare (xargs :guard t
@@ -86,7 +86,7 @@
   (implies (parsed-json-object-pairsp pairs)
            (string-listp (strip-cars pairs)))
   :hints (("Goal" :induct (len pairs)
-           :in-theory (enable parsed-json-valuesp strip-cdrs))))
+           :in-theory (enable parsed-json-valuesp strip-cars))))
 
 (defthm parsed-json-valuesp-of-strip-cdrs-when-parsed-json-object-pairsp
   (implies (parsed-json-object-pairsp pairs)

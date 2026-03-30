@@ -1,3 +1,13 @@
+; More rules
+;
+; Copyright (C) 2020-2026 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "PFIELD")
 
 ;; TODO: Are some of these specific to idioms of certain R1CS compilers?

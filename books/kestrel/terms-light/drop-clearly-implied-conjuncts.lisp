@@ -1,6 +1,6 @@
 ; A utility to simplify conjunctions
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,7 @@
 ;; Treats TERM as a conjunction, dropping conjuncts that are clearly implied by
 ;; earlier conjuncts or by terms in TRUE-TERMS.  Treats the conjuncts and the
 ;; terms in TRUE-TERMS as disjunctions when checking whether one clearly
-;; implies another.  The preserves iff on TERM.
+;; implies another.  This preserves iff on TERM.
 (defund drop-clearly-implied-conjuncts (term true-terms)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp true-terms))))

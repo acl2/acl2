@@ -337,7 +337,7 @@
      "From a user perspective, this should be viewed as an arbitrary element of
       the set. For a description of which element this actually provides, see
       @(tsee tree->head)."))
-  (tagged-element->elem (tree->head (fix set)))
+  (tree-element->val (tree->head (fix set)))
   :inline t
   :guard-hints (("Goal" :in-theory (enable setp
                                            emptyp))))
@@ -357,7 +357,7 @@
                   nil))
   :enable (head
            emptyp
-           irr-tagged-element))
+           irr-tree-element))
 
 (defrule head-when-emptyp-cheap
   (implies (emptyp set)

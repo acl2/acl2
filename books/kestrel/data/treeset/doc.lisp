@@ -46,6 +46,8 @@
         (xdoc::li
           "@(tsee in) &mdash; @($O(\\log(n))$)")
         (xdoc::li
+          "@(tsee subset) &mdash; @($O(m\\log(n/m))$)")
+        (xdoc::li
           "@(tsee insert) &mdash; @($O(\\log(n))$)")
         (xdoc::li
           "@(tsee delete) &mdash; @($O(\\log(n))$)")

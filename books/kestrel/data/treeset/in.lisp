@@ -9,7 +9,6 @@
 (in-package "TREESET")
 
 (include-book "std/util/define" :dir :system)
-(include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 

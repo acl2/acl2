@@ -1,6 +1,6 @@
 ; A utility to check for clear implication between disjunctions
 
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,6 +63,7 @@
     (or (equal d (farg1 disj))
         (among-disjunctsp d (farg3 disj)))))
 
+;todo: rename
 (defthm among-disjunctsp-before-correct
   (implies (among-disjunctsp d disj)
            (implies (if-eval d a)

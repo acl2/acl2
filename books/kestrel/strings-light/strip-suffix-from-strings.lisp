@@ -1,6 +1,6 @@
 ; Strip a suffix from each of a list of strings, if it is present
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,3 +19,9 @@
       nil
     (cons (strip-suffix-from-string suffix (first strings))
           (strip-suffix-from-strings suffix (rest strings)))))
+
+(defthm string-listp-of-strip-suffix-from-strings
+  (implies (and (stringp suffix)
+                (string-listp strings))
+           (string-listp (strip-suffix-from-strings suffix strings)))
+  :hints (("Goal" :in-theory (enable strip-suffix-from-strings))))

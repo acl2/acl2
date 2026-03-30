@@ -26,13 +26,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define heap<-with-tagged-element
-  ((x tagged-element-p)
-   (y tagged-element-p))
-  (heap<-with-hashes (tagged-element->elem x)
-                     (tagged-element->elem y)
-                     (tagged-element->hash x)
-                     (tagged-element->hash y))
+(define heap<-with-tree-element
+  ((x tree-element-p)
+   (y tree-element-p))
+  (heap<-with-hashes (tree-element->val x)
+                     (tree-element->val y)
+                     (tree-element->hash x)
+                     (tree-element->hash y))
   :enabled t
   :inline t)
 
@@ -45,7 +45,7 @@
   :short "Check that all members of a tree are @(tsee heap<) some value."
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
-      (and (heap< (tagged-element->elem (tree->head tree)) x)
+      (and (heap< (tree-element->val (tree->head tree)) x)
            (heap<-all-l (tree->left tree) x)
            (heap<-all-l (tree->right tree) x))))
 
@@ -84,7 +84,7 @@
   :enable heap<-all-l)
 
 (defrule heap<-all-l-of-arg1-and-tree->head
-  (equal (heap<-all-l tree (tagged-element->elem (tree->head tree)))
+  (equal (heap<-all-l tree (tree-element->val (tree->head tree)))
          (tree-empty-p tree))
   :enable (heap<-all-l
            heap<-rules))
@@ -113,7 +113,7 @@
 
 (defrule heap<-all-l-of-tree-node
   (equal (heap<-all-l (tree-node head left right) x)
-         (and (heap< (tagged-element->elem head) x)
+         (and (heap< (tree-element->val head) x)
               (heap<-all-l left x)
               (heap<-all-l right x)))
   :enable heap<-all-l)
@@ -154,13 +154,13 @@
 (defruled heap<-of-tree->head-when-heap<-all-l
   (implies (and (heap<-all-l tree x)
                 (not (tree-empty-p tree)))
-           (heap< (tagged-element->elem (tree->head tree)) x))
+           (heap< (tree-element->val (tree->head tree)) x))
   :enable heap<-all-l)
 
 (defrule heap<-of-tree->head-when-heap<-all-l-cheap
   (implies (and (heap<-all-l tree x)
                 (not (tree-empty-p tree)))
-           (heap< (tagged-element->elem (tree->head tree)) x))
+           (heap< (tree-element->val (tree->head tree)) x))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :by heap<-of-tree->head-when-heap<-all-l)
 
@@ -171,7 +171,7 @@
   :returns (mv (heapp booleanp :rule-classes :type-prescription)
                (hash-max (unsigned-byte-p 32 hash-max)))
   (let* ((head (tree->head tree))
-         (hash-head (tagged-element->hash head)))
+         (hash-head (tree-element->hash head)))
     (declare (type (unsigned-byte 32) hash-head))
     (if (tree-empty-p (tree->left tree))
         (if (tree-empty-p (tree->right tree))
@@ -180,9 +180,9 @@
                   (fast-nonempty-heapp (tree->right tree))
             (declare (type (unsigned-byte 32) hash-right))
             (mv (and heapp
-                     (heap<-with-hashes (tagged-element->elem
+                     (heap<-with-hashes (tree-element->val
                                           (tree->head (tree->right tree)))
-                                        (tagged-element->elem head)
+                                        (tree-element->val head)
                                         hash-right
                                         hash-head))
                 hash-head)))
@@ -191,9 +191,9 @@
                   (fast-nonempty-heapp (tree->left tree))
             (declare (type (unsigned-byte 32) hash-left))
             (mv (and heapp
-                     (heap<-with-hashes (tagged-element->elem
+                     (heap<-with-hashes (tree-element->val
                                           (tree->head (tree->left tree)))
-                                        (tagged-element->elem head)
+                                        (tree-element->val head)
                                         hash-left
                                         hash-head))
                 hash-head))
@@ -205,14 +205,14 @@
                       (fast-nonempty-heapp (tree->right tree))
                 (declare (type (unsigned-byte 32) hash-right))
                 (mv (and heapp
-                         (heap<-with-hashes (tagged-element->elem
+                         (heap<-with-hashes (tree-element->val
                                               (tree->head (tree->left tree)))
-                                            (tagged-element->elem head)
+                                            (tree-element->val head)
                                             hash-left
                                             hash-head)
-                         (heap<-with-hashes (tagged-element->elem
+                         (heap<-with-hashes (tree-element->val
                                               (tree->head (tree->right tree)))
-                                            (tagged-element->elem head)
+                                            (tree-element->val head)
                                             hash-right
                                             hash-head))
                     hash-head))
@@ -232,7 +232,7 @@
 
 (defrulel fast-nonempty-heapp.hash-max
   (equal (mv-nth 1 (fast-nonempty-heapp tree))
-         (hash (tagged-element->elem (tree->head tree))))
+         (hash (tree-element->val (tree->head tree))))
   :expand (fast-nonempty-heapp tree))
 
 (verify-guards fast-nonempty-heapp)
@@ -249,9 +249,9 @@
          (and (mv-nth 0 (fast-nonempty-heapp (tree->left tree)))
               (mv-nth 0 (fast-nonempty-heapp (tree->right tree)))
               (heap<-all-l (tree->left tree)
-                           (tagged-element->elem (tree->head tree)))
+                           (tree-element->val (tree->head tree)))
               (heap<-all-l (tree->right tree)
-                           (tagged-element->elem (tree->head tree)))))
+                           (tree-element->val (tree->head tree)))))
   :induct t
   :enable (fast-nonempty-heapp
            heap<-all-l-weaken))
@@ -262,9 +262,9 @@
                   (and (mv-nth 0 (fast-nonempty-heapp (tree->left tree)))
                        (mv-nth 0 (fast-nonempty-heapp (tree->right tree)))
                        (heap<-all-l (tree->left tree)
-                                    (tagged-element->elem (tree->head tree)))
+                                    (tree-element->val (tree->head tree)))
                        (heap<-all-l (tree->right tree)
-                                    (tagged-element->elem (tree->head tree))))))
+                                    (tree-element->val (tree->head tree))))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by fast-nonempty-heapp.heapp)
 
@@ -278,9 +278,9 @@
       (mbe :logic (and (heapp (tree->left tree))
                        (heapp (tree->right tree))
                        (heap<-all-l (tree->left tree)
-                                    (tagged-element->elem (tree->head tree)))
+                                    (tree-element->val (tree->head tree)))
                        (heap<-all-l (tree->right tree)
-                                    (tagged-element->elem (tree->head tree))))
+                                    (tree-element->val (tree->head tree))))
            :exec (mv-let (heapp hash-max)
                          (fast-nonempty-heapp tree)
                    (declare (ignore hash-max))
@@ -356,9 +356,9 @@
                   (and (heapp (tree->left tree))
                        (heapp (tree->right tree))
                        (heap<-all-l (tree->left tree)
-                                    (tagged-element->elem (tree->head tree)))
+                                    (tree-element->val (tree->head tree)))
                        (heap<-all-l (tree->right tree)
-                                    (tagged-element->elem (tree->head tree))))))
+                                    (tree-element->val (tree->head tree))))))
   :enable heapp)
 
 (defrule heapp-when-not-tree-empty-p-cheap
@@ -367,9 +367,9 @@
                   (and (heapp (tree->left tree))
                        (heapp (tree->right tree))
                        (heap<-all-l (tree->left tree)
-                                    (tagged-element->elem (tree->head tree)))
+                                    (tree-element->val (tree->head tree)))
                        (heap<-all-l (tree->right tree)
-                                    (tagged-element->elem (tree->head tree))))))
+                                    (tree-element->val (tree->head tree))))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by heapp-when-not-tree-empty-p)
 
@@ -379,8 +379,8 @@
   (equal (heapp (tree-node head left right))
          (and (heapp left)
               (heapp right)
-              (heap<-all-l left (tagged-element->elem head))
-              (heap<-all-l right (tagged-element->elem head))))
+              (heap<-all-l left (tree-element->val head))
+              (heap<-all-l right (tree-element->val head))))
   :enable heapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -388,14 +388,14 @@
 (defruled heap<-of-tree->head-and-tree->head-of-tree->left
   (implies (and (heapp tree)
                 (not (tree-empty-p (tree->left tree))))
-           (heap< (tagged-element->elem (tree->head (tree->left tree)))
-                  (tagged-element->elem (tree->head tree)))))
+           (heap< (tree-element->val (tree->head (tree->left tree)))
+                  (tree-element->val (tree->head tree)))))
 
 (defruled heap<-of-tree->head-and-tree->head-of-tree->right
   (implies (and (heapp tree)
                 (not (tree-empty-p (tree->right tree))))
-           (heap< (tagged-element->elem (tree->head (tree->right tree)))
-                  (tagged-element->elem (tree->head tree)))))
+           (heap< (tree-element->val (tree->head (tree->right tree)))
+                  (tree-element->val (tree->head tree)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -425,7 +425,7 @@ language?</p>
         (and in-eofp (not out-eofp)
              (raise "More output than input entries"))
         (and out-eofp (not in-eofp)
-             (raise "More input than outut entries"))
+             (raise "More input than output entries"))
         (mv nil t x86 state))
        ((mv mismatch x86)
         (run-compare-snippet input-bytes output-bytes

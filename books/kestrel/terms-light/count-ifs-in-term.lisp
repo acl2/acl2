@@ -1,6 +1,6 @@
 ; A utility to count IFs in terms
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -41,16 +41,14 @@
            (<= (count-ifs-in-terms (fargs term))
                (count-ifs-in-term term)))
   :rule-classes :linear
-  :hints (("Goal" :expand (count-ifs-in-term term)
-           :in-theory (enable count-ifs))))
+  :hints (("Goal" :expand (count-ifs-in-term term))))
 
 (defthm <=-of-count-ifs-in-term-of-lambda-body-of-car
   (implies (consp (car term))
            (<= (count-ifs-in-term (lambda-body (car term)))
                (count-ifs-in-term term)))
   :rule-classes :linear
-  :hints (("Goal" :expand (count-ifs-in-term term)
-           :in-theory (enable count-ifs))))
+  :hints (("Goal" :expand (count-ifs-in-term term))))
 
 (defthm <=-of-count-ifs-in-term-of-cdr-2
   (implies (consp terms)

@@ -36,7 +36,6 @@
 
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
 
-(local (include-book "to-oset"))
 (local (include-book "internal/tree"))
 (local (include-book "internal/join"))
 (local (include-book "internal/delete"))
@@ -151,7 +150,7 @@
 
 (add-to-ruleset break-abstraction '(delete-type-prescription))
 
-(defrule delete-when-set-equiv-congruence
+(defrule delete-when-equiv-congruence
   (implies (equiv set0 set1)
            (equal (delete x set0)
                   (delete x set1)))
@@ -191,12 +190,38 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by delete-when-not-in)
 
-(defrule delete-of-insert
-  (equal (delete x (insert x set))
-         (delete x set))
+(defrule equal-of-delete-and-arg2
+  (equal (equal (delete x set) set)
+         (and (setp set)
+              (not (in x set)))))
+
+;; TODO: add to expensive-rules
+(defruled delete-of-insert
+  (equal (delete x (insert y set))
+         (if (equal x y)
+             (delete x set)
+           (insert y (delete x set))))
   :enable extensionality)
 
-(defrule insert-of-delete
+(defrule delete-of-insert-same
+  (equal (delete x (insert x set))
+         (delete x set))
+  :enable delete-of-insert)
+
+(defruled delete-of-insert-when-not-equal
+  (implies (not (equal x y))
+           (equal (delete x (insert y set))
+                  (insert y (delete x set))))
+  :by delete-of-insert)
+
+(defrule delete-of-insert-when-not-equal-cheap
+  (implies (not (equal x y))
+           (equal (delete x (insert y set))
+                  (insert y (delete x set))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by delete-of-insert-when-not-equal)
+
+(defrule insert-of-delete-same
   (equal (insert x (delete x set))
          (insert x set))
   :enable extensionality)
@@ -251,16 +276,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule oset-delete-of-arg1-and-to-oset
-  (equal (set::delete x (to-oset set))
-         (to-oset (delete x set)))
+(defrule to-oset-of-delete
+  (equal (to-oset (delete x set))
+         (set::delete x (to-oset set)))
   :enable (to-oset
            delete
            fix
            setp
            empty))
 
-(add-to-ruleset from-oset-theory '(oset-delete-of-arg1-and-to-oset))
+(add-to-ruleset to-oset-theory '(to-oset-of-delete))
 
 (defrule from-oset-of-oset-delete
   (equal (from-oset (set::delete x oset))
@@ -269,18 +294,18 @@
 
 (add-to-ruleset from-oset-theory '(from-oset-of-oset-delete))
 
+(defruled delete-becomes-oset-delete
+  (equal (delete x set)
+         (from-oset (set::delete x (to-oset set)))))
+
+(add-to-ruleset to-oset-theory '(delete-becomes-oset-delete))
+
 (defruled oset-delete-becomes-delete
   (equal (set::delete x oset)
          (to-oset (delete x (from-oset oset))))
   :enable set::expensive-rules)
 
 (add-to-ruleset from-oset-theory '(oset-delete-becomes-delete))
-
-(defruled delete-becomes-oset-delete
-  (equal (delete x set)
-         (from-oset (set::delete x (to-oset set)))))
-
-(add-to-ruleset to-oset-theory '(delete-becomes-oset-delete))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -323,7 +348,7 @@
   ((x acl2-numberp)
    (set acl2-number-setp))
   (mbe :logic (delete x set)
-       :exec (acl2-number-tree-delete x (fix set)))
+       :exec (acl2-number-tree-delete x set))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -336,7 +361,7 @@
   ((x symbolp)
    (set symbol-setp))
   (mbe :logic (delete x set)
-       :exec (symbol-tree-delete x (fix set)))
+       :exec (symbol-tree-delete x set))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -349,7 +374,7 @@
   ((x eqlablep)
    (set eqlable-setp))
   (mbe :logic (delete x set)
-       :exec (eqlable-tree-delete x (fix set)))
+       :exec (eqlable-tree-delete x set))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction

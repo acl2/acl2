@@ -498,7 +498,6 @@
 (defconst *allowed-encoding-overlaps*
   '((:add-immediate :adr-encoding-a1)
     (:bfc :bfi)
-    (:bl :blx-immediate)
     (:sub-immediate :adr-encoding-a2)
     (:str-immediate :push-encoding-a2)
     (:str-immediate :strt-encoding-a1)
@@ -527,7 +526,7 @@
     (:ldr-literal :ldrt-encoding-a1)
     (:ldr-register :ldrt-encoding-a2)
     (:b :blx-immediate) ; for the case of cond=1111 in B
-    (:bl-immediate :blx-immediate) ; for the case of cond=1111 in BL
+    (:bl :blx-immediate) ; for the case of cond=1111 in BL
     (:mov-register :lsl-immediate) ; for the shift=0 case in LSL
     (:mcr :mcr2)
     (:mrc :mrc2)

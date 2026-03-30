@@ -114,7 +114,7 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable logic-term-listp))))
 
-;; Note sure if we want this
+;; Not sure if we want this
 (defthmd logic-term-listp-forward-to-term-listp
   (implies (logic-term-listp terms w)
            (term-listp terms w))

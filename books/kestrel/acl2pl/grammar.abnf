@@ -1,0 +1,705 @@
+; ACL2 Programming Language Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Authors: Eric McCarthy (bendyarm on GitHub)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This file contains an ABNF grammar of ACL2's reader syntax,
+; derived from the ACL2 source code (acl2.lisp, acl2-fns.lisp,
+; acl2-check.lisp, axioms.lisp), the Common Lisp standard (dpANS/CLtL2),
+; and experiment.
+;
+; ACL2 files are sequences of bytes 0-255 (ISO-8859-1 / Latin-1).
+; The grammar operates on these bytes.
+;
+; The grammar consists of two sub-grammars:
+; a lexical (sub)grammar and a syntactic (sub)grammar.
+;
+; Notes on portability:
+; - ACL2 inherits parts of its reader from the host Common Lisp implementation.
+;   The behavior of bare (unescaped) non-ASCII constituent characters
+;   (bytes 128-255) in symbol names depends on the host Lisp's char-upcase
+;   and other reader behavior. On ACL2/SBCL, all 128 non-ASCII bytes are
+;   valid bare constituents (as of commit 045c9b28). Other host Lisps
+;   may differ (e.g., CCL treats byte 160 as whitespace).
+;   Non-ASCII bytes can always be used in symbol names via escape syntax
+;   (backslash or vertical bars), regardless of host Lisp.
+; - This grammar specifies the SBCL-specific behavior as the primary
+;   definition, since it is currently the most commonly used host Lisp.
+;   There are some notes on CCL as well.
+;   A portable-graphic-constituent rule is also provided for reference;
+;   it covers the ASCII graphic subset that should work identically across
+;   all supported host Lisps. More work is needed on what is portable
+;   in practice for non-graphic and non-ASCII bytes.
+; - ACL2 requires the host Lisp to be case-insensitive-upper.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Lexical Grammar
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Bytes and character classes
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Any byte (ISO-8859-1 character)
+byte = %x00-FF
+
+; Whitespace characters that separate tokens and are discarded.
+; The whitespace-char rule here reflects SBCL behavior.
+;   (ACL2 on other Common Lisps can treat additional bytes as
+;    whitespace;  CCL treats as whitespace at least bytes
+;    0 (NUL), 1 (SOH), 11 (VT), and 160 (NBSP)).
+; These 5 bytes are:
+;   Tab (9), Newline/Linefeed (10), Page/Formfeed (12),
+;   Return (13), Space (32).
+whitespace-char = %x09 / %x0A / %x0C / %x0D / %x20
+whitespace = 1*whitespace-char
+
+; ASCII letters
+uppercase-letter = %x41-5A ; A-Z
+lowercase-letter = %x61-7A ; a-z
+letter = uppercase-letter / lowercase-letter
+
+; ASCII digits
+digit = %x30-39 ; 0-9
+
+; Hex digits
+hex-digit = digit / %i"a" / %i"b" / %i"c" / %i"d" / %i"e" / %i"f"
+
+; Octal digits
+octal-digit = %x30-37 ; 0-7
+
+; Binary digits
+binary-digit = "0" / "1"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Comments
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Line comment: semicolon to end of line
+; Any byte can appear after the semicolon except newline.
+not-newline = %x00-09 / %x0B-FF
+
+line-comment = ";" *not-newline
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Block comment: #| ... |#, nestable.
+
+not-bar-or-hash = %x00-22 / %x24-7B / %x7D-FF
+                  ; anything except # (%x23) or | (%x7C)
+
+block-comment = "#|" rest-of-block-comment
+
+rest-of-block-comment = not-bar-or-hash rest-of-block-comment
+                      / "|" rest-of-block-comment-after-bar
+                      / "#" rest-of-block-comment-after-hash
+
+; After seeing | inside a block comment:
+;   # = end of this block comment (|# consumed)
+;   | = another |, stay in this state
+;   # after nested = handled by hash state
+;   other = back to normal
+rest-of-block-comment-after-bar = "#"
+                                / "|" rest-of-block-comment-after-bar
+                                / not-bar-or-hash rest-of-block-comment
+
+; After seeing # inside a block comment:
+;   | = start of nested block comment; then require two instances
+;       of rest-of-block-comment, each of which contains |#
+;   # = another #, stay in this state
+;   other = back to normal block comment contents state
+rest-of-block-comment-after-hash =
+    "|" rest-of-block-comment rest-of-block-comment
+  / "#" rest-of-block-comment-after-hash
+  / not-bar-or-hash rest-of-block-comment
+
+comment = line-comment / block-comment
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Intertoken space: whitespace and/or comments between tokens.
+intertoken-space = *( whitespace / comment )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Strings
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; String: double-quoted, with \ as escape for " and \ only.
+; All 256 bytes can appear in strings (no upcasing).
+; The only escape sequences are \" (literal double-quote)
+; and \\ (literal backslash).
+
+dquote = %x22
+
+string-char = %x00-21     ; bytes before "
+            / %x23-5B     ; bytes between " and \
+            / %x5D-FF     ; bytes after \
+            / "\" dquote  ; escaped double-quote
+            / "\\"        ; escaped backslash
+
+string-literal = dquote *string-char dquote
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Fancy string: #{"""..."""}
+; https://acl2.org/doc/?topic=ACL2____FANCY-STRING-READER
+; Content is terminated by """}. To include a literal """}
+; in the string, write """\}: one backslash is consumed and }
+; becomes content. Similarly """\\} includes \} in content, etc.
+; All 256 bytes are allowed in content.
+
+not-dquote = %x00-21 / %x23-FF
+
+; Byte that is not ", }, or \
+not-dquote-rbrace-backslash = %x00-21 / %x23-5B / %x5D-7C / %x7E-FF
+
+fancy-string = "#{" dquote dquote dquote rest-of-fancy-string
+
+; rest-of-fancy-string includes the fancy body and closing """}
+rest-of-fancy-string = dquote rest-of-fancy-after-q1
+                     / not-dquote rest-of-fancy-string
+
+rest-of-fancy-after-q1 = dquote rest-of-fancy-after-q2
+                       / not-dquote rest-of-fancy-string
+
+rest-of-fancy-after-q2 = dquote rest-of-fancy-after-q3
+                       / not-dquote rest-of-fancy-string
+
+; After seeing """, the next byte determines:
+;   } = end of fancy string ("""} consumed)
+;   " = another quote; stay in this state (handles 4 or more quotes)
+;   \ = start of potential escape sequence
+;   other = the """ was content; back to normal
+rest-of-fancy-after-q3 = "}"
+                       / dquote rest-of-fancy-after-q3
+                       / "\" rest-of-fancy-after-q3-backslash
+                       / not-dquote-rbrace-backslash rest-of-fancy-string
+
+; After """ followed by one or more \, the next byte determines:
+;   } = escaped terminator; one \ is consumed, continue reading
+;   \ = more backslashes; stay in this state
+;   " = backslashes are content; start tracking quotes again
+;   other = backslashes are content; back to normal
+rest-of-fancy-after-q3-backslash =
+    "}" rest-of-fancy-string
+  / "\" rest-of-fancy-after-q3-backslash
+  / dquote rest-of-fancy-after-q1
+  / not-dquote-rbrace-backslash rest-of-fancy-string
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Character literals
+; https://acl2.org/doc/?topic=ACL2____CHARACTERS
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Single-character literal: #\ followed by one byte,
+; terminated by whitespace or a terminating macro character.
+; All 256 bytes are valid as the character.
+
+; Named character literals (case-insensitive):
+; Space (32), Tab (9), Newline (10), Page (12), Rubout (127), Return (13).
+named-character = %i"Space" / %i"Tab" / %i"Newline"
+                / %i"Page" / %i"Rubout" / %i"Return"
+
+; A single character after #\ can be any byte.
+; When followed by a terminator (whitespace or macro char),
+; it is read as that single character.
+; When followed by more constituent characters, the accumulated
+; token must be one of the named characters above.
+
+character-literal = "#\" ( named-character / byte )
+                    ; constraint: if byte is followed by a constituent
+                    ; character, it must form a named-character
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Numbers
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Integers in the current read-base (default 10).
+; We specify base-10 here; other bases are handled by # dispatch macros.
+
+sign = "+" / "-"
+
+decimal-integer = [sign] 1*digit
+
+; Ratio: integer / positive-integer
+ratio = [sign] 1*digit "/" 1*digit
+        ; constraint: denominator must be positive and nonzero
+
+; Binary integer: #b or #B
+binary-integer = "#" %i"b" [sign] 1*binary-digit
+
+; Octal integer: #o or #O
+octal-integer = "#" %i"o" [sign] 1*octal-digit
+
+; Hexadecimal integer: #x or #X
+hex-integer = "#" %i"x" [sign] 1*hex-digit
+
+; Radix-n integer: #nR where n is 2-36
+radix-integer = "#" 1*digit %i"r" [sign] 1*radix-digit
+                ; constraint: the digits before R form a number 2-36
+                ; and the radix-digits are valid for that base
+
+radix-digit = digit / letter
+              ; constraint: must be valid for the specified radix
+
+; Complex rational: #c(real imag) or #C(real imag)
+complex-rational = "#" %i"c" "(" intertoken-space rational-number
+                   whitespace rational-number intertoken-space ")"
+
+rational-number = decimal-integer / ratio
+
+; #u numeric with underscores (ACL2-specific)
+; Allows underscores as visual separators in numbers.
+; Can also have hex/octal/binary prefix after #u.
+; https://acl2.org/doc/?topic=ACL2____SHARP-U-READER
+sharp-u-number = "#" %i"u" ( sharp-u-decimal / sharp-u-prefixed )
+
+sharp-u-decimal = 1*( digit / "_" )
+
+sharp-u-prefixed = %i"b" 1*( binary-digit / "_" )
+                 / %i"o" 1*( octal-digit / "_" )
+                 / %i"x" 1*( hex-digit / "_" )
+
+; #d / #D double-float reader (ACL2-specific)
+; Reads the next token as a Lisp double-float and converts to rational.
+; Unlike #f, #d delegates to CL's reader and accepts CL float syntax.
+; The exponent marker must produce a double-float: "e" and "d" work
+; (both default to double-float), but "f", "s", "l" are rejected.
+; https://acl2.org/doc/?topic=ACL2____SHARP-D-READER
+sharp-d-float = "#" %i"d" [sign] sharp-d-body
+
+sharp-d-body = 1*digit [ "." *digit ] [ sharp-d-exponent ]
+             / "." 1*digit [ sharp-d-exponent ]
+
+sharp-d-exponent = ( %i"e" / %i"d" ) [sign] 1*digit
+
+; #f / #F float reader (ACL2-specific)
+; Has two modes: base-10 (#f) and base-16 (#fx).
+; https://acl2.org/doc/?topic=ACL2____SHARP-F-READER
+sharp-f-float = "#" %i"f" [sign] float-body
+              / "#" %i"f" %i"x" [sign] hex-float-body
+
+; Base-10 float body: digits with optional decimal point and exponent.
+; Underscores are allowed as visual separators.
+float-body = 1*( digit / "_" ) [ "." *( digit / "_" ) ]
+             [ float-exponent ]
+           / "." 1*( digit / "_" )
+             [ float-exponent ]
+
+float-exponent = %i"e" [sign] 1*( digit / "_" )
+
+; Base-16 float body (#fx): hex digits with optional decimal point
+; and base-2 exponent using "p"/"P".
+hex-float-body = 1*( hex-digit / "_" ) [ "." *( hex-digit / "_" ) ]
+                 [ hex-float-exponent ]
+               / "." 1*( hex-digit / "_" )
+                 [ hex-float-exponent ]
+
+hex-float-exponent = %i"p" [sign] 1*( digit / "_" )
+
+number = decimal-integer
+       / ratio
+       / binary-integer
+       / octal-integer
+       / hex-integer
+       / radix-integer
+       / complex-rational
+       / sharp-u-number
+       / sharp-d-float
+       / sharp-f-float
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Symbol names and tokens
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The reader classifies each byte into a syntactic type.
+; The CL symbol reader upcases unescaped constituent characters.
+
+; Terminating macro characters:
+;   " (34), ' (39), ( (40), ) (41), , (44), ; (59), ` (96)
+; Non-terminating macro character:
+;   # (35)
+; Single escape: \ (92)
+; Multiple escape: | (124)
+; Invalid: Backspace (8), Delete (127)
+; Whitespace (on SBCL): Tab (9), Newline (10), Page (12),
+;   Return (13), Space (32)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Portable ASCII graphic constituent characters.
+
+; These are the printable ASCII characters that should be constituents
+; on ACL2 on any supported Common Lisp. They are upcased by the reader.
+; Excludes the macro chars, escape chars, and invalid chars listed above.
+; Note: non-graphic ASCII bytes (0-31) are constituents on SBCL but
+; likely whitespace on CCL, so they are likely not portable.
+; See sbcl-non-graphic-ascii-constituent below.
+
+portable-graphic-constituent = "!" ; %x21
+                             / "$" / "%" / "&" ; %x24-26
+                             / "*" / "+" ; %x2A-2B
+                             / "-" / "." / "/" ; %x2D-2F
+                             / digit     ; %x30-39
+                             / ":" / "<" / "=" / ">" / "?" / "@" ; %x3A-40
+                             / letter    ; %x41-5A, %x61-7A
+                             / "[" / "]" / "^" / "_" ; %x5B, %x5D-5F
+                             / "{" / "}" / "~" ; %x7B, %x7D-7E
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; SBCL-specific non-graphic ASCII constituent characters.
+;
+; On ACL2/SBCL, bytes 0-7, 11, and 14-31 are constituents.
+; These characters are not upcased by the symbol reader (they have no case).
+;
+; Portability note:
+; On ACL2/CCL, we think all bytes 0-31 (except 8, which is invalid) are
+; treated as whitespace, so there would be no portable non-graphic ASCII
+; constituents.  However, that might be incorrect and needs to be revisted.
+
+sbcl-non-graphic-ascii-constituent = %x00-07  ; NUL through BEL
+                                   / %x0B     ; VT (vertical tab)
+                                   / %x0E-1F  ; SO through US
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Non-ASCII constituent characters on ACL2/SBCL.
+
+; All non-ASCII bytes 128-255 are constituent characters.
+; The symbol reader upcases two ranges following ISO-8859-1:
+;   224-246 -> 192-214 and 248-254 -> 216-222.
+; The other non-ASCII bytes (128-223, 247, 255) are not upcased.
+;
+; Historical note: In ACL2 8.7, SBCL's NFKC Unicode normalization
+; caused 9 bytes (168, 175, 180, 181, 184, 188, 189, 190, 255) to be
+; rejected. This was fixed in commit 045c9b28 by disabling readtable
+; normalization and overriding char-upcase for byte 255.
+; See Note 1 at the end of this file for details.
+;
+; Portability note:
+; On ACL2/CCL, the non-ASCII constituent set may differ; see Note 2
+; at the end of this file.
+
+sbcl-non-ascii-constituent = %x80-FF  ; 128-255
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Constituent characters for ACL2/SBCL.
+
+; This is the primary definition used by the grammar.
+; On other host Lisps, the constituent set differs
+; (see Notes at end of file).
+constituent = portable-graphic-constituent
+            / sbcl-non-graphic-ascii-constituent
+            / sbcl-non-ascii-constituent
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Token escapes.
+
+; Single-escape: \ followed by one byte (the byte is not upcased)
+single-escaped-char = "\" byte
+
+; Multiple-escape region: |...| (characters inside are not upcased).
+; Inside |...|, backslash escapes the next character.
+vbar-char = %x00-5B      ; anything except \ (%x5C) or | (%x7C)
+          / %x5D-7B      ; anything except | (%x7C)
+          / %x7D-FF      ; anything after |
+          / "\" byte      ; escaped byte (including \| and \\)
+
+multiple-escape-region = "|" *vbar-char "|"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Non-terminating macro character.
+;
+; # is a non-terminating macro character.  At the start of a read,
+; it triggers dispatch (#\, #b, #x, etc.).  But within an already-started
+; token, it acts as a constituent character.  For example, A#B is a valid
+; symbol whose name is "A#B".
+
+non-terminating-macro-char = "#"
+
+; Symbol tokens.
+;
+; A symbol token is a sequence of constituent characters,
+; single-escape sequences, multiple-escape regions, and
+; non-terminating macro characters (currently just #).
+; At least one character must be present.
+;
+; The first element cannot be a non-terminating macro character
+; (since that would trigger dispatch), but subsequent elements can.
+; This is captured by the start/rest distinction.
+;
+; The CL reader first tries to interpret a token as a number.
+; Only if that fails does it interpret the token as a symbol.
+; Although the following production also matches certain numbers
+; (e.g., "123" or "3/4"), as long as the lexer has tried and
+; failed to match a number, this production will correctly
+; match a symbol token.  See the atom rule below.
+
+symbol-token-start = constituent
+                   / single-escaped-char
+                   / multiple-escape-region
+
+symbol-token-rest = constituent
+                  / non-terminating-macro-char
+                  / single-escaped-char
+                  / multiple-escape-region
+
+symbol-token = symbol-token-start *symbol-token-rest
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Package-qualified symbols
+; https://acl2.org/doc/?topic=ACL2____DEFPKG
+
+; The colon is a constituent character but has special meaning
+; to the token parser as a package marker.
+;
+; PKG:SYM     - external symbol SYM in package PKG (single colon)
+; PKG::SYM    - internal symbol SYM in package PKG (double colon)
+; :SYM        - keyword symbol (in KEYWORD package)
+;
+; Package and symbol names follow the same token rules.
+; This is a semantic constraint applied after token formation.
+;
+; Note on single vs double colon: ACL2 inherits both forms from CL.
+; Single colon (PKG:SYM) requires SYM to be exported from PKG.
+; Double colon (PKG::SYM) accesses any symbol in PKG.
+; However, ACL2 does not support exporting symbols (there is no
+; EXPORT or DEFPACKAGE :EXPORT in ACL2; DEFPKG does not provide
+; an export mechanism). The only packages with exported symbols
+; are those inherited from the host CL, such as COMMON-LISP.
+; Therefore, single-colon syntax only works for symbols like
+; COMMON-LISP:CONS that are exported by the host CL.
+; It could be argued that ACL2 should standardize on double-colon
+; and disallow single-colon, since ACL2 has no concept of export.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Sharp-sign (#) dispatch macros
+;
+; Most of ACL2's # dispatch macros are inherited from Common Lisp,
+; some with restrictions. ACL2 also adds several of its own
+; (#!, #u, #d, #f, #{, #@). For a systematic review of
+; every # dispatch character from ACL2's perspective, see the essay
+; "Remarks on *acl2-readtable*" in acl2.lisp (around line 2239).
+;
+; This grammar covers only the # dispatches that produce valid ACL2
+; objects. CL dispatches that ACL2 reads but rejects via
+; bad-lisp-objectp (#(, #*, #:, #A, #P, #S) are omitted.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; # is a non-terminating macro character. When it appears in a token,
+; it is a constituent. At the start of a read, #x dispatches based on x.
+;
+; Many of these are defined in the syntactic grammar below since they
+; read full s-expressions recursively. Here we define the ones
+; that produce atomic tokens.
+
+; Feature conditionals: #+feature form / #-feature form
+; These conditionally read or skip the next form.
+; The feature expression is read with *package* bound to KEYWORD,
+; so a bare symbol like SBCL is read as :SBCL.
+; The feature expression is a keyword symbol or a boolean combination
+; using AND, OR, NOT. (AND) with no arguments is true;
+; (OR) with no arguments is false.
+; Explicit keyword syntax (#+:sbcl) also works and is equivalent
+; to the bare form (#+sbcl).
+; Non-keyword-package symbols (e.g., #+acl2::sbcl) are syntactically
+; valid but will not match any feature on *features*.
+feature-conditional = "#" ("+" / "-") intertoken-space
+                      feature-expr intertoken-space s-expression
+
+feature-expr = symbol-token
+             / "(" intertoken-space feature-and intertoken-space ")"
+             / "(" intertoken-space feature-or intertoken-space ")"
+             / "(" intertoken-space feature-not intertoken-space ")"
+
+feature-and = %i"and" *( intertoken-space feature-expr )
+feature-or  = %i"or"  *( intertoken-space feature-expr )
+feature-not = %i"not" intertoken-space feature-expr
+
+; #. constant reader (restricted in ACL2)
+; #. must be followed immediately by a non-whitespace character.
+; It reads an s-expression using CL's read.
+; Constraint: the s-expression must be a symbol naming a defconst.
+; https://acl2.org/doc/?topic=ACL2____SHARP-DOT-READER
+sharp-dot = "#." s-expression
+
+; #! package reader (ACL2-specific)
+; https://acl2.org/doc/?topic=ACL2____SHARP-BANG-READER
+; #!PKG form - reads a package name, then reads a form in that package.
+; The package name is read as an s-expression by CL's read,
+; but must read as a symbol or string; other types are rejected.
+; If it reads as a symbol, the symbol-name is used as the package name.
+; This includes keyword symbols and package-qualified symbols.
+; If it reads as a string, the string is used as the package name.
+; The form is then read with *package* bound to the named package.
+; Constraint: the package must be known to ACL2.
+sharp-bang = "#!" intertoken-space s-expression intertoken-space s-expression
+
+; #n= and #n# shared structure
+sharp-equal = "#" 1*digit "=" intertoken-space s-expression
+sharp-sharp = "#" 1*digit "#"
+
+; #@ iprint reference (ACL2-specific)
+; Used to refer to values that were elided during printing.
+; Users can type #@n# at the REPL to access iprinted values.
+; https://acl2.org/doc/?topic=ACL2____IPRINT
+sharp-atsign = "#@" 1*digit "#"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Syntactic Grammar
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; S-expressions
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; An atom is a number, character, string, or symbol.
+; Note: number must be tried before symbol-token, since
+; symbol-token also matches numeric syntax. The CL reader
+; tries to interpret a token as a number first.
+atom = number
+     / character-literal
+     / string-literal
+     / fancy-string
+     / symbol-token
+
+; A list is a sequence of s-expressions in parentheses,
+; optionally with a dotted-pair tail.
+; The "." for the dotted pair is the consing dot: a lone dot token
+; surrounded by whitespace (or other token delimiters).
+; This is distinct from a dot as part of a symbol name (e.g., "A.B")
+; or a number (e.g., "#d1.5").
+; constraint: the "." must be a standalone token (preceded and followed
+; by whitespace or token boundaries), not part of another token.
+list = "(" intertoken-space ")"
+     / "(" 1*( intertoken-space s-expression )
+       intertoken-space ")"
+     / "(" 1*( intertoken-space s-expression )
+       intertoken-space "." intertoken-space s-expression
+       intertoken-space ")"
+
+; Quote: 'x reads as (QUOTE x)
+quoted = "'" intertoken-space s-expression
+
+; Backquote: `x reads using ACL2's backquote implementation
+backquoted = "`" intertoken-space s-expression
+
+; Comma (only valid inside backquote):
+; ,x reads as unquote
+; ,@x reads as splicing unquote
+; Note: ,. (comma-dot, destructive splice from CLtL1) is explicitly
+; rejected by ACL2 with an error.
+comma-expr = "," [ "@" ] intertoken-space s-expression
+
+; Function quote: #'x reads as (FUNCTION x).
+; This is inherited from the Common Lisp reader and is not rejected
+; by ACL2 at read time. However, ACL2 is first-order and does not
+; support passing functions as values, so FUNCTION forms are not
+; evaluable. The #' syntax is arguably misleading in ACL2 and
+; could be removed (i.e., made to signal a reader error).
+function-quoted = "#'" intertoken-space s-expression
+
+; An s-expression is the top-level grammatical unit.
+s-expression = atom
+             / list
+             / quoted
+             / backquoted
+             / comma-expr
+             / function-quoted
+             / sharp-equal
+             / sharp-sharp
+             / sharp-dot
+             / sharp-bang
+             / feature-conditional
+
+; A file is a sequence of s-expressions separated by intertoken space.
+file = intertoken-space *( s-expression intertoken-space )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Notes
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Note 1: Historical note on SBCL NFKC normalization issue
+; (Fixed in commit 045c9b28cba1422dc2c45234f6e8171a344ccc76)
+;
+; In ACL2 8.7 on SBCL, 9 non-ASCII bytes (168, 175, 180, 181, 184,
+; 188, 189, 190, 255) could not be used as bare symbol constituents.
+; The root cause was SBCL's NFKC Unicode normalization of symbol names
+; during reading (controlled by sb-ext:readtable-normalization, which
+; defaults to T on SBCL with Unicode support).
+;
+; On SBCL, base-char covers only codes 0-127. Characters 128-255 are
+; extended-char, which triggered the NFKC normalization path in the
+; reader. NFKC normalization mapped ISO-8859-1 compatibility characters
+; to their Unicode canonical equivalents (e.g., micro sign 181 to
+; Greek small mu 956, then upcased to Greek capital mu 924).
+; ACL2's bad-lisp-objectp then rejected symbols whose names contained
+; characters with codes > 255.
+;
+; The fix had two parts:
+; 1. Disable readtable normalization for *acl2-readtable*:
+;    (setf (sb-ext:readtable-normalization *acl2-readtable*) nil)
+; 2. Override char-upcase for byte 255 (y with diaeresis) on SBCL,
+;    since SBCL's char-upcase maps it to code 376 (> 255).
+;    (This parallels an existing fix for LispWorks.)
+;
+; With these fixes, all 256 bytes are valid bare symbol constituents
+; on ACL2/SBCL, with only the standard ISO-8859-1 lowercase-to-
+; uppercase mappings (224-246 -> 192-214, 248-254 -> 216-222).
+;
+; Note 2: CCL comparison
+; (Tested with CCL 1.12.1 on Linux/x86-64)
+;
+; WARNING: Earlier read-string-based tests of CCL proved unreliable
+; (the results differed from file-based certification testing).
+; The char-upcase information below was tested in raw CCL and is
+; believed correct. The whitespace/constituent classification needs
+; re-verification via file-based testing on CCL.
+;
+; CCL char-upcase for non-ASCII bytes:
+;   - ASCII a-z to A-Z (same as SBCL)
+;   - ISO-8859-1 lowercase letters 224-254 (except 247) to 192-222
+;     (same as SBCL)
+;   - Byte 255 (y with diaeresis) to 376 (Y with diaeresis)
+;     (Note: SBCL used to do this too, but the fix in commit 045c9b28
+;     overrides char-upcase for byte 255 on SBCL so it stays 255.
+;     CCL may still upcase 255 to 376.)
+; CCL does NOT map diacritical marks to combining characters,
+; micro sign to Greek Mu, or fractions to fraction slash.
+; (SBCL no longer does either, after the NFKC fix.)
+;
+; CCL whitespace (needs re-verification):
+; File-based testing showed that CCL treats ALL bytes 0-31
+; (except 8, which is invalid) as whitespace, plus byte 160 (NBSP).
+; This means there are NO non-graphic ASCII constituents on CCL.
+; Earlier read-string tests suggested only bytes 0, 1, 11, and 160 were
+; whitespace, but this was not yet confirmed by file certification testing.
+; The non-ASCII constituent set on CCL also needs re-verification.

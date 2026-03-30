@@ -1,6 +1,6 @@
 ; Utilities for dealing with untranslated terms
 ;
-; Copyright (C) 2015-2023 Kestrel Institute
+; Copyright (C) 2015-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1058,7 +1058,7 @@
                              `(,fn ,@args)))))))))))))))
 
  ;;Rename all functions called in TERMS according that are mapped to new names by ALIST.
- ;; tdo rename the lst to list
+ ;; todo rename the lst to list
  (defun rename-fns-and-expand-lambdas-in-untranslated-term-lst (terms alist)
    (declare (xargs :guard (and (untranslated-term-listp terms) ;(true-listp terms)
                                (symbol-alistp alist)

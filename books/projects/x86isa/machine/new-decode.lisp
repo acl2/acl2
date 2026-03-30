@@ -222,7 +222,7 @@
 
        (t
         (er hard 'get-operand-size
-            "This should've been reachable! ~
+            "This should not have been reachable! ~
              Addressing Method Code: ~x0 Operand Type Code: ~x1 ~
              Rex Byte: ~x2 Prefixes: ~x3~%"
             addressing-method-code

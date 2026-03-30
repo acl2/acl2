@@ -1,7 +1,7 @@
 ; Keeping strings that start with a prefix
 ;
 ; Copyright (C) 2021-2022 Kestrel Technology, LLC
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,3 +24,7 @@
           (cons string
                 (strings-starting-with prefix (rest strings)))
         (strings-starting-with prefix (rest strings))))))
+
+(defthm string-listp-of-strings-starting-with
+  (implies (string-listp strings)
+           (string-listp (strings-starting-with prefix strings))))

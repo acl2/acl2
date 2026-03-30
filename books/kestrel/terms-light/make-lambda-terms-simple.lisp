@@ -1,6 +1,6 @@
 ; Making a list of lambda terms
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,8 +13,7 @@
 (include-book "make-lambda-term-simple")
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
-;tood: reduce:
-(local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
+;todo: reduce:
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -45,23 +44,6 @@
   :hints (("Goal" :in-theory (enable make-lambda-terms-simple))))
 
 ;move?
-(defthm empty-eval-of-make-lambda-term-simple-when-symbolp
-  (implies (and (symbolp var)
-;                (symbol-listp lambda-formals)
-;                (pseudo-term-listp args)
-                (equal (len lambda-formals) (len args)))
-           (equal (empty-eval (make-lambda-term-simple lambda-formals args var) a)
-                  (if (equal var nil) ; gross exception in defevaluator
-                      nil
-                    (if (member-equal var lambda-formals)
-                        (empty-eval (cdr (assoc-equal var (pairlis$ lambda-formals args))) ; todo: use lookup-equal?
-                                     a)
-                      (empty-eval var a)))))
-  :hints (("Goal" :in-theory (enable make-lambda-term-simple
-                                     ;;assoc-equal-iff-member-equal-of-strip-cars
-                                     empty-eval-of-cdr-of-assoc-equal
-                                     lookup-equal))))
-
 (defthm empty-eval-of-make-lambda-term-simple-when-symbolp
   (implies (and (symbolp var)
 ;                (symbol-listp lambda-formals)

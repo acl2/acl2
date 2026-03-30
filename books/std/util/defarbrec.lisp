@@ -1463,7 +1463,7 @@
                   updates
                   update-names$
                   terminates-name$
-                  teminates-witness-name$
+                  terminates-witness-name$
                   terminates-rewrite-name$
                   measure-name$
                   nonterminating$))
@@ -1487,7 +1487,7 @@
                 updates
                 update-names$
                 terminates-name$
-                teminates-witness-name$
+                terminates-witness-name$
                 terminates-rewrite-name$
                 measure-name$
                 nonterminating$

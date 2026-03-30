@@ -791,14 +791,14 @@
 (defun trace-read-memory-1 (fn)
   (let* ((numbytes
           (case fn
-            ('rml08  1)
-            ('riml08 1)
-            ('rml16  2)
-            ('riml16 2)
-            ('rml32  4)
-            ('riml32 4)
-            ('rml64  8)
-            ('riml64 8))))
+            (rml08  1)
+            (riml08 1)
+            (rml16  2)
+            (riml16 2)
+            (rml32  4)
+            (riml32 4)
+            (rml64  8)
+            (riml64 8))))
     (list
      `(trace! (,fn
                :cond (and (equal ACL2::traced-fn (quote ,fn))
@@ -832,14 +832,14 @@
 (defun trace-write-memory-1 (fn)
   (let* ((numbytes
           (case fn
-            ('wml08  1)
-            ('wiml08 1)
-            ('wml16  2)
-            ('wiml16 2)
-            ('wml32  4)
-            ('wiml32 4)
-            ('wml64  8)
-            ('wiml64 8))))
+            (wml08  1)
+            (wiml08 1)
+            (wml16  2)
+            (wiml16 2)
+            (wml32  4)
+            (wiml32 4)
+            (wml64  8)
+            (wiml64 8))))
     (list
      `(trace! (,fn
                :cond (equal ACL2::traced-fn (quote ,fn))

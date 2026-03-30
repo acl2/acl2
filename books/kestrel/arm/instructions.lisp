@@ -2303,7 +2303,7 @@
          (operand2 (sint 32 (reg m arm)))
          (addend (sint 32 (reg a arm)))
          (result (- addend (* operand1 operand2)))
-         (arm (set-reg rd (slice 31 0 result) arm))
+         (arm (set-reg d (slice 31 0 result) arm))
          (arm (advance-pc arm)))
       arm))
 
@@ -2472,7 +2472,7 @@
          (operand1 (sint 32 (reg n arm)))
          (operand2 (sint 32 (reg m arm)))
          (result (* operand1 operand2))
-         (arm (set-reg rd (slice 31 0 result) arm))
+         (arm (set-reg d (slice 31 0 result) arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 (slice 31 0 result)) arm))
@@ -2501,7 +2501,7 @@
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
        (my-result (bvmult 32 (reg n arm) (reg m arm)))
-       (arm (set-reg rd my-result arm))
+       (arm (set-reg d my-result arm))
        (arm (if setflags
                 (let* ((arm (set-apsr.n (getbit 31 my-result) arm))
                        (arm (set-apsr.z (IsZeroBit 32 my-result) arm))
@@ -2710,7 +2710,7 @@
          (m (uint 4 rm))
          (setflags (== s #b1))
          ;; end EncodingSpecificOperations
-         ((mv result carry) (shift_c 32 (reg m arm) :SRType_RRX 1 (apsr.c arm))))
+         ((mv result carry) (shift_c 32 (reg m arm) *SRType_RRX* 1 (apsr.c arm))))
       (if (== d 15)
           (ALUWritePC result arm)
         (b* ((arm (set-reg d result arm))

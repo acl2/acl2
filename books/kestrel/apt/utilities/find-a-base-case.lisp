@@ -1,4 +1,10 @@
-;; Author: Grant Jurgensen (grant@kestrel.edu)
+; APT (Automated Program Transformations) Library
+;
+; Copyright (C) 2022-2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 (in-package "APT")
 

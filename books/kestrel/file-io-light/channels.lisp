@@ -1,6 +1,6 @@
 ; A lightweight book about i/o channels
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -137,7 +137,7 @@
                               open-channel-listp
                               open-channels-p))))
 
-(defthm true-list-of-cddr-of-assoc-equal-when-open-channel-listp
+(defthm true-listp-of-cddr-of-assoc-equal-when-open-channel-listp
   (implies (open-channel-listp channels)
            (true-listp (cddr (assoc-equal channel channels))))
   :hints (("Goal" :in-theory (enable open-channel-listp open-channel1))))

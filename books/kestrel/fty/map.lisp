@@ -31,6 +31,4 @@
   (fty::deffixtype map
     :pred mapp
     :fix mfix
-    :equiv mequiv
-    :define t
-    :forward t))
+    :equiv mequiv))

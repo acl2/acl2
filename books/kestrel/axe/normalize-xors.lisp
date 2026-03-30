@@ -1050,7 +1050,7 @@
    :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
                                    (pseudo-dag-arrayp))))))
 
-(defthm integer-of-mv-nth-1-of-bvxor-nest-leaves-aux
+(defthm integerp-of-mv-nth-1-of-bvxor-nest-leaves-aux
   (implies (integerp accumulated-constant)
            (integerp (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))
   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp)))))

@@ -39,7 +39,7 @@
 
 (define to-oset ((set setp))
   :parents (treeset)
-  :short "Build an oset from a @(see treeset)"
+  :short "Build an oset from a @(see treeset)."
   :long
   (xdoc::topstring
    (xdoc::p

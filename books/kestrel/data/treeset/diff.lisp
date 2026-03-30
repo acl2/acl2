@@ -361,17 +361,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule oset-difference-of-to-oset
-  (equal (set::difference (to-oset x)
-                          (to-oset y))
-         (to-oset (diff x y)))
+(defrule to-oset-of-diff
+  (equal (to-oset (diff x y))
+         (set::difference (to-oset x)
+                          (to-oset y)))
   :enable (to-oset
            diff
            fix
            setp
            empty))
 
-(add-to-ruleset from-oset-theory '(oset-difference-of-to-oset))
+(add-to-ruleset to-oset-theory '(to-oset-of-diff))
 
 (defrule from-oset-of-oset-difference
   (equal (from-oset (set::difference x y))
@@ -381,6 +381,13 @@
 
 (add-to-ruleset from-oset-theory '(from-oset-of-oset-difference))
 
+(defruled diff-becomes-oset-difference
+  (equal (diff x y)
+         (from-oset (set::difference (to-oset x)
+                                     (to-oset y)))))
+
+(add-to-ruleset to-oset-theory '(diff-becomes-oset-difference))
+
 (defruled oset-difference-becomes-diff
   (equal (set::difference x y)
          (to-oset (diff (from-oset x)
@@ -388,13 +395,6 @@
   :enable set::expensive-rules)
 
 (add-to-ruleset from-oset-theory '(oset-difference-becomes-diff))
-
-(defruled diff-becomes-oset-difference
-  (equal (diff x y)
-         (from-oset (set::difference (to-oset x)
-                                     (to-oset y)))))
-
-(add-to-ruleset to-oset-theory '(diff-becomes-oset-difference))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
