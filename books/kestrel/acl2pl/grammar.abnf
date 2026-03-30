@@ -429,24 +429,43 @@ multiple-escape-region = "|" *vbar-char "|"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Symbol tokens.
+; Non-terminating macro character.
+;
+; # is a non-terminating macro character.  At the start of a read,
+; it triggers dispatch (#\, #b, #x, etc.).  But within an already-started
+; token, it acts as a constituent character.  For example, A#B is a valid
+; symbol whose name is "A#B".
 
+non-terminating-macro-char = "#"
+
+; Symbol tokens.
+;
 ; A symbol token is a sequence of constituent characters,
-; single-escape sequences, and multiple-escape regions.
+; single-escape sequences, multiple-escape regions, and
+; non-terminating macro characters (currently just #).
 ; At least one character must be present.
+;
+; The first element cannot be a non-terminating macro character
+; (since that would trigger dispatch), but subsequent elements can.
+; This is captured by the start/rest distinction.
 ;
 ; The CL reader first tries to interpret a token as a number.
 ; Only if that fails does it interpret the token as a symbol.
 ; Although the following production also matches certain numbers
 ; (e.g., "123" or "3/4"), as long as the lexer has tried and
 ; failed to match a number, this production will correctly
-; match a symbol token.
+; match a symbol token.  See the atom rule below.
 
-symbol-token-element = constituent
-                     / single-escaped-char
-                     / multiple-escape-region
+symbol-token-start = constituent
+                   / single-escaped-char
+                   / multiple-escape-region
 
-symbol-token = 1*symbol-token-element
+symbol-token-rest = constituent
+                  / non-terminating-macro-char
+                  / single-escaped-char
+                  / multiple-escape-region
+
+symbol-token = symbol-token-start *symbol-token-rest
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
