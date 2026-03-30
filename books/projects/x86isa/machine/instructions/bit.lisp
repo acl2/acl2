@@ -536,8 +536,6 @@
 
                ;; Update the x86 state:
                ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
-               ;; If reg is 5, we need to set the selected bit
-               ;; If reg is 6, we need to clear the selected bit
                (x86
                  (let* ((x86 (!flgi :cf
                                     (the (unsigned-byte 1)
