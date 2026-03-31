@@ -143,14 +143,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar-white-space*
-  :short "Grammar rules for white space."
-  :file "grammar/white-space.abnf"
-  :untranslate t
-  :well-formed t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (abnf::defgrammar *grammar-comments*
   :short "Grammar rules for comments."
   :file "grammar/comments.abnf"
@@ -176,7 +168,6 @@
              std
              :c17 *grammar-characters-c17*
              :c23 *grammar-characters-c23*)
-            *grammar-white-space*
             *grammar-comments*
             *grammar*))
 
