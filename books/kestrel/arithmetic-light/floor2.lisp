@@ -130,7 +130,7 @@
 ;for stuff like this (where we can prove it for a constant but not in general), try to figure out which literals are needed by analyzing what happens with the constant.  here, it's all 3 of the big ones
 
 (local
- (defthmd helper-lemmm
+ (defthmd helper-lemma
    (IMPLIES (AND (POSP N)
                  (POSP J)
                  (NOT (EQUAL (+ (FLOOR N J)
@@ -289,7 +289,7 @@
                         (<= (* k j) (mod n (* m j)))
                         (< (mod n (* m j)) (* j (+ 1 k))))))
    :otf-flg t
-   :hints (("Goal" :use (:instance helper-lemmm (m m ;17
+   :hints (("Goal" :use (:instance helper-lemma (m m ;17
                                                    ))
             :in-theory (e/d (mod
                              natp)

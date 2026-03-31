@@ -391,7 +391,7 @@
 ;;                (< 1 i))
 ;;           (equal (integer-length (ceiling i 2))
 ;;                  (+ -1 (integer-length i))))
-;;  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases))))
+;;  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-alt))))
 
 (local
  (defthm integer-length-of-ceiling-of-2-when-power-of-2p
@@ -401,7 +401,7 @@
                    (if (< 1 i)
                        (+ -1 (integer-length i))
                      1)))
-   :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases
+   :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-alt
                                       floor-when-evenp)))))
 
 (local

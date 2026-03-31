@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function floor.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -111,7 +111,7 @@
            (<= (floor free j) (floor i j)))
   :rule-classes ((:linear :trigger-terms ((floor i j)))))
 
-(defthm floor-weak-monotone-linear=-2
+(defthm floor-weak-monotone-linear-2
   (implies (and (<= i free)
                 (<= 0 j)
                 (rationalp free)
@@ -1283,9 +1283,7 @@
   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
 
 (defthm floor-of-*-of-/-and-1
-  (implies (and (integerp i)
-                (<= 0 pos)
-                (integerp pos))
+  (implies (integerp i)
            (equal (floor (* i (/ j)) 1)
                   (floor i j)))
   :hints (("Goal" :in-theory (enable floor))))

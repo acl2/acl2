@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function ceiling.
 ;
-; Copyright (C) 2019-2025 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -113,15 +113,6 @@
 ;;           (equal (ceiling (+ i1 i2) j)
 ;;                  (+ (/ i1 j) (ceiling i2 j))))
 ;;  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor))))
-
-(defthmd ceiling-in-terms-of-floor-cases
-  (implies (and (rationalp i)
-                (rationalp j))
-           (equal (ceiling i j)
-                  (if (integerp (/ i j))
-                      (/ i j)
-                    (+ 1 (floor i j)))))
-  :hints (("Goal" :in-theory (enable ceiling floor))))
 
 ;; (thm
 ;;  (implies (and (rationalp x)
@@ -271,7 +262,7 @@
                 )
            (equal (ceiling i j)
                   (/ i j)))
-  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases))))
+  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-alt))))
 
 (defthm ceiling-of-+-when-multiple
   (implies (and (integerp (* (/ j) x))
@@ -280,7 +271,7 @@
                 (integerp y))
            (equal (ceiling (+ x y) j)
                   (+ (/ x j) (ceiling y j))))
-  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases))))
+  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-alt))))
 
 (defthm equal-of-0-and-ceiling
   (implies (and (natp i)
@@ -344,7 +335,7 @@
            (equal (< (ceiling n 2) n)
                   (< 1 n)))
   :hints (("Goal" :cases ((< (+ 1 (floor n 2)) n))
-                  :in-theory (enable ceiling-in-terms-of-floor-cases))))
+                  :in-theory (enable ceiling-in-terms-of-floor-alt))))
 
 (defthm ceiling-of-expt2-and-2
   (implies (integerp i)
