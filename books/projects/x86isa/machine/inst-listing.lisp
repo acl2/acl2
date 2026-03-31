@@ -10379,7 +10379,7 @@
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTC" (OP :OP #xFBB)
           (ARG :OP1 '(E V) :OP2 '(G V))
-          'NIL
+          '(X86-BTC-0F-BB)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BSF" (OP :OP #xFBC :PFX :NO-PREFIX)
           (ARG :OP1 '(G V) :OP2 '(E V))
