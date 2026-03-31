@@ -60,7 +60,7 @@
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVUPS, VMOVUPD, VMMOVDQU:
+  :short "VMOVUPS, VMOVUPD, VMOVDQU:
           move unaligned packed single/double-precision floating-point values
           and unaligned packed integer values
           (VEX encoding, Op/En A)."
@@ -178,7 +178,7 @@
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVUPS, VMOVUPD, VMMOVDQU:
+  :short "VMOVUPS, VMOVUPD, VMOVDQU:
           move unaligned packed single/double-precision floating-point values
           and unaligned packed integer values
           (VEX encoding, Op/En B)"
@@ -315,7 +315,7 @@
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVAPS, VMOVAPD, VMMOVDQA:
+  :short "VMOVAPS, VMOVAPD, VMOVDQA:
           move aligned packed single/double-precision floating-point values
           and aligned packed integer values
           (VEX encoding, Op/En A)."
@@ -433,9 +433,9 @@
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVAPS, VMOVAPD, VMMOVDQA:
-          move unaligned packed single/double-precision floating-point values
-          and unaligned packed integer values
+  :short "VMOVAPS, VMOVAPD, VMOVDQA:
+          move aligned packed single/double-precision floating-point values
+          and aligned packed integer values
           (VEX encoding, Op/En B)"
 
   :long
