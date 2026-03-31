@@ -129,8 +129,8 @@
     iff-of-constant-arg1
     iff-of-constant-arg2
     iff-same
-    iff-bool-fix-arg1
-    iff-bool-fix-arg2))
+    iff-of-bool-fix-arg1
+    iff-of-bool-fix-arg2))
 
 ;some of these may be necessary for case-splitting in the dag prover to work right
 (defun boolean-rules ()
