@@ -83,17 +83,6 @@
   (not (tree-in x nil))
   :enable tree-in-when-tree-empty-p)
 
-(defruled tree-in-when-tree-empty-p
-  (implies (tree-empty-p tree)
-           (not (tree-in x tree)))
-  :enable tree-in)
-
-(defrule tree-in-when-tree-empty-p-cheap
-  (implies (tree-empty-p tree)
-           (not (tree-in x tree)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by tree-in-when-tree-empty-p)
-
 (defrule tree-in-of-tree->head
   (equal (tree-in (tree-element->val (tree->head tree)) tree)
          (not (tree-empty-p tree))))
