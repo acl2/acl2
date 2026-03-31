@@ -66,13 +66,13 @@
            (equal (equal x t)
                   x)))
 
-;Disabled by default.  We could add an (enabled version) in which both conjuncts are calls to NOT?
+;Disabled by default.  We could add an (enabled) version in which both conjuncts are calls to NOT?
 (defthmd not-of-booland
   (equal (not (booland x y))
          (boolor (not x) (not y)))
   :hints (("Goal" :in-theory (enable booland))))
 
-;Disabled by default.  We could add an (enabled version) in which both conjuncts are calls to NOT?
+;Disabled by default.  We could add an (enabled) version in which both disjuncts are calls to NOT?
 (defthmd not-of-boolor
   (equal (not (boolor x y))
          (booland (not x) (not y)))
