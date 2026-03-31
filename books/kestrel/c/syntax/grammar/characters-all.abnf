@@ -131,11 +131,11 @@ new-line = line-feed
 
 ; White-space characters [C17:6.4/3] and [C23:6.4.1].
 
-white-space = space
-            / horizontal-tab
-            / vertical-tab
-            / form-feed
-            / new-line
+white-space-character = space
+                      / horizontal-tab
+                      / vertical-tab
+                      / form-feed
+                      / new-line
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

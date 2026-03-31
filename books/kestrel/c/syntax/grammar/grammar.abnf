@@ -35,12 +35,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; White Space
-
-; See the file white-space.abnf.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Comments
 
 ; See the file comments.abnf.
@@ -656,7 +650,7 @@ preprocessing-token = header-name
                     / character-constant
                     / string-literal
                     / punctuator
-                    / character ; non-white-space none of the above
+                    / character ; non-white-space-character none of the above
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -667,7 +661,7 @@ preprocessing-token = header-name
 
 preprocessing-lexeme = preprocessing-token
                      / comment
-                     / white-space
+                     / white-space-character
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -692,7 +686,7 @@ token = keyword
 
 lexeme = token
        / comment
-       / white-space
+       / white-space-character
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
