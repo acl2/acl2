@@ -76,7 +76,9 @@
     "Operand Size   Register bitOffset"
     "     2          -2^15 to 2^15-1"
     "     4          -2^31 to 2^31-1"
-    "     8          -2^63 to 2^63-1"))
+    "     8          -2^63 to 2^63-1")
+   (xdoc::p
+    "See Table 3-2 of Intel manual Volume 2 (Feb 2026)."))
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -207,7 +209,9 @@
    (xdoc::codeblock
     "        0F AB /r: BTS r/m16, r16"
     "        0F AB /r: BTS r/m32, r32"
-    "REX.W + 0F AB /r: BTS r/m64, r64"))
+    "REX.W + 0F AB /r: BTS r/m64, r64")
+   (xdoc::p
+    "See @(tsee x86-bt-0F-A3) for a description of bitOffset."))
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -343,13 +347,18 @@
 
 (def-inst x86-btr-0F-B3
 
-  ;; 0F B3/r: BTR r/m16, r16
-  ;; 0F B3/r: BTR r/m32, r32
-  ;; REX.W + 0F B3/r: BTR r/m64, r64
-
-  ;; This implementation is a lot like BTS (x86-bt-0F-AB)
-
   :parents (two-byte-opcodes)
+
+  :short "Bit test and reset, with offset in register."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "        0F B3 /r: BTR r/m16, r16"
+    "        0F B3 /r: BTR r/m32, r32"
+    "REX.W + 0F B3 /r: BTR r/m64, r64")
+   (xdoc::p
+    "See @(tsee x86-bt-0F-A3) for a description of bitOffset."))
 
   :returns (x86 x86p :hyp (x86p x86))
 
