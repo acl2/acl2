@@ -660,7 +660,7 @@
          (to-oset (insert x (from-oset oset))))
   :enable set::expensive-rules)
 
-(add-to-ruleset from-oset-theory '(from-oset-of-oset-insert))
+(add-to-ruleset from-oset-theory '(oset-insert-becomes-insert))
 
 (defruled insert-becomes-oset-insert
   (equal (insert x set)
