@@ -10,36 +10,13 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file is divided into three sections
-; (for lexical, preprocessing, and phrase structure rules),
-; separated by lines of 80 semicolons.
-; Each section is divided into subsections,
-; separated by lines of 40 semicolons.
+; This file contains the rest of the grammar rules
+; that are not in the other *.abnf files in this directory.
+; We are in the process of dividing this file into other files,
+; to obtain a modular definition of our grammar;
+; eventually this file will disappear.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Lexical Rules
-
-; These rules describe how a sequence of Unicode characters
-; is organized into a sequence of lexemes.
-; The description provided by the rules alone is partial
-; because the rules do not capture things like
-; the fact that an identifier cannot be a keyword, and that
-; the longest match is always taken [C17:6.4/4] (with an exception noted there).
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Characters
-
-; See the files characters-*.abnf.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Comments
-
-; See the file comments.abnf.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Keywords in C17 [C17:A.1.2] [C17:6.4.1]
 
@@ -690,18 +667,6 @@ lexeme = token
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing Rules
-
-; These rules describe how a sequence of preprocessing lexemes
-; is organized into preprocessing constructs,
-; corresponding to the preprocessing directives [C17:A.3] [C23:A.4].
-; The description provided by the rules is partial
-; because there are requirements not explicitly captured by the rules,
-; such as the fact that 'paren' is not immediately preceded by white space
-; (indicated in a comment below).
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Preprocessing Directives [C17:6.10] [C17:A.3]
 
 preprocessing-file = [ group ]
@@ -760,20 +725,6 @@ on-off-switch = %s"ON" / %s"OFF" / %s"DEFAULT"
 ; because it is already under the subsection on characters.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Phrase Structure Rules
-
-; These rules describe how a sequence of lexemes
-; is organized into higher-level constructs,
-; corresponding to the phase structure grammar in [C17:A.2],
-; but with the addition of some preprocessing constructs
-; which our C preprocessor preserves to keep the code more modular
-; (see :doc syntax-for-tools).
-; The description provided by the rules alone is partial
-; because the rules do not capture things like
-; the association of a dangling 'else' with the closest 'if'.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Expressions [C17:A.2.1]
 
