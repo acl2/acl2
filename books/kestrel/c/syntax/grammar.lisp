@@ -20,7 +20,7 @@
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
-; (depends-on "grammar/characters-all.abnf")
+; (depends-on "grammar/characters.abnf")
 ; (depends-on "grammar/characters-c17.abnf")
 ; (depends-on "grammar/characters-c23.abnf")
 ; (depends-on "grammar/comments.abnf")
@@ -124,10 +124,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar-characters-all*
+(abnf::defgrammar *grammar-characters*
   :short "Grammar rules for the source character set
           that are common to all the C dialects."
-  :file "grammar/characters-all.abnf"
+  :file "grammar/characters.abnf"
   :untranslate t
   :well-formed t)
 
@@ -167,7 +167,7 @@
   :returns (grammar abnf::rulelistp)
   :short "Grammar for a given C dialect."
   (b* ((std (c::dialect->std dialect)))
-    (append *grammar-characters-all*
+    (append *grammar-characters*
             (c::standard-case
              std
              :c17 *grammar-characters-c17*
