@@ -1,7 +1,7 @@
 ; A formal model of the JVM
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1964,9 +1964,9 @@
         (let ((monitor-table (monitor-table s))
               (object-to-unlock (addressfix (locked-object frame))))
           (if (null-refp object-to-unlock)
-              (obtain-and-throw-exception *nullpointerexception* (list :ireturn object-to-unlock) th s)
+              (obtain-and-throw-exception *nullpointerexception* (list :freturn object-to-unlock) th s)
             (if (not (thread-owns-monitorp th object-to-unlock monitor-table))
-                (obtain-and-throw-exception *illegalmonitorstateexception* (list :ireturn object-to-unlock) th s)
+                (obtain-and-throw-exception *illegalmonitorstateexception* (list :freturn object-to-unlock) th s)
               ;;fixme think about structured locking.
               (let* ((s (modify th s :monitor-table (decrement-mcount object-to-unlock monitor-table))))
                 (return-core val th s)))))
@@ -5681,7 +5681,7 @@
       (if (float< value1 value2)
           (encode-signed -1)
         ;; at least one value is NaN:
-        -1))))
+        (encode-signed -1)))))
 
 ;returns an int (1, 0, or -1 [encoded as a BV]) to indicate the result of the comparison
 (defun dcmpg (value1 value2)
@@ -5707,7 +5707,7 @@
       (if (double< value1 value2)
           (encode-signed -1)
         ;; at least one value is NaN:
-        -1))))
+        (encode-signed -1)))))
 
 ; (FCMPG)
 (defun execute-FCMPG (th s)
