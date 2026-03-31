@@ -24,7 +24,7 @@
 ; (depends-on "grammar/characters-c17.abnf")
 ; (depends-on "grammar/characters-c23.abnf")
 ; (depends-on "grammar/comments.abnf")
-; (depends-on "grammar/grammar.abnf")
+; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,9 +155,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar*
+(abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
-  :file "grammar/grammar.abnf"
+  :file "grammar/grammar-rest.abnf"
   :untranslate t
   :well-formed t)
 
@@ -173,7 +173,7 @@
              :c17 *grammar-characters-c17*
              :c23 *grammar-characters-c23*)
             *grammar-comments*
-            *grammar*))
+            *grammar-rest*))
 
   ///
 
