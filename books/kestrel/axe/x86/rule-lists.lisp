@@ -5973,7 +5973,7 @@
             ;acl2::bvcat-of-0-arg2
             acl2::bvmod-tighten-64-32
             acl2::bvdiv-tighten-64-32
-            acl2::not-bvlt-of-max-when-unsiged-byte-p
+            acl2::not-bvlt-of-max-when-unsigned-byte-p
             ;x86isa::sf-spec32-rewrite ; trying without...
             ;jle-condition-rewrite-1-with-bvif ; this one works on bvif
             ;jle-condition-rewrite-1-with-bvif-and-bvchop
