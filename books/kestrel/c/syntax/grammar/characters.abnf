@@ -11,9 +11,9 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for the source character set
-; that are common to all the C dialect.
-; Together with the rules in characters-c17.abnf or characters-c23.abnf,
-; they define the source character set of the C17 or C23 dialect.
+; that are common to all the C dialects.
+; Together with the rules in the dialect-specific files characters-*.abnf,
+; they define the source character set of each C dialect.
 ; None of these rules have counterparts in the grammars in [C17] and [C23],
 ; except for the rule 'digit' [C17:6.4.2.1/1] [C23:6.4.3.1].
 
@@ -126,6 +126,16 @@ character = basic-character
 new-line = line-feed
          / carriage-return
          / carriage-return line-feed
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; White-space characters [C17:6.4/3] and [C23:6.4.1].
+
+white-space-character = space
+                      / horizontal-tab
+                      / vertical-tab
+                      / form-feed
+                      / new-line
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

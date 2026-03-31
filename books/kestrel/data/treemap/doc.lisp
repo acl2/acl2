@@ -38,27 +38,37 @@
       ".")
     (xdoc::p
       "The core operations are:")
-    (xdoc::ul
-      (xdoc::li
-        "@(tsee mapp) &mdash; @($O(n)$)")
-      (xdoc::li
-        "@(tsee keys) &mdash; @($O(n)$)")
-      (xdoc::li
-        "@(tsee values) &mdash; @($O(\\log(n))$)")
-      (xdoc::li
-        "@(tsee in) &mdash; @($O(\\log(n))$)")
-      (xdoc::li
-        "@(tsee lookup) &mdash; @($O(\\log(n))$)")
-      (xdoc::li
-        "@(tsee submap) &mdash; @($O(m\\log(n/m))$)")
-      (xdoc::li
-        "@(tsee update) &mdash; @($O(\\log(n))$)")
-      (xdoc::li
-        "@(tsee delete) &mdash; @($O(\\log(n))$)")
-      (xdoc::li
-        "@(tsee update*) &mdash; @($O(m\\log(n/m))$)")
-      (xdoc::li
-        "@(tsee restrict) &mdash; @($O(m\\log(n/m))$)"))
+    (xdoc::table_
+      (xdoc::tr
+        (xdoc::td "@(tsee mapp)")
+        (xdoc::td "@($O(n)$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee keys)")
+        (xdoc::td "@($O(n)$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee values)")
+        (xdoc::td "@($O(n\\log(n))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee in)")
+        (xdoc::td "@($O(\\log(n))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee lookup)")
+        (xdoc::td "@($O(\\log(n))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee submap)")
+        (xdoc::td "@($O(m\\log(n/m))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee update)")
+        (xdoc::td "@($O(\\log(n))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee delete)")
+        (xdoc::td "@($O(\\log(n))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee update*)")
+        (xdoc::td "@($O(m\\log(n/m))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee restrict)")
+        (xdoc::td "@($O(m\\log(n/m))$)")))
     (xdoc::p
       "(where @($m < n$))."))
   :order-subtopics t)
