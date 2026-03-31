@@ -185,7 +185,7 @@
        ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
        (x86
         (let* ((x86 (!flgi :cf
-                           (the (unsigned-byte 1) (acl2::logbit bitOffset bitBase))
+                           (the (unsigned-byte 1) (logbit bitOffset bitBase))
                            x86))
                (x86 (!flgi-undefined :pf x86))
                (x86 (!flgi-undefined :af x86))
@@ -307,7 +307,7 @@
        (x86
         (let* ((x86 (!flgi :cf
                            (the (unsigned-byte 1)
-                                (acl2::logbit bitOffset bitBase))
+                                (logbit bitOffset bitBase))
                            x86))
                (x86 (!flgi-undefined :pf x86))
                (x86 (!flgi-undefined :af x86))
@@ -441,7 +441,7 @@
        (x86
         (let* ((x86 (!flgi :cf
                            (the (unsigned-byte 1)
-                                (acl2::logbit bitOffset bitBase))
+                                (logbit bitOffset bitBase))
                            x86))
                (x86 (!flgi-undefined :pf x86))
                (x86 (!flgi-undefined :af x86))
@@ -575,7 +575,7 @@
        (x86
         (let* ((x86 (!flgi :cf
                            (the (unsigned-byte 1)
-                                (acl2::logbit bitOffset bitBase))
+                                (logbit bitOffset bitBase))
                            x86))
                (x86 (!flgi-undefined :pf x86))
                (x86 (!flgi-undefined :af x86))
@@ -686,7 +686,7 @@
        (x86
         (let* ((x86 (!flgi :cf
                            (the (unsigned-byte 1)
-                                (acl2::logbit bitOffset bitBase))
+                                (logbit bitOffset bitBase))
                            x86))
                (x86 (!flgi-undefined :pf x86))
                (x86 (!flgi-undefined :af x86))
