@@ -510,7 +510,7 @@
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
-           (er hard? 'insert "Arguments are ill-formed: ~x0" list))
+           (er hard? 'set "Arguments are ill-formed: ~x0" list))
           ((not (consp rest))
            '(empty))
           (t (let ((test? (assoc-eq :test alist)))
@@ -587,7 +587,7 @@
            set::in-to-member
            sfix))
 
-(add-to-ruleset to-oset-theory '(emptyp-of-from-oset))
+(add-to-ruleset to-oset-theory '(in-of-from-oset))
 
 (defruled oset-in-becomes-in
   (equal (set::in x oset)
@@ -660,7 +660,7 @@
          (to-oset (insert x (from-oset oset))))
   :enable set::expensive-rules)
 
-(add-to-ruleset from-oset-theory '(from-oset-of-oset-insert))
+(add-to-ruleset from-oset-theory '(oset-insert-becomes-insert))
 
 (defruled insert-becomes-oset-insert
   (equal (insert x set)
