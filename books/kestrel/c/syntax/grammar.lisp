@@ -151,6 +151,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(abnf::defgrammar *grammar-comments*
+  :short "Grammar rules for comments."
+  :file "grammar/comments.abnf"
+  :untranslate t
+  :well-formed t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar*
   :short "Rest of the grammar rules."
   :file "grammar/grammar.abnf"
@@ -169,6 +177,7 @@
              :c17 *grammar-characters-c17*
              :c23 *grammar-characters-c23*)
             *grammar-white-space*
+            *grammar-comments*
             *grammar*))
 
   ///
