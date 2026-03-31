@@ -57,19 +57,26 @@
 
 (def-inst x86-bt-0F-A3
 
-  ;; 0F A3: BT r/m16/32/64, r16/32/64
-
-  ;; If the bitBase is a register operand, the bitOffset can be in the
-  ;; range 0 to [15, 31, 63] depending on the mode and register size.
-  ;; If the bitBase is a memory address and bitOffset is a register
-  ;; operand, the bitOffset can be:
-
-  ;; Operand Size   Register bitOffset
-  ;;      2          -2^15 to 2^15-1
-  ;;      4          -2^31 to 2^31-1
-  ;;      8          -2^63 to 2^63-1
-
   :parents (two-byte-opcodes)
+
+  :short "Bit test, with offset in register."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "        0F A3 /r    BT r/m16, r16"
+    "        0F A3 /r    BT r/m32, r32"
+    "REX.W + 0F A3 /r    BT r/m64, r64")
+   (xdoc::p
+    "If the bitBase is a register operand, the bitOffset can be in the
+     range 0 to [15, 31, 63] depending on the mode and register size.
+     If the bitBase is a memory address and bitOffset is a register
+     operand, the bitOffset can be:")
+   (xdoc::codeblock
+    "Operand Size   Register bitOffset"
+    "     2          -2^15 to 2^15-1"
+    "     4          -2^31 to 2^31-1"
+    "     8          -2^63 to 2^63-1"))
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -190,11 +197,17 @@
 ;; ======================================================================
 
 (def-inst x86-bts-0F-AB
-  ;; 0F AB /r: BTS r/m16, r16
-  ;; 0F AB /r: BTS r/m32, r32
-  ;; REX.W + 0F AB /r: BTS r/m64, r64
 
   :parents (two-byte-opcodes)
+
+  :short "Bit test and set, with offset in register."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "        0F AB /r: BTS r/m16, r16"
+    "        0F AB /r: BTS r/m32, r32"
+    "REX.W + 0F AB /r: BTS r/m64, r64"))
 
   :returns (x86 x86p :hyp (x86p x86))
 
