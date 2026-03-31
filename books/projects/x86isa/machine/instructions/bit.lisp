@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2018, Kestrel Technology, LLC
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; Copyright (C) May - August 2023, Regents of the University of Texas
 ; Copyright (C) August 2023 - May 2024, Yahya Sohail
 ; Copyright (C) May 2024 - August 2024, Intel Corporation
@@ -40,7 +40,7 @@
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 ; Contributing Author(s):
-; Alessandro Coglio   <coglio@kestrel.edu>
+; Alessandro Coglio   <www.alessandrocoglio.info>
 ; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
