@@ -38,6 +38,32 @@
          (booland y (booland x z)))
   :hints (("Goal" :in-theory (enable booland))))
 
+(defthm booland-when-arg1-cheap
+  (implies x
+           (equal (booland x y)
+                  (bool-fix y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthm booland-when-arg2-cheap
+  (implies y
+           (equal (booland x y)
+                  (bool-fix x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthm booland-when-not-arg1-cheap
+  (implies (not x)
+           (not (booland x y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthm booland-when-not-arg2-cheap
+  (implies (not y)
+           (not (booland x y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable booland))))
+
 ;drop, since we know how to handle constants?
 (defthm booland-combine-constants
   (implies (syntaxp (and (quotep a) (quotep b)))
@@ -112,13 +138,13 @@
 (defthm booland-of-bool-fix-arg1
   (equal (booland (bool-fix x) y)
          (booland x y))
-  :hints (("Goal" :in-theory (enable bool-fix$inline booland))))
+  :hints (("Goal" :in-theory (enable bool-fix$inline))))
 
 ;; Helps justify the STP translation.
 (defthm booland-of-bool-fix-arg2
   (equal (booland x (bool-fix y))
          (booland x y))
-  :hints (("Goal" :in-theory (enable bool-fix$inline booland))))
+  :hints (("Goal" :in-theory (enable bool-fix$inline))))
 
 ;; These help justify some things that Axe does:
 (defcong iff equal (booland x y) 1 :hints (("Goal" :in-theory (enable booland))))
