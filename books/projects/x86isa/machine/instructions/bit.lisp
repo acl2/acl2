@@ -52,6 +52,20 @@
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
 ;; ======================================================================
+
+(local
+ (defthm dumb-signed-byte-p-guard-lemma
+   (implies (not (mv-nth 0
+                         (x86-effective-addr
+                          proc-mode p4 temp-rip rex-byte
+                          r/m mod sib num-imm-bytes x86)))
+            (signed-byte-p 48
+                           (mv-nth 2
+                                   (x86-effective-addr
+                                    proc-mode p4 temp-rip rex-byte
+                                    r/m mod sib num-imm-bytes x86))))))
+
+;; ======================================================================
 ;; INSTRUCTION: BT
 ;; ======================================================================
 
@@ -87,18 +101,6 @@
 
   :prepwork
   ((local
-    (defthm dumb-signed-byte-p-guard-lemma
-      (implies (not (mv-nth 0
-                            (x86-effective-addr
-                             proc-mode p4 temp-rip rex-byte
-                             r/m mod sib num-imm-bytes x86)))
-               (signed-byte-p 48
-                              (mv-nth 2
-                                      (x86-effective-addr
-                                       proc-mode p4 temp-rip rex-byte
-                                       r/m mod sib num-imm-bytes x86))))))
-
-   (local
     (in-theory (e/d ()
                     (acl2::mod-minus
                      signed-byte-p
@@ -222,18 +224,6 @@
 
   :prepwork
   ((local
-    (defthm dumb-signed-byte-p-guard-lemma
-        (implies (not (mv-nth 0
-                              (x86-effective-addr
-                               proc-mode p4 temp-rip rex-byte
-                               r/m mod sib num-imm-bytes x86)))
-                 (signed-byte-p 48
-                                (mv-nth 2
-                                        (x86-effective-addr
-                                         proc-mode p4 temp-rip rex-byte
-                                         r/m mod sib num-imm-bytes x86))))))
-
-   (local
     (in-theory (e/d ()
                     (acl2::mod-minus
                      signed-byte-p
@@ -365,22 +355,8 @@
   :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
                                         ())))
 
-  ;; This is copied from x86-bt-0F-AB
-  ;; It probably should be done only in one place and reused
   :prepwork
   ((local
-    (defthm dumb-signed-byte-p-guard-lemma
-      (implies (not (mv-nth 0
-                            (x86-effective-addr
-                             proc-mode p4 temp-rip rex-byte
-                             r/m mod sib num-imm-bytes x86)))
-               (signed-byte-p 48
-                              (mv-nth 2
-                                      (x86-effective-addr
-                                       proc-mode p4 temp-rip rex-byte
-                                       r/m mod sib num-imm-bytes x86))))))
-
-   (local
     (in-theory (e/d ()
                     (acl2::mod-minus
                      signed-byte-p
