@@ -113,16 +113,6 @@ character = basic-character
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; White-space characters [C17:6.4/3] and [C23:6.4.1].
-
-white-space = space
-            / horizontal-tab
-            / vertical-tab
-            / form-feed
-            / new-line
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; [C17] and [C23] do not prescribe how lines should be terminated,
 ; but assume a new-line character
 ; [C17:5.1.1.2/1] [C17:5.2.1] [C23:5.2.1.2] [C23:5.3.1].
@@ -136,6 +126,16 @@ white-space = space
 new-line = line-feed
          / carriage-return
          / carriage-return line-feed
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; White-space characters [C17:6.4/3] and [C23:6.4.1].
+
+white-space = space
+            / horizontal-tab
+            / vertical-tab
+            / form-feed
+            / new-line
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
