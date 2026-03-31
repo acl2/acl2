@@ -470,7 +470,7 @@
                 (equal len (len data)))
            (equal (bvplus size val (bv-array-read size len index data))
                   (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
+  :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -518,8 +518,8 @@
                             (bv-array-read size len index data))
                    :in-theory (enable bv-array-read-cases
                                       bvlt
-                                      ;;acl2::bvlt-convert-arg2-to-bv
-                                      ;;acl2::trim-of-+-becomes-bvplus ; don't we want this enabled?
+                                      ;;bvlt-convert-arg2-to-bv
+                                      ;;trim-of-+-becomes-bvplus ; don't we want this enabled?
                                       )))))
 
 ;; restrict to constant array?

@@ -1,7 +1,7 @@
 ; Distinguishing between different ways to represent rule sets
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -88,7 +88,7 @@
 
 ;; Returns (mv erp rule-alists).  At most one of RULES, RULE-ALIST, and
 ;; RULE-ALISTS should be a value other than :none.
-;; TODO: Relax the restruction on :none?
+;; TODO: Relax the restriction on :none?
 ;; TODO: Avoid returning an erp.
 ;; todo: allow giving a list of lists of rule-names?
 (defund make-tagged-rule-sets (rules rule-alist rule-alists)

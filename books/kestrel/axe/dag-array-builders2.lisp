@@ -1,7 +1,7 @@
 ; More general functions to create and extend dag-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -129,13 +129,6 @@
   (implies (natp dag-len)
            (<= (mv-nth 3 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
                (+ 1 dag-len)))
-  :rule-classes ((:linear :trigger-terms ((mv-nth 3 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))))
-  :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-name))))
-
-(defthm bound-on-mv-nth-3-of-add-variable-to-dag-array-with-name-3
-  (implies (natp dag-len)
-           (<= dag-len
-               (mv-nth 3 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
   :rule-classes ((:linear :trigger-terms ((mv-nth 3 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-name))))
 
@@ -354,7 +347,7 @@
     (let ((possible-index (find-expr-using-parents-with-name fn args dag-array dag-parent-array dag-array-name dag-parent-array-name dag-len))) ;BOZO use hashing?
       (if possible-index ;is already present
           (mv (erp-nil) possible-index dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-        ;; otherwisem try to add it at the top
+        ;; otherwise, try to add it at the top
         (if (= dag-len *max-1d-array-length*)     ;error case
             (mv :dag-too-large         ;error
                 dag-len ;; meaningless but might help with proofs
@@ -536,7 +529,7 @@
 (defthm all-<-of-strip-cdrs-of-mv-nth-5-of-add-function-call-expr-to-dag-array-with-name
   (implies (and (bounded-dag-constant-alistp dag-constant-alist dag-len)
                 (natp dag-len))
-           (all-< (strip-cdrs (mv-nth 5 (add-function-call-expr-to-dag-array-with-name fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-namew)))
+           (all-< (strip-cdrs (mv-nth 5 (add-function-call-expr-to-dag-array-with-name fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))
                   (mv-nth 3 (add-function-call-expr-to-dag-array-with-name fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-name bounded-dag-constant-alistp))))
 

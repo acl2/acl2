@@ -10086,7 +10086,7 @@
           'NIL)
     (INST "BTS" (OP :OP #xFAB)
           (ARG :OP1 '(E V) :OP2 '(G V))
-          '(X86-BT-0F-AB)
+          '(X86-BTS-0F-AB)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "SHRD" (OP :OP #xFAC)
           (ARG :OP1 '(E V)
@@ -10273,7 +10273,7 @@
               :SUPERSCRIPTS '(:1A :1C)
               :GROUP '(:GROUP-15)
               :FEAT '(:SSE))
-          NIL 'NIL
+          NIL '(X86-TWO-BYTE-NOP)
           '((:UD (UD-LOCK-USED))))
     (INST "VLDMXCSR"
           (OP :OP #xFAE
@@ -10351,7 +10351,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E V) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED))))
     (INST "BTS"
           (OP :OP #xFBA
@@ -10359,7 +10359,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTR"
           (OP :OP #xFBA
@@ -10367,7 +10367,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTC"
           (OP :OP #xFBA
@@ -10375,7 +10375,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTC" (OP :OP #xFBB)
           (ARG :OP1 '(E V) :OP2 '(G V))

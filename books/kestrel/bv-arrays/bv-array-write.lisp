@@ -19,7 +19,6 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
@@ -137,7 +136,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
-;;Do not remove.  This helps justify te correctness of the translation to STP.
+;;Do not remove.  This helps justify the correctness of the translation to STP.
 ;a write out of bounds has essentially no effect
 ;note that the index is chopped down before the comparison
 (defthmd bv-array-write-when-index-is-too-large
@@ -240,20 +239,20 @@
                   nil)))
 
 (defthm bv-array-write-of-bvchop-list
-  (equal (bv-array-write elemement-width len index val (bvchop-list elemement-width array))
-         (bv-array-write elemement-width len index val array))
+  (equal (bv-array-write element-width len index val (bvchop-list element-width array))
+         (bv-array-write element-width len index val array))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 bvchop-list-of-take-of-bvchop-list))))
 
 (defthm bv-array-write-of-take
   (implies (and (<= len n)
                 (natp n))
-           (equal (bv-array-write elemement-width len index val (take n array))
-                  (bv-array-write elemement-width len index val array)))
+           (equal (bv-array-write element-width len index val (take n array))
+                  (bv-array-write element-width len index val array)))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 bvchop-list-of-take-of-bvchop-list take))))
 
 (defthm bv-array-write-of-take-same
-  (equal (bv-array-write elemement-width len index val (take len array))
-         (bv-array-write elemement-width len index val array))
+  (equal (bv-array-write element-width len index val (take len array))
+         (bv-array-write element-width len index val array))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 bvchop-list-of-take-of-bvchop-list take))))
 
 ;fixme can loop?
@@ -321,7 +320,7 @@
                 )
            (equal (bv-array-write element-size1 len index1 val1 (bv-array-write element-size2 len index2 val2 lst))
                   (bv-array-write element-size1 len index2 (bvchop element-size2 val2)
-;the bvchop-list should have no affect when lst is a bv-array-write nest with element-size2
+;the bvchop-list should have no effect when lst is a bv-array-write nest with element-size2
                                   (bv-array-write element-size1 len index1 val1 (bvchop-list element-size2 lst)))))
   :hints
   (("Goal" :cases ((<= len (len lst)))
@@ -497,14 +496,7 @@
                         (bvchop-list element-size (cdr (take len (true-list-fix lst))))
                       (bv-array-write element-size (- len 1) (- key 1) val (nthcdr 1 lst))))))
   :hints (("Goal"
-           :cases ((and (< len 0)
-                        (< key n))
-                   (and (not (< len 0))
-                        (< key n))
-                   (and (< len 0)
-                        (not (< key n)))
-                   (and (not (< len 0))
-                        (not (< key n))))
+
            :in-theory (e/d (update-nth2 bv-array-write-opener
                             ;bv-array-write
                             ) (ceiling-of-lg

@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-;; This packages like the "X" package for Axe x86 work and the "R"
+;; This is for packages like the "X" package for Axe x86 work and the "R"
 ;; package for Axe RISC-V work.
 
 ;; In general, we import function/command names, but not theorem names, from
@@ -212,7 +212,6 @@
     darg2
     darg3
     darg4
-    dargs
 
     dag-array ; for calls of axe-syntaxp functions
 
@@ -295,7 +294,6 @@
     lookup
     lookup-safe
 
-    translate-term
     term-listp
 
     _ ;; used to print non-pure patterns
@@ -310,9 +308,6 @@
     axe-quotep
     result-array-stobj
 
-    nat-to-string
-    print-dag-nicely
-    print-dag-nicely-with-base
     print-terms-elided
     make-term-into-dag
     remove-assumptions-about
@@ -340,7 +335,6 @@
     doublets-to-alist
     translate-term
     translate-terms
-    myquotep
     variablep
     empty-alist
     empty-acc
@@ -353,8 +347,6 @@
     ;; formal unit tester common stuff:
     print-test-summary
     any-result-unexpectedp
-
-    _  ; for printing non-pure node patterns
 
     make-event-quiet
     print-list
@@ -536,12 +528,11 @@
     rtl::prec
     rtl::mxcsr-masks
     ;; rtl::set-flag ; conflict with our set-flag
-    rtl::zencode
     rtl::iencode
     rtl::dencode
     rtl::nencode
     rtl::decode
-    rtl::ddecode
+    rtl::ddecode ; todo: more?
     rtl::zencode
     rtl::mxcsr-rc))
 

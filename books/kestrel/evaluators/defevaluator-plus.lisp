@@ -1,6 +1,6 @@
 ; A nicer interface to defevaluator
 ;
-; Copyright (C) 2014-2024 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -75,7 +75,7 @@
          :rule-classes :type-prescription
          :hints (("Goal" :induct (len terms) :in-theory (enable true-listp (:i len)))))
 
-       (defthm ,(add-suffix eval-list-name "-OF-TRUE-LIST_FIX")
+       (defthm ,(add-suffix eval-list-name "-OF-TRUE-LIST-FIX")
          (equal (,eval-list-name (true-list-fix terms) a)
                 (,eval-list-name terms a))
          :hints (("Goal" :in-theory (enable append (:I len)))))

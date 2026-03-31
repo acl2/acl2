@@ -1,7 +1,7 @@
 ; Alists mapping functions to definitions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -130,12 +130,6 @@
   (implies (and (interpreted-function-alistp interpreted-function-alist)
                 (assoc-equal fn interpreted-function-alist))
            (true-listp (cdr (assoc-equal fn interpreted-function-alist))))
-  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
-
-(defthmd symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
-  (implies (and (interpreted-function-alistp interpreted-function-alist)
-                (assoc-equal fn interpreted-function-alist))
-           (symbol-listp (cadr (assoc-equal fn interpreted-function-alist))))
   :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
 
 (defthmd consp-of-cdr-of-assoc-equal-when-interpreted-function-alistp

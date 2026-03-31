@@ -1,6 +1,6 @@
-; A lightweight book the built-in function pseudo-term-list-listp
+; A lightweight book about the built-in function pseudo-term-list-listp
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
