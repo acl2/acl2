@@ -185,6 +185,9 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
+;; ======================================================================
+;; INSTRUCTION: BTS
+;; ======================================================================
 
 (def-inst x86-bts-0F-AB
   ;; 0F AB /r: BTS r/m16, r16
@@ -320,6 +323,10 @@
        ((when flg) (!!ms-fresh :wme-size-opt flg))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
+
+;; ======================================================================
+;; INSTRUCTION: BTR
+;; ======================================================================
 
 (def-inst x86-btr-0F-B3
 
@@ -458,6 +465,10 @@
                (x86 (write-*ip proc-mode temp-rip x86)))
               x86))
 
+;; ======================================================================
+;; INSTRUCTIONS: BT, BTS, BTR, BTC with immediate operand
+;; ======================================================================
+
 (def-inst x86-bt/bts/btr/btc-0F-BA
 
           ;; 0F BA/4: BT r/m16/32/64, imm8
@@ -561,6 +572,10 @@
                ((when flg) (!!ms-fresh :x86-operand-to-reg/mem flg))
                (x86 (write-*ip proc-mode temp-rip x86)))
               x86))
+
+;; ======================================================================
+;; INSTRUCTION: BSR
+;; ======================================================================
 
 ;; Helper for the bsr instruction
 (define bsr ((n natp))
@@ -675,6 +690,10 @@
                (x86 (write-*ip proc-mode temp-rip x86)))
               x86))
 
+;; ======================================================================
+;; INSTRUCTION: TZCNT
+;; ======================================================================
+
 ;; Helper for the tzcnt instruction
 (define tzcnt ((bits natp)
                (i natp)
@@ -769,6 +788,10 @@
                (x86 (write-*ip proc-mode temp-rip x86)))
               x86))
 
+;; ======================================================================
+;; INSTRUCTION: BSWAP
+;; ======================================================================
+
 (defmacro bswap (n src)
   (if (equal n 0)
     0
@@ -814,7 +837,8 @@
     x86))
 
 ;; ======================================================================
-
+;; INSTRUCTION: BLSI
+;; ======================================================================
 
 (local (in-theory (disable bitops::ash-1-removal
                            signed-byte-p
@@ -832,7 +856,6 @@
                   (<= (* 8 operand-size) w))
              (unsigned-byte-p w (blsi operand-size src-val)))
     :hints(("Goal" :in-theory (enable bitops::ash-is-expt-*-x)))))
-
 
 (def-inst x86-blsi
   ;; VEX.LZ.0F38.W0 F3 /3:  BLSI r32, r/m32
@@ -899,9 +922,9 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-
 ;; ======================================================================
-
+;; INSTRUCTION: POPCNT
+;; ======================================================================
 
 (local (defthm logcount-bound-when-unsigned-byte-p
          (implies (unsigned-byte-p n x)
