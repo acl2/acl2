@@ -11,7 +11,7 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for the source character set
-; that are common to all the C dialect.
+; that are common to all the C dialects.
 ; Together with the rules in characters-c17.abnf or characters-c23.abnf,
 ; they define the source character set of the C17 or C23 dialect.
 ; None of these rules have counterparts in the grammars in [C17] and [C23],
