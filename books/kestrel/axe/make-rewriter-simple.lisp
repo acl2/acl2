@@ -3323,7 +3323,7 @@
                      ;; (:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2)
                      (:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2-special)
                      (:rewrite subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-binding-hyp)
-                     (:rewrite alistp-of-cdr)
+                     ;; (:rewrite alistp-of-cdr)
                      (:rewrite alistp-of-for-unify-trees-with-dag-nodes)
                      (:rewrite all-<-of-nil)
                      (:rewrite all-<-transitive-free-2)
