@@ -113,10 +113,10 @@
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((p2 (prefixes->seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes->adr prefixes)))
-
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? (alignment-checking-enabled-p x86))
 
        ((the (integer 1 8) operand-size)
         (select-operand-size
@@ -172,7 +172,6 @@
                (bitOffset-int-abs (abs bitOffset-int))
                (bitNumber (mod bitOffset-int-abs 8))
                (byte-addr (+ addr (floor bitOffset-int 8)))
-               (inst-ac? (alignment-checking-enabled-p x86))
                ((mv flg byte x86)
                 (if (signed-byte-p 64 byte-addr)
                     (rme-size-opt proc-mode 1 byte-addr seg-reg :r inst-ac? x86
@@ -220,8 +219,6 @@
   :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
                                         (bitops::part-install-width-low))))
 
-  :modr/m t
-
   :prepwork
   ((local
     (in-theory (e/d ()
@@ -229,15 +226,17 @@
                      signed-byte-p
                      unsigned-byte-p)))))
 
+  :modr/m t
+
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
-       (inst-ac? (alignment-checking-enabled-p x86))
-
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? (alignment-checking-enabled-p x86))
 
        ((the (integer 1 8) operand-size)
         (select-operand-size
@@ -269,6 +268,7 @@
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
         (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
@@ -366,18 +366,20 @@
 
   :body
 
-  (b* (((the (integer 1 8) operand-size)
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? (alignment-checking-enabled-p x86))
+
+       ((the (integer 1 8) operand-size)
         (select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
-       (p2 (prefixes->seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes->adr prefixes)))
-       (inst-ac? (alignment-checking-enabled-p x86))
-
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
-       (bitOffset (rgfi-size operand-size (reg-index reg rex-byte *r*) rex-byte x86))
+       (bitOffset (rgfi-size operand-size
+                             (reg-index reg rex-byte *r*)
+                             rex-byte
+                             x86))
 
        ((mv flg0
             (the (signed-byte 64) addr)
