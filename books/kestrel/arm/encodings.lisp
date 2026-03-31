@@ -316,7 +316,7 @@
     (:strh-immediate  (cond 4) 0 0 0 p u 1 w 0 (rn 4) (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
     (:strh-register   (cond 4) 0 0 0 p u 0 w 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 1 1 (rm 4))
 
-    (:strht-encoding-a1 (cond 4) 0 0 0 _ 0 u 1 _ 1 _ 0 (rn 4) (rt 4) (imm4H 4) 1 0 1 1 (imm4L 4))
+    (:strht-encoding-a1 (cond 4) 0 0 0 _ 0 u 1 _ 1 _ 0 (rn 4) (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
     (:strht-encoding-a2 (cond 4) 0 0 0 _ 0 u 0 _ 1 _ 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 1 1 (rm 4))
 
     (:strt-encoding-a1 (cond 4) 0 1 _ 0 _ 0 u 0 _ 1 _ 0 (rn 4) (rt 4) (imm12 12))
