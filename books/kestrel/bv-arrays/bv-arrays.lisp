@@ -721,7 +721,7 @@
                 (all-equal$ (bv-array-read element-size len 0 data) data) ;old way (involves consing): (equal data (repeat (len data) (car data)))
                 (or (and (natp index)
                          (< index len))
-                    ;; the the array is all zeros, we don't need to show that the index is good:
+                    ;; if the array is all zeros, we don't need to show that the index is good:
                     (equal 0 (bv-array-read element-size len 0 data)))
                 (equal (len data) len) ; gets computed
                 )

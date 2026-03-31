@@ -320,7 +320,7 @@
                 )
            (equal (bv-array-write element-size1 len index1 val1 (bv-array-write element-size2 len index2 val2 lst))
                   (bv-array-write element-size1 len index2 (bvchop element-size2 val2)
-;the bvchop-list should have no affect when lst is a bv-array-write nest with element-size2
+;the bvchop-list should have no effect when lst is a bv-array-write nest with element-size2
                                   (bv-array-write element-size1 len index1 val1 (bvchop-list element-size2 lst)))))
   :hints
   (("Goal" :cases ((<= len (len lst)))
