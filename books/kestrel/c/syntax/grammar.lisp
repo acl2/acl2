@@ -143,6 +143,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(abnf::defgrammar *grammar-white-space*
+  :short "Grammar rules for white space."
+  :file "grammar/white-space.abnf"
+  :untranslate t
+  :well-formed t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar*
   :short "Rest of the grammar rules."
   :file "grammar/grammar.abnf"
@@ -156,9 +164,11 @@
   :short "Grammar for a given C dialect."
   (b* ((std (c::dialect->std dialect)))
     (append *grammar-characters-all*
-            (c::standard-case std
-                              :c17 *grammar-characters-c17*
-                              :c23 *grammar-characters-c23*)
+            (c::standard-case
+             std
+             :c17 *grammar-characters-c17*
+             :c23 *grammar-characters-c23*)
+            *grammar-white-space*
             *grammar*))
 
   ///

@@ -35,19 +35,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; White Space [C17:6.4/3]
+; White Space
 
-; [C17] designates the following as white-space characters:
-; space, horizontal tab, vertical tab, form feed, and new line.
-; It designates white space as not only these characters, but also comments.
-; We introduce an ABNF rule (which has no counterpart grammar rule in [C17])
-; for white-space characters (not comments, which are defined separately).
-
-white-space = space
-            / horizontal-tab
-            / vertical-tab
-            / form-feed
-            / new-line
+; See the file white-space.abnf.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
