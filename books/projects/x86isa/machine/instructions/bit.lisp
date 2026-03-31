@@ -187,7 +187,7 @@
     x86))
 
 
-(def-inst x86-bt-0F-AB
+(def-inst x86-bts-0F-AB
   ;; 0F AB /r: BTS r/m16, r16
   ;; 0F AB /r: BTS r/m32, r32
   ;; REX.W + 0F AB /r: BTS r/m64, r64
@@ -295,8 +295,6 @@
 
        ;; Update the x86 state:
        ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
-       ;; If reg is 5, we need to set the selected bit
-       ;; If reg is 6, we need to clear the selected bit
        (x86
         (let* ((x86 (!flgi :cf
                            (the (unsigned-byte 1)
@@ -434,8 +432,6 @@
 
                ;; Update the x86 state:
                ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
-               ;; If reg is 5, we need to set the selected bit
-               ;; If reg is 6, we need to clear the selected bit
                (x86
                  (let* ((x86 (!flgi :cf
                                     (the (unsigned-byte 1)
@@ -463,7 +459,7 @@
                (x86 (write-*ip proc-mode temp-rip x86)))
               x86))
 
-(def-inst x86-bt-0F-BA
+(def-inst x86-bt/bts/btr/btc-0F-BA
 
           ;; 0F BA/4: BT r/m16/32/64, imm8
           ;; 0F BA/5: BTS r/m16/32/64, imm8
@@ -540,8 +536,6 @@
 
                ;; Update the x86 state:
                ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
-               ;; If reg is 5, we need to set the selected bit
-               ;; If reg is 6, we need to clear the selected bit
                (x86
                  (let* ((x86 (!flgi :cf
                                     (the (unsigned-byte 1)
