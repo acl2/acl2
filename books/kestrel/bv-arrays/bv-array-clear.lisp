@@ -149,13 +149,11 @@
                 (equal len (len lst)))
            (equal (bv-array-clear esize len key (bv-array-write esize len key val lst))
                   (bv-array-clear esize len key lst)))
-  :hints (("Goal" :cases ((< KEY1 KEY2)
-                          (< KEY2 KEY1))
-           :in-theory (enable BV-ARRAY-CLEAR))))
+  :hints (("Goal" :in-theory (enable BV-ARRAY-CLEAR))))
 
 (defthm bv-array-clear-of-bvchop-list
-  (equal (bv-array-clear elemement-width len index (bvchop-list elemement-width array))
-         (bv-array-clear elemement-width len index array))
+  (equal (bv-array-clear element-width len index (bvchop-list element-width array))
+         (bv-array-clear element-width len index array))
   :hints (("Goal" :in-theory (enable bv-array-clear))))
 
 (defthm bv-array-clear-of-bv-array-clear-diff
@@ -337,8 +335,7 @@
   :hints (("Goal" :in-theory (enable bv-array-clear))))
 
 (defthm cdr-of-bv-array-clear-2
-  (implies (and (<= n len)
-                (< key len)
+  (implies (and (< key len)
                 (integerp len)
                 (natp key))
            (equal (cdr (bv-array-clear element-size len key lst))

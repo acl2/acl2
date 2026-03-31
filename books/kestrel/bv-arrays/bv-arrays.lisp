@@ -147,8 +147,8 @@
   :hints (("Goal" :in-theory (enable bv-array-read bv-array-write BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
 (defthm bv-array-read-of-bvchop-list
-  (equal (bv-array-read elemement-width len index (bvchop-list elemement-width array))
-         (bv-array-read elemement-width len index array))
+  (equal (bv-array-read element-width len index (bvchop-list element-width array))
+         (bv-array-read element-width len index array))
   :hints (("Goal" :cases ((posp len))
            :in-theory (enable bv-array-read))))
 
@@ -254,9 +254,10 @@
   :hints (("Goal" :use (:instance bv-array-read-of-bv-array-write-both-better (index1 index) (index2 index))
            :in-theory (disable bv-array-read-of-bv-array-write-both-better))))
 
- ;;Do not remove.  This helps justify te correctness of the translation to STP.
+;;Do not remove.  This helps justify the correctness of the translation to STP.
 ;a read out of bounds returns 0
 ;note that the index is chopped down before the comparison
+;todo: move to bv-array-read.lisp
 (defthmd bv-array-read-when-index-is-too-large
   (implies (and (<= len (bvchop (ceiling-of-lg len) index))
                 (natp len))
