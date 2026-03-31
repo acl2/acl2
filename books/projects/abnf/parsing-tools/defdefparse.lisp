@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Contributions by: Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,7 +299,12 @@
   :key-type repetition
   :val-type acl2::symbol
   :true-listp t
-  :pred defdefparse-rep-symbol-alistp)
+  :pred defdefparse-rep-symbol-alistp
+  ///
+
+  (defruled symbolp-of-cdr-of-assoc-equal-when-defdefparse-rep-symbol-alistp
+    (implies (defdefparse-rep-symbol-alistp alist)
+             (acl2::symbolp (cdr (assoc-equal key alist))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1168,46 +1174,106 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is only used for repetitions whose repeat prefix is @('*'),
-     i.e. zero or more (i.e. this is all we support for now).
-     The name is retrieved from the alist for repetition parsing functions.
-     We generate a recursive function that
+    "This supports repetitions whose repeat prefix is @('*') (zero or more)
+     or @('1*') (one or more).
+     The name is retrieved from the alist for repetition parsing functions.")
+   (xdoc::p
+    "For @('*') repetitions, we generate a recursive function that
      repeatedly attempts to parse the underlying element.
-     Note that we set the @('check-error-p') flag to @('nil') here,
+     We set the @('check-error-p') flag to @('nil') here,
      because we don't want the error to be returned,
-     we just want to stop the recursion."))
+     we just want to stop the recursion.")
+   (xdoc::p
+    "For @('1*') repetitions, we generate a non-recursive function that
+     parses one element (propagating errors), then calls the corresponding
+     @('*') function for the remaining elements.  The @('*') function must
+     already exist (i.e. the @('*') repetition entry must appear before the
+     @('1*') entry in the repetition table, and the @('*') function must
+     be generated before the @('1*') function)."))
   (b* ((parse-repetition (cdr (assoc-equal rep repetition-table)))
        ((repetition rep) rep)
-       ((unless (equal rep.range
-                       (make-repeat-range :min 0
-                                          :max (nati-infinity))))
-        (raise "Repetition ~x0 currently not supported." rep)))
-    `(define ,parse-repetition ((input nat-listp))
-       :returns (mv (trees tree-listp)
-                    (rest-input nat-listp))
-       :short ,(str::cat "Parse a @('" (pretty-print-repetition rep) "').")
-       (b* (,@(defdefparse-gen-code-for-element
-                rep.element nil prefix group-table option-table)
-            ((when (reserrp tree)) (mv nil input))
-            ((mv trees input) (,parse-repetition input)))
-         (mv (cons tree trees) input))
-       :no-function nil
-       :measure (len input)
-       :hints (("Goal" :in-theory (enable o-p o< o-finp)))
-       :prepwork
-       ((local
-         (in-theory
-          (enable treep-when-tree-resultp-and-not-reserrp
-                  tree-listp-when-tree-list-resultp-and-not-reserrp
-                  tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
-       :hooks (:fix)
-       ///
-       (defret ,(acl2::packn-pos (list 'len-of- parse-repetition)
-                                 parse-repetition)
-         (<= (len rest-input)
-             (len input))
-         :rule-classes :linear
-         :hints (("Goal" :induct t))))))
+       ;; Case 1: *element (zero or more)
+       ((when (equal rep.range
+                     (make-repeat-range :min 0
+                                        :max (nati-infinity))))
+        `(define ,parse-repetition ((input nat-listp))
+           :returns (mv (trees tree-listp)
+                        (rest-input nat-listp))
+           :short ,(str::cat "Parse a @('" (pretty-print-repetition rep) "').")
+           (b* (,@(defdefparse-gen-code-for-element
+                    rep.element nil prefix group-table option-table)
+                ((when (reserrp tree)) (mv nil input))
+                ((mv trees input) (,parse-repetition input)))
+             (mv (cons tree trees) input))
+           :no-function nil
+           :measure (len input)
+           :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+           :prepwork
+           ((local
+             (in-theory
+              (enable treep-when-tree-resultp-and-not-reserrp
+                      tree-listp-when-tree-list-resultp-and-not-reserrp
+                      tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
+           :hooks (:fix)
+           ///
+           (defret ,(acl2::packn-pos (list 'len-of- parse-repetition)
+                                     parse-repetition)
+             (<= (len rest-input)
+                 (len input))
+             :rule-classes :linear
+             :hints (("Goal" :induct t)))))
+       ;; Case 2: 1*element (one or more)
+       ((when (equal rep.range
+                     (make-repeat-range :min 1
+                                        :max (nati-infinity))))
+        (b* (;; Find the corresponding * function name from the table.
+             (star-rep (change-repetition rep
+                         :range (make-repeat-range :min 0
+                                                   :max (nati-infinity))))
+             (parse-star (cdr (assoc-equal star-rep repetition-table)))
+             ((unless parse-star)
+              (raise "For 1* repetition ~x0, no corresponding * entry ~
+                      found in the repetition table." rep)))
+          `(define ,parse-repetition ((input nat-listp))
+             :returns
+             (mv (trees tree-list-resultp
+                        :hints
+                        (("Goal" :in-theory
+                          (enable treep-when-tree-resultp-and-not-reserrp))))
+                 (rest-input nat-listp))
+             :short ,(str::cat "Parse a @('" (pretty-print-repetition rep)
+                               "').")
+             (b* (,@(defdefparse-gen-code-for-element
+                      rep.element t prefix group-table option-table)
+                  ((mv trees input) (,parse-star input)))
+               (mv (cons tree trees) input))
+             :no-function nil
+             :prepwork
+             ((local
+               (in-theory
+                (enable
+                 treep-when-tree-resultp-and-not-reserrp
+                 tree-listp-when-tree-list-resultp-and-not-reserrp
+                 tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
+             :hooks (:fix)
+             ///
+             (defret ,(acl2::packn-pos (list 'len-of- parse-repetition '-<=)
+                                       parse-repetition)
+               (<= (len rest-input)
+                   (len input))
+               :rule-classes :linear)
+             (defret ,(acl2::packn-pos (list 'len-of- parse-repetition '-<)
+                                       parse-repetition)
+               (implies (not (reserrp trees))
+                        (< (len rest-input)
+                           (len input)))
+               :rule-classes :linear)))))
+    (raise "Repetition ~x0 currently not supported." rep))
+  :guard-hints (("Goal"
+                  :in-theory
+                  (enable
+                   symbolp-of-cdr-of-assoc-equal-when-defdefparse-rep-symbol-alistp
+                   not-consp-when-symbolp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1289,6 +1355,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(define defdefparse-gen-1*-rulename-macro ((name acl2::symbolp)
+                                            (pkg-wit acl2::symbolp)
+                                            (grammar acl2::symbolp)
+                                            (prefix acl2::symbolp)
+                                            (group-table-name acl2::symbolp)
+                                            (option-table-name acl2::symbolp)
+                                            (repetition-table-name acl2::symbolp))
+  :returns (event pseudo-event-formp)
+  :short "Generate the @('defparse-name-1*-rulename') macro."
+  (b* ((macro-name
+        (packn-pos (list 'defparse- name '-1*-rulename) pkg-wit)))
+    `(defmacro ,macro-name (rulename)
+       `(make-event (defdefparse-gen-function-for-spec
+                      (defdefparse-function-spec-repetition
+                        (make-repetition
+                         :element (element-rulename
+                                   (rulename ,rulename))
+                         :range (make-repeat-range
+                                 :min 1
+                                 :max (nati-infinity))))
+                      ,',grammar
+                      ',',prefix
+                      ,',group-table-name
+                      ,',option-table-name
+                      ,',repetition-table-name)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define defdefparse-gen-group-macro ((name acl2::symbolp)
                                      (pkg-wit acl2::symbolp)
                                      (grammar acl2::symbolp)
@@ -1341,6 +1435,38 @@
                            :element (element-group ',alt)
                            :range (make-repeat-range
                                    :min 0
+                                   :max (nati-infinity))))
+                        ,',grammar
+                        ',',prefix
+                        ,',group-table-name
+                        ,',option-table-name
+                        ,',repetition-table-name))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defdefparse-gen-1*-group-macro ((name acl2::symbolp)
+                                         (pkg-wit acl2::symbolp)
+                                         (grammar acl2::symbolp)
+                                         (prefix acl2::symbolp)
+                                         (group-table-name acl2::symbolp)
+                                         (option-table-name acl2::symbolp)
+                                         (repetition-table-name acl2::symbolp))
+  :returns (event pseudo-event-formp)
+  :short "Generate the @('defparse-name-1*-group') macro."
+  (b* ((macro-name
+        (packn-pos (list 'defparse- name '-1*-group) pkg-wit)))
+    `(defmacro ,macro-name (group)
+       (b* (((mv err tree rest) (parse-group (string=>nats group)))
+            ((when err) (er hard ',macro-name "~@0" err))
+            ((when (consp rest))
+             (er hard ',macro-name "Extra: ~s0." (nats=>string rest)))
+            (alt (abstract-group/option tree)))
+         `(make-event (defdefparse-gen-function-for-spec
+                        (defdefparse-function-spec-repetition
+                          (make-repetition
+                           :element (element-group ',alt)
+                           :range (make-repeat-range
+                                   :min 1
                                    :max (nati-infinity))))
                         ,',grammar
                         ',',prefix
@@ -1405,6 +1531,11 @@
                            group-table-name
                            option-table-name
                            repetition-table-name))
+       (1*-rulename-macro (defdefparse-gen-1*-rulename-macro
+                            name pkg-wit grammar prefix
+                            group-table-name
+                            option-table-name
+                            repetition-table-name))
        (group-macro (defdefparse-gen-group-macro
                       name pkg-wit grammar prefix
                       group-table-name
@@ -1415,6 +1546,11 @@
                         group-table-name
                         option-table-name
                         repetition-table-name))
+       (1*-group-macro (defdefparse-gen-1*-group-macro
+                         name pkg-wit grammar prefix
+                         group-table-name
+                         option-table-name
+                         repetition-table-name))
        (option-macro (defdefparse-gen-option-macro
                        name pkg-wit grammar prefix
                        group-table-name
@@ -1427,8 +1563,10 @@
        ,repetition-table-macro
        ,rulename-macro
        ,*-rulename-macro
+       ,1*-rulename-macro
        ,group-macro
        ,*-group-macro
+       ,1*-group-macro
        ,option-macro
        ,table-event)))
 
