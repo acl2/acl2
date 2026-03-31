@@ -1,7 +1,7 @@
 ; Utilities in support of reasoning about / lifting 32-bit code.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,6 @@
 ;(include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
 (include-book "state")
 (include-book "memory32")
-(include-book "state")
 (include-book "flags")
 (include-book "readers-and-writers")
 (include-book "register-readers-and-writers32")

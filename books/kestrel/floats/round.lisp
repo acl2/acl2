@@ -1,6 +1,6 @@
 ; Partial spec of IEEE 754 floating point rounding
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 
 ;; TODO: Handle rounding attributes other than roundTiesToEven
 
-;; TODO: Prove more validation theorems, such as that these is no closer
+;; TODO: Prove more validation theorems, such as that there is no closer
 ;; representable value than the rounded value.
 
 (include-book "ieee-floats")

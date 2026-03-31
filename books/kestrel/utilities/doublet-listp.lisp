@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in-function doublet-listp
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,7 +22,7 @@
 ;; Justifies calling strip-cadrs on a doublet-list.
 (defthm all->=-len-when-doublet-listp
   (implies (doublet-listp x)
-           (acl2::all->=-len x 2))
+           (all->=-len x 2))
   :hints (("Goal" :in-theory (enable doublet-listp))))
 
 ;; Then the built-in rule alistp-forward-to-true-listp should give us

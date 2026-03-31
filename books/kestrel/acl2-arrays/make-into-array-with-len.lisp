@@ -1,7 +1,7 @@
 ; A function to turn an alist into an array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -47,7 +47,7 @@
                           :maximum-length (min (* 2 len)
                                                *max-array-maximum-length* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
                                                )
-                          :default nil ; ;fixme?
+                          :default nil ; fixme?
                           :name array-name)
                     alist)))
 

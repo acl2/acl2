@@ -69,17 +69,17 @@
          :hints (("Goal" :in-theory (e/d (,(add-suffix-to-fn eval-name "-OF-FNCALL-ARGS"))
                                          (,(add-suffix-to-fn eval-name "-OF-FNCALL-ARGS-BACK"))))))
 
-       (defthm ,(add-suffix-to-fn eval-list-name "-WHEN-SYMBOL-LISTP")
-         (implies (and (symbol-listp vars)
-                       (not (member-equal nil vars)) ;evaluating nil just gives nil;
-                       )
-                  (equal (,eval-list-name vars a)
-                         (map-lookup-equal vars a)))
-         :hints (("Goal" :in-theory (enable
-                                     map-lookup-equal
-                                     (:i len)
-                                     lookup-equal)
-                  :induct (len vars))))
+       ;; (defthm ,(add-suffix-to-fn eval-list-name "-WHEN-SYMBOL-LISTP")
+       ;;   (implies (and (symbol-listp vars)
+       ;;                 (not (member-equal nil vars)) ;evaluating nil just gives nil;
+       ;;                 )
+       ;;            (equal (,eval-list-name vars a)
+       ;;                   (map-lookup-equal vars a)))
+       ;;   :hints (("Goal" :in-theory (enable
+       ;;                               map-lookup-equal
+       ;;                               (:i len)
+       ;;                               lookup-equal)
+       ;;            :induct (len vars))))
 
        ;; Pushes the evaluation into the alist.
        ;;term may often be a var

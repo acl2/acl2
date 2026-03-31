@@ -1,7 +1,7 @@
 ; Substituting for a variable in the Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -53,7 +53,7 @@
                  (or (consp equated-thing) ; always safe to put in a constant
                      ;;helps prevent loops:
                      ;; TODO: Consider using a version of supporters-of-node-with-name that uses a worklist instead of walking over every node <= to the node of interest. See vars-that-support-dag-node.
-                     ;; Also, we really only need supporting vars, not all suporters
+                     ;; Also, we really only need supporting vars, not all supporters
                      ;; TODO: Call a specialized version of supporters-of-node-with-name (that takes no name):
                      (if (member nodenum-or-quotep (supporters-of-node-with-name equated-thing 'dag-array dag-array 'tag-array-for-supporters))
                          (prog2$ (cw "Refusing to substitute for ~x0 because it is equated to something involving itself !!~%" expr) ;; todo: print the terms involved?
@@ -346,7 +346,7 @@
     (if (or (not changep)
             (endp literal-nodenums) ;todo: think about this
             )
-        ;; No more vars to susbt:
+        ;; No more vars to subst:
         (mv (erp-nil)
             nil
             changep-acc

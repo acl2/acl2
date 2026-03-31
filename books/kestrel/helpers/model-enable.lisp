@@ -1,5 +1,3 @@
-(in-package "HELP")
-
 ; A simple model to recommend enabling functions in a theorem
 ;
 ; Copyright (C) 2022-2023 Kestrel Institute
@@ -9,6 +7,8 @@
 ; Author: Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "HELP")
 
 (include-book "recommendations")
 (include-book "std/util/bstar" :dir :system)

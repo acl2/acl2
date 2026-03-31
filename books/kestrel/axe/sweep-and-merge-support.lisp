@@ -1,7 +1,7 @@
 ; Support for sweeping and merging
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -97,7 +97,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: check consisency with existing entries in the alist
+;; todo: check consistency with existing entries in the alist
 (defund extend-var-type-alist-with-hyp (hyp all-hyps var-type-alist)
   (declare (xargs :guard (and (pseudo-termp hyp)
                               (pseudo-term-listp all-hyps)

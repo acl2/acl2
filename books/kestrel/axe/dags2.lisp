@@ -174,6 +174,7 @@
 
 (local (in-theory (disable alistp)))
 
+;;todo: make local
 (defthm alistp-of-cdr
   (implies (alistp x)
            (alistp (cdr x)))

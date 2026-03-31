@@ -303,9 +303,9 @@
 ;;                 (< LOWINDEX LEN)
 ;;                 (< INDEX LEN)
 ;;                 (natp index)
-;;                 (natp elemement-width))
-;;            (equal (bv-array-clear elemement-width len index (bv-array-clear-range elemement-width len lowindex highindex data))
-;;                   (bv-array-clear-range elemement-width len lowindex highindex (bv-array-clear elemement-width len index data))))
+;;                 (natp element-width))
+;;            (equal (bv-array-clear element-width len index (bv-array-clear-range element-width len lowindex highindex data))
+;;                   (bv-array-clear-range element-width len lowindex highindex (bv-array-clear element-width len index data))))
 ;;   :hints (("Goal" :in-theory (enable bv-array-clear-range))))
 
 (defthm bv-array-clear-range-of-bv-array-write-contained
