@@ -20,6 +20,10 @@
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
+; (depends-on "grammar/characters-all.abnf")
+; (depends-on "grammar/characters-c17.abnf")
+; (depends-on "grammar/characters-c23.abnf")
+; (depends-on "grammar/comments.abnf")
 ; (depends-on "grammar/grammar.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
