@@ -127,6 +127,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
+
+   (xdoc::p
+    "A new data structure,"
+    (xdoc::seetopic "treemap::treemap" "treemaps")
+    ", was introduced, representing finite maps with ordered keys.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h3 "Documentation")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
