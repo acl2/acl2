@@ -52,7 +52,7 @@
   (xdoc::topstring
    (xdoc::p
      "When @('tree') is a @('map'), @('(tree-split key tree)') yields
-      @('(mv in left right)') where:")
+      @('(mv assoc left right)') where:")
    (xdoc::ul
      (xdoc::li "@('assoc') is an optional pair representing
                 @('(tree-search-assoc key tree)').")

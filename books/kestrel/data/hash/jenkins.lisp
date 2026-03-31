@@ -409,7 +409,7 @@
            (acc (data::u32-xor acc (data::u32-shr acc 11))))
       (data::u32-plus acc (data::u32-shl acc 15)))))
 
-(in-theory (disable (:t jenkins-acc)))
+(in-theory (disable (:t jenkins)))
 
 (defrule jenkins-type-presciption
   (natp (jenkins x))

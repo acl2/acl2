@@ -153,13 +153,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule tree-empty-p-when-not-<<-all-l-forward-chaining
+(defrule tree-empty-p-when-not-<<-all-l-cheap
   (implies (not (<<-all-l tree x))
            (not (tree-empty-p tree)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :enable <<-all-l)
 
-(defrule tree-empty-p-when-not-<<-all-r-forward-chaining
+(defrule tree-empty-p-when-not-<<-all-r-cheap
   (implies (not (<<-all-r x tree))
            (not (tree-empty-p tree)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
@@ -424,9 +424,7 @@
            (<<-all-l (tree->left tree)
                      (tree-element->key (tree->head tree))))
   ;; TODO: ugly proof. Why is this disable necessary?
-  ;; - Oh, this "forward chaining" rule is actually a "cheap" rewrite rule.
-  ;;   Was that intentional? Maybe that was the problem?
-  :disable tree-empty-p-when-not-<<-all-l-forward-chaining
+  :disable tree-empty-p-when-not-<<-all-l-cheap
   :cases ((tree-empty-p (tree->left tree)))
   :expand (fast-bstp-nonempty tree))
 
@@ -436,7 +434,7 @@
            (<<-all-r (tree-element->key (tree->head tree))
                      (tree->right tree)))
   ;; Same comment as above
-  :disable tree-empty-p-when-not-<<-all-r-forward-chaining
+  :disable tree-empty-p-when-not-<<-all-r-cheap
   :cases ((tree-empty-p (tree->right tree)))
   :expand (fast-bstp-nonempty tree))
 
