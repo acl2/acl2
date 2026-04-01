@@ -941,4 +941,5 @@
                                     map-with-source-file)
                     map-with-source-file)))
               map-with-all-files)
+     :resolved-headers nil
      :info nil)))

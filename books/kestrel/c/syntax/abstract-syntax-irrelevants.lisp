@@ -569,4 +569,5 @@
   :short "An irrelevant ensemble of translation units."
   :type transunit-ensemblep
   :body (make-transunit-ensemble :units nil
+                                 :resolved-headers nil
                                  :info nil))

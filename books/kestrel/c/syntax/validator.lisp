@@ -7500,8 +7500,9 @@
                       len-new-map len-map)))
             nil)))
     (retok (make-transunit-ensemble
-             :units new-map
-             :info (transunit-ensemble-info table))))
+            :units new-map
+            :resolved-headers nil
+            :info (transunit-ensemble-info table))))
 
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)

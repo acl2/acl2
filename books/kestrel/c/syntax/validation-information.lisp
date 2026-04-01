@@ -995,10 +995,12 @@
     :enable identity)
 
   (defruled transunit-ensemble-annop-of-transunit-ensemble
-    (equal (transunit-ensemble-annop (transunit-ensemble units info))
+    (equal (transunit-ensemble-annop
+            (transunit-ensemble units resolved-headers info))
            (and (filepath-transunit-map-annop units)
                 (transunit-ensemble-infop info)))
-    :expand (transunit-ensemble-annop (transunit-ensemble units info))
+    :expand (transunit-ensemble-annop
+             (transunit-ensemble units resolved-headers info))
     :enable identity)
 
   ;; theorems about accessors:
