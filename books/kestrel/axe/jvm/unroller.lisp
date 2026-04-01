@@ -453,7 +453,7 @@
                       jvm::method-namep
                       method-designator-stringp
                       no-duplicatesp-equal ; why?
-                      strip-cars-of-non-consp
+                      strip-cars-when-not-consp
                       assoc-equal-when-member-equal-of-strip-cars
                       subsetp-equal
                       ;; ilks-plist-worldp-forward-to-plist-worldp

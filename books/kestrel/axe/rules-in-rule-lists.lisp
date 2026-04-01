@@ -1,7 +1,7 @@
 ; Rules mentioned in rule-lists.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -80,6 +80,7 @@
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/lists-light/union-equal" :dir :system)  ;for UNION-EQUAL-OF-NIL-ARG1
 ;(include-book "kestrel/alists-light/assoc-equal" :dir :system) ;only needed by axe prover?
+(include-book "kestrel/alists-light/strip-cars" :dir :system)
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system)
 (include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)  ;drop?  ;for LIST-TO-BV-ARRAY
 (include-book "kestrel/bv/rightrotate32" :dir :system)
