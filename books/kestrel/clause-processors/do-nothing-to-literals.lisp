@@ -1,6 +1,6 @@
-; A very simple trivial clause-processor
+; An almost trivial clause-processor
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 ;; A slightly less trivial clause processor, compared to the one in
-;; do-nothing.lisp.  We rebuild the clause by applying an identify function to
+;; do-nothing.lisp.  We rebuild the clause by applying an identity function to
 ;; each literal.
 
 (include-book "kestrel/evaluators/if-eval" :dir :system)
