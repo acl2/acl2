@@ -730,14 +730,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod trans-ensemble-info
-  :short "Fixtype of validation information for translation unit ensembles."
+  :short "Fixtype of validation information for translation ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the type of the annotations that
-     the validator adds to translation unit ensembles.
+     the validator adds to translation ensembles.
      The information consists of
-     the final validation table for the translation unit ensemble."))
+     the final validation table for the translation ensemble."))
   ((table-end valid-table))
   :pred trans-ensemble-infop)
 

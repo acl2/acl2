@@ -12516,10 +12516,10 @@
    (xdoc::p
     "We go through each file of the file set and parse it,
      obtaining a translation unit for each,
-     which we return in an ensemble of translation units
+     which we return in a translation ensemble
      that corresponds to the file set.
      The file paths are the same for the file set
-     and for the translation unit ensembles
+     and for the translation ensembles
      (they are the keys of the maps)."))
   (b* (((reterr) (irr-trans-ensemble))
        (filemap (fileset->unwrap fileset))

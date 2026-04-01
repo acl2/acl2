@@ -4957,7 +4957,7 @@
   (xdoc::topstring
    (xdoc::p
     "The input is a map from file paths to translation units,
-     i.e. the core content of a translation unit ensemble.
+     i.e. the core content of a translation ensemble.
      We also pass the printer options as additional input.
      We go through each translation unit in the map and print it,
      obtaining a file for each.
@@ -4996,9 +4996,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The input is a translation unit ensemble in the abstract syntax.
+    "The input is a translation ensemble in the abstract syntax.
      We also pass the printer options as additional input.
-     We unwrap the translation unit ensemble obtainining a map,
+     We unwrap the translation ensemble obtainining a map,
      we print the translation units of the map to files into a file map,
      and we wrap the file map into a file set."))
   (fileset

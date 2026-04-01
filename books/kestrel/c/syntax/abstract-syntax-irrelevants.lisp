@@ -566,7 +566,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-trans-ensemble
-  :short "An irrelevant ensemble of translation units."
+  :short "An irrelevant translation ensemble."
   :type trans-ensemblep
   :body (make-trans-ensemble :units nil
                              :resolved-headers nil

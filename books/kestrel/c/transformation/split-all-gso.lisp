@@ -406,7 +406,7 @@
            (c$::valid-trans-ensemble tunits$ ienv nil))
           ;; TODO: c$::valid-trans-ensemble should return an annop
           ((unless (c$::trans-ensemble-annop tunits$))
-           (retmsg$ "Invalid translation unit ensemble.")))
+           (retmsg$ "Invalid translation ensemble.")))
        (trans-ensemble-split-all-gso0 tunits$
                                           blacklist
                                           ienv

@@ -697,7 +697,7 @@
   :guard (trans-ensemble-annop transunits)
   :returns (mv (er? maybe-msgp)
                (transunits$ trans-ensemblep))
-  :short "Transform a translation unit ensemble."
+  :short "Transform a translation ensemble."
   (b* (((reterr) (c$::trans-ensemble-fix transunits))
        ((trans-ensemble transunits) transunits)
        (blacklist (filepath-transunit-map-collect-idents transunits.units))

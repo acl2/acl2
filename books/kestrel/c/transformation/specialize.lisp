@@ -262,7 +262,7 @@
    (target-fn identp)
    (target-param identp)
    (const exprp))
-  :short "Transform a translation unit ensemble."
+  :short "Transform a translation ensemble."
   :returns (new-tunits trans-ensemblep)
   (b* (((trans-ensemble tunits) tunits))
     (c$::make-trans-ensemble

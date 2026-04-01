@@ -3241,7 +3241,7 @@
               (trans-ensemble-annop tunits))
   :returns (mv (new-tunits trans-ensemblep)
                (gout goutp))
-  :short "Transform a translation unit ensemble."
+  :short "Transform a translation ensemble."
   (b* (((trans-ensemble tunits) tunits)
        ((mv new-map (gout gout-map))
         (simpadd0-filepath-transunit-map tunits.units gin))

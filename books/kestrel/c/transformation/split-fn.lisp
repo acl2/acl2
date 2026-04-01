@@ -580,7 +580,7 @@
    (new-fn-name identp)
    (tunits trans-ensemblep)
    (split-point natp))
-  :short "Transform a translation unit ensemble."
+  :short "Transform a translation ensemble."
   :returns (mv (er? maybe-msgp)
                (new-tunits trans-ensemblep))
   (b* (((trans-ensemble tunits) tunits)

@@ -1109,7 +1109,7 @@
 
 (define trans-ensemble-paths ((tunits trans-ensemblep))
   :returns (paths filepath-setp)
-  :short "Set of file paths in a translation unit ensemble."
+  :short "Set of file paths in a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1119,7 +1119,7 @@
      than extracting the map and then the keys.")
    (xdoc::p
     "Together with @(tsee transunit-at-path),
-     it can be used as an API to inspect translation unit ensembles."))
+     it can be used as an API to inspect translation ensembles."))
   (omap::keys (trans-ensemble->units tunits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1127,12 +1127,12 @@
 (define transunit-at-path ((path filepathp) (tunits trans-ensemblep))
   :guard (set::in path (trans-ensemble-paths tunits))
   :returns (tunit transunitp)
-  :short "Translation unit at a certain path in a translation unit ensemble."
+  :short "Translation unit at a certain path in a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the value associated to the key (path) in the map,
-     which the guard requires to be in the translation unit ensemble.")
+     which the guard requires to be in the translation ensemble.")
    (xdoc::p
     "It is more concise, and more abstract,
      than accessing the map and then looking up the path.")

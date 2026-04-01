@@ -4042,7 +4042,7 @@
      the name of this type used a postfix structure, like
      @('(string (header-name string map) map)').
      These maps are used to record how header name resolve
-     for all the files in a file set or translation unit ensemble:
+     for all the files in a file set or translation ensemble:
      the keys of the outer map identify the files or translation units,
      and each inner map records the mapping for that file."))
   :key-type string
@@ -4068,7 +4068,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod trans-ensemble
-  :short "Fixtype of ensembles of translation units."
+  :short "Fixtype of translation ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4077,7 +4077,7 @@
      a collection of translation units that form
      a C program or library or other component.
      Since translation units are contained in files,
-     it is natural to view a translation unit ensemble
+     it is natural to view a translation ensemble
      as a collection of (parsed) files.
      Since @(tsee fileset) models a collection of files
      as a map from file paths to file data (bytes),

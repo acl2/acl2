@@ -27,7 +27,7 @@
   (xdoc::topstring
    (xdoc::p
     "We introduce the notion of code ensemble as consisting of a "
-    (xdoc::seetopic "trans-ensemble" "translation unit ensemble")
+    (xdoc::seetopic "trans-ensemble" "translation ensemble")
     " and an "
     (xdoc::seetopic "implementation-environments" "implementation environment")
     ". The latter provides information for interpreting the former."))

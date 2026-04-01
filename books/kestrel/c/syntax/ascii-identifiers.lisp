@@ -128,7 +128,7 @@
 
 (define code-ensemble-aidentp ((code code-ensemblep))
   :returns (yes/no booleanp)
-  :short "Check if a code ensemble only uses, in its translation unit ensemble,
+  :short "Check if a code ensemble only uses, in its translation ensemble,
           ASCII identifiers."
   :long
   (xdoc::topstring

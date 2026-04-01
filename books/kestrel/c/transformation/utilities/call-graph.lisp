@@ -683,7 +683,7 @@
   ((ensemble trans-ensemblep))
   :guard (c$::trans-ensemble-annop ensemble)
   :returns (call-graph$ call-graphp)
-  :short "Build a call graph corresponding to a translation unit ensemble."
+  :short "Build a call graph corresponding to a translation ensemble."
   (call-graph-filepath-transunit-map
    (c$::trans-ensemble->units ensemble)
    nil)

@@ -3914,7 +3914,7 @@
                              (dialect c::dialectp)
                              (keep-going booleanp))
   :returns (mv (erp maybe-msgp) (new-tuens trans-ensemblep))
-  :short "Disambiguate a translation unit ensembles."
+  :short "Disambiguate a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p

@@ -208,7 +208,7 @@
    (target-fn identp)
    (new-fn identp))
   :guard (trans-ensemble-annop tunits)
-  :short "Transform a translation unit ensemble."
+  :short "Transform a translation ensemble."
   :returns (new-tunits trans-ensemblep)
   (b* (((trans-ensemble tunits) tunits))
     (c$::make-trans-ensemble

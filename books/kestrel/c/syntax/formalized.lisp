@@ -1251,7 +1251,7 @@
 (define trans-ensemble-formalp ((tunits trans-ensemblep))
   :guard (trans-ensemble-unambp tunits)
   :returns (yes/no booleanp)
-  :short "Check if a translation unit ensemble has formal dynamic semantics."
+  :short "Check if a translation ensemble has formal dynamic semantics."
   :long
   (xdoc::topstring
    (xdoc::p

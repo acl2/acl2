@@ -919,7 +919,7 @@
                              (tunits c::transunit-ensemblep))
   :returns (tunits1 trans-ensemblep)
   :short "Map a translation unit ensemble in the language definition
-          to a translation unit ensemble in the syntax for tools."
+          to a translation ensemble in the syntax for tools."
   :long
   (xdoc::topstring
    (xdoc::p

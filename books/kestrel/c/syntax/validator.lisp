@@ -7475,7 +7475,7 @@
                               (keep-going booleanp))
   :guard (trans-ensemble-unambp tunits)
   :returns (mv (erp maybe-msgp) (new-tunits trans-ensemblep))
-  :short "Validate a translation unit ensemble."
+  :short "Validate a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -7485,7 +7485,7 @@
      For now we do no make any use of the returned table,
      but in the future we should use it to validate
      the externally linked identifiers across
-     different translation units of a translation unit ensemble."))
+     different translation units of a translation ensemble."))
   (b* (((reterr) (irr-trans-ensemble))
        (map (trans-ensemble->units tunits))
        ((erp new-map table)

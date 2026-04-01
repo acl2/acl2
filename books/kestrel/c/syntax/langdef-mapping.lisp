@@ -1833,11 +1833,11 @@
 (define ldm-trans-ensemble ((tunits trans-ensemblep))
   :guard (trans-ensemble-unambp tunits)
   :returns (mv erp (tunits1 c::transunit-ensemblep))
-  :short "Map a translation unit ensemble to the language definition."
+  :short "Map a translation ensemble to the language definition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently we only support translation unit ensembles
+    "Currently we only support translation ensembles
      consisting of a single translation unit.
      We map that to a @(tsee c::transunit-ensemblep)
      without header, just with a source file
@@ -1848,7 +1848,7 @@
   (b* (((reterr) (c::transunit-ensemble "" nil (c::transunit nil)))
        (map (trans-ensemble->units tunits))
        ((unless (= (omap::size map) 1))
-        (reterr (msg "Unsupported translation unit ensemble ~
+        (reterr (msg "Unsupported translation ensemble ~
                       with ~x0 translation units."
                      (omap::size map))))
        (tunit (omap::head-val map))

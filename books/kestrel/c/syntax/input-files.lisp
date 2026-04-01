@@ -702,7 +702,7 @@
    (xdoc::p
     "The event is an empty @(tsee progn) if
      this is called via the programmatic interface.
-     We also return the translation unit ensemble
+     We also return the translation ensemble
      resulting from processing the (possibly preprocessed) files."))
   (b* (((reterr) '(_) (irr-code-ensemble) state)
        ((erp files

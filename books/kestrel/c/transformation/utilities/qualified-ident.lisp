@@ -40,11 +40,11 @@
        declared/defined.")
     (xdoc::p
       "Qualified identifiers are used to refer unambiguously to a file-scope
-       identifier when working with a translation unit ensemble. Identifiers
+       identifier when working with a translation ensemble. Identifiers
        with internal linkage require the filepath to disambiguate them from
        other possible objects/functions of the same name defined in different
        translation units. Identifiers with external linkage do not require a
-       filepath since they must be unique across the translation unit ensemble.
+       filepath since they must be unique across the translation ensemble.
        However, a filepath may be provided nonetheless. If a filepath is
        provided, it must identify a translation unit in which the external
        identifier is declared."))
