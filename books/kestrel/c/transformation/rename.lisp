@@ -98,7 +98,7 @@
               trans-items
               transunit
               filepath-transunit-map
-              transunit-ensemble)
+              trans-ensemble)
   :extra-args ((subst ident-ident-alistp))
   :override ((ident (ident-ident-subst ident subst))))
 
@@ -108,4 +108,4 @@
   (change-code-ensemble
    code
    :transunits
-   (transunit-ensemble-rename (code-ensemble->transunits code) subst)))
+   (trans-ensemble-rename (code-ensemble->transunits code) subst)))

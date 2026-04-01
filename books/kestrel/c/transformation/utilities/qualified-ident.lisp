@@ -216,16 +216,16 @@
 
 (define resolve-qualified-ident
   ((qual-ident qualified-identp)
-   (ensemble transunit-ensemblep))
-  :guard (transunit-ensemble-annop ensemble)
+   (ensemble trans-ensemblep))
+  :guard (trans-ensemble-annop ensemble)
   :returns (mv (er? maybe-msgp)
                (uid c$::uidp))
   (b* (((reterr) (c$::irr-uid))
        ((qualified-ident qual-ident) qual-ident)
        ((unless qual-ident.filepath?)
         (b* (((c$::valid-table valid-table)
-              (c$::transunit-ensemble-info->table-end
-                (c$::transunit-ensemble->info ensemble)))
+              (c$::trans-ensemble-info->table-end
+                (c$::trans-ensemble->info ensemble)))
              (info? (omap::assoc qual-ident.ident valid-table.externals))
              ((unless info?)
               (retmsg$ "~x0 is not an object or function ~
@@ -238,7 +238,7 @@
                   with external linkage."
                  qual-ident.ident))
        (transunit? (omap::assoc qual-ident.filepath?
-                                (transunit-ensemble->units ensemble)))
+                                (trans-ensemble->units ensemble)))
        ((unless transunit?)
         (retmsg$ "~x0 is not a translation unit in the ensemble."
                  qual-ident.filepath?)))

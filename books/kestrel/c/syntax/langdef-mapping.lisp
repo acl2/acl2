@@ -1830,8 +1830,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-transunit-ensemble ((tunits transunit-ensemblep))
-  :guard (transunit-ensemble-unambp tunits)
+(define ldm-trans-ensemble ((tunits trans-ensemblep))
+  :guard (trans-ensemble-unambp tunits)
   :returns (mv erp (tunits1 c::transunit-ensemblep))
   :short "Map a translation unit ensemble to the language definition."
   :long
@@ -1846,7 +1846,7 @@
      to the empty string for now,
      as we are not concerned with any actual interaction with the file system."))
   (b* (((reterr) (c::transunit-ensemble "" nil (c::transunit nil)))
-       (map (transunit-ensemble->units tunits))
+       (map (trans-ensemble->units tunits))
        ((unless (= (omap::size map) 1))
         (reterr (msg "Unsupported translation unit ensemble ~
                       with ~x0 translation units."
@@ -1861,7 +1861,7 @@
 
   ///
 
-  (defret ldm-transunit-ensemble-ok-when-transunit-ensemble-formalp
+  (defret ldm-trans-ensemble-ok-when-trans-ensemble-formalp
     (not erp)
-    :hyp (transunit-ensemble-formalp tunits)
-    :hints (("Goal" :in-theory (enable transunit-ensemble-formalp)))))
+    :hyp (trans-ensemble-formalp tunits)
+    :hints (("Goal" :in-theory (enable trans-ensemble-formalp)))))

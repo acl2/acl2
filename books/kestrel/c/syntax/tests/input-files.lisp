@@ -33,7 +33,7 @@
 (acl2::assert! (code-ensemblep *parsed-simple*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths (code-ensemble->transunits *parsed-simple*))
+ (trans-ensemble-paths (code-ensemble->transunits *parsed-simple*))
  (set::mergesort (list (filepath "simple.c"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,7 +50,7 @@
 (acl2::assert! (code-ensemblep *ppext-parsed-simple*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths (code-ensemble->transunits *ppext-parsed-simple*))
+ (trans-ensemble-paths (code-ensemble->transunits *ppext-parsed-simple*))
  (set::mergesort (list (filepath "simple.c"))))
 
 (acl2::assert-equal *ppext-parsed-simple*
@@ -66,7 +66,7 @@
 (acl2::assert! (code-ensemblep *ppext-parsed-simple/stdbool/stdint*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths
+ (trans-ensemble-paths
   (code-ensemble->transunits *ppext-parsed-simple/stdbool/stdint*))
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c")
@@ -87,7 +87,7 @@
 (acl2::assert! (code-ensemblep *ppextlist-parsed-simple/stdbool/stdint*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths
+ (trans-ensemble-paths
    (code-ensemble->transunits *ppextlist-parsed-simple/stdbool/stdint*))
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c")
@@ -120,7 +120,7 @@
 (acl2::assert! (code-ensemblep *ppextomap-parsed-simple/stdbool/stdint*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths
+ (trans-ensemble-paths
    (code-ensemble->transunits *ppextomap-parsed-simple/stdbool/stdint*))
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c")
@@ -146,7 +146,7 @@
 (acl2::assert! (code-ensemblep *macro-tests*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths
+ (trans-ensemble-paths
    (code-ensemble->transunits *macro-tests*))
  (set::mergesort (list (filepath "macro_test1.c")
                        (filepath "macro_test2.c"))))
@@ -164,7 +164,7 @@
 (acl2::assert! (code-ensemblep *macro-tests2*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths
+ (trans-ensemble-paths
    (code-ensemble->transunits *macro-tests2*))
  (set::mergesort (list (filepath "macro_test1.c")
                        (filepath "macro_test2.c"))))
@@ -183,7 +183,7 @@
 (acl2::assert! (code-ensemblep *ppint-parsed-simple*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths (code-ensemble->transunits *ppint-parsed-simple*))
+ (trans-ensemble-paths (code-ensemble->transunits *ppint-parsed-simple*))
  (set::mergesort (list (filepath "simple.c"))))
 
 (acl2::assert-equal *ppint-parsed-simple*

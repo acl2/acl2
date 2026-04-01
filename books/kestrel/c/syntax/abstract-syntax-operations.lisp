@@ -1107,7 +1107,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-ensemble-paths ((tunits transunit-ensemblep))
+(define trans-ensemble-paths ((tunits trans-ensemblep))
   :returns (paths filepath-setp)
   :short "Set of file paths in a translation unit ensemble."
   :long
@@ -1120,12 +1120,12 @@
    (xdoc::p
     "Together with @(tsee transunit-at-path),
      it can be used as an API to inspect translation unit ensembles."))
-  (omap::keys (transunit-ensemble->units tunits)))
+  (omap::keys (trans-ensemble->units tunits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-at-path ((path filepathp) (tunits transunit-ensemblep))
-  :guard (set::in path (transunit-ensemble-paths tunits))
+(define transunit-at-path ((path filepathp) (tunits trans-ensemblep))
+  :guard (set::in path (trans-ensemble-paths tunits))
   :returns (tunit transunitp)
   :short "Translation unit at a certain path in a translation unit ensemble."
   :long
@@ -1137,8 +1137,8 @@
     "It is more concise, and more abstract,
      than accessing the map and then looking up the path.")
    (xdoc::p
-    "Together with @(tsee transunit-ensemble-paths),
+    "Together with @(tsee trans-ensemble-paths),
      it can be used an as API to inspect a file set."))
   (transunit-fix
-   (omap::lookup (filepath-fix path) (transunit-ensemble->units tunits)))
-  :guard-hints (("Goal" :in-theory (enable transunit-ensemble-paths))))
+   (omap::lookup (filepath-fix path) (trans-ensemble->units tunits)))
+  :guard-hints (("Goal" :in-theory (enable trans-ensemble-paths))))

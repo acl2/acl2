@@ -3869,13 +3869,6 @@
        the normal notion of external declaration.
        Thus, it seems best to introduce this new notion.")
      (xdoc::p
-      "The dash in @('trans-item') is consistent with @(tsee block-item),
-       but not with @(tsee transunit);
-       the latter should be probably renamed to @('trans-unit'),
-       and perhaps @(tsee transunit-ensemble)
-       could be renamed to @('trans-ensemble'),
-       since we do not need to repeat @('unit') there.")
-     (xdoc::p
       "A @('#include') directive, as a translation item,
        is represented by the header name.
        So we do not represent indirect @('#include') directives,
@@ -4074,7 +4067,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-ensemble
+(fty::defprod trans-ensemble
   :short "Fixtype of ensembles of translation units."
   :long
   (xdoc::topstring
@@ -4097,5 +4090,5 @@
   ((units filepath-transunit-map)
    (resolved-headers string-header-name-string-map-map)
    (info any))
-  :pred transunit-ensemblep
+  :pred trans-ensemblep
   :layout :fulltree)

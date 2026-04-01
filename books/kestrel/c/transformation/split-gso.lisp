@@ -136,14 +136,14 @@
 (define get-gso-filepath-linkage
   ((filepath? c$::filepath-optionp)
    (ident identp)
-   (tunits transunit-ensemblep))
-  :guard (c$::transunit-ensemble-annop tunits)
+   (tunits trans-ensemblep))
+  :guard (c$::trans-ensemble-annop tunits)
   :returns (mv (er? maybe-msgp)
                (filepath filepathp)
                (linkage c$::linkagep)
                (tag? ident-optionp))
   (b* (((reterr) (filepath "") (c$::irr-linkage) nil)
-       (unwrapped-tunits (transunit-ensemble->units tunits))
+       (unwrapped-tunits (trans-ensemble->units tunits))
        ((unless filepath?)
         (get-gso-filepath-linkage-search ident unwrapped-tunits))
        (lookup
@@ -158,7 +158,7 @@
           ident
           (c$::transunit-info->table-end (c$::transunit->info tunit)))))
     (retok filepath? linkage tag?))
-  :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop)))
+  :guard-hints (("Goal" :in-theory (enable c$::trans-ensemble-annop)))
   :prepwork
   ((defrulel transunit-infop-of-assoc-tunits
      (implies (and (filepath-transunit-mapp tunits)
@@ -174,17 +174,17 @@
 
 (defrulel assoc-of-get-gso-filepath-linkage.filepath
   (implies
-    (and (transunit-ensemblep tunits)
+    (and (trans-ensemblep tunits)
          (not (mv-nth 0 (get-gso-filepath-linkage filepath? ident tunits))))
     (omap::assoc (mv-nth 1 (get-gso-filepath-linkage filepath? ident tunits))
-                 (transunit-ensemble->units tunits)))
+                 (trans-ensemble->units tunits)))
   :enable get-gso-filepath-linkage)
 
 (define get-gso-info
   ((filepath? c$::filepath-optionp)
    (ident identp)
-   (tunits transunit-ensemblep))
-  :guard (c$::transunit-ensemble-annop tunits)
+   (tunits trans-ensemblep))
+  :guard (c$::trans-ensemble-annop tunits)
   :returns (mv (er? maybe-msgp)
                (struct-tag identp)
                (filepath filepathp)
@@ -198,10 +198,10 @@
 
 (defruled assoc-of-get-gso-info.filepath?
   (implies
-    (and (transunit-ensemblep tunits)
+    (and (trans-ensemblep tunits)
          (not (mv-nth 0 (get-gso-info filepath? ident tunits))))
     (omap::assoc (mv-nth 2 (get-gso-info filepath? ident tunits))
-                 (transunit-ensemble->units tunits)))
+                 (trans-ensemble->units tunits)))
   :enable get-gso-info)
 
 (local (in-theory (enable assoc-of-get-gso-info.filepath?)))
@@ -1167,7 +1167,7 @@
                          tunit
                          map))))
 
-(define split-gso-transunit-ensemble
+(define split-gso-trans-ensemble
   ((filepath? c$::filepath-optionp)
    (orig-struct identp)
    (new-struct1 ident-optionp)
@@ -1175,14 +1175,14 @@
    (new-struct-tag1 ident-optionp)
    (new-struct-tag2 ident-optionp)
    (split-members ident-listp)
-   (tunits transunit-ensemblep))
-  :guard (c$::transunit-ensemble-annop tunits)
+   (tunits trans-ensemblep))
+  :guard (c$::trans-ensemble-annop tunits)
   :returns (mv (er? maybe-msgp)
-               (tunits$ transunit-ensemblep))
-  (b* (((reterr) (c$::transunit-ensemble-fix tunits))
+               (tunits$ trans-ensemblep))
+  (b* (((reterr) (c$::trans-ensemble-fix tunits))
        ((erp struct-tag filepath linkage)
         (get-gso-info filepath? orig-struct tunits))
-       (map (transunit-ensemble->units tunits))
+       (map (trans-ensemble->units tunits))
        ((erp map)
         (split-gso-filepath-transunit-map
           struct-tag
@@ -1196,7 +1196,7 @@
           split-members
           map)))
     (retok
-      (c$::make-transunit-ensemble :units (split-gso-rename-filepaths map)))))
+      (c$::make-trans-ensemble :units (split-gso-rename-filepaths map)))))
 
 (define split-gso-code-ensemble
   ((filepath? c$::filepath-optionp)
@@ -1212,14 +1212,14 @@
                (code$ code-ensemblep))
   (b* (((reterr) (irr-code-ensemble))
        ((code-ensemble code) code)
-       ((erp tunits) (split-gso-transunit-ensemble filepath?
-                                                   orig-struct
-                                                   new-struct1
-                                                   new-struct2
-                                                   new-struct-tag1
-                                                   new-struct-tag2
-                                                   split-members
-                                                   code.transunits)))
+       ((erp tunits) (split-gso-trans-ensemble filepath?
+                                               orig-struct
+                                               new-struct1
+                                               new-struct2
+                                               new-struct-tag1
+                                               new-struct-tag2
+                                               split-members
+                                               code.transunits)))
     (retok (change-code-ensemble code :transunits tunits)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 

@@ -3235,38 +3235,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-transunit-ensemble ((tunits transunit-ensemblep)
-                                     (gin ginp))
-  :guard (and (transunit-ensemble-unambp tunits)
-              (transunit-ensemble-annop tunits))
-  :returns (mv (new-tunits transunit-ensemblep)
+(define simpadd0-trans-ensemble ((tunits trans-ensemblep)
+                                 (gin ginp))
+  :guard (and (trans-ensemble-unambp tunits)
+              (trans-ensemble-annop tunits))
+  :returns (mv (new-tunits trans-ensemblep)
                (gout goutp))
   :short "Transform a translation unit ensemble."
-  (b* (((transunit-ensemble tunits) tunits)
+  (b* (((trans-ensemble tunits) tunits)
        ((mv new-map (gout gout-map))
         (simpadd0-filepath-transunit-map tunits.units gin))
        (gin (gin-update gin gout-map)))
-    (mv (c$::change-transunit-ensemble
-          tunits
-          :units new-map)
+    (mv (c$::change-trans-ensemble
+         tunits
+         :units new-map)
         (gout-no-thm gin)))
   :hooks (:fix)
 
   ///
 
-  (defret transunit-ensemble-unambp-of-simpadd0-transunit-ensemble
-    (transunit-ensemble-unambp new-tunits)
-    :hyp (transunit-ensemble-unambp tunits))
+  (defret trans-ensemble-unambp-of-simpadd0-trans-ensemble
+    (trans-ensemble-unambp new-tunits)
+    :hyp (trans-ensemble-unambp tunits))
 
-  (defret transunit-ensemble-annop-of-simpadd0-transunit-ensemble
-    (transunit-ensemble-annop new-tunits)
-    :hyp (and (transunit-ensemble-unambp tunits)
-              (transunit-ensemble-annop tunits)))
+  (defret trans-ensemble-annop-of-simpadd0-trans-ensemble
+    (trans-ensemble-annop new-tunits)
+    :hyp (and (trans-ensemble-unambp tunits)
+              (trans-ensemble-annop tunits)))
 
-  (defret transunit-ensemble-aidentp-of-simpadd0-transunit-ensemble
-    (transunit-ensemble-aidentp new-tunits gcc)
-    :hyp (and (transunit-ensemble-unambp tunits)
-              (transunit-ensemble-aidentp tunits gcc))))
+  (defret trans-ensemble-aidentp-of-simpadd0-trans-ensemble
+    (trans-ensemble-aidentp new-tunits gcc)
+    :hyp (and (trans-ensemble-unambp tunits)
+              (trans-ensemble-aidentp tunits gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3279,7 +3279,7 @@
   :short "Transform a code ensemble."
   (b* (((code-ensemble code) code)
        ((mv tunits-new (gout gout))
-        (simpadd0-transunit-ensemble code.transunits gin)))
+        (simpadd0-trans-ensemble code.transunits gin)))
     (mv (change-code-ensemble code :transunits tunits-new) gout))
   :hooks (:fix)
 

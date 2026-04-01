@@ -1248,17 +1248,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-ensemble-formalp ((tunits transunit-ensemblep))
-  :guard (transunit-ensemble-unambp tunits)
+(define trans-ensemble-formalp ((tunits trans-ensemblep))
+  :guard (trans-ensemble-unambp tunits)
   :returns (yes/no booleanp)
   :short "Check if a translation unit ensemble has formal dynamic semantics."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As in @(tsee ldm-transunit-ensemble),
+    "As in @(tsee ldm-trans-ensemble),
      there must be a single translation unit,
      and in addition it must have formal dynamic semantics."))
-  (b* ((map (transunit-ensemble->units tunits)))
+  (b* ((map (trans-ensemble->units tunits)))
     (and (= (omap::size map) 1)
          (transunit-formalp (omap::head-val map))))
   :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))

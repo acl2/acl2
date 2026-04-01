@@ -39,8 +39,8 @@
     (xdoc::p
       "Attributes may either be associated to @(see qualified-ident)s, or to
        @(see c$::UID)s directly
-       (see @(tsee transunit-ensemble-add-attributes-with-qualified-idents)
-       and @(tsee transunit-ensemble-add-attributes), respectively).")
+       (see @(tsee trans-ensemble-add-attributes-with-qualified-idents)
+       and @(tsee trans-ensemble-add-attributes), respectively).")
     (xdoc::p
       "When adding attributes to declaration, it is not clear whether it is
        necessary to add the attribute to <i>each</i> declaration of the same
@@ -110,8 +110,8 @@
 
 (define resolve-qualified-ident-attrib-spec-list-map
   ((map qualified-ident-attrib-spec-list-mapp)
-   (ensemble transunit-ensemblep))
-  :guard (transunit-ensemble-annop ensemble)
+   (ensemble trans-ensemblep))
+  :guard (trans-ensemble-annop ensemble)
   :returns (mv (er? maybe-msgp)
                (map$ uid-attrib-spec-list-mapp))
   (b* (((reterr) nil)
@@ -268,7 +268,7 @@
               trans-items
               transunit
               filepath-transunit-map
-              transunit-ensemble)
+              trans-ensemble)
   :extra-args
   ((attrs uid-attrib-spec-list-mapp))
   :override
@@ -334,13 +334,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-ensemble-add-attributes-with-qualified-idents
-  ((ensemble transunit-ensemblep)
+(define trans-ensemble-add-attributes-with-qualified-idents
+  ((ensemble trans-ensemblep)
    (attrs qualified-ident-attrib-spec-list-mapp))
-  :guard (transunit-ensemble-annop ensemble)
+  :guard (trans-ensemble-annop ensemble)
   :returns (mv (er? maybe-msgp)
-               (ensemble$ transunit-ensemblep))
-  (b* (((reterr) (irr-transunit-ensemble))
+               (ensemble$ trans-ensemblep))
+  (b* (((reterr) (irr-trans-ensemble))
        ((erp attrs$)
         (resolve-qualified-ident-attrib-spec-list-map attrs ensemble)))
-    (retok (transunit-ensemble-add-attributes ensemble attrs$))))
+    (retok (trans-ensemble-add-attributes ensemble attrs$))))

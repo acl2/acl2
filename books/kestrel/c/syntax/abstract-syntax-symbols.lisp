@@ -479,9 +479,9 @@
 
     filepath-transunit-mapp
 
-    transunit-ensemblep
-    transunit-ensemble
-    transunit-ensemble->units
+    trans-ensemblep
+    trans-ensemble
+    trans-ensemble->units
 
     filepathp
     filepath
@@ -522,7 +522,7 @@
     irr-fundef
     irr-trans-item
     irr-transunit
-    irr-transunit-ensemble
+    irr-trans-ensemble
     irr-code-ensemble
 
     ;; unambiguity:
@@ -584,7 +584,7 @@
     trans-item-list-unambp
     transunit-unambp
     filepath-transunit-map-unambp
-    transunit-ensemble-unambp
+    trans-ensemble-unambp
     code-ensemble-unambp
 
     ;; purity:
@@ -654,7 +654,7 @@
     trans-item-list-aidentp
     transunit-aidentp
     filepath-transunit-map-aidentp
-    transunit-ensemble-aidentp
+    trans-ensemble-aidentp
     code-ensemble-aidentp
 
     ;; formalized subset:
@@ -831,7 +831,7 @@
     trans-item-list-annop
     transunit-annop
     filepath-transunit-map-annop
-    transunit-ensemble-annop
+    trans-ensemble-annop
     code-ensemble-annop
 
     ;; other operations:

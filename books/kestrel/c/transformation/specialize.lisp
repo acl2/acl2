@@ -257,15 +257,15 @@
                                                      const)))
   :verify-guards :after-returns)
 
-(define specialize-transunit-ensemble
-  ((tunits transunit-ensemblep)
+(define specialize-trans-ensemble
+  ((tunits trans-ensemblep)
    (target-fn identp)
    (target-param identp)
    (const exprp))
   :short "Transform a translation unit ensemble."
-  :returns (new-tunits transunit-ensemblep)
-  (b* (((transunit-ensemble tunits) tunits))
-    (c$::make-transunit-ensemble
+  :returns (new-tunits trans-ensemblep)
+  (b* (((trans-ensemble tunits) tunits))
+    (c$::make-trans-ensemble
       :units (specialize-filepath-transunit-map tunits.units
                                                 target-fn
                                                 target-param
@@ -282,10 +282,10 @@
   :returns (new-code code-ensemblep)
   (b* (((code-ensemble code) code))
     (make-code-ensemble
-     :transunits (specialize-transunit-ensemble code.transunits
-                                                target-fn
-                                                target-param
-                                                const)
+     :transunits (specialize-trans-ensemble code.transunits
+                                            target-fn
+                                            target-param
+                                            const)
      :ienv code.ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

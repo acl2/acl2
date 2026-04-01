@@ -26,7 +26,7 @@
     :files '("main.c" "file1.c"))
 
   (defconst *call-graph*
-    (call-graph-transunit-ensemble
+    (call-graph-trans-ensemble
      (code-ensemble->transunits *test*)))
 
   (acl2::assert-equal
@@ -76,7 +76,7 @@
     :files '("main2.c" "file1.c"))
 
   (defconst *call-graph*
-    (call-graph-transunit-ensemble
+    (call-graph-trans-ensemble
      (code-ensemble->transunits *test*)))
 
   (acl2::assert-equal

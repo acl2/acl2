@@ -485,9 +485,9 @@
         (type-composite x y table.completions table.next-uid ienv)))
     (mv composite
         (change-valid-table
-          table
-          :completions completions
-          :next-uid next-uid))))
+         table
+         :completions completions
+         :next-uid next-uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -729,7 +729,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-ensemble-info
+(fty::defprod trans-ensemble-info
   :short "Fixtype of validation information for translation unit ensembles."
   :long
   (xdoc::topstring
@@ -739,7 +739,7 @@
      The information consists of
      the final validation table for the translation unit ensemble."))
   ((table-end valid-table))
-  :pred transunit-ensemble-infop)
+  :pred trans-ensemble-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -795,7 +795,7 @@
             trans-items
             transunit
             filepath-transunit-map
-            transunit-ensemble
+            trans-ensemble
             code-ensemble)
     :result booleanp
     :default t
@@ -875,11 +875,11 @@
                   (fundef-infop (fundef->info fundef))))
      (transunit (and (trans-item-list-annop (transunit->items transunit))
                      (transunit-infop (transunit->info transunit))))
-     (transunit-ensemble (and (filepath-transunit-map-annop
-                               (transunit-ensemble->units transunit-ensemble))
-                              (transunit-ensemble-infop
-                               (transunit-ensemble->info
-                                transunit-ensemble)))))))
+     (trans-ensemble (and (filepath-transunit-map-annop
+                           (trans-ensemble->units trans-ensemble))
+                          (trans-ensemble-infop
+                           (trans-ensemble->info
+                            trans-ensemble)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -994,13 +994,13 @@
     :expand (transunit-annop (transunit items info))
     :enable identity)
 
-  (defruled transunit-ensemble-annop-of-transunit-ensemble
-    (equal (transunit-ensemble-annop
-            (transunit-ensemble units resolved-headers info))
+  (defruled trans-ensemble-annop-of-trans-ensemble
+    (equal (trans-ensemble-annop
+            (trans-ensemble units resolved-headers info))
            (and (filepath-transunit-map-annop units)
-                (transunit-ensemble-infop info)))
-    :expand (transunit-ensemble-annop
-             (transunit-ensemble units resolved-headers info))
+                (trans-ensemble-infop info)))
+    :expand (trans-ensemble-annop
+             (trans-ensemble units resolved-headers info))
     :enable identity)
 
   ;; theorems about accessors:
@@ -1187,15 +1187,15 @@
              (transunit-infop (transunit->info transunit)))
     :enable transunit-annop)
 
-  (defruled filepath-transunit-map-annop-of-transunit-ensemble->units
-    (implies (transunit-ensemble-annop ensemble)
-             (filepath-transunit-map-annop (transunit-ensemble->units ensemble)))
-    :enable transunit-ensemble-annop)
+  (defruled filepath-transunit-map-annop-of-trans-ensemble->units
+    (implies (trans-ensemble-annop ensemble)
+             (filepath-transunit-map-annop (trans-ensemble->units ensemble)))
+    :enable trans-ensemble-annop)
 
-  (defruled transunit-ensemble-infop-of-transunit-ensemble->info
-    (implies (transunit-ensemble-annop ensemble)
-             (transunit-ensemble-infop (transunit-ensemble->info ensemble)))
-    :enable transunit-ensemble-annop)
+  (defruled trans-ensemble-infop-of-trans-ensemble->info
+    (implies (trans-ensemble-annop ensemble)
+             (trans-ensemble-infop (trans-ensemble->info ensemble)))
+    :enable trans-ensemble-annop)
 
   ;; Add the above theorems to the rule set.
 
@@ -1215,7 +1215,7 @@
      init-declor-annop-of-init-declor
      fundef-annop-of-fundef
      transunit-annop-of-transunit
-     transunit-ensemble-annop-of-transunit-ensemble
+     trans-ensemble-annop-of-trans-ensemble
      iconst-infop-of-iconst->info
      var-infop-of-expr-ident->info
      const-annop-of-expr-const->const
@@ -1247,8 +1247,8 @@
      trans-item-list-annop-of-transunit->items
      transunit-annop-of-cdr-assoc
      transunit-infop-of-transunit->info
-     filepath-transunit-map-annop-of-transunit-ensemble->units
-     transunit-ensemble-infop-of-transunit-ensemble->info)))
+     filepath-transunit-map-annop-of-trans-ensemble->units
+     trans-ensemble-infop-of-trans-ensemble->info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

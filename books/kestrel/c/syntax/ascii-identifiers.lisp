@@ -117,7 +117,7 @@
           trans-items
           transunit
           filepath-transunit-map
-          transunit-ensemble)
+          trans-ensemble)
   :extra-args ((dialect c::dialectp))
   :result booleanp
   :default t
@@ -135,6 +135,6 @@
    (xdoc::p
     "The condition is checked w.r.t.
      the @(see c::dialect) in the implementation environment."))
-  (transunit-ensemble-aidentp (code-ensemble->transunits code)
-                              (ienv->dialect (code-ensemble->ienv code)))
+  (trans-ensemble-aidentp (code-ensemble->transunits code)
+                          (ienv->dialect (code-ensemble->ienv code)))
   :hooks (:fix))

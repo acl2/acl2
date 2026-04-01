@@ -23,7 +23,7 @@
 ; Change paths, to avoid overwriting files.
 (defconst *renamed-ppext-disamb-simple/stdbool/stdint*
   (code-ensemble
-   (make-transunit-ensemble
+   (make-trans-ensemble
      :units
      (list (cons (filepath "simple-renamed-renamed.c")
                  (transunit-at-path (filepath "simple.c")

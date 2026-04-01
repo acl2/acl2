@@ -2035,12 +2035,12 @@
                   new-map))
   :verify-guards :after-returns)
 
-(define const-prop-transunit-ensemble
-  ((tunits transunit-ensemblep))
-  :returns (new-tunits transunit-ensemblep)
+(define const-prop-trans-ensemble
+  ((tunits trans-ensemblep))
+  :returns (new-tunits trans-ensemblep)
   :short "Transform a translation unit ensemble."
-  (b* (((transunit-ensemble tunits) tunits))
-    (c$::make-transunit-ensemble
+  (b* (((trans-ensemble tunits) tunits))
+    (c$::make-trans-ensemble
       :units (const-prop-filepath-transunit-map tunits.units))))
 
 (define const-prop-code-ensemble
@@ -2049,5 +2049,5 @@
   :short "Transform a code ensemble."
   (b* (((code-ensemble code) code))
     (make-code-ensemble
-     :transunits (const-prop-transunit-ensemble code.transunits)
+     :transunits (const-prop-trans-ensemble code.transunits)
      :ienv code.ienv)))

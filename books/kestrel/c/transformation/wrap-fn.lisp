@@ -690,16 +690,16 @@
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   :verify-guards :after-returns)
 
-(define transunit-ensemble-wrap-fn
-  ((transunits transunit-ensemblep)
+(define trans-ensemble-wrap-fn
+  ((transunits trans-ensemblep)
    (target-name identp)
    (wrapper-name? ident-optionp))
-  :guard (transunit-ensemble-annop transunits)
+  :guard (trans-ensemble-annop transunits)
   :returns (mv (er? maybe-msgp)
-               (transunits$ transunit-ensemblep))
+               (transunits$ trans-ensemblep))
   :short "Transform a translation unit ensemble."
-  (b* (((reterr) (c$::transunit-ensemble-fix transunits))
-       ((transunit-ensemble transunits) transunits)
+  (b* (((reterr) (c$::trans-ensemble-fix transunits))
+       ((trans-ensemble transunits) transunits)
        (blacklist (filepath-transunit-map-collect-idents transunits.units))
        ((erp any-foundp map)
         (filepath-transunit-map-wrap-fn
@@ -709,7 +709,7 @@
              nil
            (cw "Warning: No declaration found for ~x0.~%"
                (ident->unwrap target-name)))))
-    (retok (c$::change-transunit-ensemble
+    (retok (c$::change-trans-ensemble
              transunits
              :units map)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
@@ -731,7 +731,7 @@
   (b* (((reterr) (c$::code-ensemble-fix code))
        ((code-ensemble code) code)
        ((erp transunits)
-        (transunit-ensemble-wrap-fn
+        (trans-ensemble-wrap-fn
           code.transunits target-name wrapper-name?)))
     (retok (c$::change-code-ensemble
              code
@@ -764,12 +764,12 @@
        ((unless (code-ensemble-unambp code))
         (retmsg$ "Internal error: code has not been disambiguated."))
        ((erp valid-transunits)
-        (c$::valid-transunit-ensemble (code-ensemble->transunits code)
+        (c$::valid-trans-ensemble (code-ensemble->transunits code)
                                       (code-ensemble->ienv code)
                                       nil))
        ;; TODO: remove after it is proved that validation produces an annotated
        ;; term.
-       ((unless (transunit-ensemble-annop valid-transunits))
+       ((unless (trans-ensemble-annop valid-transunits))
         (retmsg$ "Internal error: code is invalid."))
        (code (change-code-ensemble
                code

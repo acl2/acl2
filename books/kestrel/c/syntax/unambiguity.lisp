@@ -85,7 +85,7 @@
           trans-items
           transunit
           filepath-transunit-map
-          transunit-ensemble
+          trans-ensemble
           code-ensemble)
   :result booleanp
   :default t

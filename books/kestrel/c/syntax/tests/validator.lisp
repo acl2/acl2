@@ -102,8 +102,8 @@
                              :pointer-bytes ,pointer-bytes
                              :plain-char-signedp ,plain-char-signedp))
             ((mv erp1 ast) (parse-fileset ',fileset ,dialect t nil))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,dialect nil))
-            ((mv erp3 ?ast) (valid-transunit-ensemble ast ienv nil)))
+            ((mv erp2 ast) (dimb-trans-ensemble ast ,dialect nil))
+            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv nil)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
                (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -144,8 +144,8 @@
                              :pointer-bytes ,pointer-bytes
                              :plain-char-signedp ,plain-char-signedp))
             ((mv erp1 ast) (parse-fileset ',fileset ,dialect t nil))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,dialect nil))
-            ((mv erp3 ?ast) (valid-transunit-ensemble ast ienv nil)))
+            ((mv erp2 ast) (dimb-trans-ensemble ast ,dialect nil))
+            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
                (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
                (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
@@ -252,7 +252,7 @@ void f() {
   int y = sizeof(x);
   }
 "
- :cond (b* ((transunit (omap::head-val (transunit-ensemble->units ast)))
+ :cond (b* ((transunit (omap::head-val (trans-ensemble->units ast)))
             (items (transunit->items transunit))
             (item (cadr items))
             (edecl (trans-item-declon->declon item))
@@ -871,7 +871,7 @@ void bar(void) {
   return bar;
 }
 "
-  :cond (b* ((filepath-transunit-map (transunit-ensemble->units ast))
+  :cond (b* ((filepath-transunit-map (trans-ensemble->units ast))
              (transunit1 (omap::head-val filepath-transunit-map))
              (transunit2 (omap::head-val (omap::tail filepath-transunit-map)))
              (items1 (transunit->items transunit1))
@@ -944,7 +944,7 @@ int main(void) {
   ;; show a UID value of "0".
   :cond (b* ((transunit-test0
                (cdr (omap::assoc (filepath "test0")
-                                 (transunit-ensemble->units ast))))
+                                 (trans-ensemble->units ast))))
              (info? (transunit->info transunit-test0))
              ((unless (transunit-infop info?))
               nil)
@@ -968,7 +968,7 @@ void foo(void) {
   ;; show a UID value of "0".
   :cond (b* ((transunit-test0
                (cdr (omap::assoc (filepath "test0")
-                                 (transunit-ensemble->units ast))))
+                                 (trans-ensemble->units ast))))
              (info? (transunit->info transunit-test0))
              ((unless (transunit-infop info?))
               nil)
@@ -992,7 +992,7 @@ static void foo(void) {
   ;; show a UID value of "0".
   :cond (b* ((transunit-test0
                (cdr (omap::assoc (filepath "test0")
-                                 (transunit-ensemble->units ast))))
+                                 (trans-ensemble->units ast))))
              (info? (transunit->info transunit-test0))
              ((unless (transunit-infop info?))
               nil)

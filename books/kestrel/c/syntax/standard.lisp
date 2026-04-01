@@ -115,7 +115,7 @@
           trans-items
           transunit
           filepath-transunit-map
-          transunit-ensemble)
+          trans-ensemble)
   :result booleanp
   :default t
   :combine and

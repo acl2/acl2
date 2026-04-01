@@ -12505,7 +12505,7 @@
                        (dialect c::dialectp)
                        (skip-control-lines booleanp)
                        (keep-going booleanp))
-  :returns (mv erp (tunits transunit-ensemblep))
+  :returns (mv erp (tunits trans-ensemblep))
   :short "Parse a file set."
   :long
   (xdoc::topstring
@@ -12521,7 +12521,7 @@
      The file paths are the same for the file set
      and for the translation unit ensembles
      (they are the keys of the maps)."))
-  (b* (((reterr) (irr-transunit-ensemble))
+  (b* (((reterr) (irr-trans-ensemble))
        (filemap (fileset->unwrap fileset))
        ((erp tunitmap)
         (parse-fileset-loop filemap dialect skip-control-lines keep-going))
@@ -12533,9 +12533,9 @@
                     nil
                   (cw "Parsed ~x0/~x1 files.~%" len-tunitmap len-filemap)))
             nil)))
-    (retok (make-transunit-ensemble :units tunitmap
-                                    :resolved-headers nil
-                                    :info nil)))
+    (retok (make-trans-ensemble :units tunitmap
+                                :resolved-headers nil
+                                :info nil)))
 
   :prepwork
   ((define parse-fileset-loop ((filemap filepath-filedata-mapp)
@@ -12582,5 +12582,5 @@
   (defret filepaths-of-parse-fileset
     (implies (and (not keep-going)
                   (not erp))
-             (equal (omap::keys (transunit-ensemble->units tunits))
+             (equal (omap::keys (trans-ensemble->units tunits))
                     (omap::keys (fileset->unwrap fileset))))))

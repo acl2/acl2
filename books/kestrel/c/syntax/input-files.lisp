@@ -645,7 +645,7 @@
           (retok events code state)))
        ;; Disambiguation is required, if we get here.
        ((erp tunits)
-        (dimb-transunit-ensemble tunits (ienv->dialect ienv) keep-going))
+        (dimb-trans-ensemble tunits (ienv->dialect ienv) keep-going))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
@@ -655,7 +655,7 @@
                        events)))
           (retok events code state)))
        ;; Validation is required, if we get here.
-       ((erp tunits) (valid-transunit-ensemble tunits ienv keep-going))
+       ((erp tunits) (valid-trans-ensemble tunits ienv keep-going))
        (code (make-code-ensemble :transunits tunits :ienv ienv))
        ;; Generate :CONST constant with the validated translation unit.
        (events (if (not progp)

@@ -4986,11 +4986,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-fileset ((tunits transunit-ensemblep)
+(define print-fileset ((tunits trans-ensemblep)
                        (options prioptp)
                        (dialect c::dialectp))
-  :guard (and (transunit-ensemble-unambp tunits)
-              (transunit-ensemble-aidentp tunits dialect))
+  :guard (and (trans-ensemble-unambp tunits)
+              (trans-ensemble-aidentp tunits dialect))
   :returns (fileset filesetp)
   :short "Print a file set."
   :long
@@ -5002,7 +5002,7 @@
      we print the translation units of the map to files into a file map,
      and we wrap the file map into a file set."))
   (fileset
-   (print-filepath-transunit-map (transunit-ensemble->units tunits)
+   (print-filepath-transunit-map (trans-ensemble->units tunits)
                                  options
                                  dialect))
   :hooks (:fix)
@@ -5011,4 +5011,4 @@
 
   (defret keys-of-print-fileset
     (equal (omap::keys (fileset->unwrap fileset))
-           (omap::keys (transunit-ensemble->units tunits)))))
+           (omap::keys (trans-ensemble->units tunits)))))

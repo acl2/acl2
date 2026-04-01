@@ -203,15 +203,15 @@
                                                   new-fn)))
   :verify-guards :after-returns)
 
-(define copy-fn-transunit-ensemble
-  ((tunits transunit-ensemblep)
+(define copy-fn-trans-ensemble
+  ((tunits trans-ensemblep)
    (target-fn identp)
    (new-fn identp))
-  :guard (transunit-ensemble-annop tunits)
+  :guard (trans-ensemble-annop tunits)
   :short "Transform a translation unit ensemble."
-  :returns (new-tunits transunit-ensemblep)
-  (b* (((transunit-ensemble tunits) tunits))
-    (c$::make-transunit-ensemble
+  :returns (new-tunits trans-ensemblep)
+  (b* (((trans-ensemble tunits) tunits))
+    (c$::make-trans-ensemble
       :units (copy-fn-filepath-transunit-map tunits.units
                                              target-fn
                                              new-fn))))
@@ -229,4 +229,4 @@
     (change-code-ensemble
      code
      :transunits
-     (copy-fn-transunit-ensemble code.transunits target-fn new-fn))))
+     (copy-fn-trans-ensemble code.transunits target-fn new-fn))))

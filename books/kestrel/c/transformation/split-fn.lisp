@@ -575,21 +575,21 @@
                          new-map)))
   :verify-guards :after-returns)
 
-(define split-fn-transunit-ensemble
+(define split-fn-trans-ensemble
   ((target-fn identp)
    (new-fn-name identp)
-   (tunits transunit-ensemblep)
+   (tunits trans-ensemblep)
    (split-point natp))
   :short "Transform a translation unit ensemble."
   :returns (mv (er? maybe-msgp)
-               (new-tunits transunit-ensemblep))
-  (b* (((transunit-ensemble tunits) tunits)
+               (new-tunits trans-ensemblep))
+  (b* (((trans-ensemble tunits) tunits)
        ((mv er map)
         (split-fn-filepath-transunit-map target-fn
                                          new-fn-name
                                          tunits.units
                                          split-point)))
-    (mv er (c$::make-transunit-ensemble :units map))))
+    (mv er (c$::make-trans-ensemble :units map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -603,10 +603,10 @@
   :short "Transform a code ensemble."
   (b* (((code-ensemble code) code)
        ((reterr) (irr-code-ensemble))
-       ((erp tunits) (split-fn-transunit-ensemble target-fn
-                                                  new-fn-name
-                                                  code.transunits
-                                                  split-point)))
+       ((erp tunits) (split-fn-trans-ensemble target-fn
+                                              new-fn-name
+                                              code.transunits
+                                              split-point)))
     (retok (change-code-ensemble code :transunits tunits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

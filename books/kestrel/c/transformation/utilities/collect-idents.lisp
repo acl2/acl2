@@ -58,7 +58,7 @@
           c$::trans-items
           transunit
           c$::filepath-transunit-map
-          transunit-ensemble)
+          trans-ensemble)
   :result ident-setp
   :default nil
   :combine union

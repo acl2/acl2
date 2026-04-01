@@ -89,9 +89,9 @@
   (b* (((code-ensemble code) code)
        ((reterr) (irr-code-ensemble))
        (attrs (elaborate-qualified-ident-string-alist attrs))
-       ((transunit-ensemble transunits) code.transunits)
+       ((trans-ensemble transunits) code.transunits)
        ((erp transunits)
-        (transunit-ensemble-add-attributes-with-qualified-idents
+        (trans-ensemble-add-attributes-with-qualified-idents
           transunits
           attrs)))
     (retok (change-code-ensemble code :transunits transunits)))

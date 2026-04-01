@@ -904,7 +904,7 @@
     "The optional file name passed as input represents (if present)
      an implicit @('#include') in the translation unit
      for a header with that name, to which we add the @('.h') extension.
-     See @(tsee ildm-transunit-ensemble)."))
+     See @(tsee ildm-trans-ensemble)."))
   (b* ((includes
         (and file-name
              (list (string-to-q-header-name (str::cat file-name ".h")))))
@@ -915,9 +915,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ildm-transunit-ensemble ((file-name stringp)
-                                 (tunits c::transunit-ensemblep))
-  :returns (tunits1 transunit-ensemblep)
+(define ildm-trans-ensemble ((file-name stringp)
+                             (tunits c::transunit-ensemblep))
+  :returns (tunits1 trans-ensemblep)
   :short "Map a translation unit ensemble in the language definition
           to a translation unit ensemble in the syntax for tools."
   :long
@@ -927,7 +927,7 @@
      without extension."))
   (b* (((c::transunit-ensemble tunits) tunits)
        (file-name (str-fix file-name)))
-    (make-transunit-ensemble
+    (make-trans-ensemble
      :units (b* ((map-with-source-file
                   (omap::update (filepath (str::cat file-name ".c"))
                                 (ildm-transunit (and tunits.dot-h

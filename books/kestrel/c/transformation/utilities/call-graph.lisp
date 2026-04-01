@@ -679,15 +679,15 @@
   :guard-hints
   (("Goal" :in-theory (acl2::enable* c$::abstract-syntax-annop-rules))))
 
-(define call-graph-transunit-ensemble
-  ((ensemble transunit-ensemblep))
-  :guard (c$::transunit-ensemble-annop ensemble)
+(define call-graph-trans-ensemble
+  ((ensemble trans-ensemblep))
+  :guard (c$::trans-ensemble-annop ensemble)
   :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation unit ensemble."
   (call-graph-filepath-transunit-map
-   (c$::transunit-ensemble->units ensemble)
+   (c$::trans-ensemble->units ensemble)
    nil)
-  :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop))))
+  :guard-hints (("Goal" :in-theory (enable c$::trans-ensemble-annop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

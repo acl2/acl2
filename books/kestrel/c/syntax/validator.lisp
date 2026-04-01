@@ -7470,11 +7470,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit-ensemble ((tunits transunit-ensemblep)
-                                  (ienv ienvp)
-                                  (keep-going booleanp))
-  :guard (transunit-ensemble-unambp tunits)
-  :returns (mv (erp maybe-msgp) (new-tunits transunit-ensemblep))
+(define valid-trans-ensemble ((tunits trans-ensemblep)
+                              (ienv ienvp)
+                              (keep-going booleanp))
+  :guard (trans-ensemble-unambp tunits)
+  :returns (mv (erp maybe-msgp) (new-tunits trans-ensemblep))
   :short "Validate a translation unit ensemble."
   :long
   (xdoc::topstring
@@ -7486,10 +7486,10 @@
      but in the future we should use it to validate
      the externally linked identifiers across
      different translation units of a translation unit ensemble."))
-  (b* (((reterr) (irr-transunit-ensemble))
-       (map (transunit-ensemble->units tunits))
+  (b* (((reterr) (irr-trans-ensemble))
+       (map (trans-ensemble->units tunits))
        ((erp new-map table)
-        (valid-transunit-ensemble-loop map nil nil (uid 0) ienv keep-going))
+        (valid-trans-ensemble-loop map nil nil (uid 0) ienv keep-going))
        (- (if keep-going
               (b* ((len-map (omap::size map))
                    (len-new-map (omap::size new-map))
@@ -7499,18 +7499,18 @@
                   (cw "Validated ~x0/~x1 translation units.~%"
                       len-new-map len-map)))
             nil)))
-    (retok (make-transunit-ensemble
+    (retok (make-trans-ensemble
             :units new-map
             :resolved-headers nil
-            :info (transunit-ensemble-info table))))
+            :info (trans-ensemble-info table))))
 
   :prepwork
-  ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
-                                          (externals valid-externalsp)
-                                          (completions type-completions-p)
-                                          (next-uid uidp)
-                                          (ienv ienvp)
-                                          (keep-going booleanp))
+  ((define valid-trans-ensemble-loop ((map filepath-transunit-mapp)
+                                      (externals valid-externalsp)
+                                      (completions type-completions-p)
+                                      (next-uid uidp)
+                                      (ienv ienvp)
+                                      (keep-going booleanp))
      :guard (filepath-transunit-map-unambp map)
      :returns (mv (erp maybe-msgp)
                   (new-map filepath-transunit-mapp
@@ -7522,28 +7522,28 @@
           (path (omap::head-key map))
           ((mv erp new-tunit table)
            (valid-transunit
-             path (omap::head-val map) externals completions next-uid ienv))
+            path (omap::head-val map) externals completions next-uid ienv))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
                            (filepath->unwrap path)
                            erp)
-                       (valid-transunit-ensemble-loop (omap::tail map)
-                                                      externals
-                                                      completions
-                                                      next-uid
-                                                      ienv
-                                                      keep-going))
+                       (valid-trans-ensemble-loop (omap::tail map)
+                                                  externals
+                                                  completions
+                                                  next-uid
+                                                  ienv
+                                                  keep-going))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->unwrap path)
                       erp)))
           ((valid-table table) table)
-          ((erp new-map -) (valid-transunit-ensemble-loop (omap::tail map)
-                                                          table.externals
-                                                          table.completions
-                                                          table.next-uid
-                                                          ienv
-                                                          keep-going)))
+          ((erp new-map -) (valid-trans-ensemble-loop (omap::tail map)
+                                                      table.externals
+                                                      table.completions
+                                                      table.next-uid
+                                                      ienv
+                                                      keep-going)))
        (retok (omap::update path new-tunit new-map)
               table))
      :verify-guards :after-returns
@@ -7551,11 +7551,11 @@
 
      ///
 
-     (fty::deffixequiv valid-transunit-ensemble-loop
+     (fty::deffixequiv valid-trans-ensemble-loop
        :args ((ienv ienvp)
               (keep-going booleanp)))
 
-     (defret filepath-transunit-map-unambp-of-valid-transunit-ensemble-loop
+     (defret filepath-transunit-map-unambp-of-valid-trans-ensemble-loop
        (implies (not erp)
                 (filepath-transunit-map-unambp new-map))
        :hyp (and (filepath-transunit-mapp map)
@@ -7564,7 +7564,7 @@
 
   ///
 
-  (defret transunit-ensemble-unambp-of-valid-transunit-ensemble
+  (defret trans-ensemble-unambp-of-valid-trans-ensemble
     (implies (not erp)
-             (transunit-ensemble-unambp new-tunits))
-    :hyp (transunit-ensemble-unambp tunits)))
+             (trans-ensemble-unambp new-tunits))
+    :hyp (trans-ensemble-unambp tunits)))

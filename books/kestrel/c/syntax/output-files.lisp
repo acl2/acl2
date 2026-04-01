@@ -121,7 +121,7 @@
                       contains non-all-ASCII identifiers."
                      code desc)))
        ((unless (or (ienv->gcc/clang (code-ensemble->ienv code))
-                    (transunit-ensemble-standardp
+                    (trans-ensemble-standardp
                      (code-ensemble->transunits code))))
         (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       uses non-standard syntax (i.e. GCC/Clang extensions), ~
