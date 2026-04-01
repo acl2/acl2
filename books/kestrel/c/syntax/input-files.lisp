@@ -613,18 +613,22 @@
        (events nil)
        ;; Preprocess if required, or just read files from file system.
        ((erp files state)
-        (cond ((equal preprocessor "") ; internal preprocessor
-               (preprocess files base-dir include-dirs options ienv state))
-              ((not preprocessor)
-               (input-files-read-files files base-dir state))
-              (t ; external preprocessor
-               (preprocess-files
-                files
-                :path base-dir
-                :preprocessor preprocessor
-                :extra-args (input-files-complete-preprocess-extra-args
-                             preprocess-extra-args
-                             ienv)))))
+        (b* (((reterr) (irr-fileset) state))
+          (cond ((equal preprocessor "") ; internal preprocessor
+                 (b* (((erp files & state)
+                       (preprocess
+                        files base-dir include-dirs options ienv state)))
+                   (retok files state)))
+                ((not preprocessor)
+                 (input-files-read-files files base-dir state))
+                (t ; external preprocessor
+                 (preprocess-files
+                  files
+                  :path base-dir
+                  :preprocessor preprocessor
+                  :extra-args (input-files-complete-preprocess-extra-args
+                               preprocess-extra-args
+                               ienv))))))
        ;; Parsing is always required.
        (skip-control-lines (not (equal preprocessor "")))
        ((erp tunits) (parse-fileset files
