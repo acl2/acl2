@@ -2456,7 +2456,7 @@
      we add the macro name to the multiset;
      every time we encounter a @(':end') marker (see @(tsee macrep-mode)),
      we remove the macro name from the multiset.
-     Each expansion of the macro is surrounded by
+     Each expansion of a macro is surrounded by
      a @(':start') and @(':end') marker for that macro name:
      this way, when the expansion is added in front of the input,
      the macro will not be re-expanded until we go past its expansion
@@ -2522,7 +2522,7 @@
        Initially 0,
        it is incremented by a left parenthesis
        and decremented by a right parenthesis.
-       This is used to skip commas and right parenthesis
+       This is used to skip commas and right parentheses
        within inner parentheses [C17:6.10.3/10] [C17:6.10.3/11]:
        only when the parenthesis level is 0,
        a comma or right parenthesis counts as ending macro arguments.
@@ -2538,9 +2538,9 @@
       "This function starts by reading the next lexmark,
        and then it dispatches based on it.")
      (xdoc::p
-      "If there is no next lexmark, it is an error.
-       In every mode, the stopping criterion is never end of file;
-       see @(tsee macrep-mode).")
+      "If there is no next lexmark, it is an error,
+       unless GCC or Clang extensions are enabled,
+       in which case an end of file is treated like an end of line.")
      (xdoc::p
       "If the next lexmark is a @(':start') marker,
        we add the macro name to the multiset,
@@ -2562,7 +2562,7 @@
        new line is treated like other white space [C17:6.10.3/10],
        so we continue the recursive preprocessing of lexemes,
        unless we are in a directive:
-       in the latter case, the new line ends with directive [C17:6.10/2],
+       in the latter case, the new line ends the directive [C17:6.10/2],
        but if we are in the middle of a macro argument,
        it means that we have an error.")
      (xdoc::p
@@ -2584,7 +2584,8 @@
        that correspond to the ellipsis parameter
        are considered all together and associated to @('__VA_ARGS__')
        [C17:6.10.3/12];
-       and it is also the case for the @(':arg-nonlast') and @(':arg-last') modes
+       and it is also the case for
+       the @(':arg-nonlast') and @(':arg-last') modes
        when the parenthesis level is not 0.")
      (xdoc::p
       "If the next lexmark is an open parenthesis,
@@ -2850,6 +2851,9 @@
                                    ppstate
                                    (1- limit))))
                  ((when (or no-expandp
+                            ;; TODO: eventually replace the following test with
+                            ;; (member-equal ident
+                            ;;               (plexeme-ident->provenance ident))
                             (member-equal ident (string-list-fix disabled))))
                   (pproc-lexemes mode
                                  (cons lexmark rev-lexmarks)
@@ -2876,6 +2880,8 @@
                                                          (ienv->dialect
                                                           (ppstate->ienv
                                                            ppstate))))
+                    ;; TODO: add (plexeme-ident->provenance ident)
+                    ;;       to idents in replist
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
                     (ppstate (push-lexemes replist ppstate))
                     (ppstate (push-lexmark (lexmark-start ident) ppstate)))
@@ -2936,6 +2942,8 @@
                                                          (ienv->dialect
                                                           (ppstate->ienv
                                                            ppstate))))
+                    ;; TODO: add (plexeme-ident->provenance ident)
+                    ;;       to idents in replist
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
                     (ppstate (push-lexmarks replist ppstate))
                     (ppstate (push-lexmark (lexmark-start ident) ppstate)))
