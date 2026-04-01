@@ -66,11 +66,15 @@
 
 
 (acl2::defstobj-clone bitarr acl2::bitarr :pkg fgl-pkg)
+(acl2::defstobj-clone bitarr2 bitarr :suffix "2")
 
 (stobjs::defnicestobj env$
   (alist :initially nil)
   (bitarr :type bitarr)
   (obj-alist :type (satisfies obj-alist-p) :fix obj-alist-fix))
+
+(acl2::defstobj-clone env$2 env$ :suffix "2")
+(acl2::defstobj-clone bvar-db2 bvar-db :suffix "2")
 
 
 (local (defthmd equal-of-len
@@ -93,6 +97,48 @@
                           (bitarr)
                           (resize-bits 0 bitarr)
                           env$))))
+
+
+
+
+(stobjs::defnicestobj reference-ctrex
+  (invals :type bitarr)
+  (bvar-db :type bvar-db)
+  (env :type env$)
+  (initialized-ins :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+  (initialized-fanins :type (integer 0 *) :initially 0 :fix lnfix :pred natp))
+
+(acl2::defstobj-clone reference-ctrex2 reference-ctrex :suffix "2")
+
+(define reference-ctrex-init (reference-ctrex)
+  :guard-hints (("goal" :in-theory (e/d* (reference-ctrex-defs
+                                           equal-of-len
+                                           (init-bvar-db$c))
+                                         (default-car default-cdr cons-equal
+                                           (:t update-nth) (:t true-listp)
+                                           (:t true-listp-update-nth)
+                                           len set::sets-are-true-lists-cheap
+                                           acl2::consp-of-nth-when-atom-listp))))
+  :prepwork ((local (defthm update-nth-open
+                      (implies (syntaxp (quotep n))
+                               (equal (update-nth n v x)
+                                      (if (zp n) (cons v (cdr x))
+                                        (cons (car x)
+                                              (update-nth (1- n) v (cdr x))))))
+                      :hints(("Goal" :in-theory (enable update-nth))))))
+  :enabled t
+  (mbe :logic (non-exec (create-reference-ctrex))
+       :exec (b* ((reference-ctrex (update-reference-ctrex->initialized-ins 0 reference-ctrex))
+                  (reference-ctrex (update-reference-ctrex->initialized-fanins 0 reference-ctrex)))
+               (stobj-let ((bitarr (reference-ctrex->invals reference-ctrex))
+                           (bvar-db (reference-ctrex->bvar-db reference-ctrex))
+                           (env$ (reference-ctrex->env reference-ctrex)))
+                          (bitarr bvar-db env$)
+                          (b* ((bitarr (resize-bits 0 bitarr))
+                               (bvar-db (init-bvar-db 0 bvar-db))
+                               (env$ (env$-init env$)))
+                            (mv bitarr bvar-db env$))
+                          reference-ctrex))))
 
 (fty::defmap trace-alist :key-type fgl-generic-rune :val-type true-listp :true-listp t :keyp-of-nil nil)
 (fty::deflist trace-alistlist :elt-type trace-alist :true-listp t :elementp-of-nil t)
@@ -140,6 +186,8 @@
       (ctrex-env :type env$)
       (sat-ctrex :type bitarr)
 
+      (reference-ctrex :type reference-ctrex)
+
       (user-scratch :type (satisfies obj-alist-p) :initially nil :fix obj-alist-fix)
       (trace-scratch :type t :initially nil)
       (trace-depth :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
@@ -163,15 +211,8 @@
 
 (define interp-st-init (interp-st)
   :guard-hints (("goal" :in-theory (e/d* (interp-st-defs
-                                           update-nth
                                            equal-of-len
-                                           (init-bvar-db$c)
-                                           ;; update-term-bvars$c
-                                           ;; update-bvar-fn-indices$c
-                                           ;; update-term-equivs$c
-                                           ;; update-next-bvar1$c
-                                           ;; update-base-bvar$c
-                                           )
+                                           (init-bvar-db$c))
                                          (default-car default-cdr cons-equal
                                            (:t update-nth) (:t true-listp)
                                            (:t true-listp-update-nth)
@@ -181,6 +222,14 @@
                                            pathcondp-implies-update-bdd-equal
                                            pathcondp-implies-update-aignet-equal
                                            acl2::consp-of-nth-when-atom-listp))))
+  :prepwork ((local (defthm update-nth-open
+                      (implies (syntaxp (quotep n))
+                               (equal (update-nth n v x)
+                                      (if (zp n) (cons v (cdr x))
+                                        (cons (car x)
+                                              (update-nth (1- n) v (cdr x))))))
+                      :hints(("Goal" :in-theory (enable update-nth))))))
+                               
   (mbe :logic
        (non-exec (b* ((logicman (interp-st->logicman interp-st))
                       (interp-st (create-interp-st)))
@@ -192,8 +241,9 @@
                          (constraint-pathcond (interp-st->constraint interp-st))
                          (interp-profiler (interp-st->prof interp-st))
                          (env$ (interp-st->ctrex-env interp-st))
-                         (bitarr (interp-st->sat-ctrex interp-st)))
-                        (stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr)
+                         (bitarr (interp-st->sat-ctrex interp-st))
+                         (reference-ctrex (interp-st->reference-ctrex interp-st)))
+                        (stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr reference-ctrex)
                         (b* ((stack (stack-empty stack))
                              (logicman (logicman-init))
                              (bvar-db (init-bvar-db 0 bvar-db))
@@ -201,8 +251,9 @@
                              (constraint-pathcond (pathcond-init constraint-pathcond))
                              (interp-profiler (interp-profiler-init interp-profiler))
                              (env$ (env$-init env$))
-                             (bitarr (resize-bits 0 bitarr)))
-                          (mv stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr))
+                             (bitarr (resize-bits 0 bitarr))
+                             (reference-ctrex (reference-ctrex-init reference-ctrex)))
+                          (mv stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr reference-ctrex))
                         (b* ((interp-st (update-interp-st->constraint-db (make-constraint-db) interp-st))
                              (interp-st (update-interp-st->backchain-limit -1 interp-st))
                              (interp-st (update-interp-st->equiv-contexts nil interp-st))
