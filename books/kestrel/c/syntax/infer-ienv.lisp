@@ -122,6 +122,8 @@
        (cheri-extensions (not (equal cheri-extensions-str "0")))
        ((when (and gcc-extensions clang-extensions))
         (retmsg$ "Both GCC and Clang extensions appear to be enabled."))
+       ((when (and cheri-extensions (not clang-extensions)))
+        (retmsg$ "CHERI extensions are only supported with Clang."))
        (dialect (c::make-dialect
                   :std (if (= std-c 17) (c::standard-c17) (c::standard-c23))
                   :gcc gcc-extensions
@@ -214,7 +216,8 @@
              :double-bytes double-bytes?
              :ldouble-bytes ldouble-bytes?
              :pointer-bytes pointer-bytes?
-             :plain-char-signedp plain-char-signedp))))
+             :plain-char-signedp plain-char-signedp)))
+  :guard-hints (("Goal" :in-theory (enable not))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
