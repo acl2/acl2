@@ -4313,25 +4313,35 @@
                (cond (entry (cons entry macro-alist))
                      (t macro-alist)))))))
 
+(defun defevaluator-guard-msg (form)
+  (declare (xargs :guard t))
+  (msg "The form of a ~x0 event is (~x0 evfn evfn-lst fn-args-lst ...), where ~
+        evfn and evfn-lst are symbols, and fn-args-lst is an alist each of ~
+        whose members is a true list of symbols.  However, ~x1 does not have ~
+        this form.  See :DOC defevaluator."
+       'defevaluator
+       form))
+
 (defun defevaluator-check (x evfn evfn-lst fn-args-lst ctx state)
-  (declare (xargs :guard
-                  (and (state-p state)
-                       (symbol-alistp fn-args-lst)
-                       (symbol-alistp
-                        (fgetprop 'macro-aliases-table
-                                  'table-alist
-                                  nil
-                                  (w state))))))
-  (cond ((not (and (symbolp evfn)
-                   (symbolp evfn-lst)
-                   (symbol-list-listp fn-args-lst)))
-         (er soft ctx
-             "The form of a defevaluator event is (defevaluator evfn evfn-lst ~
-              fn-args-lst), where evfn and evfn-lst are symbols and ~
-              fn-args-lst is a true list of lists of symbols.  Optionally, ~
-              one may supply the final keyword argument :namedp with value t ~
-              or nil (default).  However, ~x0 does not have this form."
-             x))
+
+; This must ultimately be in :logic mode so that the mbt calls behave as calls
+; of the identity function when guard-checking is :none.
+
+  (declare (xargs :stobjs state
+                  :guard (and (error1-state-p state)
+                              (symbolp evfn)
+                              (symbolp evfn-lst)
+                              (alistp fn-args-lst)
+                              (symbol-list-listp fn-args-lst)
+                              (symbol-alistp (macro-aliases (w state)))))
+; The following can avoid a warning for the raw Lisp definition because of the
+; meaning of mbt in raw Lisp.
+           (ignorable evfn evfn-lst x))
+  (cond ((not (and (mbt (symbolp evfn))
+                   (mbt (symbolp evfn-lst))
+                   (mbt (alistp fn-args-lst))
+                   (mbt (symbol-list-listp fn-args-lst))))
+         (er soft ctx "~@0" (defevaluator-guard-msg x)))
         (t (let* ((wrld (w state))
                   (msg (defevaluator-check-msg
                          fn-args-lst
@@ -4372,10 +4382,17 @@
 ; make it clear that the :namedp option only affects the names of the
 ; constraint theorems.
 
+  (declare (xargs :guard (and (symbolp evfn)
+                              (symbolp evfn-lst)
+                              (alistp fn-args-lst)
+                              (symbol-list-listp fn-args-lst))))
   (let ((form (defevaluator-form evfn evfn-lst namedp fn-args-lst)))
     (cond (skip-checks form)
           (t `(progn ,(defevaluator-check-form x evfn evfn-lst fn-args-lst)
                      ,form)))))
+
+(set-guard-msg defevaluator
+               (defevaluator-guard-msg (cons 'defevaluator args)))
 
 (set-table-guard term-table
                  (term-listp val world)
