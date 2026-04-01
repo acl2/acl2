@@ -295,24 +295,16 @@
      *grammar-keywords*
      (c::standard-case
       dialect.std
-      :c17 (cond (dialect.gcc (if dialect.cheri
-                                  *grammar-keywords-c17-gcc-cheri*
-                                *grammar-keywords-c17-gcc*))
+      :c17 (cond (dialect.gcc *grammar-keywords-c17-gcc*)
                  (dialect.clang (if dialect.cheri
                                     *grammar-keywords-c17-clang-cheri*
                                   *grammar-keywords-c17-clang*))
-                 (t (if dialect.cheri
-                        *grammar-keywords-c17-cheri*
-                      *grammar-keywords-c17*)))
-      :c23 (cond (dialect.gcc (if dialect.cheri
-                                  *grammar-keywords-c23-gcc-cheri*
-                                *grammar-keywords-c23-gcc*))
+                 (t *grammar-keywords-c17*))
+      :c23 (cond (dialect.gcc *grammar-keywords-c23-gcc*)
                  (dialect.clang (if dialect.cheri
                                     *grammar-keywords-c23-clang-cheri*
                                   *grammar-keywords-c23-clang*))
-                 (t (if dialect.cheri
-                        *grammar-keywords-c23-cheri*
-                      *grammar-keywords-c23*))))
+                 (t *grammar-keywords-c23*)))
      ;; rest:
      *grammar-rest*))
 
