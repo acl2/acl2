@@ -37,7 +37,6 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
-(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 ;(local (include-book "subst-var-alt-proofs")) ; todo, for pairlis$-of-empty-eval-list, which introduces empty-eval-cdrs -- why?

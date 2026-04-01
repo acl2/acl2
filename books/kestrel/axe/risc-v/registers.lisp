@@ -93,7 +93,6 @@
   :hints (("Goal" :in-theory (enable set-reg))))
 
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
-(local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/bv/logapp" :dir :system)) ; todo: move loghead rule
 ;open less
 (defthm set-reg-does-nothing

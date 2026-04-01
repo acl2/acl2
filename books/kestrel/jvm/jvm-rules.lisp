@@ -1,7 +1,7 @@
 ; Various rules about the jvm model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -339,7 +339,7 @@
                 )
            (NOT (EQUAL ad (NEW-AD (RKEYS heap))))))
 
-(in-theory (disable set-field-of-get-field-same-eric-2)) ;todo: enabled just below
+(in-theory (disable set-field-of-get-field-same-eric-2)) ;todo: enabled just below, and then re-enabled below that!
 
 
 ;i don't know why the cars are getting introduced...
