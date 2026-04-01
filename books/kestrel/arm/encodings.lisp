@@ -20,8 +20,9 @@
 ;; ARMv7-A and ARMv7-R edition" (see README.md).
 
 (include-book "portcullis")
-(include-book "kestrel/bv/bvor" :dir :system)
-(include-book "kestrel/bv/bvand-def" :dir :system) ; todo: include just the def
+(include-book "kestrel/bv/bvor-def" :dir :system)
+(include-book "kestrel/bv/bvand-def" :dir :system)
+(include-book "kestrel/bv/getbit-def" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -31,6 +32,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

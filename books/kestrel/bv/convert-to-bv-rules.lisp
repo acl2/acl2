@@ -13,7 +13,7 @@
 (include-book "bv-syntax") ; for convertible-to-bvp
 (include-book "trim")
 (include-book "bvand-def")
-(include-book "bvor")
+(include-book "bvor-def")
 (include-book "bvxor")
 (include-book "bvplus")
 (include-book "bvminus-def")
@@ -31,6 +31,7 @@
 (include-book "bitxor")
 (include-book "trim-elim-rules-non-bv") ; to get rid of the TRIMs introduced by these rules
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "bvcat"))
 (local (include-book "slice"))
 (local (include-book "getbit"))

@@ -24,7 +24,7 @@
 (include-book "bvmult")
 (include-book "bvminus")
 (include-book "bvand-def")
-(include-book "bvor")
+(include-book "bvor-def")
 (include-book "bvxor")
 (include-book "bvlt")
 (include-book "trim-elim-rules-bv") ; need these whenever we introduce trim

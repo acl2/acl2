@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "bvand-def")
-(include-book "bvor")
+(include-book "bvor-def")
 (include-book "bvxor")
 (include-book "bvplus-def")
 (include-book "bvminus")
@@ -26,6 +26,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "logand-b"))

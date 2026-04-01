@@ -1,7 +1,7 @@
 ; Rules about bitwise operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 (include-book "bvand-def")
 (include-book "bvxor")
 (include-book "bvnot")
-(include-book "bvor")
+(include-book "bvor-def")
 (include-book "bitxor")
 (include-book "bitand")
 (include-book "bitnot")
@@ -30,6 +30,7 @@
 (local (include-book "single-bit"))
 (local (include-book "slice"))
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "getbit"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
