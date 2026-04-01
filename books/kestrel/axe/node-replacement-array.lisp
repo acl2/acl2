@@ -25,7 +25,6 @@
 (local (include-book "kestrel/arithmetic-light/max" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 ;(local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
-(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/utilities/assoc-keyword" :dir :system))
 
 ;; We can build the node-replacement-array by calling make-into-array on the
