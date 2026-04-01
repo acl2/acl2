@@ -116,7 +116,7 @@
                   :guard (seg-regp seg-reg)))
   (if (equal *cs* seg-reg)
       0 ;code segment is always expand-up
-    ;; anything other than a code segment (including a stack segment) is treated like a data sgement:
+    ;; anything other than a code segment (including a stack segment) is treated like a data segment:
     (x86isa::data-segment-descriptor-attributesbits->e (seg-hidden-attri seg-reg x86))))
 
 (defthm segment-expand-down-bit-intro
@@ -1261,7 +1261,7 @@
   (and (<= (segment-min-eff-addr32 seg-reg x86) eff-addr)
        (<= eff-addr (segment-max-eff-addr32 seg-reg x86))))
 
-;; Check whether the N effective addresss starting at EFF-ADDR are all valid
+;; Check whether the N effective addresses starting at EFF-ADDR are all valid
 ;; effective addresses in the segment indicated by SEG-REG.  Theorem
 ;; mv-nth-0-of-ea-to-la shows that this function characterizes the inputs for
 ;; which ea-to-la does not return an error.
@@ -2464,7 +2464,7 @@
            (equal (read-from-segment n1 eff-addr1 seg-reg (write-to-segment n2 eff-addr2 seg-reg val x86))
                   (read-from-segment n1 eff-addr1 seg-reg x86))))
 
-;same segment (we don't know how other segmentes are laid out)
+;same segment (we don't know how other segments are laid out)
 (defthm read-from-segment-of-write-to-segment-irrel
   (implies (and (sep-eff-addr-ranges eff-addr1 n1 eff-addr2 n2)
                 (integerp eff-addr1)

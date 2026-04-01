@@ -628,8 +628,8 @@
            :in-theory (e/d (disjoint-regions48p bvlt)
                            (read-of-write-of-write-irrel-inner)))))
 
-;; We don't know which whether the write to ad2 has an effect, but any writes
-;; inside the write to ad1 (of size n1) can't possibly affect the read to ad1
+;; We don't know whether the write to ad2 has an effect, but any writes inside
+;; the write to ad1 (of size n1) can't possibly affect the outer read to ad1
 ;; (of size n1).  Can help clarify failures.
 (defthm read-of-write-of-write-of-write-same-middle-bv
   (implies (and (unsigned-byte-p 48 n1)
