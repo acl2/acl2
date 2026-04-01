@@ -1,7 +1,7 @@
 ; The Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1305,7 +1305,7 @@
          ;;fixme would it make sense to memoize in this (moot if we call the new rewriter)?:
          (rewrite-nodes-for-axe-prover (list nodenum)
                                        result-array-name
-                                       (make-empty-array result-array-name dag-len) ;fixme dag-len here is overkill? use (+ 1 nodeum)?
+                                       (make-empty-array result-array-name dag-len) ;fixme dag-len here is overkill? use (+ 1 nodenum)?
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        nodenums-to-assume-false
                                        rule-alist

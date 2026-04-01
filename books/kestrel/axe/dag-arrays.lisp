@@ -1539,7 +1539,7 @@
 ;; (defthm <-of-lemma-for-arg3-when-pseudo-dag-arrayp-aux-alt
 ;;   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
 ;;                 (<= 4 (len (dargs (aref1 dag-array-name dag-array nodenum))))
-;; ;                (not (EQUAL 'QUOTE (NTH 0 (AREF1 DAG-ARRAY-NAME DAG-ARRAY nodeum))))
+;; ;                (not (EQUAL 'QUOTE (NTH 0 (AREF1 DAG-ARRAY-NAME DAG-ARRAY nodenum))))
 ;;                 (not (consp (cadr (cdddr (aref1 dag-array-name dag-array nodenum))))) ;rules out a quotep
 ;;                 (natp nodenum)
 ;;                 )

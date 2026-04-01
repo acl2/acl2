@@ -797,7 +797,7 @@
          (to-omap (update key val (from-omap omap))))
   :enable omap::extensionality)
 
-(add-to-ruleset from-omap-theory '(from-omap-of-omap-update))
+(add-to-ruleset from-omap-theory '(omap-update-becomes-update))
 
 (defruled update-becomes-omap-update
   (equal (update key val map)

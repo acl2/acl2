@@ -1,6 +1,6 @@
 ; Reasoning about disjointness and inclusion in memory regions
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -711,7 +711,7 @@
                     (,disjoint-regionsp-spec-name len1 ad1 len2 ad2))
            :hints (("Goal" :in-theory (enable ,disjoint-regionsp-spec-name))))
 
-         ;; Shows that the complicated defintion of disjoint-regionsp agrees with the higher-level spec.
+         ;; Shows that the complicated definition of disjoint-regionsp agrees with the higher-level spec.
          (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-correct)
            (equal (,disjoint-regionsp-spec-name len1 ad1 len2 ad2)
                   (,disjoint-regionsp-name len1 ad1 len2 ad2))

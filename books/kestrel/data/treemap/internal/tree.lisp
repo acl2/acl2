@@ -92,7 +92,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tree-element-p)))
+(in-theory (disable (:t tree-element-fix)))
 
 (defrule tree-element-fix-type-prescription
   (tree-element-p (tree-element-fix elem))
