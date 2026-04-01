@@ -1,7 +1,7 @@
 ; Additions to the records library
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -365,7 +365,7 @@
 
 ;will this loop?
 (defthm s-of-s-same-val
-  (implies t ;(syntaxp (smaller-termp a2 a1))
+  (implies t ; (syntaxp (smaller-termp key2 key))
            (equal (s key val (s key2 val r))
                   (s key2 val (s key val r))))
   :hints (("Goal" :cases ((equal key key2)))))
