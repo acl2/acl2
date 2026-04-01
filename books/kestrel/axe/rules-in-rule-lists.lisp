@@ -1,7 +1,7 @@
 ; Rules mentioned in rule-lists.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -51,6 +51,8 @@
 (include-book "axe-rules-mixed") ;reduce? since some rules in this file are now in the basic jvm rule set? for NOT-EQUAL-MAX-INT-WHEN-<=, etc.
 (include-book "kestrel/bv/sbvdivdown-rules" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
+(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/bvif2" :dir :system)
 (include-book "kestrel/bv/rules6" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)

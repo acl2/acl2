@@ -44,6 +44,8 @@
 ;(include-book "kestrel/utilities/real-time-since" :dir :system)
 ;(include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
+(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
 (include-book "basic-rules")

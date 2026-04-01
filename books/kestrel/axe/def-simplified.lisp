@@ -42,6 +42,8 @@
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
+(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/rules3" :dir :system) ; for max-constants-lemma
 (include-book "kestrel/bv/rules4" :dir :system) ; for bvlt-of-bvcat-arg2-constant-arg4-arg3, etc.
 (include-book "kestrel/arithmetic-light/ifix" :dir :system) ; for ifix-when-integerp
