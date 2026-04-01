@@ -4054,17 +4054,7 @@
      Since @(tsee fileset) models a collection of files
      as a map from file paths to file data (bytes),
      we use a finite map from file paths to translation units
-     to model ensembles in the abstract syntax.")
-   (xdoc::p
-    "Currently we do not model preprocessing constructs in our abstract syntax,
-     and so a translation unit as formalized in @(tsee transunit)
-     corresponds exactly to the notion of translation unit in [C17].
-     As we add support for preprocessing constructs,
-     our translation units will be more like something in between
-     proper traslation units and preprocessing translation units.
-     The notion of file set as formalized here will still apply to that case,
-     with some elements of the ensembles
-     that may be headers instead of source files."))
+     to model ensembles in the abstract syntax."))
   ((units filepath-transunit-map)
    (info any))
   :pred transunit-ensemblep
