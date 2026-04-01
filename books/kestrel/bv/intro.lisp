@@ -12,7 +12,7 @@
 
 (include-book "bvand-def")
 (include-book "bvor-def")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bvplus-def")
 (include-book "bvminus")
 (include-book "bv-syntax")

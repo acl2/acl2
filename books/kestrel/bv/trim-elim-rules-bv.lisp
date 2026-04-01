@@ -25,7 +25,7 @@
 (include-book "bvminus")
 (include-book "bvand-def")
 (include-book "bvor-def")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bvif")
 (include-book "bvshl")
 (local (include-book "bvand"))

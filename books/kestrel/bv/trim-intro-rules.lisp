@@ -1,7 +1,7 @@
 ; Rules to chop arguments using trim
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,7 +25,7 @@
 (include-book "bvminus")
 (include-book "bvand-def")
 (include-book "bvor-def")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bvlt")
 (include-book "trim-elim-rules-bv") ; need these whenever we introduce trim
 (local (include-book "slice"))

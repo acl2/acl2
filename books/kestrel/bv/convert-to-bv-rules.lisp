@@ -14,7 +14,7 @@
 (include-book "trim")
 (include-book "bvand-def")
 (include-book "bvor-def")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bvplus")
 (include-book "bvminus-def")
 (include-book "bvnot")

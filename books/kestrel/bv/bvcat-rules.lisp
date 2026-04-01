@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvcat")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bvor-def")
 (include-book "bitnot")
 (include-book "bvand-def")

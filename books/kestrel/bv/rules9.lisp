@@ -20,7 +20,7 @@
 (include-book "rightrotate")
 (include-book "bvcat")
 (include-book "bitnot")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bitxor")
 (include-book "rotate")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

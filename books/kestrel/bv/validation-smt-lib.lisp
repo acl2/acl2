@@ -15,7 +15,7 @@
 (include-book "bvnot")
 (include-book "bvand-def")
 (include-book "bvor-def")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "sbvdiv")
 (include-book "bvdiv")
 (local (include-book "sbvdiv-rules"))

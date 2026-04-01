@@ -22,7 +22,7 @@
 (include-book "bvuminus-def")
 (include-book "bvand-def")
 (include-book "bvor-def")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bvsx-def")
 (include-book "bvif")
 (include-book "logext-def")

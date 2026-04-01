@@ -69,6 +69,7 @@
 (include-book "bvor-def")
 (include-book "bvor")
 (include-book "bvxor")
+(include-book "bvxor-def")
 
 ;; Single bit operations:
 (include-book "bitxor")

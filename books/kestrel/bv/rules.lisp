@@ -21,7 +21,7 @@
 ;(include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "single-bit")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bitor")
 (include-book "bitand")
 (include-book "logapp")
