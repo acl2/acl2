@@ -1,7 +1,7 @@
 ; A theory of register readers and writers (emphasis on readability of terms)
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -757,15 +757,6 @@
            (equal (set-rsp rsp (xw fld index val x86))
                   (xw fld index val (set-rsp rsp x86))))
   :hints (("Goal" :in-theory (enable set-rsp
-                                     ))))
-
-(defthm set-rbp-of-xw
-  (implies (or (not (equal fld :rgf))
-               ;;(not (equal index *rax*))
-               )
-           (equal (set-rbp rbp (xw fld index val x86))
-                  (xw fld index val (set-rbp rbp x86))))
-  :hints (("Goal" :in-theory (enable set-rbp
                                      ))))
 
 (defthm set-rbp-of-xw

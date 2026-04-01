@@ -639,11 +639,6 @@
            (class-tablep0 (class-table s)))
   :hints (("Goal" :in-theory (enable jvm-statep class-table))))
 
-(defthm monitor-tablep-of-monitor-table
-  (implies (jvm-statep s)
-           (monitor-tablep (monitor-table s)))
-  :hints (("Goal" :in-theory (enable jvm-statep monitor-table))))
-
 (defthm static-field-mapp-of-static-field-map
   (implies (jvm-statep s)
            (static-field-mapp (static-field-map s)))
@@ -2619,14 +2614,7 @@
 (defconst *dummy-method-to-build-class-object*
   (make-dummy-method-info *dummy-program-to-build-class-object*))
 
-;move up
-(defthm intern-table-okp-of-intern-table-and-heap
-  (implies (jvm-statep s)
-           (intern-table-okp (intern-table s)
-                             (heap s)))
-  :hints (("Goal" :in-theory (enable jvm-statep intern-table heap))))
-
-;; Push a frame so that we are poised to run *dummy-method-to-build-class-object*.
+; Push a frame so that we are poised to run *dummy-method-to-build-class-object*.
 ;; It will run, and eventually get popped off, at which time execution will again be at this instruction, but the class object will have been built.
 (defun push-frame-to-build-class-object (class-name th s)
   (declare (xargs :guard (and (jvm-statep s)

@@ -597,8 +597,6 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-read (size (* n 8)))
            :in-theory (disable unsigned-byte-p-of-read))))
 
-(local (include-book "kestrel/bv/ash" :dir :system))
-
 ; see read32-mem-ubyte32-lendian-becomes-read below
 (defthmd read32-mem-ubyte32-lendian-redef
   (implies (integerp addr)
@@ -796,13 +794,10 @@
                                      disjoint-regions32p-of-+-arg4
                                      in-region32p-of-+-arg3))))))
 
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-
 ;(include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 (include-book "kestrel/bv-lists/bv-list-read-chunk-little" :dir :system)
 
 (local (include-book "kestrel/lists-light/take" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
 ;; The next rules get information from hyps of the for (equal (read-bytes ...) XXX).
 ;; The XXX may be a constant list of bytes (e.g., from a section/segment of the executable)
@@ -1497,10 +1492,7 @@
                             ;;ACL2::BVCAT-EQUAL-REWRITE
                             ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
 
-
-
-(local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system))
-(local (acl2::limit-expt))
+(local (acl2::limit-expt)) ;move up?
 
 ;; todo: gen the 1?
 ;rename -bv
