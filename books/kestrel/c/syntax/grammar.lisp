@@ -28,15 +28,11 @@
 ; (depends-on "grammar/keywords-c17.abnf")
 ; (depends-on "grammar/keywords-c17-gcc.abnf")
 ; (depends-on "grammar/keywords-c17-clang.abnf")
-; (depends-on "grammar/keywords-c17-gcc-cheri.abnf")
 ; (depends-on "grammar/keywords-c17-clang-cheri.abnf")
-; (depends-on "grammar/keywords-c17-cheri.abnf")
 ; (depends-on "grammar/keywords-c23.abnf")
 ; (depends-on "grammar/keywords-c23-gcc.abnf")
 ; (depends-on "grammar/keywords-c23-clang.abnf")
-; (depends-on "grammar/keywords-c23-gcc-cheri.abnf")
 ; (depends-on "grammar/keywords-c23-clang-cheri.abnf")
-; (depends-on "grammar/keywords-c23-cheri.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -221,20 +217,6 @@
   :untranslate t
   :well-formed t)
 
-(abnf::defgrammar *grammar-keywords-c17-gcc-cheri*
-  :short "Grammar rules for keywords
-          that are specific to the C17 dialect with GCC and CHERI extensions."
-  :file "grammar/keywords-c17-gcc-cheri.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c23-gcc-cheri*
-  :short "Grammar rules for keywords
-          that are specific to the C23 dialect with GCC and CHERI extensions."
-  :file "grammar/keywords-c23-gcc-cheri.abnf"
-  :untranslate t
-  :well-formed t)
-
 (abnf::defgrammar *grammar-keywords-c17-clang-cheri*
   :short "Grammar rules for keywords
           that are specific to the C17 dialect with Clang and CHERI extensions."
@@ -246,22 +228,6 @@
   :short "Grammar rules for keywords
           that are specific to the C23 dialect with Clang and CHERI extensions."
   :file "grammar/keywords-c23-clang-cheri.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c17-cheri*
-  :short "Grammar rules for keywords
-          that are specific to the C17 dialect with CHERI extensions
-          but without GCC or Clang extensions."
-  :file "grammar/keywords-c17-cheri.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c23-cheri*
-  :short "Grammar rules for keywords
-          that are specific to the C23 dialect with CHERI extensions
-          but without GCC or Clang extensions."
-  :file "grammar/keywords-c23-cheri.abnf"
   :untranslate t
   :well-formed t)
 
@@ -295,24 +261,16 @@
      *grammar-keywords*
      (c::standard-case
       dialect.std
-      :c17 (cond (dialect.gcc (if dialect.cheri
-                                  *grammar-keywords-c17-gcc-cheri*
-                                *grammar-keywords-c17-gcc*))
+      :c17 (cond (dialect.gcc *grammar-keywords-c17-gcc*)
                  (dialect.clang (if dialect.cheri
                                     *grammar-keywords-c17-clang-cheri*
                                   *grammar-keywords-c17-clang*))
-                 (t (if dialect.cheri
-                        *grammar-keywords-c17-cheri*
-                      *grammar-keywords-c17*)))
-      :c23 (cond (dialect.gcc (if dialect.cheri
-                                  *grammar-keywords-c23-gcc-cheri*
-                                *grammar-keywords-c23-gcc*))
+                 (t *grammar-keywords-c17*))
+      :c23 (cond (dialect.gcc *grammar-keywords-c23-gcc*)
                  (dialect.clang (if dialect.cheri
                                     *grammar-keywords-c23-clang-cheri*
                                   *grammar-keywords-c23-clang*))
-                 (t (if dialect.cheri
-                        *grammar-keywords-c23-cheri*
-                      *grammar-keywords-c23*))))
+                 (t *grammar-keywords-c23*)))
      ;; rest:
      *grammar-rest*))
 
