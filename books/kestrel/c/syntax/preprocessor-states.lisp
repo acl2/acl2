@@ -177,6 +177,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lexmark-add-provenance ((prov string-listp) (lexmark lexmarkp))
+  :returns (new-lexmark lexmarkp)
+  :short "Add to the provenance of a lexmark, if it is an identifier."
+  (if (lexmark-case lexmark :lexeme)
+      (b* ((old-lexeme (lexmark-lexeme->lexeme lexmark))
+           (new-lexeme (plexeme-add-provenance prov old-lexeme)))
+        (change-lexmark-lexeme lexmark :lexeme new-lexeme))
+    (lexmark-fix lexmark)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexmarks-add-provenance ((prov string-listp) (lexmarks lexmark-listp))
+  :returns (new-lexmarks lexmark-listp)
+  :short "Add to the provenance of all the identifiers in a list of lexmarks."
+  (cond ((endp lexmarks) nil)
+        (t (cons (lexmark-add-provenance prov (car lexmarks))
+                 (lexmarks-add-provenance prov (cdr lexmarks))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection ppstate
   :short "Fixtype of preprocessor states."
   :long
