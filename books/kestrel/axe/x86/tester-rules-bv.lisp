@@ -1,7 +1,7 @@
 ; BV Rules used by the Formal Unit Tester
 ;
 ; Copyright (C) 2016-2023 Kestrel Technology, LLC
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,7 +51,6 @@
 (local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
-(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system))
 (local (include-book "kestrel/bv/sbvlt-rules" :dir :system))

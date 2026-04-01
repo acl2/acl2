@@ -1,6 +1,6 @@
 ; More rules about reading and writing
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -269,7 +269,6 @@
                         (:instance read-of-bvchop-48 (addr (+ ad1 x ad2))))
            :in-theory (e/d (ifix) (read-of-bvchop-48)))))
 
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -412,7 +411,7 @@
 
 ;todo: split out:
 
-(include-book "read-bytes-and-write-bytes")
+;;(include-book "read-bytes-and-write-bytes")
 
 (local
   ;rename

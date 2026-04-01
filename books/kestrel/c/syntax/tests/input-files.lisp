@@ -126,7 +126,7 @@
                        (filepath "stdbool.c")
                        (filepath "stdint.c"))))
 
-(acl2::assert-equal *ppextlist-parsed-simple/stdbool/stdint*
+(acl2::assert-equal *ppextomap-parsed-simple/stdbool/stdint*
                     *ppext-parsed-simple/stdbool/stdint*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
