@@ -233,7 +233,7 @@
                   (BVmod 32 x y)))
   :hints (("Goal" :in-theory (enable bvmod))))
 
-(defthm not-bvlt-of-max-when-unsiged-byte-p
+(defthm not-bvlt-of-max-when-unsigned-byte-p
   (implies (unsigned-byte-p 32 x)
            (not (bvlt 64 4294967295 x))))
 

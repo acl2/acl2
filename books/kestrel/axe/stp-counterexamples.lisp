@@ -1,7 +1,7 @@
 ; Parsing counterexamples from STP
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -60,7 +60,7 @@
 ;; since it does so anyway for single bit vars (maybe for any var whose size is
 ;; not a multiple of 4 bits so hex digits would be a bit deceptive?)
 
-;; A raw-counterexample pairs nodenums or arraynodeum/index pairs to values (that
+;; A raw-counterexample pairs nodenums or arraynodenum/index pairs to values (that
 ;; is, arrays are split into assignments of their individual elements).
 (defun raw-counterexamplep (cex)
   (declare (xargs :guard t))
