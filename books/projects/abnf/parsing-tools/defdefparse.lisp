@@ -1220,7 +1220,7 @@
                                     (enable
                                      treep-when-tree-resultp-and-not-reserrp))))))
                   (rest-input nat-listp))
-     :short ,(str::cat "Helper: parse COUNT elements for " short)
+     :short ,(str::cat "Helper: parse COUNT elements for " short ".")
      (if (zp count)
          (mv nil (nat-list-fix input))
        (b* (,@element-code
