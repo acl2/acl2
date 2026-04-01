@@ -1,7 +1,7 @@
 ; Mixed x86 supporting material
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1219,8 +1219,6 @@
 
 ;; todo: more
 (defthmd n64-becomes-bvchop (equal (x86isa::n64 x) (acl2::bvchop 64 x)))
-
-(local (include-book "kestrel/bv/rules3" :dir :system)) ;drop?
 
 ;todo: gen the 2
 (defthm idiv-64-by-2-no-error

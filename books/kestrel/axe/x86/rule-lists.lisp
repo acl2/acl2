@@ -5628,9 +5628,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Try this rule first
-(set-axe-rule-priority read-of-write-irrel -1) ; todo: also below
-
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
 ;; (set-axe-rule-priority read-when-program-at 1)
 ;; these are no longer used:
@@ -6495,7 +6492,7 @@
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
 (set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
-(set-axe-rule-priority read-of-write-irrel -1)
+(set-axe-rule-priority read-of-write-irrel -1) ; Try this rule first
 (set-axe-rule-priority read-of-write-irrel-bv-axe-smt 1) ; try late, as this uses SMT
 (set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt 1)
 (set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt-alt 1)

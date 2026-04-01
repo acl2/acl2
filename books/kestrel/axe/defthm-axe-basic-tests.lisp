@@ -59,16 +59,6 @@
            x)
     :rules '((rules1))))
 
-
-(deftest
-  (defun rules1 ()
-    '(car-cons equal-same))
-
-  (defthm-axe-basic test
-    (equal (car (cons x y))
-           x)
-    :rules '((rules1))))
-
 (deftest
   (defun rules1 ()
     '(car-cons equal-same))

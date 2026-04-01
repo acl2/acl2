@@ -171,7 +171,7 @@
 
 ;; Sanity check: infinity-threshold is the average of the largest normal and
 ;; the smallest normal that would be expressible using the next larger exponent
-;; (were such a number representable)
+;; (were such a number representable).
 (defthmd infinity-threshold-redef
   (implies (formatp k p)
            (equal (infinity-threshold k p)
@@ -205,6 +205,7 @@
                                      largest-normal-redef
                                      infinity-threshold))))
 
+;; todo: make local
 (defthm <-of-expt2-and-1
   (implies (integerp i)
            (equal (< (expt 2 i) 1)
@@ -463,6 +464,16 @@
               (expt 2 p)))
   :hints (("Goal" :in-theory (enable infinity-threshold))))
 
+(defthm <-of-infinity-threshold-when-representable-positive-subnormalp
+  (implies (and (representable-positive-subnormalp k p rat)
+                (formatp k p)
+                (rationalp rat))
+           (< rat (infinity-threshold k p)))
+  :hints (("Goal" :in-theory (enable infinity-threshold-redef
+                                     representable-positive-subnormalp
+                                     emin
+                                     expt-of-+))))
+
 ;; todo: clean up the stuff above here
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -600,13 +611,13 @@
   :hints (("Goal" :in-theory (e/d (round-positive-rational-ties-to-even) (type-of-round-positive-subnormal-ties-to-even))
            :use type-of-round-positive-subnormal-ties-to-even)))
 
-(defthm round-positive-subnormal-ties-to-even-when-representable-positive-subnormalp
+(defthm round-positive-rational-ties-to-even-when-representable-positive-subnormalp
   (implies (and (formatp k p)
                 (rationalp rat)
                 (representable-positive-subnormalp k p rat))
-           (equal (round-positive-subnormal-ties-to-even k p rat)
+           (equal (round-positive-rational-ties-to-even k p rat)
                   rat))
-  :hints (("Goal" :in-theory (enable round-positive-subnormal-ties-to-even representable-positive-subnormalp))))
+  :hints (("Goal" :in-theory (enable round-positive-subnormal-ties-to-even round-positive-rational-ties-to-even))))
 
 ;; Rounding always returns a floating-point-datum (perhaps infinity or 0).
 (defthm floating-point-datump-of-round-positive-rational-ties-to-even
@@ -769,18 +780,6 @@
                             ;distributivity-alt
                             log2-monotonic-weak
                             )))))
-
-;;easy
-(defthm <-of-infinity-threshold-when-representable-positive-subnormalp
-  (implies (and (formatp k p)
-                (rationalp rat)
-                (representable-positive-subnormalp k p rat))
-           (< rat (infinity-threshold k p)))
-  :hints (("Goal"
-           :use <-of-1-and-infinity-threshold
-           :cases ((< rat 1))
-           :in-theory (e/d (representable-positive-subnormalp emin)
-                           (<-of-1-and-infinity-threshold)))))
 
 ;; Rounding does not change a representable number.
 (defthm round-positive-rational-ties-to-even-when-representable-positive-rationalp
