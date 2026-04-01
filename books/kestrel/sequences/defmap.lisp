@@ -1,7 +1,7 @@
 ; Utility to make a function that applies a function to each item in a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-;Defmap map be similar to the (unfortunately named) defprojection in
+;Defmap may be similar to the (unfortunately named) defprojection in
 ;std/util/defprojection.lisp.
 
 ;TODO: prove a generic map of map theorem (for any two defmaps?)
@@ -314,7 +314,7 @@
                     (defthm ,(pack$ 'firstn-of- map-fn)
                       (equal (firstn ,fresh-var (,map-fn ,@all-formals))
                              (,map-fn ,@(sublis-var-simple-lst
-                                         (acons list-formal `(firstn ,fresh-var (double-rewrite,list-formal)) nil)
+                                         (acons list-formal `(firstn ,fresh-var (double-rewrite ,list-formal)) nil)
                                          all-formals)))
                       :hints (("Goal" :use (:instance (:functional-instance firstn-of-generic-map ,@bindings)
                                                       (x ,list-formal)

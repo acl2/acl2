@@ -1,6 +1,6 @@
-; Tests of defmap
+; Top file for sequences library
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
