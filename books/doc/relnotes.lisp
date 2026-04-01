@@ -5049,7 +5049,7 @@ specialization of @(tsee r1cs::verify-r1cs).")
      argument, @(':enable'), specifying whether the generated @(tsee defthm)
      event is enabled.  In addition to Boolean values, it allows the default
      value, @(':auto'), specifying that the new rule is enabled if and only if
-     the original defintion is enabled.  This is a change in default behavior,
+     the original definition is enabled.  This is a change in default behavior,
      since before, the new rule was always enabled.")
 
    ))

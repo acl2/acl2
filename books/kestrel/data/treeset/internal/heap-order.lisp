@@ -32,7 +32,6 @@
 
 (defxdoc+ heap<
   :parents (implementation)
-  :short "A total order based on object hashes."
   :short "The total order used by @(tsee heapp)."
   :long
   (xdoc::topstring
@@ -42,8 +41,8 @@
        are equal to ensure the order is total.")
     (xdoc::p
       "The goal of this order is to be largely uncorrelated with @(tsee <<).
-       Therefore, it is important that the hash function (@(tsee hash::jenkins))
-       does not collide frequently and exhibits a strong "
+       Therefore, it is important that the hash function (@(tsee hash))
+       does not collide frequently and exhibits a reasonably strong "
       (xdoc::a :href
                "https://en.wikipedia.org/wiki/Avalanche_effect"
                "avalanche effect")
@@ -59,13 +58,14 @@
   (x
    y
    (hash-x (unsigned-byte-p 32 hash-x))
-   (hash-y (unsigned-byte-p 32 hash-x)))
+   (hash-y (unsigned-byte-p 32 hash-y)))
   :guard (mbe :logic (and (equal (hash x) hash-x)
                           (equal (hash y) hash-y))
               :exec (and (data::u32-equal (hash x) hash-x)
                          (data::u32-equal (hash y) hash-y)))
   (declare (type (unsigned-byte 32) hash-x hash-y)
-           (xargs :type-prescription
+           (xargs :split-types t
+                  :type-prescription
                   (booleanp (heap<-with-hashes x y hash-x hash-y))))
   :short "Variant of @(tsee heap<) which uses pre-computed hashes."
   :long

@@ -420,7 +420,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule tree-sumbap-p-when-<<-all-l-of-head
+(defrule tree-submap-p-when-<<-all-l-of-head
   (implies (and (bstp x)
                 (bstp y)
                 (not (tree-empty-p y))
@@ -448,7 +448,7 @@
                treeset::in-when-subset-and-in
                tree-lookup-when-in-of-tree-key-set-and-tree-submap-p-forward-chaining))))
 
-(defrule tree-sumbap-p-when-<<-all-r-of-head
+(defrule tree-submap-p-when-<<-all-r-of-head
   (implies (and (bstp x)
                 (bstp y)
                 (not (tree-empty-p y))

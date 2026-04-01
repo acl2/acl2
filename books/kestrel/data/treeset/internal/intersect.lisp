@@ -44,8 +44,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "The result might not be a intersection if the input trees are not binary search
-      trees."))
+     "The result might not be an intersection if the input trees are not binary
+      search trees."))
   :returns (tree treep)
   (cond ((or (tree-empty-p x)
              (tree-empty-p y))
