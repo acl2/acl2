@@ -1,7 +1,7 @@
 ; A partial formalization of Java floating point values
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 
 (in-package "JVM")
 
+(include-book "values")
 (include-book "kestrel/bv/bvshl-def" :dir :system)
 (include-book "kestrel/bv/bvshr-def" :dir :system)
 (include-book "kestrel/bv/defs-bitwise" :dir :system)
@@ -343,7 +344,7 @@
       (if (eq *double-negative-infinity* d)
           *min-signed-int32*
         (let* ((val (regular-double-value d))
-               (int-val (floor val 1)))
+               (int-val (truncate val 1)))
           (if (> int-val (acl2::logext 32 *max-signed-int32*))
               *max-signed-int32*
             (if (< int-val (acl2::logext 32 *min-signed-int32*))
@@ -362,7 +363,7 @@
       (if (eq *double-negative-infinity* d)
           *min-signed-int64*
         (let* ((val (regular-double-value d))
-               (int-val (floor val 1)))
+               (int-val (truncate val 1)))
           (if (> int-val (acl2::logext 64 *max-signed-int64*))
               *max-signed-int64*
             (if (< int-val (acl2::logext 64 *min-signed-int64*))
@@ -372,7 +373,7 @@
 ;; TODO: This should perform rounding (and perhaps range checking)
 (defun i2f (int)
   (declare (xargs :guard (unsigned-byte-p 32 int)))
-  (make-regular-float (if (< int 0) :neg :pos) int))
+  (make-regular-float (if (< (decode-signed int) 0) :neg :pos) int))
 
 ;; (can't call this float-sign because that symbol is already in the main LISP package)
 (defun sign-of-float (f)

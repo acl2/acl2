@@ -1,7 +1,7 @@
 ; More material on the JVM heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,11 +27,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;move
 (defthm len-of-strip-cars
   (equal (len (strip-cars x))
          (len x)))
 
-(defthm len-of-strip-cads
+;move
+(defthm len-of-strip-cdrs
   (equal (len (strip-cdrs x))
          (len x)))
 
