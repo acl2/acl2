@@ -894,7 +894,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ildm-trans-unit ((file-name string-optionp) (tunit c::transunitp))
+(define ildm-trans-unit ((file-name string-optionp) (tunit c::trans-unitp))
   :returns (tunit1 trans-unitp)
   :short "Map a translation unit in the language definition
           to a translation unit in the syntax for tools."
@@ -908,7 +908,7 @@
   (b* ((includes
         (and file-name
              (list (string-to-q-header-name (str::cat file-name ".h")))))
-       (declons (ildm-ext-declon-list (c::transunit->declons tunit)))
+       (declons (ildm-ext-declon-list (c::trans-unit->declons tunit)))
        (items (append (trans-item-list-include includes)
                       (trans-item-list-declon declons))))
     (make-trans-unit :items items :info nil)))
@@ -918,7 +918,7 @@
 (define ildm-trans-ensemble ((file-name stringp)
                              (tunits c::trans-ensemblep))
   :returns (tunits1 trans-ensemblep)
-  :short "Map a translation unit ensemble in the language definition
+  :short "Map a translation ensemble in the language definition
           to a translation ensemble in the syntax for tools."
   :long
   (xdoc::topstring

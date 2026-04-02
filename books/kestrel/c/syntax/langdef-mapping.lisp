@@ -1806,7 +1806,7 @@
 
 (define ldm-trans-unit ((tunit trans-unitp))
   :guard (trans-unit-unambp tunit)
-  :returns (mv erp (tunit1 c::transunitp))
+  :returns (mv erp (tunit1 c::trans-unitp))
   :short "Map a translation unit to the language definition."
   :long
   (xdoc::topstring
@@ -1814,11 +1814,11 @@
     "A translation unit consists of a list of external declarations.
      We map all of them to the language definition (if possible),
      obtaining a corresponding list of external declaration,
-     which we put into a @(tsee c::transunit)."))
-  (b* (((reterr) (c::transunit nil))
+     which we put into a @(tsee c::trans-unit)."))
+  (b* (((reterr) (c::trans-unit nil))
        (items (trans-unit->items tunit))
        ((erp extdecls1) (ldm-trans-item-list items)))
-    (retok (c::make-transunit :declons extdecls1)))
+    (retok (c::make-trans-unit :declons extdecls1)))
   :hooks (:fix)
 
   ///
@@ -1845,7 +1845,7 @@
      We set the path of the @(tsee c::trans-ensemble)
      to the empty string for now,
      as we are not concerned with any actual interaction with the file system."))
-  (b* (((reterr) (c::trans-ensemble "" nil (c::transunit nil)))
+  (b* (((reterr) (c::trans-ensemble "" nil (c::trans-unit nil)))
        (map (trans-ensemble->units tunits))
        ((unless (= (omap::size map) 1))
         (reterr (msg "Unsupported translation ensemble ~

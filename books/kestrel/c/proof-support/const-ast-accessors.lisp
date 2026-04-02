@@ -189,8 +189,8 @@
     (:e ext-declon-fun-declon->get)
     (:e ext-declon-obj-declon->get)
     (:e ext-declon-tag-declon->get)
-    ;; transunit:
-    (:e transunit->declons)
+    ;; trans-unit:
+    (:e trans-unit->declons)
     ;; trans-ensemble:
     (:e trans-ensemble->path-wo-ext)
     (:e trans-ensemble->dot-h)

@@ -586,8 +586,8 @@
                                   fn-thms fn-appconds appcond-thms
                                   header print
                                   names-to-avoid state))
-       (tunit-h (and header (make-transunit :declons exts-h)))
-       (tunit-c (make-transunit :declons exts-c))
+       (tunit-h (and header (make-trans-unit :declons exts-h)))
+       (tunit-c (make-trans-unit :declons exts-c))
        (tunits (make-trans-ensemble :path-wo-ext path-wo-ext
                                     :dot-h tunit-h
                                     :dot-c tunit-c))

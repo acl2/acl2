@@ -67,7 +67,7 @@
           fundef
           ext-declon
           ext-declon-list
-          transunit
+          trans-unit
           trans-ensemble)
   :override
   ((iconst (if (and (iconst-base-case (iconst->base iconst) :dec)

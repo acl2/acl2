@@ -274,10 +274,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-transunit
+(defirrelevant irr-trans-unit
   :short "An irrelevant translation unit."
-  :type transunitp
-  :body (transunit nil))
+  :type trans-unitp
+  :body (trans-unit nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,4 +286,4 @@
   :type trans-ensemblep
   :body (make-trans-ensemble :path-wo-ext ""
                              :dot-h nil
-                             :dot-c (irr-transunit)))
+                             :dot-c (irr-trans-unit)))
