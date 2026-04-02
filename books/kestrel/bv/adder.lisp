@@ -1,7 +1,7 @@
 ; Expressing a sum as a ripple-carry adder
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -146,8 +146,7 @@
   (implies (and (unsigned-byte-p n y)
                 (posp n)
                 (integerp x)
-                (integerp a)
-                (integerp b))
+                (integerp a))
            (equal (equal (+ y x) (+ a (bvchop (+ -1 n) y)))
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
                          (+ a))))

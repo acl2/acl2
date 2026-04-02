@@ -720,7 +720,6 @@
 (defthm floor-minus-negative-constant
   (implies (and (syntaxp (quotep k))
                 (< k 0)
-                (rationalp x)
                 (rationalp k)
                 (rationalp y))
            (equal (floor k y)

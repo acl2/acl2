@@ -1952,8 +1952,7 @@
 
 (defthm bvchop-hack1
   (implies (and (integerp x)
-                (integerp y)
-                (integerp z))
+                (integerp y))
            (equal (bvchop 32 (+ x (* 2 (bvchop 31 y))))
                   (bvchop 32 (+ x (* 2 y)))))
   :hints (("Goal" :use (;(:instance BVCHOP-+-BVCHOP (J (* 2 Y)) (I X) (SIZE 32))
@@ -1961,8 +1960,7 @@
 
 (defthm bvchop-hack1b
  (implies (and (integerp x)
-               (integerp y)
-               (integerp z))
+               (integerp y))
           (equal (bvchop 32 (+ x (* 2 (logext 31 y))))
                  (bvchop 32 (+ x (* 2 y)))))
  :hints (("Goal"; :in-theory (disable)
@@ -3947,8 +3945,7 @@
 (defthm bvchop-minus-equal-bvchop-minus
   (IMPLIES (AND (NATP N)
                 (INTEGERP FREE)
-                (INTEGERP X)
-                (INTEGERP Y))
+                (INTEGERP X))
            (equal (EQUAL (BVCHOP N (- X))
                          (BVCHOP N (- FREE)))
                   (EQUAL (BVCHOP N X)

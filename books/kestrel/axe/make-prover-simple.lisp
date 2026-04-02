@@ -289,7 +289,7 @@
     (:FORWARD-CHAINING axe-tree-listp-forward-to-true-listp)
     (:forward-chaining bounded-axe-tree-listp-forward-to-axe-tree-listp)
     (:FORWARD-CHAINING BOUNDED-DAG-CONSTANT-ALISTP-FORWARD-TO-DAG-CONSTANT-ALISTP)
-    (:FORWARD-CHAINING BOUNDED-DAG-PARENT-ARRAYP-FORWARD-TO-BOUNDED-DAG-PARENT-ARRAYP)
+    (:FORWARD-CHAINING BOUNDED-DAG-PARENT-ARRAYP-FORWARD-TO-DAG-PARENT-ARRAYP)
     (:FORWARD-CHAINING BOUNDED-DAG-VARIABLE-ALISTP-FORWARD-TO-DAG-VARIABLE-ALISTP)
     (:FORWARD-CHAINING BOUNDED-INTEGER-ALISTP-FORWARD-TO-EQLABLE-ALISTP)
     (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
@@ -6110,7 +6110,7 @@
          (defund ,clause-processor-name (clause hint state)
            (declare (xargs :guard (pseudo-term-listp clause)
                            :stobjs state))
-           (b* (;; Check the the hint:
+           (b* (;; Check the hint:
                 ((when (not (alistp hint)))
                  (er hard? ',clause-processor-name "Unexpected hint (not an alist): ~x0." hint)
                  (mv :bad-hint (list clause) state))

@@ -1,7 +1,7 @@
 ; Tools to rebuild DAGs while applying variable substitutions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -483,7 +483,6 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp nodenum-to-replace)
-                (nat-listp acc)
                 (dargp-less-than new-nodenum-or-quotep dag-len)
                 ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)))
                 )
@@ -501,10 +500,8 @@
                 (all-< literal-nodenums dag-len)
                 (natp nodenum-to-replace)
                 (< nodenum-to-replace dag-len)
-                (nat-listp acc)
                 (dargp-less-than new-nodenum-or-quotep dag-len)
                 ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)))
-                (all-< acc dag-len)
                 )
            (all-< (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))
                   (mv-nth 4 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))

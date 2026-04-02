@@ -72,7 +72,7 @@
                 ;; (integerp ad2)
                 (UNSIGNED-BYTE-P '48 LEN1)
                 (UNSIGNED-BYTE-P '48 LEN2)
-                (UNSIGNED-BYTE-P '48 n1)
+                ;; (UNSIGNED-BYTE-P '48 n1)
                 (UNSIGNED-BYTE-P '48 n2)
                 )
            (equal (read-byte ad1 (write n2 ad2 val x86))

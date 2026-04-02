@@ -546,7 +546,6 @@
 ;move
 (defthm slice-of-+-of--1-and-expt
   (implies (and (< high i)
-                (posp n)
                 (natp low)
                 (integerp high)
                 (<= low high)

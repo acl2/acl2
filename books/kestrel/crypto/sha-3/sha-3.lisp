@@ -1,6 +1,6 @@
 ; A formal specification of the SHA-3 hash function
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -779,7 +779,6 @@
 
 (defthm lanep-of-theta-lane
   (implies (and (state-arrayp a w)
-                (natp z)
                 (posp w))
            (lanep (theta-lane 0 x y a d w) w))
   :hints (("Goal" :in-theory (enable lanep))))
@@ -1106,7 +1105,6 @@
 
 (defthm state-arrayp-of-rho-aux
   (implies (and (w-valp w)
-                (natp z)
                 (natp x)
                 (< x 5)
                 (natp y)

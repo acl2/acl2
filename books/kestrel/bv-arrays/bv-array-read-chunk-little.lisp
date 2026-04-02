@@ -63,8 +63,7 @@
  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little))))
 
 (defthm bv-array-read-chunk-little-of-expt-of-ceiling-of-lg
- (implies (and (natp len)
-               (natp index))
+ (implies (natp len)
           (equal (bv-array-read-chunk-little num element-width len (expt 2 (ceiling-of-lg len)) data)
                  (bv-array-read-chunk-little num element-width len 0 data)))
  :hints (("Goal" :use (:instance bv-array-read-chunk-little-of-+-of-expt-of-ceiling-of-lg (index 0))

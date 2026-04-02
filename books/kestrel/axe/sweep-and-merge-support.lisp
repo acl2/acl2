@@ -170,8 +170,7 @@
   (make-var-type-alist-from-hyps-aux hyps hyps nil))
 
 (defthm strict-var-type-alistp-of-make-var-type-alist-from-hyps
-  (implies (strict-var-type-alistp var-type-alist)
-           (strict-var-type-alistp (make-var-type-alist-from-hyps hyps)))
+  (strict-var-type-alistp (make-var-type-alist-from-hyps hyps))
   :hints (("Goal" :in-theory (enable make-var-type-alist-from-hyps))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1945,7 +1945,6 @@
                 (< n size)
                 (integerp n)
                 (integerp size)
-                (integerp xsize)
                 (unsigned-byte-p-forced ysize y))
            (equal (getbit n (bvor size x y))
                   (getbit n x)))

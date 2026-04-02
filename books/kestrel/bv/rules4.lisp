@@ -98,8 +98,7 @@
                 (<= low high)
                 (natp low)
                 (natp high)
-                (posp size)
-                (natp n))
+                (posp size))
            (equal (slice high low x)
                   (repeatbit (+ 1 high (- low))
                              (getbit (+ -1 size) x))))
@@ -183,10 +182,8 @@
 
 (defthm logapp-less-than
   (implies (and (natp lowsize)
-                (natp highsize)
                 (integerp x)
-                (integerp highval)
-                )
+                (integerp highval))
            (equal (< (logapp lowsize lowval highval) x)
                   (or (< highval (logtail lowsize x))
                       (and (equal highval (logtail lowsize x))
@@ -287,7 +284,6 @@
 
 (defthmd logapp-less-than-alt-helper-1
   (IMPLIES (AND (NATP LOWSIZE)
-                (NATP HIGHSIZE)
                 (INTEGERP X)
                 (INTEGERP HIGHVAL)
                 (< (LOGTAIL LOWSIZE X) HIGHVAL))
@@ -301,7 +297,6 @@
 ;; (<= (+ 1 HIGHVAL) (LOGTAIL LOWSIZE X))
 (defthm logapp-less-than-alt-helper-2
   (IMPLIES (AND (NATP LOWSIZE)
-                (NATP HIGHSIZE)
                 (INTEGERP X)
                 (INTEGERP HIGHVAL)
                 (<= HIGHVAL (LOGTAIL LOWSIZE X))
@@ -317,7 +312,6 @@
 
 (defthm logapp-less-than-alt
   (implies (and (natp lowsize)
-                (natp highsize)
                 (integerp x)
                 (integerp highval)
                 )

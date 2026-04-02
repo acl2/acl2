@@ -1,6 +1,6 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -209,8 +209,7 @@
                             acl2::mod-sum-cases)))))
 
 (defthm inv-of-unary--
-  (implies (and (integerp y)
-                (integerp x)
+  (implies (and (integerp x)
                 (integerp p)
                 (<= 2 p))
            (equal (pfield::inv (- x) p)

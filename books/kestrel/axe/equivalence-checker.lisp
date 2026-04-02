@@ -1877,7 +1877,7 @@
 
                ;;upper bound:
                (if (all-same upper-bounds)
-                   ;; all traces count up the the same value:
+                   ;; all traces count up to the same value:
                    `((not (sbvlt '32 ',(first upper-bounds) ,term)))
 
                  ;; the traces count up to different values, so try to find an expression for the ending values
@@ -10012,12 +10012,12 @@
                      (call-of 'add-to-end (top-expr update-dag-for-returned-formal))
                      (eq base-case-term (lookup (farg2 (top-expr update-dag-for-returned-formal))
                                                 update-dag-for-returned-formal)))
-                (let* ((nodenunm-or-quotep-for-value-added-on (farg1 (top-expr update-dag-for-returned-formal)))
+                (let* ((nodenum-or-quotep-for-value-added-on (farg1 (top-expr update-dag-for-returned-formal)))
                        (dag-for-value-added-on
-                        (if (quotep nodenunm-or-quotep-for-value-added-on)
-                            nodenunm-or-quotep-for-value-added-on
+                        (if (quotep nodenum-or-quotep-for-value-added-on)
+                            nodenum-or-quotep-for-value-added-on
                           ;;fixme destroys 'dag-array! <-- old comment?
-                          (drop-non-supporters (drop-nodes-past nodenunm-or-quotep-for-value-added-on update-dag-for-returned-formal)))))
+                          (drop-non-supporters (drop-nodes-past nodenum-or-quotep-for-value-added-on update-dag-for-returned-formal)))))
                   (if (member-eq base-case-term (dag-vars-unsorted dag-for-value-added-on))
                       ;;if the element produced depends on previous elements, it's not a producer in this sense (we can't get rid of the list argument when combining it with a consumer)
                       (mv (erp-nil) nil state)
