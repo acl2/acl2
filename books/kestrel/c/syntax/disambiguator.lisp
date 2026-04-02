@@ -3910,39 +3910,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-trans-ensemble ((tuens trans-ensemblep)
-                             (dialect c::dialectp)
-                             (keep-going booleanp))
-  :returns (mv (erp maybe-msgp) (new-tuens trans-ensemblep))
-  :short "Disambiguate a translation ensemble."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We pass an indication of the C dialect to use.")
-   (xdoc::p
-    "We disambiguate all the translation units, independently.
-     We leave the file path mapping unchanged."))
-  (b* (((reterr) (irr-trans-ensemble))
-       (tumap (trans-ensemble->units tuens))
-       ((erp new-tumap)
-        (dimb-trans-ensemble-loop tumap dialect keep-going))
-       (- (if keep-going
-              (b* ((len-tumap (omap::size tumap))
-                   (len-new-tumap (omap::size new-tumap))
-                   (diff (- len-tumap len-new-tumap)))
-                (if (= (the integer diff) 0)
-                    nil
-                  (cw "Disambiguated ~x0/~x1 translation units.~%"
-                      len-new-tumap len-tumap)))
-            nil)))
-    (retok (make-trans-ensemble :units new-tumap
-                                :resolved-includes nil
-                                :info nil)))
-  :hooks (:fix)
-
-  :prepwork
-
-  ((define dimb-trans-ensemble-loop ((tumap filepath-trans-unit-mapp)
+(define dimb-trans-ensemble-loop ((tumap filepath-trans-unit-mapp)
                                      (dialect c::dialectp)
                                      (keep-going booleanp))
      :returns (mv (erp maybe-msgp)
@@ -3981,7 +3949,39 @@
        (implies (not erp)
                 (filepath-trans-unit-map-unambp new-tumap))
        :hyp (filepath-trans-unit-mapp tumap)
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-trans-ensemble ((tuens trans-ensemblep)
+                             (dialect c::dialectp)
+                             (keep-going booleanp))
+  :returns (mv (erp maybe-msgp) (new-tuens trans-ensemblep))
+  :short "Disambiguate a translation ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pass an indication of the C dialect to use.")
+   (xdoc::p
+    "We disambiguate all the translation units, independently.
+     We leave the file path mapping unchanged."))
+  (b* (((reterr) (irr-trans-ensemble))
+       (tumap (trans-ensemble->units tuens))
+       ((erp new-tumap)
+        (dimb-trans-ensemble-loop tumap dialect keep-going))
+       (- (if keep-going
+              (b* ((len-tumap (omap::size tumap))
+                   (len-new-tumap (omap::size new-tumap))
+                   (diff (- len-tumap len-new-tumap)))
+                (if (= (the integer diff) 0)
+                    nil
+                  (cw "Disambiguated ~x0/~x1 translation units.~%"
+                      len-new-tumap len-tumap)))
+            nil)))
+    (retok (make-trans-ensemble :units new-tumap
+                                :resolved-includes nil
+                                :info nil)))
+  :hooks (:fix)
 
   ///
 
