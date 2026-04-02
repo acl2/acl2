@@ -3997,7 +3997,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit
+(fty::defprod trans-unit
   :short "Fixtype of translation units [C17:6.9] [C17:A.2.4]."
   :long
   (xdoc::topstring
@@ -4012,7 +4012,7 @@
     "We also add a slot with additional information, e.g. from validation."))
   ((items trans-item-list)
    (info any))
-  :pred transunitp
+  :pred trans-unitp
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4051,16 +4051,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap filepath-transunit-map
+(fty::defomap filepath-trans-unit-map
   :short "Fixtype of omaps from file paths to translation units."
   :key-type filepath
-  :val-type transunit
-  :pred filepath-transunit-mapp
+  :val-type trans-unit
+  :pred filepath-trans-unit-mapp
 
   ///
 
-  (defrule filepath-setp-of-keys-when-filepath-transunit-mapp
-    (implies (filepath-transunit-mapp map)
+  (defrule filepath-setp-of-keys-when-filepath-trans-unit-mapp
+    (implies (filepath-trans-unit-mapp map)
              (filepath-setp (omap::keys map)))
     :induct t
     :enable omap::keys))
@@ -4087,7 +4087,7 @@
     "We also have a map of resolved header names.
      This is temporary, because we plan to put that information
      directly in the ASTs for the @('#include') directives."))
-  ((units filepath-transunit-map)
+  ((units filepath-trans-unit-map)
    (resolved-headers string-header-name-string-map-map)
    (info any))
   :pred trans-ensemblep

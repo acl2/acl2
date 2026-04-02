@@ -115,8 +115,8 @@
           hash-if/elif-expr
           hash-if/ifdef/ifndef
           trans-items
-          transunit
-          filepath-transunit-map
+          trans-unit
+          filepath-trans-unit-map
           trans-ensemble)
   :extra-args ((dialect c::dialectp))
   :result booleanp
@@ -135,6 +135,6 @@
    (xdoc::p
     "The condition is checked w.r.t.
      the @(see c::dialect) in the implementation environment."))
-  (trans-ensemble-aidentp (code-ensemble->transunits code)
+  (trans-ensemble-aidentp (code-ensemble->trans-units code)
                           (ienv->dialect (code-ensemble->ienv code)))
   :hooks (:fix))

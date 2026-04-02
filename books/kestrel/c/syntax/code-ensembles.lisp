@@ -38,7 +38,7 @@
 
 (fty::defprod code-ensemble
   :short "Fixtype of code ensembles."
-  ((transunits trans-ensemble)
+  ((trans-units trans-ensemble)
    (ienv ienv))
   :pred code-ensemblep)
 
@@ -48,5 +48,5 @@
   :short "An irrelevant code ensemble."
   :type code-ensemblep
   :body (make-code-ensemble
-         :transunits (irr-trans-ensemble)
+         :trans-units (irr-trans-ensemble)
          :ienv (irr-ienv)))

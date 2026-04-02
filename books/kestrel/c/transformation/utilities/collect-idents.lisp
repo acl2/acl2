@@ -56,8 +56,8 @@
           c$::hash-if/elif-expr
           c$::hash-if/ifdef/ifndef
           c$::trans-items
-          transunit
-          c$::filepath-transunit-map
+          trans-unit
+          c$::filepath-trans-unit-map
           trans-ensemble)
   :result ident-setp
   :default nil

@@ -558,10 +558,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-transunit
+(defirrelevant irr-trans-unit
   :short "An irrelevant translation unit."
-  :type transunitp
-  :body (transunit nil nil))
+  :type trans-unitp
+  :body (trans-unit nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

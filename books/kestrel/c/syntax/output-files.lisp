@@ -122,7 +122,7 @@
                      code desc)))
        ((unless (or (ienv->gcc/clang (code-ensemble->ienv code))
                     (trans-ensemble-standardp
-                     (code-ensemble->transunits code))))
+                     (code-ensemble->trans-units code))))
         (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       uses non-standard syntax (i.e. GCC/Clang extensions), ~
                       but the implementation environment indicates that ~
@@ -341,7 +341,7 @@
        ;; Print the abstract syntax.
        (options (make-priopt :indent-size indent-size
                              :paren-nested-conds paren-nested-conds))
-       (tunits (code-ensemble->transunits code))
+       (tunits (code-ensemble->trans-units code))
        (files (print-fileset tunits
                              options
                              (ienv->dialect (code-ensemble->ienv code))))

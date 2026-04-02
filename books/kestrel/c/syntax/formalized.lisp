@@ -1235,15 +1235,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-formalp ((tunit transunitp))
-  :guard (transunit-unambp tunit)
+(define trans-unit-formalp ((tunit trans-unitp))
+  :guard (trans-unit-unambp tunit)
   :returns (yes/no booleanp)
   :short "Check if a translation unit has formal dynamic semantics."
   :long
   (xdoc::topstring
    (xdoc::p
     "All its translation items must have formal semantics."))
-  (trans-item-list-formalp (transunit->items tunit))
+  (trans-item-list-formalp (trans-unit->items tunit))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1260,6 +1260,6 @@
      and in addition it must have formal dynamic semantics."))
   (b* ((map (trans-ensemble->units tunits)))
     (and (= (omap::size map) 1)
-         (transunit-formalp (omap::head-val map))))
+         (trans-unit-formalp (omap::head-val map))))
   :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))
   :hooks (:fix))

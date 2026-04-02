@@ -172,35 +172,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define copy-fn-transunit
-  ((tunit transunitp)
+(define copy-fn-trans-unit
+  ((tunit trans-unitp)
    (target-fn identp)
    (new-fn identp))
-  :guard (transunit-annop tunit)
+  :guard (trans-unit-annop tunit)
   :short "Transform a translation unit."
-  :returns (new-tunit transunitp)
-  (b* (((transunit tunit) tunit))
-    (make-transunit :items (copy-fn-trans-item-list tunit.items target-fn new-fn)
-                    :info tunit.info)))
+  :returns (new-tunit trans-unitp)
+  (b* (((trans-unit tunit) tunit))
+    (make-trans-unit :items (copy-fn-trans-item-list tunit.items target-fn new-fn)
+                     :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define copy-fn-filepath-transunit-map
-  ((map filepath-transunit-mapp)
+(define copy-fn-filepath-trans-unit-map
+  ((map filepath-trans-unit-mapp)
    (target-fn identp)
    (new-fn identp))
-  :guard (filepath-transunit-map-annop map)
+  :guard (filepath-trans-unit-map-annop map)
   :short "Transform a filepath."
-  :returns (new-map filepath-transunit-mapp
-                    :hyp (filepath-transunit-mapp map))
+  :returns (new-map filepath-trans-unit-mapp
+                    :hyp (filepath-trans-unit-mapp map))
   (b* (((when (omap::emptyp map))
         nil)
        ((mv path tunit) (omap::head map)))
     (omap::update (c$::filepath-fix path)
-                  (copy-fn-transunit tunit target-fn new-fn)
-                  (copy-fn-filepath-transunit-map (omap::tail map)
-                                                  target-fn
-                                                  new-fn)))
+                  (copy-fn-trans-unit tunit target-fn new-fn)
+                  (copy-fn-filepath-trans-unit-map (omap::tail map)
+                                                   target-fn
+                                                   new-fn)))
   :verify-guards :after-returns)
 
 (define copy-fn-trans-ensemble
@@ -212,9 +212,9 @@
   :returns (new-tunits trans-ensemblep)
   (b* (((trans-ensemble tunits) tunits))
     (c$::make-trans-ensemble
-      :units (copy-fn-filepath-transunit-map tunits.units
-                                             target-fn
-                                             new-fn))))
+      :units (copy-fn-filepath-trans-unit-map tunits.units
+                                              target-fn
+                                              new-fn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,5 +228,5 @@
   (b* (((code-ensemble code) code))
     (change-code-ensemble
      code
-     :transunits
-     (copy-fn-trans-ensemble code.transunits target-fn new-fn))))
+     :trans-units
+     (copy-fn-trans-ensemble code.trans-units target-fn new-fn))))

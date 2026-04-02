@@ -2703,7 +2703,7 @@
      (pstate pristatep))
     :guard (and (consp tyqualattribs)
                 (typequal/attribspec-list-aidentp
-                  tyqualattribs (pristate->dialect pstate)))
+                 tyqualattribs (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more
@@ -2723,7 +2723,7 @@
      (pstate pristatep))
     :guard (and (consp tyqualattribss)
                 (typequal/attribspec-list-list-aidentp
-                  tyqualattribss (pristate->dialect pstate)))
+                 tyqualattribss (pristate->dialect pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list or one or more lists of
@@ -3642,7 +3642,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-init-declor-list ((initdeclors init-declor-listp)
-                                 (pstate pristatep))
+                                  (pstate pristatep))
     :guard (and (consp initdeclors)
                 (init-declor-list-unambp initdeclors)
                 (init-declor-list-aidentp initdeclors
@@ -4901,9 +4901,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-transunit ((tunit transunitp) (pstate pristatep))
-  :guard (and (transunit-unambp tunit)
-              (transunit-aidentp tunit (pristate->dialect pstate)))
+(define print-trans-unit ((tunit trans-unitp) (pstate pristatep))
+  :guard (and (trans-unit-unambp tunit)
+              (trans-unit-aidentp tunit (pristate->dialect pstate)))
   :returns (new-pstate pristatep)
   :short "Print a translation unit."
   :long
@@ -4915,18 +4915,18 @@
      If there are @('#include') directives,
      they are printed in contiguous lines,
      followed by a blank line if there are external declarations."))
-  (print-trans-item-list (transunit->items tunit) pstate)
+  (print-trans-item-list (trans-unit->items tunit) pstate)
   :hooks (:fix)
 
   ///
 
-  (defret-same-dialect print-transunit))
+  (defret-same-dialect print-trans-unit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-file ((tunit transunitp) (options prioptp) (dialect c::dialectp))
-  :guard (and (transunit-unambp tunit)
-              (transunit-aidentp tunit dialect))
+(define print-file ((tunit trans-unitp) (options prioptp) (dialect c::dialectp))
+  :guard (and (trans-unit-unambp tunit)
+              (trans-unit-aidentp tunit dialect))
   :returns (data byte-listp)
   :short "Print (the data bytes of) a file."
   :long
@@ -4939,18 +4939,18 @@
      we extract the data bytes from the final printing state,
      and we reverse them (see @(tsee pristate))."))
   (b* ((pstate (init-pristate options dialect))
-       (pstate (print-transunit tunit pstate))
+       (pstate (print-trans-unit tunit pstate))
        (bytes-rev (pristate->bytes-rev pstate)))
     (rev bytes-rev))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-filepath-transunit-map ((tunitmap filepath-transunit-mapp)
-                                      (options prioptp)
-                                      (dialect c::dialectp))
-  :guard (and (filepath-transunit-map-unambp tunitmap)
-              (filepath-transunit-map-aidentp tunitmap dialect))
+(define print-filepath-trans-unit-map ((tunitmap filepath-trans-unit-mapp)
+                                       (options prioptp)
+                                       (dialect c::dialectp))
+  :guard (and (filepath-trans-unit-map-unambp tunitmap)
+              (filepath-trans-unit-map-aidentp tunitmap dialect))
   :returns (filemap filepath-filedata-mapp)
   :short "Print the files in a file set."
   :long
@@ -4967,21 +4967,21 @@
   (b* (((when (omap::emptyp tunitmap)) nil)
        ((mv filepath tunit) (omap::head tunitmap))
        (data (print-file tunit options dialect))
-       (filemap (print-filepath-transunit-map (omap::tail tunitmap)
-                                              options
-                                              dialect)))
+       (filemap (print-filepath-trans-unit-map (omap::tail tunitmap)
+                                               options
+                                               dialect)))
     (omap::update (filepath-fix filepath) (filedata data) filemap))
   :verify-guards :after-returns
 
   ///
 
-  (defret keys-of-print-filepath-transunit-map
+  (defret keys-of-print-filepath-trans-unit-map
     (equal (omap::keys filemap)
            (omap::keys tunitmap))
-    :hyp (filepath-transunit-mapp tunitmap)
+    :hyp (filepath-trans-unit-mapp tunitmap)
     :hints (("Goal" :induct t)))
 
-  (fty::deffixequiv print-filepath-transunit-map
+  (fty::deffixequiv print-filepath-trans-unit-map
     :args ((options prioptp) (dialect c::dialectp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5002,9 +5002,9 @@
      we print the translation units of the map to files into a file map,
      and we wrap the file map into a file set."))
   (fileset
-   (print-filepath-transunit-map (trans-ensemble->units tunits)
-                                 options
-                                 dialect))
+   (print-filepath-trans-unit-map (trans-ensemble->units tunits)
+                                  options
+                                  dialect))
   :hooks (:fix)
 
   ///

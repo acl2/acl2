@@ -252,8 +252,8 @@ void f() {
   int y = sizeof(x);
   }
 "
- :cond (b* ((transunit (omap::head-val (trans-ensemble->units ast)))
-            (items (transunit->items transunit))
+ :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+            (items (trans-unit->items tunit))
             (item (cadr items))
             (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
@@ -871,10 +871,10 @@ void bar(void) {
   return bar;
 }
 "
-  :cond (b* ((filepath-transunit-map (trans-ensemble->units ast))
-             (transunit1 (omap::head-val filepath-transunit-map))
-             (transunit2 (omap::head-val (omap::tail filepath-transunit-map)))
-             (items1 (transunit->items transunit1))
+  :cond (b* ((filepath-trans-unit-map (trans-ensemble->units ast))
+             (tunit1 (omap::head-val filepath-trans-unit-map))
+             (tunit2 (omap::head-val (omap::tail filepath-trans-unit-map)))
+             (items1 (trans-unit->items tunit1))
              (foo-init1 (first (declon-declon->declors (ext-declon-declon->declon (trans-item-declon->declon (first items1))))))
              (foo-init1-uid (init-declor-info->uid? (init-declor->info foo-init1)))
              ;; (- (cw "foo-init1 uid: ~x0~%" foo-init1-uid))
@@ -899,7 +899,7 @@ void bar(void) {
              (bar-return-stmt (block-item-stmt->stmt (third (comp-stmt->items (fundef->body bar-fundef)))))
              (foo-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? bar-return-stmt))))
              ;; (- (cw "foo-expr uid: ~x0~%" foo-expr-uid))
-             (items2 (transunit->items transunit2))
+             (items2 (trans-unit->items tunit2))
              (bar-init (first (declon-declon->declors (ext-declon-declon->declon (trans-item-declon->declon (first items2))))))
              (bar-init-uid (init-declor-info->uid? (init-declor->info bar-init)))
              ;; (- (cw "bar-init uid: ~x0~%" bar-init-uid))
@@ -942,13 +942,13 @@ int main(void) {
 "
   ;; Looking up "foo" in the first translation unit validation table should
   ;; show a UID value of "0".
-  :cond (b* ((transunit-test0
+  :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
-             (info? (transunit->info transunit-test0))
-             ((unless (transunit-infop info?))
+             (info? (trans-unit->info tunit-test0))
+             ((unless (trans-unit-infop info?))
               nil)
-             (table (transunit-info->table-end info?))
+             (table (trans-unit-info->table-end info?))
              ((mv ord-info? currentp)
               (valid-lookup-ord (ident "foo") table)))
           (and ord-info?
@@ -966,13 +966,13 @@ void foo(void) {
 "
   ;; Looking up "foo" in the first translation unit validation table should
   ;; show a UID value of "0".
-  :cond (b* ((transunit-test0
+  :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
-             (info? (transunit->info transunit-test0))
-             ((unless (transunit-infop info?))
+             (info? (trans-unit->info tunit-test0))
+             ((unless (trans-unit-infop info?))
               nil)
-             (table (transunit-info->table-end info?))
+             (table (trans-unit-info->table-end info?))
              ((mv ord-info? currentp)
               (valid-lookup-ord (ident "foo") table)))
           (and ord-info?
@@ -990,13 +990,13 @@ static void foo(void) {
 "
   ;; Looking up "foo" in the first translation unit validation table should
   ;; show a UID value of "0".
-  :cond (b* ((transunit-test0
+  :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
-             (info? (transunit->info transunit-test0))
-             ((unless (transunit-infop info?))
+             (info? (trans-unit->info tunit-test0))
+             ((unless (trans-unit-infop info?))
               nil)
-             (table (transunit-info->table-end info?))
+             (table (trans-unit-info->table-end info?))
              ((mv ord-info? currentp)
               (valid-lookup-ord (ident "foo") table)))
           (and ord-info?

@@ -89,12 +89,12 @@
   (b* (((code-ensemble code) code)
        ((reterr) (irr-code-ensemble))
        (attrs (elaborate-qualified-ident-string-alist attrs))
-       ((trans-ensemble transunits) code.transunits)
-       ((erp transunits)
+       ((trans-ensemble trans-units) code.trans-units)
+       ((erp trans-units)
         (trans-ensemble-add-attributes-with-qualified-idents
-          transunits
+          trans-units
           attrs)))
-    (retok (change-code-ensemble code :transunits transunits)))
+    (retok (change-code-ensemble code :trans-units trans-units)))
   :verbosep t
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 

@@ -1094,7 +1094,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-emptyp ((tunit transunitp))
+(define trans-unit-emptyp ((tunit trans-unitp))
   :returns (yes/no booleanp)
   :short "Check if a translation unit is empty, in the sense of having
           no external declarations and no @('#include') directives."
@@ -1103,7 +1103,7 @@
    (xdoc::p
     "That is, if the translation unit only contains comments,
      it is regarded as effectively empty, according to this predicate."))
-  (trans-item-list-commentp (transunit->items tunit)))
+  (trans-item-list-commentp (trans-unit->items tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1118,15 +1118,15 @@
     "It is more concise, and more abstract,
      than extracting the map and then the keys.")
    (xdoc::p
-    "Together with @(tsee transunit-at-path),
+    "Together with @(tsee trans-unit-at-path),
      it can be used as an API to inspect translation ensembles."))
   (omap::keys (trans-ensemble->units tunits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-at-path ((path filepathp) (tunits trans-ensemblep))
+(define trans-unit-at-path ((path filepathp) (tunits trans-ensemblep))
   :guard (set::in path (trans-ensemble-paths tunits))
-  :returns (tunit transunitp)
+  :returns (tunit trans-unitp)
   :short "Translation unit at a certain path in a translation ensemble."
   :long
   (xdoc::topstring
@@ -1139,6 +1139,6 @@
    (xdoc::p
     "Together with @(tsee trans-ensemble-paths),
      it can be used an as API to inspect a file set."))
-  (transunit-fix
+  (trans-unit-fix
    (omap::lookup (filepath-fix path) (trans-ensemble->units tunits)))
   :guard-hints (("Goal" :in-theory (enable trans-ensemble-paths))))

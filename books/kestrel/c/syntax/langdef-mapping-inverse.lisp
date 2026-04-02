@@ -894,8 +894,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ildm-transunit ((file-name string-optionp) (tunit c::transunitp))
-  :returns (tunit1 transunitp)
+(define ildm-trans-unit ((file-name string-optionp) (tunit c::transunitp))
+  :returns (tunit1 trans-unitp)
   :short "Map a translation unit in the language definition
           to a translation unit in the syntax for tools."
   :long
@@ -911,7 +911,7 @@
        (declons (ildm-ext-declon-list (c::transunit->declons tunit)))
        (items (append (trans-item-list-include includes)
                       (trans-item-list-declon declons))))
-    (make-transunit :items items :info nil)))
+    (make-trans-unit :items items :info nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -930,14 +930,14 @@
     (make-trans-ensemble
      :units (b* ((map-with-source-file
                   (omap::update (filepath (str::cat file-name ".c"))
-                                (ildm-transunit (and tunits.dot-h
-                                                     file-name)
-                                                tunits.dot-c)
+                                (ildm-trans-unit (and tunits.dot-h
+                                                      file-name)
+                                                 tunits.dot-c)
                                 nil))
                  (map-with-all-files
                   (if tunits.dot-h
                       (omap::update (filepath (str::cat file-name ".h"))
-                                    (ildm-transunit nil tunits.dot-h)
+                                    (ildm-trans-unit nil tunits.dot-h)
                                     map-with-source-file)
                     map-with-source-file)))
               map-with-all-files)

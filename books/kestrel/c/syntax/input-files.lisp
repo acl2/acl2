@@ -638,7 +638,7 @@
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))
-        (b* ((code (make-code-ensemble :transunits tunits :ienv ienv))
+        (b* ((code (make-code-ensemble :trans-units tunits :ienv ienv))
              (events (if (not progp)
                          (rcons `(defconst ,const ',code) events)
                        events)))
@@ -649,14 +649,14 @@
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
-        (b* ((code (make-code-ensemble :transunits tunits :ienv ienv))
+        (b* ((code (make-code-ensemble :trans-units tunits :ienv ienv))
              (events (if (not progp)
                          (rcons `(defconst ,const ',code) events)
                        events)))
           (retok events code state)))
        ;; Validation is required, if we get here.
        ((erp tunits) (valid-trans-ensemble tunits ienv keep-going))
-       (code (make-code-ensemble :transunits tunits :ienv ienv))
+       (code (make-code-ensemble :trans-units tunits :ienv ienv))
        ;; Generate :CONST constant with the validated translation unit.
        (events (if (not progp)
                    (rcons `(defconst ,const ',code) events)

@@ -113,8 +113,8 @@
           hash-if/elif-expr
           hash-if/ifdef/ifndef
           trans-items
-          transunit
-          filepath-transunit-map
+          trans-unit
+          filepath-trans-unit-map
           trans-ensemble)
   :result booleanp
   :default t
@@ -255,7 +255,7 @@
                 (comp-stmt-standardp (fundef->body fundef))))
    (ext-declon :empty nil)
    (ext-declon :asm nil)
-   (transunit (and (not (trans-item-list-commentp
-                         (transunit->items transunit)))
-                   (trans-item-list-standardp
-                    (transunit->items transunit))))))
+   (trans-unit (and (not (trans-item-list-commentp
+                          (trans-unit->items trans-unit)))
+                    (trans-item-list-standardp
+                     (trans-unit->items trans-unit))))))

@@ -650,29 +650,29 @@
         valid-table
         call-graph))))
 
-(define call-graph-transunit
+(define call-graph-trans-unit
   ((filepath filepathp)
-   (transunit transunitp)
+   (trans-unit trans-unitp)
    (call-graph call-graphp))
-  :guard (c$::transunit-annop transunit)
+  :guard (c$::trans-unit-annop trans-unit)
   :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation unit."
-  (b* (((transunit transunit) transunit)
-       (info (c$::transunit-info-fix (c$::transunit->info transunit)))
-       (valid-table (c$::transunit-info->table-end info)))
-    (call-graph-trans-item-list transunit.items filepath valid-table call-graph))
-  :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
+  (b* (((trans-unit trans-unit) trans-unit)
+       (info (c$::trans-unit-info-fix (c$::trans-unit->info trans-unit)))
+       (valid-table (c$::trans-unit-info->table-end info)))
+    (call-graph-trans-item-list trans-unit.items filepath valid-table call-graph))
+  :guard-hints (("Goal" :in-theory (enable c$::trans-unit-annop))))
 
-(define call-graph-filepath-transunit-map
-  ((map filepath-transunit-mapp)
+(define call-graph-filepath-trans-unit-map
+  ((map filepath-trans-unit-mapp)
    (call-graph call-graphp))
-  :guard (c$::filepath-transunit-map-annop map)
+  :guard (c$::filepath-trans-unit-map-annop map)
   :returns (call-graph$ call-graphp)
   (if (omap::emptyp map)
       (call-graph-fix call-graph)
-    (call-graph-filepath-transunit-map
+    (call-graph-filepath-trans-unit-map
       (omap::tail map)
-      (call-graph-transunit
+      (call-graph-trans-unit
         (omap::head-key map)
         (omap::head-val map)
         call-graph)))
@@ -684,7 +684,7 @@
   :guard (c$::trans-ensemble-annop ensemble)
   :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation ensemble."
-  (call-graph-filepath-transunit-map
+  (call-graph-filepath-trans-unit-map
    (c$::trans-ensemble->units ensemble)
    nil)
   :guard-hints (("Goal" :in-theory (enable c$::trans-ensemble-annop))))

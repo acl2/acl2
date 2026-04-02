@@ -103,8 +103,8 @@
 
 (define get-gso-filepath-linkage-search
   ((ident identp)
-   (tunits filepath-transunit-mapp))
-  :guard (c$::filepath-transunit-map-annop tunits)
+   (tunits filepath-trans-unit-mapp))
+  :guard (c$::filepath-trans-unit-map-annop tunits)
   :returns (mv (er? maybe-msgp)
                (filepath filepathp)
                (linkage c$::linkagep)
@@ -117,16 +117,16 @@
        ((mv erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
-          (c$::transunit-info->table-end (c$::transunit->info tunit))))
+          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
        ((unless erp)
         (retok filepath linkage tag?)))
     (get-gso-filepath-linkage-search ident (omap::tail tunits)))
-  :guard-hints (("Goal" :in-theory (enable c$::filepath-transunit-map-annop
-                                           c$::transunit-annop))))
+  :guard-hints (("Goal" :in-theory (enable c$::filepath-trans-unit-map-annop
+                                           c$::trans-unit-annop))))
 
 (defrulel assoc-of-get-gso-filepath-linkage-search.filepath
   (implies
-    (and (filepath-transunit-mapp tunits)
+    (and (filepath-trans-unit-mapp tunits)
          (not (mv-nth 0 (get-gso-filepath-linkage-search ident tunits))))
     (omap::assoc (mv-nth 1 (get-gso-filepath-linkage-search ident tunits))
                  tunits))
@@ -156,21 +156,21 @@
        ((erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
-          (c$::transunit-info->table-end (c$::transunit->info tunit)))))
+          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit)))))
     (retok filepath? linkage tag?))
   :guard-hints (("Goal" :in-theory (enable c$::trans-ensemble-annop)))
   :prepwork
-  ((defrulel transunit-infop-of-assoc-tunits
-     (implies (and (filepath-transunit-mapp tunits)
-                   (c$::filepath-transunit-map-annop tunits)
+  ((defrulel trans-unit-infop-of-assoc-tunits
+     (implies (and (filepath-trans-unit-mapp tunits)
+                   (c$::filepath-trans-unit-map-annop tunits)
                    (omap::assoc filepath tunits))
-              (c$::transunit-infop
-                (c$::transunit->info
+              (c$::trans-unit-infop
+                (c$::trans-unit->info
                   (cdr (omap::assoc filepath tunits)))))
      :induct t
      :enable (omap::assoc
-              c$::filepath-transunit-map-annop
-              c$::transunit-annop))))
+              c$::filepath-trans-unit-map-annop
+              c$::trans-unit-annop))))
 
 (defrulel assoc-of-get-gso-filepath-linkage.filepath
   (implies
@@ -472,19 +472,19 @@
            (identp new1$))
     :hints (("Goal" :induct t))))
 
-(define dup-split-struct-type-transunit
+(define dup-split-struct-type-trans-unit
   ((original identp)
    (new1 ident-optionp)
    (new2 ident-optionp)
    (blacklist ident-setp)
    (split-members ident-listp)
-   (tunit transunitp))
+   (tunit trans-unitp))
   :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
-               (tunit$ transunitp))
-  (b* (((reterr) nil nil (c$::irr-transunit))
-       ((transunit tunit) tunit)
+               (tunit$ trans-unitp))
+  (b* (((reterr) nil nil (c$::irr-trans-unit))
+       ((trans-unit tunit) tunit)
        ((erp new1 new2 items)
         (dup-split-struct-type-trans-item-list
           original
@@ -495,30 +495,30 @@
           tunit.items)))
     (retok new1
            new2
-           (make-transunit :items items
+           (make-trans-unit :items items
                            :info tunit.info)))
     ///
 
-    (defret identp-of-dup-split-struct-type-transunit.new2$
+    (defret identp-of-dup-split-struct-type-trans-unit.new2$
       (equal (identp new2$)
              (identp new1$))))
 
-(define dup-split-struct-type-filepath-transunit-map
+(define dup-split-struct-type-filepath-trans-unit-map
   ((original identp)
    (new1 ident-optionp)
    (new2 ident-optionp)
    (blacklist ident-setp)
    (split-members ident-listp)
-   (map filepath-transunit-mapp))
+   (map filepath-trans-unit-mapp))
   :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
-               (map$ filepath-transunit-mapp))
+               (map$ filepath-trans-unit-mapp))
   (b* (((reterr) nil nil nil)
        ((when (omap::emptyp map))
         (retok nil nil nil))
        ((erp new1$ new2$ tunit)
-        (dup-split-struct-type-transunit
+        (dup-split-struct-type-trans-unit
           original
           new1
           new2
@@ -526,7 +526,7 @@
           split-members
           (omap::head-val map)))
        ((erp new1 new2 map$)
-        (dup-split-struct-type-filepath-transunit-map
+        (dup-split-struct-type-filepath-trans-unit-map
           original
           new1
           new2
@@ -545,7 +545,7 @@
   :verify-guards :after-returns
   ///
 
-  (defret identp-of-dup-split-struct-type-filepath-transunit-map.new2$
+  (defret identp-of-dup-split-struct-type-filepath-trans-unit-map.new2$
     (equal (identp new2$)
            (identp new1$))
     :hints (("Goal" :induct t))))
@@ -888,7 +888,7 @@
           (rest items))))
     (retok (append new-items1 new-items2))))
 
-(define split-gso-split-object-transunit
+(define split-gso-split-object-trans-unit
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -896,11 +896,11 @@
    (new1-type identp)
    (new2-type identp)
    (split-members ident-listp)
-   (tunit transunitp))
+   (tunit trans-unitp))
   :returns (mv (er? maybe-msgp)
-               (tunit$ transunitp))
-  (b* (((reterr) (c$::irr-transunit))
-       ((transunit tunit) tunit)
+               (tunit$ trans-unitp))
+  (b* (((reterr) (c$::irr-trans-unit))
+       ((trans-unit tunit) tunit)
        ((erp items)
         (split-gso-split-object-trans-item-list
           original
@@ -911,9 +911,9 @@
           new2-type
           split-members
           tunit.items)))
-    (retok (make-transunit :items items :info tunit.info))))
+    (retok (make-trans-unit :items items :info tunit.info))))
 
-(define split-gso-split-object-filepath-transunit-map
+(define split-gso-split-object-filepath-trans-unit-map
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -921,14 +921,14 @@
    (new1-type identp)
    (new2-type identp)
    (split-members ident-listp)
-   (map filepath-transunit-mapp))
+   (map filepath-trans-unit-mapp))
   :returns (mv (er? maybe-msgp)
-               (map$ filepath-transunit-mapp))
+               (map$ filepath-trans-unit-mapp))
   (b* (((reterr) nil)
        ((when (omap::emptyp map))
         (retok nil))
        ((erp tunit)
-        (split-gso-split-object-transunit
+        (split-gso-split-object-trans-unit
           original
           linkage
           new1
@@ -938,7 +938,7 @@
           split-members
           (omap::head-val map)))
        ((erp map$)
-        (split-gso-split-object-filepath-transunit-map
+        (split-gso-split-object-filepath-trans-unit-map
           original
           linkage
           new1
@@ -972,8 +972,8 @@
                 hash-if/elif-expr
                 hash-if/ifdef/ifndef
                 trans-items
-                transunit
-                filepath-transunit-map)
+                trans-unit
+                filepath-trans-unit-map)
     :extra-args
     ((original identp)
      (linkage c$::linkagep)
@@ -1054,18 +1054,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-gso-rename-filepaths
-  ((map filepath-transunit-mapp))
-  :returns (map$ filepath-transunit-mapp)
+  ((map filepath-trans-unit-mapp))
+  :returns (map$ filepath-trans-unit-mapp)
   (b* (((when (omap::emptyp map)) nil)
        ((mv path tunit) (omap::head map)))
     (omap::update (c$::filepath-fix path)
-                  (c$::transunit-fix tunit)
+                  (c$::trans-unit-fix tunit)
                   (split-gso-rename-filepaths (omap::tail map))))
   :verify-guards :after-returns)
 
 ;; TODO: add `:fragment` argument indicate the map does not represent a
 ;;   complete program. In such cases, fail if the gso is external.
-(define split-gso-filepath-transunit-map
+(define split-gso-filepath-trans-unit-map
   ((struct-tag identp)
    (filepath filepathp)
    (linkage c$::linkagep)
@@ -1075,20 +1075,20 @@
    (new-struct-tag1 ident-optionp)
    (new-struct-tag2 ident-optionp)
    (split-members ident-listp)
-   (map filepath-transunit-mapp))
+   (map filepath-trans-unit-mapp))
   :guard (omap::assoc filepath map)
   :returns (mv (er? maybe-msgp)
-               (map$ filepath-transunit-mapp))
+               (map$ filepath-trans-unit-mapp))
   (b* (((reterr) nil)
-       (map (c$::filepath-transunit-map-fix map))
+       (map (c$::filepath-trans-unit-map-fix map))
        ((when (equal linkage (c$::linkage-none)))
         (retmsg$ "Invalid struct object linkage: ~x0" linkage))
-       (ident-blacklist (filepath-transunit-map-collect-idents map))
+       (ident-blacklist (filepath-trans-unit-map-collect-idents map))
        (new-struct1 (or new-struct1 orig-struct))
        (new-struct2 (or new-struct2 orig-struct))
        ((when (equal linkage (c$::linkage-external)))
         (b* (((erp new-struct-tag1 new-struct-tag2 map)
-              (dup-split-struct-type-filepath-transunit-map
+              (dup-split-struct-type-filepath-trans-unit-map
                 struct-tag
                 new-struct-tag1
                 new-struct-tag2
@@ -1107,7 +1107,7 @@
                                   new-struct2)
                             ident-blacklist))
              ((erp map)
-              (split-gso-split-object-filepath-transunit-map
+              (split-gso-split-object-filepath-trans-unit-map
                 orig-struct
                 linkage
                 new-struct1
@@ -1117,7 +1117,7 @@
                 split-members
                 map))
              (map
-               (filepath-transunit-map-replace-field-access
+               (filepath-trans-unit-map-replace-field-access
                  map
                  orig-struct
                  linkage
@@ -1127,7 +1127,7 @@
           (retok map)))
        (tunit (omap::lookup filepath map))
        ((erp new-struct-tag1 new-struct-tag2 tunit)
-        (dup-split-struct-type-transunit
+        (dup-split-struct-type-trans-unit
           struct-tag
           new-struct-tag1
           new-struct-tag2
@@ -1146,7 +1146,7 @@
                             new-struct2)
                       ident-blacklist))
        ((erp tunit)
-        (split-gso-split-object-transunit
+        (split-gso-split-object-trans-unit
           orig-struct
           linkage
           new-struct1
@@ -1156,7 +1156,7 @@
           split-members
           tunit))
        (tunit
-         (transunit-replace-field-access
+         (trans-unit-replace-field-access
            tunit
            orig-struct
            linkage
@@ -1184,7 +1184,7 @@
         (get-gso-info filepath? orig-struct tunits))
        (map (trans-ensemble->units tunits))
        ((erp map)
-        (split-gso-filepath-transunit-map
+        (split-gso-filepath-trans-unit-map
           struct-tag
           filepath
           linkage
@@ -1219,8 +1219,8 @@
                                                new-struct-tag1
                                                new-struct-tag2
                                                split-members
-                                               code.transunits)))
-    (retok (change-code-ensemble code :transunits tunits)))
+                                               code.trans-units)))
+    (retok (change-code-ensemble code :trans-units tunits)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

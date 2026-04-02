@@ -27,7 +27,7 @@
 
   (defconst *call-graph*
     (call-graph-trans-ensemble
-     (code-ensemble->transunits *test*)))
+     (code-ensemble->trans-units *test*)))
 
   (acl2::assert-equal
     *call-graph*
@@ -77,7 +77,7 @@
 
   (defconst *call-graph*
     (call-graph-trans-ensemble
-     (code-ensemble->transunits *test*)))
+     (code-ensemble->trans-units *test*)))
 
   (acl2::assert-equal
     *call-graph*

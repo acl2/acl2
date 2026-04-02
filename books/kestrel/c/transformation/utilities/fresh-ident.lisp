@@ -231,12 +231,12 @@
 ;; TODO: add tests
 (define trans-ensemble-fresh-ident
   ((ident identp)
-   (transunits trans-ensemblep)
+   (trans-units trans-ensemblep)
    &key
    ((number-prefix stringp) '"_")
    ((number-suffix stringp) '""))
   :returns (ident$ identp)
   (fresh-ident ident
-               (trans-ensemble-collect-idents transunits)
+               (trans-ensemble-collect-idents trans-units)
                :number-prefix number-prefix
                :number-suffix number-suffix))

@@ -24,21 +24,21 @@
 (defconst *renamed-ppext-disamb-simple/stdbool/stdint*
   (code-ensemble
    (make-trans-ensemble
-     :units
-     (list (cons (filepath "simple-renamed-renamed.c")
-                 (transunit-at-path (filepath "simple.c")
-                                    (code-ensemble->transunits
-                                      *ppext-disamb-simple/stdbool/stdint*)))
-           (cons (filepath "stdbool-renamed-renamed.c")
-                 (transunit-at-path (filepath "stdbool.c")
-                                    (code-ensemble->transunits
-                                      *ppext-disamb-simple/stdbool/stdint*)))
-           (cons (filepath "stdint-renamed-renamed.c")
-                 (transunit-at-path (filepath "stdint.c")
-                                    (code-ensemble->transunits
+    :units
+    (list (cons (filepath "simple-renamed-renamed.c")
+                (trans-unit-at-path (filepath "simple.c")
+                                    (code-ensemble->trans-units
+                                     *ppext-disamb-simple/stdbool/stdint*)))
+          (cons (filepath "stdbool-renamed-renamed.c")
+                (trans-unit-at-path (filepath "stdbool.c")
+                                    (code-ensemble->trans-units
+                                     *ppext-disamb-simple/stdbool/stdint*)))
+          (cons (filepath "stdint-renamed-renamed.c")
+                (trans-unit-at-path (filepath "stdint.c")
+                                    (code-ensemble->trans-units
                                      *ppext-disamb-simple/stdbool/stdint*))))
-     :resolved-headers nil
-     :info nil)
+    :resolved-headers nil
+    :info nil)
    (code-ensemble->ienv *ppext-disamb-simple/stdbool/stdint*)))
 
 (output-files :const *renamed-ppext-disamb-simple/stdbool/stdint*)

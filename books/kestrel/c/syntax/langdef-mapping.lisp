@@ -1804,8 +1804,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-transunit ((tunit transunitp))
-  :guard (transunit-unambp tunit)
+(define ldm-trans-unit ((tunit trans-unitp))
+  :guard (trans-unit-unambp tunit)
   :returns (mv erp (tunit1 c::transunitp))
   :short "Map a translation unit to the language definition."
   :long
@@ -1816,17 +1816,17 @@
      obtaining a corresponding list of external declaration,
      which we put into a @(tsee c::transunit)."))
   (b* (((reterr) (c::transunit nil))
-       (items (transunit->items tunit))
+       (items (trans-unit->items tunit))
        ((erp extdecls1) (ldm-trans-item-list items)))
     (retok (c::make-transunit :declons extdecls1)))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-transunit-ok-when-transunit-formalp
+  (defret ldm-trans-unit-ok-when-trans-unit-formalp
     (not erp)
-    :hyp (transunit-formalp tunit)
-    :hints (("Goal" :in-theory (enable transunit-formalp)))))
+    :hyp (trans-unit-formalp tunit)
+    :hints (("Goal" :in-theory (enable trans-unit-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1852,7 +1852,7 @@
                       with ~x0 translation units."
                      (omap::size map))))
        (tunit (omap::head-val map))
-       ((erp tunit1) (ldm-transunit tunit)))
+       ((erp tunit1) (ldm-trans-unit tunit)))
     (retok (c::make-transunit-ensemble :path-wo-ext ""
                                        :dot-h nil
                                        :dot-c tunit1)))

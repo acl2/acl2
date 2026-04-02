@@ -12416,7 +12416,7 @@
 
 (define parse-translation-unit ((parstate parstatep))
   :returns (mv erp
-               (tunit transunitp)
+               (tunit trans-unitp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a translation unit."
   :long
@@ -12433,15 +12433,15 @@
      this means that, if the file is not empty,
      then the last character is a new-line,
      otherwise that position would be at a non-zero column."))
-  (b* (((reterr) (irr-transunit) parstate)
+  (b* (((reterr) (irr-trans-unit) parstate)
        ((erp items & parstate) (parse-*-translation-item parstate))
        ((unless (or items
                     (parstate->gcc/clang parstate)))
         (reterr (msg "The file does not contain any translation items.")))
        ((unless (= (position->column (parstate->position parstate)) 0))
         (reterr (msg "The file does not end in new-line."))))
-    (retok (make-transunit :items items
-                           :info nil)
+    (retok (make-trans-unit :items items
+                            :info nil)
            parstate))
 
   ///
@@ -12457,7 +12457,7 @@
                     (data byte-listp)
                     (dialect c::dialectp)
                     (skip-control-lines booleanp))
-  :returns (mv erp (tunit transunitp))
+  :returns (mv erp (tunit trans-unitp))
   :short "Parse (the data bytes of) a file."
   :long
   (xdoc::topstring
@@ -12483,7 +12483,7 @@
              ((unless (stringp file))
               (raise "Internal error: malformed file path ~x0."
                      (filepath-fix path))
-              (mv t (irr-transunit) parstate))
+              (mv t (irr-trans-unit) parstate))
              (parstate
               (init-parstate file data dialect skip-control-lines parstate))
              ((mv erp tunit parstate) (parse-translation-unit parstate)))
@@ -12491,11 +12491,11 @@
               (if (msgp erp)
                   (mv (msg "Error in file ~x0: ~@1"
                            (filepath->unwrap path) erp)
-                      (irr-transunit)
+                      (irr-trans-unit)
                       parstate)
                 (prog2$
                  (raise "Internal error: ~x0 is not a message." erp)
-                 (mv t (irr-transunit) parstate)))
+                 (mv t (irr-trans-unit) parstate)))
             (mv nil tunit parstate)))
       (mv erp tunit))))
 
@@ -12542,7 +12542,7 @@
                                (dialect c::dialectp)
                                (skip-control-lines booleanp)
                                (keep-going booleanp))
-     :returns (mv erp (tunitmap filepath-transunit-mapp))
+     :returns (mv erp (tunitmap filepath-trans-unit-mapp))
      (b* (((reterr) nil)
           ((when (omap::emptyp filemap)) (retok nil))
           ((mv filepath filedata) (omap::head filemap))

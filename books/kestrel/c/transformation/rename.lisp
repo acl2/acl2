@@ -96,8 +96,8 @@
               hash-if/elif-expr
               hash-if/ifdef/ifndef
               trans-items
-              transunit
-              filepath-transunit-map
+              trans-unit
+              filepath-trans-unit-map
               trans-ensemble)
   :extra-args ((subst ident-ident-alistp))
   :override ((ident (ident-ident-subst ident subst))))
@@ -107,5 +107,5 @@
   :returns (new-code code-ensemblep)
   (change-code-ensemble
    code
-   :transunits
-   (trans-ensemble-rename (code-ensemble->transunits code) subst)))
+   :trans-units
+   (trans-ensemble-rename (code-ensemble->trans-units code) subst)))

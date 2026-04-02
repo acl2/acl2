@@ -203,15 +203,15 @@
 
 ;; TODO: this should look at the translation validation table instead of going
 ;; over declarations.
-(define transunit-resolve-qualified-ident
+(define trans-unit-resolve-qualified-ident
   ((qual-ident qualified-identp)
-   (transunit transunitp))
-  :guard (transunit-annop transunit)
+   (trans-unit trans-unitp))
+  :guard (trans-unit-annop trans-unit)
   :returns (mv (er? maybe-msgp)
                (uid c$::uidp))
   (b* (((reterr) (c$::irr-uid)))
     (trans-item-list-resolve-qualified-ident qual-ident
-                                             (transunit->items transunit)))
+                                             (trans-unit->items trans-unit)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 (define resolve-qualified-ident
@@ -237,10 +237,10 @@
         (retmsg$ "~x0 is not an object or function ~
                   with external linkage."
                  qual-ident.ident))
-       (transunit? (omap::assoc qual-ident.filepath?
+       (trans-unit? (omap::assoc qual-ident.filepath?
                                 (trans-ensemble->units ensemble)))
-       ((unless transunit?)
+       ((unless trans-unit?)
         (retmsg$ "~x0 is not a translation unit in the ensemble."
                  qual-ident.filepath?)))
-    (transunit-resolve-qualified-ident qual-ident (cdr transunit?)))
+    (trans-unit-resolve-qualified-ident qual-ident (cdr trans-unit?)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))

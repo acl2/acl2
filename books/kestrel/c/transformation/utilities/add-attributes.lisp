@@ -266,8 +266,8 @@
               hash-if/elif-expr
               hash-if/ifdef/ifndef
               trans-items
-              transunit
-              filepath-transunit-map
+              trans-unit
+              filepath-trans-unit-map
               trans-ensemble)
   :extra-args
   ((attrs uid-attrib-spec-list-mapp))

@@ -3836,8 +3836,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-transunit ((tunit transunitp) (dialect c::dialectp))
-  :returns (mv (erp maybe-msgp) (new-tunit transunitp))
+(define dimb-trans-unit ((tunit trans-unitp) (dialect c::dialectp))
+  :returns (mv (erp maybe-msgp) (new-tunit trans-unitp))
   :short "Disambiguate a translation unit."
   :long
   (xdoc::topstring
@@ -3892,21 +3892,21 @@
      However, note that these variables only make sense on an x86 platform:
      we should refine our GCC/Clang flag with
      a richer description of the C implementation."))
-  (b* (((reterr) (irr-transunit))
-       (items (transunit->items tunit))
+  (b* (((reterr) (irr-trans-unit))
+       (items (trans-unit->items tunit))
        (table (dimb-add-idents-objfun (built-ins-for dialect)
                                       (dimb-init-table)))
        ((erp new-items &)
         (dimb-trans-item-list items table (c::dialect-gcc/clangp dialect))))
-    (retok (make-transunit :items new-items
+    (retok (make-trans-unit :items new-items
                            :info nil)))
   :hooks (:fix)
 
   ///
 
-  (defret transunit-unambp-of-dimb-transunit
+  (defret trans-unit-unambp-of-dimb-trans-unit
     (implies (not erp)
-             (transunit-unambp new-tunit))))
+             (trans-unit-unambp new-tunit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3942,17 +3942,17 @@
 
   :prepwork
 
-  ((define dimb-trans-ensemble-loop ((tumap filepath-transunit-mapp)
+  ((define dimb-trans-ensemble-loop ((tumap filepath-trans-unit-mapp)
                                      (dialect c::dialectp)
                                      (keep-going booleanp))
      :returns (mv (erp maybe-msgp)
-                  (new-tumap filepath-transunit-mapp
-                             :hyp (filepath-transunit-mapp tumap)))
+                  (new-tumap filepath-trans-unit-mapp
+                             :hyp (filepath-trans-unit-mapp tumap)))
      :parents nil
      (b* (((reterr) nil)
           ((when (omap::emptyp tumap)) (retok nil))
           ((mv path tunit) (omap::head tumap))
-          ((mv erp new-tunit) (dimb-transunit tunit dialect))
+          ((mv erp new-tunit) (dimb-trans-unit tunit dialect))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
@@ -3977,10 +3977,10 @@
        :args ((dialect c::dialectp)
               (keep-going booleanp)))
 
-     (defret filepath-transunit-map-unambp-of-dimb-trans-ensemble-loop
+     (defret filepath-trans-unit-map-unambp-of-dimb-trans-ensemble-loop
        (implies (not erp)
-                (filepath-transunit-map-unambp new-tumap))
-       :hyp (filepath-transunit-mapp tumap)
+                (filepath-trans-unit-map-unambp new-tumap))
+       :hyp (filepath-trans-unit-mapp tumap)
        :hints (("Goal" :induct t)))))
 
   ///
