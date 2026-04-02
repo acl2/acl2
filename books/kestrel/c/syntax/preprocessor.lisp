@@ -809,13 +809,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-next-token ((stop-at-newline-p booleanp)
-                         (disabled string-listp)
-                         (ppstate ppstatep))
+(define read-next-token ((stop-at-newline-p booleanp) (ppstate ppstatep))
   :returns (mv erp
                (token plexemep)
                (span spanp)
-               (new-disabled string-listp)
                (new-ppstate ppstatep))
   :short "Read a token, handling any markers along the way."
   :long
@@ -824,16 +821,12 @@
     "We skip over comments and white space,
      where white space excludes/includes new lines
      according to whether @('stop-at-newline-p') is @('t')/@('nil').
-     We handle any markers encountered along the way,
-     as in @(tsee pproc-lexemes).
      We must find a token, which we return;
      otherwise this fails.")
    (xdoc::p
-    "This is used only in @(tsee pproc-lexemes).
-     The multiset (modeled as a list) of disabled macro names
-     is taken as input and returned as output."))
+    "This is used only in @(tsee pproc-lexemes)."))
   (b* ((ppstate (ppstate-fix ppstate))
-       ((reterr) (irr-plexeme) (irr-span) nil ppstate)
+       ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp lexmark ppstate) (read-lexmark ppstate)))
     (cond
      ((not lexmark) ; EOF
@@ -841,13 +834,9 @@
                   :expected "a lexmark"
                   :found "end of file"))
      ((lexmark-case lexmark :start) ; start(M)
-      (b* ((name (lexmark-start->macro lexmark))
-           (disabled (cons name disabled)))
-        (read-next-token stop-at-newline-p disabled ppstate)))
+      (read-next-token stop-at-newline-p ppstate))
      ((lexmark-case lexmark :end) ; end(M)
-      (b* ((name (lexmark-end->macro lexmark))
-           (disabled (remove1-equal name (string-list-fix disabled))))
-        (read-next-token stop-at-newline-p disabled ppstate)))
+      (read-next-token stop-at-newline-p ppstate))
      (t ; lexeme
       (b* ((lexeme (lexmark-lexeme->lexeme lexmark))
            (span (lexmark-lexeme->span lexmark)))
@@ -860,9 +849,9 @@
                                  a token"
                       :found (plexeme?-to-msg lexeme)))
          ((plexeme-tokenp lexeme) ; token
-          (retok lexeme span (string-list-fix disabled) ppstate))
+          (retok lexeme span ppstate))
          (t ; comment or white space
-          (read-next-token stop-at-newline-p disabled ppstate)))))))
+          (read-next-token stop-at-newline-p ppstate)))))))
   :no-function nil
   :measure (ppstate->size ppstate)
 
@@ -2427,36 +2416,6 @@
      and may contain further macro calls,
      the recursion is mutual.")
    (xdoc::p
-    "Both functions take a list of identifiers
-     that consists of the names of the macros that are ``disabled'',
-     in the sense that they must not be expanded.
-     The order in the list is unimportant, but the repetitions are:
-     the list represents a multiset of macro names.
-     Every time we encounter a @(':start') marker (see @(tsee macrep-mode)),
-     we add the macro name to the multiset;
-     every time we encounter a @(':end') marker (see @(tsee macrep-mode)),
-     we remove the macro name from the multiset.
-     Each expansion of a macro is surrounded by
-     a @(':start') and @(':end') marker for that macro name:
-     this way, when the expansion is added in front of the input,
-     the macro will not be re-expanded until we go past its expansion
-     [C17:6.10.3.4].
-     The reason why we need a multiset is that, for instance,
-     the argument of a function-like macro @('F')
-     could contain a call of @('F') itself.
-     The argument is macro-expanded before the (outer) call is expanded,
-     which therefore involves expanding the inner call.
-     The expansion of the inner call is surrounded by the markers.
-     Then, when we expand the outer call,
-     that expansion is also surrounded by the markers.
-     This gives rise to nested markers for the same macro,
-     but reaching an inner closing marker should not re-enable the expansion,
-     which is re-enabled only after the outer closing marker.
-     Thus, we need to keep track of how many disablements and re-enablements
-     each macro goes through, i.e. we need a multiset.
-     Only if the multiset contains no occurrences at all of a macro,
-     that macro is enabled, otherwise it stays disabled.")
-   (xdoc::p
     "Both functions take a flag saying whether
      we are preprocessing a directive [C17:6.10/2] or not.
      This affects the treatment of new lines within macro arguments.")
@@ -2478,7 +2437,6 @@
                          (rev-lexmarks lexmark-listp)
                          (paren-level natp)
                          (no-expandp booleanp)
-                         (disabled string-listp)
                          (directivep booleanp)
                          (ppstate ppstatep)
                          (limit natp))
@@ -2654,33 +2612,27 @@
                       :expected "a lexmark"
                       :found "end of file")))
        ((lexmark-case lexmark :start) ; start(M)
-        (b* ((name (lexmark-start->macro lexmark))
-             (disabled (cons name (string-list-fix disabled))))
-          (pproc-lexemes mode
-                         (if (member-eq (macrep-mode-kind mode)
-                                        '(:arg-nonlast :arg-last :arg-dots))
-                             (cons lexmark rev-lexmarks)
-                           rev-lexmarks)
-                         paren-level
-                         no-expandp
-                         disabled
-                         directivep
-                         ppstate
-                         (1- limit))))
+        (pproc-lexemes mode
+                       (if (member-eq (macrep-mode-kind mode)
+                                      '(:arg-nonlast :arg-last :arg-dots))
+                           (cons lexmark rev-lexmarks)
+                         rev-lexmarks)
+                       paren-level
+                       no-expandp
+                       directivep
+                       ppstate
+                       (1- limit)))
        ((lexmark-case lexmark :end) ; end(M)
-        (b* ((name (lexmark-end->macro lexmark))
-             (disabled (remove1-equal name (string-list-fix disabled))))
-          (pproc-lexemes mode
-                         (if (member-eq (macrep-mode-kind mode)
-                                        '(:arg-nonlast :arg-last :arg-dots))
-                             (cons lexmark rev-lexmarks)
-                           rev-lexmarks)
-                         paren-level
-                         no-expandp
-                         disabled
-                         directivep
-                         ppstate
-                         (1- limit))))
+        (pproc-lexemes mode
+                       (if (member-eq (macrep-mode-kind mode)
+                                      '(:arg-nonlast :arg-last :arg-dots))
+                           (cons lexmark rev-lexmarks)
+                         rev-lexmarks)
+                       paren-level
+                       no-expandp
+                       directivep
+                       ppstate
+                       (1- limit)))
        (t ; lexeme
         (b* ((lexeme (lexmark-lexeme->lexeme lexmark))
              (span (lexmark-lexeme->span lexmark)))
@@ -2699,7 +2651,6 @@
                                 (cons lexmark rev-lexmarks)
                                 paren-level
                                 no-expandp
-                                disabled
                                 directivep
                                 ppstate
                                 (1- limit))))
@@ -2718,7 +2669,6 @@
                                     (cons lexmark rev-lexmarks)
                                     paren-level
                                     no-expandp
-                                    disabled
                                     directivep
                                     ppstate
                                     (1- limit)))))
@@ -2730,7 +2680,6 @@
                                (1+ (lnfix paren-level))
                              paren-level)
                            no-expandp
-                           disabled
                            directivep
                            ppstate
                            (1- limit)))
@@ -2741,7 +2690,6 @@
                               (cons lexmark rev-lexmarks)
                               paren-level
                               no-expandp
-                              disabled
                               directivep
                               ppstate
                               (1- limit)))
@@ -2754,7 +2702,6 @@
                                 (cons lexmark rev-lexmarks)
                                 (1- paren-level)
                                 no-expandp
-                                disabled
                                 directivep
                                 ppstate
                                 (1- limit))))
@@ -2766,7 +2713,6 @@
                                 (cons lexmark rev-lexmarks)
                                 (1- paren-level)
                                 no-expandp
-                                disabled
                                 directivep
                                 ppstate
                                 (1- limit))))
@@ -2775,32 +2721,25 @@
             (b* ((ident (plexeme-ident->ident lexeme))
                  ((when (and (macrep-mode-case mode :expr)
                              (equal ident "defined"))) ; defined
-                  (b* (((erp lexmarks disabled ppstate)
-                        (b* (((reterr) nil nil ppstate)
-                             ((erp token2 span2 disabled ppstate)
-                              (read-next-token directivep
-                                               disabled
-                                               ppstate)))
+                  (b* (((erp lexmarks ppstate)
+                        (b* (((reterr) nil ppstate)
+                             ((erp token2 span2 ppstate)
+                              (read-next-token directivep ppstate)))
                           (cond
                            ((plexeme-case token2 :ident) ; defined ident
                             (retok (list (make-lexmark-lexeme :lexeme token2
                                                               :span (irr-span)))
-                                   disabled
                                    ppstate))
                            ((plexeme-punctuatorp token2 "(") ; defined (
-                            (b* (((erp token3 span3 disabled ppstate)
-                                  (read-next-token directivep
-                                                   disabled
-                                                   ppstate))
+                            (b* (((erp token3 span3 ppstate)
+                                  (read-next-token directivep ppstate))
                                  ((unless (plexeme-case token3 :ident))
                                   ;; defined ( ident
                                   (reterr-msg :where (span->start span3)
                                               :expected "an identifier"
                                               :found (plexeme?-to-msg token3)))
-                                 ((erp token4 span4 disabled ppstate)
-                                  (read-next-token directivep
-                                                   disabled
-                                                   ppstate))
+                                 ((erp token4 span4 ppstate)
+                                  (read-next-token directivep ppstate))
                                  ((unless (plexeme-punctuatorp token4 ")"))
                                   ;; defined ( ident )
                                   (reterr-msg :where (span->start span4)
@@ -2815,7 +2754,6 @@
                                            (make-lexmark-lexeme
                                             :lexeme token4
                                             :span (irr-span)))
-                                     disabled
                                      ppstate)))
                            (t ; defined EOF-or-not-ident-and-not-(
                             (reterr-msg :where (span->start span2)
@@ -2832,7 +2770,6 @@
                                                     rev-lexmarks))
                                    paren-level
                                    no-expandp
-                                   disabled
                                    directivep
                                    ppstate
                                    (1- limit))))
@@ -2843,7 +2780,6 @@
                                  (cons lexmark rev-lexmarks)
                                  paren-level
                                  no-expandp
-                                 disabled
                                  directivep
                                  ppstate
                                  (1- limit)))
@@ -2853,7 +2789,6 @@
                                  (cons lexmark rev-lexmarks)
                                  paren-level
                                  no-expandp
-                                 disabled
                                  directivep
                                  ppstate
                                  (1- limit))))
@@ -2874,7 +2809,6 @@
                                 rev-lexmarks
                                 paren-level
                                 no-expandp
-                                disabled
                                 directivep
                                 ppstate
                                 (1- limit)))
@@ -2886,42 +2820,35 @@
                                     (cons lexmark rev-lexmarks)
                                     paren-level
                                     no-expandp
-                                    disabled
                                     directivep
                                     ppstate
                                     (1- limit)))
-                    ((erp token span2 disabled ppstate)
-                     (read-next-token directivep
-                                      disabled
-                                      ppstate))
+                    ((erp token span2 ppstate)
+                     (read-next-token directivep ppstate))
                     ((unless (plexeme-punctuatorp token "(")) ; ident (
                      (reterr-msg :where (span->start span2)
                                  :expected "an open parenthesis"
                                  :found (plexeme?-to-msg token)))
-                    ((erp subst disabled ppstate)
-                     (b* (((reterr) nil nil ppstate))
+                    ((erp subst ppstate)
+                     (b* (((reterr) nil ppstate))
                        (if (and (endp info.params)
                                 (not info.ellipsis))
-                           (b* (((erp token span2 disabled ppstate)
-                                 (read-next-token directivep
-                                                  disabled
-                                                  ppstate))
+                           (b* (((erp token span2 ppstate)
+                                 (read-next-token directivep ppstate))
                                 ((unless (plexeme-punctuatorp token ")"))
                                  (reterr-msg :where (span->start span2)
                                              :expected "a closed parenthesis"
                                              :found (plexeme?-to-msg token))))
                              (retok nil ; subst
-                                    disabled
                                     ppstate))
                          (b* (((erp subst ppstate)
                                (pproc-macro-args info.params
                                                  info.ellipsis
                                                  info.hash-params
-                                                 disabled
                                                  directivep
                                                  ppstate
                                                  (1- limit))))
-                           (retok subst disabled ppstate)))))
+                           (retok subst ppstate)))))
                     (replist (replace-macro-args info.replist subst))
                     ((erp replist) (evaluate-triple-hash replist
                                                          (ienv->dialect
@@ -2937,7 +2864,6 @@
                                 rev-lexmarks
                                 paren-level
                                 no-expandp
-                                disabled
                                 directivep
                                 ppstate
                                 (1- limit))))))
@@ -2946,7 +2872,6 @@
                            (cons lexmark rev-lexmarks)
                            paren-level
                            no-expandp
-                           disabled
                            directivep
                            ppstate
                            (1- limit))))))))
@@ -2956,7 +2881,6 @@
   (define pproc-macro-args ((params string-listp)
                             (ellipsis booleanp)
                             (hash-params string-listp)
-                            (disabled string-listp)
                             (directivep booleanp)
                             (ppstate ppstatep)
                             (limit natp))
@@ -2997,7 +2921,6 @@
                                    nil ; rev-lexmarks
                                    0 ; paren-level
                                    no-expandp
-                                   nil ; disabled
                                    directivep
                                    ppstate
                                    (1- limit)))
@@ -3018,7 +2941,6 @@
                          nil ; rev-lexmarks
                          0 ; paren-level
                          no-expandp
-                         nil ; disabled
                          directivep
                          ppstate
                          (1- limit)))
@@ -3028,7 +2950,6 @@
           (pproc-macro-args (cdr params)
                             ellipsis
                             hash-params
-                            disabled
                             directivep
                             ppstate
                             (1- limit))))
@@ -3080,7 +3001,6 @@
                        nil ; rev-lexmarks
                        0 ; paren-level
                        nil ; no-expandp
-                       nil ; disabled
                        t ; directivep
                        ppstate
                        1000000000)) ; limit
@@ -3862,7 +3782,6 @@
                        nil ; rev-lexmarks
                        0 ; paren-level
                        nil ; no-expandp
-                       nil ; disabled
                        nil ; directivep
                        ppstate
                        1000000000)) ; limit
@@ -4777,7 +4696,6 @@
                              nil ; rev-lexmarks
                              0 ; paren-level
                              nil ; no-expandp
-                             nil ; disabled
                              nil ; directivep
                              ppstate
                              limit)) ; unrelated to limit for this clique
@@ -4909,7 +4827,6 @@
                              nil ; rev-lexmarks
                              0 ; paren-level
                              nil ; no-expandp
-                             nil ; disabled
                              t ; directivep
                              ppstate
                              limit)) ; unrelated to limit for this clique
