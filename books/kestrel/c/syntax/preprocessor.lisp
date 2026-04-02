@@ -4621,9 +4621,6 @@
      (xdoc::p
       "If we find some other token, we put it back,
        and we perform macro replacement on the rest of the line.
-       The resulting lexmarks are all lexemes,
-       but since we do not have that fact statically available,
-       we double-check that and throw a hard error if the check fails.
        We try to turn those lexemes into a header name,
        and then we use a separate function to preprocess it.")
      (xdoc::p
