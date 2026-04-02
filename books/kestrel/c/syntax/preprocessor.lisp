@@ -744,54 +744,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-lexmark ((ppstate ppstatep))
-  :returns (mv erp
-               (lexmark? lexmark-optionp)
-               (new-ppstate ppstatep))
-  :short "Read a lexmark during preprocessing."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If there are pending lexmarks, we return the first one.
-     If there are no pending lexmarks,
-     we call @(tsee plex-lexeme) to lex a lexeme from the input,
-     and we return the lexmark obtained by combining lexeme and span."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       ((reterr) nil ppstate)
-       (lexmarks (ppstate->lexmarks ppstate))
-       (size (ppstate->size ppstate))
-       ((when (consp lexmarks))
-        (b* ((lexmark (car lexmarks))
-             ((unless (> size 0))
-              (raise "Internal error: ~
-                      size is 0 but there are pending lexmarks.")
-              (reterr t))
-             (ppstate (update-ppstate->size (1- size) ppstate))
-             (ppstate (update-ppstate->lexmarks (cdr lexmarks) ppstate)))
-          (retok lexmark ppstate)))
-       ((erp lexeme? span ppstate) (plex-lexeme nil ppstate))
-       ((when (not lexeme?)) (retok nil ppstate)))
-    (retok (make-lexmark-lexeme :lexeme lexeme? :span span) ppstate))
-  :no-function nil
-
-  ///
-
-  (defret ppstate->size-of-read-lexmark-uncond
-    (<= (ppstate->size new-ppstate)
-        (ppstate->size ppstate))
-    :rule-classes :linear
-    :hints (("Goal" :in-theory (enable nfix))))
-
-  (defret ppstate->size-of-read-lexmark-cond
-    (implies (and (not erp)
-                  lexmark?)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
-    :rule-classes :linear
-    :hints (("Goal" :in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define read-next-token ((stop-at-newline-p booleanp) (ppstate ppstatep))
   :returns (mv erp
                (token plexemep)
