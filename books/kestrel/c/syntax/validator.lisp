@@ -7501,7 +7501,7 @@
             nil)))
     (retok (make-trans-ensemble
             :units new-map
-            :resolved-headers nil
+            :resolved-includes nil
             :info (trans-ensemble-info table))))
 
   :prepwork

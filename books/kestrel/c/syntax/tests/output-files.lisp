@@ -37,7 +37,7 @@
                 (trans-unit-at-path (filepath "stdint.c")
                                     (code-ensemble->trans-units
                                      *ppext-disamb-simple/stdbool/stdint*))))
-    :resolved-headers nil
+    :resolved-includes nil
     :info nil)
    (code-ensemble->ienv *ppext-disamb-simple/stdbool/stdint*)))
 

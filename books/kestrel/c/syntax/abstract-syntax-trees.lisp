@@ -4088,7 +4088,7 @@
      This is temporary, because we plan to put that information
      directly in the ASTs for the @('#include') directives."))
   ((units filepath-trans-unit-map)
-   (resolved-headers string-header-name-string-map-map)
+   (resolved-includes string-header-name-string-map-map)
    (info any))
   :pred trans-ensemblep
   :layout :fulltree)

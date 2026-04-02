@@ -642,7 +642,7 @@
        ;; This will no longer be necessary once we store that information
        ;; directly in the #include ASTs, coming from our preprocessor.
        (tunits (change-trans-ensemble tunits
-                                      :resolved-headers resolved-includes))
+                                      :resolved-includes resolved-includes))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))

@@ -3936,7 +3936,7 @@
                       len-new-tumap len-tumap)))
             nil)))
     (retok (make-trans-ensemble :units new-tumap
-                                :resolved-headers nil
+                                :resolved-includes nil
                                 :info nil)))
   :hooks (:fix)
 
