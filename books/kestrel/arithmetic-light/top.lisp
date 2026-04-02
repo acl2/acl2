@@ -1,6 +1,6 @@
 ; Top-level book for the arithmetic-light library.
 ;
-; Copyright (C) 2019-2025 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -40,6 +40,8 @@
 (include-book "mod2")
 (include-book "floor")
 (include-book "floor2")
+(include-book "floor-and-expt")
+(include-book "floor-mod-expt")
 (include-book "truncate")
 (include-book "divide")
 (include-book "times-and-divide")
@@ -62,6 +64,7 @@
 (include-book "natp")
 (include-book "fix")
 (include-book "ifix")
+(include-book "types")
 
 (include-book "limit-expt")
 
