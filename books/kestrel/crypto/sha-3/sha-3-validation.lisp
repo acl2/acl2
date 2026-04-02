@@ -1,6 +1,6 @@
 ; Validation proofs for SHA-3 spec
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -60,12 +60,16 @@
            (equal (a x y z (bits-to-state-array s w) w)
                   (nth (+ (* w (+ (* 5 y) x)) z)
                        s)))
-  :otf-flg t
   :hints (("Goal"
-           :in-theory (enable bits-to-state-array
+           :in-theory (e/d (bits-to-state-array
                               BIT-STRING-TO-PLANE NTH-LANE helper a
                               nth-bit ;todo
-                              ))))
+                              )
+                           (;; For speed:
+                            acl2::<-of-*-same-linear-2
+                            acl2::<-of-*-and-*-same-linear-1
+                            acl2::<-of-*-same-linear-special
+                            acl2::<-of-*-and-*-same-linear-2)))))
 
 ;;;
 ;;; Correctness of theta
