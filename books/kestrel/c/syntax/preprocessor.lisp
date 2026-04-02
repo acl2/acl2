@@ -2643,7 +2643,11 @@
        We call a separate function to replace the parameters with the arguments
        in the macro's replacement list,
        and then we add the resulting lexemes to the pending lexmarks,
-       surrounded by the markers for the macro.")
+       surrounded by the markers for the macro.
+       In both cases of an object-like macro and a function-like macro,
+       just before adding the replacement list to the pending lexmarks,
+       we add to all its identifiers the provenance of the macro's name;
+       this way we propagate provenance.")
      (xdoc::p
       "In all other cases, the lexeme is added to the reversed list,
        and we continue the recursive preprocessing."))
@@ -2880,8 +2884,9 @@
                                                          (ienv->dialect
                                                           (ppstate->ienv
                                                            ppstate))))
-                    ;; TODO: add (plexeme-ident->provenance ident)
-                    ;;       to idents in replist
+                    (replist (plexemes-add-provenance
+                              (plexeme-ident->provenance lexeme)
+                              replist))
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
                     (ppstate (push-lexemes replist ppstate))
                     (ppstate (push-lexmark (lexmark-start ident) ppstate)))
@@ -2942,8 +2947,9 @@
                                                          (ienv->dialect
                                                           (ppstate->ienv
                                                            ppstate))))
-                    ;; TODO: add (plexeme-ident->provenance ident)
-                    ;;       to idents in replist
+                    (replist (lexmarks-add-provenance
+                              (plexeme-ident->provenance lexeme)
+                              replist))
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
                     (ppstate (push-lexmarks replist ppstate))
                     (ppstate (push-lexmark (lexmark-start ident) ppstate)))
