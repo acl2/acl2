@@ -28,7 +28,6 @@
 (include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (in-theory (disable mv-nth))
 
@@ -39,8 +38,7 @@
 
 (local
  (defthm equal-of-+-of-bvchop-same-31-32-linear
-   (implies (and (unsigned-byte-p 32 x)
-                 (integerp y))
+   (implies (unsigned-byte-p 32 x)
             (equal x (+ (bvchop 31 x) (* (expt 2 31) (getbit 31 x)))))
    :rule-classes :linear
    :hints (("Goal" :use (:instance acl2::split-bv

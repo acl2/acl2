@@ -1,7 +1,7 @@
 ; BV Library: bitxor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +11,14 @@
 
 (in-package "ACL2")
 
-(include-book "bvxor")
+(include-book "bvxor-def")
+(include-book "bvxor") ; for smaller-bvxor-arg
+(include-book "getbit-def")
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "slice"))
 (local (include-book "getbit"))
 (local (include-book "logxor-b"))
+(local (include-book "bvxor"))
 
 (defund bitxor (x y)
   (declare (type integer x)

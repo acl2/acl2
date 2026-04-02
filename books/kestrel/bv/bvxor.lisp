@@ -1,7 +1,7 @@
 ; BV Library: bvxor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-;(include-book "bvchop")
+(include-book "bvxor-def")
 (include-book "getbit-def")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "slice"))
@@ -21,19 +21,6 @@
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
-
-(defund bvxor (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (logxor (bvchop size x)
-          (bvchop size y)))
-
-(defthm bvxor-type
-  (and (integerp (bvxor size x y))
-       (<= 0 (bvxor size x y)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable (:type-prescription bvxor))) ; bvxor-type is at least as good
 
 (defthm bvxor-associative
   (equal (bvxor size (bvxor size x y) z)

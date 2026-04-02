@@ -13,7 +13,7 @@
 
 (include-book "rightrotate")
 (include-book "rightrotate32")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bitxor")
 (include-book "bitand")
 (include-book "bitor")

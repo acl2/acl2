@@ -1,6 +1,6 @@
 ; Trim-based rules to convert non-BV functions to BV functions
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,8 +21,8 @@
 (include-book "bvmult")
 (include-book "bvuminus-def")
 (include-book "bvand-def")
-(include-book "bvor")
-(include-book "bvxor")
+(include-book "bvor-def")
+(include-book "bvxor-def")
 (include-book "bvsx-def")
 (include-book "bvif")
 (include-book "logext-def")
