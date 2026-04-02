@@ -1230,13 +1230,7 @@
      which are not part of the replacement list [C17:6.10.3/7].
      We ensure that @('##') does not occur
      at the start or end of the replacement list [C17:6.10.3.3/1].
-     We also return the final new line lexeme, if present.")
-   (xdoc::p
-    "For each identifier that we read,
-     we set its provenance list to the singleton of the macro name.
-     This way, when we expand the macro,
-     the identifiers in the replacement list already contain
-     the information about the provenance from the macro."))
+     We also return the final new line lexeme, if present."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil nil ppstate)
        ((erp replist newline? ppstate)
@@ -1266,10 +1260,7 @@
         ((plexeme?-tokenp toknl?) ; token
          (b* (((erp replist newline? ppstate) ; token replist
                (read-macro-object-replist-loop name nil ppstate))
-              (token (if (plexeme-case toknl? :ident)
-                         (change-plexeme-ident toknl? :provenance (list name))
-                       toknl?))
-              (replist (cons token replist))
+              (replist (cons toknl? replist))
               (replist (if (and nontoknls
                                 (not startp))
                            (cons (plexeme-spaces 1) replist)
@@ -1361,15 +1352,7 @@
     "We also ensure that @('__VA_ARGS__') occurs in the replacement list
      only if the macro has ellipsis.")
    (xdoc::p
-    "We also return the final new line lexeme, if present.")
-   (xdoc::p
-    "For each non-parameter identifier that we read,
-     we set its provenance list to the singleton of the macro name.
-     This way, when we expand the macro,
-     the identifiers in the replacement list already contain
-     the information about the provenance from the macro.
-     The parameters do not need that provenance
-     because they are substituted when the macro is expanded."))
+    "We also return the final new line lexeme, if present."))
   (read-macro-function-replist-loop name nil params ellipsis ppstate)
 
   :prepwork
@@ -1429,10 +1412,7 @@
                                  paramp)))
                    (add-to-set-equal ident hash-params)
                  hash-params))
-              (token (if paramp
-                         toknl?
-                       (change-plexeme-ident toknl? :provenance (list name))))
-              (replist (cons token replist))
+              (replist (cons toknl? replist))
               (replist (if (and previous nontoknls)
                            (cons (plexeme-spaces 1) replist)
                          replist)))
