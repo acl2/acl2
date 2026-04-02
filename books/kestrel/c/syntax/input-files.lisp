@@ -638,25 +638,25 @@
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))
-        (b* ((code (make-code-ensemble :transunits tunits :ienv ienv))
+        (b* ((code (make-code-ensemble :trans-units tunits :ienv ienv))
              (events (if (not progp)
                          (rcons `(defconst ,const ',code) events)
                        events)))
           (retok events code state)))
        ;; Disambiguation is required, if we get here.
        ((erp tunits)
-        (dimb-transunit-ensemble tunits (ienv->dialect ienv) keep-going))
+        (dimb-trans-ensemble tunits (ienv->dialect ienv) keep-going))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
-        (b* ((code (make-code-ensemble :transunits tunits :ienv ienv))
+        (b* ((code (make-code-ensemble :trans-units tunits :ienv ienv))
              (events (if (not progp)
                          (rcons `(defconst ,const ',code) events)
                        events)))
           (retok events code state)))
        ;; Validation is required, if we get here.
-       ((erp tunits) (valid-transunit-ensemble tunits ienv keep-going))
-       (code (make-code-ensemble :transunits tunits :ienv ienv))
+       ((erp tunits) (valid-trans-ensemble tunits ienv keep-going))
+       (code (make-code-ensemble :trans-units tunits :ienv ienv))
        ;; Generate :CONST constant with the validated translation unit.
        (events (if (not progp)
                    (rcons `(defconst ,const ',code) events)
@@ -702,7 +702,7 @@
    (xdoc::p
     "The event is an empty @(tsee progn) if
      this is called via the programmatic interface.
-     We also return the translation unit ensemble
+     We also return the translation ensemble
      resulting from processing the (possibly preprocessed) files."))
   (b* (((reterr) '(_) (irr-code-ensemble) state)
        ((erp files

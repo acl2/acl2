@@ -83,9 +83,9 @@
           hash-if/elif-expr
           hash-if/ifdef/ifndef
           trans-items
-          transunit
-          filepath-transunit-map
-          transunit-ensemble
+          trans-unit
+          filepath-trans-unit-map
+          trans-ensemble
           code-ensemble)
   :result booleanp
   :default t
