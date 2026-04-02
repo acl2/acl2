@@ -171,18 +171,7 @@
     "Currently some of this preprocessor's code duplicates, at some level,
      some of the code in the @(see parser)
      (including the @(see lexer) and the @(see reader)).
-     At some point we should integrate the preprocessor with the parser.")
-   (xdoc::p
-    "Our currently implemented approach
-     to limit recursive macro expansion [C17:6.10.3.4/2]
-     should work in most cases, but it may not be fully general.
-     In some contrived cases, which seem nonetheless legal according to [C17],
-     the approach may generate non-balanced start/end markers.
-     Some quick experiments show that Clang fails in those cases as well.
-     This needs further investigation,
-     but we are planning to implement a more general that should always work,
-     by avoiding markers altogether,
-     instead attaching ``provenance'' information to certain tokens."))
+     At some point we should integrate the preprocessor with the parser."))
   :order-subtopics (preprocessor-options
                     preprocessor-lexemes
                     preprocessor-files
