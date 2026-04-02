@@ -68,7 +68,7 @@
           ext-declon
           ext-declon-list
           transunit
-          transunit-ensemble)
+          trans-ensemble)
   :override
   ((iconst (if (and (iconst-base-case (iconst->base iconst) :dec)
                     (equal (iconst->value iconst) 0))

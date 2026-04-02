@@ -1065,7 +1065,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-ensemble
+(fty::defprod trans-ensemble
   :short "Fixtype of translation unit ensembles."
   :long
   (xdoc::topstring
@@ -1106,5 +1106,5 @@
   ((path-wo-ext string)
    (dot-h transunit-option)
    (dot-c transunit))
-  :tag :transunit-ensemble
-  :pred transunit-ensemblep)
+  :tag :trans-ensemble
+  :pred trans-ensemblep)

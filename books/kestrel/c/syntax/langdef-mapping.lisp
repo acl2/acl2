@@ -1832,20 +1832,20 @@
 
 (define ldm-trans-ensemble ((tunits trans-ensemblep))
   :guard (trans-ensemble-unambp tunits)
-  :returns (mv erp (tunits1 c::transunit-ensemblep))
+  :returns (mv erp (tunits1 c::trans-ensemblep))
   :short "Map a translation ensemble to the language definition."
   :long
   (xdoc::topstring
    (xdoc::p
     "Currently we only support translation ensembles
      consisting of a single translation unit.
-     We map that to a @(tsee c::transunit-ensemblep)
+     We map that to a @(tsee c::trans-ensemblep)
      without header, just with a source file
      that corresponds to the translation unit.
-     We set the path of the @(tsee c::transunit-ensemble)
+     We set the path of the @(tsee c::trans-ensemble)
      to the empty string for now,
      as we are not concerned with any actual interaction with the file system."))
-  (b* (((reterr) (c::transunit-ensemble "" nil (c::transunit nil)))
+  (b* (((reterr) (c::trans-ensemble "" nil (c::transunit nil)))
        (map (trans-ensemble->units tunits))
        ((unless (= (omap::size map) 1))
         (reterr (msg "Unsupported translation ensemble ~
@@ -1853,9 +1853,9 @@
                      (omap::size map))))
        (tunit (omap::head-val map))
        ((erp tunit1) (ldm-trans-unit tunit)))
-    (retok (c::make-transunit-ensemble :path-wo-ext ""
-                                       :dot-h nil
-                                       :dot-c tunit1)))
+    (retok (c::make-trans-ensemble :path-wo-ext ""
+                                   :dot-h nil
+                                   :dot-c tunit1)))
   :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))
   :hooks (:fix)
 

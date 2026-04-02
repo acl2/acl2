@@ -2716,7 +2716,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define preprocess ((tunits transunit-ensemblep))
+(define preprocess ((tunits trans-ensemblep))
   :returns (tunit transunit-resultp)
   :short "Preprocess a translation unit ensemble [C17:5.1.1.2/4]."
   :long
@@ -2725,7 +2725,7 @@
     "This is a very simplified model of C preprocessing [C17:6.10].
      If there is no header, this is essentially a no-op:
      we return the translation unit for the source file.
-     If there is a header, as explained in @(tsee transunit-ensemble),
+     If there is a header, as explained in @(tsee trans-ensemble),
      it is implicitly included in the source file
      (without an explicit representation of the @('#include') directive):
      we concatenate the external declarations from the header
@@ -2736,16 +2736,16 @@
      which is assumed to be at the beginning of the source file.
      The path without extension component of the translation unit ensemble
      is currently ignored, because the @('#include') is implicit."))
-  (b* ((h-extdecls (and (transunit-ensemble->dot-h tunits)
+  (b* ((h-extdecls (and (trans-ensemble->dot-h tunits)
                         (transunit->declons
-                         (transunit-ensemble->dot-h tunits))))
+                         (trans-ensemble->dot-h tunits))))
        (c-extdecls (transunit->declons
-                    (transunit-ensemble->dot-c tunits))))
+                    (trans-ensemble->dot-c tunits))))
     (make-transunit :declons (append h-extdecls c-extdecls))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-transunit-ensemble ((tunits transunit-ensemblep))
+(define check-trans-ensemble ((tunits trans-ensemblep))
   :returns (wf wellformed-resultp)
   :short "Check a translation unit ensemble."
   :long

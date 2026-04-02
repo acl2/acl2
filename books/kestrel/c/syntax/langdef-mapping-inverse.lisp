@@ -916,7 +916,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ildm-trans-ensemble ((file-name stringp)
-                             (tunits c::transunit-ensemblep))
+                             (tunits c::trans-ensemblep))
   :returns (tunits1 trans-ensemblep)
   :short "Map a translation unit ensemble in the language definition
           to a translation ensemble in the syntax for tools."
@@ -925,7 +925,7 @@
    (xdoc::p
     "The string input represents the name of the file or files,
      without extension."))
-  (b* (((c::transunit-ensemble tunits) tunits)
+  (b* (((c::trans-ensemble tunits) tunits)
        (file-name (str-fix file-name)))
     (make-trans-ensemble
      :units (b* ((map-with-source-file

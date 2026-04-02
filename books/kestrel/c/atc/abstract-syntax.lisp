@@ -281,9 +281,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-transunit-ensemble
+(defirrelevant irr-trans-ensemble
   :short "An irrelevant translation unit ensemble."
-  :type transunit-ensemblep
-  :body (make-transunit-ensemble :path-wo-ext ""
-                                 :dot-h nil
-                                 :dot-c (irr-transunit)))
+  :type trans-ensemblep
+  :body (make-trans-ensemble :path-wo-ext ""
+                             :dot-h nil
+                             :dot-c (irr-transunit)))

@@ -1437,10 +1437,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-transunit-ensemble ((tunits transunit-ensemblep)
-                                   (file-name stringp)
-                                   (options pprint-options-p)
-                                   state)
+(define pprint-trans-ensemble ((tunits trans-ensemblep)
+                               (file-name stringp)
+                               (options pprint-options-p)
+                               state)
   :returns (mv erp val state)
   :mode :program
   :short "Pretty-print a translation unit ensemble to the file system."
@@ -1449,7 +1449,7 @@
    (xdoc::p
     "We pretty-print each translation unit in the ensemble,
      at the associated path."))
-  (b* (((transunit-ensemble tunits) tunits)
+  (b* (((trans-ensemble tunits) tunits)
        (path-dot-h (str::cat tunits.path-wo-ext ".h"))
        (path-dot-c (str::cat tunits.path-wo-ext ".c")))
     (if tunits.dot-h

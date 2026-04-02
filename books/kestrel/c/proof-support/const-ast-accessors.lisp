@@ -191,10 +191,10 @@
     (:e ext-declon-tag-declon->get)
     ;; transunit:
     (:e transunit->declons)
-    ;; transunit-ensemble:
-    (:e transunit-ensemble->path-wo-ext)
-    (:e transunit-ensemble->dot-h)
-    (:e transunit-ensemble->dot-c)))
+    ;; trans-ensemble:
+    (:e trans-ensemble->path-wo-ext)
+    (:e trans-ensemble->dot-h)
+    (:e trans-ensemble->dot-c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
