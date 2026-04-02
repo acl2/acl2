@@ -3910,9 +3910,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-trans-ensemble-loop ((tumap filepath-trans-unit-mapp)
-                                     (dialect c::dialectp)
-                                     (keep-going booleanp))
+(define dimb-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
+                                      (dialect c::dialectp)
+                                      (keep-going booleanp))
      :returns (mv (erp maybe-msgp)
                   (new-tumap filepath-trans-unit-mapp
                              :hyp (filepath-trans-unit-mapp tumap)))
@@ -3926,26 +3926,26 @@
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
                            (filepath->unwrap path)
                            erp)
-                       (dimb-trans-ensemble-loop (omap::tail tumap)
-                                                 dialect
-                                                 keep-going))
+                       (dimb-filepath-trans-unit-map (omap::tail tumap)
+                                                     dialect
+                                                     keep-going))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->unwrap path)
                       erp)))
           ((erp new-tumap)
-           (dimb-trans-ensemble-loop (omap::tail tumap)
-                                     dialect
-                                     keep-going)))
+           (dimb-filepath-trans-unit-map (omap::tail tumap)
+                                         dialect
+                                         keep-going)))
        (retok (omap::update path new-tunit new-tumap)))
      :verify-guards :after-returns
 
      ///
 
-     (fty::deffixequiv dimb-trans-ensemble-loop
+     (fty::deffixequiv dimb-filepath-trans-unit-map
        :args ((dialect c::dialectp)
               (keep-going booleanp)))
 
-     (defret filepath-trans-unit-map-unambp-of-dimb-trans-ensemble-loop
+     (defret filepath-trans-unit-map-unambp-of-dimb-filepath-trans-unit-map
        (implies (not erp)
                 (filepath-trans-unit-map-unambp new-tumap))
        :hyp (filepath-trans-unit-mapp tumap)
@@ -3967,8 +3967,7 @@
      We leave the file path mapping unchanged."))
   (b* (((reterr) (irr-trans-ensemble))
        (tumap (trans-ensemble->units tuens))
-       ((erp new-tumap)
-        (dimb-trans-ensemble-loop tumap dialect keep-going))
+       ((erp new-tumap) (dimb-filepath-trans-unit-map tumap dialect keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
                    (len-new-tumap (omap::size new-tumap))
