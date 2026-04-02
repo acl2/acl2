@@ -846,13 +846,13 @@
     (plexeme-tokenp token)
     :hints (("Goal" :induct t :in-theory (enable irr-plexeme))))
 
-  (defret ppstate->size-of-read-punctuator-handling-markers-uncond
+  (defret ppstate->size-of-read-next-token-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-read-punctuator-handling-markers-cond
+  (defret ppstate->size-of-read-next-token-cond
     (implies (not erp)
              (<= (ppstate->size new-ppstate)
                  (1- (ppstate->size ppstate))))
