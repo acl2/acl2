@@ -1846,9 +1846,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define space-lexmark-singleton? ((spacep booleanp))
-  :returns (lexmark-singleton? lexmark-listp)
-  :short "Return a singleton list containing a single space lexmark
+(define space-lexeme-singleton? ((spacep booleanp))
+  :returns (lexeme-singleton? plexeme-listp)
+  :short "Return a singleton list containing a single space lexeme
           if the input is @('t'), otherwise return the empty list."
   :long
   (xdoc::topstring
@@ -1856,8 +1856,7 @@
     "This is used in @(tsee replace-macro-args),
      to optionally add a space in a list of generated lexmarks."))
   (and spacep
-       (list (make-lexmark-lexeme :lexeme (plexeme-spaces 1)
-                                  :span (irr-span)))))
+       (list (plexeme-spaces 1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1948,12 +1947,12 @@
            ((mv stringlit markers) (stringize (lexeme-list-to-lexmark-list arg)))
            (token (plexeme-string stringlit))
            (lexmark (make-lexmark-lexeme :lexeme token :span (irr-span))))
-        (append (space-lexmark-singleton? spacep)
+        (append (lexeme-list-to-lexmark-list (space-lexeme-singleton? spacep))
                 (list lexmark) ; string literal
                 markers ; markers collected from the operand of #
                 (replace-macro-args replist subst))))
      ((plexeme-hashhashp token) ; ##
-      (append (space-lexmark-singleton? spacep)
+      (append (lexeme-list-to-lexmark-list (space-lexeme-singleton? spacep))
               ;; Replace ## with ### -- see doc above.
               (list (make-lexmark-lexeme :lexeme (plexeme-punctuator "###")
                                          :span (irr-span)))
@@ -1964,7 +1963,7 @@
            ;; If the token is an identifier but not a parameter,
            ;; it remains unchanged.
            ((when (not ident+arg))
-            (append (space-lexmark-singleton? spacep)
+            (append (lexeme-list-to-lexmark-list (space-lexeme-singleton? spacep))
                     (list (make-lexmark-lexeme :lexeme token
                                                :span (irr-span)))
                     (replace-macro-args replist subst)))
@@ -1973,13 +1972,13 @@
            ;; If it is empty, we add NIL to the output list (see doc above);
            ;; if it is not empty, we add its lexmarks to the output list.
            (arg (cdr ident+arg)))
-        (append (space-lexmark-singleton? spacep)
+        (append (lexeme-list-to-lexmark-list (space-lexeme-singleton? spacep))
                 (or (lexeme-list-to-lexmark-list arg) (list nil))
                 (replace-macro-args replist subst))))
      (t ; other token
       ;; This case is the same as that above
       ;; of an identifier that is not a parameter.
-      (append (space-lexmark-singleton? spacep)
+      (append (lexeme-list-to-lexmark-list (space-lexeme-singleton? spacep))
               (list (make-lexmark-lexeme :lexeme token
                                          :span (irr-span)))
               (replace-macro-args replist subst)))))
