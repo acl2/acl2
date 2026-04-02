@@ -2627,8 +2627,9 @@
        surrounded by the markers for the macro.
        In both cases of an object-like macro and a function-like macro,
        just before adding the replacement list to the pending lexmarks,
-       we add to all its identifiers the provenance of the macro's name;
-       this way we propagate provenance.")
+       we add to all its identifiers the provenance of the macro's name
+       this way we propagate provenance,
+       as well as, critically, the macro name itself.")
      (xdoc::p
       "In all other cases, the lexeme is added to the reversed list,
        and we continue the recursive preprocessing."))
