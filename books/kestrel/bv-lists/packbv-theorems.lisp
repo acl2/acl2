@@ -1,7 +1,7 @@
 ; More rules about packbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -81,7 +81,6 @@
    (implies (and (< 0 size)
                  (rationalp size)
                  (rationalp x)
-                 (rationalp z)
                  (rationalp y))
             (equal (< (* x size) (* size y))
                    (< x y)))
@@ -94,7 +93,6 @@
    (implies (and (< 0 size)
                  (rationalp size)
                  (rationalp x)
-                 (rationalp z)
                  (rationalp y))
             (equal (< (* x size) (+ (- size) (* y size)))
                    (< x (+ (- 1) y))))

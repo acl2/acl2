@@ -1,6 +1,6 @@
 ; An R1CS gadget for comparing a packed value to a constant
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -774,8 +774,7 @@
                            (bitp)))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-aux-type-1
-  (implies (and (primep p)
-                (integerp i)
+  (implies (and (integerp i)
                 (natp tvar)
                 (symbol-listp avars)
                 (symbol-listp pivars)
@@ -806,8 +805,7 @@
                            (bitp)))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-aux-type-2
-  (implies (and (primep p)
-                (integerp i)
+  (implies (and (integerp i)
                 (natp tvar)
                 (symbol-listp avars)
                 (symbol-listp pivars)
@@ -868,8 +866,7 @@
                                          (acons (+ -1 n) a_n-1 nil))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-type-1
-  (implies (and (primep p)
-                (symbol-listp avars)
+  (implies (and (symbol-listp avars)
                 (symbol-listp pivars)
                 (no-duplicatesp-equal pivars)
                 (no-duplicatesp-equal avars)
@@ -890,8 +887,7 @@
            :in-theory (enable make-range-check-pi-constraints))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-type-2
-  (implies (and (primep p)
-                (symbol-listp avars)
+  (implies (and (symbol-listp avars)
                 (symbol-listp pivars)
                 (no-duplicatesp-equal pivars)
                 (no-duplicatesp-equal avars)

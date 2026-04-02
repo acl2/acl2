@@ -1,7 +1,7 @@
 ; Utilities for making fresh names
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -117,9 +117,7 @@
     (fresh-symbol-aux desired-sym 1 syms-to-avoid)))
 
 (defthm not-member-equal-of-fresh-symbol-same
-  (implies (natp current-num)
-           (not (member-equal (fresh-symbol desired-sym syms-to-avoid)
-                              syms-to-avoid)))
+  (not (member-equal (fresh-symbol desired-sym syms-to-avoid) syms-to-avoid))
   :hints (("Goal" :in-theory (enable fresh-symbol))))
 
 (defthm fresh-symbol-not-nil
