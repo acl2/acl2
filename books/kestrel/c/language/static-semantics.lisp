@@ -2718,7 +2718,7 @@
 
 (define preprocess ((tunits trans-ensemblep))
   :returns (tunit trans-unit-resultp)
-  :short "Preprocess a translation unit ensemble [C17:5.1.1.2/4]."
+  :short "Preprocess a translation ensemble [C17:5.1.1.2/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2734,7 +2734,7 @@
      This amounts to replacing the (implicit) @('#include')
      with the included header,
      which is assumed to be at the beginning of the source file.
-     The path without extension component of the translation unit ensemble
+     The path without extension component of the translation ensemble
      is currently ignored, because the @('#include') is implicit."))
   (b* ((h-extdecls (and (trans-ensemble->dot-h tunits)
                         (trans-unit->declons
@@ -2747,11 +2747,11 @@
 
 (define check-trans-ensemble ((tunits trans-ensemblep))
   :returns (wf wellformed-resultp)
-  :short "Check a translation unit ensemble."
+  :short "Check a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
-    "First we preprocess the translation unit ensemble.
+    "First we preprocess the translation ensemble.
      If preprocessing is successful,
      we check the translation unit."))
   (b* (((okf tunit) (preprocess tunits)))

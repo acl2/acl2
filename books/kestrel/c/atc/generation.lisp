@@ -414,7 +414,7 @@
                             (print evmac-input-print-p))
   :returns (events pseudo-event-form-listp)
   :short "Generate the named constant for the abstract syntax tree
-          of the generated C code (i.e. translation unit ensemble)."
+          of the generated C code (i.e. translation ensemble)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -449,10 +449,10 @@
     "The theorem asserts that
      running the static semantics (i.e. @(tsee check-trans-ensemble))
      on the C code succeeds.
-     We also include an assertion that the C code is a translation unit ensemble
+     We also include an assertion that the C code is a translation ensemble
      (i.e. that it satisfies @(tsee trans-ensemblep));
      this does not directly follow from @(tsee check-trans-ensemble),
-     which fixes its argument to be a translation unit ensemble.")
+     which fixes its argument to be a translation ensemble.")
    (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
@@ -536,7 +536,7 @@
                (events pseudo-event-form-listp)
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
-  :short "Generate a translation unit ensemble from the ATC targets,
+  :short "Generate a translation ensemble from the ATC targets,
           and accompanying events."
   :long
   (xdoc::topstring
@@ -547,7 +547,7 @@
      we generate a theorem to ``cache''
      the result of calling @(tsee init-fun-env)
      on the generated translation unit
-     (obtained by preprocessing the generated translation unit ensemble),
+     (obtained by preprocessing the generated translation ensemble),
      to avoid recomputing that for every function environment theorem.
      We need to generate the name of this (local) theorem
      before generating the function environment theorems,
@@ -639,7 +639,7 @@
      so there is no extra screen output.
      This is a ``dummy'' event, which is not supposed to do anything:
      it is the execution of the @(tsee make-event) argument that matters,
-     because it writes the translation unit ensemble to the file system.
+     because it writes the translation ensemble to the file system.
      In essence, we use @(tsee make-event) to turn a computation
      (the one that writes the output files)
      into an event.

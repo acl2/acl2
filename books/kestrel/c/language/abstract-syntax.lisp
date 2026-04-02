@@ -1066,11 +1066,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod trans-ensemble
-  :short "Fixtype of translation unit ensembles."
+  :short "Fixtype of translation ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A translation unit ensemble is a collection of related translation units.
+    "A translation ensemble is a collection of related translation units.
      This is not an explicit notion in [C17],
      but it is a useful one in a language formalization:
      a program, or a portion of a program,
@@ -1080,7 +1080,7 @@
      a library, or a program without a library that it uses,
      would not qualify as a program in this sense.")
    (xdoc::p
-    "For now, a translation unit ensemble consists of
+    "For now, a translation ensemble consists of
      one or two translation units (see @(tsee trans-unit)),
      one for an optional header and one for a source file,
      which have the same name except for the extension.

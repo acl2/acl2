@@ -282,7 +282,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-trans-ensemble
-  :short "An irrelevant translation unit ensemble."
+  :short "An irrelevant translation ensemble."
   :type trans-ensemblep
   :body (make-trans-ensemble :path-wo-ext ""
                              :dot-h nil

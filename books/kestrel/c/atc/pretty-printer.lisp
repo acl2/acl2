@@ -1443,7 +1443,7 @@
                                state)
   :returns (mv erp val state)
   :mode :program
-  :short "Pretty-print a translation unit ensemble to the file system."
+  :short "Pretty-print a translation ensemble to the file system."
   :long
   (xdoc::topstring
    (xdoc::p
