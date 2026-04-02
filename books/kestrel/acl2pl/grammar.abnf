@@ -201,27 +201,31 @@ rest-of-fancy-after-q3-backslash =
 
 ; Character literals
 ; https://acl2.org/doc/?topic=ACL2____CHARACTERS
+;
+; A character literal is #\ followed by either a named character
+; or a single byte.
+;
+; The named characters (case-insensitive) are:
+;   Space (32), Tab (9), Newline (10), Page (12), Rubout (127), Return (13).
+;
+; Constraint (enforced by the lexer, not expressible in ABNF):
+; After #\, the reader accumulates bytes until it encounters a
+; token terminator: whitespace, a terminating macro character
+; (" ' ( ) , ; `), or end of input.
+; If only one byte was accumulated, it is that character.
+; If multiple bytes were accumulated, they must spell one of the
+; named characters above (case-insensitively); otherwise it is an error.
+; For example, #\Spacex is invalid because "Spacex" is not a named
+; character and is more than one byte.
+; The ABNF rule below matches named-character first, then single byte,
+; but cannot express the token-terminator lookahead.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Single-character literal: #\ followed by one byte,
-; terminated by whitespace or a terminating macro character.
-; All 256 bytes are valid as the character.
-
-; Named character literals (case-insensitive):
-; Space (32), Tab (9), Newline (10), Page (12), Rubout (127), Return (13).
 named-character = %i"Space" / %i"Tab" / %i"Newline"
                 / %i"Page" / %i"Rubout" / %i"Return"
 
-; A single character after #\ can be any byte.
-; When followed by a terminator (whitespace or macro char),
-; it is read as that single character.
-; When followed by more constituent characters, the accumulated
-; token must be one of the named characters above.
-
 character-literal = "#\" ( named-character / byte )
-                    ; constraint: if byte is followed by a constituent
-                    ; character, it must form a named-character
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -261,7 +265,9 @@ radix-digit = digit / letter
 complex-rational = "#" %i"c" "(" intertoken-space rational-number
                    whitespace rational-number intertoken-space ")"
 
-rational-number = decimal-integer / ratio
+; Ratio must be tried before decimal-integer, since decimal-integer
+; would match the numerator and stop at the "/".
+rational-number = ratio / decimal-integer
 
 ; #u numeric with underscores (ACL2-specific)
 ; Allows underscores as visual separators in numbers.
@@ -438,8 +444,10 @@ multiple-escape-region = "|" *vbar-char "|"
 
 non-terminating-macro-char = "#"
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Symbol tokens.
-;
+
 ; A symbol token is a sequence of constituent characters,
 ; single-escape sequences, multiple-escape regions, and
 ; non-terminating macro characters (currently just #).
@@ -469,7 +477,7 @@ symbol-token = symbol-token-start *symbol-token-rest
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Package-qualified symbols
+; Note on Package-qualified symbols
 ; https://acl2.org/doc/?topic=ACL2____DEFPKG
 
 ; The colon is a constituent character but has special meaning
@@ -496,7 +504,61 @@ symbol-token = symbol-token-start *symbol-token-rest
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Sharp-sign (#) dispatch macros
+; Tokens and lexemes
+;
+; This section classifies the lexical units produced by the lexer.
+; A token is any meaningful lexical unit other than whitespace or comments.
+; A lexeme is a token, whitespace, or comment.
+;
+; Tokens are divided into three categories:
+;   1. Atoms: numbers, character literals, strings, and symbols.
+;   2. Delimiters: parentheses, quote, backquote, comma, dot.
+;   3. Sharp-sign tokens: # dispatch forms that are complete tokens
+;      or prefix tokens whose arguments are handled by the parser.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Atoms
+;
+; An atom is a self-contained token representing a value: a number,
+; character literal, string, or symbol.
+; Note: the lexer must try number before symbol-token, since
+; symbol-token also matches numeric syntax. The CL reader
+; tries to interpret a token as a number first.
+
+atom = number
+     / character-literal
+     / string-literal
+     / fancy-string
+     / symbol-token
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Delimiters
+;
+; These single- and multi-character tokens serve as syntactic delimiters.
+; Note: some of these characters also appear inside atom rules
+; (e.g., "(" and ")" in complex-rational),
+; where they are part of the atom's internal syntax.
+; Similarly, "." is a constituent character (in portable-graphic-constituent),
+; so it is consumed as part of a symbol token when adjacent to other
+; constituents (e.g., "A.B" is a single symbol).  The "." delimiter
+; token is only produced when "." appears standalone, not consumed
+; by an atom rule.  In the syntactic grammar, a standalone dot
+; serves as the consing dot in dotted pairs like (A . B).
+; Delimiter tokens are only produced when not consumed by an atom rule.
+
+open-paren = "("
+close-paren = ")"
+single-quote = "'"
+backquote-char = "`"
+comma-char = ","
+comma-atsign = ",@"
+dot = "."
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Sharp-sign (#) tokens
 ;
 ; Most of ACL2's # dispatch macros are inherited from Common Lisp,
 ; some with restrictions. ACL2 also adds several of its own
@@ -507,45 +569,124 @@ symbol-token = symbol-token-start *symbol-token-rest
 ; This grammar covers only the # dispatches that produce valid ACL2
 ; objects. CL dispatches that ACL2 reads but rejects via
 ; bad-lisp-objectp (#(, #*, #:, #A, #P, #S) are omitted.
+;
+; Some # dispatches are lexed entirely as complete atoms
+; (numbers like #b, #o, #x, #r, #c, #u, #d, #f;
+; character literals #\; fancy strings #{""").
+; These are covered by the atom rules above.
+;
+; The remaining # dispatches are either complete non-atom tokens
+; or prefix tokens whose s-expression arguments are handled by
+; the syntactic grammar.
+
+; Complete tokens:
+sharp-sharp = "#" 1*digit "#"
+              ; #n# shared structure reference
+
+sharp-atsign = "#@" 1*digit "#"
+               ; #@n# iprint reference (ACL2-specific)
+               ; https://acl2.org/doc/?topic=ACL2____IPRINT
+
+; Prefix tokens (arguments handled by syntactic grammar):
+sharp-quote-prefix = "#'"
+sharp-dot-prefix = "#."
+sharp-bang-prefix = "#!"
+sharp-plus-prefix = "#+"
+sharp-minus-prefix = "#-"
+sharp-equal = "#" 1*digit "="
+              ; #n= shared structure definition
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; # is a non-terminating macro character. When it appears in a token,
-; it is a constituent. At the start of a read, #x dispatches based on x.
+; Token and lexeme
+
+delimiter = open-paren / close-paren
+          / single-quote / backquote-char
+          / comma-atsign / comma-char
+          / dot
+
+sharp-sign-token = sharp-sharp / sharp-atsign
+                 / sharp-quote-prefix / sharp-dot-prefix / sharp-bang-prefix
+                 / sharp-plus-prefix / sharp-minus-prefix
+                 / sharp-equal
+
+token = atom / delimiter / sharp-sign-token
+
+lexeme = token / whitespace / comment
+
+; A valid ACL2 source file can be fully decomposed into a sequence of
+; lexemes (*lexeme). However, we do not define a lexical "file" rule
+; here because the syntactic grammar below defines "file" as a more
+; structured object: a sequence of s-expressions with intertoken space.
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Syntactic Grammar
+
+; The syntactic grammar defines how tokens and intertoken space (produced by
+; the lexer) combine into s-expressions. Atoms are s-expressions by themselves.
+; Other s-expressions are formed by combining tokens: lists use
+; parentheses and dots, and various prefix operators (#., #!, etc.)
+; take s-expression arguments.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Lists
 ;
-; Many of these are defined in the syntactic grammar below since they
-; read full s-expressions recursively. Here we define the ones
-; that produce atomic tokens.
+; A list is a sequence of s-expressions in parentheses,
+; optionally with a dotted-pair tail.
+; The "." for the dotted pair is the consing dot: a lone dot token
+; surrounded by whitespace (or other token delimiters).
+; This is distinct from a dot as part of a symbol name (e.g., "A.B")
+; or a number (e.g., "#d1.5").
+; constraint: the "." must be a standalone token (preceded and followed
+; by whitespace or token boundaries), not part of another token.
+list = open-paren intertoken-space close-paren
+     / open-paren 1*( intertoken-space s-expression )
+       intertoken-space close-paren
+     / open-paren 1*( intertoken-space s-expression )
+       intertoken-space dot intertoken-space s-expression
+       intertoken-space close-paren
 
-; Feature conditionals: #+feature form / #-feature form
-; These conditionally read or skip the next form.
-; The feature expression is read with *package* bound to KEYWORD,
-; so a bare symbol like SBCL is read as :SBCL.
-; The feature expression is a keyword symbol or a boolean combination
-; using AND, OR, NOT. (AND) with no arguments is true;
-; (OR) with no arguments is false.
-; Explicit keyword syntax (#+:sbcl) also works and is equivalent
-; to the bare form (#+sbcl).
-; Non-keyword-package symbols (e.g., #+acl2::sbcl) are syntactically
-; valid but will not match any feature on *features*.
-feature-conditional = "#" ("+" / "-") intertoken-space
-                      feature-expr intertoken-space s-expression
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-feature-expr = symbol-token
-             / "(" intertoken-space feature-and intertoken-space ")"
-             / "(" intertoken-space feature-or intertoken-space ")"
-             / "(" intertoken-space feature-not intertoken-space ")"
+; Prefix forms
+;
+; These syntactic forms consist of a prefix token (produced by
+; the lexer) followed by one or more s-expression arguments.
 
-feature-and = %i"and" *( intertoken-space feature-expr )
-feature-or  = %i"or"  *( intertoken-space feature-expr )
-feature-not = %i"not" intertoken-space feature-expr
+; Quote: 'x reads as (QUOTE x)
+quoted = single-quote intertoken-space s-expression
+
+; Backquote: `x reads using ACL2's backquote implementation
+backquoted = backquote-char intertoken-space s-expression
+
+; Comma (only valid inside backquote):
+; ,x reads as unquote
+; ,@x reads as splicing unquote
+; Note: ,. (comma-dot, destructive splice from CLtL1) is explicitly
+; rejected by ACL2 with an error.
+comma-expr = comma-atsign intertoken-space s-expression
+           / comma-char intertoken-space s-expression
+
+; Function quote: #'x reads as (FUNCTION x).
+; This is inherited from the Common Lisp reader and is not rejected
+; by ACL2 at read time. However, ACL2 is first-order and does not
+; support passing functions as values, so FUNCTION forms are not
+; evaluable. The #' syntax is arguably misleading in ACL2 and
+; could be removed (i.e., made to signal a reader error).
+function-quoted = sharp-quote-prefix intertoken-space s-expression
 
 ; #. constant reader (restricted in ACL2)
-; #. must be followed immediately by a non-whitespace character.
-; It reads an s-expression using CL's read.
-; Constraint: the s-expression must be a symbol naming a defconst.
 ; https://acl2.org/doc/?topic=ACL2____SHARP-DOT-READER
-sharp-dot = "#." s-expression
+; Constraint: the s-expression must be a symbol naming a defconst.
+; Constraint: the byte immediately after "#." must not be a whitespace
+; character. However, comments (including block comments) are permitted
+; between "#." and the s-expression, because CL's read skips them.
+; After the initial non-whitespace check, normal intertoken-space applies.
+sharp-dot-expr = sharp-dot-prefix intertoken-space s-expression
+                 ; constraint: first byte after "#." must not be whitespace
 
 ; #! package reader (ACL2-specific)
 ; https://acl2.org/doc/?topic=ACL2____SHARP-BANG-READER
@@ -557,73 +698,36 @@ sharp-dot = "#." s-expression
 ; If it reads as a string, the string is used as the package name.
 ; The form is then read with *package* bound to the named package.
 ; Constraint: the package must be known to ACL2.
-sharp-bang = "#!" intertoken-space s-expression intertoken-space s-expression
+sharp-bang-expr = sharp-bang-prefix intertoken-space
+                  s-expression intertoken-space s-expression
 
-; #n= and #n# shared structure
-sharp-equal = "#" 1*digit "=" intertoken-space s-expression
-sharp-sharp = "#" 1*digit "#"
+; #n= shared structure definition
+sharp-equal-expr = sharp-equal intertoken-space s-expression
 
-; #@ iprint reference (ACL2-specific)
-; Used to refer to values that were elided during printing.
-; Users can type #@n# at the REPL to access iprinted values.
-; https://acl2.org/doc/?topic=ACL2____IPRINT
-sharp-atsign = "#@" 1*digit "#"
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Syntactic Grammar
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; S-expressions
+; Feature conditionals: #+feature form / #-feature form
+; These conditionally read or skip the next form.
+; The first s-expression is the feature expression; the second
+; is the form that is conditionally read or skipped.
+;
+; The feature expression is read with *package* bound to KEYWORD,
+; so a bare symbol like SBCL is read as :SBCL.
+; Syntactically, the feature expression is any s-expression.
+; Semantically, it must be a symbol or a list of the form
+; (and ...), (or ...), or (not ...) where and/or/not are symbols.
+; A symbol feature is checked by Common Lisp via membership in *features*.
+; *features* is generally a list of keyword symbols.
+; Since *package* is KEYWORD during the read, bare symbols like
+; SBCL become :SBCL, which matches the keyword in *features*.
+; Package-qualified symbols (e.g., acl2::sbcl) remain in their
+; own package and match only if that exact symbol is in *features*.
+; (AND) with no arguments is true; (OR) with no arguments is false.
+feature-conditional = ( sharp-plus-prefix / sharp-minus-prefix )
+                      intertoken-space s-expression
+                      intertoken-space s-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; An atom is a number, character, string, or symbol.
-; Note: number must be tried before symbol-token, since
-; symbol-token also matches numeric syntax. The CL reader
-; tries to interpret a token as a number first.
-atom = number
-     / character-literal
-     / string-literal
-     / fancy-string
-     / symbol-token
-
-; A list is a sequence of s-expressions in parentheses,
-; optionally with a dotted-pair tail.
-; The "." for the dotted pair is the consing dot: a lone dot token
-; surrounded by whitespace (or other token delimiters).
-; This is distinct from a dot as part of a symbol name (e.g., "A.B")
-; or a number (e.g., "#d1.5").
-; constraint: the "." must be a standalone token (preceded and followed
-; by whitespace or token boundaries), not part of another token.
-list = "(" intertoken-space ")"
-     / "(" 1*( intertoken-space s-expression )
-       intertoken-space ")"
-     / "(" 1*( intertoken-space s-expression )
-       intertoken-space "." intertoken-space s-expression
-       intertoken-space ")"
-
-; Quote: 'x reads as (QUOTE x)
-quoted = "'" intertoken-space s-expression
-
-; Backquote: `x reads using ACL2's backquote implementation
-backquoted = "`" intertoken-space s-expression
-
-; Comma (only valid inside backquote):
-; ,x reads as unquote
-; ,@x reads as splicing unquote
-; Note: ,. (comma-dot, destructive splice from CLtL1) is explicitly
-; rejected by ACL2 with an error.
-comma-expr = "," [ "@" ] intertoken-space s-expression
-
-; Function quote: #'x reads as (FUNCTION x).
-; This is inherited from the Common Lisp reader and is not rejected
-; by ACL2 at read time. However, ACL2 is first-order and does not
-; support passing functions as values, so FUNCTION forms are not
-; evaluable. The #' syntax is arguably misleading in ACL2 and
-; could be removed (i.e., made to signal a reader error).
-function-quoted = "#'" intertoken-space s-expression
+; S-expressions
 
 ; An s-expression is the top-level grammatical unit.
 s-expression = atom
@@ -632,14 +736,20 @@ s-expression = atom
              / backquoted
              / comma-expr
              / function-quoted
-             / sharp-equal
+             / sharp-dot-expr
+             / sharp-bang-expr
+             / sharp-equal-expr
              / sharp-sharp
-             / sharp-dot
-             / sharp-bang
+             / sharp-atsign
              / feature-conditional
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Files
 
 ; A file is a sequence of s-expressions separated by intertoken space.
 file = intertoken-space *( s-expression intertoken-space )
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
