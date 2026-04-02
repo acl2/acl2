@@ -2387,11 +2387,7 @@
    (xdoc::p
     "The main function is @(tsee pproc-lexemes),
      which goes through the lexemes applying macro replacement,
-     returning the resulting lexmarks:
-     these lexmarks are all lexemes unless
-     the function is applied to macro arguments,
-     for which we need to retain the markers,
-     which are eliminated when the expanded call is rescanned.
+     returning the resulting lexemes.
      The companion recursive function is used to preprocess the lexemes
      that form arguments of function-like macros.
      This companion function performs a recursion over the macro parameters,
@@ -2409,7 +2405,7 @@
      but it is a bit more complicated than
      decreasing the size of the preprocessing state,
      because when macros get expanded,
-     their replacement lists are added in front of the input lexmarks,
+     their replacement lists are added in front of the input lexemes,
      making the input larger.
      The termination argument should rely on the fact that
      macros are not recursively expanded,
@@ -2417,14 +2413,14 @@
      it can contribute to decreasing a suitable measure."))
 
   (define pproc-lexemes ((mode macrep-modep)
-                         (rev-lexmarks lexmark-listp)
+                         (rev-lexemes plexeme-listp)
                          (paren-level natp)
                          (no-expandp booleanp)
                          (directivep booleanp)
                          (ppstate ppstatep)
                          (limit natp))
     :returns (mv erp
-                 (new-rev-lexmarks lexmark-listp)
+                 (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep))
     :parents (preprocessor pproc-lexemes/macroargs)
     :short "Preprocess lexemes."
@@ -2435,7 +2431,7 @@
        there are different macro replacement modes in different situations.
        This function takes the mode as an input.")
      (xdoc::p
-      "This function takes and returns the lexmarks generated so far,
+      "This function takes and returns the lexemes generated so far,
        in reverse order for efficiency.")
      (xdoc::p
       "This function takes a parenthesis level (@('paren-level')),
@@ -2456,15 +2452,15 @@
        is preceded by @('#') or @('##') or followed by @('##').
        The flag inhibits macro expansion [C17:6.10.3.1/1].")
      (xdoc::p
-      "This function starts by reading the next lexmark,
+      "This function starts by reading the next lexeme,
        and then it dispatches based on it.")
      (xdoc::p
-      "If there is no next lexmark, it is an error,
+      "If there is no next lexeme, it is an error,
        unless GCC or Clang extensions are enabled,
        in which case an end of file is treated like an end of line.")
      (xdoc::p
-      "If tne next lexmark is a new line,
-       it is always added to the reversed lexmarks.
+      "If the next lexeme is a new line,
+       it is always added to the reversed lexemes.
        In the @(':line') and @(':expr') modes,
        the new line is the stopping criterion,
        so we end the recursive preprocessing of lexemes.
@@ -2476,10 +2472,10 @@
        but if we are in the middle of a macro argument,
        it means that we have an error.")
      (xdoc::p
-      "If the next lexmark is a comma,
+      "If the next lexeme is a comma,
        it is the stopping criterion for the @(':arg-nonlast') mode,
        but only if the parenthesis level is 0;
-       in this case, we do not add the comma to the reversed lexmarks,
+       in this case, we do not add the comma to the reversed lexemes,
        because those are meant to contain the argument we are preprocessing,
        and the comma is not part of the argument.
        However, if the mode is @(':arg-last') and the parenthesis level is 0,
@@ -2498,15 +2494,15 @@
        the @(':arg-nonlast') and @(':arg-last') modes
        when the parenthesis level is not 0.")
      (xdoc::p
-      "If the next lexmark is an open parenthesis,
-       we add it to the list of reversed lexmarks and we continue preprocessing.
+      "If the next lexeme is an open parenthesis,
+       we add it to the list of reversed lexemes and we continue preprocessing.
        We increment the parenthesis level if we are in an @(':arg-...') mode.")
      (xdoc::p
-      "If the next lexmark is a closed parenthesis,
+      "If the next lexeme is a closed parenthesis,
        it is the stopping criterion for
        the @(':arg-last') and @(':arg-dots') modes,
        but only if the parenthesis level is 0;
-       in this case, we do not add the parenthesis to the reversed lexmarks,
+       in this case, we do not add the parenthesis to the reversed lexemes,
        because those are meant to contain the argument we are preprocessing,
        and the parenthesis is not part of the argument.
        If the parenthesis level is not 0,
@@ -2519,7 +2515,7 @@
        In the @(':line') and @(':expr') modes,
        a closed parenthesis has no special significance.")
      (xdoc::p
-      "If the next lexmark is an identifier, there are several cases.
+      "If the next lexeme is an identifier, there are several cases.
        If we are in the @(':expr') mode and the identifier is @('defined'),
        it is the operator described in [C17:6.10.1/1],
        which must be followed by another identifier, possibly parenthesized.
@@ -2527,19 +2523,18 @@
        so that it can be parsed as part of the expression;
        in recognizing the identifier, we check that the syntax is correct.")
      (xdoc::p
-      "If the next lexmark is an identifier different from @('defined'),
+      "If the next lexeme is an identifier different from @('defined'),
        or if we are not in the @(':expr') mode,
        then we look up the identifier in the macro table,
        unless it includes its own name in its provenance
        (which indicates a recursion),
        and unless macro expansion is inhibited.
        If it is not found in the macro table,
-       it is just added to the reversed lexmarks,
+       it is just added to the reversed lexemes,
        and we continue preprocessing.
        If we find an object-like macro,
-       we leave the reversed lexmarks unchanged,
-       and push the replacement list of the macro onto the pending lexmarks,
-       surrounded by markers to disable that macro;
+       we leave the reversed lexemes unchanged,
+       and push the replacement list of the macro onto the pending lexemes;
        that is, we replace the macro with its expansion,
        and we continue preprocessing the replacement,
        realizing the rescanning and further replacement [C17:6.10.3.4].
@@ -2553,10 +2548,9 @@
        the companion function consumes the final right parenthesis.
        We call a separate function to replace the parameters with the arguments
        in the macro's replacement list,
-       and then we add the resulting lexemes to the pending lexmarks,
-       surrounded by the markers for the macro.
+       and then we add the resulting lexemes to the pending lexemes.
        In both cases of an object-like macro and a function-like macro,
-       just before adding the replacement list to the pending lexmarks,
+       just before adding the replacement list to the pending lexemes,
        we add to all its identifiers the provenance of the macro's name
        this way we propagate provenance,
        as well as, critically, the macro name itself.")
@@ -2566,31 +2560,31 @@
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp lexmark ppstate) (read-lexmark ppstate)))
+         ((erp lexmark ppstate) (read-lexmark ppstate))
+         (lexeme (and lexmark (lexmark-lexeme->lexeme lexmark))))
       (cond
-       ((not lexmark) ; EOF
+       ((not lexeme) ; EOF
         (if (ppstate->gcc/clang ppstate)
             (case (macrep-mode-kind mode)
               ((:line :expr)
-               (retok (lexmark-list-fix rev-lexmarks) ppstate))
+               (retok (plexeme-list-fix rev-lexemes) ppstate))
               ((:arg-nonlast :arg-last :arg-dots)
                (if directivep
                    (reterr-msg :where (ppstate->current-position ppstate)
                                :expected "the completion of a macro call"
                                :found "end of line (which ends the directive)")
-                 (retok (lexmark-list-fix rev-lexmarks) ppstate)))
+                 (retok (plexeme-list-fix rev-lexemes) ppstate)))
               (t (prog2$ (impossible) (reterr :impossible))))
           (reterr-msg :where (ppstate->current-position ppstate)
-                      :expected "a lexmark"
+                      :expected "a lexeme"
                       :found "end of file")))
        (t ; lexeme
-        (b* ((lexeme (lexmark-lexeme->lexeme lexmark))
-             (span (lexmark-lexeme->span lexmark)))
+        (b* ((span (lexmark-lexeme->span lexmark)))
           (cond
            ((plexeme-case lexeme :newline) ; EOL
             (case (macrep-mode-kind mode)
               ((:line :expr)
-               (retok (cons lexmark (lexmark-list-fix rev-lexmarks))
+               (retok (cons lexeme (plexeme-list-fix rev-lexemes))
                       ppstate))
               ((:arg-nonlast :arg-last :arg-dots)
                (if directivep
@@ -2598,7 +2592,7 @@
                                :expected "the completion of a macro call"
                                :found "new line (which ends the directive)")
                  (pproc-lexemes mode
-                                (cons lexmark rev-lexmarks)
+                                (cons lexeme rev-lexemes)
                                 paren-level
                                 no-expandp
                                 directivep
@@ -2608,7 +2602,7 @@
            ((plexeme-punctuatorp lexeme ",") ; ,
             (cond ((and (macrep-mode-case mode :arg-nonlast)
                         (zp paren-level))
-                   (retok (lexmark-list-fix rev-lexmarks)
+                   (retok (plexeme-list-fix rev-lexemes)
                           ppstate))
                   ((and (macrep-mode-case mode :arg-last)
                         (zp paren-level))
@@ -2616,7 +2610,7 @@
                                :expected "a closed parenthesis"
                                :found "a comma"))
                   (t (pproc-lexemes mode
-                                    (cons lexmark rev-lexmarks)
+                                    (cons lexeme rev-lexemes)
                                     paren-level
                                     no-expandp
                                     directivep
@@ -2624,7 +2618,7 @@
                                     (1- limit)))))
            ((plexeme-punctuatorp lexeme "(") ; (
             (pproc-lexemes mode
-                           (cons lexmark rev-lexmarks)
+                           (cons lexeme rev-lexemes)
                            (if (member-eq (macrep-mode-kind mode)
                                           '(:arg-nonlast :arg-last :arg-dots))
                                (1+ (lnfix paren-level))
@@ -2637,7 +2631,7 @@
             (case (macrep-mode-kind mode)
               ((:line :expr)
                (pproc-lexemes mode
-                              (cons lexmark rev-lexmarks)
+                              (cons lexeme rev-lexemes)
                               paren-level
                               no-expandp
                               directivep
@@ -2649,7 +2643,7 @@
                                :expected "a comma"
                                :found "a closed parenthesis")
                  (pproc-lexemes mode
-                                (cons lexmark rev-lexmarks)
+                                (cons lexeme rev-lexemes)
                                 (1- paren-level)
                                 no-expandp
                                 directivep
@@ -2657,10 +2651,10 @@
                                 (1- limit))))
               ((:arg-last :arg-dots)
                (if (zp paren-level)
-                   (retok (lexmark-list-fix rev-lexmarks)
+                   (retok (plexeme-list-fix rev-lexemes)
                           ppstate)
                  (pproc-lexemes mode
-                                (cons lexmark rev-lexmarks)
+                                (cons lexeme rev-lexemes)
                                 (1- paren-level)
                                 no-expandp
                                 directivep
@@ -2671,15 +2665,13 @@
             (b* ((ident (plexeme-ident->ident lexeme))
                  ((when (and (macrep-mode-case mode :expr)
                              (equal ident "defined"))) ; defined
-                  (b* (((erp lexmarks ppstate)
+                  (b* (((erp lexemes ppstate)
                         (b* (((reterr) nil ppstate)
                              ((erp token2 span2 ppstate)
                               (read-next-token directivep ppstate)))
                           (cond
                            ((plexeme-case token2 :ident) ; defined ident
-                            (retok (list (make-lexmark-lexeme :lexeme token2
-                                                              :span (irr-span)))
-                                   ppstate))
+                            (retok (list token2) ppstate))
                            ((plexeme-punctuatorp token2 "(") ; defined (
                             (b* (((erp token3 span3 ppstate)
                                   (read-next-token directivep ppstate))
@@ -2695,15 +2687,7 @@
                                   (reterr-msg :where (span->start span4)
                                               :expected "a right parenthesis"
                                               :found (plexeme?-to-msg token4))))
-                              (retok (list (make-lexmark-lexeme
-                                            :lexeme token2
-                                            :span (irr-span))
-                                           (make-lexmark-lexeme
-                                            :lexeme token3
-                                            :span (irr-span))
-                                           (make-lexmark-lexeme
-                                            :lexeme token4
-                                            :span (irr-span)))
+                              (retok (list token2 token3 token4)
                                      ppstate)))
                            (t ; defined EOF-or-not-ident-and-not-(
                             (reterr-msg :where (span->start span2)
@@ -2711,13 +2695,11 @@
                                                    a left parenthesis"
                                         :found (plexeme?-to-msg token2)))))))
                     (pproc-lexemes mode
-                                   (revappend lexmarks
-                                              (cons (make-lexmark-lexeme
-                                                     :lexeme (make-plexeme-ident
-                                                              :ident "defined"
-                                                              :provenance nil)
-                                                     :span (irr-span))
-                                                    rev-lexmarks))
+                                   (revappend lexemes
+                                              (cons (make-plexeme-ident
+                                                     :ident "defined"
+                                                     :provenance nil)
+                                                    rev-lexemes))
                                    paren-level
                                    no-expandp
                                    directivep
@@ -2727,7 +2709,7 @@
                             (member-equal ident
                                           (plexeme-ident->provenance lexeme))))
                   (pproc-lexemes mode
-                                 (cons lexmark rev-lexmarks)
+                                 (cons lexeme rev-lexemes)
                                  paren-level
                                  no-expandp
                                  directivep
@@ -2736,7 +2718,7 @@
                  (info (macro-lookup ident (ppstate->macros ppstate)))
                  ((unless info)
                   (pproc-lexemes mode
-                                 (cons lexmark rev-lexmarks)
+                                 (cons lexeme rev-lexemes)
                                  paren-level
                                  no-expandp
                                  directivep
@@ -2754,7 +2736,7 @@
                               replist))
                     (ppstate (push-lexemes replist ppstate)))
                  (pproc-lexemes mode
-                                rev-lexmarks
+                                rev-lexemes
                                 paren-level
                                 no-expandp
                                 directivep
@@ -2765,7 +2747,7 @@
                      (peek-token/newline directivep ppstate))
                     ((unless (plexeme?-punctuatorp toknl "("))
                      (pproc-lexemes mode
-                                    (cons lexmark rev-lexmarks)
+                                    (cons lexeme rev-lexemes)
                                     paren-level
                                     no-expandp
                                     directivep
@@ -2807,7 +2789,7 @@
                               replist))
                     (ppstate (push-lexmarks replist ppstate)))
                  (pproc-lexemes mode
-                                rev-lexmarks
+                                rev-lexemes
                                 paren-level
                                 no-expandp
                                 directivep
@@ -2815,7 +2797,7 @@
                                 (1- limit))))))
            (t ; other lexeme
             (pproc-lexemes mode
-                           (cons lexmark rev-lexmarks)
+                           (cons lexeme rev-lexemes)
                            paren-level
                            no-expandp
                            directivep
@@ -2864,13 +2846,14 @@
                                     t))
                    ((erp rev-arg ppstate)
                     (pproc-lexemes mode
-                                   nil ; rev-lexmarks
+                                   nil ; rev-lexemes
                                    0 ; paren-level
                                    no-expandp
                                    directivep
                                    ppstate
                                    (1- limit)))
                    (arg (rev rev-arg))
+                   (arg (lexeme-list-to-lexmark-list arg))
                    (arg (normalize-macro-arg arg))
                    (subst (acons va-args arg nil)))
                 (retok subst ppstate))
@@ -2884,13 +2867,14 @@
          (no-expandp (and (member-equal param (string-list-fix hash-params)) t))
          ((erp rev-arg ppstate)
           (pproc-lexemes mode
-                         nil ; rev-lexmarks
+                         nil ; rev-lexemes
                          0 ; paren-level
                          no-expandp
                          directivep
                          ppstate
                          (1- limit)))
          (arg (rev rev-arg))
+         (arg (lexeme-list-to-lexmark-list arg))
          (arg (normalize-macro-arg arg))
          ((erp subst ppstate)
           (pproc-macro-args (cdr params)
@@ -2931,9 +2915,6 @@
     "We use @(tsee pproc-lexemes), in the @(':expr') mode,
      to read the lexemes that form the constant expression;
      that function consumes (and returns) the final new line.
-     The resulting lexmarks are all lexemes;
-     since currently we do not have that fact statically available,
-     we double-check it here and throw a hard error in case the check fails.
      The lexemes are reversed back to their order of occurrence.")
    (xdoc::p
     "Then we must parse and evaluate those lexemes, obtaining a boolean,
@@ -2942,18 +2923,14 @@
      so that we can incorporate that into the @(tsee pfile)."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-pexpr) nil ppstate)
-       ((erp rev-lexmarks ppstate)
+       ((erp rev-lexemes ppstate)
         (pproc-lexemes (macrep-mode-expr)
-                       nil ; rev-lexmarks
+                       nil ; rev-lexemes
                        0 ; paren-level
                        nil ; no-expandp
                        t ; directivep
                        ppstate
                        1000000000)) ; limit
-       ((unless (lexmark-list-case-lexeme-p rev-lexmarks))
-        (raise "Internal error: ~x0 contains markers.")
-        (reterr t))
-       (rev-lexemes (lexmark-list-to-lexeme-list rev-lexmarks))
        (lexemes (rev rev-lexemes))
        ((erp expr) (pparse-const-expr lexemes))
        ((erp pval) (peval-expr expr
@@ -3723,18 +3700,14 @@
      the macro expansion, in general, handles the form in [C17:6.10.4/5]."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
-       ((erp rev-lexmarks ppstate)
+       ((erp rev-lexemes ppstate)
         (pproc-lexemes (macrep-mode-line)
-                       nil ; rev-lexmarks
+                       nil ; rev-lexemes
                        0 ; paren-level
                        nil ; no-expandp
                        nil ; directivep
                        ppstate
                        1000000000)) ; limit
-       ((unless (lexmark-list-case-lexeme-p rev-lexmarks))
-        (raise "Internal error: ~x0 contains markers.")
-        (reterr t))
-       (rev-lexemes (lexmark-list-to-lexeme-list rev-lexmarks))
        (lexemes (rev rev-lexemes))
        ((erp & line & file? & &)
         (line-digit-sequence-and-string-literal lexemes))
@@ -4637,19 +4610,15 @@
                         :found (plexeme?-to-msg toknl2))))))
        (t ; non-# -- text line
         (b* ((ppstate (unread-lexeme toknl span ppstate))
-             ((erp rev-lexmarks ppstate)
+             ((erp rev-lexemes ppstate)
               (pproc-lexemes (macrep-mode-line)
-                             nil ; rev-lexmarks
+                             nil ; rev-lexemes
                              0 ; paren-level
                              nil ; no-expandp
                              nil ; directivep
                              ppstate
                              limit)) ; unrelated to limit for this clique
-             ((unless (lexmark-list-case-lexeme-p rev-lexmarks))
-              (raise "Internal error: ~x0 contains markers.")
-              (reterr t))
-             (rev-lexemes-to-add (lexmark-list-to-lexeme-list rev-lexmarks))
-             (lexemes (append nontoknls (rev rev-lexemes-to-add)))
+             (lexemes (append nontoknls (rev rev-lexemes)))
              (lexemes (if (ppoptions->keep-comments
                            (ppstate->options ppstate))
                           lexemes
@@ -4768,21 +4737,17 @@
                  state)))
        (t ; # include token
         (b* ((ppstate (unread-lexeme toknl span ppstate))
-             ((erp rev-lexmarks ppstate)
+             ((erp rev-lexemes ppstate)
               (pproc-lexemes (macrep-mode-line)
-                             nil ; rev-lexmarks
+                             nil ; rev-lexemes
                              0 ; paren-level
                              nil ; no-expandp
                              t ; directivep
                              ppstate
                              limit)) ; unrelated to limit for this clique
-             (lexmarks (rev rev-lexmarks))
-             ((unless (lexmark-list-case-lexeme-p lexmarks))
-              (raise "Internal error: ~x0 contains markers." lexmarks)
-              (reterr t))
-             (header-name-lexemes (lexmark-list-to-lexeme-list lexmarks))
+             (lexemes (rev rev-lexemes))
              ((erp header nontoknls-after-header newline?)
-              (indirect-header-name header-name-lexemes ppstate))
+              (indirect-header-name lexemes ppstate))
              ((erp pparts pfiles resolved-includes ppstate state)
               (pproc-header-name nontoknls-before-hash
                                  nontoknls-after-hash
