@@ -2565,230 +2565,228 @@
           (reterr-msg :where (ppstate->current-position ppstate)
                       :expected "a lexeme"
                       :found "end of file")))
-       (t ; lexeme
-        (cond
-           ((plexeme-case lexeme :newline) ; EOL
-            (case (macrep-mode-kind mode)
-              ((:line :expr)
-               (retok (cons lexeme (plexeme-list-fix rev-lexemes))
+       ((plexeme-case lexeme :newline) ; EOL
+        (case (macrep-mode-kind mode)
+          ((:line :expr)
+           (retok (cons lexeme (plexeme-list-fix rev-lexemes))
+                  ppstate))
+          ((:arg-nonlast :arg-last :arg-dots)
+           (if directivep
+               (reterr-msg :where (span->start span)
+                           :expected "the completion of a macro call"
+                           :found "new line (which ends the directive)")
+             (pproc-lexemes mode
+                            (cons lexeme rev-lexemes)
+                            paren-level
+                            no-expandp
+                            directivep
+                            ppstate
+                            (1- limit))))
+          (t (prog2$ (impossible) (reterr :impossible)))))
+       ((plexeme-punctuatorp lexeme ",") ; ,
+        (cond ((and (macrep-mode-case mode :arg-nonlast)
+                    (zp paren-level))
+               (retok (plexeme-list-fix rev-lexemes)
                       ppstate))
-              ((:arg-nonlast :arg-last :arg-dots)
-               (if directivep
-                   (reterr-msg :where (span->start span)
-                               :expected "the completion of a macro call"
-                               :found "new line (which ends the directive)")
-                 (pproc-lexemes mode
+              ((and (macrep-mode-case mode :arg-last)
+                    (zp paren-level))
+               (reterr-msg :where (span->start span)
+                           :expected "a closed parenthesis"
+                           :found "a comma"))
+              (t (pproc-lexemes mode
                                 (cons lexeme rev-lexemes)
                                 paren-level
                                 no-expandp
                                 directivep
                                 ppstate
-                                (1- limit))))
-              (t (prog2$ (impossible) (reterr :impossible)))))
-           ((plexeme-punctuatorp lexeme ",") ; ,
-            (cond ((and (macrep-mode-case mode :arg-nonlast)
-                        (zp paren-level))
-                   (retok (plexeme-list-fix rev-lexemes)
-                          ppstate))
-                  ((and (macrep-mode-case mode :arg-last)
-                        (zp paren-level))
-                   (reterr-msg :where (span->start span)
-                               :expected "a closed parenthesis"
-                               :found "a comma"))
-                  (t (pproc-lexemes mode
-                                    (cons lexeme rev-lexemes)
-                                    paren-level
-                                    no-expandp
-                                    directivep
-                                    ppstate
-                                    (1- limit)))))
-           ((plexeme-punctuatorp lexeme "(") ; (
-            (pproc-lexemes mode
-                           (cons lexeme rev-lexemes)
-                           (if (member-eq (macrep-mode-kind mode)
-                                          '(:arg-nonlast :arg-last :arg-dots))
-                               (1+ (lnfix paren-level))
-                             paren-level)
-                           no-expandp
-                           directivep
-                           ppstate
-                           (1- limit)))
-           ((plexeme-punctuatorp lexeme ")") ; )
-            (case (macrep-mode-kind mode)
-              ((:line :expr)
-               (pproc-lexemes mode
-                              (cons lexeme rev-lexemes)
-                              paren-level
-                              no-expandp
-                              directivep
-                              ppstate
-                              (1- limit)))
-              (:arg-nonlast
-               (if (zp paren-level)
-                   (reterr-msg :where (span->start span)
-                               :expected "a comma"
-                               :found "a closed parenthesis")
-                 (pproc-lexemes mode
-                                (cons lexeme rev-lexemes)
-                                (1- paren-level)
-                                no-expandp
-                                directivep
-                                ppstate
-                                (1- limit))))
-              ((:arg-last :arg-dots)
-               (if (zp paren-level)
-                   (retok (plexeme-list-fix rev-lexemes)
-                          ppstate)
-                 (pproc-lexemes mode
-                                (cons lexeme rev-lexemes)
-                                (1- paren-level)
-                                no-expandp
-                                directivep
-                                ppstate
-                                (1- limit))))
-              (t (prog2$ (impossible) (reterr :impossible)))))
-           ((plexeme-case lexeme :ident) ; ident
-            (b* ((ident (plexeme-ident->ident lexeme))
-                 ((when (and (macrep-mode-case mode :expr)
-                             (equal ident "defined"))) ; defined
-                  (b* (((erp lexemes ppstate)
-                        (b* (((reterr) nil ppstate)
-                             ((erp token2 span2 ppstate)
-                              (read-next-token directivep ppstate)))
-                          (cond
-                           ((plexeme-case token2 :ident) ; defined ident
-                            (retok (list token2) ppstate))
-                           ((plexeme-punctuatorp token2 "(") ; defined (
-                            (b* (((erp token3 span3 ppstate)
-                                  (read-next-token directivep ppstate))
-                                 ((unless (plexeme-case token3 :ident))
-                                  ;; defined ( ident
-                                  (reterr-msg :where (span->start span3)
-                                              :expected "an identifier"
-                                              :found (plexeme?-to-msg token3)))
-                                 ((erp token4 span4 ppstate)
-                                  (read-next-token directivep ppstate))
-                                 ((unless (plexeme-punctuatorp token4 ")"))
-                                  ;; defined ( ident )
-                                  (reterr-msg :where (span->start span4)
-                                              :expected "a right parenthesis"
-                                              :found (plexeme?-to-msg token4))))
-                              (retok (list token2 token3 token4)
-                                     ppstate)))
-                           (t ; defined EOF-or-not-ident-and-not-(
-                            (reterr-msg :where (span->start span2)
-                                        :expected "an identifier or ~
+                                (1- limit)))))
+       ((plexeme-punctuatorp lexeme "(") ; (
+        (pproc-lexemes mode
+                       (cons lexeme rev-lexemes)
+                       (if (member-eq (macrep-mode-kind mode)
+                                      '(:arg-nonlast :arg-last :arg-dots))
+                           (1+ (lnfix paren-level))
+                         paren-level)
+                       no-expandp
+                       directivep
+                       ppstate
+                       (1- limit)))
+       ((plexeme-punctuatorp lexeme ")") ; )
+        (case (macrep-mode-kind mode)
+          ((:line :expr)
+           (pproc-lexemes mode
+                          (cons lexeme rev-lexemes)
+                          paren-level
+                          no-expandp
+                          directivep
+                          ppstate
+                          (1- limit)))
+          (:arg-nonlast
+           (if (zp paren-level)
+               (reterr-msg :where (span->start span)
+                           :expected "a comma"
+                           :found "a closed parenthesis")
+             (pproc-lexemes mode
+                            (cons lexeme rev-lexemes)
+                            (1- paren-level)
+                            no-expandp
+                            directivep
+                            ppstate
+                            (1- limit))))
+          ((:arg-last :arg-dots)
+           (if (zp paren-level)
+               (retok (plexeme-list-fix rev-lexemes)
+                      ppstate)
+             (pproc-lexemes mode
+                            (cons lexeme rev-lexemes)
+                            (1- paren-level)
+                            no-expandp
+                            directivep
+                            ppstate
+                            (1- limit))))
+          (t (prog2$ (impossible) (reterr :impossible)))))
+       ((plexeme-case lexeme :ident) ; ident
+        (b* ((ident (plexeme-ident->ident lexeme))
+             ((when (and (macrep-mode-case mode :expr)
+                         (equal ident "defined"))) ; defined
+              (b* (((erp lexemes ppstate)
+                    (b* (((reterr) nil ppstate)
+                         ((erp token2 span2 ppstate)
+                          (read-next-token directivep ppstate)))
+                      (cond
+                       ((plexeme-case token2 :ident) ; defined ident
+                        (retok (list token2) ppstate))
+                       ((plexeme-punctuatorp token2 "(") ; defined (
+                        (b* (((erp token3 span3 ppstate)
+                              (read-next-token directivep ppstate))
+                             ((unless (plexeme-case token3 :ident))
+                              ;; defined ( ident
+                              (reterr-msg :where (span->start span3)
+                                          :expected "an identifier"
+                                          :found (plexeme?-to-msg token3)))
+                             ((erp token4 span4 ppstate)
+                              (read-next-token directivep ppstate))
+                             ((unless (plexeme-punctuatorp token4 ")"))
+                              ;; defined ( ident )
+                              (reterr-msg :where (span->start span4)
+                                          :expected "a right parenthesis"
+                                          :found (plexeme?-to-msg token4))))
+                          (retok (list token2 token3 token4)
+                                 ppstate)))
+                       (t ; defined EOF-or-not-ident-and-not-(
+                        (reterr-msg :where (span->start span2)
+                                    :expected "an identifier or ~
                                                    a left parenthesis"
-                                        :found (plexeme?-to-msg token2)))))))
-                    (pproc-lexemes mode
-                                   (revappend lexemes
-                                              (cons (make-plexeme-ident
-                                                     :ident "defined"
-                                                     :provenance nil)
-                                                    rev-lexemes))
-                                   paren-level
-                                   no-expandp
-                                   directivep
-                                   ppstate
-                                   (1- limit))))
-                 ((when (or no-expandp
-                            (member-equal ident
-                                          (plexeme-ident->provenance lexeme))))
-                  (pproc-lexemes mode
-                                 (cons lexeme rev-lexemes)
-                                 paren-level
-                                 no-expandp
-                                 directivep
-                                 ppstate
-                                 (1- limit)))
-                 (info (macro-lookup ident (ppstate->macros ppstate)))
-                 ((unless info)
-                  (pproc-lexemes mode
-                                 (cons lexeme rev-lexemes)
-                                 paren-level
-                                 no-expandp
-                                 directivep
-                                 ppstate
-                                 (1- limit))))
-              (macro-info-case
-               info
-               :object
-               (b* (((erp replist) (evaluate-double-hash info.replist
-                                                         (ienv->dialect
-                                                          (ppstate->ienv
-                                                           ppstate))))
-                    (replist (plexemes-add-provenance
-                              (cons ident (plexeme-ident->provenance lexeme))
-                              replist))
-                    (ppstate (push-lexemes replist ppstate)))
+                                    :found (plexeme?-to-msg token2)))))))
+                (pproc-lexemes mode
+                               (revappend lexemes
+                                          (cons (make-plexeme-ident
+                                                 :ident "defined"
+                                                 :provenance nil)
+                                                rev-lexemes))
+                               paren-level
+                               no-expandp
+                               directivep
+                               ppstate
+                               (1- limit))))
+             ((when (or no-expandp
+                        (member-equal ident
+                                      (plexeme-ident->provenance lexeme))))
+              (pproc-lexemes mode
+                             (cons lexeme rev-lexemes)
+                             paren-level
+                             no-expandp
+                             directivep
+                             ppstate
+                             (1- limit)))
+             (info (macro-lookup ident (ppstate->macros ppstate)))
+             ((unless info)
+              (pproc-lexemes mode
+                             (cons lexeme rev-lexemes)
+                             paren-level
+                             no-expandp
+                             directivep
+                             ppstate
+                             (1- limit))))
+          (macro-info-case
+           info
+           :object
+           (b* (((erp replist) (evaluate-double-hash info.replist
+                                                     (ienv->dialect
+                                                      (ppstate->ienv
+                                                       ppstate))))
+                (replist (plexemes-add-provenance
+                          (cons ident (plexeme-ident->provenance lexeme))
+                          replist))
+                (ppstate (push-lexemes replist ppstate)))
+             (pproc-lexemes mode
+                            rev-lexemes
+                            paren-level
+                            no-expandp
+                            directivep
+                            ppstate
+                            (1- limit)))
+           :function
+           (b* (((erp toknl ppstate)
+                 (peek-token/newline directivep ppstate))
+                ((unless (plexeme?-punctuatorp toknl "("))
                  (pproc-lexemes mode
-                                rev-lexemes
+                                (cons lexeme rev-lexemes)
                                 paren-level
                                 no-expandp
                                 directivep
                                 ppstate
                                 (1- limit)))
-               :function
-               (b* (((erp toknl ppstate)
-                     (peek-token/newline directivep ppstate))
-                    ((unless (plexeme?-punctuatorp toknl "("))
-                     (pproc-lexemes mode
-                                    (cons lexeme rev-lexemes)
-                                    paren-level
-                                    no-expandp
-                                    directivep
-                                    ppstate
-                                    (1- limit)))
-                    ((erp token span2 ppstate)
-                     (read-next-token directivep ppstate))
-                    ((unless (plexeme-punctuatorp token "(")) ; ident (
-                     (reterr-msg :where (span->start span2)
-                                 :expected "an open parenthesis"
-                                 :found (plexeme?-to-msg token)))
-                    ((erp subst ppstate)
-                     (b* (((reterr) nil ppstate))
-                       (if (and (endp info.params)
-                                (not info.ellipsis))
-                           (b* (((erp token span2 ppstate)
-                                 (read-next-token directivep ppstate))
-                                ((unless (plexeme-punctuatorp token ")"))
-                                 (reterr-msg :where (span->start span2)
-                                             :expected "a closed parenthesis"
-                                             :found (plexeme?-to-msg token))))
-                             (retok nil ; subst
-                                    ppstate))
-                         (b* (((erp subst ppstate)
-                               (pproc-macro-args info.params
-                                                 info.ellipsis
-                                                 info.hash-params
-                                                 directivep
-                                                 ppstate
-                                                 (1- limit))))
-                           (retok subst ppstate)))))
-                    (replist (replace-macro-args info.replist subst))
-                    ((erp replist) (evaluate-triple-hash replist
-                                                         (ienv->dialect
-                                                          (ppstate->ienv
-                                                           ppstate))))
-                    (replist (lexmarks-add-provenance
-                              (cons ident (plexeme-ident->provenance lexeme))
-                              replist))
-                    (ppstate (push-lexmarks replist ppstate)))
-                 (pproc-lexemes mode
-                                rev-lexemes
-                                paren-level
-                                no-expandp
-                                directivep
-                                ppstate
-                                (1- limit))))))
-           (t ; other lexeme
-            (pproc-lexemes mode
-                           (cons lexeme rev-lexemes)
-                           paren-level
-                           no-expandp
-                           directivep
-                           ppstate
-                           (1- limit)))))))
+                ((erp token span2 ppstate)
+                 (read-next-token directivep ppstate))
+                ((unless (plexeme-punctuatorp token "(")) ; ident (
+                 (reterr-msg :where (span->start span2)
+                             :expected "an open parenthesis"
+                             :found (plexeme?-to-msg token)))
+                ((erp subst ppstate)
+                 (b* (((reterr) nil ppstate))
+                   (if (and (endp info.params)
+                            (not info.ellipsis))
+                       (b* (((erp token span2 ppstate)
+                             (read-next-token directivep ppstate))
+                            ((unless (plexeme-punctuatorp token ")"))
+                             (reterr-msg :where (span->start span2)
+                                         :expected "a closed parenthesis"
+                                         :found (plexeme?-to-msg token))))
+                         (retok nil ; subst
+                                ppstate))
+                     (b* (((erp subst ppstate)
+                           (pproc-macro-args info.params
+                                             info.ellipsis
+                                             info.hash-params
+                                             directivep
+                                             ppstate
+                                             (1- limit))))
+                       (retok subst ppstate)))))
+                (replist (replace-macro-args info.replist subst))
+                ((erp replist) (evaluate-triple-hash replist
+                                                     (ienv->dialect
+                                                      (ppstate->ienv
+                                                       ppstate))))
+                (replist (lexmarks-add-provenance
+                          (cons ident (plexeme-ident->provenance lexeme))
+                          replist))
+                (ppstate (push-lexmarks replist ppstate)))
+             (pproc-lexemes mode
+                            rev-lexemes
+                            paren-level
+                            no-expandp
+                            directivep
+                            ppstate
+                            (1- limit))))))
+       (t ; other lexeme
+        (pproc-lexemes mode
+                       (cons lexeme rev-lexemes)
+                       paren-level
+                       no-expandp
+                       directivep
+                       ppstate
+                       (1- limit)))))
     :no-function nil
     :measure (nfix limit))
 
