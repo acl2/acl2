@@ -2548,8 +2548,7 @@
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp lexmark ppstate) (read-lexmark ppstate))
-         (lexeme (and lexmark (lexmark-lexeme->lexeme lexmark))))
+         ((erp lexeme span ppstate) (read-lexeme nil ppstate)))
       (cond
        ((not lexeme) ; EOF
         (if (ppstate->gcc/clang ppstate)
@@ -2567,8 +2566,7 @@
                       :expected "a lexeme"
                       :found "end of file")))
        (t ; lexeme
-        (b* ((span (lexmark-lexeme->span lexmark)))
-          (cond
+        (cond
            ((plexeme-case lexeme :newline) ; EOL
             (case (macrep-mode-kind mode)
               ((:line :expr)
@@ -2790,7 +2788,7 @@
                            no-expandp
                            directivep
                            ppstate
-                           (1- limit))))))))
+                           (1- limit)))))))
     :no-function nil
     :measure (nfix limit))
 
