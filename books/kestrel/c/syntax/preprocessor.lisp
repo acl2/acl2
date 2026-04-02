@@ -878,26 +878,25 @@
      The flag determines whether we stop at (and return) a new line,
      or whether we skip new lines and just find a token.")
    (xdoc::p
-    "We go through lexmarks until we reach the end of file,
+    "We go through lexemes until we reach the end of file,
      in which case we return @('nil'),
      or until we reach a token or possibly a new line (depending on the flag).
-     But none of the lexmarks are consumed:
-     they are all pushed back onto the pending lexmarks."))
+     But none of the lexemes are consumed:
+     they are all pushed back onto the pending lexemes."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil ppstate)
-       ((erp lexmark ppstate) (read-lexmark ppstate)))
+       ((erp lexeme span ppstate) (read-lexeme nil ppstate)))
     (cond
-     ((not lexmark) ; EOF
+     ((not lexeme) ; EOF
       (retok nil ppstate))
-     ((and (lexmark-case lexmark :lexeme) ; token(/EOL)
-           (or (plexeme-tokenp (lexmark-lexeme->lexeme lexmark))
-               (and stop-at-newline-p
-                    (plexeme-case (lexmark-lexeme->lexeme lexmark) :newline))))
-      (b* ((ppstate (push-lexmark lexmark ppstate)))
-        (retok (lexmark-lexeme->lexeme lexmark) ppstate)))
+     ((or (plexeme-tokenp lexeme)
+          (and stop-at-newline-p
+               (plexeme-case lexeme :newline)))
+      (b* ((ppstate (push-lexmark (lexmark-lexeme lexeme span) ppstate)))
+        (retok lexeme ppstate)))
      (t ; comment or white space
       (b* (((erp toknl? ppstate) (peek-token/newline stop-at-newline-p ppstate))
-           (ppstate (push-lexmark lexmark ppstate)))
+           (ppstate (push-lexmark (lexmark-lexeme lexeme span) ppstate)))
         (retok toknl? ppstate)))))
   :measure (ppstate->size ppstate)
 
