@@ -680,16 +680,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If there are pending lexmarks,
-     we return the first one if it is a lexeme;
-     we throw an error if it is a marker,
-     because that should never happen when this function is called.
-     If there are no pending lexmarks,
+    "If there are pending lexemes, we return the first one.
+     If there are no pending lexemes,
      we call @(tsee plex-lexeme) to lex a lexeme from the input.")
    (xdoc::p
     "The @('headerp') flag is passed to @(tsee plex-lexeme),
-     if we find no pending lexmark.
-     It is an invariant that pending lexmarks are never header names;
+     if we find no pending lexeme.
+     It is an invariant that pending lexemes are never header names;
      thus, in this case the @('headerp') flag is irrelevant."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil (irr-span) ppstate)
@@ -697,9 +694,6 @@
        (size (ppstate->size ppstate))
        ((when (consp lexmarks))
         (b* ((lexmark (car lexmarks))
-             ((unless (lexmark-case lexmark :lexeme))
-              (raise "Internal error: unexpected marker ~x0." lexmark)
-              (reterr t))
              (lexeme (lexmark-lexeme->lexeme lexmark))
              (span (lexmark-lexeme->span lexmark))
              ((unless (> size 0))
