@@ -74,24 +74,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Along with lexemes,
-     it is convenient to handle certain markers.
-     We use the term `lexmark' to denote a preprocessing lexeme or marker.")
-   (xdoc::p
-    "The lexemes are accompanied by spans.")
-   (xdoc::p
-    "The @(':start') and @(':end') summands are used to mark
-     the start and end of an expansion of the macro,
-     whose name is the @('macro') field of these two summands,
-     in order to inhibit its (direct or indirect) recursive expansion
-     [C17:6.10.3.4/2].")
-   (xdoc::p
-    "Only lexemes have spans associated with them.
-     The markers are artifacts, not an actual part of the input files."))
+    "This is just a wrapper of lexemes (and spans),
+     which will be eliminated soon.
+     It used to be more than a wrapper,
+     motivated by our previous approach to prevent recursive macro expansion,
+     but now we have a different and better approach
+     that no longer needs lexmarks."))
   (:lexeme ((lexeme plexeme)
             (span span)))
-  (:start ((macro string)))
-  (:end ((macro string)))
   :pred lexmarkp)
 
 ;;;;;;;;;;;;;;;;;;;;

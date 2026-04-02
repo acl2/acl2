@@ -822,10 +822,6 @@
       (reterr-msg :where (ppstate->current-position ppstate)
                   :expected "a lexmark"
                   :found "end of file"))
-     ((lexmark-case lexmark :start) ; start(M)
-      (read-next-token stop-at-newline-p ppstate))
-     ((lexmark-case lexmark :end) ; end(M)
-      (read-next-token stop-at-newline-p ppstate))
      (t ; lexeme
       (b* ((lexeme (lexmark-lexeme->lexeme lexmark))
            (span (lexmark-lexeme->span lexmark)))
@@ -2185,10 +2181,8 @@
        ;; If the next lexmark or placemarker is a marker or a space,
        ;; pass it on, i.e. continue processing and add it to the output.
        ((when (and lexmark/placemarker
-                   (or (lexmark-case lexmark/placemarker :start)
-                       (lexmark-case lexmark/placemarker :end)
-                       (not (plexeme-tokenp ; i.e. space
-                             (lexmark-lexeme->lexeme lexmark/placemarker))))))
+                   (not (plexeme-tokenp ; i.e. space
+                         (lexmark-lexeme->lexeme lexmark/placemarker)))))
         (b* (((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers
                                                    dialect)))
           (retok (cons (lexmark-fix lexmark/placemarker) lexmarks))))
@@ -2469,17 +2463,6 @@
        unless GCC or Clang extensions are enabled,
        in which case an end of file is treated like an end of line.")
      (xdoc::p
-      "If the next lexmark is a @(':start') marker,
-       we add the macro name to the multiset,
-       and continue preprocessing.
-       If the next lexmark is a @(':end') marker,
-       we remove the macro name (once) from the multiset
-       and continue preprocessing.
-       That multiset is discusssed in @(tsee pproc-lexemes/macroargs).
-       In any of the @(':arg-...') modes,
-       the marker is also added to the reversed list of lexmarks,
-       because markers in arguments must be retained.")
-     (xdoc::p
       "If tne next lexmark is a new line,
        it is always added to the reversed lexmarks.
        In the @(':line') and @(':expr') modes,
@@ -2600,28 +2583,6 @@
           (reterr-msg :where (ppstate->current-position ppstate)
                       :expected "a lexmark"
                       :found "end of file")))
-       ((lexmark-case lexmark :start) ; start(M)
-        (pproc-lexemes mode
-                       (if (member-eq (macrep-mode-kind mode)
-                                      '(:arg-nonlast :arg-last :arg-dots))
-                           (cons lexmark rev-lexmarks)
-                         rev-lexmarks)
-                       paren-level
-                       no-expandp
-                       directivep
-                       ppstate
-                       (1- limit)))
-       ((lexmark-case lexmark :end) ; end(M)
-        (pproc-lexemes mode
-                       (if (member-eq (macrep-mode-kind mode)
-                                      '(:arg-nonlast :arg-last :arg-dots))
-                           (cons lexmark rev-lexmarks)
-                         rev-lexmarks)
-                       paren-level
-                       no-expandp
-                       directivep
-                       ppstate
-                       (1- limit)))
        (t ; lexeme
         (b* ((lexeme (lexmark-lexeme->lexeme lexmark))
              (span (lexmark-lexeme->span lexmark)))
@@ -2791,9 +2752,7 @@
                     (replist (plexemes-add-provenance
                               (cons ident (plexeme-ident->provenance lexeme))
                               replist))
-                    (ppstate (push-lexmark (lexmark-end ident) ppstate))
-                    (ppstate (push-lexemes replist ppstate))
-                    (ppstate (push-lexmark (lexmark-start ident) ppstate)))
+                    (ppstate (push-lexemes replist ppstate)))
                  (pproc-lexemes mode
                                 rev-lexmarks
                                 paren-level
@@ -2846,9 +2805,7 @@
                     (replist (lexmarks-add-provenance
                               (cons ident (plexeme-ident->provenance lexeme))
                               replist))
-                    (ppstate (push-lexmark (lexmark-end ident) ppstate))
-                    (ppstate (push-lexmarks replist ppstate))
-                    (ppstate (push-lexmark (lexmark-start ident) ppstate)))
+                    (ppstate (push-lexmarks replist ppstate)))
                  (pproc-lexemes mode
                                 rev-lexmarks
                                 paren-level
