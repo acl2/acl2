@@ -58,12 +58,12 @@
         (equal (svar/4vec-kind x) :svar))
     :rule-classes ((:forward-chaining :trigger-terms ((svar/4vec-kind x)))))
 
-  (defthm svar/4vec-p-when-when-kind-is-4vec
+  (defthm svar/4vec-p-when-kind-is-4vec
     (implies (equal (svar/4vec-kind x) :4vec)
              (equal (svar/4vec-p x) (4vec-p x)))
     :hints(("Goal" :in-theory (enable svar/4vec-p svar-p))))
 
-  (defthm svar/4vec-p-when-when-kind-is-svar
+  (defthm svar/4vec-p-when-kind-is-svar
     (implies (equal (svar/4vec-kind x) :svar)
              (equal (svar/4vec-p x) (svar-p x)))
     :hints(("Goal" :in-theory (enable svar/4vec-p 4vec-p))))
@@ -506,12 +506,12 @@ to signed values.</p>"
         (equal (lhprobe/4vec-kind x) :lhprobe))
     :rule-classes ((:forward-chaining :trigger-terms ((lhprobe/4vec-kind x)))))
 
-  (defthm lhprobe/4vec-p-when-when-kind-is-4vec
+  (defthm lhprobe/4vec-p-when-kind-is-4vec
     (implies (equal (lhprobe/4vec-kind x) :4vec)
              (equal (lhprobe/4vec-p x) (4vec-p x)))
     :hints(("Goal" :in-theory (enable lhprobe/4vec-p lhprobe-p))))
 
-  (defthm lhprobe/4vec-p-when-when-kind-is-lhprobe
+  (defthm lhprobe/4vec-p-when-kind-is-lhprobe
     (implies (equal (lhprobe/4vec-kind x) :lhprobe)
              (equal (lhprobe/4vec-p x) (lhprobe-p x)))
     :hints(("Goal" :in-theory (enable lhprobe/4vec-p 4vec-p))))
