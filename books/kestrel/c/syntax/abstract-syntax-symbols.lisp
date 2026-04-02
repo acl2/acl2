@@ -471,17 +471,17 @@
     trans-item-listp
     trans-item-list-fix
 
-    transunitp
-    transunit
-    make-transunit
-    transunit-fix
-    transunit->items
+    trans-unitp
+    trans-unit
+    make-trans-unit
+    trans-unit-fix
+    trans-unit->items
 
-    filepath-transunit-mapp
+    filepath-trans-unit-mapp
 
-    transunit-ensemblep
-    transunit-ensemble
-    transunit-ensemble->units
+    trans-ensemblep
+    trans-ensemble
+    trans-ensemble->units
 
     filepathp
     filepath
@@ -497,7 +497,7 @@
 
     code-ensemble
     code-ensemblep
-    code-ensemble->transunits
+    code-ensemble->trans-units
     code-ensemble->ienv
     make-code-ensemble
     change-code-ensemble
@@ -521,8 +521,8 @@
     irr-block-item
     irr-fundef
     irr-trans-item
-    irr-transunit
-    irr-transunit-ensemble
+    irr-trans-unit
+    irr-trans-ensemble
     irr-code-ensemble
 
     ;; unambiguity:
@@ -582,9 +582,9 @@
     ext-declon-list-unambp
     trans-item-unambp
     trans-item-list-unambp
-    transunit-unambp
-    filepath-transunit-map-unambp
-    transunit-ensemble-unambp
+    trans-unit-unambp
+    filepath-trans-unit-map-unambp
+    trans-ensemble-unambp
     code-ensemble-unambp
 
     ;; purity:
@@ -652,9 +652,9 @@
     ext-declon-list-aidentp
     trans-item-aidentp
     trans-item-list-aidentp
-    transunit-aidentp
-    filepath-transunit-map-aidentp
-    transunit-ensemble-aidentp
+    trans-unit-aidentp
+    filepath-trans-unit-map-aidentp
+    trans-ensemble-aidentp
     code-ensemble-aidentp
 
     ;; formalized subset:
@@ -829,9 +829,9 @@
     ext-declon-list-annop
     trans-item-annop
     trans-item-list-annop
-    transunit-annop
-    filepath-transunit-map-annop
-    transunit-ensemble-annop
+    trans-unit-annop
+    filepath-trans-unit-map-annop
+    trans-ensemble-annop
     code-ensemble-annop
 
     ;; other operations:

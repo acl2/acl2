@@ -26,7 +26,7 @@
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ast) (dimb-transunit ast dialect)))
+         ((mv erp2 ast) (dimb-trans-unit ast dialect)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
             (t (and ,(or cond t)
@@ -42,7 +42,7 @@
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ?ast) (dimb-transunit ast dialect)))
+         ((mv erp2 ?ast) (dimb-trans-unit ast dialect)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))
             (t nil)))))
@@ -290,7 +290,7 @@
  return (char *) (a) - b;
 }
 "
- :cond (b* ((items (transunit->items ast))
+ :cond (b* ((items (trans-unit->items ast))
             (item (car items))
             (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
@@ -307,7 +307,7 @@
  return a + (b) + c;
 }
 "
- :cond (b* ((items (transunit->items ast))
+ :cond (b* ((items (trans-unit->items ast))
             (item (car items))
             (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
@@ -339,7 +339,7 @@
   return (a) + (b) + c;
 }
 "
- :cond (b* ((items (transunit->items ast))
+ :cond (b* ((items (trans-unit->items ast))
             (item (car items))
             (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
@@ -373,7 +373,7 @@
   return a + (b) + (c) + d;
 }
 "
- :cond (b* ((items (transunit->items ast))
+ :cond (b* ((items (trans-unit->items ast))
             (item (car items))
             (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
@@ -413,7 +413,7 @@
   return ~ (a) + b;
 }
 "
- :cond (b* ((items (transunit->items ast))
+ :cond (b* ((items (trans-unit->items ast))
             (item (car items))
             (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))

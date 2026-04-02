@@ -280,9 +280,8 @@
   ((from-file stringp)
    (hname header-namep)
    (to-file stringp)
-   (resolved-includes string-header-name-string-alist-alistp))
-  :returns (new-resolved-includes string-header-name-string-alist-alistp
-                                  :hints (("Goal" :in-theory (enable acons))))
+   (resolved-includes string-header-name-string-map-mapp))
+  :returns (new-resolved-includes string-header-name-string-map-mapp)
   :short "Extend mapping from header names to resolved file names."
   :long
   (xdoc::topstring
@@ -296,19 +295,19 @@
        (hname (header-name-fix hname))
        (to-file (str-fix to-file))
        (resolved-includes
-        (string-header-name-string-alist-alist-fix resolved-includes))
-       (from-file+inner-alist (assoc-equal from-file resolved-includes))
-       ((unless from-file+inner-alist)
-        (b* ((new-inner-alist (acons hname to-file nil))
+        (string-header-name-string-map-map-fix resolved-includes))
+       (from-file+inner-map (omap::assoc from-file resolved-includes))
+       ((unless from-file+inner-map)
+        (b* ((new-inner-map (omap::update hname to-file nil))
              (new-resolved-includes
-              (acons from-file new-inner-alist resolved-includes)))
+              (omap::update from-file new-inner-map resolved-includes)))
           new-resolved-includes))
-       (inner-alist (cdr from-file+inner-alist))
-       (hname+existing (assoc-equal hname inner-alist))
+       (inner-map (cdr from-file+inner-map))
+       (hname+existing (omap::assoc hname inner-map))
        ((unless hname+existing)
-        (b* ((new-inner-alist (acons hname to-file inner-alist))
+        (b* ((new-inner-map (omap::update hname to-file inner-map))
              (new-resolved-includes
-              (acons from-file new-inner-alist resolved-includes)))
+              (omap::update from-file new-inner-map resolved-includes)))
           new-resolved-includes))
        ((unless (equal (cdr hname+existing) to-file))
         (raise "Internal error: ~
@@ -320,9 +319,7 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (enable alistp-when-string-header-name-string-alist-alistp-rewrite
-            type-of-assoc-equal-when-string-header-name-string-alist-alistp
-            alistp-when-header-name-string-alistp-rewrite))))
+    (enable))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4269,7 +4266,7 @@
                       (base-dir stringp)
                       (include-dirs string-listp)
                       (pfiles string-pfile-alistp)
-                      (resolved-includes string-header-name-string-alist-alistp)
+                      (resolved-includes string-header-name-string-map-mapp)
                       (pending string-listp)
                       (macros macro-tablep)
                       (options ppoptionsp)
@@ -4279,7 +4276,7 @@
     :returns (mv erp
                  (pfile pfilep)
                  (new-pfiles string-pfile-alistp)
-                 (new-resolved-includes string-header-name-string-alist-alistp)
+                 (new-resolved-includes string-header-name-string-map-mapp)
                  (new-macros macro-tablep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -4417,7 +4414,7 @@
                               (include-dirs string-listp)
                               (pfiles string-pfile-alistp)
                               (resolved-includes
-                               string-header-name-string-alist-alistp)
+                               string-header-name-string-map-mapp)
                               (pending string-listp)
                               (ppstate ppstatep)
                               state
@@ -4426,7 +4423,7 @@
                  (pparts ppart-listp)
                  (groupend groupendp)
                  (new-pfiles string-pfile-alistp)
-                 (new-resolved-includes string-header-name-string-alist-alistp)
+                 (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -4484,7 +4481,7 @@
                               (include-dirs string-listp)
                               (pfiles string-pfile-alistp)
                               (resolved-includes
-                               string-header-name-string-alist-alistp)
+                               string-header-name-string-map-mapp)
                               (pending string-listp)
                               (ppstate ppstatep)
                               state
@@ -4493,7 +4490,7 @@
                  (pparts ppart-listp)
                  (groupend? groupend-optionp)
                  (new-pfiles string-pfile-alistp)
-                 (new-resolved-includes string-header-name-string-alist-alistp)
+                 (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -4579,7 +4576,7 @@
             (retok nil ; no group parts
                    (groupend-eof)
                    (string-pfile-alist-fix pfiles)
-                   (string-header-name-string-alist-alist-fix resolved-includes)
+                   (string-header-name-string-map-map-fix resolved-includes)
                    ppstate
                    state)
           (reterr-msg :where (span->start span)
@@ -4595,7 +4592,7 @@
                 (retok nil ; no group parts
                        nil ; no group ending
                        (string-pfile-alist-fix pfiles)
-                       (string-header-name-string-alist-alist-fix
+                       (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
                        state)
@@ -4606,7 +4603,7 @@
             (retok nil ; no group parts
                    nil ; no group ending
                    (string-pfile-alist-fix pfiles)
-                   (string-header-name-string-alist-alist-fix resolved-includes)
+                   (string-header-name-string-map-map-fix resolved-includes)
                    ppstate
                    state))
            ((plexeme-case toknl2 :ident) ; # ident
@@ -4616,7 +4613,7 @@
                 (retok nil ; no group parts
                        (groupend-elif)
                        (string-pfile-alist-fix pfiles)
-                       (string-header-name-string-alist-alist-fix
+                       (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
                        state))
@@ -4624,7 +4621,7 @@
                 (retok nil ; no group parts
                        (groupend-else)
                        (string-pfile-alist-fix pfiles)
-                       (string-header-name-string-alist-alist-fix
+                       (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
                        state))
@@ -4632,7 +4629,7 @@
                 (retok nil ; no group parts
                        (groupend-endif)
                        (string-pfile-alist-fix pfiles)
-                       (string-header-name-string-alist-alist-fix
+                       (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
                        state))
@@ -4713,7 +4710,7 @@
                   (retok pparts
                          nil ; no group ending
                          (string-pfile-alist-fix pfiles)
-                         (string-header-name-string-alist-alist-fix
+                         (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
                          state)))
@@ -4722,7 +4719,7 @@
                   (retok pparts
                          nil ; no group ending
                          (string-pfile-alist-fix pfiles)
-                         (string-header-name-string-alist-alist-fix
+                         (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
                          state)))
@@ -4731,7 +4728,7 @@
                   (retok nil ; no group parts
                          nil ; no group ending
                          (string-pfile-alist-fix pfiles)
-                         (string-header-name-string-alist-alist-fix
+                         (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
                          state)))
@@ -4740,7 +4737,7 @@
                   (retok nil ; no group parts
                          nil ; no group ending
                          (string-pfile-alist-fix pfiles)
-                         (string-header-name-string-alist-alist-fix
+                         (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
                          state)))
@@ -4749,7 +4746,7 @@
                   (retok nil ; no group parts
                          nil ; no group ending
                          (string-pfile-alist-fix pfiles)
-                         (string-header-name-string-alist-alist-fix
+                         (string-header-name-string-map-map-fix
                           resolved-includes)
                          ppstate
                          state)))
@@ -4799,7 +4796,7 @@
           (retok (list (ppart-line lexemes))
                  nil ; no group ending
                  (string-pfile-alist-fix pfiles)
-                 (string-header-name-string-alist-alist-fix resolved-includes)
+                 (string-header-name-string-map-map-fix resolved-includes)
                  ppstate
                  state)))))
     :no-function nil
@@ -4814,7 +4811,7 @@
                          (include-dirs string-listp)
                          (pfiles string-pfile-alistp)
                          (resolved-includes
-                          string-header-name-string-alist-alistp)
+                          string-header-name-string-map-mapp)
                          (pending string-listp)
                          (ppstate ppstatep)
                          state
@@ -4822,7 +4819,7 @@
     :returns (mv erp
                  (pparts ppart-listp)
                  (new-pfiles string-pfile-alistp)
-                 (new-resolved-includes string-header-name-string-alist-alistp)
+                 (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -4959,7 +4956,7 @@
                              (include-dirs string-listp)
                              (pfiles string-pfile-alistp)
                              (resolved-includes
-                              string-header-name-string-alist-alistp)
+                              string-header-name-string-map-mapp)
                              (pending string-listp)
                              (ppstate ppstatep)
                              state
@@ -4967,7 +4964,7 @@
     :returns (mv erp
                  (pparts ppart-listp)
                  (new-pfiles string-pfile-alistp)
-                 (new-resolved-includes string-header-name-string-alist-alistp)
+                 (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -5106,7 +5103,7 @@
                     (base-dir stringp)
                     (include-dirs string-listp)
                     (pfiles string-pfile-alistp)
-                    (resolved-includes string-header-name-string-alist-alistp)
+                    (resolved-includes string-header-name-string-map-mapp)
                     (pending string-listp)
                     (ppstate ppstatep)
                     state
@@ -5114,7 +5111,7 @@
     :returns (mv erp
                  (pparts ppart-listp)
                  (new-pfiles string-pfile-alistp)
-                 (new-resolved-includes string-header-name-string-alist-alistp)
+                 (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -5181,7 +5178,7 @@
                               (include-dirs string-listp)
                               (pfiles string-pfile-alistp)
                               (resolved-includes
-                               string-header-name-string-alist-alistp)
+                               string-header-name-string-map-mapp)
                               (pending string-listp)
                               (ppstate ppstatep)
                               state
@@ -5189,7 +5186,7 @@
     :returns (mv erp
                  (pparts ppart-listp)
                  (new-pfiles string-pfile-alistp)
-                 (new-resolved-includes string-header-name-string-alist-alistp)
+                 (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -5263,7 +5260,7 @@
                                       (include-dirs string-listp)
                                       (pfiles string-pfile-alistp)
                                       (resolved-includes
-                                       string-header-name-string-alist-alistp)
+                                       string-header-name-string-map-mapp)
                                       (pending string-listp)
                                       (ppstate ppstatep)
                                       state
@@ -5273,7 +5270,7 @@
                  (pelifs pelif-listp)
                  (pelse? pelse-optionp)
                  (new-pfiles string-pfile-alistp)
-                 (new-resolved-includes string-header-name-string-alist-alistp)
+                 (new-resolved-includes string-header-name-string-map-mapp)
                  (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -5354,7 +5351,7 @@
                 (retok nil ; no group parts
                        groupend
                        (string-pfile-alist-fix pfiles)
-                       (string-header-name-string-alist-alist-fix
+                       (string-header-name-string-map-map-fix
                         resolved-includes)
                        ppstate
                        state)))))
@@ -5416,7 +5413,7 @@
                          (retok nil
                                 groupend
                                 pfiles
-                                (string-header-name-string-alist-alist-fix
+                                (string-header-name-string-map-map-fix
                                  resolved-includes)
                                 ppstate
                                 state)))))
@@ -5489,7 +5486,7 @@
                      (recursion-limit natp))
   :returns (mv erp
                (pfiles string-pfile-alistp)
-               (resolved-includes string-header-name-string-alist-alistp)
+               (resolved-includes string-header-name-string-map-mapp)
                state)
   :short "Preprocess zero or more files."
   :long
@@ -5545,7 +5542,7 @@
                              (include-dirs string-listp)
                              (pfiles string-pfile-alistp)
                              (resolved-includes
-                              string-header-name-string-alist-alistp)
+                              string-header-name-string-map-mapp)
                              (pending string-listp)
                              (options ppoptionsp)
                              (ienv ienvp)
@@ -5553,13 +5550,13 @@
                              (recursion-limit natp))
      :returns (mv erp
                   (new-pfiles string-pfile-alistp)
-                  (new-resolved-includes string-header-name-string-alist-alistp)
+                  (new-resolved-includes string-header-name-string-map-mapp)
                   state)
      :parents nil
      (b* (((reterr) nil nil state)
           ((when (endp files))
            (retok (string-pfile-alist-fix pfiles)
-                  (string-header-name-string-alist-alist-fix resolved-includes)
+                  (string-header-name-string-map-map-fix resolved-includes)
                   state))
           (file (str-fix (car files)))
           (path-to-read (str::cat base-dir "/" file))
@@ -5613,7 +5610,7 @@
                     state)
   :returns (mv erp
                (fileset filesetp)
-               (resolved-includes string-header-name-string-alist-alistp)
+               (resolved-includes string-header-name-string-map-mapp)
                state)
   :short "Preprocess files into a file set."
   :long
