@@ -410,11 +410,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-prog-const ((prog-const symbolp)
-                            (tunits transunit-ensemblep)
+                            (tunits trans-ensemblep)
                             (print evmac-input-print-p))
   :returns (events pseudo-event-form-listp)
   :short "Generate the named constant for the abstract syntax tree
-          of the generated C code (i.e. translation unit ensemble)."
+          of the generated C code (i.e. translation ensemble)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -447,27 +447,27 @@
   (xdoc::topstring
    (xdoc::p
     "The theorem asserts that
-     running the static semantics (i.e. @(tsee check-transunit-ensemble))
+     running the static semantics (i.e. @(tsee check-trans-ensemble))
      on the C code succeeds.
-     We also include an assertion that the C code is a translation unit ensemble
-     (i.e. that it satisfies @(tsee transunit-ensemblep));
-     this does not directly follow from @(tsee check-transunit-ensemble),
-     which fixes its argument to be a translation unit ensemble.")
+     We also include an assertion that the C code is a translation ensemble
+     (i.e. that it satisfies @(tsee trans-ensemblep));
+     this does not directly follow from @(tsee check-trans-ensemble),
+     which fixes its argument to be a translation ensemble.")
    (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
      using just the executable counterparts
-     of @(tsee check-transunit-ensemble) and @(tsee transunit-ensemblep),
+     of @(tsee check-trans-ensemble) and @(tsee trans-ensemblep),
      which are executable functions."))
   (b* (((unless proofs) nil)
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
-         :formula `(and (transunit-ensemblep ,prog-const)
-                        (equal (check-transunit-ensemble ,prog-const)
+         :formula `(and (trans-ensemblep ,prog-const)
+                        (equal (check-trans-ensemble ,prog-const)
                                :wellformed))
-         :hints '(("Goal" :in-theory '((:e check-transunit-ensemble)
-                                       (:e transunit-ensemblep))))
+         :hints '(("Goal" :in-theory '((:e check-trans-ensemble)
+                                       (:e trans-ensemblep))))
          :enable nil))
        (progress-start?
         (and (evmac-input-print->= print :info)
@@ -487,7 +487,7 @@
 (define atc-gen-init-fun-env-thm ((init-fun-env-thm symbolp)
                                   (proofs booleanp)
                                   (prog-const symbolp)
-                                  (tunits transunit-ensemblep))
+                                  (tunits trans-ensemblep))
   :returns (local-events pseudo-event-form-listp)
   :short "Generate the theorem asserting that
           applying @(tsee init-fun-env) to the translation unit
@@ -496,7 +496,7 @@
   (xdoc::topstring
    (xdoc::p
     "The rationale for generating this theorem
-     is explained in @(tsee atc-gen-transunit-ensemble)."))
+     is explained in @(tsee atc-gen-trans-ensemble)."))
   (b* (((unless proofs) nil)
        (tunit (preprocess tunits))
        ((when (reserrp tunit))
@@ -521,22 +521,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-transunit-ensemble ((targets symbol-listp)
-                                    (path-wo-ext stringp)
-                                    (proofs booleanp)
-                                    (prog-const symbolp)
-                                    (wf-thm symbolp)
-                                    (fn-thms symbol-symbol-alistp)
-                                    (header booleanp)
-                                    (print evmac-input-print-p)
-                                    (names-to-avoid symbol-listp)
-                                    state)
+(define atc-gen-trans-ensemble ((targets symbol-listp)
+                                (path-wo-ext stringp)
+                                (proofs booleanp)
+                                (prog-const symbolp)
+                                (wf-thm symbolp)
+                                (fn-thms symbol-symbol-alistp)
+                                (header booleanp)
+                                (print evmac-input-print-p)
+                                (names-to-avoid symbol-listp)
+                                state)
   :returns (mv erp
-               (tunits transunit-ensemblep)
+               (tunits trans-ensemblep)
                (events pseudo-event-form-listp)
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
-  :short "Generate a translation unit ensemble from the ATC targets,
+  :short "Generate a translation ensemble from the ATC targets,
           and accompanying events."
   :long
   (xdoc::topstring
@@ -547,7 +547,7 @@
      we generate a theorem to ``cache''
      the result of calling @(tsee init-fun-env)
      on the generated translation unit
-     (obtained by preprocessing the generated translation unit ensemble),
+     (obtained by preprocessing the generated translation ensemble),
      to avoid recomputing that for every function environment theorem.
      We need to generate the name of this (local) theorem
      before generating the function environment theorems,
@@ -559,7 +559,7 @@
      and then we generate the theorem;
      however, in the generated events,
      we put that theorem before the ones for the functions."))
-  (b* (((reterr) (irr-transunit-ensemble) nil nil)
+  (b* (((reterr) (irr-trans-ensemble) nil nil)
        (wrld (w state))
        ((mv appcond-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
@@ -586,11 +586,11 @@
                                   fn-thms fn-appconds appcond-thms
                                   header print
                                   names-to-avoid state))
-       (tunit-h (and header (make-transunit :declons exts-h)))
-       (tunit-c (make-transunit :declons exts-c))
-       (tunits (make-transunit-ensemble :path-wo-ext path-wo-ext
-                                        :dot-h tunit-h
-                                        :dot-c tunit-c))
+       (tunit-h (and header (make-trans-unit :declons exts-h)))
+       (tunit-c (make-trans-unit :declons exts-c))
+       (tunits (make-trans-ensemble :path-wo-ext path-wo-ext
+                                    :dot-h tunit-h
+                                    :dot-c tunit-c))
        (init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
                                                       proofs
                                                       prog-const
@@ -608,16 +608,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-transunit-ensemble-event ((tunits transunit-ensemblep)
-                                          (file-name stringp)
-                                          (pretty-printing pprint-options-p)
-                                          (print evmac-input-print-p))
+(define atc-gen-trans-ensemble-event ((tunits trans-ensemblep)
+                                      (file-name stringp)
+                                      (pretty-printing pprint-options-p)
+                                      (print evmac-input-print-p))
   :returns (event pseudo-event-formp)
   :short "Event to pretty-print the generated C code to the file system."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to run @(tsee pprint-transunit-ensemble)
+    "This serves to run @(tsee pprint-trans-ensemble)
      after the constant and theorem events have been submitted.
      This function generates an event form
      that is put (by @(tsee atc-gen-everything))
@@ -639,7 +639,7 @@
      so there is no extra screen output.
      This is a ``dummy'' event, which is not supposed to do anything:
      it is the execution of the @(tsee make-event) argument that matters,
-     because it writes the translation unit ensemble to the file system.
+     because it writes the translation ensemble to the file system.
      In essence, we use @(tsee make-event) to turn a computation
      (the one that writes the output files)
      into an event.
@@ -653,10 +653,10 @@
        (file-gen-event
         `(make-event
           (b* (((er &)
-                (pprint-transunit-ensemble ',tunits
-                                           ,file-name
-                                           ',pretty-printing
-                                           state)))
+                (pprint-trans-ensemble ',tunits
+                                       ,file-name
+                                       ',pretty-printing
+                                       state)))
             (acl2::value '(value-triple :invisible))))))
     `(progn ,@progress-start?
             ,file-gen-event
@@ -728,22 +728,22 @@
   (b* (((reterr) '(_))
        (names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((erp tunits events &)
-        (atc-gen-transunit-ensemble targets path-wo-ext proofs
-                                    prog-const wf-thm fn-thms
-                                    header print names-to-avoid state))
-       (tunits-gen-event (atc-gen-transunit-ensemble-event tunits
-                                                           file-name
-                                                           pretty-printing
-                                                           print))
+        (atc-gen-trans-ensemble targets path-wo-ext proofs
+                                prog-const wf-thm fn-thms
+                                header print names-to-avoid state))
+       (tunits-gen-event (atc-gen-trans-ensemble-event tunits
+                                                       file-name
+                                                       pretty-printing
+                                                       print))
        (assert-events (atc-gen-thm-assert-events wf-thm fn-thms proofs))
        (encapsulate
-           `(encapsulate ()
-              (evmac-prepare-proofs)
-              (local (acl2::use-trivial-ancestors-check))
-              (set-ignore-ok t)
-              ,@events
-              ,@assert-events
-              ,tunits-gen-event))
+         `(encapsulate ()
+                       (evmac-prepare-proofs)
+                       (local (acl2::use-trivial-ancestors-check))
+                       (set-ignore-ok t)
+                       ,@events
+                       ,@assert-events
+                       ,tunits-gen-event))
        (encapsulate+ (restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))

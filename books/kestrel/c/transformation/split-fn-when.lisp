@@ -111,7 +111,7 @@
    ;; For now, the trigger is a function name.
    (triggers ident-setp)
    ;; To check for name freshness
-   (transunits transunit-ensemblep))
+   (trans-units trans-ensemblep))
   :returns (mv (er? maybe-msgp)
                (fundef1 fundefp)
                (fundef2 fundef-optionp))
@@ -134,7 +134,7 @@
            :otherwise (retmsg$ "Malformed syntax.")))))
     (split-fn-fundef
      fun-name
-     (transunit-ensemble-fresh-ident fun-name transunits)
+     (trans-ensemble-fresh-ident fun-name trans-units)
      fundef
      position?)))
 
@@ -143,7 +143,7 @@
 (define ext-declon-try-split-fn-when
   ((extdecl ext-declonp)
    (triggers ident-setp)
-   (transunits transunit-ensemblep))
+   (trans-units trans-ensemblep))
   :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
                (extdecls ext-declon-listp))
@@ -154,7 +154,7 @@
                     (fundef-try-split-fn-when
                       extdecl.fundef
                       triggers
-                      transunits)))
+                      trans-units)))
                 (fundef-option-case
                   fundef2
                   :some (retok t (list (ext-declon-fundef fundef1)
@@ -168,7 +168,7 @@
 (define trans-item-try-split-fn-when
   ((item trans-itemp)
    (triggers ident-setp)
-   (transunits transunit-ensemblep))
+   (trans-units trans-ensemblep))
   :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
                (items trans-item-listp))
@@ -178,7 +178,7 @@
       :declon (b* (((erp found extdecls)
                     (ext-declon-try-split-fn-when item.declon
                                                   triggers
-                                                  transunits)))
+                                                  trans-units)))
                 (retok found (c$::trans-item-list-declon extdecls)))
       :include (retmsg$ "Unsupported #include directive.")
       :define (retmsg$ "Unsupported #define directive.")
@@ -192,7 +192,7 @@
 (define trans-item-list-try-split-fn-when
   ((items trans-item-listp)
    (triggers ident-setp)
-   (transunits transunit-ensemblep))
+   (trans-units trans-ensemblep))
   :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
                (items$ trans-item-listp))
@@ -200,99 +200,99 @@
        ((when (endp items))
         (retok nil nil))
        ((erp found items1)
-        (trans-item-try-split-fn-when (first items) triggers transunits))
+        (trans-item-try-split-fn-when (first items) triggers trans-units))
        ((when found)
         (retok t (append items1 (trans-item-list-fix (rest items)))))
        ((erp found items2)
-        (trans-item-list-try-split-fn-when (rest items) triggers transunits)))
+        (trans-item-list-try-split-fn-when (rest items) triggers trans-units)))
     (retok found (append items1 items2)))
   ///
   (more-returns
    (items$ true-listp :rule-classes :type-prescription)))
 
-(define transunit-try-split-fn-when
-  ((tunit transunitp)
+(define trans-unit-try-split-fn-when
+  ((tunit trans-unitp)
    (triggers ident-setp)
-   (transunits transunit-ensemblep))
+   (trans-units trans-ensemblep))
   :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
-               (tunit$ transunitp))
-  (b* (((reterr) nil (c$::irr-transunit))
-       ((transunit tunit) tunit)
+               (tunit$ trans-unitp))
+  (b* (((reterr) nil (c$::irr-trans-unit))
+       ((trans-unit tunit) tunit)
        ((erp found items)
-        (trans-item-list-try-split-fn-when tunit.items triggers transunits)))
+        (trans-item-list-try-split-fn-when tunit.items triggers trans-units)))
     (retok found
-           (make-transunit :items items
+           (make-trans-unit :items items
                            :info tunit.info))))
 
-(define filepath-transunit-map-try-split-fn-when
-  ((map filepath-transunit-mapp)
+(define filepath-trans-unit-map-try-split-fn-when
+  ((map filepath-trans-unit-mapp)
    (triggers ident-setp)
-   (transunits transunit-ensemblep))
+   (trans-units trans-ensemblep))
   :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
-               (map$ filepath-transunit-mapp))
+               (map$ filepath-trans-unit-mapp))
   (b* (((reterr) nil nil)
-       (map (c$::filepath-transunit-map-fix map))
+       (map (c$::filepath-trans-unit-map-fix map))
        ((when (omap::emptyp map))
         (retok nil nil))
        ((mv path tunit) (omap::head map))
        ((erp found tunit$)
-        (transunit-try-split-fn-when tunit triggers transunits))
+        (trans-unit-try-split-fn-when tunit triggers trans-units))
        ((when found)
         (retok found
                (omap::update path tunit$ (omap::tail map))))
        ((erp found map$)
-        (filepath-transunit-map-try-split-fn-when
+        (filepath-trans-unit-map-try-split-fn-when
           (omap::tail map)
           triggers
-          transunits)))
+          trans-units)))
     (retok found
            (omap::update path tunit$ map$)))
   :verify-guards :after-returns)
 
-(define transunit-ensemble-try-split-fn-when
-  ((tunits transunit-ensemblep)
+(define trans-ensemble-try-split-fn-when
+  ((tunits trans-ensemblep)
    (triggers ident-setp))
   :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
-               (tunits$ transunit-ensemblep))
-  (b* (((reterr) nil (irr-transunit-ensemble))
-       ((transunit-ensemble tunits) tunits)
+               (tunits$ trans-ensemblep))
+  (b* (((reterr) nil (irr-trans-ensemble))
+       ((trans-ensemble tunits) tunits)
        ((erp found map)
-        (filepath-transunit-map-try-split-fn-when tunits.units
+        (filepath-trans-unit-map-try-split-fn-when tunits.units
                                                   triggers
                                                   tunits)))
-    (retok found (c$::make-transunit-ensemble :units map))))
+    (retok found (c$::make-trans-ensemble :units map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-ensemble-split-fn-when
-  ((tunits transunit-ensemblep)
+(define trans-ensemble-split-fn-when
+  ((tunits trans-ensemblep)
    (triggers ident-setp))
   :returns (mv (er? maybe-msgp)
-               (tunits$ transunit-ensemblep))
-  (transunit-ensemble-split-fn-when-loop
+               (tunits$ trans-ensemblep))
+  (trans-ensemble-split-fn-when-loop
     tunits
     triggers
     (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
 
   :prepwork
-  ((define transunit-ensemble-split-fn-when-loop
-     ((tunits transunit-ensemblep)
+  ((define trans-ensemble-split-fn-when-loop
+     ((tunits trans-ensemblep)
       (triggers ident-setp)
       (steps :type #.acl2::*fixnat-type*))
      :returns (mv (er? maybe-msgp)
-                  (tunits$ transunit-ensemblep))
-     (b* (((reterr) (irr-transunit-ensemble))
+                  (tunits$ trans-ensemblep))
+     (b* (((reterr) (irr-trans-ensemble))
           ((when (= 0 (mbe :logic (nfix steps)
                            :exec (acl2::the-fixnat steps))))
            (retmsg$ "Out of steps."))
           ((erp found tunits$)
-           (transunit-ensemble-try-split-fn-when tunits triggers))
+           (trans-ensemble-try-split-fn-when tunits triggers))
           ((unless found)
            (retok tunits$)))
-       (transunit-ensemble-split-fn-when-loop
+       (trans-ensemble-split-fn-when-loop
          tunits$
          triggers
          (- steps 1)))
@@ -306,9 +306,9 @@
                (code$ code-ensemblep))
   (b* (((code-ensemble code) code)
        ((reterr) (irr-code-ensemble))
-       ((erp tunits) (transunit-ensemble-split-fn-when code.transunits
-                                                      triggers)))
-    (retok (change-code-ensemble code :transunits tunits))))
+       ((erp tunits) (trans-ensemble-split-fn-when code.trans-units
+                                                   triggers)))
+    (retok (change-code-ensemble code :trans-units tunits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

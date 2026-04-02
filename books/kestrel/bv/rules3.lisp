@@ -15,6 +15,7 @@
 (include-book "bvashr")
 ;(local (include-book "logior"))
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "logxor")) ; used in BVXOR-OF-BVIF?
 (local (include-book "logand-b"))
 (local (include-book "bvuminus"))

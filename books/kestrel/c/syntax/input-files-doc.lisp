@@ -292,7 +292,7 @@
       "If @(':process') is @(':parse'),
        the value of the constant named by @(':const') is a "
       (xdoc::seetopic "code-ensembles" "code ensemble")
-      " consisting of the translation unit ensemble
+      " consisting of the translation ensemble
        resulting from the parser,
        paired with the implementation environment
        determined by the inputs described below.
@@ -302,7 +302,7 @@
       "If @(':process') is @(':disambiguate'),
        the value of the constant named by @(':const') is a "
       (xdoc::seetopic "code-ensembles" "code ensemble")
-      " consisting of the translation unit ensemble
+      " consisting of the translation ensemble
        resulting from the disambiguator,
        paired with the implementation environment
        determined by the inputs described below.
@@ -311,14 +311,14 @@
       "If @(':process') is @(':validate'),
        the value of the constant named by @(':const') is a "
       (xdoc::seetopic "code-ensembles" "code ensemble")
-      " consisting of the translation unit ensemble
+      " consisting of the translation ensemble
        resulting from the validator,
        paired with the implementation environment
        determined by the inputs described below.
        This representation has no ambiguous constructs
        and is annotated with validation information.")
      (xdoc::p
-      "In all cases, the keys of the translation unit ensemble map
+      "In all cases, the keys of the translation ensemble map
        are the file paths specified in the @(':files') input,
        without the @(':base-dir') prefix.")
      (xdoc::p

@@ -20,8 +20,9 @@
 ;; ARMv7-A and ARMv7-R edition" (see README.md).
 
 (include-book "portcullis")
-(include-book "kestrel/bv/bvor" :dir :system)
-(include-book "kestrel/bv/bvand-def" :dir :system) ; todo: include just the def
+(include-book "kestrel/bv/bvor-def" :dir :system)
+(include-book "kestrel/bv/bvand-def" :dir :system)
+(include-book "kestrel/bv/getbit-def" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -31,6 +32,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,7 +318,7 @@
     (:strh-immediate  (cond 4) 0 0 0 p u 1 w 0 (rn 4) (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
     (:strh-register   (cond 4) 0 0 0 p u 0 w 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 1 1 (rm 4))
 
-    (:strht-encoding-a1 (cond 4) 0 0 0 _ 0 u 1 _ 1 _ 0 (rn 4) (rt 4) (imm4H 4) 1 0 1 1 (imm4L 4))
+    (:strht-encoding-a1 (cond 4) 0 0 0 _ 0 u 1 _ 1 _ 0 (rn 4) (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
     (:strht-encoding-a2 (cond 4) 0 0 0 _ 0 u 0 _ 1 _ 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 1 1 (rm 4))
 
     (:strt-encoding-a1 (cond 4) 0 1 _ 0 _ 0 u 0 _ 1 _ 0 (rn 4) (rt 4) (imm12 12))

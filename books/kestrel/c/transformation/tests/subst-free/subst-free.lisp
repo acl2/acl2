@@ -57,13 +57,13 @@
         (retok fundef)))
     (trans-item-list-find-fundef ident (rest items))))
 
-(define transunit-find-fundef
+(define trans-unit-find-fundef
   ((ident identp)
-   (transunit transunitp))
+   (trans-unit trans-unitp))
   :returns (mv (erp booleanp)
                (fundef fundefp))
-  (b* (((transunit transunit) transunit))
-    (trans-item-list-find-fundef ident transunit.items)))
+  (b* (((trans-unit trans-unit) trans-unit))
+    (trans-item-list-find-fundef ident trans-unit.items)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,8 +82,8 @@
                                        (acl2::string=>nats ,input)
                                        dialect
                                        t))
-         ((mv erp2 ast) (c$::dimb-transunit ast dialect))
-         ((mv erp3 fundef) (transunit-find-fundef (c$::ident ,fun) ast))
+         ((mv erp2 ast) (c$::dimb-trans-unit ast dialect))
+         ((mv erp3 fundef) (trans-unit-find-fundef (c$::ident ,fun) ast))
          ((mv fundef$ -)
           ;; (fundef-subst-free fundef (mergesort ',subst) nil))
           (fundef-subst-free fundef ,subst nil))
@@ -93,9 +93,9 @@
                           (c::make-dialect :std (c::standard-c17)
                                            :gcc t)
                           t))
-         ((mv erp5 ast-expected) (c$::dimb-transunit ast-expected dialect))
+         ((mv erp5 ast-expected) (c$::dimb-trans-unit ast-expected dialect))
          ((mv erp6 fundef-expected)
-          (transunit-find-fundef (c$::ident ,fun) ast-expected)))
+          (trans-unit-find-fundef (c$::ident ,fun) ast-expected)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
             (erp3 (cw "~%Could not find function: ~x0~%" ,fun))

@@ -40,11 +40,11 @@
        declared/defined.")
     (xdoc::p
       "Qualified identifiers are used to refer unambiguously to a file-scope
-       identifier when working with a translation unit ensemble. Identifiers
+       identifier when working with a translation ensemble. Identifiers
        with internal linkage require the filepath to disambiguate them from
        other possible objects/functions of the same name defined in different
        translation units. Identifiers with external linkage do not require a
-       filepath since they must be unique across the translation unit ensemble.
+       filepath since they must be unique across the translation ensemble.
        However, a filepath may be provided nonetheless. If a filepath is
        provided, it must identify a translation unit in which the external
        identifier is declared."))
@@ -203,29 +203,29 @@
 
 ;; TODO: this should look at the translation validation table instead of going
 ;; over declarations.
-(define transunit-resolve-qualified-ident
+(define trans-unit-resolve-qualified-ident
   ((qual-ident qualified-identp)
-   (transunit transunitp))
-  :guard (transunit-annop transunit)
+   (trans-unit trans-unitp))
+  :guard (trans-unit-annop trans-unit)
   :returns (mv (er? maybe-msgp)
                (uid c$::uidp))
   (b* (((reterr) (c$::irr-uid)))
     (trans-item-list-resolve-qualified-ident qual-ident
-                                             (transunit->items transunit)))
+                                             (trans-unit->items trans-unit)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 (define resolve-qualified-ident
   ((qual-ident qualified-identp)
-   (ensemble transunit-ensemblep))
-  :guard (transunit-ensemble-annop ensemble)
+   (ensemble trans-ensemblep))
+  :guard (trans-ensemble-annop ensemble)
   :returns (mv (er? maybe-msgp)
                (uid c$::uidp))
   (b* (((reterr) (c$::irr-uid))
        ((qualified-ident qual-ident) qual-ident)
        ((unless qual-ident.filepath?)
         (b* (((c$::valid-table valid-table)
-              (c$::transunit-ensemble-info->table-end
-                (c$::transunit-ensemble->info ensemble)))
+              (c$::trans-ensemble-info->table-end
+                (c$::trans-ensemble->info ensemble)))
              (info? (omap::assoc qual-ident.ident valid-table.externals))
              ((unless info?)
               (retmsg$ "~x0 is not an object or function ~
@@ -237,10 +237,10 @@
         (retmsg$ "~x0 is not an object or function ~
                   with external linkage."
                  qual-ident.ident))
-       (transunit? (omap::assoc qual-ident.filepath?
-                                (transunit-ensemble->units ensemble)))
-       ((unless transunit?)
+       (trans-unit? (omap::assoc qual-ident.filepath?
+                                (trans-ensemble->units ensemble)))
+       ((unless trans-unit?)
         (retmsg$ "~x0 is not a translation unit in the ensemble."
                  qual-ident.filepath?)))
-    (transunit-resolve-qualified-ident qual-ident (cdr transunit?)))
+    (trans-unit-resolve-qualified-ident qual-ident (cdr trans-unit?)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))

@@ -21,7 +21,7 @@
 (include-book "bvif")
 (include-book "bvcat")
 (include-book "bvand-def")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bvplus")
 (include-book "repeatbit")
 (local (include-book "unsigned-byte-p"))

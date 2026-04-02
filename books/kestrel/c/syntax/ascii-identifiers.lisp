@@ -115,9 +115,9 @@
           hash-if/elif-expr
           hash-if/ifdef/ifndef
           trans-items
-          transunit
-          filepath-transunit-map
-          transunit-ensemble)
+          trans-unit
+          filepath-trans-unit-map
+          trans-ensemble)
   :extra-args ((dialect c::dialectp))
   :result booleanp
   :default t
@@ -128,13 +128,13 @@
 
 (define code-ensemble-aidentp ((code code-ensemblep))
   :returns (yes/no booleanp)
-  :short "Check if a code ensemble only uses, in its translation unit ensemble,
+  :short "Check if a code ensemble only uses, in its translation ensemble,
           ASCII identifiers."
   :long
   (xdoc::topstring
    (xdoc::p
     "The condition is checked w.r.t.
      the @(see c::dialect) in the implementation environment."))
-  (transunit-ensemble-aidentp (code-ensemble->transunits code)
-                              (ienv->dialect (code-ensemble->ienv code)))
+  (trans-ensemble-aidentp (code-ensemble->trans-units code)
+                          (ienv->dialect (code-ensemble->ienv code)))
   :hooks (:fix))

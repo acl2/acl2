@@ -3836,8 +3836,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-transunit ((tunit transunitp) (dialect c::dialectp))
-  :returns (mv (erp maybe-msgp) (new-tunit transunitp))
+(define dimb-trans-unit ((tunit trans-unitp) (dialect c::dialectp))
+  :returns (mv (erp maybe-msgp) (new-tunit trans-unitp))
   :short "Disambiguate a translation unit."
   :long
   (xdoc::topstring
@@ -3892,29 +3892,29 @@
      However, note that these variables only make sense on an x86 platform:
      we should refine our GCC/Clang flag with
      a richer description of the C implementation."))
-  (b* (((reterr) (irr-transunit))
-       (items (transunit->items tunit))
+  (b* (((reterr) (irr-trans-unit))
+       (items (trans-unit->items tunit))
        (table (dimb-add-idents-objfun (built-ins-for dialect)
                                       (dimb-init-table)))
        ((erp new-items &)
         (dimb-trans-item-list items table (c::dialect-gcc/clangp dialect))))
-    (retok (make-transunit :items new-items
+    (retok (make-trans-unit :items new-items
                            :info nil)))
   :hooks (:fix)
 
   ///
 
-  (defret transunit-unambp-of-dimb-transunit
+  (defret trans-unit-unambp-of-dimb-trans-unit
     (implies (not erp)
-             (transunit-unambp new-tunit))))
+             (trans-unit-unambp new-tunit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-transunit-ensemble ((tuens transunit-ensemblep)
-                                 (dialect c::dialectp)
-                                 (keep-going booleanp))
-  :returns (mv (erp maybe-msgp) (new-tuens transunit-ensemblep))
-  :short "Disambiguate a translation unit ensembles."
+(define dimb-trans-ensemble ((tuens trans-ensemblep)
+                             (dialect c::dialectp)
+                             (keep-going booleanp))
+  :returns (mv (erp maybe-msgp) (new-tuens trans-ensemblep))
+  :short "Disambiguate a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3922,10 +3922,10 @@
    (xdoc::p
     "We disambiguate all the translation units, independently.
      We leave the file path mapping unchanged."))
-  (b* (((reterr) (irr-transunit-ensemble))
-       (tumap (transunit-ensemble->units tuens))
+  (b* (((reterr) (irr-trans-ensemble))
+       (tumap (trans-ensemble->units tuens))
        ((erp new-tumap)
-        (dimb-transunit-ensemble-loop tumap dialect keep-going))
+        (dimb-trans-ensemble-loop tumap dialect keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
                    (len-new-tumap (omap::size new-tumap))
@@ -3935,55 +3935,56 @@
                   (cw "Disambiguated ~x0/~x1 translation units.~%"
                       len-new-tumap len-tumap)))
             nil)))
-    (retok (make-transunit-ensemble :units new-tumap
-                                    :info nil)))
+    (retok (make-trans-ensemble :units new-tumap
+                                :resolved-headers nil
+                                :info nil)))
   :hooks (:fix)
 
   :prepwork
 
-  ((define dimb-transunit-ensemble-loop ((tumap filepath-transunit-mapp)
-                                         (dialect c::dialectp)
-                                         (keep-going booleanp))
+  ((define dimb-trans-ensemble-loop ((tumap filepath-trans-unit-mapp)
+                                     (dialect c::dialectp)
+                                     (keep-going booleanp))
      :returns (mv (erp maybe-msgp)
-                  (new-tumap filepath-transunit-mapp
-                             :hyp (filepath-transunit-mapp tumap)))
+                  (new-tumap filepath-trans-unit-mapp
+                             :hyp (filepath-trans-unit-mapp tumap)))
      :parents nil
      (b* (((reterr) nil)
           ((when (omap::emptyp tumap)) (retok nil))
           ((mv path tunit) (omap::head tumap))
-          ((mv erp new-tunit) (dimb-transunit tunit dialect))
+          ((mv erp new-tunit) (dimb-trans-unit tunit dialect))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
                            (filepath->unwrap path)
                            erp)
-                       (dimb-transunit-ensemble-loop (omap::tail tumap)
-                                                     dialect
-                                                     keep-going))
+                       (dimb-trans-ensemble-loop (omap::tail tumap)
+                                                 dialect
+                                                 keep-going))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->unwrap path)
                       erp)))
           ((erp new-tumap)
-           (dimb-transunit-ensemble-loop (omap::tail tumap)
-                                         dialect
-                                         keep-going)))
+           (dimb-trans-ensemble-loop (omap::tail tumap)
+                                     dialect
+                                     keep-going)))
        (retok (omap::update path new-tunit new-tumap)))
      :verify-guards :after-returns
 
      ///
 
-     (fty::deffixequiv dimb-transunit-ensemble-loop
+     (fty::deffixequiv dimb-trans-ensemble-loop
        :args ((dialect c::dialectp)
               (keep-going booleanp)))
 
-     (defret filepath-transunit-map-unambp-of-dimb-transunit-ensemble-loop
+     (defret filepath-trans-unit-map-unambp-of-dimb-trans-ensemble-loop
        (implies (not erp)
-                (filepath-transunit-map-unambp new-tumap))
-       :hyp (filepath-transunit-mapp tumap)
+                (filepath-trans-unit-map-unambp new-tumap))
+       :hyp (filepath-trans-unit-mapp tumap)
        :hints (("Goal" :induct t)))))
 
   ///
 
-  (defret transunit-ensemble-unambp-of-dimb-transunit-ensemble
+  (defret trans-ensemble-unambp-of-dimb-trans-ensemble
     (implies (not erp)
-             (transunit-ensemble-unambp new-tuens))))
+             (trans-ensemble-unambp new-tuens))))
