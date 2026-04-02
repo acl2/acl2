@@ -276,6 +276,32 @@
       (and (null (c$::init-declor->initer? (first initdeclors)))
            (all-no-init (rest initdeclors)))))
 
+(define any-incomplete-struct
+  ((specs decl-spec-listp))
+  (declare (xargs :type-prescription (booleanp (any-incomplete-struct specs))))
+  (and (consp specs)
+       (let ((spec (first specs)))
+         (or (decl-spec-case
+               spec
+               :typespec (type-spec-case
+                           spec.spec
+                           :struct (b* (((struni-spec struni-spec) spec.spec.spec))
+                                     (endp struni-spec.members))
+                           :otherwise nil)
+               :otherwise nil)
+             (any-incomplete-struct (rest specs))))))
+
+(define incomplete-typedef
+  ((specs decl-spec-listp))
+  (declare (xargs :type-prescription (booleanp (incomplete-typedef specs))))
+  (and (consp specs)
+       (let ((spec (first specs)))
+         (and (decl-spec-case
+                spec
+                :stoclass (c$::stor-spec-case spec.spec :typedef)
+                :otherwise nil)
+              (any-incomplete-struct (rest specs))))))
+
 (define dup-split-struct-type-declon
   ((original identp)
    (new1 ident-optionp)
@@ -295,7 +321,8 @@
            ((erp type-match new1 new2 remanining-struct-decls split-struct-decls)
             (b* (((reterr) nil nil nil nil nil)
                  ((unless (and type-spec?
-                               (all-no-init declon.declors)))
+                               (all-no-init declon.declors)
+                               (not (incomplete-typedef declon.specs))))
                   (retok nil nil nil nil nil)))
               (type-spec-case
                 type-spec?
