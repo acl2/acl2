@@ -2620,7 +2620,8 @@
       "If the next lexmark is an identifier different from @('defined'),
        or if we are not in the @(':expr') mode,
        then we look up the identifier in the macro table,
-       unless it is in the disabled multiset,
+       unless it includes its own name in its provenance
+       (which indicates a recursion),
        and unless macro expansion is inhibited.
        If it is not found in the macro table,
        it is just added to the reversed lexmarks,
@@ -2855,10 +2856,8 @@
                                    ppstate
                                    (1- limit))))
                  ((when (or no-expandp
-                            ;; TODO: eventually replace the following test with
-                            ;; (member-equal ident
-                            ;;               (plexeme-ident->provenance ident))
-                            (member-equal ident (string-list-fix disabled))))
+                            (member-equal ident
+                                          (plexeme-ident->provenance lexeme))))
                   (pproc-lexemes mode
                                  (cons lexmark rev-lexmarks)
                                  paren-level
@@ -2885,7 +2884,7 @@
                                                           (ppstate->ienv
                                                            ppstate))))
                     (replist (plexemes-add-provenance
-                              (plexeme-ident->provenance lexeme)
+                              (cons ident (plexeme-ident->provenance lexeme))
                               replist))
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
                     (ppstate (push-lexemes replist ppstate))
@@ -2948,7 +2947,7 @@
                                                           (ppstate->ienv
                                                            ppstate))))
                     (replist (lexmarks-add-provenance
-                              (plexeme-ident->provenance lexeme)
+                              (cons ident (plexeme-ident->provenance lexeme))
                               replist))
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
                     (ppstate (push-lexmarks replist ppstate))
