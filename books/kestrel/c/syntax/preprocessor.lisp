@@ -732,7 +732,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We add the lexeme to the list of pending lexmarks.
+    "We add the lexeme to the list of pending lexemes.
      See @(tsee ppstate)."))
   (push-lexmark (make-lexmark-lexeme :lexeme lexeme :span span) ppstate)
 
@@ -797,40 +797,35 @@
                (token plexemep)
                (span spanp)
                (new-ppstate ppstatep))
-  :short "Read a token, handling any markers along the way."
+  :short "Read the next token."
   :long
   (xdoc::topstring
    (xdoc::p
     "We skip over comments and white space,
      where white space excludes/includes new lines
      according to whether @('stop-at-newline-p') is @('t')/@('nil').
-     We must find a token, which we return;
-     otherwise this fails.")
+     We must find a token, which we return; otherwise this fails.")
    (xdoc::p
     "This is used only in @(tsee pproc-lexemes)."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-plexeme) (irr-span) ppstate)
-       ((erp lexmark ppstate) (read-lexmark ppstate)))
+       ((erp lexeme span ppstate) (read-lexeme nil ppstate)))
     (cond
-     ((not lexmark) ; EOF
+     ((not lexeme) ; EOF
       (reterr-msg :where (ppstate->current-position ppstate)
-                  :expected "a lexmark"
+                  :expected "a lexeme"
                   :found "end of file"))
-     (t ; lexeme
-      (b* ((lexeme (lexmark-lexeme->lexeme lexmark))
-           (span (lexmark-lexeme->span lexmark)))
-        (cond
-         ((and stop-at-newline-p
-               (plexeme-case lexeme :newline)) ; EOL
-          (reterr-msg :where (span->start span)
-                      :expected "a comment or ~
-                                 non-new-line white space or ~
-                                 a token"
-                      :found (plexeme?-to-msg lexeme)))
-         ((plexeme-tokenp lexeme) ; token
-          (retok lexeme span ppstate))
-         (t ; comment or white space
-          (read-next-token stop-at-newline-p ppstate)))))))
+     ((and stop-at-newline-p
+           (plexeme-case lexeme :newline)) ; EOL
+      (reterr-msg :where (span->start span)
+                  :expected "a comment or ~
+                             non-new-line white space or ~
+                             a token"
+                  :found (plexeme?-to-msg lexeme)))
+     ((plexeme-tokenp lexeme) ; token
+      (retok lexeme span ppstate))
+     (t ; comment or white space
+      (read-next-token stop-at-newline-p ppstate))))
   :no-function nil
   :measure (ppstate->size ppstate)
 
