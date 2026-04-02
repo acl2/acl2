@@ -29,7 +29,6 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 ;(local (include-book "numeric-lists"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 

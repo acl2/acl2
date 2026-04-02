@@ -1,6 +1,6 @@
 ; UTF-16 surrogate code points
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/hex-char-to-val" :dir :system)
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
@@ -27,10 +26,10 @@
        (<= code-point #xDFFF)))
 
 (defund combine-utf-16-surrogates (high-surrogate low-surrogate)
-  (declare  (type (integer 0 #x10FFFF) high-surrogate)
-            (type (integer 0 #x10FFFF) low-surrogate)
-            (xargs :guard (and (high-surrogatep high-surrogate)
-                               (low-surrogatep low-surrogate))))
+  (declare (type (integer 0 #x10FFFF) high-surrogate)
+           (type (integer 0 #x10FFFF) low-surrogate)
+           (xargs :guard (and (high-surrogatep high-surrogate)
+                              (low-surrogatep low-surrogate))))
   (+ #x10000
      (logior (ash (logand #b1111111111 high-surrogate) ;10 bits
                   10)

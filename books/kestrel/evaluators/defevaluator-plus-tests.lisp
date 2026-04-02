@@ -1,4 +1,4 @@
-; A nicer interface to defevaluator
+; Tests of defevaluator+
 ;
 ; Copyright (C) 2014-2026 Kestrel Institute
 ;

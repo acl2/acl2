@@ -1,6 +1,6 @@
 ; More rules about reading and writing
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -269,7 +269,6 @@
                         (:instance read-of-bvchop-48 (addr (+ ad1 x ad2))))
            :in-theory (e/d (ifix) (read-of-bvchop-48)))))
 
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -412,7 +411,7 @@
 
 ;todo: split out:
 
-(include-book "read-bytes-and-write-bytes")
+;;(include-book "read-bytes-and-write-bytes")
 
 (local
   ;rename
@@ -629,8 +628,8 @@
            :in-theory (e/d (disjoint-regions48p bvlt)
                            (read-of-write-of-write-irrel-inner)))))
 
-;; We don't know which whether the write to ad2 has an effect, but any writes
-;; inside the write to ad1 (of size n1) can't possibly affect the read to ad1
+;; We don't know whether the write to ad2 has an effect, but any writes inside
+;; the write to ad1 (of size n1) can't possibly affect the outer read to ad1
 ;; (of size n1).  Can help clarify failures.
 (defthm read-of-write-of-write-of-write-same-middle-bv
   (implies (and (unsigned-byte-p 48 n1)

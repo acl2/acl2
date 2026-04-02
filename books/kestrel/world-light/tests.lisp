@@ -1,6 +1,6 @@
 ; Tests for the lightweight world utilities
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -192,7 +192,7 @@
 ;; A built-in macro
 (assert-event (not (function-symbolp 'append (w state))))
 (assert-event (not (defined-functionp 'append (w state))))
-(assert-event (not (defthm-or-defaxiom-symbolp 'defined-functionp (w state))))
+(assert-event (not (defthm-or-defaxiom-symbolp 'append (w state))))
 
 ;; A non-built-in macro
 (defmacro mymac (x) `(+ ,x 1))

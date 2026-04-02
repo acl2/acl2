@@ -367,8 +367,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-
 (local
  (defthm unsigned-byte-p-of-ceiling-of-lg-and-ceiling-of-2
    (implies (and (< 1 i)
