@@ -1759,40 +1759,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define find-first-token/marker ((lexmarks lexmark-listp))
-  :returns (mv (wsc lexmark-listp)
-               (token/marker? lexmark-optionp)
-               (lexmarks-rest lexmark-listp))
-  :short "Find the first token or marker in a list of lexmarks, if any."
+(define find-next-token ((lexemes plexeme-listp))
+  :returns (mv (wsc plexeme-listp)
+               (token? plexeme-optionp)
+               (lexemes-rest plexeme-listp))
+  :short "Find the first token in a list of lexemes, if any."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If there is no token or marker, we return @('nil').
-     If we find a token or marker, we return it,
+    "If there is no token, we return @('nil').
+     If we find a token, we return it,
      and we also return the white space and comments that precede the token;
-     if there is no token or marker, these are all the lexemes passed as input.
-     We also return the remaining lexmarks."))
-  (b* (((when (endp lexmarks)) (mv nil nil nil))
-       (lexmark (car lexmarks))
-       ((when (or (not (lexmark-case lexmark :lexeme))
-                  (plexeme-tokenp (lexmark-lexeme->lexeme lexmark))))
-        (mv nil (lexmark-fix lexmark) (lexmark-list-fix (cdr lexmarks))))
-       ((mv wsc token/marker? lexmarks) (find-first-token/marker (cdr lexmarks))))
-    (mv (cons (lexmark-fix lexmark) wsc) token/marker? lexmarks))
+     if there is no token, these are all the lexemes passed as input.
+     We also return the remaining lexemes."))
+  (b* (((when (endp lexemes)) (mv nil nil nil))
+       (lexeme (car lexemes))
+       ((when (plexeme-tokenp lexeme))
+        (mv nil (plexeme-fix lexeme) (plexeme-list-fix (cdr lexemes))))
+       ((mv wsc token? lexemes) (find-next-token (cdr lexemes))))
+    (mv (cons (plexeme-fix lexeme) wsc) token? lexemes))
 
   ///
 
-  (defret len-of-find-first-token/marker
-    (implies token/marker?
-             (< (len lexmarks-rest)
-                (len lexmarks)))
+  (defret len-of-find-next-token
+    (implies token?
+             (< (len lexemes-rest)
+                (len lexemes)))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define normalize-macro-arg ((arg lexmark-listp))
-  :returns (norm-arg lexmark-listp)
+(define normalize-macro-arg ((arg plexeme-listp))
+  :returns (norm-arg plexeme-listp)
   :short "Normalize a macro argument,
           turning comments and white space (including new lines)
           into single spaces between tokens."
@@ -1800,8 +1799,7 @@
   (xdoc::topstring
    (xdoc::p
     "When we calculate the arguments of a macro call,
-     each argument is a list of zero or more lexmarks
-     (not just lexemes, because we need to retain the markers);
+     each argument is a list of zero or more lexemes;
      the calculation involves macro expansion within the arguments themselves,
      unless the corresponding parameters in the macro's replacement list
      are preceded by @('#') or @('##') or followed by @('##')
@@ -1809,7 +1807,7 @@
      Each calculated argument needs to replace the correspoding parameter
      in the replacement list in order to realize the macro call
      [C17:6.10.3/10].
-     The list of lexmarks that forms an argument
+     The list of lexemes that forms an argument
      could include comments and white space,
      including new lines [C17:6.10.3/10].
      Since we generally try to preserve comments and white space,
@@ -1818,7 +1816,7 @@
      but for now, to keep things simple,
      we normalize all those comments and white space
      to single spaces between tokens.
-     That is, given the list of lexmarks that forms an argument,
+     That is, given the list of lexemes that forms an argument,
      we remove all the white space and comments at the start and end,
      and we join all the contiguous white space and comments
      into single spaces.
@@ -1827,26 +1825,24 @@
      to single spaces,
      so our normalization is consistent with that.")
    (xdoc::p
-    "The resulting list of lexemes is a sequence of tokens and markers
-     with single spaces between some of the tokens (ignoring markers).")
+    "The resulting list of lexemes is a sequence of tokens
+     with single spaces between some of the tokens.")
    (xdoc::p
     "This function performs this normalization."))
   (normalize-macro-arg-loop t arg)
 
   :prepwork
-  ((define normalize-macro-arg-loop ((startp booleanp) (arg lexmark-listp))
-     :returns (norm-arg lexmark-listp)
+  ((define normalize-macro-arg-loop ((startp booleanp) (arg plexeme-listp))
+     :returns (norm-arg plexeme-listp)
      :parents nil
-     (b* (((mv wsc token/marker arg-rest) (find-first-token/marker arg))
-          ((when (not token/marker)) nil)
+     (b* (((mv wsc token arg-rest) (find-next-token arg))
+          ((when (not token)) nil)
           (norm-arg-rest (normalize-macro-arg-loop nil arg-rest)))
        (append (if (or startp
                        (not wsc))
                    nil
-                 (list (make-lexmark-lexeme :lexeme (plexeme-spaces 1)
-                                            :span (irr-span))))
-               (cons token/marker
-                     norm-arg-rest)))
+                 (list (plexeme-spaces 1)))
+               (cons token norm-arg-rest)))
      :measure (len arg)
      :verify-guards :after-returns)))
 
@@ -2786,8 +2782,8 @@
                                    ppstate
                                    (1- limit)))
                    (arg (rev rev-arg))
-                   (arg (lexeme-list-to-lexmark-list arg))
                    (arg (normalize-macro-arg arg))
+                   (arg (lexeme-list-to-lexmark-list arg))
                    (subst (acons va-args arg nil)))
                 (retok subst ppstate))
             (retok nil ; subst
@@ -2807,8 +2803,8 @@
                          ppstate
                          (1- limit)))
          (arg (rev rev-arg))
-         (arg (lexeme-list-to-lexmark-list arg))
          (arg (normalize-macro-arg arg))
+         (arg (lexeme-list-to-lexmark-list arg))
          ((erp subst ppstate)
           (pproc-macro-args (cdr params)
                             ellipsis
