@@ -1681,31 +1681,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist string-lexmark-list-alist
+(fty::defalist string-plexeme-list-alist
   :short "Fixtype of alists
           from strings (representing identifiers)
-          to lists of lexmarks."
+          to lists of lexemes."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are used to model the mapping of macro parameters
-     to the corresponding macro arguments.
-     The macro arguments retain their markers,
-     so we have a list of lexmarks and not just of lexemes."))
+     to the corresponding macro arguments."))
   :key-type string
-  :val-type lexmark-list
+  :val-type plexeme-list
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil t
-  :pred string-lexmark-list-alistp
+  :pred string-plexeme-list-alistp
   :prepwork ((set-induction-depth-limit 1))
 
   ///
 
-  (defruled lexmark-listp-of-cdr-of-assoc-equal-when-string-lexmark-list-alistp
-    (implies (and (string-lexmark-list-alistp alist)
+  (defruled plexeme-listp-of-cdr-of-assoc-equal-when-string-plexeme-list-alistp
+    (implies (and (string-plexeme-list-alistp alist)
                   (assoc-equal key alist))
-             (lexmark-listp (cdr (assoc-equal key alist))))
+             (plexeme-listp (cdr (assoc-equal key alist))))
     :induct t
     :enable assoc-equal))
 
@@ -1864,7 +1862,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define replace-macro-args ((replist plexeme-listp)
-                            (subst string-lexmark-list-alistp))
+                            (subst string-plexeme-list-alistp))
   :guard (plexeme-list-token/space-p replist)
   :returns (lexmarks/placemarkers lexmark-option-listp)
   :short "In the replacement list of a function-like macro,
@@ -1941,13 +1939,13 @@
                    param))
            (param (plexeme-ident->ident param))
            (param+arg (assoc-equal param
-                                   (string-lexmark-list-alist-fix subst)))
+                                   (string-plexeme-list-alist-fix subst)))
            ((unless param+arg)
             (raise "Internal error: # is followed by a non-parameter ~x0."
                    param))
            (arg (cdr param+arg))
            ;; Combine # and ARG into TOKEN.
-           ((mv stringlit markers) (stringize arg))
+           ((mv stringlit markers) (stringize (lexeme-list-to-lexmark-list arg)))
            (token (plexeme-string stringlit))
            (lexmark (make-lexmark-lexeme :lexeme token :span (irr-span))))
         (append (space-lexmark-singleton? spacep)
@@ -1962,7 +1960,7 @@
               (replace-macro-args replist subst)))
      ((plexeme-case token :ident) ; ident (param or not)
       (b* ((ident (plexeme-ident->ident token))
-           (ident+arg (assoc-equal ident (string-lexmark-list-alist-fix subst)))
+           (ident+arg (assoc-equal ident (string-plexeme-list-alist-fix subst)))
            ;; If the token is an identifier but not a parameter,
            ;; it remains unchanged.
            ((when (not ident+arg))
@@ -1976,7 +1974,7 @@
            ;; if it is not empty, we add its lexmarks to the output list.
            (arg (cdr ident+arg)))
         (append (space-lexmark-singleton? spacep)
-                (or arg (list nil))
+                (or (lexeme-list-to-lexmark-list arg) (list nil))
                 (replace-macro-args replist subst))))
      (t ; other token
       ;; This case is the same as that above
@@ -1989,7 +1987,7 @@
   :measure (len replist)
   :guard-hints
   (("Goal" :in-theory (enable
-                       alistp-when-string-lexmark-list-alistp-rewrite
+                       alistp-when-string-plexeme-list-alistp-rewrite
                        true-listp-when-lexmark-listp)))
   :hooks nil)
 
@@ -2742,7 +2740,7 @@
                             (ppstate ppstatep)
                             (limit natp))
     :returns (mv erp
-                 (subst string-lexmark-list-alistp)
+                 (subst string-plexeme-list-alistp)
                  (new-ppstate ppstatep))
     :parents (preprocessor pproc-lexemes/macroargs)
     :short "Preprocess macro arguments."
@@ -2783,7 +2781,6 @@
                                    (1- limit)))
                    (arg (rev rev-arg))
                    (arg (normalize-macro-arg arg))
-                   (arg (lexeme-list-to-lexmark-list arg))
                    (subst (acons va-args arg nil)))
                 (retok subst ppstate))
             (retok nil ; subst
@@ -2804,7 +2801,6 @@
                          (1- limit)))
          (arg (rev rev-arg))
          (arg (normalize-macro-arg arg))
-         (arg (lexeme-list-to-lexmark-list arg))
          ((erp subst ppstate)
           (pproc-macro-args (cdr params)
                             ellipsis
@@ -2823,7 +2819,7 @@
   :guard-hints
   (("Goal" :in-theory (enable ifix
                               acl2::true-listp-when-string-listp-rewrite
-                              alistp-when-string-lexmark-list-alistp-rewrite))))
+                              alistp-when-string-plexeme-list-alistp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
