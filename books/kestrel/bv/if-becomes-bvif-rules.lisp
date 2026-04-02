@@ -27,6 +27,7 @@
 (include-book "sbvdiv")
 (include-book "sbvrem")
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "bvlt"))
 (local (include-book "bvuminus"))
 (local (include-book "slice"))

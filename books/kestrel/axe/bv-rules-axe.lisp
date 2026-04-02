@@ -41,6 +41,7 @@
 (local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/bv/leftrotate-rules" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
