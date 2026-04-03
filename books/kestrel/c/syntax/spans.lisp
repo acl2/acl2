@@ -12,6 +12,8 @@
 
 (include-book "positions")
 
+(local (include-book "std/lists/top" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,6 +68,15 @@
   span
   :short "Fixtype of optional spans."
   :pred span-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist span-list
+  :short "Fixtype of lists of spans."
+  :elt-type span
+  :true-listp t
+  :elementp-of-nil nil
+  :pred span-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

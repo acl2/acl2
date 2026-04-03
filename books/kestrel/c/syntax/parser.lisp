@@ -12534,7 +12534,7 @@
                   (cw "Parsed ~x0/~x1 files.~%" len-tunitmap len-filemap)))
             nil)))
     (retok (make-trans-ensemble :units tunitmap
-                                :resolved-headers nil
+                                :resolved-includes nil
                                 :info nil)))
 
   :prepwork

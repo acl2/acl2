@@ -996,11 +996,11 @@
 
   (defruled trans-ensemble-annop-of-trans-ensemble
     (equal (trans-ensemble-annop
-            (trans-ensemble units resolved-headers info))
+            (trans-ensemble units resolved-includes info))
            (and (filepath-trans-unit-map-annop units)
                 (trans-ensemble-infop info)))
     :expand (trans-ensemble-annop
-             (trans-ensemble units resolved-headers info))
+             (trans-ensemble units resolved-includes info))
     :enable identity)
 
   ;; theorems about accessors:

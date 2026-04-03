@@ -78,7 +78,9 @@
                                         (acl2::string=>nats ,input)
                                         dialect
                                         t))
-         ((mv erp2 ast) (c$::dimb-trans-unit ast dialect))
+         (table (c$::dimb-init-table dialect))
+         (gcc/clang (c::dialect-gcc/clangp dialect))
+         ((mv erp2 ast &) (c$::dimb-trans-unit ast table gcc/clang))
          ((mv erp3 fundef) (trans-unit-find-fundef (c$::ident ,fun) ast))
          (free-vars (free-vars-fundef fundef nil))
          (expected (mergesort (ident-map (list ,@vars)))))

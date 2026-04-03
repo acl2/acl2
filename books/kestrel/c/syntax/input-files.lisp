@@ -612,29 +612,37 @@
        ;; Initialize list of generated events.
        (events nil)
        ;; Preprocess if required, or just read files from file system.
-       ((erp files state)
-        (b* (((reterr) (irr-fileset) state))
+       ;; Unless we use our own internal preprocessor,
+       ;; the RESOLVED-INCLUDES mapping is empty (NIL).
+       ((erp files resolved-includes state)
+        (b* (((reterr) (irr-fileset) nil state))
           (cond ((equal preprocessor "") ; internal preprocessor
-                 (b* (((erp files & state)
-                       (preprocess
-                        files base-dir include-dirs options ienv state)))
-                   (retok files state)))
+                 (preprocess files base-dir include-dirs options ienv state))
                 ((not preprocessor)
-                 (input-files-read-files files base-dir state))
+                 (b* (((erp files state)
+                       (input-files-read-files files base-dir state)))
+                   (retok files nil state)))
                 (t ; external preprocessor
-                 (preprocess-files
-                  files
-                  :path base-dir
-                  :preprocessor preprocessor
-                  :extra-args (input-files-complete-preprocess-extra-args
-                               preprocess-extra-args
-                               ienv))))))
+                 (b* (((erp files state)
+                       (preprocess-files
+                        files
+                        :path base-dir
+                        :preprocessor preprocessor
+                        :extra-args (input-files-complete-preprocess-extra-args
+                                     preprocess-extra-args
+                                     ienv))))
+                   (retok files nil state))))))
        ;; Parsing is always required.
        (skip-control-lines (not (equal preprocessor "")))
        ((erp tunits) (parse-fileset files
                                     (ienv->dialect ienv)
                                     skip-control-lines
                                     keep-going))
+       ;; We add the RESOLVED-INCLUDES mapping to the translation ensemble.
+       ;; This will no longer be necessary once we store that information
+       ;; directly in the #include ASTs, coming from our preprocessor.
+       (tunits (change-trans-ensemble tunits
+                                      :resolved-includes resolved-includes))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))

@@ -765,9 +765,9 @@
                     (1- (ppstate->size ppstate))))
     :rule-classes (:rewrite :linear))
 
-  (defret ppstate->lexmarks-of-read-pchar
-    (equal (ppstate->lexmarks new-ppstate)
-           (ppstate->lexmarks ppstate))))
+  (defret ppstate->lexemes-of-read-pchar
+    (equal (ppstate->lexemes new-ppstate)
+           (ppstate->lexemes ppstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -800,9 +800,9 @@
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate))))
 
-  (defret ppstate->lexmarks-of-unread-pchar
-    (equal (ppstate->lexmarks new-ppstate)
-           (ppstate->lexmarks ppstate)))
+  (defret ppstate->lexemes-of-unread-pchar
+    (equal (ppstate->lexemes new-ppstate)
+           (ppstate->lexemes ppstate)))
 
   (defrule unread-pchar-of-read-pchar
     (b* (((mv erp char? & new-ppstate) (read-pchar ppstate)))
