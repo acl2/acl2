@@ -89,7 +89,7 @@ express it in terms of T(x) = v.  This is the key incrementalization step.</li>
 
 <li>Prove that F$1(x,v) is equivalent to F$1-pre(x,v) assuming v = T(x).</li>
 
-<li>Build a wrapper function that calls F$1 with thv V parameter initialized to
+<li>Build a wrapper function that calls F$1 with the V parameter initialized to
 T(x), thus establishing the invariant.</li>
 
 <li>Prove that the wrapper function is equal to the original F.</li>

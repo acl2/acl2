@@ -135,7 +135,7 @@
  @('verify-guards') that generated the checkpoints that you considered.</li>
 
  <li>Provide a @(':hints') option (for the measure theorem) or
- @(':guard-hints') option (for guard verification), @('(simplify FN :hitns
+ @(':guard-hints') option (for guard verification), @('(simplify FN :hints
  ... :guard-hints ...)'), that specifies a suitable theory and, perhaps,
  include @(':use (:termination-theorem FN)') (for the measure theorem) or
  @(':use (:guard-theorem FN)') (for guard verification).</li>
