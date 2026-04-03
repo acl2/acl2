@@ -67,6 +67,15 @@
   :short "Fixtype of optional spans."
   :pred span-optionp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist span-list
+  :short "Fixtype of lists of spans."
+  :elt-type span
+  :true-listp t
+  :elementp-of-nil nil
+  :pred span-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define span-join ((span1 spanp) (span2 spanp))
