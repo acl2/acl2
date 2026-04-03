@@ -2017,7 +2017,7 @@
     "See the documentation of @(tsee replace-macro-args) for context.")
    (xdoc::p
     "We go through the list of lexemes and placemarkers.
-     When we encounter a marker or a space, we just pass it on.
+     When we encounter a space, we just pass it on.
      When we encounter a token or placemarker, we check whether
      it is followed by a @('###'):
      in this case, the token or placemarker
@@ -2030,8 +2030,6 @@
      Thus, we use a recursive auxiliary function
      to find all the @('###') operators,
      so that we can concatenate all the operands together.
-     Any markers found within the concatenation(s)
-     are put just after the result.
      [C17:6.10.3.2/2] says that the order of evaluation of @('##')
      (here represented as @('###')), as well as of @('#') is unspecified;
      our implementation associates @('###') to the left.
@@ -2096,8 +2094,7 @@
           ;; If there is no next token or placemarker,
           ;; or it is not a ### token,
           ;; then return the input token or placemarker unchanged,
-          ;; and also the list of lexemes and placemarker unchanged;
-          ;; and also the markers found so far unchanged.
+          ;; and also the list of lexemes and placemarker unchanged.
           ((unless (and foundp
                         (plexeme?-punctuatorp triplehash? "###")))
            (retok (plexeme-option-fix token/placemarker)
@@ -2144,9 +2141,9 @@
   (xdoc::topstring
    (xdoc::p
     "This is similar to @(tsee evaluate-triple-hash),
-     but it does not deal with placemarkers and markers,
-     because it is used on the replacement list of an object like macro,
-     which consists of lexemes.
+     but it does not deal with placemarkers,
+     because it is used on the replacement list of an object-like macro,
+     where placemarkers cannot arise.
      Here the @('##') is represented as itself, not as @('###').")
    (xdoc::p
     "Since the replacement list of an object like macro
