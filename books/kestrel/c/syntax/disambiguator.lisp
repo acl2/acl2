@@ -13,6 +13,7 @@
 
 (include-book "built-in")
 (include-book "unambiguity")
+(include-book "macro-tables")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -247,9 +248,8 @@
    (xdoc::p
     "This consists of
      a (mutable) disambiguation table,
-     and an immutable flag saying whether GCC or Clang extensions are enabled.
-     We plan to add a component that is a macro table,
-     needed to handle @('#include') directives.")
+     a (mutable) macro table,
+     and an immutable flag saying whether GCC or Clang extensions are enabled.")
    (xdoc::p
     "This could be turned into a stobj, if needed for efficiency.
      But note that
@@ -261,6 +261,7 @@
    (xdoc::p
     "We pick the short name `@('dstate')' since it is used a lot."))
   ((table dimb-table)
+   (macros macro-table)
    (gcc/clang bool))
   :pred dstatep)
 
@@ -269,7 +270,7 @@
 (defirrelevant irr-dstate
   :short "An irrelevant disambiguation state."
   :type dstatep
-  :body (dstate (irr-dimb-table) nil))
+  :body (dstate (irr-dimb-table) (irr-macro-table) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -409,7 +410,8 @@
        (new-table (append (butlast table 1) (list new-scope))))
     (change-dstate dstate :table new-table))
   :no-function nil
-  :guard-hints (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
+  :guard-hints
+  (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -421,6 +423,8 @@
    (xdoc::p
     "The disambiguation table consists of a single scope,
      which is the file scope.")
+   (xdoc::p
+    "The macro table is the initial one for the given dialect.")
    (xdoc::p
     "If the C dialect does not have any extensions,
      the initial disambiguation table is empty.
@@ -470,7 +474,9 @@
      we should refine our GCC/Clang flag with
      a richer description of the C implementation."))
   (b* ((table (list nil))
+       (macros (macro-init dialect))
        (dstate (make-dstate :table table
+                            :macros macros
                             :gcc/clang (c::dialect-gcc/clangp dialect))))
     (dimb-add-idents-objfun (built-ins-for dialect) dstate)))
 
