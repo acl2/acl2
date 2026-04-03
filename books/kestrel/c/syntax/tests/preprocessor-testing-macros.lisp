@@ -70,12 +70,12 @@
                                   :trace-expansion ,trace-expansion
                                   :no-errors/warnings nil))
          (ienv (change-ienv (ienv-default) :dialect dialect))
-         ((mv erp fileset state) (preprocess files
-                                             base-dir
-                                             include-dirs
-                                             options
-                                             ienv
-                                             state)))
+         ((mv erp fileset & state) (preprocess files
+                                               base-dir
+                                               include-dirs
+                                               options
+                                               ienv
+                                               state)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
@@ -127,12 +127,12 @@
                                   :trace-expansion ,trace-expansion
                                   :no-errors/warnings nil))
          (ienv (change-ienv (ienv-default) :dialect dialect))
-         ((mv erp fileset state) (preprocess files
-                                             base-dir
-                                             include-dirs
-                                             options
-                                             ienv
-                                             state))
+         ((mv erp fileset & state) (preprocess files
+                                               base-dir
+                                               include-dirs
+                                               options
+                                               ienv
+                                               state))
          (- (if erp
                 (cw "~@0" erp)
               (cw "Result:~%~x0" (fileset-to-string-map fileset)))))
@@ -252,7 +252,7 @@
                                          :trace-expansion nil
                                          :no-errors/warnings nil))
          ;; Initial preprocessing.
-         ((mv erp fileset-initial state)
+         ((mv erp fileset-initial & state)
           (preprocess files base-dir include-dirs options-preserve ienv state))
          ((when erp)
           (mv (cw "Initial preprocessing fails: ~@0" erp) state))
@@ -263,7 +263,7 @@
          ((when erp)
           (mv (cw "Initial file set writing fails: ~x0" erp) state))
          ;; Full-expansion preprocessing of original files.
-         ((mv erp pfiles-original state)
+         ((mv erp pfiles-original & state)
           (pproc-files files base-dir include-dirs
                        options-expand ienv state 1000000000))
          ((when erp)
@@ -282,7 +282,7 @@
          ;; Full-expansion preprocessing of transformed files.
          (include-dirs-initial
           (relativize-include-dirs include-dirs out-dir-initial))
-         ((mv erp pfiles-transformed state)
+         ((mv erp pfiles-transformed & state)
           (pproc-files files out-dir-initial include-dirs-initial
                        options-expand ienv state 1000000000))
          ((when erp)
@@ -325,12 +325,12 @@
                                   :trace-expansion ,trace-expansion
                                   :no-errors/warnings nil))
          (ienv (change-ienv (ienv-default) :dialect dialect))
-         ((mv erp fileset state) (preprocess files
-                                             base-dir
-                                             include-dirs
-                                             options
-                                             ienv
-                                             state))
+         ((mv erp fileset & state) (preprocess files
+                                               base-dir
+                                               include-dirs
+                                               options
+                                               ienv
+                                               state))
          ((when erp) (mv (cw "Preprocessing fails: ~@0" erp) state))
          (fileset (fileset-relativize-absolute-paths fileset))
          ((mv erp state) (write-fileset fileset out-dir state))

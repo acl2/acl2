@@ -42,6 +42,8 @@
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
+(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/rules3" :dir :system) ; for max-constants-lemma
 (include-book "kestrel/bv/rules4" :dir :system) ; for bvlt-of-bvcat-arg2-constant-arg4-arg3, etc.
 (include-book "kestrel/arithmetic-light/ifix" :dir :system) ; for ifix-when-integerp
@@ -192,7 +194,7 @@
   (declare (xargs :stobjs state
                   :mode :program ;; because this translates terms
                   :guard (and (symbolp defconst-name)
-                              ;; (pseudo-termp term) ;; really an untranlated term
+                              ;; (pseudo-termp term) ;; really an untranslated term
                               (or (eq :auto rules)
                                   (symbol-listp rules))
                               ;; (or (eq :auto rule-lists)
@@ -242,7 +244,7 @@
                                  &key
                                  (rules ':auto) ;to completely replace the usual set of rules
                                  (extra-rules 'nil) ; to add to the usual set of rules
-                                 (remove-rules 'nil) ; to remove from to the usual set of rules
+                                 (remove-rules 'nil) ; to remove from the usual set of rules
                                  ;;(rule-lists ':auto) ;to completely replace the usual set of rules
                                  ;;(rule-alists 'auto) ;to completely replace the usual set of rules
                                  (assumptions 'nil)

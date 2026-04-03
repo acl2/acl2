@@ -1003,7 +1003,7 @@
                                  (simplify-tree-and-add-to-dag (farg1 tree) ;size param
                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                rewriter-rule-alist
-                                                               nil ;no trees are yet known equal to the the size param
+                                                               nil ;no trees are yet known equal to the size param
                                                                refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                                embedded-dag-depth work-hard-when-instructedp tag limits state))
                                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))

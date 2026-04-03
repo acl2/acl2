@@ -367,8 +367,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-
 (local
  (defthm unsigned-byte-p-of-ceiling-of-lg-and-ceiling-of-2
    (implies (and (< 1 i)
@@ -391,7 +389,7 @@
 ;;                (< 1 i))
 ;;           (equal (integer-length (ceiling i 2))
 ;;                  (+ -1 (integer-length i))))
-;;  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases))))
+;;  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-alt))))
 
 (local
  (defthm integer-length-of-ceiling-of-2-when-power-of-2p
@@ -401,7 +399,7 @@
                    (if (< 1 i)
                        (+ -1 (integer-length i))
                      1)))
-   :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases
+   :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-alt
                                       floor-when-evenp)))))
 
 (local
@@ -470,7 +468,7 @@
                 (equal len (len data)))
            (equal (bvplus size val (bv-array-read size len index data))
                   (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
+  :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -518,8 +516,8 @@
                             (bv-array-read size len index data))
                    :in-theory (enable bv-array-read-cases
                                       bvlt
-                                      ;;acl2::bvlt-convert-arg2-to-bv
-                                      ;;acl2::trim-of-+-becomes-bvplus ; don't we want this enabled?
+                                      ;;bvlt-convert-arg2-to-bv
+                                      ;;trim-of-+-becomes-bvplus ; don't we want this enabled?
                                       )))))
 
 ;; restrict to constant array?

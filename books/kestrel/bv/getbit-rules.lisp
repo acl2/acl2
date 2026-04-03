@@ -55,9 +55,8 @@
 
 (defthmd floor-when-equal-of-floor-and-0-and->=
   (implies (and (equal (floor x y) 0)
-                (<= xsmall x)
+                (<= xsmall x) ;drop?
                 (posp y)
-                (natp n)
                 (natp x)
                 (natp xsmall))
            (equal (floor xsmall y)

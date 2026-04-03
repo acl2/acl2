@@ -201,7 +201,8 @@
       "This list contains variables corresponding to certain x86 registers.
        We could not find mention of these variables in the GCC manual,
        but they have been observed in practical code.
-       See @(tsee dimb-transunit) for further discussion of these variables.")
+       See @(tsee dimb-filepath-trans-unit-map)
+       for further discussion of these variables.")
     (xdoc::p
       "We also include @('latent_entropy').
        This variable was observed in the preprocessed output

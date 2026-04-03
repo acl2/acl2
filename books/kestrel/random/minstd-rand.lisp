@@ -1,6 +1,6 @@
 ; A simple random number generator
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,7 +20,7 @@
 ;; The Mersenne prime M_31, used as the modulus of the generator.
 (defconst *m31* (- (expt 2 31) 1))
 
-;; The multipler of the generator.
+;; The multiplier of the generator.
 (defconst *minstd-rand-multiplier* 48271)
 
 ;; Recognize a (pseudo-random) value.

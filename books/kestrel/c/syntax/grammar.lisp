@@ -20,7 +20,20 @@
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
-; (depends-on "grammar/grammar.abnf")
+; (depends-on "grammar/characters.abnf")
+; (depends-on "grammar/characters-c17.abnf")
+; (depends-on "grammar/characters-c23.abnf")
+; (depends-on "grammar/comments.abnf")
+; (depends-on "grammar/keywords.abnf")
+; (depends-on "grammar/keywords-c17.abnf")
+; (depends-on "grammar/keywords-c17-gcc.abnf")
+; (depends-on "grammar/keywords-c17-clang.abnf")
+; (depends-on "grammar/keywords-c17-clang-cheri.abnf")
+; (depends-on "grammar/keywords-c23.abnf")
+; (depends-on "grammar/keywords-c23-gcc.abnf")
+; (depends-on "grammar/keywords-c23-clang.abnf")
+; (depends-on "grammar/keywords-c23-clang-cheri.abnf")
+; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,10 +133,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar-characters-all*
+(abnf::defgrammar *grammar-characters*
   :short "Grammar rules for the source character set
           that are common to all the C dialects."
-  :file "grammar/characters-all.abnf"
+  :file "grammar/characters.abnf"
   :untranslate t
   :well-formed t)
 
@@ -143,23 +156,123 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar*
+(abnf::defgrammar *grammar-comments*
+  :short "Grammar rules for comments."
+  :file "grammar/comments.abnf"
+  :untranslate t
+  :well-formed t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::defgrammar *grammar-keywords*
+  :short "Grammar rules for keywords
+          that form subsets for the various C dialects."
+  :file "grammar/keywords.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-keywords-c17*
+  :short "Grammar rules for keywords
+          that are specific to the C17 dialect without extensions."
+  :file "grammar/keywords-c17.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-keywords-c23*
+  :short "Grammar rules for keywords
+          that are specific to the C23 dialect without extensions."
+  :file "grammar/keywords-c23.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-keywords-c17-gcc*
+  :short "Grammar rules for keywords
+          that are specific to
+          the C17 dialect with GCC and without CHERI extensions."
+  :file "grammar/keywords-c17-gcc.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-keywords-c23-gcc*
+  :short "Grammar rules for keywords
+          that are specific to
+          the C23 dialect with GCC and without CHERI extensions."
+  :file "grammar/keywords-c23-gcc.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-keywords-c17-clang*
+  :short "Grammar rules for keywords
+          that are specific to
+          the C17 dialect with Clang and without CHERI extensions."
+  :file "grammar/keywords-c17-clang.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-keywords-c23-clang*
+  :short "Grammar rules for keywords
+          that are specific to
+          the C23 dialect with Clang and without CHERI extensions."
+  :file "grammar/keywords-c23-clang.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-keywords-c17-clang-cheri*
+  :short "Grammar rules for keywords
+          that are specific to the C17 dialect with Clang and CHERI extensions."
+  :file "grammar/keywords-c17-clang-cheri.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-keywords-c23-clang-cheri*
+  :short "Grammar rules for keywords
+          that are specific to the C23 dialect with Clang and CHERI extensions."
+  :file "grammar/keywords-c23-clang-cheri.abnf"
+  :untranslate t
+  :well-formed t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
-  :file "grammar/grammar.abnf"
+  :file "grammar/grammar-rest.abnf"
   :untranslate t
   :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define grammar-for ((dialect c::dialectp))
-  :returns (grammar abnf::rulelistp)
+  :returns (grammar abnf::rulelistp
+                    :hints (("Goal" ; for speed:
+                             :in-theory (disable abnf::rulelistp-of-append
+                                                 abnf::rulelistp-of-cons))))
   :short "Grammar for a given C dialect."
-  (b* ((std (c::dialect->std dialect)))
-    (append *grammar-characters-all*
-            (c::standard-case std
-                              :c17 *grammar-characters-c17*
-                              :c23 *grammar-characters-c23*)
-            *grammar*))
+  (b* (((c::dialect dialect) dialect))
+    (append
+     ;; characters:
+     *grammar-characters*
+     (c::standard-case
+      dialect.std
+      :c17 *grammar-characters-c17*
+      :c23 *grammar-characters-c23*)
+     ;; comments:
+     *grammar-comments*
+     ;; keywords:
+     *grammar-keywords*
+     (c::standard-case
+      dialect.std
+      :c17 (cond (dialect.gcc *grammar-keywords-c17-gcc*)
+                 (dialect.clang (if dialect.cheri
+                                    *grammar-keywords-c17-clang-cheri*
+                                  *grammar-keywords-c17-clang*))
+                 (t *grammar-keywords-c17*))
+      :c23 (cond (dialect.gcc *grammar-keywords-c23-gcc*)
+                 (dialect.clang (if dialect.cheri
+                                    *grammar-keywords-c23-clang-cheri*
+                                  *grammar-keywords-c23-clang*))
+                 (t *grammar-keywords-c23*)))
+     ;; rest:
+     *grammar-rest*))
 
   ///
 

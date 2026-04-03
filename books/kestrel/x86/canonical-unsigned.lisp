@@ -1,6 +1,6 @@
 ; Unsigned machinery for canonical addresses
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -139,7 +139,7 @@
                 (unsigned-canonical-address-p (bvplus 64 offset ad))
                 (integerp offset)
                 (integerp ad)
-                (integerp base)
+                ;; (integerp base)
                 )
            (equal (bvsx 64 48 (bvplus 48 offset ad))
                   (bvplus 64 offset ad)))

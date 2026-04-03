@@ -223,50 +223,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define specialize-transunit
-  ((tunit transunitp)
+(define specialize-trans-unit
+  ((tunit trans-unitp)
    (target-fn identp)
    (target-param identp)
    (const exprp))
   :short "Transform a translation unit."
-  :returns (new-tunit transunitp)
-  (b* (((transunit tunit) tunit))
-    (make-transunit
+  :returns (new-tunit trans-unitp)
+  (b* (((trans-unit tunit) tunit))
+    (make-trans-unit
      :items (specialize-trans-item-list tunit.items target-fn target-param const)
      :info tunit.info))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define specialize-filepath-transunit-map
-  ((map filepath-transunit-mapp)
+(define specialize-filepath-trans-unit-map
+  ((map filepath-trans-unit-mapp)
    (target-fn identp)
    (target-param identp)
    (const exprp))
   :short "Transform a filepath."
-  :returns (new-map filepath-transunit-mapp
-                    :hyp (filepath-transunit-mapp map))
+  :returns (new-map filepath-trans-unit-mapp
+                    :hyp (filepath-trans-unit-mapp map))
   (b* (((when (omap::emptyp map))
         nil)
        ((mv path tunit) (omap::head map)))
     (omap::update (c$::filepath-fix path)
-                  (specialize-transunit tunit target-fn target-param const)
-                  (specialize-filepath-transunit-map (omap::tail map)
-                                                     target-fn
-                                                     target-param
-                                                     const)))
+                  (specialize-trans-unit tunit target-fn target-param const)
+                  (specialize-filepath-trans-unit-map (omap::tail map)
+                                                      target-fn
+                                                      target-param
+                                                      const)))
   :verify-guards :after-returns)
 
-(define specialize-transunit-ensemble
-  ((tunits transunit-ensemblep)
+(define specialize-trans-ensemble
+  ((tunits trans-ensemblep)
    (target-fn identp)
    (target-param identp)
    (const exprp))
-  :short "Transform a translation unit ensemble."
-  :returns (new-tunits transunit-ensemblep)
-  (b* (((transunit-ensemble tunits) tunits))
-    (c$::make-transunit-ensemble
-      :units (specialize-filepath-transunit-map tunits.units
+  :short "Transform a translation ensemble."
+  :returns (new-tunits trans-ensemblep)
+  (b* (((trans-ensemble tunits) tunits))
+    (c$::make-trans-ensemble
+     :units (specialize-filepath-trans-unit-map tunits.units
                                                 target-fn
                                                 target-param
                                                 const))))
@@ -282,10 +282,10 @@
   :returns (new-code code-ensemblep)
   (b* (((code-ensemble code) code))
     (make-code-ensemble
-     :transunits (specialize-transunit-ensemble code.transunits
-                                                target-fn
-                                                target-param
-                                                const)
+     :trans-units (specialize-trans-ensemble code.trans-units
+                                             target-fn
+                                             target-param
+                                             const)
      :ienv code.ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,7 +1,7 @@
 ; Crunching a DAG (i.e., dropping irrelevant nodes from a dag-array in place)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -128,7 +128,7 @@
 ;; Smashes 'tag-array and 'translation-array.
 ;; The resulting dag may have dead nodes at positions at and above the returned dag-len.
 ;; Another option is to go to a dag-lst and then back to a dag.
-;; TODO: Look up all the nodeums and return them.
+;; TODO: Look up all the nodenums and return them.
 ;; TODO: Should this create a new array?  If so, what about the name?
 ;; TODO: Rebuild the auxililary structures
 ;; Note that this inlines constant nodes, so some nodes may map to constants.

@@ -56,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A stobj that gathers data that changes during rewriting, incluing the 5 components of the DAG, the xor-signature information, etc.
+;; A stobj that gathers data that changes during rewriting, including the 5 components of the DAG, the xor-signature information, etc.
 (defstobj+ rewrite-stobj2
   ;; TODO: Make this (and the dag-parent-array) into true stobj arrays (but that will be a lot of work):
   (dag-array :type t :initially nil) ; todo: strengthen pred? will always be named 'dag-array

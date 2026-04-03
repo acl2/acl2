@@ -171,8 +171,7 @@
   (implies (and (consp (aref1 dag-array-name dag-array 0))
                 (not (equal (car (aref1 dag-array-name dag-array 0))
                             'quote))
-                (pseudo-dag-arrayp-aux dag-array-name dag-array 0)
-                (natp n))
+                (pseudo-dag-arrayp-aux dag-array-name dag-array 0))
            (all-myquotep (dargs (aref1 dag-array-name dag-array 0))))
   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array 0))
            :in-theory (enable bounded-dag-exprp))))
@@ -238,7 +237,6 @@
 (defthm supporters-arrayp-aux-of-make-empty-array
   (implies (and (natp n)
                 (<= n dag-len)
-                (natp dag-len)
                 (posp dag-len)
                 (<= dag-len *max-1d-array-length*))
            (supporters-arrayp-aux 'supporters-array

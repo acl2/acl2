@@ -129,8 +129,8 @@
     iff-of-constant-arg1
     iff-of-constant-arg2
     iff-same
-    iff-bool-fix-arg1
-    iff-bool-fix-arg2))
+    iff-of-bool-fix-arg1
+    iff-of-bool-fix-arg2))
 
 ;some of these may be necessary for case-splitting in the dag prover to work right
 (defun boolean-rules ()
@@ -4373,7 +4373,7 @@
 (set-axe-rule-priority bvchop-of-bvmult -1)
 (set-axe-rule-priority bvchop-of-bvxor -1)
 (set-axe-rule-priority bvchop-of-bvor -1)
-(set-axe-rule-priority bvchop-of-bvand -1)
+(set-axe-rule-priority bvchop-of-bvand -1) ;happens before bvchop-identity to prevent loops? more like this?
 (set-axe-rule-priority bvchop-of-bvif -1)
 (set-axe-rule-priority bvchop-of-bv-array-read -1)
 (set-axe-rule-priority bvchop-of-bitand -1)
@@ -4398,9 +4398,6 @@
 ;new:
 (set-axe-rule-priority bvchop-identity-axe -1/2)
 (set-axe-rule-priority getbit-identity-axe -1/2)
-
-;bozo more like this?
-(set-axe-rule-priority bvchop-of-bvand -1) ;happens before bvchop-identity to prevent loops?
 
 ;these should happen before bv-array-read-of-bv-array-write-tighten:
 (set-axe-rule-priority bv-array-read-of-bv-array-write-diff-safe -10)

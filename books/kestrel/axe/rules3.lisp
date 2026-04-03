@@ -1,7 +1,7 @@
 ; Mixed rules 3
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -59,6 +59,7 @@
 (local (include-book "kestrel/bv/pick-a-bit" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -1927,8 +1928,7 @@
 
 ;kill?
 (defthm bvchop-of-expt-special
-  (implies (and (natp low)
-                (natp high))
+  (implies (natp high)
            (equal (BVCHOP (+ -2 HIGH) (* 1/4 (EXPT 2 HIGH)))
                   0))
   :hints (("Goal" :use (:instance bvchop-of-expt-0 (size1 (- high 2)) (size2 (- high 2)))
@@ -1936,8 +1936,7 @@
 
 ;kill?
 (defthm bvchop-of-expt-special2
-  (implies (and (natp low)
-                (natp high))
+  (implies (natp high)
            (equal (BVCHOP (+ -2 HIGH) (* 1/2 (EXPT 2 HIGH)))
                   0))
   :hints (("Goal" :use (:instance bvchop-of-expt-0 (size1 (- high 2)) (size2 (- high 1)))
@@ -2281,7 +2280,6 @@
 
 (defthm bvplus-of-bvuminus-tighten
   (implies (and (unsigned-byte-p 4 x)
-                (integerp jj)
                 (integerp k))
            (equal (bvplus 32 k (bvuminus 30 x))
                   (if (equal 0 (bvchop 30 x))
@@ -6416,10 +6414,8 @@
 
 (defthmd floor-bound-hack-31
   (implies (and (<= X (FLOOR 31 J))
-                (rationalp x)
                 (posp j)
-                (posp x)
-                (rationalp j))
+                (posp x))
            (<= (* x j) 31))
   :hints (("Goal" :in-theory (disable FLOOR-BOUND-LEMMA2
                                       my-FLOOR-LOWER-BOUND-ALT
@@ -8302,7 +8298,6 @@
 
 (defthm equal-of-bvchop-cancel-slice-rule
   (implies (and (integerp z1)
-                (integerp z2)
                 (integerp z3)
                 (integerp k)
                 (natp size)
@@ -12916,7 +12911,7 @@
 ;fixme gen!
 (defthm equal-of-bv-array-write-and-bv-array-write-top-elements
   (implies (and (work-hard (< index (bvplus '5 '1 index))) ;fixme
-                (work-hard (< index (bvplus '5 '1 index))) ;fixme
+                ;; (work-hard (< index (bvplus '5 '1 index))) ;fixme
                 (work-hard (natp index)) ;so we can use bv-array-write-opener
                 (all-unsigned-byte-p 8 data1)
                 (all-unsigned-byte-p 8 data2)

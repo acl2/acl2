@@ -1,7 +1,7 @@
 ; Bounded variant of dag-parent-arrayp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -100,7 +100,7 @@
                                     dag-parent-array
                                     dag-len)))
 
-(defthm bounded-dag-parent-arrayp-forward-to-bounded-dag-parent-arrayp
+(defthm bounded-dag-parent-arrayp-forward-to-dag-parent-arrayp
   (implies (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
            (dag-parent-arrayp dag-parent-array-name dag-parent-array))
   :rule-classes :forward-chaining

@@ -1282,8 +1282,8 @@
       when the parameter type is a union and GCC/Clang extensions are enabled.
       See "
      (xdoc::ahref
-       "https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html"
-       "[GCCM:6.4.3.1]")
+      "https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html"
+      "[GCCM:6.4.3.1]")
      " for more information on the @('transparent_union') attribute.")))
   (b* (((reterr))
        (types-param (type-list-fix types-param))
@@ -1312,17 +1312,17 @@
                           (let ((type-to-param (type-pointer->to type-param))
                                 (type-to-arg (type-pointer->to type-arg)))
                             (or (type-compatible-p
-                                  type-to-param type-to-arg completions ienv)
+                                 type-to-param type-to-arg completions ienv)
                                 (and (type-case type-to-param :void)
                                      (not (type-case type-to-arg :function)))
                                 (and (type-case type-to-arg :void)
                                      (not
-                                       (type-case type-to-param :function))))))
+                                      (type-case type-to-param :function))))))
                      (expr-null-pointer-constp arg type-arg)))
             (and (type-case type-param :bool)
                  (type-case type-arg :pointer)))
         (valid-prototype-args
-          (rest types-param) (rest args) (rest types-arg) ellipsis completions ienv)
+         (rest types-param) (rest args) (rest types-arg) ellipsis completions ienv)
       (retmsg$ "Argument ~x0 with type ~x1 ~
                 cannot be applied to function parameter with type ~x2."
                arg
@@ -1333,9 +1333,9 @@
   :guard-hints (("Goal" :in-theory (enable len)))
   :hooks ((:fix
            :hints (("Goal" :induct t
-                           :expand (valid-prototype-args
-                                     (type-list-fix types-param) args types-arg
-                                     ellipsis completions ienv))))))
+                    :expand (valid-prototype-args
+                             (type-list-fix types-param) args types-arg
+                             ellipsis completions ienv))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1391,14 +1391,14 @@
        (type-params (type-function->params to-type))
        ((erp)
         (type-params-case
-          type-params
-          :prototype (valid-prototype-args type-params.params
-                                           (expr-funcall->args expr)
-                                           types-arg
-                                           type-params.ellipsis
-                                           completions
-                                           ienv)
-          :otherwise (retok))
+         type-params
+         :prototype (valid-prototype-args type-params.params
+                                          (expr-funcall->args expr)
+                                          types-arg
+                                          type-params.ellipsis
+                                          completions
+                                          ienv)
+         :otherwise (retok))
         :iferr (msg$ "Error in function call ~x0:~%~@1" (expr-fix expr) erp)))
     (retok (type-function->ret to-type))))
 
@@ -1433,12 +1433,12 @@
        ((erp uid tag/members)
         (b* (((reterr) nil nil))
           (type-case
-            type-arg
-            :struct (retok type-arg.uid type-arg.tag/members)
-            :union (retok type-arg.uid type-arg.tag/members)
-            :otherwise (retmsg$ "In the member expression ~x0, ~
+           type-arg
+           :struct (retok type-arg.uid type-arg.tag/members)
+           :union (retok type-arg.uid type-arg.tag/members)
+           :otherwise (retmsg$ "In the member expression ~x0, ~
                                  the sub-expression has type ~x1."
-                                (expr-fix expr) (type-fix type-arg)))))
+                               (expr-fix expr) (type-fix type-arg)))))
        ((mv erp members)
         (type-struni-tag/members->members tag/members uid completions))
        ((when erp)
@@ -1501,12 +1501,12 @@
        ((erp uid tag/members)
         (b* (((reterr) nil nil))
           (type-case
-            to-type
-            :struct (retok to-type.uid to-type.tag/members)
-            :union (retok to-type.uid to-type.tag/members)
-            :otherwise (retmsg$ "In the member expression ~x0, ~
+           to-type
+           :struct (retok to-type.uid to-type.tag/members)
+           :union (retok to-type.uid to-type.tag/members)
+           :otherwise (retmsg$ "In the member expression ~x0, ~
                                  the sub-expression has type ~x1."
-                                (expr-fix expr) (type-fix type-arg)))))
+                               (expr-fix expr) (type-fix type-arg)))))
        ((mv erp members)
         (type-struni-tag/members->members tag/members uid completions))
        ((when erp)
@@ -1873,7 +1873,7 @@
                                     (and (not (type-case type-to1 :function))
                                          (not (type-case type-to2 :function))
                                          (type-compatible-p
-                                           type-to1 type-to2 completions ienv))))
+                                          type-to1 type-to2 completions ienv))))
                            (and (ienv->gcc/clang ienv)
                                 (expr-null-pointer-constp
                                  (expr-binary->arg1 expr) type1)
@@ -1887,7 +1887,7 @@
                               (type-arithmeticp type2))
                          (if (type-case type1 :pointer)
                              (or (type-compatible-p
-                                   type1 type2 completions ienv)
+                                  type1 type2 completions ienv)
                                  (and (type-case type2 :pointer)
                                       (let ((type-to1 (type-pointer->to type1))
                                             (type-to2 (type-pointer->to type2)))
@@ -1930,7 +1930,7 @@
                                    (let ((type-to1 (type-pointer->to type1))
                                          (type-to2 (type-pointer->to type2)))
                                      (or (type-compatible-p
-                                           type-to1 type-to2 completions ienv)
+                                          type-to1 type-to2 completions ienv)
                                          (and (type-case type-to1 :void)
                                               (or (ienv->gcc/clang ienv)
                                                   (not (type-case type-to2
@@ -1938,10 +1938,10 @@
                                          (and (type-case type-to2 :void)
                                               (or (ienv->gcc/clang ienv)
                                                   (not
-                                                    (type-case type-to1
-                                                               :function)))))))
+                                                   (type-case type-to1
+                                                              :function)))))))
                               (expr-null-pointer-constp
-                                (expr-binary->arg2 expr) type2)))
+                               (expr-binary->arg2 expr) type2)))
                      (and (type-case type1 :bool)
                           (type-case type2 :pointer))))
              (reterr msg)))
@@ -2997,9 +2997,9 @@
                       (len exprs)))
       :fn valid-expr-list
       :hints (("Goal" :induct (induct-valid-expr-list exprs table ienv)
-                      :in-theory (enable (:i induct-valid-expr-list)
-                                         len
-                                         fix)))))
+               :in-theory (enable (:i induct-valid-expr-list)
+                                  len
+                                  fix)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3386,10 +3386,10 @@
                                       (tag-kind-struct))
                                (retok (type-spec-struct new-spec)
                                       (make-type-struct
-                                        :uid (valid-tag-info->uid info?)
-                                        :tunit? (valid-table->filepath table)
-                                        :tag/members (type-struni-tag/members-tagged
-                                                       tyspec.spec.name?))
+                                       :uid (valid-tag-info->uid info?)
+                                       :tunit? (valid-table->filepath table)
+                                       :tag/members (type-struni-tag/members-tagged
+                                                     tyspec.spec.name?))
                                       nil
                                       types
                                       table)
@@ -3402,19 +3402,19 @@
                                       (type-spec-fix tyspec))))
                           (uid (valid-table->next-uid table))
                           (table (change-valid-table
-                                   table
-                                   :next-uid (uid-increment uid)))
+                                  table
+                                  :next-uid (uid-increment uid)))
                           (table (valid-add-tag tyspec.spec.name?
                                                 (make-valid-tag-info
-                                                  :kind (tag-kind-struct)
-                                                  :uid uid)
+                                                 :kind (tag-kind-struct)
+                                                 :uid uid)
                                                 table)))
                        (retok (type-spec-struct new-spec)
                               (make-type-struct
-                                :uid uid
-                                :tunit? (valid-table->filepath table)
-                                :tag/members (type-struni-tag/members-tagged
-                                               tyspec.spec.name?))
+                               :uid uid
+                               :tunit? (valid-table->filepath table)
+                               :tag/members (type-struni-tag/members-tagged
+                                             tyspec.spec.name?))
                               nil
                               types
                               table)))
@@ -3440,33 +3440,33 @@
                            (mv current-uid? table))
                           (uid (valid-table->next-uid table))
                           (table (change-valid-table
-                                   table
-                                   :next-uid (uid-increment uid))))
+                                  table
+                                  :next-uid (uid-increment uid))))
                        (mv uid
                            (if tyspec.spec.name?
                                (valid-add-tag tyspec.spec.name?
                                               (make-valid-tag-info
-                                                :kind (tag-kind-struct)
-                                                :uid uid)
+                                               :kind (tag-kind-struct)
+                                               :uid uid)
                                               table)
                              table))))
                     ((erp new-spec type-struni-members types table)
                      (valid-struni-spec tyspec.spec table ienv))
                     ((valid-table table) table)
                     (type (make-type-struct
-                            :uid uid
-                            :tunit? table.filepath
-                            :tag/members (if tyspec.spec.name?
-                                             (type-struni-tag/members-tagged
-                                               tyspec.spec.name?)
-                                           (type-struni-tag/members-untagged
-                                             type-struni-members))))
+                           :uid uid
+                           :tunit? table.filepath
+                           :tag/members (if tyspec.spec.name?
+                                            (type-struni-tag/members-tagged
+                                             tyspec.spec.name?)
+                                          (type-struni-tag/members-untagged
+                                           type-struni-members))))
                     (table (change-valid-table
-                             table
-                             :completions (hons-acons
-                                            uid
-                                            type-struni-members
-                                            table.completions))))
+                            table
+                            :completions (hons-acons
+                                          uid
+                                          type-struni-members
+                                          table.completions))))
                  (retok (type-spec-struct new-spec)
                         type
                         nil
@@ -3488,10 +3488,10 @@
                                      (tag-kind-union))
                               (retok (type-spec-union new-spec)
                                      (make-type-union
-                                       :uid (valid-tag-info->uid info?)
-                                       :tunit? (valid-table->filepath table)
-                                       :tag/members (type-struni-tag/members-tagged
-                                                      tyspec.spec.name?))
+                                      :uid (valid-tag-info->uid info?)
+                                      :tunit? (valid-table->filepath table)
+                                      :tag/members (type-struni-tag/members-tagged
+                                                    tyspec.spec.name?))
                                      nil
                                      types
                                      table)
@@ -3503,19 +3503,19 @@
                                      (type-spec-fix tyspec))))
                          (uid (valid-table->next-uid table))
                          (table (change-valid-table
-                                  table
-                                  :next-uid (uid-increment uid)))
+                                 table
+                                 :next-uid (uid-increment uid)))
                          (table (valid-add-tag tyspec.spec.name?
                                                (make-valid-tag-info
-                                                 :kind (tag-kind-union)
-                                                 :uid uid)
+                                                :kind (tag-kind-union)
+                                                :uid uid)
                                                table)))
                       (retok (type-spec-union new-spec)
                              (make-type-union
-                               :uid uid
-                               :tunit? (valid-table->filepath table)
-                               :tag/members (type-struni-tag/members-tagged
-                                              tyspec.spec.name?))
+                              :uid uid
+                              :tunit? (valid-table->filepath table)
+                              :tag/members (type-struni-tag/members-tagged
+                                            tyspec.spec.name?))
                              nil
                              types
                              table)))
@@ -3541,33 +3541,33 @@
                           (mv current-uid? table))
                          (uid (valid-table->next-uid table))
                          (table (change-valid-table
-                                  table
-                                  :next-uid (uid-increment uid))))
+                                 table
+                                 :next-uid (uid-increment uid))))
                       (mv uid
                           (if tyspec.spec.name?
                               (valid-add-tag tyspec.spec.name?
                                              (make-valid-tag-info
-                                               :kind (tag-kind-union)
-                                               :uid uid)
+                                              :kind (tag-kind-union)
+                                              :uid uid)
                                              table)
                             table))))
                    ((erp new-spec type-struni-members types table)
                     (valid-struni-spec tyspec.spec table ienv))
                    ((valid-table table) table)
                    (type (make-type-union
-                           :uid uid
-                           :tunit? table.filepath
-                           :tag/members (if tyspec.spec.name?
-                                            (type-struni-tag/members-tagged
-                                              tyspec.spec.name?)
-                                          (type-struni-tag/members-untagged
-                                            type-struni-members))))
+                          :uid uid
+                          :tunit? table.filepath
+                          :tag/members (if tyspec.spec.name?
+                                           (type-struni-tag/members-tagged
+                                            tyspec.spec.name?)
+                                         (type-struni-tag/members-untagged
+                                          type-struni-members))))
                    (table (change-valid-table
-                            table
-                            :completions (hons-acons
-                                           uid
-                                           type-struni-members
-                                           table.completions))))
+                           table
+                           :completions (hons-acons
+                                         uid
+                                         type-struni-members
+                                         table.completions))))
                 (retok (type-spec-union new-spec)
                        type
                        nil
@@ -3641,34 +3641,34 @@
                                  (mv current-uid? table))
                                 (uid (valid-table->next-uid table))
                                 (table (change-valid-table
-                                         table
-                                         :next-uid (uid-increment uid))))
+                                        table
+                                        :next-uid (uid-increment uid))))
                              (mv uid
                                  (if tyspec.name?
                                      (valid-add-tag tyspec.name?
                                                     (make-valid-tag-info
-                                                      :kind (tag-kind-struct)
-                                                      :uid uid)
+                                                     :kind (tag-kind-struct)
+                                                     :uid uid)
                                                     table)
                                    table))))
                           ((valid-table table) table)
                           (type (make-type-struct
-                                  :uid uid
-                                  :tunit? table.filepath
-                                  :tag/members (if tyspec.name?
-                                                   (type-struni-tag/members-tagged
-                                                     tyspec.name?)
-                                                 (type-struni-tag/members-untagged
-                                                   nil))))
+                                 :uid uid
+                                 :tunit? table.filepath
+                                 :tag/members (if tyspec.name?
+                                                  (type-struni-tag/members-tagged
+                                                   tyspec.name?)
+                                                (type-struni-tag/members-untagged
+                                                 nil))))
                           (table (change-valid-table
-                                   table
-                                   :completions (hons-acons
-                                                  uid
-                                                  nil
-                                                  table.completions))))
+                                  table
+                                  :completions (hons-acons
+                                                uid
+                                                nil
+                                                table.completions))))
                        (retok (make-type-spec-struct-empty
-                                :attribs tyspec.attribs
-                                :name? tyspec.name?)
+                               :attribs tyspec.attribs
+                               :name? tyspec.name?)
                               type
                               nil
                               nil
@@ -4085,8 +4085,8 @@
       :rule-classes :type-prescription
       :hints
       (("Goal"
-         :in-theory (disable return-type-of-valid-decl-spec-list.all-storspecs)
-         :use return-type-of-valid-decl-spec-list.all-storspecs))))
+        :in-theory (disable return-type-of-valid-decl-spec-list.all-storspecs)
+        :use return-type-of-valid-decl-spec-list.all-storspecs))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4205,10 +4205,10 @@
                                                (type-pointer->to target-type))
                                               (type-to (type-pointer->to type)))
                                           (or (type-compatible-p
-                                                target-type-to
-                                                type-to
-                                                (valid-table->completions table)
-                                                ienv)
+                                               target-type-to
+                                               type-to
+                                               (valid-table->completions table)
+                                               ienv)
                                               (and (type-case target-type-to
                                                               :void)
                                                    (not
@@ -4253,13 +4253,13 @@
              (initer-case initer :single)
              (expr-case (initer-single->expr initer) :string))
         (b* (((erp type) (valid-stringlit-list
-                           (expr-string->strings (initer-single->expr initer))
-                           ienv))
+                          (expr-string->strings (initer-single->expr initer))
+                          ienv))
              (info (make-expr-string-info :type type)))
           (retok (initer-single
                   (make-expr-string
-                    :strings (expr-string->strings (initer-single->expr initer))
-                    :info info))
+                   :strings (expr-string->strings (initer-single->expr initer))
+                   :info info))
                  nil
                  (valid-table-fix table))))
        ((and (or (type-aggregatep target-type)
@@ -4896,30 +4896,30 @@
                       (dirdeclor-fix dirdeclor)
                       (type-fix type)))
             (outermost-fundef-params-p
-              (and fundef-params-p
-                   (not (dirdeclor-has-params-p dirdeclor.declor))))
+             (and fundef-params-p
+                  (not (dirdeclor-has-params-p dirdeclor.declor))))
             (table (valid-push-scope table))
             ((erp new-params type-params return-types0 table)
              (b* (((reterr) nil (irr-type-params) nil table)
                   ((when (equal dirdeclor.params
                                 (list (make-param-declon
-                                        :specs (list (decl-spec-typespec
-                                                       (type-spec-void)))
-                                        :declor (param-declor-none)
-                                        :attribs nil))))
+                                       :specs (list (decl-spec-typespec
+                                                     (type-spec-void)))
+                                       :declor (param-declor-none)
+                                       :attribs nil))))
                    (retok dirdeclor.params
                           (make-type-params-prototype
-                            :params nil
-                            :ellipsis nil)
+                           :params nil
+                           :ellipsis nil)
                           nil
                           table))
                   ((erp new-params types return-types table)
                    (valid-param-declon-list
-                     dirdeclor.params outermost-fundef-params-p table ienv)))
+                    dirdeclor.params outermost-fundef-params-p table ienv)))
                (retok new-params
                       (make-type-params-prototype
-                        :params types
-                        :ellipsis dirdeclor.ellipsis)
+                       :params types
+                       :ellipsis dirdeclor.ellipsis)
                       return-types
                       table)))
             (table (if outermost-fundef-params-p
@@ -4928,7 +4928,7 @@
             (type (make-type-function :ret type :params type-params))
             ((erp new-dirdeclor type ident return-types1 table)
              (valid-dirdeclor
-               dirdeclor.declor fundef-params-p type table ienv)))
+              dirdeclor.declor fundef-params-p type table ienv)))
          (retok (make-dirdeclor-function-params :declor new-dirdeclor
                                                 :params new-params
                                                 :ellipsis dirdeclor.ellipsis)
@@ -4943,18 +4943,18 @@
                       (dirdeclor-fix dirdeclor)
                       (type-fix type)))
             (outermost-fundef-params-p
-              (and fundef-params-p
-                   (not (dirdeclor-has-params-p dirdeclor))))
+             (and fundef-params-p
+                  (not (dirdeclor-has-params-p dirdeclor))))
             ((erp type table)
              (b* (((reterr) (irr-type) table))
                (if fundef-params-p
                    (if (no-duplicatesp-equal dirdeclor.names)
                        (retok (make-type-function
-                                :ret type
-                                :params (make-type-params-old-style
-                                          :params (make-list
-                                                    (len dirdeclor.names)
-                                                    :initial-element (type-unknown))))
+                               :ret type
+                               :params (make-type-params-old-style
+                                        :params (make-list
+                                                 (len dirdeclor.names)
+                                                 :initial-element (type-unknown))))
                               (valid-push-scope table))
                      (retmsg$ "The list of parameter names ~
                                in the function declarator ~x0 ~
@@ -4962,8 +4962,8 @@
                               (dirdeclor-fix dirdeclor)))
                  (if (endp dirdeclor.names)
                      (retok (make-type-function
-                              :ret type
-                              :params (type-params-unspecified))
+                             :ret type
+                             :params (type-params-unspecified))
                             table)
                    (retmsg$ "A non-empty list of parameter names ~
                              occurs in a function declarator ~x0 ~
@@ -4971,7 +4971,7 @@
                             (dirdeclor-fix dirdeclor))))))
             ((erp new-dirdeclor type ident types table)
              (valid-dirdeclor
-               dirdeclor.declor outermost-fundef-params-p type table ienv)))
+              dirdeclor.declor outermost-fundef-params-p type table ienv)))
          (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
                 type
@@ -5158,25 +5158,25 @@
              (b* (((reterr) nil (irr-type-params) nil table)
                   ((when (equal dirabsdeclor.params
                                 (list (make-param-declon
-                                        :specs (list (decl-spec-typespec
-                                                       (type-spec-void)))
-                                        :declor (param-declor-none)
-                                        :attribs nil))))
+                                       :specs (list (decl-spec-typespec
+                                                     (type-spec-void)))
+                                       :declor (param-declor-none)
+                                       :attribs nil))))
                    (retok dirabsdeclor.params
                           (make-type-params-prototype
-                            :params nil
-                            :ellipsis nil)
+                           :params nil
+                           :ellipsis nil)
                           nil
                           table))
                   ((erp new-params types return-types table)
                    (valid-param-declon-list
-                     dirabsdeclor.params nil table ienv)))
+                    dirabsdeclor.params nil table ienv)))
                (retok new-params
-                        (make-type-params-prototype
-                          :params types
-                          :ellipsis dirabsdeclor.ellipsis)
-                        return-types
-                        table)))
+                      (make-type-params-prototype
+                       :params types
+                       :ellipsis dirabsdeclor.ellipsis)
+                      return-types
+                      table)))
             (table (valid-pop-scope table))
             (type (make-type-function :ret type :params type-params))
             ((erp new-declor? type return-types1 table)
@@ -5556,20 +5556,20 @@
              (valid-spec/qual-list structdeclon.specquals nil nil table ienv))
             ((when (endp structdeclon.declors))
              (if (type-case
-                   type
-                   :struct (type-struni-tag/members-case
-                             type.tag/members :untagged)
-                   :union (type-struni-tag/members-case
-                            type.tag/members :untagged)
-                   :otherwise nil)
+                  type
+                  :struct (type-struni-tag/members-case
+                           type.tag/members :untagged)
+                  :union (type-struni-tag/members-case
+                          type.tag/members :untagged)
+                  :otherwise nil)
                  (retok (make-struct-declon-member :extension structdeclon.extension
                                                    :specquals new-specquals
                                                    :declors nil
                                                    :attribs structdeclon.attribs)
                         (ident-list-fix previous)
                         (list (make-type-struni-member
-                                :name? nil
-                                :type type))
+                               :name? nil
+                               :type type))
                         types
                         table)
                (retmsg$ "Struct member ~x0 with type ~x1 ~
@@ -5610,8 +5610,8 @@
       :rule-classes :type-prescription
       :hints
       (("Goal"
-         :in-theory (disable return-type-of-valid-struct-declon.type-struni-members)
-         :use return-type-of-valid-struct-declon.type-struni-members))))
+        :in-theory (disable return-type-of-valid-struct-declon.type-struni-members)
+        :use return-type-of-valid-struct-declon.type-struni-members))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5694,10 +5694,10 @@
        of the name and type for the member declared by
        the structure declarator."))
     (b* (((reterr) (irr-struct-declor)
-                   nil
-                   (irr-type-struni-member)
-                   nil
-                   (irr-valid-table))
+          nil
+          (irr-type-struni-member)
+          nil
+          (irr-valid-table))
          ((struct-declor structdeclor) structdeclor)
          ((when (and (not structdeclor.declor?)
                      (not structdeclor.expr?)))
@@ -5726,9 +5726,9 @@
       (retok (make-struct-declor :declor? new-declor? :expr? new-expr?)
              previous
              (make-type-struni-member
-               :name? (and structdeclor.declor?
-                           (declor->ident structdeclor.declor?))
-               :type new-type)
+              :name? (and structdeclor.declor?
+                          (declor->ident structdeclor.declor?))
+              :type new-type)
              (set::union types more-types)
              table))
     :measure (struct-declor-count structdeclor))
@@ -7400,14 +7400,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit ((filepath filepathp)
-                         (tunit transunitp)
-                         (externals valid-externalsp)
-                         (completions type-completions-p)
-                         (next-uid uidp)
-                         (ienv ienvp))
-  :guard (transunit-unambp tunit)
-  :returns (mv (erp maybe-msgp) (new-tunit transunitp) (table valid-tablep))
+(define valid-trans-unit ((filepath filepathp)
+                          (tunit trans-unitp)
+                          (externals valid-externalsp)
+                          (completions type-completions-p)
+                          (next-uid uidp)
+                          (ienv ienvp))
+  :guard (trans-unit-unambp tunit)
+  :returns (mv (erp maybe-msgp) (new-tunit trans-unitp) (table valid-tablep))
   :short "Validate a translation unit."
   :long
   (xdoc::topstring
@@ -7438,58 +7438,58 @@
      For each built-in object, the associated information consists of
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
-  (b* (((reterr) (irr-transunit) (irr-valid-table))
+  (b* (((reterr) (irr-trans-unit) (irr-valid-table))
        (dialect (ienv->dialect ienv))
        (table (valid-init-table filepath externals completions next-uid))
        (table (valid-add-ord-objfuns-file-scope
-                (built-in-functions-for dialect)
-                (make-type-function :ret (type-unknown)
-                                    :params (type-params-unspecified))
-                (linkage-external)
-                (valid-defstatus-defined)
-                table))
+               (built-in-functions-for dialect)
+               (make-type-function :ret (type-unknown)
+                                   :params (type-params-unspecified))
+               (linkage-external)
+               (valid-defstatus-defined)
+               table))
        (table (valid-add-ord-objfuns-file-scope
-                (built-in-vars-for dialect)
-                (type-unknown)
-                (linkage-external)
-                (valid-defstatus-defined)
-                table))
+               (built-in-vars-for dialect)
+               (type-unknown)
+               (linkage-external)
+               (valid-defstatus-defined)
+               table))
        ((erp new-items table)
-        (valid-trans-item-list (transunit->items tunit) table ienv))
-       (info (make-transunit-info :table-end table)))
-    (retok (make-transunit :items new-items
-                           :info info)
+        (valid-trans-item-list (trans-unit->items tunit) table ienv))
+       (info (make-trans-unit-info :table-end table)))
+    (retok (make-trans-unit :items new-items
+                            :info info)
            table))
 
   ///
 
-  (defret transunit-unambp-of-valid-transunit
+  (defret trans-unit-unambp-of-valid-trans-unit
     (implies (not erp)
-             (transunit-unambp new-tunit))
-    :hyp (transunit-unambp tunit)))
+             (trans-unit-unambp new-tunit))
+    :hyp (trans-unit-unambp tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit-ensemble ((tunits transunit-ensemblep)
-                                  (ienv ienvp)
-                                  (keep-going booleanp))
-  :guard (transunit-ensemble-unambp tunits)
-  :returns (mv (erp maybe-msgp) (new-tunits transunit-ensemblep))
-  :short "Validate a translation unit ensemble."
+(define valid-trans-ensemble ((tunits trans-ensemblep)
+                              (ienv ienvp)
+                              (keep-going booleanp))
+  :guard (trans-ensemble-unambp tunits)
+  :returns (mv (erp maybe-msgp) (new-tunits trans-ensemblep))
+  :short "Validate a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
     "We validate each translation unit.
-     As mentioned in @(tsee valid-transunit),
+     As mentioned in @(tsee valid-trans-unit),
      we annotate the translation unit with the finval validation table.
      For now we do no make any use of the returned table,
      but in the future we should use it to validate
      the externally linked identifiers across
-     different translation units of a translation unit ensemble."))
-  (b* (((reterr) (irr-transunit-ensemble))
-       (map (transunit-ensemble->units tunits))
+     different translation units of a translation ensemble."))
+  (b* (((reterr) (irr-trans-ensemble))
+       (map (trans-ensemble->units tunits))
        ((erp new-map table)
-        (valid-transunit-ensemble-loop map nil nil (uid 0) ienv keep-going))
+        (valid-trans-ensemble-loop map nil nil (uid 0) ienv keep-going))
        (- (if keep-going
               (b* ((len-map (omap::size map))
                    (len-new-map (omap::size new-map))
@@ -7499,50 +7499,51 @@
                   (cw "Validated ~x0/~x1 translation units.~%"
                       len-new-map len-map)))
             nil)))
-    (retok (make-transunit-ensemble
-             :units new-map
-             :info (transunit-ensemble-info table))))
+    (retok (make-trans-ensemble
+            :units new-map
+            :resolved-includes nil
+            :info (trans-ensemble-info table))))
 
   :prepwork
-  ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
-                                          (externals valid-externalsp)
-                                          (completions type-completions-p)
-                                          (next-uid uidp)
-                                          (ienv ienvp)
-                                          (keep-going booleanp))
-     :guard (filepath-transunit-map-unambp map)
+  ((define valid-trans-ensemble-loop ((map filepath-trans-unit-mapp)
+                                      (externals valid-externalsp)
+                                      (completions type-completions-p)
+                                      (next-uid uidp)
+                                      (ienv ienvp)
+                                      (keep-going booleanp))
+     :guard (filepath-trans-unit-map-unambp map)
      :returns (mv (erp maybe-msgp)
-                  (new-map filepath-transunit-mapp
-                           :hyp (filepath-transunit-mapp map))
+                  (new-map filepath-trans-unit-mapp
+                           :hyp (filepath-trans-unit-mapp map))
                   (table valid-tablep))
      :parents nil
      (b* (((reterr) nil (irr-valid-table))
           ((when (omap::emptyp map)) (retok nil (irr-valid-table)))
           (path (omap::head-key map))
           ((mv erp new-tunit table)
-           (valid-transunit
-             path (omap::head-val map) externals completions next-uid ienv))
+           (valid-trans-unit
+            path (omap::head-val map) externals completions next-uid ienv))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
                            (filepath->unwrap path)
                            erp)
-                       (valid-transunit-ensemble-loop (omap::tail map)
-                                                      externals
-                                                      completions
-                                                      next-uid
-                                                      ienv
-                                                      keep-going))
+                       (valid-trans-ensemble-loop (omap::tail map)
+                                                  externals
+                                                  completions
+                                                  next-uid
+                                                  ienv
+                                                  keep-going))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->unwrap path)
                       erp)))
           ((valid-table table) table)
-          ((erp new-map -) (valid-transunit-ensemble-loop (omap::tail map)
-                                                          table.externals
-                                                          table.completions
-                                                          table.next-uid
-                                                          ienv
-                                                          keep-going)))
+          ((erp new-map -) (valid-trans-ensemble-loop (omap::tail map)
+                                                      table.externals
+                                                      table.completions
+                                                      table.next-uid
+                                                      ienv
+                                                      keep-going)))
        (retok (omap::update path new-tunit new-map)
               table))
      :verify-guards :after-returns
@@ -7550,20 +7551,20 @@
 
      ///
 
-     (fty::deffixequiv valid-transunit-ensemble-loop
+     (fty::deffixequiv valid-trans-ensemble-loop
        :args ((ienv ienvp)
               (keep-going booleanp)))
 
-     (defret filepath-transunit-map-unambp-of-valid-transunit-ensemble-loop
+     (defret filepath-trans-unit-map-unambp-of-valid-trans-ensemble-loop
        (implies (not erp)
-                (filepath-transunit-map-unambp new-map))
-       :hyp (and (filepath-transunit-mapp map)
-                 (filepath-transunit-map-unambp map))
+                (filepath-trans-unit-map-unambp new-map))
+       :hyp (and (filepath-trans-unit-mapp map)
+                 (filepath-trans-unit-map-unambp map))
        :hints (("Goal" :induct t)))))
 
   ///
 
-  (defret transunit-ensemble-unambp-of-valid-transunit-ensemble
+  (defret trans-ensemble-unambp-of-valid-trans-ensemble
     (implies (not erp)
-             (transunit-ensemble-unambp new-tunits))
-    :hyp (transunit-ensemble-unambp tunits)))
+             (trans-ensemble-unambp new-tunits))
+    :hyp (trans-ensemble-unambp tunits)))

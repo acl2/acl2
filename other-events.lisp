@@ -33891,10 +33891,8 @@
 
 #+acl2-loop-only
 (defmacro defund (&rest def)
-  (declare (xargs :guard (and (true-listp def)
-                              (symbolp (car def))
-                              (symbol-listp (cadr def)))))
-
+; The weak guard enables helpful error reports from defun.
+  (declare (xargs :guard (true-listp def)))
   `(with-output
      :stack :push :off :all
      (progn (with-output :stack :pop (defun ,@def))

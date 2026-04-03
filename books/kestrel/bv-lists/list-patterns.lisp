@@ -1,7 +1,7 @@
 ; A book about patterns of values in BV lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,7 +33,7 @@
 ;;  :hints (("Goal" :in-theory (enable BYTE-FIX-LIST LIST::CLEAR-NTH))))
 
 
-;; ;ffffixme change this to use the unsiged representation
+;; ;ffffixme change this to use the unsigned representation
 ;; ;BBBOZO change this to handle booleans
 ;; ;adding len and type params..
 ;; ;BBBOZO should this really byte-fix (etc.) its values?  if so, don't use it to phrase the postcond, or you'll be able to prove that the contents are something not quite true (but that byte-fixes) to the real values

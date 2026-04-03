@@ -12416,7 +12416,7 @@
 
 (define parse-translation-unit ((parstate parstatep))
   :returns (mv erp
-               (tunit transunitp)
+               (tunit trans-unitp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a translation unit."
   :long
@@ -12433,15 +12433,15 @@
      this means that, if the file is not empty,
      then the last character is a new-line,
      otherwise that position would be at a non-zero column."))
-  (b* (((reterr) (irr-transunit) parstate)
+  (b* (((reterr) (irr-trans-unit) parstate)
        ((erp items & parstate) (parse-*-translation-item parstate))
        ((unless (or items
                     (parstate->gcc/clang parstate)))
         (reterr (msg "The file does not contain any translation items.")))
        ((unless (= (position->column (parstate->position parstate)) 0))
         (reterr (msg "The file does not end in new-line."))))
-    (retok (make-transunit :items items
-                           :info nil)
+    (retok (make-trans-unit :items items
+                            :info nil)
            parstate))
 
   ///
@@ -12457,7 +12457,7 @@
                     (data byte-listp)
                     (dialect c::dialectp)
                     (skip-control-lines booleanp))
-  :returns (mv erp (tunit transunitp))
+  :returns (mv erp (tunit trans-unitp))
   :short "Parse (the data bytes of) a file."
   :long
   (xdoc::topstring
@@ -12483,7 +12483,7 @@
              ((unless (stringp file))
               (raise "Internal error: malformed file path ~x0."
                      (filepath-fix path))
-              (mv t (irr-transunit) parstate))
+              (mv t (irr-trans-unit) parstate))
              (parstate
               (init-parstate file data dialect skip-control-lines parstate))
              ((mv erp tunit parstate) (parse-translation-unit parstate)))
@@ -12491,11 +12491,11 @@
               (if (msgp erp)
                   (mv (msg "Error in file ~x0: ~@1"
                            (filepath->unwrap path) erp)
-                      (irr-transunit)
+                      (irr-trans-unit)
                       parstate)
                 (prog2$
                  (raise "Internal error: ~x0 is not a message." erp)
-                 (mv t (irr-transunit) parstate)))
+                 (mv t (irr-trans-unit) parstate)))
             (mv nil tunit parstate)))
       (mv erp tunit))))
 
@@ -12505,7 +12505,7 @@
                        (dialect c::dialectp)
                        (skip-control-lines booleanp)
                        (keep-going booleanp))
-  :returns (mv erp (tunits transunit-ensemblep))
+  :returns (mv erp (tunits trans-ensemblep))
   :short "Parse a file set."
   :long
   (xdoc::topstring
@@ -12516,12 +12516,12 @@
    (xdoc::p
     "We go through each file of the file set and parse it,
      obtaining a translation unit for each,
-     which we return in an ensemble of translation units
+     which we return in a translation ensemble
      that corresponds to the file set.
      The file paths are the same for the file set
-     and for the translation unit ensembles
+     and for the translation ensembles
      (they are the keys of the maps)."))
-  (b* (((reterr) (irr-transunit-ensemble))
+  (b* (((reterr) (irr-trans-ensemble))
        (filemap (fileset->unwrap fileset))
        ((erp tunitmap)
         (parse-fileset-loop filemap dialect skip-control-lines keep-going))
@@ -12533,15 +12533,16 @@
                     nil
                   (cw "Parsed ~x0/~x1 files.~%" len-tunitmap len-filemap)))
             nil)))
-    (retok (make-transunit-ensemble :units tunitmap
-                                    :info nil)))
+    (retok (make-trans-ensemble :units tunitmap
+                                :resolved-includes nil
+                                :info nil)))
 
   :prepwork
   ((define parse-fileset-loop ((filemap filepath-filedata-mapp)
                                (dialect c::dialectp)
                                (skip-control-lines booleanp)
                                (keep-going booleanp))
-     :returns (mv erp (tunitmap filepath-transunit-mapp))
+     :returns (mv erp (tunitmap filepath-trans-unit-mapp))
      (b* (((reterr) nil)
           ((when (omap::emptyp filemap)) (retok nil))
           ((mv filepath filedata) (omap::head filemap))
@@ -12581,5 +12582,5 @@
   (defret filepaths-of-parse-fileset
     (implies (and (not keep-going)
                   (not erp))
-             (equal (omap::keys (transunit-ensemble->units tunits))
+             (equal (omap::keys (trans-ensemble->units tunits))
                     (omap::keys (fileset->unwrap fileset))))))

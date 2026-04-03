@@ -58,12 +58,12 @@
   ((keys treeset::treep)
    (tree treep))
   :parents (implementation)
-  :short "Take the restriction of a map treap under a key set reap."
+  :short "Take the restriction of a map treap under a key set treap."
   :long
   (xdoc::topstring
    (xdoc::p
-     "The result might not be expected restriction if the input trees are not
-      binary search trees."))
+     "The result might not be the expected restriction if the input trees are
+      not binary search trees."))
   :returns (tree treep)
   (cond ((or (treeset::tree-empty-p keys)
              (tree-empty-p tree))

@@ -60,33 +60,33 @@
 ; the lexing functions do not modify some PPSTATE stobj components.
 
 (local ; for non-recursive FN
- (defmacro defret-same-lexmarks (fn)
-   `(defret ,(packn-pos (list 'ppstate->lexmarks-of- fn) fn)
-      (equal (ppstate->lexmarks new-ppstate)
-             (ppstate->lexmarks ppstate)))))
+ (defmacro defret-same-lexemes (fn)
+   `(defret ,(packn-pos (list 'ppstate->lexemes-of- fn) fn)
+      (equal (ppstate->lexemes new-ppstate)
+             (ppstate->lexemes ppstate)))))
 
 (local ; for singly recursive FN
- (defmacro defret-rec-same-lexmarks (fn)
-   `(defret ,(packn-pos (list 'ppstate->lexmarks-of- fn) fn)
-      (equal (ppstate->lexmarks new-ppstate)
-             (ppstate->lexmarks ppstate))
+ (defmacro defret-rec-same-lexemes (fn)
+   `(defret ,(packn-pos (list 'ppstate->lexemes-of- fn) fn)
+      (equal (ppstate->lexemes new-ppstate)
+             (ppstate->lexemes ppstate))
       :hints (("Goal" :induct t)))))
 
 (local ; used by the macro below
- (defun defret-mut-same-lexmarks-fn (fns)
+ (defun defret-mut-same-lexemes-fn (fns)
    (b* (((when (endp fns)) nil)
         (fn (car fns))
-        (event `(defret ,(packn-pos (list 'ppstate->lexmarks-of- fn) fn)
-                  (equal (ppstate->lexmarks new-ppstate)
-                         (ppstate->lexmarks ppstate))
+        (event `(defret ,(packn-pos (list 'ppstate->lexemes-of- fn) fn)
+                  (equal (ppstate->lexemes new-ppstate)
+                         (ppstate->lexemes ppstate))
                   :fn ,fn))
-        (events (defret-mut-same-lexmarks-fn (cdr fns))))
+        (events (defret-mut-same-lexemes-fn (cdr fns))))
      (cons event events))))
 
 (local ; for mutually recursive FNS
- (defmacro defret-mut-same-lexmarks (name fns &key hints)
+ (defmacro defret-mut-same-lexemes (name fns &key hints)
    `(defret-mutual ,name
-      ,@(defret-mut-same-lexmarks-fn fns)
+      ,@(defret-mut-same-lexemes-fn fns)
       ,@(and hints (list :hints hints)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -166,7 +166,7 @@
 
      (verify-guards plex-identifier-loop)
 
-     (defret-rec-same-lexmarks plex-identifier-loop)
+     (defret-rec-same-lexemes plex-identifier-loop)
 
      (defret ppstate->size-of-plex-identifier-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -176,7 +176,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-identifier)
+  (defret-same-lexemes plex-identifier)
 
   (defret ppstate->size-of-plex-identifier-uncond
     (<= (ppstate->size new-ppstate)
@@ -363,7 +363,7 @@
 
      ///
 
-     (defret-rec-same-lexmarks plex-pp-number-loop)
+     (defret-rec-same-lexemes plex-pp-number-loop)
 
      (defret ppstate->size-of-plex-pp-number-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -373,7 +373,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-pp-number)
+  (defret-same-lexemes plex-pp-number)
 
   (defret ppstate->size-of-plex-pp-number-uncond
     (<= (ppstate->size new-ppstate)
@@ -418,7 +418,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-hexadecimal-digit)
+  (defret-same-lexemes plex-hexadecimal-digit)
 
   (defret ppstate->size-of-plex-hexadecimal-digit-uncond
     (<= (ppstate->size new-ppstate)
@@ -459,7 +459,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-hex-quad)
+  (defret-same-lexemes plex-hex-quad)
 
   (defret ppstate->size-of-plex-hex-quad-uncond
     (<= (ppstate->size new-ppstate)
@@ -520,7 +520,7 @@
    (hexdigs true-listp
             :rule-classes :type-prescription))
 
-  (defret-rec-same-lexmarks plex-*-hexadecimal-digit)
+  (defret-rec-same-lexemes plex-*-hexadecimal-digit)
 
   (defret ppstate->size-of-plex-*-hexadecimal-digit-uncond
     (<= (ppstate->size new-ppstate)
@@ -644,7 +644,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-escape-sequence)
+  (defret-same-lexemes plex-escape-sequence)
 
   (defret ppstate->size-of-plex-escape-sequence-uncond
     (<= (ppstate->size new-ppstate)
@@ -705,7 +705,7 @@
 
   ///
 
-  (defret-rec-same-lexmarks plex-*-c-char)
+  (defret-rec-same-lexemes plex-*-c-char)
 
   (defret ppstate->size-of-plex-*-c-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -769,7 +769,7 @@
 
   ///
 
-  (defret-rec-same-lexmarks plex-*-s-char)
+  (defret-rec-same-lexemes plex-*-s-char)
 
   (defret ppstate->size-of-plex-*-s-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -824,7 +824,7 @@
 
   ///
 
-  (defret-rec-same-lexmarks plex-*-h-char)
+  (defret-rec-same-lexemes plex-*-h-char)
 
   (defret ppstate->size-of-plex-*-h-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -879,7 +879,7 @@
 
   ///
 
-  (defret-rec-same-lexmarks plex-*-q-char)
+  (defret-rec-same-lexemes plex-*-q-char)
 
   (defret ppstate->size-of-plex-*-q-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -923,7 +923,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-character-constant)
+  (defret-same-lexemes plex-character-constant)
 
   (defret ppstate->size-of-plex-character-constant-uncond
     (<= (ppstate->size new-ppstate)
@@ -959,7 +959,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-string-literal)
+  (defret-same-lexemes plex-string-literal)
 
   (defret ppstate->size-of-plex-string-literal-uncond
     (<= (ppstate->size new-ppstate)
@@ -1020,7 +1020,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-header-name)
+  (defret-same-lexemes plex-header-name)
 
   (defret ppstate->size-of-plex-header-name-uncond
     (<= (ppstate->size new-ppstate)
@@ -1156,7 +1156,7 @@
 
      (fty::deffixequiv-mutual plex-block-comment-loops)
 
-     (defret-mut-same-lexmarks plex-block-comment-loops
+     (defret-mut-same-lexemes plex-block-comment-loops
        (plex-rest-of-block-comment
         plex-rest-of-block-comment-after-star))
 
@@ -1188,7 +1188,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-block-comment)
+  (defret-same-lexemes plex-block-comment)
 
   (defret ppstate->size-of-plex-block-comment-uncond
     (<= (ppstate->size new-ppstate)
@@ -1270,7 +1270,7 @@
 
      ///
 
-     (defret-rec-same-lexmarks plex-line-comment-loop)
+     (defret-rec-same-lexemes plex-line-comment-loop)
 
      (defret ppstate->size-of-plex-line-comment-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -1280,7 +1280,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-line-comment)
+  (defret-same-lexemes plex-line-comment)
 
   (defret ppstate->size-of-plex-line-comment-uncond
     (<= (ppstate->size new-ppstate)
@@ -1337,7 +1337,7 @@
 
      ///
 
-     (defret-rec-same-lexmarks plex-spaces-loop)
+     (defret-rec-same-lexemes plex-spaces-loop)
 
      (defret ppstate->size-of-plex-spaces-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -1347,7 +1347,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-spaces)
+  (defret-same-lexemes plex-spaces)
 
   (defret ppstate->size-of-plex-spaces-uncond
     (<= (ppstate->size new-ppstate)
@@ -1919,7 +1919,7 @@
 
   ///
 
-  (defret-same-lexmarks plex-lexeme)
+  (defret-same-lexemes plex-lexeme)
 
   (defret ppstate->size-of-plex-lexeme-uncond
     (<= (ppstate->size new-ppstate)

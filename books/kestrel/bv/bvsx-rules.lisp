@@ -22,6 +22,7 @@
 (local (include-book "getbit"))
 (local (include-book "bvuminus"))
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "unsigned-byte-p"))
 
 (defthm bvand-of-bvsx-low-arg2

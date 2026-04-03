@@ -3358,7 +3358,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defaxiom cdr-cons (equal (cdr (cons x y)) y))
 
-(defaxiom cons-equal
+(defthm cons-equal
   (equal (equal (cons x1 y1) (cons x2 y2))
          (and (equal x1 x2)
               (equal y1 y2))))
@@ -4470,7 +4470,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 165))
+  (let ((x 164))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -4743,14 +4743,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (integerp 0)
   :rule-classes nil)
 
-(defaxiom Integer-1
-  (integerp 1)
-  :rule-classes nil)
-
 (defaxiom Integer-step
   (implies (integerp x)
            (and (integerp (+ x 1))
                 (integerp (+ x -1))))
+  :rule-classes nil)
+
+(defthm Integer-1
+
+; The following was originally an axiom, but Claude Code noticed its
+; provability as shown below.  We don't actually need the hint, though; ACL2
+; can prove this with type-set reasoning.
+
+  (integerp 1)
+  :hints (("Goal" :use (integer-0
+                        (:instance integer-step
+                                   (x 0)))))
   :rule-classes nil)
 
 (defaxiom Lowest-Terms
@@ -8028,7 +8036,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun defun-nx-form (form)
   (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))
                               (member-eq (car form) '(defun-nx defund-nx)))
                   :mode :program))
   (let ((defunx (if (eq (car form) 'defun-nx) 'defun 'defund))
@@ -8043,10 +8050,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun defun-nx-fn (form)
   (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))
                               (member-eq (car form) '(defun-nx defund-nx)))
                   :mode :program))
-  `(with-output :stack :push :off :all
+  `(with-output :stack :push :off :all :on error
        (progn (encapsulate
                 ()
                 (logic)
@@ -8060,14 +8066,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  ',(event-keyword-name (car form) (cadr form)))))))
 
 (defmacro defun-nx (&whole form &rest rest)
-  (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))))
+; The weak guard enables helpful error reports from defun.
+  (declare (xargs :guard (true-listp form))
            (ignore rest))
   (defun-nx-fn form))
 
 (defmacro defund-nx (&whole form &rest rest)
-  (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))))
+; The weak guard enables helpful error reports from defun.
+  (declare (xargs :guard (true-listp form))
            (ignore rest))
   (defun-nx-fn form))
 

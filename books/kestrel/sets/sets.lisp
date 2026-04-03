@@ -1,7 +1,7 @@
 ; Additions to osets
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -107,8 +107,8 @@
                   (set::intersect s4 (set::intersect (set::difference s2 s3) (set::difference s2 s1))))))
 
 (defthm difference-of-union-difference-same
-  (implies (and (set::setp s1)
-                (set::setp s2)
+  (implies (and (set::setp s1) ;drop hyps?
+                ;; (set::setp s2)
                 (set::setp s3))
            (equal (set::difference
                    (set::union
@@ -164,12 +164,12 @@
   (equal (set::intersect s1 (set::difference s2 s3))
          (set::difference (set::intersect s2 s1) s3)))
 
-(defthm diffence-of-union-lemma
+(defthm difference-of-union-lemma
   (implies (set::emptyp (set::difference s1 s3))
            (equal (set::difference (set::union s1 s2) s3)
                   (set::difference s2 s3))))
 
-(defthm diffence-of-union-lemma-alt
+(defthm difference-of-union-lemma-alt
   (implies (set::emptyp (set::difference s1 s3))
            (equal (set::difference (set::union s2 s1) s3)
                   (set::difference s2 s3))))

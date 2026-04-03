@@ -997,7 +997,7 @@
     x86isa::!prefixes->adr$inline
     x86isa::!prefixes->nxt$inline
 
-    ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
+    ;; are constant-openers better than enabling these functions? todo: remove once built into x86 evaluator and other evaluators no longer used
     X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
     x86isa::!prefixes->seg$inline-constant-opener
 
@@ -5628,9 +5628,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Try this rule first
-(set-axe-rule-priority read-of-write-irrel -1) ; todo: also below
-
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
 ;; (set-axe-rule-priority read-when-program-at 1)
 ;; these are no longer used:
@@ -5973,7 +5970,7 @@
             ;acl2::bvcat-of-0-arg2
             acl2::bvmod-tighten-64-32
             acl2::bvdiv-tighten-64-32
-            acl2::not-bvlt-of-max-when-unsiged-byte-p
+            acl2::not-bvlt-of-max-when-unsigned-byte-p
             ;x86isa::sf-spec32-rewrite ; trying without...
             ;jle-condition-rewrite-1-with-bvif ; this one works on bvif
             ;jle-condition-rewrite-1-with-bvif-and-bvchop
@@ -6495,7 +6492,7 @@
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
 (set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
-(set-axe-rule-priority read-of-write-irrel -1)
+(set-axe-rule-priority read-of-write-irrel -1) ; Try this rule first
 (set-axe-rule-priority read-of-write-irrel-bv-axe-smt 1) ; try late, as this uses SMT
 (set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt 1)
 (set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt-alt 1)

@@ -1,6 +1,6 @@
 ; Convert hex chars to a unicode code point
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,8 +15,7 @@
 
 (local
  (defthm <=-of-ash-of-mv-nth-1-of-hex-char-to-val
-   (implies (and (natp x)
-                 (natp c))
+   (implies (natp c)
             (<= (ash (mv-nth 1 (hex-char-to-val char1)) c)
                 (* 15 (expt 2 c))))
    :rule-classes :linear))

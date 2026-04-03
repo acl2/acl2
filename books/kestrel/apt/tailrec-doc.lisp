@@ -410,7 +410,7 @@
        where @('dom') is a named function."))
 
     (xdoc::p
-     "If all the above coditions hold, the inferred domain is @('dom').
+     "If all the above conditions hold, the inferred domain is @('dom').
       Otherwise, the inferred domain is @('(lambda (x) t)'),
       i.e. the domain consisting of all values.")
 
@@ -418,7 +418,7 @@
      "This domain inference is a heuristic.
       It has no impact on soundness,
       since the user could supply any domain anyhow.
-      Inferring a tigther domain than the one consisting of all values
+      Inferring a tighter domain than the one consisting of all values
       may be helpful to prove left and right identity,
       which may not hold over all values
       (e.g. left and right identity of addition).

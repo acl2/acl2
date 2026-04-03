@@ -21,7 +21,7 @@
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 
 ;; From the ARRAY (described by ELEMENT-SIZE and ARRAY-LEN), read ELEMENT-COUNT
-;; elements starting at INDEX and combine then into a single BV in a
+;; elements starting at INDEX and combine them into a single BV in a
 ;; little-endian way.
 ;; todo: inefficient? define in terms of packbv-little?
 (defund bv-array-read-chunk-little (element-count element-size array-len index array)
@@ -63,8 +63,7 @@
  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little))))
 
 (defthm bv-array-read-chunk-little-of-expt-of-ceiling-of-lg
- (implies (and (natp len)
-               (natp index))
+ (implies (natp len)
           (equal (bv-array-read-chunk-little num element-width len (expt 2 (ceiling-of-lg len)) data)
                  (bv-array-read-chunk-little num element-width len 0 data)))
  :hints (("Goal" :use (:instance bv-array-read-chunk-little-of-+-of-expt-of-ceiling-of-lg (index 0))
@@ -98,7 +97,6 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 ;; (local (include-book "kestrel/bv-lists/packbv-theorems"))
@@ -202,8 +200,7 @@
   :hints (("Goal" :in-theory (enable bv-array-read-chunk-little bv-array-read-of-1-arg2-better))))
 
 (defthm bv-array-read-chunk-little-of-1-1
-  (implies (and (equal 1 (len array))
-                (integerp index))
+  (implies (equal 1 (len array))
            (equal (bv-array-read-chunk-little element-count element-size 1 1 array)
                   (bv-array-read-chunk-little element-count element-size 1 0 array)))
   :hints (("Goal" :use (:instance bv-array-read-chunk-little-of-+-of-len (len 1)

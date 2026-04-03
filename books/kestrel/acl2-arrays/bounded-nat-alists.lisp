@@ -1,7 +1,7 @@
 ; A recognizer for alists that can be made into ACL2 arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,17 +12,17 @@
 
 (in-package "ACL2")
 
-;todo: make local
-(defthm alistp-of-cdr
-  ;; [Jared] changed variable from lst to x for std/alists compatibility
-  (implies (alistp x)
-           (alistp (cdr x))))
+(local
+ (defthm alistp-of-cdr
+   ;; [Jared] changed variable from lst to x for std/alists compatibility
+   (implies (alistp x)
+            (alistp (cdr x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognizes an alist mapping indices to values (suitable for conversion to an array).
 ;; Unlike BOUNDED-INTEGER-ALISTP, this one doesn't allow an entry to be :header.
-;; todo: remve the p from natp in the name.
+;; todo: remove the p from natp in the name.
 (defund bounded-natp-alistp (l n)
   (declare (xargs :guard (rationalp n)))
   (if (atom l)
@@ -39,19 +39,20 @@
            (bounded-natp-alistp alist x))
   :hints (("Goal" :in-theory (enable bounded-natp-alistp))))
 
-(defthmd <-when-when-bounded-natp-alistp
+(defthmd <-when-bounded-natp-alistp
   (implies (and (bounded-natp-alistp alist n)
                 (consp alist))
            (< (caar alist) n))
   :hints (("Goal" :in-theory (enable bounded-natp-alistp))))
 
-(defthm <-of-0-when-when-bounded-natp-alistp
+;rename
+(defthm <-of-0-when-bounded-natp-alistp
   (implies (and (bounded-natp-alistp alist n) ;n is a free var
                 (consp alist))
            (<= 0 (caar alist)))
   :hints (("Goal" :in-theory (enable bounded-natp-alistp))))
 
-(defthm equal-of-non-natp-and-caar-when-when-bounded-natp-alistp
+(defthm equal-of-non-natp-and-caar-when-bounded-natp-alistp
   (implies (and (bounded-natp-alistp alist n) ;n is a free var
                 (consp alist)
                 (not (natp val)))
@@ -59,13 +60,13 @@
                   nil))
   :hints (("Goal" :in-theory (enable bounded-natp-alistp))))
 
-(defthm integerp-of-caar-when-when-bounded-natp-alistp
+(defthm integerp-of-caar-when-bounded-natp-alistp
   (implies (and (bounded-natp-alistp alist n) ;n is a free var
                 (consp alist))
            (integerp (caar alist)))
   :hints (("Goal" :in-theory (enable bounded-natp-alistp))))
 
-(defthm true-listp-of-car-when-when-bounded-natp-alistp
+(defthm consp-of-car-when-bounded-natp-alistp
   (implies (and (bounded-natp-alistp alist n) ;n is a free var
                 (consp alist))
            (consp (car alist)))

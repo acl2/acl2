@@ -15,6 +15,7 @@
 (include-book "bvashr")
 ;(local (include-book "logior"))
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "logxor")) ; used in BVXOR-OF-BVIF?
 (local (include-book "logand-b"))
 (local (include-book "bvuminus"))
@@ -116,7 +117,6 @@
 
 (defthmd split-when-low-bit-1
   (implies (and (INTEGERP X)
-                (integerp y)
                 (EQUAL 1 (BVCHOP 1 X)))
            (equal (+ 1 (* 2 (floor x 2)))
                   x))
@@ -128,7 +128,6 @@
 
 (defthmd split-when-low-bit-0
   (implies (and (INTEGERP X)
-                (integerp y)
                 (EQUAL 0 (BVCHOP 1 X)))
            (equal (* 2 (floor x 2))
                   x))

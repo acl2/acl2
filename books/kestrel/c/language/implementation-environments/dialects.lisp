@@ -69,32 +69,41 @@
     (xdoc::li
      "CHERI extensions [CHERI]."))
    (xdoc::p
-    "Not all combinations of extensions are valid.
+    "Not all combinations of extensions are valid or supported.
      We therefore constrain @('dialect') to disallow such combinations.
-     Currently, the only constraint is that
-     GCC and Clang extensions cannot both be enabled.")
-   (xdoc::p
-    "Among those dialects which are considered valid,
-     some may be unsupported or only partially supported by our tools.
-     For instance, it is valid (i.e. non-contradictory)
-     to apply the CHERI extensions to a base standard
-     without Clang or GCC extensions,
-     but this is not to our knowledge a dialect that is ever used in practice,
-     and so receives very little support and testing."))
+     We currently have the following restrictions:")
+   (xdoc::ul
+    (xdoc::li
+     "GCC and Clang extensions cannot both be enabled.
+      It would not make sense to enable both.
+      ")
+    (xdoc::li
+     "CHERI extensions are allowed only with Clang.
+      This is just a support limitation,
+      because CHERI extensions could exist with GCC,
+      or even without GCC or Clang.
+      We will lift this restriction if needed in the future.")))
   ((std standard)
    (gcc booleanp
-        :reqfix (if (and gcc clang)
+        :reqfix (if (or (and gcc clang)
+                        (and cheri (not clang)))
                     nil
                   gcc)
         :default nil)
    (clang booleanp
-          :reqfix (if (and gcc clang)
+          :reqfix (if (or (and gcc clang)
+                          (and cheri (not clang)))
                       nil
                     clang)
           :default nil)
    (cheri booleanp
+          :reqfix (if (or (and gcc clang)
+                          (and cheri (not clang)))
+                      nil
+                    cheri)
           :default nil))
-  :require (or (not gcc) (not clang))
+  :require (and (or (not gcc) (not clang))
+                (or (not cheri) clang))
   :pred dialectp)
 
 ;;;;;;;;;;;;;;;;;;;;

@@ -3869,13 +3869,6 @@
        the normal notion of external declaration.
        Thus, it seems best to introduce this new notion.")
      (xdoc::p
-      "The dash in @('trans-item') is consistent with @(tsee block-item),
-       but not with @(tsee transunit);
-       the latter should be probably renamed to @('trans-unit'),
-       and perhaps @(tsee transunit-ensemble)
-       could be renamed to @('trans-ensemble'),
-       since we do not need to repeat @('unit') there.")
-     (xdoc::p
       "A @('#include') directive, as a translation item,
        is represented by the header name.
        So we do not represent indirect @('#include') directives,
@@ -4004,7 +3997,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit
+(fty::defprod trans-unit
   :short "Fixtype of translation units [C17:6.9] [C17:A.2.4]."
   :long
   (xdoc::topstring
@@ -4019,28 +4012,63 @@
     "We also add a slot with additional information, e.g. from validation."))
   ((items trans-item-list)
    (info any))
-  :pred transunitp
+  :pred trans-unitp
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap filepath-transunit-map
+(fty::defomap header-name-string-map
+  :short "Fixtype of maps from header names to strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to record how header names in @('#include') directives
+     resolve to files identified by strings.
+     A map from header names to strings pertains to one file;
+     see @(tsee string-header-name-string-map-map)."))
+  :key-type header-name
+  :val-type string
+  :pred header-name-string-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-header-name-string-map-map
+  :short "Fixtype of maps from strings to
+          maps from header names to strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As in other types and recognizers used in the ACL2 community books,
+     the name of this type used a postfix structure, like
+     @('(string (header-name string map) map)').
+     These maps are used to record how header name resolve
+     for all the files in a file set or translation ensemble:
+     the keys of the outer map identify the files or translation units,
+     and each inner map records the mapping for that file."))
+  :key-type string
+  :val-type header-name-string-map
+  :pred string-header-name-string-map-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap filepath-trans-unit-map
   :short "Fixtype of omaps from file paths to translation units."
   :key-type filepath
-  :val-type transunit
-  :pred filepath-transunit-mapp
+  :val-type trans-unit
+  :pred filepath-trans-unit-mapp
+
   ///
 
-  (defrule filepath-setp-of-keys-when-filepath-transunit-mapp
-    (implies (filepath-transunit-mapp map)
+  (defrule filepath-setp-of-keys-when-filepath-trans-unit-mapp
+    (implies (filepath-trans-unit-mapp map)
              (filepath-setp (omap::keys map)))
     :induct t
     :enable omap::keys))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-ensemble
-  :short "Fixtype of ensembles of translation units."
+(fty::defprod trans-ensemble
+  :short "Fixtype of translation ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4049,23 +4077,18 @@
      a collection of translation units that form
      a C program or library or other component.
      Since translation units are contained in files,
-     it is natural to view a translation unit ensemble
+     it is natural to view a translation ensemble
      as a collection of (parsed) files.
      Since @(tsee fileset) models a collection of files
      as a map from file paths to file data (bytes),
      we use a finite map from file paths to translation units
      to model ensembles in the abstract syntax.")
    (xdoc::p
-    "Currently we do not model preprocessing constructs in our abstract syntax,
-     and so a translation unit as formalized in @(tsee transunit)
-     corresponds exactly to the notion of translation unit in [C17].
-     As we add support for preprocessing constructs,
-     our translation units will be more like something in between
-     proper traslation units and preprocessing translation units.
-     The notion of file set as formalized here will still apply to that case,
-     with some elements of the ensembles
-     that may be headers instead of source files."))
-  ((units filepath-transunit-map)
+    "We also have a map of resolved header names.
+     This is temporary, because we plan to put that information
+     directly in the ASTs for the @('#include') directives."))
+  ((units filepath-trans-unit-map)
+   (resolved-includes string-header-name-string-map-map)
    (info any))
-  :pred transunit-ensemblep
+  :pred trans-ensemblep
   :layout :fulltree)

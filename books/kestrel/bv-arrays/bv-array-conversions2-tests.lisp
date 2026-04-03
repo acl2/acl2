@@ -1,7 +1,7 @@
 ; Tests of operations in bv-array-conversions2.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,8 @@
                          (bv-array-write 8 3 1 y
                                          (bv-array-write 8 3 2 z
                                                          '(0 0 0)))))
-  :hints (("Goal" :in-theory (enable list-to-bv-array2
+  :hints (("Goal" :in-theory (e/d (list-to-bv-array2
                                      list-to-bv-array-aux2
-                                     list-to-bv-array-aux2-of-cons))))
+                                     list-to-bv-array-aux2-of-cons)
+                                  (array-aux2-case2-of-0-redef ;todo: rename this
+                                   )))))

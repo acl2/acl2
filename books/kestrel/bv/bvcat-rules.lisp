@@ -12,8 +12,8 @@
 (in-package "ACL2")
 
 (include-book "bvcat")
-(include-book "bvxor")
-(include-book "bvor")
+(include-book "bvxor-def")
+(include-book "bvor-def")
 (include-book "bitnot")
 (include-book "bvand-def")
 (include-book "bitand")
@@ -26,6 +26,7 @@
 (include-book "bvif")
 (include-book "bvlt-def")
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "logapp"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))

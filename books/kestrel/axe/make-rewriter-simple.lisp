@@ -1799,7 +1799,7 @@
                   ;; Simplify the size param:
                   ((mv erp simplified-size rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
                    (,simplify-tree-and-add-to-dag-name size-arg
-                                                       nil ;no trees are yet known equal to the the size param
+                                                       nil ;no trees are yet known equal to the size param
                                                        rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                        node-replacement-array node-replacement-count refined-assumption-alist
                                                        rewrite-stobj (+ -1 count)))
@@ -3281,7 +3281,7 @@
                      (:forward-chaining axe-bind-free-function-applicationp-forward-to-true-listp)
                      (:forward-chaining bounded-axe-treep-forward-to-axe-treep)
                      (:forward-chaining bounded-dag-constant-alistp-forward-to-dag-constant-alistp)
-                     (:forward-chaining bounded-dag-parent-arrayp-forward-to-bounded-dag-parent-arrayp)
+                     (:forward-chaining bounded-dag-parent-arrayp-forward-to-dag-parent-arrayp)
                      (:forward-chaining bounded-dag-variable-alistp-forward-to-dag-variable-alistp)
                      (:forward-chaining bounded-darg-list-listp-forward-to-true-listp)
                      (:forward-chaining bounded-darg-listp-forward-to-darg-listp)
@@ -3318,12 +3318,12 @@
                      (:rewrite alist-suitable-for-hypsp-of-append-and-cdr-when-axe-bind-free)
                      (:rewrite alist-suitable-for-hypsp-of-cdr-of-car-when-normal)
                      (:rewrite alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep)
-                     (:rewrite alist-suitable-for-hypsp-when-axe-sytaxp-car)
+                     (:rewrite alist-suitable-for-hypsp-when-axe-syntaxp-car)
                      (:rewrite alist-suitable-for-hypsp-of-append-and-cdr-when-axe-binding-hyp)
                      ;; (:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2)
                      (:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2-special)
                      (:rewrite subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-binding-hyp)
-                     (:rewrite alistp-of-cdr)
+                     ;; (:rewrite alistp-of-cdr)
                      (:rewrite alistp-of-for-unify-trees-with-dag-nodes)
                      (:rewrite all-<-of-nil)
                      (:rewrite all-<-transitive-free-2)

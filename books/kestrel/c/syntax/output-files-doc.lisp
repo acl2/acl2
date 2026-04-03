@@ -93,7 +93,7 @@
        In particular, the @('\".\"') path (which is the default)
        specifies the connected book directory.")
      (xdoc::p
-      "Each file in the file set obtained from the translation unit ensemble
+      "Each file in the file set obtained from the translation ensemble
        is written to the path resulting from
        prepending the corresponding key in the file set map
        with the path specified by the @(':base-dir') input."))
@@ -143,5 +143,5 @@
      "This macro generates one file in the file system
       for each translation unit in @('*const*'),
       at the paths that are obtained by
-      prepending the keys of the translation unit ensemble map
+      prepending the keys of the translation ensemble map
       with the path specified by the @(':base-dir') input."))))

@@ -630,22 +630,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-wrap-fn
-  ((transunit transunitp)
+(define trans-unit-wrap-fn
+  ((trans-unit trans-unitp)
    (target-name identp)
    (wrapper-name? ident-optionp)
    (blacklist ident-setp))
-  :guard (c$::transunit-annop transunit)
+  :guard (c$::trans-unit-annop trans-unit)
   :returns (mv (er? maybe-msgp)
                (warnings? maybe-msgp)
                (foundp booleanp :rule-classes :type-prescription)
-               (transunit$ transunitp))
+               (trans-unit$ trans-unitp))
   :short "Transform a translation unit."
-  (b* (((reterr) nil nil (c$::transunit-fix transunit))
-       ((transunit transunit) transunit)
+  (b* (((reterr) nil nil (c$::trans-unit-fix trans-unit))
+       ((trans-unit trans-unit) trans-unit)
        ((erp foundp found-satp items)
         (trans-item-list-wrap-fn
-          transunit.items target-name wrapper-name? blacklist))
+          trans-unit.items target-name wrapper-name? blacklist))
        (warnings?
          (if (and foundp (not found-satp))
              (msg$ "Declaration of ~x0 found, but couldn't create a wrapper."
@@ -653,28 +653,28 @@
            nil)))
     (retok warnings?
            foundp
-           (c$::change-transunit
-             transunit
+           (c$::change-trans-unit
+             trans-unit
              :items items
              :info nil)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-(define filepath-transunit-map-wrap-fn
-  ((map filepath-transunit-mapp)
+(define filepath-trans-unit-map-wrap-fn
+  ((map filepath-trans-unit-mapp)
    (target-name identp)
    (wrapper-name? ident-optionp)
    (blacklist ident-setp))
-  :guard (c$::filepath-transunit-map-annop map)
+  :guard (c$::filepath-trans-unit-map-annop map)
   :returns (mv (er? maybe-msgp)
                (any-foundp booleanp :rule-classes :type-prescription)
-               (map$ filepath-transunit-mapp))
+               (map$ filepath-trans-unit-mapp))
   :short "Transform an omap of file paths to translation units."
-  (b* ((map (c$::filepath-transunit-map-fix map))
+  (b* ((map (c$::filepath-trans-unit-map-fix map))
        ((reterr) nil map)
        ((when (omap::emptyp map))
         (retok nil nil))
-       ((erp warnings? foundp transunit)
-        (transunit-wrap-fn
+       ((erp warnings? foundp trans-unit)
+        (trans-unit-wrap-fn
           (omap::head-val map) target-name wrapper-name? blacklist))
        (-
          (if warnings?
@@ -683,34 +683,34 @@
                  warnings?)
            nil))
        ((erp any-foundp map$)
-        (filepath-transunit-map-wrap-fn
+        (filepath-trans-unit-map-wrap-fn
           (omap::tail map) target-name wrapper-name? blacklist)))
     (retok (or foundp any-foundp)
-           (omap::update (omap::head-key map) transunit map$)))
+           (omap::update (omap::head-key map) trans-unit map$)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   :verify-guards :after-returns)
 
-(define transunit-ensemble-wrap-fn
-  ((transunits transunit-ensemblep)
+(define trans-ensemble-wrap-fn
+  ((trans-units trans-ensemblep)
    (target-name identp)
    (wrapper-name? ident-optionp))
-  :guard (transunit-ensemble-annop transunits)
+  :guard (trans-ensemble-annop trans-units)
   :returns (mv (er? maybe-msgp)
-               (transunits$ transunit-ensemblep))
-  :short "Transform a translation unit ensemble."
-  (b* (((reterr) (c$::transunit-ensemble-fix transunits))
-       ((transunit-ensemble transunits) transunits)
-       (blacklist (filepath-transunit-map-collect-idents transunits.units))
+               (trans-units$ trans-ensemblep))
+  :short "Transform a translation ensemble."
+  (b* (((reterr) (c$::trans-ensemble-fix trans-units))
+       ((trans-ensemble trans-units) trans-units)
+       (blacklist (filepath-trans-unit-map-collect-idents trans-units.units))
        ((erp any-foundp map)
-        (filepath-transunit-map-wrap-fn
-          transunits.units target-name wrapper-name? blacklist))
+        (filepath-trans-unit-map-wrap-fn
+          trans-units.units target-name wrapper-name? blacklist))
        (-
          (if any-foundp
              nil
            (cw "Warning: No declaration found for ~x0.~%"
                (ident->unwrap target-name)))))
-    (retok (c$::change-transunit-ensemble
-             transunits
+    (retok (c$::change-trans-ensemble
+             trans-units
              :units map)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
@@ -730,12 +730,12 @@
       no suggestion is provided, a name will be generated."))
   (b* (((reterr) (c$::code-ensemble-fix code))
        ((code-ensemble code) code)
-       ((erp transunits)
-        (transunit-ensemble-wrap-fn
-          code.transunits target-name wrapper-name?)))
+       ((erp trans-units)
+        (trans-ensemble-wrap-fn
+          code.trans-units target-name wrapper-name?)))
     (retok (c$::change-code-ensemble
              code
-             :transunits transunits)))
+             :trans-units trans-units)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 (define code-ensemble-wrap-fn-multiple
@@ -763,17 +763,17 @@
        ;; TODO: prove the above preserves disambiguation.
        ((unless (code-ensemble-unambp code))
         (retmsg$ "Internal error: code has not been disambiguated."))
-       ((erp valid-transunits)
-        (c$::valid-transunit-ensemble (code-ensemble->transunits code)
+       ((erp valid-trans-units)
+        (c$::valid-trans-ensemble (code-ensemble->trans-units code)
                                       (code-ensemble->ienv code)
                                       nil))
        ;; TODO: remove after it is proved that validation produces an annotated
        ;; term.
-       ((unless (transunit-ensemble-annop valid-transunits))
+       ((unless (trans-ensemble-annop valid-trans-units))
         (retmsg$ "Internal error: code is invalid."))
        (code (change-code-ensemble
                code
-               :transunits valid-transunits)))
+               :trans-units valid-trans-units)))
     (code-ensemble-wrap-fn-multiple code (omap::tail targets)))
   :measure (acl2-count (ident-ident-option-map-fix targets))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules

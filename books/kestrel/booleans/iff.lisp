@@ -36,11 +36,11 @@
   (equal (iff x x)
          t))
 
-(defthm iff-bool-fix-arg1
+(defthm iff-of-bool-fix-arg1
   (equal (iff (bool-fix x) y)
          (iff x y)))
 
-(defthm iff-bool-fix-arg2
+(defthm iff-of-bool-fix-arg2
   (equal (iff x (bool-fix y))
          (iff x y)))
 

@@ -558,15 +558,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-transunit
+(defirrelevant irr-trans-unit
   :short "An irrelevant translation unit."
-  :type transunitp
-  :body (transunit nil nil))
+  :type trans-unitp
+  :body (trans-unit nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-transunit-ensemble
-  :short "An irrelevant ensemble of translation units."
-  :type transunit-ensemblep
-  :body (make-transunit-ensemble :units nil
-                                 :info nil))
+(defirrelevant irr-trans-ensemble
+  :short "An irrelevant translation ensemble."
+  :type trans-ensemblep
+  :body (make-trans-ensemble :units nil
+                             :resolved-includes nil
+                             :info nil))

@@ -230,5 +230,5 @@
            (equal (equal (bvnot size x) k)
                   (and (unsigned-byte-p size k)
                        (equal (bvchop size x) (bvnot size k)))))
-  :hints (("Goal" :in-theory (enable bvnot lognot acl2::bvchop-of-sum-cases
+  :hints (("Goal" :in-theory (enable bvnot lognot bvchop-of-sum-cases
                                      unsigned-byte-p))))

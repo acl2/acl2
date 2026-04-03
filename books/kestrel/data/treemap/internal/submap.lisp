@@ -198,27 +198,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled tree-submap-p-of-tree->left-when-when-tree-submap-p
+(defruled tree-submap-p-of-tree->left-when-tree-submap-p
   (implies (tree-submap-p x y)
            (tree-submap-p (tree->left x) y))
   :enable tree-submap-p)
 
-(defrule tree-submap-p-of-tree->left-when-when-tree-submap-p-cheap
+(defrule tree-submap-p-of-tree->left-when-tree-submap-p-cheap
   (implies (tree-submap-p x y)
            (tree-submap-p (tree->left x) y))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by tree-submap-p-of-tree->left-when-when-tree-submap-p)
+  :by tree-submap-p-of-tree->left-when-tree-submap-p)
 
-(defruled tree-submap-p-of-tree->right-when-when-tree-submap-p
+(defruled tree-submap-p-of-tree->right-when-tree-submap-p
   (implies (tree-submap-p x y)
            (tree-submap-p (tree->right x) y))
   :enable tree-submap-p)
 
-(defrule tree-submap-p-of-tree->right-when-when-tree-submap-p-cheap
+(defrule tree-submap-p-of-tree->right-when-tree-submap-p-cheap
   (implies (tree-submap-p x y)
            (tree-submap-p (tree->right x) y))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by tree-submap-p-of-tree->right-when-when-tree-submap-p)
+  :by tree-submap-p-of-tree->right-when-tree-submap-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -420,7 +420,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule tree-sumbap-p-when-<<-all-l-of-head
+(defrule tree-submap-p-when-<<-all-l-of-head
   (implies (and (bstp x)
                 (bstp y)
                 (not (tree-empty-p y))
@@ -448,7 +448,7 @@
                treeset::in-when-subset-and-in
                tree-lookup-when-in-of-tree-key-set-and-tree-submap-p-forward-chaining))))
 
-(defrule tree-sumbap-p-when-<<-all-r-of-head
+(defrule tree-submap-p-when-<<-all-r-of-head
   (implies (and (bstp x)
                 (bstp y)
                 (not (tree-empty-p y))
@@ -599,6 +599,6 @@
 (defthy tree-submap-p-extra-rules
   '(tree-submap-p-when-tree-submap-p-of-arg1-and-tree->left
     tree-submap-p-when-tree-submap-p-of-arg1-and-tree->right
-    tree-submap-p-of-tree->left-when-when-tree-submap-p
-    tree-submap-p-of-tree->right-when-when-tree-submap-p
+    tree-submap-p-of-tree->left-when-tree-submap-p
+    tree-submap-p-of-tree->right-when-tree-submap-p
     tree-submap-p-when-not-tree-assoc-of-tree->head))

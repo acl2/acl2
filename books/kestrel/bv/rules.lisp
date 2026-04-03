@@ -21,7 +21,7 @@
 ;(include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "single-bit")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bitor")
 (include-book "bitand")
 (include-book "logapp")
@@ -65,6 +65,7 @@
 (local (include-book "logior-b"))
 (local (include-book "bvuminus"))
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -1951,8 +1952,7 @@
 
 (defthm bvchop-hack1
   (implies (and (integerp x)
-                (integerp y)
-                (integerp z))
+                (integerp y))
            (equal (bvchop 32 (+ x (* 2 (bvchop 31 y))))
                   (bvchop 32 (+ x (* 2 y)))))
   :hints (("Goal" :use (;(:instance BVCHOP-+-BVCHOP (J (* 2 Y)) (I X) (SIZE 32))
@@ -1960,8 +1960,7 @@
 
 (defthm bvchop-hack1b
  (implies (and (integerp x)
-               (integerp y)
-               (integerp z))
+               (integerp y))
           (equal (bvchop 32 (+ x (* 2 (logext 31 y))))
                  (bvchop 32 (+ x (* 2 y)))))
  :hints (("Goal"; :in-theory (disable)
@@ -3946,8 +3945,7 @@
 (defthm bvchop-minus-equal-bvchop-minus
   (IMPLIES (AND (NATP N)
                 (INTEGERP FREE)
-                (INTEGERP X)
-                (INTEGERP Y))
+                (INTEGERP X))
            (equal (EQUAL (BVCHOP N (- X))
                          (BVCHOP N (- FREE)))
                   (EQUAL (BVCHOP N X)

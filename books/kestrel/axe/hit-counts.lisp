@@ -1,7 +1,7 @@
 ; Counting how many times rewrite rules apply
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -334,7 +334,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; the alist should have shadowed paris already removed
+;; the alist should have shadowed pairs already removed
 (defund add-counts-in-hit-count-alist (alist acc)
   (declare (xargs :guard (and (hit-count-alistp alist)
                               (natp acc))

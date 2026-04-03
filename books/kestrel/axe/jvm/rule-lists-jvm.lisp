@@ -944,7 +944,7 @@
             jvm::initialize-static-fields-base
             default-value
 ;    strip-cars-opener
-            strip-cars-of-non-consp
+;            strip-cars-when-not-consp
             ;bvand-of-logext
             ;bvand-of-logext-alt
 

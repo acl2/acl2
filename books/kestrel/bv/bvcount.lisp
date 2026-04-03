@@ -1,7 +1,7 @@
 ; Counting the number of 1 bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -65,8 +65,6 @@
           ((evenp x)
            (ind (nonnegative-integer-quotient x 2) (+ -1 i)))
           (t (1+ (ind (nonnegative-integer-quotient x 2) (+ -1 i)))))))
-
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 
 ;move
 (defthm logcount-of-nonnegative-integer-quotient

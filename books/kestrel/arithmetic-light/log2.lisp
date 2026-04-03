@@ -1,7 +1,7 @@
 ; (Floor of) base-2 logarithm (works on all positive rationals)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,7 +51,7 @@
         (+ 1 (log2 (/ x 2)))
       (if (< x 1)
           (+ -1 (log2 (* x 2)))
-        ;; x is in [1,2), so it's log2 is 0:
+        ;; x is in [1,2), so its log2 is 0:
         0))))
 
 (defthm natp-of-log2-type

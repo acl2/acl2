@@ -1,4 +1,4 @@
-; A drop irrelevant parameters from a function
+; Transformation to drop irrelevant parameters from a function
 ;
 ; Copyright (C) 2015-2021 Kestrel Institute
 ;

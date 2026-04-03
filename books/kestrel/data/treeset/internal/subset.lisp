@@ -119,27 +119,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled tree-subset-p-of-tree->left-when-when-tree-subset-p
+(defruled tree-subset-p-of-tree->left-when-tree-subset-p
   (implies (tree-subset-p x y)
            (tree-subset-p (tree->left x) y))
   :enable tree-subset-p)
 
-(defrule tree-subset-p-of-tree->left-when-when-tree-subset-p-cheap
+(defrule tree-subset-p-of-tree->left-when-tree-subset-p-cheap
   (implies (tree-subset-p x y)
            (tree-subset-p (tree->left x) y))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by tree-subset-p-of-tree->left-when-when-tree-subset-p)
+  :by tree-subset-p-of-tree->left-when-tree-subset-p)
 
-(defruled tree-subset-p-of-tree->right-when-when-tree-subset-p
+(defruled tree-subset-p-of-tree->right-when-tree-subset-p
   (implies (tree-subset-p x y)
            (tree-subset-p (tree->right x) y))
   :enable tree-subset-p)
 
-(defrule tree-subset-p-of-tree->right-when-when-tree-subset-p-cheap
+(defrule tree-subset-p-of-tree->right-when-tree-subset-p-cheap
   (implies (tree-subset-p x y)
            (tree-subset-p (tree->right x) y))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by tree-subset-p-of-tree->right-when-when-tree-subset-p)
+  :by tree-subset-p-of-tree->right-when-tree-subset-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -424,6 +424,6 @@
 (defthy tree-subset-p-extra-rules
   '(tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
     tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right
-    tree-subset-p-of-tree->left-when-when-tree-subset-p
-    tree-subset-p-of-tree->right-when-when-tree-subset-p
+    tree-subset-p-of-tree->left-when-tree-subset-p
+    tree-subset-p-of-tree->right-when-tree-subset-p
     tree-subset-p-when-not-tree-in-of-tree->head))
