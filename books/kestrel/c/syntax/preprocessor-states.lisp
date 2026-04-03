@@ -770,39 +770,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define push-lexmark ((lexmark lexmarkp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Push a lexmark onto the pending lexmark list."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used when unreading a lexeme,
-     and also when expaning a macro."))
-  (b* ((new-lexmarks (cons lexmark (ppstate->lexmarks ppstate)))
-       (new-size (1+ (ppstate->size ppstate)))
-       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
-       (ppstate (update-ppstate->size new-size ppstate)))
-    ppstate)
-
-  ///
-
-  (defret ppstate->size-of-push-lexmark
-    (equal (ppstate->size new-ppstate)
-           (1+ (ppstate->size ppstate)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define push-lexmarks ((lexmarks lexmark-listp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Push a list of lexmarks onto the pending lexmark list."
-  (b* ((new-lexmarks (append lexmarks (ppstate->lexmarks ppstate)))
-       (new-size (+ (len lexmarks) (ppstate->size ppstate)))
-       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
-       (ppstate (update-ppstate->size new-size ppstate)))
-    ppstate))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define push-lexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
   :returns (new-ppstate ppstatep)
   :short "Push a lexeme, with a span, onto the pending lexmark list."
