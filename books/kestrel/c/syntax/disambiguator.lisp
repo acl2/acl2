@@ -249,7 +249,9 @@
      but we will extend this soon with macro tables,
      needed to handle @('#include') directives.")
    (xdoc::p
-    "This could be turned into a stobj if needed for efficiency."))
+    "This could be turned into a stobj if needed for efficiency.")
+   (xdoc::p
+    "We pick the short name `@('dstate')' since it is used a lot."))
   ((table dimb-table))
   :pred dstatep)
 
