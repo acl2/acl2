@@ -803,6 +803,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define push-lexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Push a lexeme, with a span, onto the pending lexmark list."
+  (push-lexmark (make-lexmark-lexeme :lexeme lexeme :span span) ppstate)
+
+  ///
+
+  (defret ppstate->size-of-push-lexeme
+    (equal (ppstate->size new-ppstate)
+           (1+ (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define push-lexemes ((lexemes plexeme-listp) (ppstate ppstatep))
   :returns (new-ppstate ppstatep)
   :short "Push a list of lexemes onto the pending lexmark list."

@@ -731,7 +731,7 @@
    (xdoc::p
     "We add the lexeme to the list of pending lexemes.
      See @(tsee ppstate)."))
-  (push-lexmark (make-lexmark-lexeme :lexeme lexeme :span span) ppstate)
+  (push-lexeme lexeme span ppstate)
 
   ///
 
@@ -841,11 +841,11 @@
      ((or (plexeme-tokenp lexeme)
           (and stop-at-newline-p
                (plexeme-case lexeme :newline)))
-      (b* ((ppstate (push-lexmark (lexmark-lexeme lexeme span) ppstate)))
+      (b* ((ppstate (push-lexeme lexeme span ppstate)))
         (retok lexeme ppstate)))
      (t ; comment or white space
       (b* (((erp toknl? ppstate) (peek-token/newline stop-at-newline-p ppstate))
-           (ppstate (push-lexmark (lexmark-lexeme lexeme span) ppstate)))
+           (ppstate (push-lexeme lexeme span ppstate)))
         (retok toknl? ppstate)))))
   :measure (ppstate->size ppstate)
 
