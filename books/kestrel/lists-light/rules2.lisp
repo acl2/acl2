@@ -1,7 +1,7 @@
 ; Mixed rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1538,7 +1538,6 @@
 ;bozo gen?
 (defthm update-nth-equal-update-subrange-special
   (implies (and (<= n end)
-                (< end (len lst))
                 (natp n)
                 (natp end)
                 (equal val1 val2)

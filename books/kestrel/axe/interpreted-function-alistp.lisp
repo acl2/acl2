@@ -101,7 +101,7 @@
            (true-listp (assoc-equal fn interpreted-function-alist)))
   :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
 
-;maybe use a custom lookup and handle this rule of it?
+;maybe use a custom lookup and adapt this rule for it?
 (defthmd true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
   (implies (and (interpreted-function-alistp interpreted-function-alist)
                 (assoc-equal fn interpreted-function-alist))

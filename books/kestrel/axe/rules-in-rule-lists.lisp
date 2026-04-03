@@ -81,6 +81,7 @@
 (include-book "kestrel/lists-light/ungroup" :dir :system)
 (include-book "kestrel/lists-light/union-equal" :dir :system)  ;for UNION-EQUAL-OF-NIL-ARG1
 ;(include-book "kestrel/alists-light/assoc-equal" :dir :system) ;only needed by axe prover?
+(include-book "kestrel/alists-light/strip-cars" :dir :system)
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system)
 (include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)  ;drop?  ;for LIST-TO-BV-ARRAY
 (include-book "kestrel/bv/rightrotate32" :dir :system)

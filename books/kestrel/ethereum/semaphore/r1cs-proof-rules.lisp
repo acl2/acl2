@@ -1,6 +1,6 @@
 ; Rules to support R1CS proofs
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -701,8 +701,7 @@
 
 
 (defthmd add-of-mul-of-1048576
-  (implies (and (equal ysize 20)
-                (unsigned-byte-p 12 x)
+  (implies (and (unsigned-byte-p 12 x)
                 (unsigned-byte-p 20 y)
                 (integerp p)
                 (< (expt 2 32) p))

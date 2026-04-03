@@ -1,6 +1,6 @@
 ; A simple model to recommend :induct hints.
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -97,8 +97,7 @@
 
 ;; Just to check
 (defthm no-duplicatesp-equal-of-induct-expressions-in-term
-  (implies (no-duplicatesp-equal calls)
-           (no-duplicatesp-equal (induct-expressions-in-term term wrld)))
+  (no-duplicatesp-equal (induct-expressions-in-term term wrld))
   :hints (("Goal" :in-theory (enable induct-expressions-in-term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

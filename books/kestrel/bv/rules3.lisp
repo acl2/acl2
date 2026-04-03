@@ -117,7 +117,6 @@
 
 (defthmd split-when-low-bit-1
   (implies (and (INTEGERP X)
-                (integerp y)
                 (EQUAL 1 (BVCHOP 1 X)))
            (equal (+ 1 (* 2 (floor x 2)))
                   x))
@@ -129,7 +128,6 @@
 
 (defthmd split-when-low-bit-0
   (implies (and (INTEGERP X)
-                (integerp y)
                 (EQUAL 0 (BVCHOP 1 X)))
            (equal (* 2 (floor x 2))
                   x))

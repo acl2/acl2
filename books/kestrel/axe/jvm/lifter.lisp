@@ -1,7 +1,7 @@
 ; A JVM lifter for use when not unrolling
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -242,29 +242,6 @@
 (defforall-simple loop-idp)
 (verify-guards all-loop-idp)
 
-;; Elaborate a loop-id (which may just be a PC) into a full loop designator.
-(defun elaborate-loop-id (loop-id class-name method-name method-descriptor keyword-context)
-  (declare (xargs :guard (and (loop-idp loop-id)
-                              (jvm::class-namep class-name)
-                              (jvm::method-namep method-name)
-                              (jvm::method-descriptorp method-descriptor))))
-  (if (loop-designatorp loop-id) ;already a loop-designator
-      loop-id
-    (if (jvm::pcp loop-id) ;a natp is taken to be a PC in the main method being lifted
-        (make-loop-designator class-name method-name method-descriptor loop-id)
-      (er hard 'elaborate-loop-ids "Bad loop-id, ~x0, in supplied ~x1" loop-id keyword-context))))
-
-;; (defun elaborate-loop-ids (loop-ids class-name method-name method-descriptor keyword-context)
-;;   (declare (xargs :guard (and (all-loop-idp loop-ids)
-;;                               (true-listp loop-ids)
-;;                               (jvm::class-namep class-name)
-;;                               (jvm::method-namep method-name)
-;;                               (jvm::method-descriptorp method-descriptor))))
-;;   (if (endp loop-ids)
-;;       nil
-;;     (cons (elaborate-loop-id (first loop-ids) class-name method-name method-descriptor keyword-context)
-;;           (elaborate-loop-ids (rest loop-ids) class-name method-name method-descriptor keyword-context))))
-
 ;;;
 ;;; loop-function-ids (before elaboration)
 ;;;
@@ -280,6 +257,8 @@
 (defforall-simple loop-function-idp)
 (verify-guards all-loop-function-idp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;
 ;;; loop-function-designators (after elaboration)
 ;;;
@@ -292,6 +271,39 @@
 (defforall-simple loop-function-designatorp)
 (verify-guards all-loop-function-designatorp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Elaborate a loop-id (which may just be a PC) into a full loop designator.
+(defun elaborate-loop-id (loop-id class-name method-name method-descriptor keyword-context)
+  (declare (xargs :guard (and (loop-idp loop-id)
+                              (jvm::class-namep class-name)
+                              (jvm::method-namep method-name)
+                              (jvm::method-descriptorp method-descriptor))))
+  (if (loop-designatorp loop-id) ;already a loop-designator
+      loop-id
+    (if (jvm::pcp loop-id) ;a natp is taken to be a PC in the main method being lifted
+        (make-loop-designator class-name method-name method-descriptor loop-id)
+      (er hard 'elaborate-loop-ids "Bad loop-id, ~x0, in supplied ~x1" loop-id keyword-context))))
+
+(defthm loop-function-designatorp-of-elaborate-loop-id
+  (implies (and;  (loop-function-idp loop-function-id)
+                (jvm::class-namep class-name)
+                (jvm::method-namep method-name)
+                (jvm::method-descriptorp method-descriptor))
+           (loop-function-designatorp (elaborate-loop-id loop-id class-name method-name method-descriptor keyword-context))))
+
+;; (defun elaborate-loop-ids (loop-ids class-name method-name method-descriptor keyword-context)
+;;   (declare (xargs :guard (and (all-loop-idp loop-ids)
+;;                               (true-listp loop-ids)
+;;                               (jvm::class-namep class-name)
+;;                               (jvm::method-namep method-name)
+;;                               (jvm::method-descriptorp method-descriptor))))
+;;   (if (endp loop-ids)
+;;       nil
+;;     (cons (elaborate-loop-id (first loop-ids) class-name method-name method-descriptor keyword-context)
+;;           (elaborate-loop-ids (rest loop-ids) class-name method-name method-descriptor keyword-context))))
+
+
 ;; Elaborate a loop-function-id (if it is a loop-id that needs to be elaborated).  Returns a loop-function-designator.
 (defun elaborate-loop-function-id (loop-function-id class-name method-name method-descriptor keyword-context)
   (declare (xargs :guard (and (loop-function-idp loop-function-id)
@@ -302,12 +314,12 @@
       loop-function-id ;it's already a symbol naming a specific loop function
     (elaborate-loop-id loop-function-id class-name method-name method-descriptor keyword-context)))
 
-(defthm loop-function-designatorp-of-elaborate-loop-id
+(defthm loop-function-designatorp-of-elaborate-loop-function-id
   (implies (and (loop-function-idp loop-function-id)
                 (jvm::class-namep class-name)
                 (jvm::method-namep method-name)
                 (jvm::method-descriptorp method-descriptor))
-           (loop-function-designatorp (elaborate-loop-id loop-id class-name method-name method-descriptor keyword-context))))
+           (loop-function-designatorp (elaborate-loop-function-id loop-function-id class-name method-name method-descriptor keyword-context))))
 
 ;; Elaborate any loop function designators that are loop-ids that needs to be
 ;; elaborated (i.e., just PCs). Returns a list of loop-function-designators.

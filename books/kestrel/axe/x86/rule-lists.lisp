@@ -997,7 +997,7 @@
     x86isa::!prefixes->adr$inline
     x86isa::!prefixes->nxt$inline
 
-    ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
+    ;; are constant-openers better than enabling these functions? todo: remove once built into x86 evaluator and other evaluators no longer used
     X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
     x86isa::!prefixes->seg$inline-constant-opener
 

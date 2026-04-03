@@ -60,7 +60,6 @@
 (defthm mod-of---of-*-of-mod-same
   (implies (and (integerp y) ;gen
                 (integerp x)
-                (integerp k)
                 (posp p))
            (equal (mod (- (* x (mod y p))) p)
                   (mod (- (* x y)) p))))

@@ -22,20 +22,12 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
 (local (in-theory (disable true-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;move
-(defthm len-of-strip-cars
-  (equal (len (strip-cars x))
-         (len x)))
-
-;move
-(defthm len-of-strip-cdrs
-  (equal (len (strip-cdrs x))
-         (len x)))
 
 (defthm alistp-of-append
   ;; [Jared] changed for compatibility with std/alists/alistp.lisp
@@ -437,7 +429,7 @@
                                    (g ad heap))
                         heap)))
      :hints (("Goal" :do-not '(generalize eliminate-destructors)
-              :in-theory (e/d (s-many set-fields set-field) ( ;S==R
+              :in-theory (e/d (s-many set-fields set-field strip-cars strip-cdrs) ( ;S==R
                                                              )))))))
 
 ;todo: the unique test might be expensive and seems like overkill
@@ -448,7 +440,7 @@
            (equal (rkeys (set-fields ad pairs heap))
                   (set::insert ad (rkeys heap))))
   :hints (("Goal" :in-theory (enable set-fields-rewrite ;NO-DUPLICATESP-EQUAL-OF-CONS
-                                     ))))
+                                     strip-cdrs))))
 
 
 (defthm in-of-rkeys-of-set-fields-irrel

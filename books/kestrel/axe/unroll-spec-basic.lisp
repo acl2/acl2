@@ -121,7 +121,7 @@
                               whole-form
                               state)
   (declare (xargs :guard (and (symbolp defconst-name)
-                              ;; term is an untranlated term
+                              ;; term is an untranslated term
                               (or (eq :standard rules)
                                   (eq :auto rules)
                                   (symbol-listp rules))
@@ -340,7 +340,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                        (rules ':standard) ;to completely replace the usual set of rules
                                        ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                        (extra-rules 'nil) ; to add to the usual set of rules
-                                       (remove-rules 'nil) ; to remove from to the usual set of rules
+                                       (remove-rules 'nil) ; to remove from the usual set of rules
                                        (normalize-xors 'nil)
                                        ;; Options that affect performance:
                                        (memoizep 't)

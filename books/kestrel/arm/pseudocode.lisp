@@ -333,7 +333,7 @@
 
 (defthm mv-nth-0-of-lsr_c-becomes-bvshr
   (implies (and (unsigned-byte-p n x)
-                (integerp shift)
+                ;; (integerp shift)
                 (> shift 0) ; todo drop
                 (natp shift)
                 )
@@ -343,7 +343,7 @@
 
 (defthm mv-nth-1-of-lsr_c-becomes-getbit
   (implies (and (unsigned-byte-p n x)
-                (integerp shift)
+                ;; (integerp shift)
                 (> shift 0) ; todo drop
                 (natp shift)
                 )

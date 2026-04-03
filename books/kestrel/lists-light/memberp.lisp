@@ -1,7 +1,7 @@
 ; Theorems about memberp.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -243,7 +243,7 @@
 (defthm memberp-of-constant-when-not-member-of-constant
   (implies (and (syntaxp (quotep k1))
                 (not (memberp a k2))
-                (syntaxp (quotep k1))
+                (syntaxp (quotep k2))
                 (intersection-equal k1 k2) ;gets computed
                 )
            (equal (memberp a k1)

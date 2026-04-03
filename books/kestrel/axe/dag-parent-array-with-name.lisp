@@ -1,4 +1,4 @@
-; More general variant of dag-parent-arrray.lisp
+; More general variant of dag-parent-array.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2026 Kestrel Institute

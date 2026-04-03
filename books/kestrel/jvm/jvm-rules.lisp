@@ -31,6 +31,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/memberp2" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ;for USB-PLUS-FROM-BOUNDS
 
 ;move

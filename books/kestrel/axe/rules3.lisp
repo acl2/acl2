@@ -1928,8 +1928,7 @@
 
 ;kill?
 (defthm bvchop-of-expt-special
-  (implies (and (natp low)
-                (natp high))
+  (implies (natp high)
            (equal (BVCHOP (+ -2 HIGH) (* 1/4 (EXPT 2 HIGH)))
                   0))
   :hints (("Goal" :use (:instance bvchop-of-expt-0 (size1 (- high 2)) (size2 (- high 2)))
@@ -1937,8 +1936,7 @@
 
 ;kill?
 (defthm bvchop-of-expt-special2
-  (implies (and (natp low)
-                (natp high))
+  (implies (natp high)
            (equal (BVCHOP (+ -2 HIGH) (* 1/2 (EXPT 2 HIGH)))
                   0))
   :hints (("Goal" :use (:instance bvchop-of-expt-0 (size1 (- high 2)) (size2 (- high 1)))
@@ -2282,7 +2280,6 @@
 
 (defthm bvplus-of-bvuminus-tighten
   (implies (and (unsigned-byte-p 4 x)
-                (integerp jj)
                 (integerp k))
            (equal (bvplus 32 k (bvuminus 30 x))
                   (if (equal 0 (bvchop 30 x))
@@ -6417,10 +6414,8 @@
 
 (defthmd floor-bound-hack-31
   (implies (and (<= X (FLOOR 31 J))
-                (rationalp x)
                 (posp j)
-                (posp x)
-                (rationalp j))
+                (posp x))
            (<= (* x j) 31))
   :hints (("Goal" :in-theory (disable FLOOR-BOUND-LEMMA2
                                       my-FLOOR-LOWER-BOUND-ALT
@@ -8303,7 +8298,6 @@
 
 (defthm equal-of-bvchop-cancel-slice-rule
   (implies (and (integerp z1)
-                (integerp z2)
                 (integerp z3)
                 (integerp k)
                 (natp size)
@@ -12917,7 +12911,7 @@
 ;fixme gen!
 (defthm equal-of-bv-array-write-and-bv-array-write-top-elements
   (implies (and (work-hard (< index (bvplus '5 '1 index))) ;fixme
-                (work-hard (< index (bvplus '5 '1 index))) ;fixme
+                ;; (work-hard (< index (bvplus '5 '1 index))) ;fixme
                 (work-hard (natp index)) ;so we can use bv-array-write-opener
                 (all-unsigned-byte-p 8 data1)
                 (all-unsigned-byte-p 8 data2)

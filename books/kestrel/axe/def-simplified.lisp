@@ -194,7 +194,7 @@
   (declare (xargs :stobjs state
                   :mode :program ;; because this translates terms
                   :guard (and (symbolp defconst-name)
-                              ;; (pseudo-termp term) ;; really an untranlated term
+                              ;; (pseudo-termp term) ;; really an untranslated term
                               (or (eq :auto rules)
                                   (symbol-listp rules))
                               ;; (or (eq :auto rule-lists)
@@ -244,7 +244,7 @@
                                  &key
                                  (rules ':auto) ;to completely replace the usual set of rules
                                  (extra-rules 'nil) ; to add to the usual set of rules
-                                 (remove-rules 'nil) ; to remove from to the usual set of rules
+                                 (remove-rules 'nil) ; to remove from the usual set of rules
                                  ;;(rule-lists ':auto) ;to completely replace the usual set of rules
                                  ;;(rule-alists 'auto) ;to completely replace the usual set of rules
                                  (assumptions 'nil)

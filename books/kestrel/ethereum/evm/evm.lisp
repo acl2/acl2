@@ -1282,8 +1282,7 @@
   (implies (and (bvlt 256 x k2)
                 (<= k2 (+ -1 k))
                 (unsigned-byte-p 256 x)
-                (unsigned-byte-p 256 k2)
-                (unsigned-byte-p 256 k1))
+                (unsigned-byte-p 256 k2))
            (not (< k x)))
   :hints (("Goal" :in-theory (enable acl2::bvlt))))
 
