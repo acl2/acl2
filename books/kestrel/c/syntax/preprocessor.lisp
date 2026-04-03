@@ -708,24 +708,6 @@
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable nfix)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define unread-lexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Unread a lexeme."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We add the lexeme to the list of pending lexemes.
-     See @(tsee ppstate)."))
-  (push-lexeme lexeme span ppstate)
-
-  ///
-
-  (defret ppstate->size-of-unread-lexeme
-    (equal (ppstate->size new-ppstate)
-           (1+ (ppstate->size ppstate)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-next-token ((stop-at-newline-p booleanp) (ppstate ppstatep))
@@ -4482,7 +4464,7 @@
                         :expected "an identifier"
                         :found (plexeme?-to-msg toknl2))))))
        (t ; non-# -- text line
-        (b* ((ppstate (unread-lexeme toknl span ppstate))
+        (b* ((ppstate (push-lexeme toknl span ppstate))
              ((erp rev-lexemes ppstate)
               (pproc-lexemes (macrep-mode-line)
                              nil ; rev-lexemes
@@ -4606,7 +4588,7 @@
                  ppstate
                  state)))
        (t ; # include token
-        (b* ((ppstate (unread-lexeme toknl span ppstate))
+        (b* ((ppstate (push-lexeme toknl span ppstate))
              ((erp rev-lexemes ppstate)
               (pproc-lexemes (macrep-mode-line)
                              nil ; rev-lexemes
