@@ -22,7 +22,7 @@
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
-(acl2::controlled-configuration :no-function nil)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -295,7 +295,8 @@
        (new-table (if (consp table)
                       (cdr table)
                     (raise "Internal error: empty disambiguation table."))))
-    (change-dstate dstate :table new-table)))
+    (change-dstate dstate :table new-table))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -353,6 +354,7 @@
        (new-scope (acons (ident-fix ident) (dimb-kind-fix kind) scope))
        (new-table (cons new-scope (cdr table))))
     (change-dstate dstate :table new-table))
+  :no-function nil
   :guard-hints
   (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
 
@@ -395,6 +397,7 @@
        (new-scope (acons (ident-fix ident) (dimb-kind-objfun) scope))
        (new-table (append (butlast table 1) (list new-scope))))
     (change-dstate dstate :table new-table))
+  :no-function nil
   :guard-hints (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -563,6 +566,7 @@
     (prog2$ (raise "Internal error: ~x0 applied to ~x1." inc/dec arg)
             (expr-fix arg)))
    (t (make-expr-cast :type type :arg (apply-pre-inc/dec-ops inc/dec arg))))
+  :no-function nil
   :measure (expr-count arg)
   :verify-guards :after-returns
 
@@ -724,6 +728,7 @@
            (new-arg2 (expr-binary->arg2 arg2)))
         (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2 :info nil)))
      (t (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info nil))))
+  :no-function nil
   :measure (+ (expr-count arg1) (expr-count arg2))
   :verify-guards :after-returns
 
@@ -799,6 +804,7 @@
                              op (expr-binary->arg1 arg))
                       :arg2 (expr-binary->arg2 arg)
                       :info nil))
+  :no-function nil
   :measure (expr-count arg)
   :verify-guards :after-returns
 
@@ -841,6 +847,7 @@
                              (expr-binary->arg1 arg))
                       :arg2 (expr-binary->arg2 arg)
                       :info nil))
+  :no-function nil
   :measure (expr-count arg)
   :verify-guards :after-returns
 
@@ -966,6 +973,7 @@
        (prog2$
         (raise "Internal error: unexpected expression ~x0." (expr-fix fun))
         (irr-expr)))
+     :no-function nil
      :measure (expr-count rest)
      :verify-guards :after-returns
 
@@ -2499,6 +2507,7 @@
                                             :params new-params
                                             :ellipsis dirabsdeclor.ellipsis)
                 dstate))))
+    :no-function nil
     :measure (dirabsdeclor-count dirabsdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2636,6 +2645,7 @@
           :absdeclor
           (retok (param-declor-abstract declor/absdeclor.absdeclor)
                  (dstate-fix dstate))))))
+    :no-function nil
     :measure (param-declor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
