@@ -245,14 +245,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now this is just a wrapper of a disambiguation table,
-     but we will extend this soon with macro tables,
+    "This consists of
+     a (mutable) disambiguation table,
+     and an immutable flag saying whether GCC or Clang extensions are enabled.
+     We plan to add a component that is a macro table,
      needed to handle @('#include') directives.")
    (xdoc::p
-    "This could be turned into a stobj if needed for efficiency.")
+    "This could be turned into a stobj, if needed for efficiency.
+     But note that
+     @(tsee dimb-amb-expr/tyname),
+     @(tsee dimb-amb-declor/absdeclor), and
+     @(tsee dimb-amb-declon/stmt)
+     do not currently treat this in a single-threaded way,
+     so that code would need to change in some way.")
    (xdoc::p
     "We pick the short name `@('dstate')' since it is used a lot."))
-  ((table dimb-table))
+  ((table dimb-table)
+   (gcc/clang bool))
   :pred dstatep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -260,7 +269,7 @@
 (defirrelevant irr-dstate
   :short "An irrelevant disambiguation state."
   :type dstatep
-  :body (dstate (irr-dimb-table)))
+  :body (dstate (irr-dimb-table) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,7 +470,8 @@
      we should refine our GCC/Clang flag with
      a richer description of the C implementation."))
   (b* ((table (list nil))
-       (dstate (make-dstate :table table)))
+       (dstate (make-dstate :table table
+                            :gcc/clang (c::dialect-gcc/clangp dialect))))
     (dimb-add-idents-objfun (built-ins-for dialect) dstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3711,7 +3721,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-fundef ((fundef fundefp) (dstate dstatep) (gcc/clang booleanp))
+(define dimb-fundef ((fundef fundefp) (dstate dstatep))
   :returns (mv (erp maybe-msgp) (new-fundef fundefp) (new-dstate dstatep))
   :short "Disambiguate a function definition."
   :long
@@ -3794,7 +3804,7 @@
        (dstate (dimb-add-ident-objfun-file-scope ident dstate))
        ((erp new-declons dstate) (dimb-declon-list fundef.declons dstate))
        (dstate (dimb-add-ident-objfun (ident "__func__") dstate))
-       (dstate (if gcc/clang
+       (dstate (if (dstate->gcc/clang dstate)
                    (dimb-add-idents-objfun
                     (list (ident "__FUNCTION__")
                           (ident "__PRETTY_FUNCTION__"))
@@ -3819,16 +3829,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-ext-declon ((extdecl ext-declonp)
-                         (dstate dstatep)
-                         (gcc/clang booleanp))
+(define dimb-ext-declon ((extdecl ext-declonp) (dstate dstatep))
   :returns (mv (erp maybe-msgp) (new-extdecl ext-declonp) (new-dstate dstatep))
   :short "Disambiguate an external declaration."
   (b* (((reterr) (irr-ext-declon) (irr-dstate)))
     (ext-declon-case
      extdecl
      :fundef
-     (b* (((erp new-fundef dstate) (dimb-fundef extdecl.fundef dstate gcc/clang)))
+     (b* (((erp new-fundef dstate) (dimb-fundef extdecl.fundef dstate)))
        (retok (ext-declon-fundef new-fundef) dstate))
      :declon
      (b* (((erp new-decl dstate) (dimb-declon extdecl.declon dstate)))
@@ -3846,9 +3854,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-trans-item ((item trans-itemp)
-                         (dstate dstatep)
-                         (gcc/clang booleanp))
+(define dimb-trans-item ((item trans-itemp) (dstate dstatep))
   :returns (mv (erp maybe-msgp) (new-item trans-itemp) (new-dstate dstatep))
   :short "Disambiguate a translation item."
   :long
@@ -3860,7 +3866,7 @@
     (trans-item-case
      item
      :declon (b* (((erp declon dstate)
-                   (dimb-ext-declon item.declon dstate gcc/clang)))
+                   (dimb-ext-declon item.declon dstate)))
                (retok (trans-item-declon declon) dstate))
      :include (reterr
                (msg "Disambiguator does not support #include directives yet."))
@@ -3880,18 +3886,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-trans-item-list ((items trans-item-listp)
-                              (dstate dstatep)
-                              (gcc/clang booleanp))
+(define dimb-trans-item-list ((items trans-item-listp) (dstate dstatep))
   :returns (mv (erp maybe-msgp)
                (new-items trans-item-listp)
                (new-dstate dstatep))
   :short "Disambiguate a list of translation items."
   (b* (((reterr) nil (irr-dstate))
        ((when (endp items)) (retok nil (dstate-fix dstate)))
-       ((erp new-item dstate) (dimb-trans-item (car items) dstate gcc/clang))
+       ((erp new-item dstate) (dimb-trans-item (car items) dstate))
        ((erp new-items dstate)
-        (dimb-trans-item-list (cdr items) dstate gcc/clang)))
+        (dimb-trans-item-list (cdr items) dstate)))
     (retok (cons new-item new-items) dstate))
 
   ///
@@ -3903,9 +3907,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-trans-unit ((tunit trans-unitp)
-                         (dstate dstatep)
-                         (gcc/clang booleanp))
+(define dimb-trans-unit ((tunit trans-unitp) (dstate dstatep))
   :returns (mv (erp maybe-msgp)
                (new-tunit trans-unitp)
                (new-dstate dstatep))
@@ -3930,7 +3932,7 @@
      is then used to disambiguate the rest of the including file."))
   (b* (((reterr) (irr-trans-unit) (irr-dstate))
        (items (trans-unit->items tunit))
-       ((erp new-items dstate) (dimb-trans-item-list items dstate gcc/clang)))
+       ((erp new-items dstate) (dimb-trans-item-list items dstate)))
     (retok (make-trans-unit :items new-items :info nil) dstate))
 
   ///
@@ -3963,8 +3965,7 @@
        ((when (omap::emptyp (filepath-trans-unit-map-fix tumap))) (retok nil))
        ((mv path tunit) (omap::head tumap))
        (dstate (init-dstate dialect))
-       (gcc/clang (c::dialect-gcc/clangp dialect))
-       ((mv erp new-tunit &) (dimb-trans-unit tunit dstate gcc/clang))
+       ((mv erp new-tunit &) (dimb-trans-unit tunit dstate))
        ((when erp)
         (if keep-going
             (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
