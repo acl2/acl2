@@ -90,7 +90,7 @@
 (defthm all-unsigned-byte-p-of-update-subrange
   (implies (and (all-unsigned-byte-p size lst)
                 (all-unsigned-byte-p size vals)
-                (integerp start) (natp start)
+                (natp start)
                 (integerp end)
                 (natp size)
                 (true-listp lst) ;drop?

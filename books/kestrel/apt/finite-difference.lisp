@@ -1,6 +1,6 @@
 ; A transformation to perform incrementalization
 ;
-; Copyright (C) 2015-2023 Kestrel Institute
+; Copyright (C) 2015-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -468,7 +468,7 @@ T(x), thus establishing the invariant.</li>
                                  ;;substituted for v, but the guard says the expr is the
                                  ;;same as v -- except that guard obligations from the expr itself
                                  ;;may arise, because now it is in the guard (todo: carve that out
-                                 ;; as an applicability condition) -- yes, usually the the expr
+                                 ;; as an applicability condition) -- yes, usually the expr
                                  ;; also appears in the body of pre2, meaning we already have that obligation,
                                  ;; but it may be guarded by an IF, so it may have conditions from that IF in
                                  ;; the guard obligation of -pre2.

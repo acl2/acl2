@@ -238,7 +238,6 @@
 (defthm alistp-of-mv-nth-1-of-make-range-check-pi-constraints-aux
   (implies (and (alistp pivar-renaming)
                 ;(nat-listp (strip-cars pivar-renaming))
-                (alistp pivar-renaming)
                 (symbol-listp pivars))
            (alistp (mv-nth 1 (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming))))
   :hints (("Goal" :in-theory (enable make-range-check-pi-constraints-aux))))
@@ -246,14 +245,12 @@
 (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-make-range-check-pi-constraints-aux
   (implies (and (alistp pivar-renaming)
                 (nat-listp (strip-cars pivar-renaming))
-                (alistp pivar-renaming)
                 (symbol-listp pivars))
            (nat-listp (strip-cars (mv-nth 1 (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming)))))
   :hints (("Goal" :in-theory (enable make-range-check-pi-constraints-aux))))
 
 (defthm symbol-listp-of-strip-cdrs-of-mv-nth-1-of-make-range-check-pi-constraints-aux
   (implies (and (alistp pivar-renaming)
-                ;; (alistp pivar-renaming)
                 (symbol-listp pivars)
                 (symbol-listp (strip-cdrs pivar-renaming)))
            (symbol-listp (strip-cdrs (mv-nth 1 (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming)))))
@@ -319,7 +316,6 @@
 (defthm subsetp-equal-of-indices-for-1s-and-indices-for-1s
   (implies (and (<= low low+)
                 (integerp high)
-                (integerp low)
                 (natp low)
                 (integerp low+))
            (SUBSETP-EQUAL (indices-for-1s high low+ C)
@@ -1441,7 +1437,6 @@
 (defthm indices-for-1s-split-bottom-index
   (implies (and (equal 1 (getbit low c))
                 (integerp high)
-                (integerp low)
                 (<= low high)
                 (natp low))
            (equal (indices-for-1s high low c)
@@ -1452,7 +1447,6 @@
 (defthm indices-for-1s-when-low-bit-0
   (implies (and (equal 0 (getbit low c))
                 (integerp high)
-                (integerp low)
                 (<= low high)
                 (natp low))
            (equal (indices-for-1s high low c)

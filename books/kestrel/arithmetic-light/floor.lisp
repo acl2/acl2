@@ -1047,7 +1047,7 @@
   (defthm <=-of-floor-same-when-negative-integer
     (implies (and (<= i 0) ; this case
                   (integerp i) ; this case
-                  (rationalp i)
+                  ;; (rationalp i)
                   (rationalp j)
                 ;; j is not in (0,1):
                   (or ;(integerp j) ; could drop

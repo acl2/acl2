@@ -237,7 +237,6 @@
 (defthm supporters-arrayp-aux-of-make-empty-array
   (implies (and (natp n)
                 (<= n dag-len)
-                (natp dag-len)
                 (posp dag-len)
                 (<= dag-len *max-1d-array-length*))
            (supporters-arrayp-aux 'supporters-array

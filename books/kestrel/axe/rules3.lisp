@@ -6414,10 +6414,8 @@
 
 (defthmd floor-bound-hack-31
   (implies (and (<= X (FLOOR 31 J))
-                (rationalp x)
                 (posp j)
-                (posp x)
-                (rationalp j))
+                (posp x))
            (<= (* x j) 31))
   :hints (("Goal" :in-theory (disable FLOOR-BOUND-LEMMA2
                                       my-FLOOR-LOWER-BOUND-ALT
@@ -12913,7 +12911,7 @@
 ;fixme gen!
 (defthm equal-of-bv-array-write-and-bv-array-write-top-elements
   (implies (and (work-hard (< index (bvplus '5 '1 index))) ;fixme
-                (work-hard (< index (bvplus '5 '1 index))) ;fixme
+                ;; (work-hard (< index (bvplus '5 '1 index))) ;fixme
                 (work-hard (natp index)) ;so we can use bv-array-write-opener
                 (all-unsigned-byte-p 8 data1)
                 (all-unsigned-byte-p 8 data2)

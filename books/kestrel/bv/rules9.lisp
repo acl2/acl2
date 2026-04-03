@@ -303,8 +303,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1) ;why?
@@ -333,8 +333,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1) ;why?
@@ -453,8 +453,8 @@
                 ;(<= low2 high2minus1)
                 (natp low1)
                 (natp low2)
-                (natp high1)
-                (natp high2)
+                ;; (natp high1)
+                ;; (natp high2)
                 (posp high1) ;why?
                 (posp high2) ;why?
                 (natp zsize))
@@ -480,8 +480,8 @@
                 ;(<= low2 high2minus1)
                 (natp low1)
                 (natp low2)
-                (natp high1)
-                (natp high2)
+                ;; (natp high1)
+                ;; (natp high2)
                 (posp high1) ;why?
                 (posp high2) ;why?
                 (natp zsize))
@@ -512,8 +512,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1)  ;why?
@@ -546,8 +546,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1)  ;why?
