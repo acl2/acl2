@@ -1958,7 +1958,7 @@
            ;; If the token is a parameter,
            ;; consider its correspoding argument ARG.
            ;; If it is empty, we add NIL to the output list (see doc above);
-           ;; if it is not empty, we add its lexmarks to the output list.
+           ;; if it is not empty, we add its lexemes to the output list.
            (arg (cdr ident+arg)))
         (append (space-lexeme-singleton? spacep)
                 (or arg (list nil))
@@ -2673,10 +2673,10 @@
                                                      (ienv->dialect
                                                       (ppstate->ienv
                                                        ppstate))))
-                (replist (lexmarks-add-provenance
+                (replist (plexemes-add-provenance
                           (cons ident (plexeme-ident->provenance lexeme))
-                          (lexeme-list-to-lexmark-list replist)))
-                (ppstate (push-lexmarks replist ppstate)))
+                          replist))
+                (ppstate (push-lexemes replist ppstate)))
              (pproc-lexemes mode
                             rev-lexemes
                             paren-level
