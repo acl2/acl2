@@ -3986,10 +3986,6 @@
 
   ///
 
-  (fty::deffixequiv dimb-filepath-trans-unit-map
-    :args ((dialect c::dialectp)
-           (keep-going booleanp)))
-
   (defret filepath-trans-unit-map-unambp-of-dimb-filepath-trans-unit-map
     (implies (not erp)
              (filepath-trans-unit-map-unambp new-tumap))
