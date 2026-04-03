@@ -14,6 +14,7 @@
 
 (include-book "std/strings/letter-uscore-chars" :dir :system)
 
+(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 
 (acl2::controlled-configuration)
@@ -512,3 +513,23 @@
   (defret plexeme-list-tokenp-of-plexemes-without-nontokens
     (plexeme-list-tokenp new-lexemes)
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme-add-provenance ((prov string-listp) (lexeme plexemep))
+  :returns (new-lexeme plexemep)
+  :short "Add to the provenance of a lexeme, if it is an identifier."
+  (if (plexeme-case lexeme :ident)
+      (b* ((old-prov (plexeme-ident->provenance lexeme))
+           (new-prov (append (string-list-fix prov) old-prov)))
+        (change-plexeme-ident lexeme :provenance new-prov))
+    (plexeme-fix lexeme)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexemes-add-provenance ((prov string-listp) (lexemes plexeme-listp))
+  :returns (new-lexemes plexeme-listp)
+  :short "Add to the provenance of all the identifiers in a list of lexemes."
+  (cond ((endp lexemes) nil)
+        (t (cons (plexeme-add-provenance prov (car lexemes))
+                 (plexemes-add-provenance prov (cdr lexemes))))))
