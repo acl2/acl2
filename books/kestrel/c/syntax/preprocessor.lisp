@@ -1854,7 +1854,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is used in @(tsee replace-macro-args),
-     to optionally add a space in a list of generated lexmarks."))
+     to optionally add a space in a list of generated lexemes."))
   (and spacep
        (list (plexeme-spaces 1))))
 
@@ -1863,7 +1863,7 @@
 (define replace-macro-args ((replist plexeme-listp)
                             (subst string-plexeme-list-alistp))
   :guard (plexeme-list-token/space-p replist)
-  :returns (lexmarks/placemarkers lexmark-option-listp)
+  :returns (lexemes/placemarkers plexeme-option-listp)
   :short "In the replacement list of a function-like macro,
           replace all the parameters with the corresponding arguments,
           and evaluate the @('#') and operator."
@@ -1873,17 +1873,13 @@
     "The alist @('subst') is calculated elsewhere.
      It consists of the parameter names as keys,
      including @('__VA_ARGS__') if the macro has ellipsis,
-     and the corresponding list of lexmarks as values.
-     The list of lexmarks associated to each parameter
+     and the corresponding list of lexemes as values.
+     The list of lexemes associated to each parameter
      is generally fully replaced [C17:6.10.3.1],
      unless it is preceded by @('#') or @('##') or followed by @('##'),
      in which case the argument lexemes are not replaced.
-     Either way, the alist has the appropriate lists of lexmarks here;
-     the markers are needed because we need to retain the information about
-     which macros have been expanded where in the arguments,
-     to prevent re-expansion when we rescan
-     the substituted replacement list of the macro.
-     Those lexmarks are already normalized via @(tsee normalize-macro-arg).
+     Either way, the alist has the appropriate lists of lexemes here.
+     Those lexemes are already normalized via @(tsee normalize-macro-arg).
      Furthermore, the identifier lexemes in the values of @('subst')
      already contain the information about the function-like macro
      that the substitution pertains to.")
@@ -1905,18 +1901,14 @@
      (which we change into @('###')),
      from the ones that occur in arguments,
      which must not be evaluated [C17:6.10.3.3/3].
-     Another approach is to evaluate @('##') in this ACL2 function,
-     but because of the possible presence of markers,
-     this would make the code more complicated
-     than doing a separate pass to evaluate the @('##') operators
-     that (temporarily) appear as @('###').")
+     Another approach is to evaluate @('##') in this ACL2 function.")
    (xdoc::p
     "A complication arises from the treatment of parameters adjacent to @('##'),
      which are replaced with the tokens of the corresponding arguments,
      which may be zero or more.
      If zero, they are treated like placemarkers [C17:6.10.3.3].
      We represent placemarkers as @('nil'),
-     which is why this function returns a list of optional lexmarks.
+     which is why this function returns a list of optional lexemes.
      In @(tsee evaluate-triple-hash),
      we eliminate all the @('nil') placemarkers,
      according to [C17:6.10.3.3].
@@ -1937,25 +1929,22 @@
             (raise "Internal error: # is followed by non-identifier ~x0."
                    param))
            (param (plexeme-ident->ident param))
-           (param+arg (assoc-equal param
-                                   (string-plexeme-list-alist-fix subst)))
+           (param+arg (assoc-equal param (string-plexeme-list-alist-fix subst)))
            ((unless param+arg)
             (raise "Internal error: # is followed by a non-parameter ~x0."
                    param))
            (arg (cdr param+arg))
            ;; Combine # and ARG into TOKEN.
-           ((mv stringlit markers) (stringize (lexeme-list-to-lexmark-list arg)))
-           (token (plexeme-string stringlit))
-           (lexmark (make-lexmark-lexeme :lexeme token :span (irr-span))))
-        (append (lexeme-list-to-lexmark-list (space-lexeme-singleton? spacep))
-                (list lexmark) ; string literal
-                markers ; markers collected from the operand of #
+           (schars (stringize-lexeme-list arg))
+           (stringlit (make-stringlit :prefix? nil :schars schars))
+           (token (plexeme-string stringlit)))
+        (append (space-lexeme-singleton? spacep)
+                (list token) ; string literal
                 (replace-macro-args replist subst))))
      ((plexeme-hashhashp token) ; ##
-      (append (lexeme-list-to-lexmark-list (space-lexeme-singleton? spacep))
+      (append (space-lexeme-singleton? spacep)
               ;; Replace ## with ### -- see doc above.
-              (list (make-lexmark-lexeme :lexeme (plexeme-punctuator "###")
-                                         :span (irr-span)))
+              (list (plexeme-punctuator "###"))
               (replace-macro-args replist subst)))
      ((plexeme-case token :ident) ; ident (param or not)
       (b* ((ident (plexeme-ident->ident token))
@@ -1963,43 +1952,40 @@
            ;; If the token is an identifier but not a parameter,
            ;; it remains unchanged.
            ((when (not ident+arg))
-            (append (lexeme-list-to-lexmark-list (space-lexeme-singleton? spacep))
-                    (list (make-lexmark-lexeme :lexeme token
-                                               :span (irr-span)))
+            (append (space-lexeme-singleton? spacep)
+                    (list token)
                     (replace-macro-args replist subst)))
            ;; If the token is a parameter,
            ;; consider its correspoding argument ARG.
            ;; If it is empty, we add NIL to the output list (see doc above);
            ;; if it is not empty, we add its lexmarks to the output list.
            (arg (cdr ident+arg)))
-        (append (lexeme-list-to-lexmark-list (space-lexeme-singleton? spacep))
-                (or (lexeme-list-to-lexmark-list arg) (list nil))
+        (append (space-lexeme-singleton? spacep)
+                (or arg (list nil))
                 (replace-macro-args replist subst))))
      (t ; other token
       ;; This case is the same as that above
       ;; of an identifier that is not a parameter.
-      (append (lexeme-list-to-lexmark-list (space-lexeme-singleton? spacep))
-              (list (make-lexmark-lexeme :lexeme token
-                                         :span (irr-span)))
+      (append (space-lexeme-singleton? spacep)
+              (list token)
               (replace-macro-args replist subst)))))
   :no-function nil
   :measure (len replist)
   :guard-hints
   (("Goal" :in-theory (enable
                        alistp-when-string-plexeme-list-alistp-rewrite
-                       true-listp-when-lexmark-listp)))
+                       true-listp-when-plexeme-listp)))
   :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define find-first-token/placemarker
-  ((lexmarks/placemarkers lexmark-option-listp))
+  ((lexemes/placemarkers plexeme-option-listp))
   :returns (mv (foundp booleanp)
                (token/placemarker plexeme-optionp)
-               (markers lexmark-listp)
-               (lexmarks/placemarkers-rest lexmark-option-listp))
+               (lexemes/placemarkers-rest plexeme-option-listp))
   :short "Find the first token or placemarker, if any,
-          in a list of lexmarks and placemarkers."
+          in a list of lexemes and placemarkers."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2008,40 +1994,29 @@
      If found, the first result is @('t'),
      the second result is the token or placemarker
      (the latter represented as @('nil')),
-     the third result are the markers found along the way,
-     and the fourth result are the remaining lexmarks and placemarkers.
+     and the third result are the remaining lexemes and placemarkers.
      Spaces found along the way are ignored,
      because we use this to find the token concatenation operator
      and its second operand, after having the first operand,
      and thus all those spaces are absorbed into token concatenation."))
-  (b* (((when (endp lexmarks/placemarkers)) (mv nil nil nil nil))
-       (lexmark/placemarker (car lexmarks/placemarkers))
-       ((when (not lexmark/placemarker)) ; placemarker
-        (mv t nil nil (lexmark-option-list-fix (cdr lexmarks/placemarkers))))
-       (lexmark lexmark/placemarker)
-       ((when (not (lexmark-case lexmark :lexeme))) ; marker
-        (b* ((marker (lexmark-fix lexmark))
-             ((mv foundp token/placemarker markers lexmarks/placemarkers-rest)
-              (find-first-token/placemarker (cdr lexmarks/placemarkers))))
-          (if foundp
-              (mv foundp
-                  token/placemarker
-                  (cons marker markers)
-                  lexmarks/placemarkers-rest)
-            (mv nil nil nil nil))))
-       (lexeme (lexmark-lexeme->lexeme lexmark))
+  (b* (((when (endp lexemes/placemarkers)) (mv nil nil nil))
+       (lexeme/placemarker (car lexemes/placemarkers))
+       ((when (not lexeme/placemarker)) ; placemarker
+        (mv t nil (plexeme-option-list-fix (cdr lexemes/placemarkers))))
+       (lexeme lexeme/placemarker)
        ((when (plexeme-tokenp lexeme))
-        (mv t lexeme nil
-            (lexmark-option-list-fix (cdr lexmarks/placemarkers)))))
-    (find-first-token/placemarker (cdr lexmarks/placemarkers)))
-  :prepwork ((local (in-theory (enable lexmark-option-fix))))
+        (mv t
+            (plexeme-option-fix lexeme)
+            (plexeme-option-list-fix (cdr lexemes/placemarkers)))))
+    (find-first-token/placemarker (cdr lexemes/placemarkers)))
+  :prepwork ((local (in-theory (enable plexeme-option-fix))))
 
   ///
 
   (more-returns
-   (lexmarks/placemarkers-rest lexmark-listp
-                               :hyp (lexmark-listp lexmarks/placemarkers)
-                               :hints (("Goal" :induct t))))
+   (lexemes/placemarkers-rest plexeme-listp
+                              :hyp (plexeme-listp lexemes/placemarkers)
+                              :hints (("Goal" :induct t))))
 
   (defret plexeme-tokenp-of-find-first-token/placemarker
     (implies token/placemarker
@@ -2049,23 +2024,23 @@
     :hints (("Goal" :induct t)))
 
   (defret len-of-find-first-token/placemarker-uncond
-    (<= (len lexmarks/placemarkers-rest)
-        (len lexmarks/placemarkers))
+    (<= (len lexemes/placemarkers-rest)
+        (len lexemes/placemarkers))
     :rule-classes :linear
     :hints (("Goal" :induct t)))
 
   (defret len-of-find-first-token/placemarker-cond
     (implies foundp
-             (< (len lexmarks/placemarkers-rest)
-                (len lexmarks/placemarkers)))
+             (< (len lexemes/placemarkers-rest)
+                (len lexemes/placemarkers)))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define evaluate-triple-hash ((lexmarks/placemarkers lexmark-option-listp)
+(define evaluate-triple-hash ((lexemes/placemarkers plexeme-option-listp)
                               (dialect c::dialectp))
-  :returns (mv erp (lexmarks lexmark-listp))
+  :returns (mv erp (lexemes plexeme-listp))
   :short "Evaluate the @('##') operator, represented as @('###'),
           in the list produced by @(tsee replace-macro-args)."
   :long
@@ -2073,7 +2048,7 @@
    (xdoc::p
     "See the documentation of @(tsee replace-macro-args) for context.")
    (xdoc::p
-    "We go through the list of lexmarks and placemarkers.
+    "We go through the list of lexemes and placemarkers.
      When we encounter a marker or a space, we just pass it on.
      When we encounter a token or placemarker, we check whether
      it is followed by a @('###'):
@@ -2105,74 +2080,65 @@
      to distinguish the original @('##') in the macro's replacement list,
      which are the actual concatenation operators."))
   (b* (((reterr) nil)
-       ((when (endp lexmarks/placemarkers)) (retok nil))
-       (lexmark/placemarker (car lexmarks/placemarkers))
-       (lexmarks/placemarkers (cdr lexmarks/placemarkers))
-       ;; If the next lexmark or placemarker is a marker or a space,
+       ((when (endp lexemes/placemarkers)) (retok nil))
+       (lexeme/placemarker (car lexemes/placemarkers))
+       (lexemes/placemarkers (cdr lexemes/placemarkers))
+       ;; If the next lexeme or placemarker is a space,
        ;; pass it on, i.e. continue processing and add it to the output.
-       ((when (and lexmark/placemarker
+       ((when (and lexeme/placemarker
                    (not (plexeme-tokenp ; i.e. space
-                         (lexmark-lexeme->lexeme lexmark/placemarker)))))
-        (b* (((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers
-                                                   dialect)))
-          (retok (cons (lexmark-fix lexmark/placemarker) lexmarks))))
-       ;; Otherwise, the next lexmark or placemarker
+                         lexeme/placemarker))))
+        (b* (((erp lexemes)
+              (evaluate-triple-hash lexemes/placemarkers dialect)))
+          (retok (cons (plexeme-fix lexeme/placemarker) lexemes))))
+       ;; Otherwise, the next lexeme or placemarker
        ;; is either a token or a placemarker.
        ;; Call the recursive companion function to concatenate it
        ;; with any subsequent token with ### in between.
-       ((erp token/placemarker markers lexmarks/placemarkers)
-        (evaluate-triple-hash-aux (and lexmark/placemarker
-                                       (lexmark-lexeme->lexeme
-                                        lexmark/placemarker))
-                                  nil
-                                  lexmarks/placemarkers
+       ((erp token/placemarker lexemes/placemarkers)
+        (evaluate-triple-hash-aux lexeme/placemarker
+                                  lexemes/placemarkers
                                   dialect))
-       ;; Process the rest of the lexmarks and placemarkers.
-       ((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers dialect)))
+       ;; Process the rest of the lexemes and placemarkers.
+       ((erp lexemes) (evaluate-triple-hash lexemes/placemarkers dialect)))
     ;; Add the token from the recursive companion function to the output,
     ;; or otherwise discard the placemarker.
-    ;; Also add any markers in between any ### operations.
     (retok (append (and token/placemarker
-                        (list (make-lexmark-lexeme :lexeme token/placemarker
-                                                   :span (irr-span))))
-                   markers
-                   lexmarks)))
-  :measure (len lexmarks/placemarkers)
-  :guard-hints (("Goal" :in-theory (enable true-listp-when-lexmark-listp)))
+                        (list token/placemarker))
+                   lexemes)))
+  :measure (len lexemes/placemarkers)
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-plexeme-listp)))
   :hooks nil
 
   :prepwork
   ((define evaluate-triple-hash-aux
      ((token/placemarker plexeme-optionp)
-      (markers lexmark-listp)
-      (lexmarks/placemarkers lexmark-option-listp)
+      (lexemes/placemarkers plexeme-option-listp)
       (dialect c::dialectp))
      :guard (or (not token/placemarker)
                 (plexeme-tokenp token/placemarker))
      :returns (mv erp
                   (new-token/placemarker plexeme-optionp)
-                  (new-markers lexmark-listp)
-                  (new-lexmarks/placemarkers lexmark-option-listp))
+                  (new-lexemes/placemarkers plexeme-option-listp))
      :parents nil
-     (b* (((reterr) nil nil nil)
+     (b* (((reterr) nil nil)
           ;; Find the next token or placemarker, if any.
-          ((mv foundp triplehash? markers1 lexmarks/placemarkers-rest)
-           (find-first-token/placemarker lexmarks/placemarkers))
+          ((mv foundp triplehash? lexemes/placemarkers-rest)
+           (find-first-token/placemarker lexemes/placemarkers))
           ;; If there is no next token or placemarker,
           ;; or it is not a ### token,
           ;; then return the input token or placemarker unchanged,
-          ;; and also the list of lexmarks and placemarker unchanged;
+          ;; and also the list of lexemes and placemarker unchanged;
           ;; and also the markers found so far unchanged.
           ((unless (and foundp
                         (plexeme?-punctuatorp triplehash? "###")))
            (retok (plexeme-option-fix token/placemarker)
-                  (lexmark-list-fix markers)
-                  (lexmark-option-list-fix lexmarks/placemarkers)))
+                  (plexeme-option-list-fix lexemes/placemarkers)))
           ;; Otherwise, there is a ###,
           ;; so we must find another token or placemarker.
-          (lexmarks/placemarkers lexmarks/placemarkers-rest)
-          ((mv foundp next-token/placemarker markers2 lexmarks/placemarkers)
-           (find-first-token/placemarker lexmarks/placemarkers))
+          (lexemes/placemarkers lexemes/placemarkers-rest)
+          ((mv foundp next-token/placemarker lexemes/placemarkers)
+           (find-first-token/placemarker lexemes/placemarkers))
           ((unless foundp)
            (raise "Internal error: ~
                    concatenation operator ## found ~
@@ -2182,24 +2148,21 @@
           ((erp token/placemarker)
            (concatenate-tokens/placemarkers token/placemarker
                                             next-token/placemarker
-                                            dialect))
-          ;; Join all the markers.
-          (markers (append markers markers1 markers2)))
+                                            dialect)))
        ;; Recursively combine the new token or placemarker
        ;; with any subsequent ones if there are more ### operators.
        (evaluate-triple-hash-aux token/placemarker
-                                 markers
-                                 lexmarks/placemarkers
+                                 lexemes/placemarkers
                                  dialect))
      :no-function nil
-     :measure (len lexmarks/placemarkers)
-     :guard-hints (("Goal" :in-theory (enable true-listp-when-lexmark-listp)))
+     :measure (len lexemes/placemarkers)
+     :guard-hints (("Goal" :in-theory (enable true-listp-when-plexeme-listp)))
 
      ///
 
      (defret len-of-evaluate-triple-hash-aux
-       (<= (len new-lexmarks/placemarkers)
-           (len lexmarks/placemarkers))
+       (<= (len new-lexemes/placemarkers)
+           (len lexemes/placemarkers))
        :rule-classes :linear
        :hints (("Goal" :induct t))))))
 
@@ -2712,7 +2675,7 @@
                                                        ppstate))))
                 (replist (lexmarks-add-provenance
                           (cons ident (plexeme-ident->provenance lexeme))
-                          replist))
+                          (lexeme-list-to-lexmark-list replist)))
                 (ppstate (push-lexmarks replist ppstate)))
              (pproc-lexemes mode
                             rev-lexemes
