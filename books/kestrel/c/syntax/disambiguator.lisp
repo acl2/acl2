@@ -22,9 +22,7 @@
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
-(acl2::controlled-configuration
- :no-function nil
- :hooks nil)
+(acl2::controlled-configuration :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -276,8 +274,7 @@
      Also see @(tsee dimb-pop-scope)."))
   (b* ((table (dstate->table dstate))
        (new-table (cons nil table)))
-    (change-dstate dstate :table new-table))
-  :hooks (:fix))
+    (change-dstate dstate :table new-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,8 +295,7 @@
        (new-table (if (consp table)
                       (cdr table)
                     (raise "Internal error: empty disambiguation table."))))
-    (change-dstate dstate :table new-table))
-  :hooks (:fix))
+    (change-dstate dstate :table new-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -315,7 +311,6 @@
      We return @('nil') if we reach the outermost scope
      without finding a match."))
   (dimb-lookup-ident-loop ident (dstate->table dstate))
-  :hooks (:fix)
 
   :prepwork
   ((define dimb-lookup-ident-loop ((ident identp) (table dimb-tablep))
@@ -326,8 +321,7 @@
           (ident+kind (assoc-equal (ident-fix ident) scope))
           ((when ident+kind) (dimb-kind-fix (cdr ident+kind))))
        (dimb-lookup-ident-loop ident (cdr table)))
-     :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite)))
-     :hooks (:fix))))
+     :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -360,8 +354,7 @@
        (new-table (cons new-scope (cdr table))))
     (change-dstate dstate :table new-table))
   :guard-hints
-  (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite)))
-  :hooks (:fix))
+  (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -369,8 +362,7 @@
   :returns (new-dstate dstatep)
   :short "Add an identifier to the disambiguation table,
           with object or function kind."
-  (dimb-add-ident ident (dimb-kind-objfun) dstate)
-  :hooks (:fix))
+  (dimb-add-ident ident (dimb-kind-objfun) dstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,8 +373,7 @@
   (cond ((endp idents) (dstate-fix dstate))
         (t (dimb-add-idents-objfun (cdr idents)
                                    (dimb-add-ident-objfun (car idents)
-                                                          dstate))))
-  :hooks (:fix))
+                                                          dstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -404,8 +395,7 @@
        (new-scope (acons (ident-fix ident) (dimb-kind-objfun) scope))
        (new-table (append (butlast table 1) (list new-scope))))
     (change-dstate dstate :table new-table))
-  :guard-hints (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -467,8 +457,7 @@
      a richer description of the C implementation."))
   (b* ((table (list nil))
        (dstate (make-dstate :table table)))
-    (dimb-add-idents-objfun (built-ins-for dialect) dstate))
-  :hooks (:fix))
+    (dimb-add-idents-objfun (built-ins-for dialect) dstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -576,7 +565,6 @@
    (t (make-expr-cast :type type :arg (apply-pre-inc/dec-ops inc/dec arg))))
   :measure (expr-count arg)
   :verify-guards :after-returns
-  :hooks (:fix)
 
   ///
 
@@ -738,7 +726,6 @@
      (t (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info nil))))
   :measure (+ (expr-count arg1) (expr-count arg2))
   :verify-guards :after-returns
-  :hooks (:fix)
 
   ///
 
@@ -814,7 +801,6 @@
                       :info nil))
   :measure (expr-count arg)
   :verify-guards :after-returns
-  :hooks (:fix)
 
   ///
 
@@ -857,7 +843,6 @@
                       :info nil))
   :measure (expr-count arg)
   :verify-guards :after-returns
-  :hooks (:fix)
 
   ///
 
@@ -899,7 +884,6 @@
      are pre-increment and pre-decrement operators
      applied to the expression @('(E)Pr')."))
   (dimb-make/adjust-expr-cast tyname inc/dec arg)
-  :hooks (:fix)
 
   ///
 
@@ -952,7 +936,6 @@
   (b* ((fun (expr-paren fun))
        (fun (apply-post-inc/dec-ops fun inc/dec)))
     (dimb-cast/call-to-call-loop fun rest))
-  :hooks (:fix)
 
   :prepwork
 
@@ -985,7 +968,6 @@
         (irr-expr)))
      :measure (expr-count rest)
      :verify-guards :after-returns
-     :hooks (:fix)
 
      ///
 
@@ -1022,7 +1004,6 @@
   (dimb-make/adjust-expr-cast tyname
                               inc/dec
                               (dimb-make/adjust-expr-unary (unop-indir) arg))
-  :hooks (:fix)
 
   ///
 
@@ -1051,7 +1032,6 @@
   (dimb-make/adjust-expr-binary (binop-mul)
                                 (apply-post-inc/dec-ops arg1 inc/dec)
                                 arg2)
-  :hooks (:fix)
 
   ///
 
@@ -1085,7 +1065,6 @@
   (dimb-make/adjust-expr-cast tyname
                               inc/dec
                               (dimb-make/adjust-expr-unary plus/minus arg))
-  :hooks (:fix)
 
   ///
 
@@ -1119,7 +1098,6 @@
   (dimb-make/adjust-expr-binary add/sub
                                 (apply-post-inc/dec-ops arg1 inc/dec)
                                 arg2)
-  :hooks (:fix)
 
   ///
 
@@ -1148,7 +1126,6 @@
   (dimb-make/adjust-expr-cast tyname
                               inc/dec
                               (dimb-make/adjust-expr-unary (unop-address) arg))
-  :hooks (:fix)
 
   ///
 
@@ -1177,7 +1154,6 @@
   (dimb-make/adjust-expr-binary (binop-bitand)
                                 (apply-post-inc/dec-ops arg1 inc/dec)
                                 arg2)
-  :hooks (:fix)
 
   ///
 
@@ -1206,7 +1182,6 @@
   (dimb-make/adjust-expr-cast tyname
                               inc/dec
                               (dimb-make/adjust-expr-label-addr arg))
-  :hooks (:fix)
 
   ///
 
@@ -1235,7 +1210,6 @@
   (dimb-make/adjust-expr-binary (binop-logand)
                                 (apply-post-inc/dec-ops arg1 inc/dec)
                                 arg2)
-  :hooks (:fix)
 
   ///
 
@@ -1309,7 +1283,6 @@
   (b* (((when (endp params)) (mv t nil))
        ((unless fundefp) (mv nil nil)))
     (dimb-params-to-names-loop params dstate))
-  :hooks (:fix)
 
   :prepwork
   ((define dimb-params-to-names-loop ((params param-declon-listp)
@@ -1332,8 +1305,7 @@
           ((when (equal kind? (dimb-kind-typedef))) (mv nil nil))
           ((mv yes/no names) (dimb-params-to-names-loop (cdr params) dstate))
           ((unless yes/no) (mv nil nil)))
-       (mv t (cons ident names)))
-     :hooks (:fix))))
+       (mv t (cons ident names))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3826,7 +3798,6 @@
                         :body new-body
                         :info fundef.info)
            dstate))
-  :hooks (:fix)
 
   ///
 
@@ -3854,7 +3825,6 @@
      (retok (ext-declon-fix extdecl) (dstate-fix dstate))
      :asm
      (retok (ext-declon-fix extdecl) (dstate-fix dstate))))
-  :hooks (:fix)
 
   ///
 
@@ -3889,7 +3859,6 @@
      :cond (reterr
             (msg "Disambiguator does not support conditional directives yet."))
      :line-comment (retok (trans-item-fix item) (dstate-fix dstate))))
-  :hooks (:fix)
 
   ///
 
@@ -3912,7 +3881,6 @@
        ((erp new-items dstate)
         (dimb-trans-item-list (cdr items) dstate gcc/clang)))
     (retok (cons new-item new-items) dstate))
-  :hooks (:fix)
 
   ///
 
@@ -3952,7 +3920,6 @@
        (items (trans-unit->items tunit))
        ((erp new-items dstate) (dimb-trans-item-list items dstate gcc/clang)))
     (retok (make-trans-unit :items new-items :info nil) dstate))
-  :hooks (:fix)
 
   ///
 
@@ -3981,7 +3948,7 @@
     "We propagate errors if the @(':keep-going') flag is @('nil').
      Otherwise, we just print a message and continue."))
   (b* (((reterr) nil)
-       ((when (omap::emptyp tumap)) (retok nil))
+       ((when (omap::emptyp (filepath-trans-unit-map-fix tumap))) (retok nil))
        ((mv path tunit) (omap::head tumap))
        (dstate (init-dstate dialect))
        (gcc/clang (c::dialect-gcc/clangp dialect))
@@ -4045,7 +4012,6 @@
     (retok (make-trans-ensemble :units new-tumap
                                 :resolved-includes nil
                                 :info nil)))
-  :hooks (:fix)
 
   ///
 
