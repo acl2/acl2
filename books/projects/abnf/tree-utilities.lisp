@@ -264,7 +264,7 @@
 (define check-tree-leafterm ((tree treep))
   :returns (nats nat-list-resultp)
   :short "Check if an ABNF tree is a leaf tree,
-          returning its list of natural numbers if sucessful."
+          returning its list of natural numbers if successful."
   (if (tree-case tree :leafterm)
       (tree-leafterm->get tree)
     (reserrf (list :required :leafterm
