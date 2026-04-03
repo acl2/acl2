@@ -242,19 +242,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-init-table ()
-  :returns (table dimb-tablep)
-  :short "Initial disambiguation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This consists of a single empty scope,
-     which is the file scope.
-     We use one disambiguation table for each translation unit."))
-  (list nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define dimb-push-scope ((table dimb-tablep))
   :returns (new-table dimb-tablep)
   :short "Push a scope into the disambiguation table."
@@ -381,6 +368,18 @@
     new-table)
   :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-init-table ()
+  :returns (table dimb-tablep)
+  :short "Initial disambiguation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This consists of a single empty scope,
+     which is the file scope."))
+  (list nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
