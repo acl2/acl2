@@ -687,22 +687,9 @@
      thus, in this case the @('headerp') flag is irrelevant."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil (irr-span) ppstate)
-       (lexmarks (ppstate->lexmarks ppstate))
-       (size (ppstate->size ppstate))
-       ((when (consp lexmarks))
-        (b* ((lexmark (car lexmarks))
-             (lexeme (lexmark-lexeme->lexeme lexmark))
-             (span (lexmark-lexeme->span lexmark))
-             ((unless (> size 0))
-              (raise "Internal error: size is 0 but there are pending lexemes.")
-              (reterr t))
-             (ppstate (update-ppstate->size (1- size) ppstate))
-             (ppstate (update-ppstate->lexmarks (cdr lexmarks) ppstate)))
-          (retok lexeme span ppstate)))
-       ((erp lexeme? span ppstate) (plex-lexeme headerp ppstate))
-       ((when (not lexeme?)) (retok nil span ppstate))
-       (lexeme lexeme?))
-    (retok lexeme span ppstate))
+       ((mv lexeme? span ppstate) (pop-lexeme ppstate))
+       ((when lexeme?) (retok lexeme? span ppstate)))
+    (plex-lexeme headerp ppstate))
   :no-function nil
 
   ///
@@ -2622,7 +2609,7 @@
                 (replist (plexemes-add-provenance
                           (cons ident (plexeme-ident->provenance lexeme))
                           replist))
-                (ppstate (push-lexemes replist ppstate)))
+                (ppstate (push-lexemes replist (irr-span) ppstate)))
              (pproc-lexemes mode
                             rev-lexemes
                             paren-level
@@ -2675,7 +2662,7 @@
                 (replist (plexemes-add-provenance
                           (cons ident (plexeme-ident->provenance lexeme))
                           replist))
-                (ppstate (push-lexemes replist ppstate)))
+                (ppstate (push-lexemes replist (irr-span) ppstate)))
              (pproc-lexemes mode
                             rev-lexemes
                             paren-level

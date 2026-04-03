@@ -69,124 +69,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum lexmark
-  :short "Fixtype of preprocessing lexemes and markers (`lexmarks')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is just a wrapper of lexemes (and spans),
-     which will be eliminated soon.
-     It used to be more than a wrapper,
-     motivated by our previous approach to prevent recursive macro expansion,
-     but now we have a different and better approach
-     that no longer needs lexmarks."))
-  (:lexeme ((lexeme plexeme)
-            (span span)))
-  :pred lexmarkp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-lexmark
-  :short "An irrelevant lexmark."
-  :type lexmarkp
-  :body (lexmark-lexeme (irr-plexeme) (irr-span)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption lexmark-option
-  lexmark
-  :short "Fixtype of optional lexmarks."
-  :pred lexmark-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist lexmark-list
-  :short "Fixtype of lists of lexmarks."
-  :elt-type lexmark
-  :true-listp t
-  :elementp-of-nil nil
-  :pred lexmark-listp
-
-  ///
-
-  (defruled true-listp-when-lexmark-listp
-    (implies (lexmark-listp x)
-             (true-listp x))
-    :induct t
-    :enable lexmark-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist lexmark-option-list
-  :short "Fixtype of lists of optional lexmarks."
-  :elt-type lexmark-option
-  :true-listp t
-  :elementp-of-nil t
-  :pred lexmark-option-listp
-
-  ///
-
-  (defrule lexmark-option-listp-when-lexmark-listp
-    (implies (lexmark-listp x)
-             (lexmark-option-listp x))
-    :induct t
-    :enable lexmark-option-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lexeme-list-to-lexmark-list ((lexemes plexeme-listp))
-  :returns (lexmarks lexmark-listp)
-  :short "Turn a list of lexemes into a list of lexmarks."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We keep the ordering.
-     We put irrelevant spans, which suggest that
-     we should probably make the span optional in @(tsee lexmark)."))
-  (cond ((endp lexemes) nil)
-        (t (cons (make-lexmark-lexeme :lexeme (car lexemes) :span (irr-span))
-                 (lexeme-list-to-lexmark-list (cdr lexemes))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist lexmark-list-case-lexeme-p (x)
-  :guard (lexmark-listp x)
-  :short "Check if all the lexmarks in a list are lexemes."
-  (lexmark-case x :lexeme))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lexmark-list-to-lexeme-list ((lexmarks lexmark-listp))
-  :guard (lexmark-list-case-lexeme-p lexmarks)
-  :returns (lexemes plexeme-listp)
-  :short "Turn a list of lexmarks that are all lexemes
-          into the list of lexemes."
-  (cond ((endp lexmarks) nil)
-        (t (cons (lexmark-lexeme->lexeme (car lexmarks))
-                 (lexmark-list-to-lexeme-list (cdr lexmarks))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lexmark-add-provenance ((prov string-listp) (lexmark lexmarkp))
-  :returns (new-lexmark lexmarkp)
-  :short "Add to the provenance of a lexmark, if it is an identifier."
-  (if (lexmark-case lexmark :lexeme)
-      (b* ((old-lexeme (lexmark-lexeme->lexeme lexmark))
-           (new-lexeme (plexeme-add-provenance prov old-lexeme)))
-        (change-lexmark-lexeme lexmark :lexeme new-lexeme))
-    (lexmark-fix lexmark)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lexmarks-add-provenance ((prov string-listp) (lexmarks lexmark-listp))
-  :returns (new-lexmarks lexmark-listp)
-  :short "Add to the provenance of all the identifiers in a list of lexmarks."
-  (cond ((endp lexmarks) nil)
-        (t (cons (lexmark-add-provenance prov (car lexmarks))
-                 (lexmarks-add-provenance prov (cdr lexmarks))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection ppstate
   :short "Fixtype of preprocessor states."
   :long
@@ -226,24 +108,23 @@
       This is always an index into the position array,
       which is one element longer than the character array as noted above.")
     (xdoc::li
-     "A list of lexmarks to be read next,
+     "A list of lexemes to be read next,
       before lexing lexemes from the character array.
       Conceptually, this list is in front of the remaining characters,
       i.e. the ones starting at the current character index.
-      The list of lexmarks is initially empty,
+      The list of lexemes is initially empty,
       and gets extended when unreading lexemes,
       but also when expanding macros.
       When a macro is expanded, the expansion is added to this list,
       so that preprocessing continues with the expansion,
-      thus realizing rescanning and further replacement [C17:6.10.3.4].
-      The @(':start') and @(':end') markers are added around that expansion,
-      to delimit that the expansion comes from a certain macro,
-      so that we can prevent recursive expansion,
-      as explained in more detail elsewhere.")
+      thus realizing rescanning and further replacement [C17:6.10.3.4].")
+    (xdoc::li
+     "A list of spans of the lexemes in the previous component,
+      in the same number and in the same order.")
     (xdoc::li
      "The current size of the input,
       defined as the sum of the remaining characters to be read
-      and the lexmarks in the pending list.
+      and the lexemes in the pending list.
       This is derivable from other components,
       but it is cached for efficiency.")
     (xdoc::li
@@ -271,8 +152,10 @@
                  :resizable t)
       (char-index :type (integer 0 *)
                   :initially 0)
-      (lexmarks :type (satisfies lexmark-listp)
-                :initially nil)
+      (lexemes :type (satisfies plexeme-listp)
+               :initially nil)
+      (spans :type (satisfies span-listp)
+             :initially nil)
       (size :type (integer 0 *)
             :initially 0)
       (macros :type (satisfies macro-tablep)
@@ -285,7 +168,8 @@
                  (charsp raw-ppstate->chars-p)
                  (positionsp raw-ppstate->positions-p)
                  (char-indexp raw-ppstate->char-index-p)
-                 (lexmarksp raw-ppstate->lexmarks-p)
+                 (lexemesp raw-ppstate->lexemes-p)
+                 (spansp raw-ppstate->spans-p)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
                  (optionsp raw-ppstate->options-p)
@@ -296,7 +180,8 @@
                  (positions-length raw-ppstate->positions-length)
                  (positionsi raw-ppstate->position)
                  (char-index raw-ppstate->char-index)
-                 (lexmarks raw-ppstate->lexmarks)
+                 (lexemes raw-ppstate->lexemes)
+                 (spans raw-ppstate->spans)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
                  (options raw-ppstate->options)
@@ -307,7 +192,8 @@
                  (resize-positions raw-update-ppstate->positions-length)
                  (update-positionsi raw-update-ppstate->position)
                  (update-char-index raw-update-ppstate->char-index)
-                 (update-lexmarks raw-update-ppstate->lexmarks)
+                 (update-lexemes raw-update-ppstate->lexemes)
+                 (update-spans raw-update-ppstate->spans)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
                  (update-options raw-update-ppstate->options)
@@ -404,10 +290,16 @@
          :exec (raw-ppstate->char-index ppstate))
     :inline t)
 
-  (define ppstate->lexmarks ((ppstate ppstatep))
-    :returns (lexmarks lexmark-listp)
-    (mbe :logic (non-exec (raw-ppstate->lexmarks (ppstate-fix ppstate)))
-         :exec (raw-ppstate->lexmarks ppstate))
+  (define ppstate->lexemes ((ppstate ppstatep))
+    :returns (lexemes plexeme-listp)
+    (mbe :logic (non-exec (raw-ppstate->lexemes (ppstate-fix ppstate)))
+         :exec (raw-ppstate->lexemes ppstate))
+    :inline t)
+
+  (define ppstate->spans ((ppstate ppstatep))
+    :returns (spans span-listp)
+    (mbe :logic (non-exec (raw-ppstate->spans (ppstate-fix ppstate)))
+         :exec (raw-ppstate->spans ppstate))
     :inline t)
 
   (define ppstate->size ((ppstate ppstatep))
@@ -493,12 +385,20 @@
          :exec (raw-update-ppstate->char-index char-index ppstate))
     :inline t)
 
-  (define update-ppstate->lexmarks ((lexmarks lexmark-listp) (ppstate ppstatep))
+  (define update-ppstate->lexemes ((lexemes plexeme-listp) (ppstate ppstatep))
     :returns (new-ppstate ppstatep)
     (mbe :logic (non-exec
-                 (raw-update-ppstate->lexmarks (lexmark-list-fix lexmarks)
-                                               (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->lexmarks lexmarks ppstate))
+                 (raw-update-ppstate->lexemes (plexeme-list-fix lexemes)
+                                              (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->lexemes lexemes ppstate))
+    :inline t)
+
+  (define update-ppstate->spans ((spans span-listp) (ppstate ppstatep))
+    :returns (new-ppstate ppstatep)
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->spans (span-list-fix spans)
+                                            (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->spans spans ppstate))
     :inline t)
 
   (define update-ppstate->size ((size natp) (ppstate ppstatep))
@@ -595,16 +495,16 @@
     :enable (ppstate->char-index
              update-ppstate->size))
 
-  (defrule ppstate->lexmarks-of-update-ppstate->char-index
-    (equal (ppstate->lexmarks (update-ppstate->char-index char-index ppstate))
-           (ppstate->lexmarks ppstate))
-    :enable (ppstate->lexmarks
+  (defrule ppstate->lexemes-of-update-ppstate->char-index
+    (equal (ppstate->lexemes (update-ppstate->char-index char-index ppstate))
+           (ppstate->lexemes ppstate))
+    :enable (ppstate->lexemes
              update-ppstate->char-index))
 
-  (defrule ppstate->lexmarks-of-update-ppstate->size
-    (equal (ppstate->lexmarks (update-ppstate->size size ppstate))
-           (ppstate->lexmarks ppstate))
-    :enable (ppstate->lexmarks
+  (defrule ppstate->lexemes-of-update-ppstate->size
+    (equal (ppstate->lexemes (update-ppstate->size size ppstate))
+           (ppstate->lexemes ppstate))
+    :enable (ppstate->lexemes
              update-ppstate->size))
 
   (defrule ppstate->size-of-update-ppstate->char-index
@@ -613,11 +513,11 @@
     :enable (ppstate->size
              update-ppstate->char-index))
 
-  (defrule ppstate->size-of-update-ppstate->lexmarks
-    (equal (ppstate->size (update-ppstate->lexmarks lexmarks ppstate))
+  (defrule ppstate->size-of-update-ppstate->lexemes
+    (equal (ppstate->size (update-ppstate->lexemes lexemes ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->lexmarks))
+             update-ppstate->lexemes))
 
   (defrule ppstate->size-of-update-ppstate->size
     (equal (ppstate->size (update-ppstate->size size ppstate))
@@ -704,7 +604,7 @@
     (ppstate->position index ppstate))
   :no-function nil)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-ppstate ((chars uchar-listp)
                       (poss position-listp)
@@ -730,12 +630,15 @@
      to the lengths of the lists,
      which are related as expressed in the guard,
      and as explained in @(tsee ppstate).
-     The character index is set to 0, i.e. the beginning."))
+     The character index is set to 0, i.e. the beginning.
+     There are no pending lexemes and spans."))
   (b* ((ppstate (update-ppstate->chars-length (len chars) ppstate))
        (ppstate (init-ppstate-chars-loop chars 0 ppstate))
        (ppstate (update-ppstate->positions-length (len poss) ppstate))
        (ppstate (init-ppstate-positions-loop poss 0 ppstate))
        (ppstate (update-ppstate->char-index 0 ppstate))
+       (ppstate (update-ppstate->lexemes nil ppstate))
+       (ppstate (update-ppstate->spans nil ppstate))
        (ppstate (update-ppstate->size (len chars) ppstate))
        (ppstate (update-ppstate->macros macros ppstate))
        (ppstate (update-ppstate->options options ppstate))
@@ -768,15 +671,18 @@
           (ppstate (update-ppstate->position i (car poss) ppstate)))
        (init-ppstate-positions-loop (cdr poss) (1+ (lnfix i)) ppstate)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define push-lexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
   :returns (new-ppstate ppstatep)
-  :short "Push a lexeme, with a span, onto the pending lexmark list."
-  (b* ((lexmark (make-lexmark-lexeme :lexeme lexeme :span span))
-       (new-lexmarks (cons lexmark (ppstate->lexmarks ppstate)))
+  :short "Push a lexeme, with a span, onto the pending lists."
+  (b* ((lexemes (ppstate->lexemes ppstate))
+       (spans (ppstate->spans ppstate))
+       (new-lexemes (cons (plexeme-fix lexeme) lexemes))
+       (new-spans (cons (span-fix span) spans))
        (new-size (1+ (ppstate->size ppstate)))
-       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
+       (ppstate (update-ppstate->lexemes new-lexemes ppstate))
+       (ppstate (update-ppstate->spans new-spans ppstate))
        (ppstate (update-ppstate->size new-size ppstate)))
     ppstate)
 
@@ -788,17 +694,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define push-lexemes ((lexemes plexeme-listp) (ppstate ppstatep))
+(define push-lexemes ((lexemes plexeme-listp) (span spanp) (ppstate ppstatep))
   :returns (new-ppstate ppstatep)
-  :short "Push a list of lexemes onto the pending lexmark list."
-  (b* ((new-lexmarks (append (lexeme-list-to-lexmark-list lexemes)
-                             (ppstate->lexmarks ppstate)))
+  :short "Push a list of lexemes, all with the same span,
+          onto the pending lists."
+  (b* ((old-lexemes (ppstate->lexemes ppstate))
+       (old-spans (ppstate->spans ppstate))
+       (new-lexemes (append (plexeme-list-fix lexemes) old-lexemes))
+       (new-spans (append (repeat (len lexemes) (span-fix span)) old-spans))
        (new-size (+ (len lexemes) (ppstate->size ppstate)))
-       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
+       (ppstate (update-ppstate->lexemes new-lexemes ppstate))
+       (ppstate (update-ppstate->spans new-spans ppstate))
        (ppstate (update-ppstate->size new-size ppstate)))
-    ppstate))
+    ppstate)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ///
+
+  (defret ppstate->size-of-push-lexemes
+    (equal (ppstate->size new-ppstate)
+           (+ (len lexemes) (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pop-lexeme ((ppstate ppstatep))
+  :returns (mv (lexeme? plexeme-optionp) (span spanp) (new-ppstate ppstatep))
+  :short "Pop a lexemes, with a span, from the pending lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the lists are empty,
+     we retun @('nil') as first result,
+     and an irrelevant span as second result.
+     It is an invariant that the two lists always have the same length,
+     but currently we do not have that invariant statically available,
+     so we make a check that is never expected to fail."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       (lexemes (ppstate->lexemes ppstate))
+       (size (ppstate->size ppstate))
+       (spans (ppstate->spans ppstate))
+       ((unless (consp lexemes)) (mv nil (irr-span) ppstate))
+       ((unless (consp spans))
+        (raise "Internal error: non-empty lexemes but empty spans.")
+        (mv nil (irr-span) ppstate))
+       ((cons lexeme new-lexemes) lexemes)
+       ((cons span new-spans) spans)
+       ((unless (> size 0))
+        (raise "Internal error: non-empty lexemes but zero size.")
+        (mv nil (irr-span) ppstate))
+       (new-size (1- (ppstate->size ppstate)))
+       (ppstate (update-ppstate->lexemes new-lexemes ppstate))
+       (ppstate (update-ppstate->spans new-spans ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    (mv lexeme span ppstate))
+  :no-function nil
+  :prepwork
+  ((defrulel lemma
+     (implies (and (plexeme-listp x)
+                   (consp x))
+              (car x))))
+
+  ///
+
+  (defret ppstate->size-of-pop-lexemes
+    (equal (ppstate->size new-ppstate)
+           (if lexeme?
+               (1- (ppstate->size ppstate))
+             (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define change-presumed-line ((line posp) (ppstate ppstatep))
   :returns (new-ppstate ppstatep)
