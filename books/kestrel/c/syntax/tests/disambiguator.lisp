@@ -26,8 +26,7 @@
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         (table (dimb-add-idents-objfun (built-ins-for dialect)
-                                        (dimb-init-table)))
+         (table (dimb-init-table dialect))
          (gcc/clang (c::dialect-gcc/clangp dialect))
          ((mv erp2 ast &) (dimb-trans-unit ast table gcc/clang)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
@@ -45,8 +44,7 @@
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         (table (dimb-add-idents-objfun (built-ins-for dialect)
-                                        (dimb-init-table)))
+         (table (dimb-init-table dialect))
          (gcc/clang (c::dialect-gcc/clangp dialect))
          ((mv erp2 & &) (dimb-trans-unit ast table gcc/clang)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
