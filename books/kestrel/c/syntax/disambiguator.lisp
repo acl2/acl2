@@ -23,8 +23,8 @@
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
 (acl2::controlled-configuration
-  :no-function nil
-  :hooks nil)
+ :no-function nil
+ :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,8 +242,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-push-scope ((table dimb-tablep))
-  :returns (new-table dimb-tablep)
+(fty::defprod dstate
+  :short "Fixtype of disambiguation states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now this is just a wrapper of a disambiguation table,
+     but we will extend this soon with macro tables,
+     needed to handle @('#include') directives.")
+   (xdoc::p
+    "This could be turned into a stobj if needed for efficiency."))
+  ((table dimb-table))
+  :pred dstatep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-dstate
+  :short "An irrelevant disambiguation state."
+  :type dstatep
+  :body (dstate (irr-dimb-table)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-push-scope ((dstate dstatep))
+  :returns (new-dstate dstatep)
   :short "Push a scope into the disambiguation table."
   :long
   (xdoc::topstring
@@ -252,13 +274,15 @@
      The top of the stack is on the left,
      so we push via @(tsee cons).
      Also see @(tsee dimb-pop-scope)."))
-  (cons nil (dimb-table-fix table))
+  (b* ((table (dstate->table dstate))
+       (new-table (cons nil table)))
+    (change-dstate dstate :table new-table))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-pop-scope ((table dimb-tablep))
-  :returns (new-table dimb-tablep)
+(define dimb-pop-scope ((dstate dstatep))
+  :returns (new-dstate dstatep)
   :short "Pop a scope from the disambiguation table."
   :long
   (xdoc::topstring
@@ -270,14 +294,16 @@
     "We remove the top scope, via @(tsee cdr).
      Recall that the stack top is on the left;
      see @(tsee dimb-push-scope)."))
-  (if (consp table)
-      (dimb-table-fix (cdr table))
-    (raise "Internal error: empty disambiguation table."))
+  (b* ((table (dstate->table dstate))
+       (new-table (if (consp table)
+                      (cdr table)
+                    (raise "Internal error: empty disambiguation table."))))
+    (change-dstate dstate :table new-table))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-lookup-ident ((ident identp) (table dimb-tablep))
+(define dimb-lookup-ident ((ident identp) (dstate dstatep))
   :returns (kind? dimb-kind-optionp)
   :short "Look up an identifier in the disambiguation table."
   :long
@@ -288,18 +314,25 @@
      We stop as soon as we find a match.
      We return @('nil') if we reach the outermost scope
      without finding a match."))
-  (b* (((when (endp table)) nil)
-       (scope (dimb-scope-fix (car table)))
-       (ident+kind (assoc-equal (ident-fix ident) scope))
-       ((when ident+kind) (dimb-kind-fix (cdr ident+kind))))
-    (dimb-lookup-ident ident (cdr table)))
-  :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite)))
-  :hooks (:fix))
+  (dimb-lookup-ident-loop ident (dstate->table dstate))
+  :hooks (:fix)
+
+  :prepwork
+  ((define dimb-lookup-ident-loop ((ident identp) (table dimb-tablep))
+     :returns (kind? dimb-kind-optionp)
+     :parents nil
+     (b* (((when (endp table)) nil)
+          (scope (dimb-scope-fix (car table)))
+          (ident+kind (assoc-equal (ident-fix ident) scope))
+          ((when ident+kind) (dimb-kind-fix (cdr ident+kind))))
+       (dimb-lookup-ident-loop ident (cdr table)))
+     :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite)))
+     :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-add-ident ((ident identp) (kind dimb-kindp) (table dimb-tablep))
-  :returns (new-table dimb-tablep)
+(define dimb-add-ident ((ident identp) (kind dimb-kindp) (dstate dstatep))
+  :returns (new-dstate dstatep)
   :short "Add an identifier and its kind to the disambiguation table."
   :long
   (xdoc::topstring
@@ -318,41 +351,43 @@
      even if the new kind differs from the old kind:
      this situation should only happen with invalid code,
      in which case it does not matter how we disambiguate it exactly."))
-  (b* (((when (endp table))
-        (raise "Internal error: empty disambiguation table."))
+  (b* ((table (dstate->table dstate))
+       ((when (endp table))
+        (raise "Internal error: empty disambiguation table.")
+        (irr-dstate))
        (scope (dimb-scope-fix (car table)))
        (new-scope (acons (ident-fix ident) (dimb-kind-fix kind) scope))
        (new-table (cons new-scope (cdr table))))
-    (dimb-table-fix new-table))
-  :guard-hints (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite)))
+    (change-dstate dstate :table new-table))
+  :guard-hints
+  (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-add-ident-objfun ((ident identp) (table dimb-tablep))
-  :returns (new-table dimb-tablep)
+(define dimb-add-ident-objfun ((ident identp) (dstate dstatep))
+  :returns (new-dstate dstatep)
   :short "Add an identifier to the disambiguation table,
           with object or function kind."
-  (dimb-add-ident ident (dimb-kind-objfun) table)
+  (dimb-add-ident ident (dimb-kind-objfun) dstate)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-add-idents-objfun ((idents ident-listp) (table dimb-tablep))
-  :returns (new-table dimb-tablep)
+(define dimb-add-idents-objfun ((idents ident-listp) (dstate dstatep))
+  :returns (new-dstate dstatep)
   :short "Add all the identifiers in a list to the disambiguation table,
           with object or function kind."
-  (cond ((endp idents) (dimb-table-fix table))
+  (cond ((endp idents) (dstate-fix dstate))
         (t (dimb-add-idents-objfun (cdr idents)
                                    (dimb-add-ident-objfun (car idents)
-                                                          table))))
+                                                          dstate))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-add-ident-objfun-file-scope ((ident identp) (table dimb-tablep))
-  :returns (new-table dimb-tablep
-                      :hints (("Goal" :in-theory (enable acons))))
+(define dimb-add-ident-objfun-file-scope ((ident identp) (dstate dstatep))
+  :returns (new-dstate dstatep :hints (("Goal" :in-theory (enable acons))))
   :short "Add an identifier to the file scope of a disambiguation table,
           with object or function kind."
   :long
@@ -360,24 +395,28 @@
    (xdoc::p
     "Unlike @(tsee dimb-add-ident-objfun), this skips any block scopes,
      and directly updates the file scope at the bottom of the stack."))
-  (b* (((when (endp table)) (raise "Internal error: no scopes."))
+  (b* ((table (dstate->table dstate))
+       ((when (endp table))
+        (raise "Internal error: no scopes.")
+        (irr-dstate))
        (table (dimb-table-fix table))
        (scope (car (last table)))
        (new-scope (acons (ident-fix ident) (dimb-kind-objfun) scope))
        (new-table (append (butlast table 1) (list new-scope))))
-    new-table)
-  :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite)))
+    (change-dstate dstate :table new-table))
+  :guard-hints (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-init-table ((dialect c::dialectp))
-  :returns (table dimb-tablep)
-  :short "Initial disambiguation table."
+(define init-dstate ((dialect c::dialectp))
+  :returns (dstate dstatep)
+  :short "Initial disambiguation state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of a single scope, which is the file scope.")
+    "The disambiguation table consists of a single scope,
+     which is the file scope.")
    (xdoc::p
     "If the C dialect does not have any extensions,
      the initial disambiguation table is empty.
@@ -427,8 +466,8 @@
      we should refine our GCC/Clang flag with
      a richer description of the C implementation."))
   (b* ((table (list nil))
-       (table (dimb-add-idents-objfun (built-ins-for dialect) table)))
-    table)
+       (dstate (make-dstate :table table)))
+    (dimb-add-idents-objfun (built-ins-for dialect) dstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1209,7 +1248,7 @@
 
 (define dimb-params-to-names ((params param-declon-listp)
                               (fundefp booleanp)
-                              (table dimb-tablep))
+                              (dstate dstatep))
   :returns (mv (yes/no booleanp) (names ident-listp))
   :short "Disambiguate a list of parameter declarations to a list of names,
           if appropriate."
@@ -1269,12 +1308,12 @@
      after that processing and disambiguation."))
   (b* (((when (endp params)) (mv t nil))
        ((unless fundefp) (mv nil nil)))
-    (dimb-params-to-names-loop params table))
+    (dimb-params-to-names-loop params dstate))
   :hooks (:fix)
 
   :prepwork
   ((define dimb-params-to-names-loop ((params param-declon-listp)
-                                      (table dimb-tablep))
+                                      (dstate dstatep))
      :returns (mv (yes/no booleanp) (names ident-listp))
      :parents nil
      (b* (((when (endp params)) (mv t nil))
@@ -1289,9 +1328,9 @@
           (tyspec (decl-spec-typespec->spec declspec))
           ((unless (type-spec-case tyspec :typedef)) (mv nil nil))
           (ident (type-spec-typedef->name tyspec))
-          (kind? (dimb-lookup-ident ident table))
+          (kind? (dimb-lookup-ident ident dstate))
           ((when (equal kind? (dimb-kind-typedef))) (mv nil nil))
-          ((mv yes/no names) (dimb-params-to-names-loop (cdr params) table))
+          ((mv yes/no names) (dimb-params-to-names-loop (cdr params) dstate))
           ((unless yes/no) (mv nil nil)))
        (mv t (cons ident names)))
      :hooks (:fix))))
@@ -1317,8 +1356,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-expr ((expr exprp) (table dimb-tablep))
-    :returns (mv (erp maybe-msgp) (new-expr exprp) (new-table dimb-tablep))
+  (define dimb-expr ((expr exprp) (dstate dstatep))
+    :returns (mv (erp maybe-msgp) (new-expr exprp) (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an expression."
     :long
@@ -1372,11 +1411,11 @@
        because the only change in priorities
        that may be caused by disambiguation
        is for cast and binary expressions."))
-    (b* (((reterr) (irr-expr) (irr-dimb-table)))
+    (b* (((reterr) (irr-expr) (irr-dstate)))
       (expr-case
        expr
        :ident
-       (b* ((kind (dimb-lookup-ident expr.ident table))
+       (b* ((kind (dimb-lookup-ident expr.ident dstate))
             ((unless kind)
              (retmsg$ "The identifier ~x0 is used as an expression ~
                        but is not in scope."
@@ -1387,111 +1426,111 @@
                              but it is used as an expression."
                             (ident->unwrap expr.ident))
           :objfun (retok (expr-fix expr)
-                         (dimb-table-fix table))
+                         (dstate-fix dstate))
           :enumconst (retok (make-expr-const :const (const-enum expr.ident))
-                            (dimb-table-fix table))))
+                            (dstate-fix dstate))))
        :const
-       (retok (expr-fix expr) (dimb-table-fix table))
+       (retok (expr-fix expr) (dstate-fix dstate))
        :string
-       (retok (expr-fix expr) (dimb-table-fix table))
+       (retok (expr-fix expr) (dstate-fix dstate))
        :paren
-       (b* (((erp new-expr table) (dimb-expr expr.inner table)))
-         (retok (expr-paren new-expr) table))
+       (b* (((erp new-expr dstate) (dimb-expr expr.inner dstate)))
+         (retok (expr-paren new-expr) dstate))
        :gensel
-       (b* (((erp new-control table) (dimb-expr expr.control table))
-            ((erp new-assocs table) (dimb-genassoc-list expr.assocs table)))
+       (b* (((erp new-control dstate) (dimb-expr expr.control dstate))
+            ((erp new-assocs dstate) (dimb-genassoc-list expr.assocs dstate)))
          (retok (make-expr-gensel :control new-control
                                   :assocs new-assocs)
-                table))
+                dstate))
        :arrsub
-       (b* (((erp new-arg1 table) (dimb-expr expr.arg1 table))
-            ((erp new-arg2 table) (dimb-expr expr.arg2 table)))
+       (b* (((erp new-arg1 dstate) (dimb-expr expr.arg1 dstate))
+            ((erp new-arg2 dstate) (dimb-expr expr.arg2 dstate)))
          (retok (make-expr-arrsub :arg1 new-arg1
                                   :arg2 new-arg2)
-                table))
+                dstate))
        :funcall
-       (b* (((erp new-fun table) (dimb-expr expr.fun table))
-            ((erp new-args table) (dimb-expr-list expr.args table)))
+       (b* (((erp new-fun dstate) (dimb-expr expr.fun dstate))
+            ((erp new-args dstate) (dimb-expr-list expr.args dstate)))
          (retok (make-expr-funcall :fun new-fun :args new-args)
-                table))
+                dstate))
        :member
-       (b* (((erp new-arg table) (dimb-expr expr.arg table)))
+       (b* (((erp new-arg dstate) (dimb-expr expr.arg dstate)))
          (retok (make-expr-member :arg new-arg :name expr.name)
-                table))
+                dstate))
        :memberp
-       (b* (((erp new-arg table) (dimb-expr expr.arg table)))
+       (b* (((erp new-arg dstate) (dimb-expr expr.arg dstate)))
          (retok (make-expr-memberp :arg new-arg :name expr.name)
-                (dimb-table-fix table)))
+                (dstate-fix dstate)))
        :complit
-       (b* (((erp new-type table) (dimb-tyname expr.type table))
-            ((erp new-elems table) (dimb-desiniter-list expr.elems table)))
+       (b* (((erp new-type dstate) (dimb-tyname expr.type dstate))
+            ((erp new-elems dstate) (dimb-desiniter-list expr.elems dstate)))
          (retok (make-expr-complit :type new-type
                                    :elems new-elems
                                    :final-comma expr.final-comma)
-                table))
+                dstate))
        :unary
-       (b* (((erp new-arg table) (dimb-expr expr.arg table)))
+       (b* (((erp new-arg dstate) (dimb-expr expr.arg dstate)))
          (retok (dimb-make/adjust-expr-unary expr.op
                                              new-arg)
-                table))
+                dstate))
        :label-addr
-       (retok (expr-fix expr) (dimb-table-fix table))
+       (retok (expr-fix expr) (dstate-fix dstate))
        :sizeof
-       (b* (((erp new-tyname table) (dimb-tyname expr.type table)))
-         (retok (expr-sizeof new-tyname) table))
+       (b* (((erp new-tyname dstate) (dimb-tyname expr.type dstate)))
+         (retok (expr-sizeof new-tyname) dstate))
        :sizeof-ambig
-       (b* (((erp expr-or-tyname table)
-             (dimb-amb-expr/tyname expr.expr/tyname t table)))
+       (b* (((erp expr-or-tyname dstate)
+             (dimb-amb-expr/tyname expr.expr/tyname t dstate)))
          (expr/tyname-case
           expr-or-tyname
           :expr (retok (dimb-make/adjust-expr-unary (unop-sizeof)
                                                     expr-or-tyname.expr)
-                       table)
+                       dstate)
           :tyname (retok (expr-sizeof expr-or-tyname.tyname)
-                         table)))
+                         dstate)))
        :alignof
-       (b* (((erp new-tyname table) (dimb-tyname expr.type table)))
+       (b* (((erp new-tyname dstate) (dimb-tyname expr.type dstate)))
          (retok (make-expr-alignof :type new-tyname :uscores expr.uscores)
-                table))
+                dstate))
        :alignof-ambig
-       (b* (((erp expr-or-tyname table)
-             (dimb-amb-expr/tyname expr.expr/tyname t table)))
+       (b* (((erp expr-or-tyname dstate)
+             (dimb-amb-expr/tyname expr.expr/tyname t dstate)))
          (expr/tyname-case
           expr-or-tyname
           :expr (retok (dimb-make/adjust-expr-unary (unop-alignof expr.uscores)
                                                     expr-or-tyname.expr)
-                       table)
+                       dstate)
           :tyname (retok (make-expr-alignof :type expr-or-tyname.tyname
                                             :uscores expr.uscores)
-                         table)))
+                         dstate)))
        :cast
-       (b* (((erp new-type table) (dimb-tyname expr.type table))
-            ((erp new-arg table) (dimb-expr expr.arg table)))
+       (b* (((erp new-type dstate) (dimb-tyname expr.type dstate))
+            ((erp new-arg dstate) (dimb-expr expr.arg dstate)))
          (retok (dimb-make/adjust-expr-cast new-type nil new-arg)
-                table))
+                dstate))
        :binary
-       (b* (((erp new-arg1 table) (dimb-expr expr.arg1 table))
-            ((erp new-arg2 table) (dimb-expr expr.arg2 table)))
+       (b* (((erp new-arg1 dstate) (dimb-expr expr.arg1 dstate))
+            ((erp new-arg2 dstate) (dimb-expr expr.arg2 dstate)))
          (retok (dimb-make/adjust-expr-binary expr.op new-arg1 new-arg2)
-                table))
+                dstate))
        :cond
-       (b* (((erp new-test table) (dimb-expr expr.test table))
-            ((erp new-then table) (dimb-expr-option expr.then table))
-            ((erp new-else table) (dimb-expr expr.else table)))
+       (b* (((erp new-test dstate) (dimb-expr expr.test dstate))
+            ((erp new-then dstate) (dimb-expr-option expr.then dstate))
+            ((erp new-else dstate) (dimb-expr expr.else dstate)))
          (retok (make-expr-cond :test new-test
                                 :then new-then
                                 :else new-else)
-                table))
+                dstate))
        :comma
-       (b* (((erp new-first table) (dimb-expr expr.first table))
-            ((erp new-next table) (dimb-expr expr.next table)))
+       (b* (((erp new-first dstate) (dimb-expr expr.first dstate))
+            ((erp new-next dstate) (dimb-expr expr.next dstate)))
          (retok (make-expr-comma :first new-first
                                  :next new-next)
-                table))
+                dstate))
        :cast/call-ambig
-       (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/fun t table))
-            ((erp new-arg/rest table) (dimb-expr expr.arg/rest table)))
+       (b* (((erp expr/tyname dstate)
+             (dimb-amb-expr/tyname expr.type/fun t dstate))
+            ((erp new-arg/rest dstate) (dimb-expr expr.arg/rest dstate)))
          (expr/tyname-case
           expr/tyname
           :tyname
@@ -1499,17 +1538,17 @@
            (dimb-cast/call-to-cast (expr/tyname-tyname->tyname expr/tyname)
                                    expr.inc/dec
                                    new-arg/rest)
-           table)
+           dstate)
           :expr
           (retok
            (dimb-cast/call-to-call (expr/tyname-expr->expr expr/tyname)
                                    expr.inc/dec
                                    new-arg/rest)
-           table)))
+           dstate)))
        :cast/mul-ambig
-       (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 t table))
-            ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
+       (b* (((erp expr/tyname dstate)
+             (dimb-amb-expr/tyname expr.type/arg1 t dstate))
+            ((erp new-arg/arg2 dstate) (dimb-expr expr.arg/arg2 dstate)))
          (expr/tyname-case
           expr/tyname
           :tyname
@@ -1517,17 +1556,17 @@
            (dimb-cast/mul-to-cast (expr/tyname-tyname->tyname expr/tyname)
                                   expr.inc/dec
                                   new-arg/arg2)
-           table)
+           dstate)
           :expr
           (retok
            (dimb-cast/mul-to-mul (expr/tyname-expr->expr expr/tyname)
                                  expr.inc/dec
                                  new-arg/arg2)
-           table)))
+           dstate)))
        :cast/add-ambig
-       (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 t table))
-            ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
+       (b* (((erp expr/tyname dstate)
+             (dimb-amb-expr/tyname expr.type/arg1 t dstate))
+            ((erp new-arg/arg2 dstate) (dimb-expr expr.arg/arg2 dstate)))
          (expr/tyname-case
           expr/tyname
           :tyname
@@ -1536,18 +1575,18 @@
                                      expr.inc/dec
                                      new-arg/arg2
                                      (unop-plus))
-           table)
+           dstate)
           :expr
           (retok
            (dimb-cast/addsub-to-addsub (expr/tyname-expr->expr expr/tyname)
                                        expr.inc/dec
                                        new-arg/arg2
                                        (binop-add))
-           table)))
+           dstate)))
        :cast/sub-ambig
-       (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 t table))
-            ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
+       (b* (((erp expr/tyname dstate)
+             (dimb-amb-expr/tyname expr.type/arg1 t dstate))
+            ((erp new-arg/arg2 dstate) (dimb-expr expr.arg/arg2 dstate)))
          (expr/tyname-case
           expr/tyname
           :tyname
@@ -1556,18 +1595,18 @@
                                      expr.inc/dec
                                      new-arg/arg2
                                      (unop-minus))
-           table)
+           dstate)
           :expr
           (retok
            (dimb-cast/addsub-to-addsub (expr/tyname-expr->expr expr/tyname)
                                        expr.inc/dec
                                        new-arg/arg2
                                        (binop-sub))
-           table)))
+           dstate)))
        :cast/and-ambig
-       (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 t table))
-            ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
+       (b* (((erp expr/tyname dstate)
+             (dimb-amb-expr/tyname expr.type/arg1 t dstate))
+            ((erp new-arg/arg2 dstate) (dimb-expr expr.arg/arg2 dstate)))
          (expr/tyname-case
           expr/tyname
           :tyname
@@ -1575,17 +1614,17 @@
            (dimb-cast/and-to-cast (expr/tyname-tyname->tyname expr/tyname)
                                   expr.inc/dec
                                   new-arg/arg2)
-           table)
+           dstate)
           :expr
           (retok
            (dimb-cast/and-to-and (expr/tyname-expr->expr expr/tyname)
                                  expr.inc/dec
                                  new-arg/arg2)
-           table)))
+           dstate)))
        :cast/logand-ambig
-       (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 t table))
-            ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
+       (b* (((erp expr/tyname dstate)
+             (dimb-amb-expr/tyname expr.type/arg1 t dstate))
+            ((erp new-arg/arg2 dstate) (dimb-expr expr.arg/arg2 dstate)))
          (expr/tyname-case
           expr/tyname
           :tyname
@@ -1593,159 +1632,159 @@
            (dimb-cast/logand-to-cast (expr/tyname-tyname->tyname expr/tyname)
                                      expr.inc/dec
                                      new-arg/arg2)
-           table)
+           dstate)
           :expr
           (retok
            (dimb-cast/logand-to-logand (expr/tyname-expr->expr expr/tyname)
                                        expr.inc/dec
                                        new-arg/arg2)
-           table)))
+           dstate)))
        :stmt
-       (b* (((erp cstmt table) (dimb-comp-stmt expr.stmt nil table)))
-         (retok (expr-stmt cstmt) table))
+       (b* (((erp cstmt dstate) (dimb-comp-stmt expr.stmt nil dstate)))
+         (retok (expr-stmt cstmt) dstate))
        :tycompat
-       (b* (((erp type1 table) (dimb-tyname expr.type1 table))
-            ((erp type2 table) (dimb-tyname expr.type2 table)))
-         (retok (make-expr-tycompat :type1 type1 :type2 type2) table))
+       (b* (((erp type1 dstate) (dimb-tyname expr.type1 dstate))
+            ((erp type2 dstate) (dimb-tyname expr.type2 dstate)))
+         (retok (make-expr-tycompat :type1 type1 :type2 type2) dstate))
        :offsetof
-       (b* (((erp type table) (dimb-tyname expr.type table))
-            ((erp memdes table) (dimb-member-designor expr.member table)))
-         (retok (make-expr-offsetof :type type :member memdes) table))
+       (b* (((erp type dstate) (dimb-tyname expr.type dstate))
+            ((erp memdes dstate) (dimb-member-designor expr.member dstate)))
+         (retok (make-expr-offsetof :type type :member memdes) dstate))
        :va-arg
-       (b* (((erp list table) (dimb-expr expr.list table))
-            ((erp type table) (dimb-tyname expr.type table)))
-         (retok (make-expr-va-arg :list list :type type) table))
+       (b* (((erp list dstate) (dimb-expr expr.list dstate))
+            ((erp type dstate) (dimb-tyname expr.type dstate)))
+         (retok (make-expr-va-arg :list list :type type) dstate))
        :extension
-       (b* (((erp expr table) (dimb-expr expr.expr table)))
-         (retok (expr-extension expr) table))))
+       (b* (((erp expr dstate) (dimb-expr expr.expr dstate)))
+         (retok (expr-extension expr) dstate))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-expr-list ((exprs expr-listp) (table dimb-tablep))
+  (define dimb-expr-list ((exprs expr-listp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-exprs expr-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of expressions."
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp exprs)) (retok nil (dimb-table-fix table)))
-         ((erp new-expr table) (dimb-expr (car exprs) table))
-         ((erp new-exprs table) (dimb-expr-list (cdr exprs) table)))
-      (retok (cons new-expr new-exprs) table))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp exprs)) (retok nil (dstate-fix dstate)))
+         ((erp new-expr dstate) (dimb-expr (car exprs) dstate))
+         ((erp new-exprs dstate) (dimb-expr-list (cdr exprs) dstate)))
+      (retok (cons new-expr new-exprs) dstate))
     :measure (expr-list-count exprs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-expr-option ((expr? expr-optionp) (table dimb-tablep))
+  (define dimb-expr-option ((expr? expr-optionp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-expr? expr-optionp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an optional expression."
-    (b* (((reterr) nil (irr-dimb-table)))
+    (b* (((reterr) nil (irr-dstate)))
       (expr-option-case
        expr?
-       :some (dimb-expr expr?.val table)
-       :none (retok nil (dimb-table-fix table))))
+       :some (dimb-expr expr?.val dstate)
+       :none (retok nil (dstate-fix dstate))))
     :measure (expr-option-count expr?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-const-expr ((cexpr const-exprp) (table dimb-tablep))
+  (define dimb-const-expr ((cexpr const-exprp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-cexpr const-exprp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a constant expression."
-    (b* (((reterr) (irr-const-expr) (irr-dimb-table))
-         ((erp new-expr table) (dimb-expr (const-expr->expr cexpr) table)))
-      (retok (const-expr new-expr) table))
+    (b* (((reterr) (irr-const-expr) (irr-dstate))
+         ((erp new-expr dstate) (dimb-expr (const-expr->expr cexpr) dstate)))
+      (retok (const-expr new-expr) dstate))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-const-expr-option ((cexpr? const-expr-optionp)
-                                  (table dimb-tablep))
+                                  (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-cexpr? const-expr-optionp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an optional constant expression."
-    (b* (((reterr) nil (irr-dimb-table)))
+    (b* (((reterr) nil (irr-dstate)))
       (const-expr-option-case
        cexpr?
-       :some (dimb-const-expr cexpr?.val table)
-       :none (retok nil (dimb-table-fix table))))
+       :some (dimb-const-expr cexpr?.val dstate)
+       :none (retok nil (dstate-fix dstate))))
     :measure (const-expr-option-count cexpr?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-genassoc ((assoc genassocp) (table dimb-tablep))
+  (define dimb-genassoc ((assoc genassocp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-assoc genassocp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a generic association."
-    (b* (((reterr) (irr-genassoc) (irr-dimb-table)))
+    (b* (((reterr) (irr-genassoc) (irr-dstate)))
       (genassoc-case
        assoc
-       :type (b* (((erp new-tyname table) (dimb-tyname assoc.type table))
-                  ((erp new-expr table) (dimb-expr assoc.expr table)))
+       :type (b* (((erp new-tyname dstate) (dimb-tyname assoc.type dstate))
+                  ((erp new-expr dstate) (dimb-expr assoc.expr dstate)))
                (retok (make-genassoc-type :type new-tyname
                                           :expr new-expr)
-                      table))
-       :default (b* (((erp new-expr table) (dimb-expr assoc.expr table)))
-                  (retok (genassoc-default new-expr) table))))
+                      dstate))
+       :default (b* (((erp new-expr dstate) (dimb-expr assoc.expr dstate)))
+                  (retok (genassoc-default new-expr) dstate))))
     :measure (genassoc-count assoc))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-genassoc-list ((assocs genassoc-listp) (table dimb-tablep))
+  (define dimb-genassoc-list ((assocs genassoc-listp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-assocs genassoc-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of generic associations."
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp assocs)) (retok nil (dimb-table-fix table)))
-         ((erp new-assoc table) (dimb-genassoc (car assocs) table))
-         ((erp new-assocs table) (dimb-genassoc-list (cdr assocs) table)))
-      (retok (cons new-assoc new-assocs) table))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp assocs)) (retok nil (dstate-fix dstate)))
+         ((erp new-assoc dstate) (dimb-genassoc (car assocs) dstate))
+         ((erp new-assocs dstate) (dimb-genassoc-list (cdr assocs) dstate)))
+      (retok (cons new-assoc new-assocs) dstate))
     :measure (genassoc-list-count assocs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-member-designor ((memdes member-designorp) (table dimb-tablep))
+  (define dimb-member-designor ((memdes member-designorp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-memdes member-designorp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a member designator."
-    (b* (((reterr) (irr-member-designor) (irr-dimb-table)))
+    (b* (((reterr) (irr-member-designor) (irr-dstate)))
       (member-designor-case
        memdes
-       :ident (retok (member-designor-fix memdes) (dimb-table-fix table))
-       :dot (b* (((erp new-memdes table)
-                  (dimb-member-designor memdes.member table)))
+       :ident (retok (member-designor-fix memdes) (dstate-fix dstate))
+       :dot (b* (((erp new-memdes dstate)
+                  (dimb-member-designor memdes.member dstate)))
               (retok (make-member-designor-dot :member new-memdes
                                                :name memdes.name)
-                     table))
-       :sub (b* (((erp new-memdes table)
-                  (dimb-member-designor memdes.member table))
-                 ((erp new-index table)
-                  (dimb-expr memdes.index table)))
+                     dstate))
+       :sub (b* (((erp new-memdes dstate)
+                  (dimb-member-designor memdes.member dstate))
+                 ((erp new-index dstate)
+                  (dimb-expr memdes.index dstate)))
               (retok (make-member-designor-sub :member new-memdes
                                                :index new-index)
-                     table))))
+                     dstate))))
     :measure (member-designor-count memdes))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-type-spec ((tyspec type-specp) (table dimb-tablep))
+  (define dimb-type-spec ((tyspec type-specp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-tyspec type-specp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a type specifier."
     :long
@@ -1755,7 +1794,7 @@
        by adding identifiers to it.
        Thus, this function returns
        not only a disambiguated type specifier,
-       but also a possibly updated table.")
+       but also a possibly updated disambiguation state.")
      (xdoc::p
       "The only type specifier that affect the disambiguation table
        is an enumeration specifiers,
@@ -1775,34 +1814,34 @@
       "If we encounter a @('typedef') name,
        we need to check that it is in the disambiguation table,
        with the right kind."))
-    (b* (((reterr) (irr-type-spec) (irr-dimb-table)))
+    (b* (((reterr) (irr-type-spec) (irr-dstate)))
       (type-spec-case
        tyspec
-       :void (retok (type-spec-void) (dimb-table-fix table))
-       :char (retok (type-spec-char) (dimb-table-fix table))
-       :short (retok (type-spec-short) (dimb-table-fix table))
-       :int (retok (type-spec-int) (dimb-table-fix table))
-       :long (retok (type-spec-long) (dimb-table-fix table))
-       :float (retok (type-spec-float) (dimb-table-fix table))
-       :double (retok (type-spec-double) (dimb-table-fix table))
-       :signed (retok (type-spec-signed tyspec.uscores) (dimb-table-fix table))
-       :unsigned (retok (type-spec-unsigned) (dimb-table-fix table))
-       :bool (retok (type-spec-bool) (dimb-table-fix table))
-       :complex (retok (type-spec-complex) (dimb-table-fix table))
-       :atomic (b* (((erp new-type table) (dimb-tyname tyspec.type table)))
-                 (retok (type-spec-atomic new-type) table))
-       :struct (b* (((erp new-struni-spec table)
-                     (dimb-struni-spec tyspec.spec table)))
+       :void (retok (type-spec-void) (dstate-fix dstate))
+       :char (retok (type-spec-char) (dstate-fix dstate))
+       :short (retok (type-spec-short) (dstate-fix dstate))
+       :int (retok (type-spec-int) (dstate-fix dstate))
+       :long (retok (type-spec-long) (dstate-fix dstate))
+       :float (retok (type-spec-float) (dstate-fix dstate))
+       :double (retok (type-spec-double) (dstate-fix dstate))
+       :signed (retok (type-spec-signed tyspec.uscores) (dstate-fix dstate))
+       :unsigned (retok (type-spec-unsigned) (dstate-fix dstate))
+       :bool (retok (type-spec-bool) (dstate-fix dstate))
+       :complex (retok (type-spec-complex) (dstate-fix dstate))
+       :atomic (b* (((erp new-type dstate) (dimb-tyname tyspec.type dstate)))
+                 (retok (type-spec-atomic new-type) dstate))
+       :struct (b* (((erp new-struni-spec dstate)
+                     (dimb-struni-spec tyspec.spec dstate)))
                  (retok (type-spec-struct new-struni-spec)
-                        table))
-       :union (b* (((erp new-struni-spec table)
-                    (dimb-struni-spec tyspec.spec table)))
+                        dstate))
+       :union (b* (((erp new-struni-spec dstate)
+                    (dimb-struni-spec tyspec.spec dstate)))
                 (retok (type-spec-union new-struni-spec)
-                       table))
-       :enum (b* (((erp new-enumspec table)
-                   (dimb-enum-spec tyspec.spec table)))
-               (retok (type-spec-enum new-enumspec) table))
-       :typedef (b* ((kind (dimb-lookup-ident tyspec.name table))
+                       dstate))
+       :enum (b* (((erp new-enumspec dstate)
+                   (dimb-enum-spec tyspec.spec dstate)))
+               (retok (type-spec-enum new-enumspec) dstate))
+       :typedef (b* ((kind (dimb-lookup-ident tyspec.name dstate))
                      ((unless kind)
                       (retmsg$ "The identifier ~x0 is used as a type specifier ~
                                 but it is not in scope."
@@ -1810,7 +1849,7 @@
                   (dimb-kind-case
                    kind
                    :typedef (retok (type-spec-typedef tyspec.name)
-                                   (dimb-table-fix table))
+                                   (dstate-fix dstate))
                    :objfun (retmsg$ "The identifier ~x0 denotes ~
                                      an object or function ~
                                      but it is used as a typedef name."
@@ -1820,103 +1859,103 @@
                                         but it is used as a typedef name."
                                        (ident->unwrap tyspec.name))))
        :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
-                      (dimb-table-fix table))
+                      (dstate-fix dstate))
        :locase-float80 (retok (type-spec-locase-float80)
-                              (dimb-table-fix table))
+                              (dstate-fix dstate))
        :locase-float128 (retok (type-spec-locase-float128)
-                               (dimb-table-fix table))
-       :float16 (retok (type-spec-float16) (dimb-table-fix table))
-       :float16x (retok (type-spec-float16x) (dimb-table-fix table))
-       :float32 (retok (type-spec-float32) (dimb-table-fix table))
-       :float32x (retok (type-spec-float32x) (dimb-table-fix table))
-       :float64 (retok (type-spec-float64) (dimb-table-fix table))
-       :float64x (retok (type-spec-float64x) (dimb-table-fix table))
-       :float128 (retok (type-spec-float128) (dimb-table-fix table))
-       :float128x (retok (type-spec-float128x) (dimb-table-fix table))
+                               (dstate-fix dstate))
+       :float16 (retok (type-spec-float16) (dstate-fix dstate))
+       :float16x (retok (type-spec-float16x) (dstate-fix dstate))
+       :float32 (retok (type-spec-float32) (dstate-fix dstate))
+       :float32x (retok (type-spec-float32x) (dstate-fix dstate))
+       :float64 (retok (type-spec-float64) (dstate-fix dstate))
+       :float64x (retok (type-spec-float64x) (dstate-fix dstate))
+       :float128 (retok (type-spec-float128) (dstate-fix dstate))
+       :float128x (retok (type-spec-float128x) (dstate-fix dstate))
        :builtin-va-list (retok (type-spec-builtin-va-list)
-                               (dimb-table-fix table))
+                               (dstate-fix dstate))
        :struct-empty (retok (type-spec-fix tyspec)
-                            (dimb-table-fix table))
+                            (dstate-fix dstate))
        :typeof-expr
-       (b* (((erp new-expr table) (dimb-expr tyspec.expr table)))
+       (b* (((erp new-expr dstate) (dimb-expr tyspec.expr dstate)))
          (retok (make-type-spec-typeof-expr :expr new-expr
                                             :uscores tyspec.uscores)
-                table))
+                dstate))
        :typeof-type
-       (b* (((erp new-tyname table) (dimb-tyname tyspec.type table)))
+       (b* (((erp new-tyname dstate) (dimb-tyname tyspec.type dstate)))
          (retok (make-type-spec-typeof-type :type new-tyname
                                             :uscores tyspec.uscores)
-                table))
+                dstate))
        :typeof-ambig
-       (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname tyspec.expr/type nil table)))
+       (b* (((erp expr/tyname dstate)
+             (dimb-amb-expr/tyname tyspec.expr/type nil dstate)))
          (expr/tyname-case
           expr/tyname
           :expr (retok (make-type-spec-typeof-expr :expr expr/tyname.expr
                                                    :uscores tyspec.uscores)
-                       table)
+                       dstate)
           :tyname (retok (make-type-spec-typeof-type :type expr/tyname.tyname
                                                      :uscores tyspec.uscores)
-                         table)))
-       :auto-type (retok (type-spec-auto-type) (dimb-table-fix table))))
+                         dstate)))
+       :auto-type (retok (type-spec-auto-type) (dstate-fix dstate))))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-spec/qual ((specqual spec/qual-p) (table dimb-tablep))
+  (define dimb-spec/qual ((specqual spec/qual-p) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-specqual spec/qual-p)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a specifier or qualifier."
     :long
     (xdoc::topstring
      (xdoc::p
       "Type qualifiers are left unchanged.
-       Type specifiers may extend the disambiguation table."))
-    (b* (((reterr) (irr-spec/qual) (irr-dimb-table)))
+       Type specifiers may extend the disambiguation dstate."))
+    (b* (((reterr) (irr-spec/qual) (irr-dstate)))
       (spec/qual-case
        specqual
-       :typespec (b* (((erp new-tyspec table)
-                       (dimb-type-spec specqual.spec table)))
+       :typespec (b* (((erp new-tyspec dstate)
+                       (dimb-type-spec specqual.spec dstate)))
                    (retok (spec/qual-typespec new-tyspec)
-                          table))
+                          dstate))
        :typequal (retok (spec/qual-typequal specqual.qual)
-                        (dimb-table-fix table))
-       :align (b* (((erp new-alignspec table)
-                    (dimb-align-spec specqual.spec table)))
+                        (dstate-fix dstate))
+       :align (b* (((erp new-alignspec dstate)
+                    (dimb-align-spec specqual.spec dstate)))
                 (retok (spec/qual-align new-alignspec)
-                       table))
+                       dstate))
        :attrib (retok (spec/qual-attrib specqual.spec)
-                      (dimb-table-fix table))))
+                      (dstate-fix dstate))))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-spec/qual-list ((specquals spec/qual-listp) (table dimb-tablep))
+  (define dimb-spec/qual-list ((specquals spec/qual-listp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-specquals spec/qual-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of specifiers and qualifiers."
     :long
     (xdoc::topstring
      (xdoc::p
-      "We process them in order, threading through the table,
+      "We process them in order, threading through the disambiguation state,
        which may be updated by each."))
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp specquals)) (retok nil (dimb-table-fix table)))
-         ((erp new-specqual table) (dimb-spec/qual (car specquals) table))
-         ((erp new-specquals table) (dimb-spec/qual-list (cdr specquals) table)))
-      (retok (cons new-specqual new-specquals) table))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp specquals)) (retok nil (dstate-fix dstate)))
+         ((erp new-specqual dstate) (dimb-spec/qual (car specquals) dstate))
+         ((erp new-specquals dstate) (dimb-spec/qual-list (cdr specquals) dstate)))
+      (retok (cons new-specqual new-specquals) dstate))
     :measure (spec/qual-list-count specquals))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-align-spec ((alignspec align-specp) (table dimb-tablep))
+  (define dimb-align-spec ((alignspec align-specp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-alignspec align-specp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an alignment specifier."
     :long
@@ -1926,35 +1965,35 @@
        we disambiguate the underlying type name or expression,
        and then return one of the two kinds of
        unambiguous alignment specifiers."))
-    (b* (((reterr) (irr-align-spec) (irr-dimb-table)))
+    (b* (((reterr) (irr-align-spec) (irr-dstate)))
       (align-spec-case
        alignspec
        :alignas-type
-       (b* (((erp new-type table) (dimb-tyname alignspec.type table)))
-         (retok (align-spec-alignas-type new-type) table))
+       (b* (((erp new-type dstate) (dimb-tyname alignspec.type dstate)))
+         (retok (align-spec-alignas-type new-type) dstate))
        :alignas-expr
-       (b* (((erp new-expr table) (dimb-const-expr alignspec.expr table)))
-         (retok (align-spec-alignas-expr new-expr) table))
+       (b* (((erp new-expr dstate) (dimb-const-expr alignspec.expr dstate)))
+         (retok (align-spec-alignas-expr new-expr) dstate))
        :alignas-ambig
-       (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname alignspec.expr/type nil table)))
+       (b* (((erp expr/tyname dstate)
+             (dimb-amb-expr/tyname alignspec.expr/type nil dstate)))
          (expr/tyname-case
           expr/tyname
           :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.expr))
-                       table)
+                       dstate)
           :tyname (retok (align-spec-alignas-type expr/tyname.tyname)
-                         table)))))
+                         dstate)))))
     :measure (align-spec-count alignspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-decl-spec ((declspec decl-specp)
                           (kind dimb-kindp)
-                          (table dimb-tablep))
+                          (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-declspec decl-specp)
                  (new-kind dimb-kindp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a declaration specifier."
     :long
@@ -1974,52 +2013,52 @@
        and change it to @(':typedef') if we encounter a @('typedef').
        This is why this ACL2 function takes and returns
        a disambiguation kind, i.e. a value of type @(tsee dimb-kind)."))
-    (b* (((reterr) (irr-decl-spec) (irr-dimb-kind) (irr-dimb-table)))
+    (b* (((reterr) (irr-decl-spec) (irr-dimb-kind) (irr-dstate)))
       (decl-spec-case
        declspec
        :stoclass (if (stor-spec-case declspec.spec :typedef)
                      (retok (decl-spec-fix declspec)
                             (dimb-kind-typedef)
-                            (dimb-table-fix table))
+                            (dstate-fix dstate))
                    (retok (decl-spec-fix declspec)
                           (dimb-kind-fix kind)
-                          (dimb-table-fix table)))
-       :typespec (b* (((erp new-tyspec table)
-                       (dimb-type-spec declspec.spec table)))
+                          (dstate-fix dstate)))
+       :typespec (b* (((erp new-tyspec dstate)
+                       (dimb-type-spec declspec.spec dstate)))
                    (retok (decl-spec-typespec new-tyspec)
                           (dimb-kind-fix kind)
-                          (dimb-table-fix table)))
+                          (dstate-fix dstate)))
        :typequal (retok (decl-spec-fix declspec)
                         (dimb-kind-fix kind)
-                        (dimb-table-fix table))
+                        (dstate-fix dstate))
        :function (retok (decl-spec-fix declspec)
                         (dimb-kind-fix kind)
-                        (dimb-table-fix table))
-       :align (b* (((erp new-alignspec table)
-                    (dimb-align-spec declspec.spec table)))
+                        (dstate-fix dstate))
+       :align (b* (((erp new-alignspec dstate)
+                    (dimb-align-spec declspec.spec dstate)))
                 (retok (decl-spec-align new-alignspec)
                        (dimb-kind-fix kind)
-                       table))
+                       dstate))
        :attrib (retok (decl-spec-fix declspec)
                       (dimb-kind-fix kind)
-                      (dimb-table-fix table))
+                      (dstate-fix dstate))
        :stdcall (retok (decl-spec-fix declspec)
                        (dimb-kind-fix kind)
-                       (dimb-table-fix table))
+                       (dstate-fix dstate))
        :declspec (retok (decl-spec-fix declspec)
                         (dimb-kind-fix kind)
-                        (dimb-table-fix table))))
+                        (dstate-fix dstate))))
     :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-decl-spec-list ((declspecs decl-spec-listp)
                                (kind dimb-kindp)
-                               (table dimb-tablep))
+                               (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-declspecs decl-spec-listp)
                  (new-kind dimb-kindp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of declaration specifiers."
     :long
@@ -2027,127 +2066,127 @@
      (xdoc::p
       "See @(tsee dimb-decl-spec) for an explanation of
        the disambiguation kind passed as input and returned as output."))
-    (b* (((reterr) nil (irr-dimb-kind) (irr-dimb-table))
+    (b* (((reterr) nil (irr-dimb-kind) (irr-dstate))
          ((when (endp declspecs)) (retok nil
                                          (dimb-kind-fix kind)
-                                         (dimb-table-fix table)))
-         ((erp new-declspec kind table)
-          (dimb-decl-spec (car declspecs) kind table))
-         ((erp new-declspecs kind table)
-          (dimb-decl-spec-list (cdr declspecs) kind table)))
-      (retok (cons new-declspec new-declspecs) kind table))
+                                         (dstate-fix dstate)))
+         ((erp new-declspec kind dstate)
+          (dimb-decl-spec (car declspecs) kind dstate))
+         ((erp new-declspecs kind dstate)
+          (dimb-decl-spec-list (cdr declspecs) kind dstate)))
+      (retok (cons new-declspec new-declspecs) kind dstate))
     :measure (decl-spec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-initer ((initer initerp) (table dimb-tablep))
-    :returns (mv (erp maybe-msgp) (new-initer initerp) (new-table dimb-tablep))
+  (define dimb-initer ((initer initerp) (dstate dstatep))
+    :returns (mv (erp maybe-msgp) (new-initer initerp) (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an initializer."
-    (b* (((reterr) (irr-initer) (irr-dimb-table)))
+    (b* (((reterr) (irr-initer) (irr-dstate)))
       (initer-case
        initer
-       :single (b* (((erp new-expr table) (dimb-expr initer.expr table)))
-                 (retok (initer-single new-expr) table))
-       :list (b* (((erp new-elems table)
-                   (dimb-desiniter-list initer.elems table)))
+       :single (b* (((erp new-expr dstate) (dimb-expr initer.expr dstate)))
+                 (retok (initer-single new-expr) dstate))
+       :list (b* (((erp new-elems dstate)
+                   (dimb-desiniter-list initer.elems dstate)))
                (retok (make-initer-list :elems new-elems
                                         :final-comma initer.final-comma)
-                      table))))
+                      dstate))))
     :measure (initer-count initer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-initer-option ((initer? initer-optionp) (table dimb-tablep))
+  (define dimb-initer-option ((initer? initer-optionp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-initer? initer-optionp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an optional initializer."
-    (b* (((reterr) nil (irr-dimb-table)))
+    (b* (((reterr) nil (irr-dstate)))
       (initer-option-case
        initer?
-       :some (dimb-initer initer?.val table)
-       :none (retok nil (dimb-table-fix table))))
+       :some (dimb-initer initer?.val dstate)
+       :none (retok nil (dstate-fix dstate))))
     :measure (initer-option-count initer?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-desiniter ((desiniter desiniterp) (table dimb-tablep))
+  (define dimb-desiniter ((desiniter desiniterp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-desiniter desiniterp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an initializer with optional designations."
-    (b* (((reterr) (irr-desiniter) (irr-dimb-table))
+    (b* (((reterr) (irr-desiniter) (irr-dstate))
          ((desiniter desiniter) desiniter)
-         ((erp new-designors table)
-          (dimb-designor-list desiniter.designors table))
-         ((erp new-initer table) (dimb-initer desiniter.initer table)))
+         ((erp new-designors dstate)
+          (dimb-designor-list desiniter.designors dstate))
+         ((erp new-initer dstate) (dimb-initer desiniter.initer dstate)))
       (retok (make-desiniter :designors new-designors :initer new-initer)
-             table))
+             dstate))
     :measure (desiniter-count desiniter))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-desiniter-list ((desiniters desiniter-listp) (table dimb-tablep))
+  (define dimb-desiniter-list ((desiniters desiniter-listp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-desiniters desiniter-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of initializers with optional designations."
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp desiniters)) (retok nil (dimb-table-fix table)))
-         ((erp new-desiniter table) (dimb-desiniter (car desiniters) table))
-         ((erp new-desiniters table)
-          (dimb-desiniter-list (cdr desiniters) table)))
-      (retok (cons new-desiniter new-desiniters) table))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp desiniters)) (retok nil (dstate-fix dstate)))
+         ((erp new-desiniter dstate) (dimb-desiniter (car desiniters) dstate))
+         ((erp new-desiniters dstate)
+          (dimb-desiniter-list (cdr desiniters) dstate)))
+      (retok (cons new-desiniter new-desiniters) dstate))
     :measure (desiniter-list-count desiniters))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-designor ((design designorp) (table dimb-tablep))
+  (define dimb-designor ((design designorp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-design designorp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a designator."
-    (b* (((reterr) (irr-designor) (irr-dimb-table)))
+    (b* (((reterr) (irr-designor) (irr-dstate)))
       (designor-case
        design
-       :sub (b* (((erp new-index table)
-                  (dimb-const-expr design.index table))
-                 ((erp new-range? table)
-                  (dimb-const-expr-option design.range? table)))
+       :sub (b* (((erp new-index dstate)
+                  (dimb-const-expr design.index dstate))
+                 ((erp new-range? dstate)
+                  (dimb-const-expr-option design.range? dstate)))
               (retok (make-designor-sub :index new-index :range? new-range?)
-                     table))
-       :dot (retok (designor-dot design.name) (dimb-table-fix table))))
+                     dstate))
+       :dot (retok (designor-dot design.name) (dstate-fix dstate))))
     :measure (designor-count design))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-designor-list ((designs designor-listp) (table dimb-tablep))
+  (define dimb-designor-list ((designs designor-listp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-designs designor-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of designators."
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp designs)) (retok nil (dimb-table-fix table)))
-         ((erp new-design table) (dimb-designor (car designs) table))
-         ((erp new-designs table) (dimb-designor-list (cdr designs) table)))
-      (retok (cons new-design new-designs) table))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp designs)) (retok nil (dstate-fix dstate)))
+         ((erp new-design dstate) (dimb-designor (car designs) dstate))
+         ((erp new-designs dstate) (dimb-designor-list (cdr designs) dstate)))
+      (retok (cons new-design new-designs) dstate))
     :measure (designor-list-count designs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-declor ((declor declorp)
                        (fundefp booleanp)
-                       (table dimb-tablep))
+                       (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-declor declorp)
                  (ident identp)
-                 (table dimb-tablep))
+                 (dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a declarator."
     :long
@@ -2175,23 +2214,23 @@
        which refine the return result of the function,
        the direct declarator is still expected to be for a function,
        and we have not disambiguated the parameters yet."))
-    (b* (((reterr) (irr-declor) (irr-ident) (irr-dimb-table))
+    (b* (((reterr) (irr-declor) (irr-ident) (irr-dstate))
          ((declor declor) declor)
-         ((erp new-dirdeclor ident table)
-          (dimb-dirdeclor declor.direct fundefp table)))
+         ((erp new-dirdeclor ident dstate)
+          (dimb-dirdeclor declor.direct fundefp dstate)))
       (retok (make-declor :pointers declor.pointers
                           :direct new-dirdeclor)
              ident
-             table))
+             dstate))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-declor-option ((declor? declor-optionp) (table dimb-tablep))
+  (define dimb-declor-option ((declor? declor-optionp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-declor? declor-optionp)
                  (ident? ident-optionp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an optional declarator."
     :long
@@ -2204,24 +2243,24 @@
      (xdoc::p
       "This function does not take a @('fundefp') flag
        because optional declarators are not used in function parameters."))
-    (b* (((reterr) nil nil (irr-dimb-table)))
+    (b* (((reterr) nil nil (irr-dstate)))
       (declor-option-case
        declor?
-       :some (b* (((erp new-declor? ident table)
-                   (dimb-declor declor?.val nil table)))
-               (retok new-declor? ident table))
-       :none (retok nil nil (dimb-table-fix table))))
+       :some (b* (((erp new-declor? ident dstate)
+                   (dimb-declor declor?.val nil dstate)))
+               (retok new-declor? ident dstate))
+       :none (retok nil nil (dstate-fix dstate))))
     :measure (declor-option-count declor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-dirdeclor ((dirdeclor dirdeclorp)
                           (fundefp booleanp)
-                          (table dimb-tablep))
+                          (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-dirdeclor dirdeclorp)
                  (ident identp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a direct declarator."
     :long
@@ -2295,95 +2334,95 @@
        i.e. the one with @('x') and @('y'),
        we leave the scope on the table,
        because that forms the parameters of the function definition."))
-    (b* (((reterr) (irr-dirdeclor) (irr-ident) (irr-dimb-table)))
+    (b* (((reterr) (irr-dirdeclor) (irr-ident) (irr-dstate)))
       (dirdeclor-case
        dirdeclor
        :ident
        (retok (dirdeclor-fix dirdeclor)
               dirdeclor.ident
-              (dimb-table-fix table))
+              (dstate-fix dstate))
        :paren
-       (b* (((erp new-declor ident table)
-             (dimb-declor dirdeclor.inner fundefp table)))
+       (b* (((erp new-declor ident dstate)
+             (dimb-declor dirdeclor.inner fundefp dstate)))
          (retok (dirdeclor-paren new-declor)
                 ident
-                table))
+                dstate))
        :array
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table))
-            ((erp new-expr? table) (dimb-expr-option dirdeclor.size? table)))
+       (b* (((erp new-dirdeclor ident dstate)
+             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
+            ((erp new-expr? dstate) (dimb-expr-option dirdeclor.size? dstate)))
          (retok (make-dirdeclor-array :declor new-dirdeclor
                                       :qualspecs dirdeclor.qualspecs
                                       :size? new-expr?)
                 ident
-                table))
+                dstate))
        :array-static1
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table))
-            ((erp new-expr table) (dimb-expr dirdeclor.size table)))
+       (b* (((erp new-dirdeclor ident dstate)
+             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
+            ((erp new-expr dstate) (dimb-expr dirdeclor.size dstate)))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
                                               :size new-expr)
                 ident
-                table))
+                dstate))
        :array-static2
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table))
-            ((erp new-expr table) (dimb-expr dirdeclor.size table)))
+       (b* (((erp new-dirdeclor ident dstate)
+             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
+            ((erp new-expr dstate) (dimb-expr dirdeclor.size dstate)))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
                                               :size new-expr)
                 ident
-                table))
+                dstate))
        :array-star
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table)))
+       (b* (((erp new-dirdeclor ident dstate)
+             (dimb-dirdeclor dirdeclor.declor fundefp dstate)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
                                            :qualspecs dirdeclor.qualspecs)
                 ident
-                table))
+                dstate))
        :function-params
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table))
+       (b* (((erp new-dirdeclor ident dstate)
+             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
             ((mv yes/no names)
-             (dimb-params-to-names dirdeclor.params fundefp table))
+             (dimb-params-to-names dirdeclor.params fundefp dstate))
             ((when yes/no)
              (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                    :names names)
                     ident
                     (if (and fundefp
                              (not (dirdeclor-has-params-p dirdeclor.declor)))
-                        (dimb-push-scope table)
-                      table)))
-            (table (dimb-push-scope table))
-            ((erp new-params table)
-             (dimb-param-declon-list dirdeclor.params table))
-            (table (if (and fundefp
-                            (not (dirdeclor-has-params-p dirdeclor.declor)))
-                       table
-                     (dimb-pop-scope table))))
+                        (dimb-push-scope dstate)
+                      dstate)))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-params dstate)
+             (dimb-param-declon-list dirdeclor.params dstate))
+            (dstate (if (and fundefp
+                             (not (dirdeclor-has-params-p dirdeclor.declor)))
+                        dstate
+                      (dimb-pop-scope dstate))))
          (retok (make-dirdeclor-function-params :declor new-dirdeclor
                                                 :params new-params
                                                 :ellipsis dirdeclor.ellipsis)
                 ident
-                table))
+                dstate))
        :function-names
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table)))
+       (b* (((erp new-dirdeclor ident dstate)
+             (dimb-dirdeclor dirdeclor.declor fundefp dstate)))
          (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
                 ident
                 (if fundefp
-                    (dimb-push-scope table)
-                  table)))))
+                    (dimb-push-scope dstate)
+                  dstate)))))
     :measure (dirdeclor-count dirdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-absdeclor ((absdeclor absdeclorp) (table dimb-tablep))
+  (define dimb-absdeclor ((absdeclor absdeclorp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-absdeclor absdeclorp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an abstract declarator."
     :long
@@ -2393,37 +2432,37 @@
        is similar to the one of a declarator,
        but an abstract declarator does not introduce an identifiers,
        and so there is no identifier to return here."))
-    (b* (((reterr) (irr-absdeclor) (irr-dimb-table))
+    (b* (((reterr) (irr-absdeclor) (irr-dstate))
          ((absdeclor absdeclor) absdeclor)
-         ((erp new-direct? table)
-          (dimb-dirabsdeclor-option absdeclor.direct? table)))
+         ((erp new-direct? dstate)
+          (dimb-dirabsdeclor-option absdeclor.direct? dstate)))
       (retok (make-absdeclor :pointers absdeclor.pointers
                              :direct? new-direct?)
-             table))
+             dstate))
     :measure (absdeclor-count absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-absdeclor-option ((absdeclor? absdeclor-optionp)
-                                 (table dimb-tablep))
+                                 (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-absdeclor? absdeclor-optionp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an optional abstract declarator."
-    (b* (((reterr) nil nil (irr-dimb-table)))
+    (b* (((reterr) nil nil (irr-dstate)))
       (absdeclor-option-case
        absdeclor?
-       :some (dimb-absdeclor absdeclor?.val table)
-       :none (retok nil (dimb-table-fix table))))
+       :some (dimb-absdeclor absdeclor?.val dstate)
+       :none (retok nil (dstate-fix dstate))))
     :measure (absdeclor-option-count absdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-dirabsdeclor ((dirabsdeclor dirabsdeclorp) (table dimb-tablep))
+  (define dimb-dirabsdeclor ((dirabsdeclor dirabsdeclorp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-dirabsdeclor dirabsdeclorp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a direct abstract declarator."
     :long
@@ -2432,7 +2471,7 @@
       "The handling is similar to @(tsee dimb-dirdeclor),
        but no identifier is returned.
        There is also no handling of possible function parameter names."))
-    (b* (((reterr) (irr-dirabsdeclor) (irr-dimb-table)))
+    (b* (((reterr) (irr-dirabsdeclor) (irr-dstate)))
       (dirabsdeclor-case
        dirabsdeclor
        :dummy-base
@@ -2440,78 +2479,78 @@
         (raise "Internal error: dummy base case of direct abstract declarator.")
         (retmsg$ ""))
        :paren
-       (b* (((erp new-absdeclor table)
-             (dimb-absdeclor dirabsdeclor.inner table)))
+       (b* (((erp new-absdeclor dstate)
+             (dimb-absdeclor dirabsdeclor.inner dstate)))
          (retok (dirabsdeclor-paren new-absdeclor)
-                table))
+                dstate))
        :array
-       (b* (((erp new-declor? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
-            ((erp new-size? table)
-             (dimb-expr-option dirabsdeclor.size? table)))
+       (b* (((erp new-declor? dstate)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? dstate))
+            ((erp new-size? dstate)
+             (dimb-expr-option dirabsdeclor.size? dstate)))
          (retok (make-dirabsdeclor-array
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
                  :size? new-size?)
-                table))
+                dstate))
        :array-static1
-       (b* (((erp new-declor? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
-            ((erp new-size table) (dimb-expr dirabsdeclor.size table)))
+       (b* (((erp new-declor? dstate)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? dstate))
+            ((erp new-size dstate) (dimb-expr dirabsdeclor.size dstate)))
          (retok (make-dirabsdeclor-array-static1
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
                  :size new-size)
-                table))
+                dstate))
        :array-static2
-       (b* (((erp new-declor? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
-            ((erp new-size table) (dimb-expr dirabsdeclor.size table)))
+       (b* (((erp new-declor? dstate)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? dstate))
+            ((erp new-size dstate) (dimb-expr dirabsdeclor.size dstate)))
          (retok (make-dirabsdeclor-array-static2
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
                  :size new-size)
-                table))
+                dstate))
        :array-star
-       (b* (((erp new-declor? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.declor? table)))
+       (b* (((erp new-declor? dstate)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? dstate)))
          (retok (dirabsdeclor-array-star new-declor?)
-                table))
+                dstate))
        :function
-       (b* (((erp new-declor? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
-            (table (dimb-push-scope table))
-            ((erp new-params table)
-             (dimb-param-declon-list dirabsdeclor.params table))
-            (table (dimb-pop-scope table)))
+       (b* (((erp new-declor? dstate)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? dstate))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-params dstate)
+             (dimb-param-declon-list dirabsdeclor.params dstate))
+            (dstate (dimb-pop-scope dstate)))
          (retok (make-dirabsdeclor-function :declor? new-declor?
                                             :params new-params
                                             :ellipsis dirabsdeclor.ellipsis)
-                table))))
+                dstate))))
     :measure (dirabsdeclor-count dirabsdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp)
-                                    (table dimb-tablep))
+                                    (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-dirabsdeclor? dirabsdeclor-optionp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an optional direct abstract declarator."
-    (b* (((reterr) nil (irr-dimb-table)))
+    (b* (((reterr) nil (irr-dstate)))
       (dirabsdeclor-option-case
        dirabsdeclor?
-       :some (dimb-dirabsdeclor dirabsdeclor?.val table)
-       :none (retok nil (dimb-table-fix table))))
+       :some (dimb-dirabsdeclor dirabsdeclor?.val dstate)
+       :none (retok nil (dstate-fix dstate))))
     :measure (dirabsdeclor-option-count dirabsdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-param-declon ((param param-declonp) (table dimb-tablep))
+  (define dimb-param-declon ((param param-declonp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-param param-declonp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a parameter declaration."
     :long
@@ -2528,45 +2567,45 @@
        Then we call a separate function to disambiguate the parameter declarator
        (which is a notion in our abstract syntax, not in [C17]);
        see @(tsee param-declor))."))
-    (b* (((reterr) (irr-param-declon) (irr-dimb-table))
+    (b* (((reterr) (irr-param-declon) (irr-dstate))
          ((param-declon param) param)
-         ((erp new-specs & table)
-          (dimb-decl-spec-list param.specs (dimb-kind-objfun) table))
-         ((erp new-decl table)
-          (dimb-param-declor param.declor table)))
+         ((erp new-specs & dstate)
+          (dimb-decl-spec-list param.specs (dimb-kind-objfun) dstate))
+         ((erp new-decl dstate)
+          (dimb-param-declor param.declor dstate)))
       (retok (make-param-declon :specs new-specs
                                 :declor new-decl
                                 :attribs param.attribs)
-             table))
+             dstate))
     :measure (param-declon-count param))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-param-declon-list ((params param-declon-listp) (table dimb-tablep))
+  (define dimb-param-declon-list ((params param-declon-listp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-params param-declon-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of parameter declarations."
     :long
     (xdoc::topstring
      (xdoc::p
-      "We process each one, threading through the table."))
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp params)) (retok nil (dimb-table-fix table)))
-         ((erp new-param table)
-          (dimb-param-declon (car params) table))
-         ((erp new-params table)
-          (dimb-param-declon-list (cdr params) table)))
-      (retok (cons new-param new-params) table))
+      "We process each one, threading through the disambiguation state."))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp params)) (retok nil (dstate-fix dstate)))
+         ((erp new-param dstate)
+          (dimb-param-declon (car params) dstate))
+         ((erp new-params dstate)
+          (dimb-param-declon-list (cdr params) dstate)))
+      (retok (cons new-param new-params) dstate))
     :measure (param-declon-list-count params))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-param-declor ((paramdeclor param-declorp) (table dimb-tablep))
+  (define dimb-param-declor ((paramdeclor param-declorp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-paramdeclor param-declorp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a parameter declarator."
     :long
@@ -2593,64 +2632,64 @@
        with @('nil') as the @('fundefp') flag,
        because the declarator passed to that function
        is for a parameter, not for a defined function."))
-    (b* (((reterr) (irr-param-declor) (irr-dimb-table)))
+    (b* (((reterr) (irr-param-declor) (irr-dstate)))
       (param-declor-case
        paramdeclor
        :nonabstract
-       (b* (((erp new-declor ident table)
-             (dimb-declor paramdeclor.declor nil table))
-            (table (dimb-add-ident ident (dimb-kind-objfun) table)))
+       (b* (((erp new-declor ident dstate)
+             (dimb-declor paramdeclor.declor nil dstate))
+            (dstate (dimb-add-ident ident (dimb-kind-objfun) dstate)))
          (retok (make-param-declor-nonabstract :declor new-declor :info nil)
-                table))
+                dstate))
        :abstract
-       (b* (((erp new-absdeclor table)
-             (dimb-absdeclor paramdeclor.declor table)))
-         (retok (param-declor-abstract new-absdeclor) (dimb-table-fix table)))
+       (b* (((erp new-absdeclor dstate)
+             (dimb-absdeclor paramdeclor.declor dstate)))
+         (retok (param-declor-abstract new-absdeclor) (dstate-fix dstate)))
        :none
-       (retok (param-declor-none) (dimb-table-fix table))
+       (retok (param-declor-none) (dstate-fix dstate))
        :ambig
-       (b* (((erp declor/absdeclor ident? table)
-             (dimb-amb-declor/absdeclor paramdeclor.declor table)))
+       (b* (((erp declor/absdeclor ident? dstate)
+             (dimb-amb-declor/absdeclor paramdeclor.declor dstate)))
          (declor/absdeclor-case
           declor/absdeclor
           :declor
           (b* (((unless ident?)
                 (raise "Internal error: declarator without identifier.")
                 (retmsg$ ""))
-               (table (dimb-add-ident ident? (dimb-kind-objfun) table)))
+               (dstate (dimb-add-ident ident? (dimb-kind-objfun) dstate)))
             (retok (make-param-declor-nonabstract
                     :declor declor/absdeclor.declor
                     :info nil)
-                   table))
+                   dstate))
           :absdeclor
           (retok (param-declor-abstract declor/absdeclor.absdeclor)
-                 (dimb-table-fix table))))))
+                 (dstate-fix dstate))))))
     :measure (param-declor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-tyname ((tyname tynamep) (table dimb-tablep))
-    :returns (mv (erp maybe-msgp) (new-tyname tynamep) (new-table dimb-tablep))
+  (define dimb-tyname ((tyname tynamep) (dstate dstatep))
+    :returns (mv (erp maybe-msgp) (new-tyname tynamep) (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a type name."
-    (b* (((reterr) (irr-tyname) (irr-dimb-table))
+    (b* (((reterr) (irr-tyname) (irr-dstate))
          ((tyname tyname) tyname)
-         ((erp new-specquals table)
-          (dimb-spec/qual-list tyname.specquals table))
-         ((erp new-declor? table)
-          (dimb-absdeclor-option tyname.declor? table)))
+         ((erp new-specquals dstate)
+          (dimb-spec/qual-list tyname.specquals dstate))
+         ((erp new-declor? dstate)
+          (dimb-absdeclor-option tyname.declor? dstate)))
       (retok (make-tyname :specquals new-specquals
                           :declor? new-declor?
                           :info nil)
-             table))
+             dstate))
     :measure (tyname-count tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-struni-spec ((struni-spec struni-specp) (table dimb-tablep))
+  (define dimb-struni-spec ((struni-spec struni-specp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-struni-spec struni-specp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a structure or union specifier."
     :long
@@ -2658,68 +2697,69 @@
      (xdoc::p
       "The disambiguation table is unaffected as we go through the members;
        the table has no information about structure and union members."))
-    (b* (((reterr) (irr-struni-spec) (irr-dimb-table))
+    (b* (((reterr) (irr-struni-spec) (irr-dstate))
          ((struni-spec struni-spec) struni-spec)
-         ((erp new-members table)
-          (dimb-struct-declon-list struni-spec.members table)))
+         ((erp new-members dstate)
+          (dimb-struct-declon-list struni-spec.members dstate)))
       (retok (make-struni-spec :attribs struni-spec.attribs
                                :name? struni-spec.name?
                                :members new-members)
-             table))
+             dstate))
     :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-struct-declon ((structdeclon struct-declonp) (table dimb-tablep))
+  (define dimb-struct-declon ((structdeclon struct-declonp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-structdeclon struct-declonp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a structure declaration."
-    (b* (((reterr) (irr-struct-declon) (irr-dimb-table)))
+    (b* (((reterr) (irr-struct-declon) (irr-dstate)))
       (struct-declon-case
        structdeclon
        :member
-       (b* (((erp new-specquals table)
-             (dimb-spec/qual-list structdeclon.specquals table))
-            ((erp new-declors table)
-             (dimb-struct-declor-list structdeclon.declors table)))
+       (b* (((erp new-specquals dstate)
+             (dimb-spec/qual-list structdeclon.specquals dstate))
+            ((erp new-declors dstate)
+             (dimb-struct-declor-list structdeclon.declors dstate)))
          (retok (make-struct-declon-member :extension structdeclon.extension
                                            :specquals new-specquals
                                            :declors new-declors
                                            :attribs structdeclon.attribs)
-                table))
+                dstate))
        :statassert
-       (b* (((erp new-statassert table)
-             (dimb-statassert structdeclon.statassert table)))
+       (b* (((erp new-statassert dstate)
+             (dimb-statassert structdeclon.statassert dstate)))
          (retok (struct-declon-statassert new-statassert)
-                table))
-       :empty (retok (struct-declon-empty) (dimb-table-fix table))))
+                dstate))
+       :empty (retok (struct-declon-empty) (dstate-fix dstate))))
     :measure (struct-declon-count structdeclon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-struct-declon-list ((structdeclons struct-declon-listp)
-                                   (table dimb-tablep))
+                                   (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-structdeclons struct-declon-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of structure declarations."
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp structdeclons)) (retok nil (dimb-table-fix table)))
-         ((erp new-structdeclon table) (dimb-struct-declon (car structdeclons) table))
-         ((erp new-structdeclons table)
-          (dimb-struct-declon-list (cdr structdeclons) table)))
-      (retok (cons new-structdeclon new-structdeclons) table))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp structdeclons)) (retok nil (dstate-fix dstate)))
+         ((erp new-structdeclon dstate)
+          (dimb-struct-declon (car structdeclons) dstate))
+         ((erp new-structdeclons dstate)
+          (dimb-struct-declon-list (cdr structdeclons) dstate)))
+      (retok (cons new-structdeclon new-structdeclons) dstate))
     :measure (struct-declon-list-count structdeclons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-struct-declor ((structdeclor struct-declorp) (table dimb-tablep))
+  (define dimb-struct-declor ((structdeclor struct-declorp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-structdeclor struct-declorp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a structure declarator."
     :long
@@ -2729,40 +2769,40 @@
        does not keep track of structure and union members.
        This is why we ignore the identifier, if any,
        returned from disambiguating the optional declarator."))
-    (b* (((reterr) (irr-struct-declor) (irr-dimb-table))
+    (b* (((reterr) (irr-struct-declor) (irr-dstate))
          ((struct-declor structdeclor) structdeclor)
-         ((erp new-declor? & table)
-          (dimb-declor-option structdeclor.declor? table))
-         ((erp new-expr? table)
-          (dimb-const-expr-option structdeclor.expr? table)))
+         ((erp new-declor? & dstate)
+          (dimb-declor-option structdeclor.declor? dstate))
+         ((erp new-expr? dstate)
+          (dimb-const-expr-option structdeclor.expr? dstate)))
       (retok (make-struct-declor :declor? new-declor? :expr? new-expr?)
-             table))
+             dstate))
     :measure (struct-declor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-struct-declor-list ((structdeclors struct-declor-listp)
-                                   (table dimb-tablep))
+                                   (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-structdeclors struct-declor-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of structure declarators."
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp structdeclors)) (retok nil (dimb-table-fix table)))
-         ((erp new-structdeclor table)
-          (dimb-struct-declor (car structdeclors) table))
-         ((erp new-structdeclors table)
-          (dimb-struct-declor-list (cdr structdeclors) table)))
-      (retok (cons new-structdeclor new-structdeclors) table))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp structdeclors)) (retok nil (dstate-fix dstate)))
+         ((erp new-structdeclor dstate)
+          (dimb-struct-declor (car structdeclors) dstate))
+         ((erp new-structdeclors dstate)
+          (dimb-struct-declor-list (cdr structdeclors) dstate)))
+      (retok (cons new-structdeclor new-structdeclors) dstate))
     :measure (struct-declor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-enum-spec ((enumspec enum-specp) (table dimb-tablep))
+  (define dimb-enum-spec ((enumspec enum-specp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-enumspec enum-specp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an enumeration specifier."
     :long
@@ -2774,21 +2814,21 @@
        just after the appearance of its enumerator [C17:6.2.1/7].
        The extension of the table is actually done by
        the function that disambiguates the enumerators."))
-    (b* (((reterr) (irr-enum-spec) (irr-dimb-table))
+    (b* (((reterr) (irr-enum-spec) (irr-dstate))
          ((enum-spec enumspec) enumspec)
-         ((erp new-enumers table) (dimb-enumer-list enumspec.enumers table)))
+         ((erp new-enumers dstate) (dimb-enumer-list enumspec.enumers dstate)))
       (retok (make-enum-spec :name? enumspec.name?
                              :enumers new-enumers
                              :final-comma enumspec.final-comma)
-             table))
+             dstate))
     :measure (enum-spec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-enumer ((enumer enumerp) (table dimb-tablep))
+  (define dimb-enumer ((enumer enumerp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-enumer enumerp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an enumerator."
     :long
@@ -2796,19 +2836,19 @@
      (xdoc::p
       "We disambiguate the constant expression, if present.
        We also add the name to the disambiguation table."))
-    (b* (((reterr) (irr-enumer) (irr-dimb-table))
+    (b* (((reterr) (irr-enumer) (irr-dstate))
          ((enumer enumer) enumer)
-         ((erp new-value? table) (dimb-const-expr-option enumer.value? table))
-         (table (dimb-add-ident enumer.name (dimb-kind-enumconst) table)))
-      (retok (make-enumer :name enumer.name :value? new-value?) table))
+         ((erp new-value? dstate) (dimb-const-expr-option enumer.value? dstate))
+         (dstate (dimb-add-ident enumer.name (dimb-kind-enumconst) dstate)))
+      (retok (make-enumer :name enumer.name :value? new-value?) dstate))
     :measure (enumer-count enumer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-enumer-list ((enumers enumer-listp) (table dimb-tablep))
+  (define dimb-enumer-list ((enumers enumer-listp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-enumers enumer-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of enumerators."
     :long
@@ -2816,36 +2856,36 @@
      (xdoc::p
       "Each enumerator updates the disambiguation table,
        which we thread through."))
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp enumers)) (retok nil (dimb-table-fix table)))
-         ((erp new-enumer table) (dimb-enumer (car enumers) table))
-         ((erp new-enumers table) (dimb-enumer-list (cdr enumers) table)))
-      (retok (cons new-enumer new-enumers) table))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp enumers)) (retok nil (dstate-fix dstate)))
+         ((erp new-enumer dstate) (dimb-enumer (car enumers) dstate))
+         ((erp new-enumers dstate) (dimb-enumer-list (cdr enumers) dstate)))
+      (retok (cons new-enumer new-enumers) dstate))
     :measure (enumer-list-count enumers))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-statassert ((statassert statassertp) (table dimb-tablep))
+  (define dimb-statassert ((statassert statassertp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-statassert statassertp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a static assertion declaration."
-    (b* (((reterr) (irr-statassert) (irr-dimb-table))
+    (b* (((reterr) (irr-statassert) (irr-dstate))
          ((statassert statassert) statassert)
-         ((erp new-test table) (dimb-const-expr statassert.test table)))
+         ((erp new-test dstate) (dimb-const-expr statassert.test dstate)))
       (retok (make-statassert :test new-test :message statassert.message)
-             table))
+             dstate))
     :measure (statassert-count statassert))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-init-declor ((ideclor init-declorp)
                             (kind dimb-kindp)
-                            (table dimb-tablep))
+                            (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-ideclor init-declorp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an initializer declarator."
     :long
@@ -2863,26 +2903,26 @@
        to @(tsee dimb-declor),
        because an initializer declarator is not
        the declarator of a defined function."))
-    (b* (((reterr) (irr-init-declor) (irr-dimb-table))
+    (b* (((reterr) (irr-init-declor) (irr-dstate))
          ((init-declor ideclor) ideclor)
-         ((erp new-declor ident table) (dimb-declor ideclor.declor nil table))
-         (table (dimb-add-ident ident kind table))
-         ((erp new-initer? table) (dimb-initer-option ideclor.initer? table)))
+         ((erp new-declor ident dstate) (dimb-declor ideclor.declor nil dstate))
+         (dstate (dimb-add-ident ident kind dstate))
+         ((erp new-initer? dstate) (dimb-initer-option ideclor.initer? dstate)))
       (retok (make-init-declor :declor new-declor
                                :asm? ideclor.asm?
                                :attribs ideclor.attribs
                                :initer? new-initer?)
-             table))
+             dstate))
     :measure (init-declor-count ideclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-init-declor-list ((ideclors init-declor-listp)
                                  (kind dimb-kindp)
-                                 (table dimb-tablep))
+                                 (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-ideclors init-declor-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of initializer declarators."
     :long
@@ -2892,18 +2932,18 @@
        The kind is the same for all of them,
        obtained from the enclosing declaration,
        and passed to this function as input."))
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp ideclors)) (retok nil (dimb-table-fix table)))
-         ((erp new-ideclor table) (dimb-init-declor (car ideclors) kind table))
-         ((erp new-ideclors table)
-          (dimb-init-declor-list (cdr ideclors) kind table)))
-      (retok (cons new-ideclor new-ideclors) table))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp ideclors)) (retok nil (dstate-fix dstate)))
+         ((erp new-ideclor dstate) (dimb-init-declor (car ideclors) kind dstate))
+         ((erp new-ideclors dstate)
+          (dimb-init-declor-list (cdr ideclors) kind dstate)))
+      (retok (cons new-ideclor new-ideclors) dstate))
     :measure (init-declor-list-count ideclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-declon ((declon declonp) (table dimb-tablep))
-    :returns (mv (erp maybe-msgp) (new-declon declonp) (new-table dimb-tablep))
+  (define dimb-declon ((declon declonp) (dstate dstatep))
+    :returns (mv (erp maybe-msgp) (new-declon declonp) (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a declaration."
     :long
@@ -2916,47 +2956,47 @@
        denote @('typedef') names or objects/functions.
        We pass the returned kind to the code that disambiguates
        the initializer declarators."))
-    (b* (((reterr) (irr-declon) (irr-dimb-table)))
+    (b* (((reterr) (irr-declon) (irr-dstate)))
       (declon-case
        declon
        :declon
-       (b* (((erp new-specs kind table)
-             (dimb-decl-spec-list declon.specs (dimb-kind-objfun) table))
-            ((erp new-declors table)
-             (dimb-init-declor-list declon.declors kind table)))
+       (b* (((erp new-specs kind dstate)
+             (dimb-decl-spec-list declon.specs (dimb-kind-objfun) dstate))
+            ((erp new-declors dstate)
+             (dimb-init-declor-list declon.declors kind dstate)))
          (retok (make-declon-declon :extension declon.extension
                                     :specs new-specs
                                     :declors new-declors)
-                table))
+                dstate))
        :statassert
-       (b* (((erp new-statassert table)
-             (dimb-statassert declon.statassert table)))
-         (retok (declon-statassert new-statassert) table))))
+       (b* (((erp new-statassert dstate)
+             (dimb-statassert declon.statassert dstate)))
+         (retok (declon-statassert new-statassert) dstate))))
     :measure (declon-count declon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-declon-list ((declons declon-listp) (table dimb-tablep))
+  (define dimb-declon-list ((declons declon-listp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-declons declon-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of declarations."
     :long
     (xdoc::topstring
      (xdoc::p
-      "The disambiguation table is threaded through."))
-    (b* (((reterr) nil (dimb-table-fix table))
-         ((when (endp declons)) (retok nil (dimb-table-fix table)))
-         ((erp new-declon table) (dimb-declon (car declons) table))
-         ((erp new-declons table) (dimb-declon-list (cdr declons) table)))
-      (retok (cons new-declon new-declons) table))
+      "The disambiguation state is threaded through."))
+    (b* (((reterr) nil (dstate-fix dstate))
+         ((when (endp declons)) (retok nil (dstate-fix dstate)))
+         ((erp new-declon dstate) (dimb-declon (car declons) dstate))
+         ((erp new-declons dstate) (dimb-declon-list (cdr declons) dstate)))
+      (retok (cons new-declon new-declons) dstate))
     :measure (declon-list-count declons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-label ((label labelp) (table dimb-tablep))
-    :returns (mv (erp maybe-msgp) (new-label labelp) (new-table dimb-tablep))
+  (define dimb-label ((label labelp) (dstate dstatep))
+    :returns (mv (erp maybe-msgp) (new-label labelp) (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a label."
     :long
@@ -2964,24 +3004,24 @@
      (xdoc::p
       "This may affect the disambiguation table,
        for a label that is a constant expression."))
-    (b* (((reterr) (irr-label) (irr-dimb-table)))
+    (b* (((reterr) (irr-label) (irr-dstate)))
       (label-case
        label
-       :name (retok (label-fix label) (dimb-table-fix table))
-       :casexpr (b* (((erp new-expr table)
-                      (dimb-const-expr label.expr table))
-                     ((erp new-range? table)
-                      (dimb-const-expr-option label.range? table)))
+       :name (retok (label-fix label) (dstate-fix dstate))
+       :casexpr (b* (((erp new-expr dstate)
+                      (dimb-const-expr label.expr dstate))
+                     ((erp new-range? dstate)
+                      (dimb-const-expr-option label.range? dstate)))
                   (retok (make-label-casexpr :expr new-expr
                                              :range? new-range?)
-                         table))
-       :default (retok (label-fix label) (dimb-table-fix table))))
+                         dstate))
+       :default (retok (label-fix label) (dstate-fix dstate))))
     :measure (label-count label))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-stmt ((stmt stmtp) (table dimb-tablep))
-    :returns (mv (erp maybe-msgp) (new-stmt stmtp) (new-table dimb-tablep))
+  (define dimb-stmt ((stmt stmtp) (dstate dstatep))
+    :returns (mv (erp maybe-msgp) (new-stmt stmtp) (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a statement."
     :long
@@ -3001,149 +3041,149 @@
        may need to be re-classified into a @(':goto').
        We base that on whether the identifier is in scope:
        if it is not, it must be a label."))
-    (b* (((reterr) (irr-stmt) (irr-dimb-table)))
+    (b* (((reterr) (irr-stmt) (irr-dstate)))
       (stmt-case
        stmt
        :labeled
-       (b* (((erp new-label table) (dimb-label stmt.label table))
-            ((erp new-stmt table) (dimb-stmt stmt.stmt table)))
+       (b* (((erp new-label dstate) (dimb-label stmt.label dstate))
+            ((erp new-stmt dstate) (dimb-stmt stmt.stmt dstate)))
          (retok (make-stmt-labeled :label new-label :stmt new-stmt)
-                table))
+                dstate))
        :compound
-       (b* (((erp cstmt table) (dimb-comp-stmt stmt.stmt nil table)))
-         (retok (stmt-compound cstmt) table))
+       (b* (((erp cstmt dstate) (dimb-comp-stmt stmt.stmt nil dstate)))
+         (retok (stmt-compound cstmt) dstate))
        :expr
-       (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
-         (retok (make-stmt-expr :expr? new-expr? :info nil) table))
+       (b* (((erp new-expr? dstate) (dimb-expr-option stmt.expr? dstate)))
+         (retok (make-stmt-expr :expr? new-expr? :info nil) dstate))
        :null-attrib
-       (retok (stmt-fix stmt) (dimb-table-fix table))
+       (retok (stmt-fix stmt) (dstate-fix dstate))
        :if
-       (b* ((table (dimb-push-scope table))
-            ((erp new-test table) (dimb-expr stmt.test table))
-            (table (dimb-push-scope table))
-            ((erp new-then table) (dimb-stmt stmt.then table))
-            (table (dimb-pop-scope table))
-            (table (dimb-pop-scope table)))
-         (retok (make-stmt-if :test new-test :then new-then) table))
+       (b* ((dstate (dimb-push-scope dstate))
+            ((erp new-test dstate) (dimb-expr stmt.test dstate))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-then dstate) (dimb-stmt stmt.then dstate))
+            (dstate (dimb-pop-scope dstate))
+            (dstate (dimb-pop-scope dstate)))
+         (retok (make-stmt-if :test new-test :then new-then) dstate))
        :ifelse
-       (b* ((table (dimb-push-scope table))
-            ((erp new-test table) (dimb-expr stmt.test table))
-            (table (dimb-push-scope table))
-            ((erp new-then table) (dimb-stmt stmt.then table))
-            (table (dimb-pop-scope table))
-            (table (dimb-push-scope table))
-            ((erp new-else table) (dimb-stmt stmt.else table))
-            (table (dimb-pop-scope table))
-            (table (dimb-pop-scope table)))
+       (b* ((dstate (dimb-push-scope dstate))
+            ((erp new-test dstate) (dimb-expr stmt.test dstate))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-then dstate) (dimb-stmt stmt.then dstate))
+            (dstate (dimb-pop-scope dstate))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-else dstate) (dimb-stmt stmt.else dstate))
+            (dstate (dimb-pop-scope dstate))
+            (dstate (dimb-pop-scope dstate)))
          (retok (make-stmt-ifelse :test new-test :then new-then :else new-else)
-                table))
+                dstate))
        :switch
-       (b* ((table (dimb-push-scope table))
-            ((erp new-target table) (dimb-expr stmt.target table))
-            (table (dimb-push-scope table))
-            ((erp new-body table) (dimb-stmt stmt.body table))
-            (table (dimb-pop-scope table))
-            (table (dimb-pop-scope table)))
-         (retok (make-stmt-switch :target new-target :body new-body) table))
+       (b* ((dstate (dimb-push-scope dstate))
+            ((erp new-target dstate) (dimb-expr stmt.target dstate))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-body dstate) (dimb-stmt stmt.body dstate))
+            (dstate (dimb-pop-scope dstate))
+            (dstate (dimb-pop-scope dstate)))
+         (retok (make-stmt-switch :target new-target :body new-body) dstate))
        :while
-       (b* ((table (dimb-push-scope table))
-            ((erp new-test table) (dimb-expr stmt.test table))
-            (table (dimb-push-scope table))
-            ((erp new-body table) (dimb-stmt stmt.body table))
-            (table (dimb-pop-scope table))
-            (table (dimb-pop-scope table)))
-         (retok (make-stmt-while :test new-test :body new-body) table))
+       (b* ((dstate (dimb-push-scope dstate))
+            ((erp new-test dstate) (dimb-expr stmt.test dstate))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-body dstate) (dimb-stmt stmt.body dstate))
+            (dstate (dimb-pop-scope dstate))
+            (dstate (dimb-pop-scope dstate)))
+         (retok (make-stmt-while :test new-test :body new-body) dstate))
        :dowhile
-       (b* ((table (dimb-push-scope table))
-            (table (dimb-push-scope table))
-            ((erp new-body table) (dimb-stmt stmt.body table))
-            (table (dimb-pop-scope table))
-            ((erp new-test table) (dimb-expr stmt.test table))
-            (table (dimb-pop-scope table)))
-         (retok (make-stmt-dowhile :body new-body :test new-test) table))
+       (b* ((dstate (dimb-push-scope dstate))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-body dstate) (dimb-stmt stmt.body dstate))
+            (dstate (dimb-pop-scope dstate))
+            ((erp new-test dstate) (dimb-expr stmt.test dstate))
+            (dstate (dimb-pop-scope dstate)))
+         (retok (make-stmt-dowhile :body new-body :test new-test) dstate))
        :for-expr
-       (b* ((table (dimb-push-scope table))
-            ((erp new-init table) (dimb-expr-option stmt.init table))
-            ((erp new-test table) (dimb-expr-option stmt.test table))
-            ((erp new-next table) (dimb-expr-option stmt.next table))
-            (table (dimb-push-scope table))
-            ((erp new-body table) (dimb-stmt stmt.body table))
-            (table (dimb-pop-scope table))
-            (table (dimb-pop-scope table)))
+       (b* ((dstate (dimb-push-scope dstate))
+            ((erp new-init dstate) (dimb-expr-option stmt.init dstate))
+            ((erp new-test dstate) (dimb-expr-option stmt.test dstate))
+            ((erp new-next dstate) (dimb-expr-option stmt.next dstate))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-body dstate) (dimb-stmt stmt.body dstate))
+            (dstate (dimb-pop-scope dstate))
+            (dstate (dimb-pop-scope dstate)))
          (retok (make-stmt-for-expr :init new-init
                                     :test new-test
                                     :next new-next
                                     :body new-body)
-                table))
+                dstate))
        :for-declon
-       (b* ((table (dimb-push-scope table))
-            ((erp new-init table) (dimb-declon stmt.init table))
-            ((erp new-test table) (dimb-expr-option stmt.test table))
-            ((erp new-next table) (dimb-expr-option stmt.next table))
-            (table (dimb-push-scope table))
-            ((erp new-body table) (dimb-stmt stmt.body table))
-            (table (dimb-pop-scope table))
-            (table (dimb-pop-scope table)))
+       (b* ((dstate (dimb-push-scope dstate))
+            ((erp new-init dstate) (dimb-declon stmt.init dstate))
+            ((erp new-test dstate) (dimb-expr-option stmt.test dstate))
+            ((erp new-next dstate) (dimb-expr-option stmt.next dstate))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-body dstate) (dimb-stmt stmt.body dstate))
+            (dstate (dimb-pop-scope dstate))
+            (dstate (dimb-pop-scope dstate)))
          (retok (make-stmt-for-declon :init new-init
                                       :test new-test
                                       :next new-next
                                       :body new-body)
-                table))
+                dstate))
        :for-ambig
-       (b* ((table (dimb-push-scope table))
-            ((erp decl/expr table) (dimb-amb-declon/stmt stmt.init table))
-            ((erp new-test table) (dimb-expr-option stmt.test table))
-            ((erp new-next table) (dimb-expr-option stmt.next table))
-            (table (dimb-push-scope table))
-            ((erp new-body table) (dimb-stmt stmt.body table))
-            (table (dimb-pop-scope table))
-            (table (dimb-pop-scope table)))
+       (b* ((dstate (dimb-push-scope dstate))
+            ((erp decl/expr dstate) (dimb-amb-declon/stmt stmt.init dstate))
+            ((erp new-test dstate) (dimb-expr-option stmt.test dstate))
+            ((erp new-next dstate) (dimb-expr-option stmt.next dstate))
+            (dstate (dimb-push-scope dstate))
+            ((erp new-body dstate) (dimb-stmt stmt.body dstate))
+            (dstate (dimb-pop-scope dstate))
+            (dstate (dimb-pop-scope dstate)))
          (declon/stmt-case
           decl/expr
           :declon (retok (make-stmt-for-declon :init decl/expr.declon
                                                :test new-test
                                                :next new-next
                                                :body new-body)
-                         table)
+                         dstate)
           :stmt (retok (make-stmt-for-expr :init decl/expr.expr
                                            :test new-test
                                            :next new-next
                                            :body new-body)
-                       table)))
+                       dstate)))
        :goto
-       (retok (stmt-fix stmt) (dimb-table-fix table))
+       (retok (stmt-fix stmt) (dstate-fix dstate))
        :gotoe
        (b* (((when (and (expr-case stmt.label :ident)
                         (not (dimb-lookup-ident
                               (expr-ident->ident stmt.label)
-                              table))))
+                              dstate))))
              (retok (stmt-goto (expr-ident->ident stmt.label))
-                    (dimb-table-fix table)))
-            ((erp new-label table) (dimb-expr stmt.label table)))
-         (retok (stmt-gotoe new-label) table))
+                    (dstate-fix dstate)))
+            ((erp new-label dstate) (dimb-expr stmt.label dstate)))
+         (retok (stmt-gotoe new-label) dstate))
        :continue
-       (retok (stmt-fix stmt) (dimb-table-fix table))
+       (retok (stmt-fix stmt) (dstate-fix dstate))
        :break
-       (retok (stmt-fix stmt) (dimb-table-fix table))
+       (retok (stmt-fix stmt) (dstate-fix dstate))
        :return
-       (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
-         (retok (make-stmt-return :expr? new-expr? :info stmt.info) table))
+       (b* (((erp new-expr? dstate) (dimb-expr-option stmt.expr? dstate)))
+         (retok (make-stmt-return :expr? new-expr? :info stmt.info) dstate))
        :return-attrib
-       (b* (((erp new-expr table) (dimb-expr stmt.expr table)))
+       (b* (((erp new-expr dstate) (dimb-expr stmt.expr dstate)))
          (retok (make-stmt-return-attrib :attrib stmt.attrib :expr new-expr)
-                table))
+                dstate))
        :asm
-       (retok (stmt-fix stmt) (dimb-table-fix table))))
+       (retok (stmt-fix stmt) (dstate-fix dstate))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-comp-stmt ((cstmt comp-stmtp)
                           (fundefp booleanp)
-                          (table dimb-tablep))
+                          (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-cstmt comp-stmtp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a compound statement."
     :long
@@ -3156,20 +3196,20 @@
        the body itself of the function does not start a new scope;
        it is the function definition itself that starts a new scope,
        involving the parameters."))
-    (b* (((reterr) (irr-comp-stmt) (irr-dimb-table))
+    (b* (((reterr) (irr-comp-stmt) (irr-dstate))
          ((comp-stmt cstmt) cstmt)
-         (table (if fundefp table (dimb-push-scope table)))
-         ((erp new-items table) (dimb-block-item-list cstmt.items table))
-         (table (if fundefp table (dimb-pop-scope table))))
-      (retok (make-comp-stmt :labels cstmt.labels :items new-items) table))
+         (dstate (if fundefp dstate (dimb-push-scope dstate)))
+         ((erp new-items dstate) (dimb-block-item-list cstmt.items dstate))
+         (dstate (if fundefp dstate (dimb-pop-scope dstate))))
+      (retok (make-comp-stmt :labels cstmt.labels :items new-items) dstate))
     :measure (comp-stmt-count cstmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-block-item ((item block-itemp) (table dimb-tablep))
+  (define dimb-block-item ((item block-itemp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-item block-itemp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a block item."
     :long
@@ -3177,54 +3217,54 @@
      (xdoc::p
       "An ambiguous declaration or (expression) statement
        is disambiguated and re-classified."))
-    (b* (((reterr) (irr-block-item) (irr-dimb-table)))
+    (b* (((reterr) (irr-block-item) (irr-dstate)))
       (block-item-case
        item
        :declon
-       (b* (((erp new-declon table) (dimb-declon item.declon table)))
+       (b* (((erp new-declon dstate) (dimb-declon item.declon dstate)))
          (retok (make-block-item-declon :declon new-declon :info item.info)
-                table))
+                dstate))
        :stmt
-       (b* (((erp new-stmt table) (dimb-stmt item.stmt table)))
-         (retok (make-block-item-stmt :stmt new-stmt :info item.info) table))
+       (b* (((erp new-stmt dstate) (dimb-stmt item.stmt dstate)))
+         (retok (make-block-item-stmt :stmt new-stmt :info item.info) dstate))
        :ambig
-       (b* (((erp declon/stmt table)
-             (dimb-amb-declon/stmt item.declon/stmt table)))
+       (b* (((erp declon/stmt dstate)
+             (dimb-amb-declon/stmt item.declon/stmt dstate)))
          (declon/stmt-case
           declon/stmt
           :declon (retok (make-block-item-declon :declon declon/stmt.declon
                                                  :info nil)
-                       table)
+                         dstate)
           :stmt (retok (make-block-item-stmt
                         :stmt (make-stmt-expr :expr? declon/stmt.expr
                                               :info nil)
                         :info nil)
-                       table)))))
+                       dstate)))))
     :measure (block-item-count item))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-block-item-list ((items block-item-listp) (table dimb-tablep))
+  (define dimb-block-item-list ((items block-item-listp) (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (new-items block-item-listp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of block items."
-    (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp items)) (retok nil (dimb-table-fix table)))
-         ((erp new-item table) (dimb-block-item (car items) table))
-         ((erp new-items table) (dimb-block-item-list (cdr items) table)))
-      (retok (cons new-item new-items) table))
+    (b* (((reterr) nil (irr-dstate))
+         ((when (endp items)) (retok nil (dstate-fix dstate)))
+         ((erp new-item dstate) (dimb-block-item (car items) dstate))
+         ((erp new-items dstate) (dimb-block-item-list (cdr items) dstate)))
+      (retok (cons new-item new-items) dstate))
     :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-amb-expr/tyname ((expr/tyname amb-expr/tyname-p)
                                 (add-parens-p booleanp)
-                                (table dimb-tablep))
+                                (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (expr-or-tyname expr/tyname-p)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an ambiguous expression or type name."
     :long
@@ -3260,12 +3300,12 @@
        @('sizeof') applied to an expression.
        In this case, the @('add-parens-p') flag is set to @('nil')
        by the caller of this disambiguation function."))
-    (b* (((reterr) (irr-expr/tyname) (irr-dimb-table))
+    (b* (((reterr) (irr-expr/tyname) (irr-dstate))
          ((amb-expr/tyname expr/tyname) expr/tyname)
-         ((mv erp-expr new-expr table-expr)
-          (dimb-expr expr/tyname.expr table))
-         ((mv erp-tyname new-tyname table-tyname)
-          (dimb-tyname expr/tyname.tyname table)))
+         ((mv erp-expr new-expr dstate-expr)
+          (dimb-expr expr/tyname.expr dstate))
+         ((mv erp-tyname new-tyname dstate-tyname)
+          (dimb-tyname expr/tyname.tyname dstate)))
       (if erp-expr
           ;; expr fails:
           (if erp-tyname
@@ -3280,14 +3320,14 @@
                        erp-expr
                        erp-tyname)
             ;; tyname succeeds:
-            (retok (expr/tyname-tyname new-tyname) table-tyname))
+            (retok (expr/tyname-tyname new-tyname) dstate-tyname))
         ;; expr succeeds:
         (if erp-tyname
             ;; tyname fails:
             (b* ((new-expr (if add-parens-p
                                (expr-paren new-expr)
                              new-expr)))
-              (retok (expr/tyname-expr new-expr) table-expr))
+              (retok (expr/tyname-expr new-expr) dstate-expr))
           ;; tyname succeeds:
           (retmsg$ "In the ambiguous expression or type name ~x0, ~
                     both the expression and the type name
@@ -3300,11 +3340,11 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-amb-declor/absdeclor ((declor/absdeclor amb-declor/absdeclor-p)
-                                     (table dimb-tablep))
+                                     (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (declor-or-absdeclor declor/absdeclor-p)
                  (ident? ident-optionp)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an ambiguous declarator or abstract declarator."
     :long
@@ -3353,12 +3393,12 @@
        because if we are disambiguating a declarator or abstract declarator,
        it means that we are disambiguating a parameter declarator,
        and not the declarator of a defined function."))
-    (b* (((reterr) (irr-declor/absdeclor) nil (irr-dimb-table))
+    (b* (((reterr) (irr-declor/absdeclor) nil (irr-dstate))
          ((amb-declor/absdeclor declor/absdeclor) declor/absdeclor)
-         ((mv erp-declor new-declor ident table-declor)
-          (dimb-declor declor/absdeclor.declor nil table))
-         ((mv erp-absdeclor new-absdeclor table-absdeclor)
-          (dimb-absdeclor declor/absdeclor.absdeclor table)))
+         ((mv erp-declor new-declor ident dstate-declor)
+          (dimb-declor declor/absdeclor.declor nil dstate))
+         ((mv erp-absdeclor new-absdeclor dstate-absdeclor)
+          (dimb-absdeclor declor/absdeclor.absdeclor dstate)))
       (if erp-declor
           ;; declor fails:
           (if erp-absdeclor
@@ -3377,19 +3417,19 @@
             ;; absdeclor succeeds:
             (retok (declor/absdeclor-absdeclor new-absdeclor)
                    nil
-                   table-absdeclor))
+                   dstate-absdeclor))
         ;; declor succeeds:
         (if erp-absdeclor
             ;; absdeclor fails:
             (retok (declor/absdeclor-declor new-declor)
                    ident
-                   table-declor)
+                   dstate-declor)
           ;; absdeclor succeeds:
-          (b* ((kind (dimb-lookup-ident ident table)))
+          (b* ((kind (dimb-lookup-ident ident dstate)))
             (if (equal kind (dimb-kind-typedef))
                 (retok (declor/absdeclor-absdeclor new-absdeclor)
                        nil
-                       table-absdeclor)
+                       dstate-absdeclor)
               (retmsg$ "In the ambiguous ~
                         declarator or abstract declarator ~x0, ~
                         both the declarator and the abstract declarator ~
@@ -3405,10 +3445,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-amb-declon/stmt ((declon/stmt amb-declon/stmt-p)
-                                (table dimb-tablep))
+                                (dstate dstatep))
     :returns (mv (erp maybe-msgp)
                  (decl-or-stmt declon/stmt-p)
-                 (new-table dimb-tablep))
+                 (new-dstate dstatep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an ambiguous declaration or statement."
     :long
@@ -3425,12 +3465,12 @@
        In valid code, one of them must succeed and the other one must fail:
        then we disambiguate in favor of the one that succeeded.
        If none or both succeed, the code must be invalid."))
-    (b* (((reterr) (irr-declon/stmt) (irr-dimb-table))
+    (b* (((reterr) (irr-declon/stmt) (irr-dstate))
          ((amb-declon/stmt declon/stmt) declon/stmt)
-         ((mv erp-declon new-declon table-decl)
-          (dimb-declon declon/stmt.declon table))
-         ((mv erp-expr new-expr table-expr)
-          (dimb-expr declon/stmt.expr table)))
+         ((mv erp-declon new-declon dstate-decl)
+          (dimb-declon declon/stmt.declon dstate))
+         ((mv erp-expr new-expr dstate-expr)
+          (dimb-expr declon/stmt.expr dstate)))
       (if erp-declon
           ;; decl fails:
           (if erp-expr
@@ -3446,11 +3486,11 @@
                        erp-declon
                        erp-expr)
             ;; stmt succeeds:
-            (retok (declon/stmt-stmt new-expr) table-expr))
+            (retok (declon/stmt-stmt new-expr) dstate-expr))
         ;; decl succeeds:
         (if erp-expr
             ;; stmt fails:
-            (retok (declon/stmt-declon new-declon) table-decl)
+            (retok (declon/stmt-declon new-declon) dstate-decl)
           ;; stmt succeeds:
           (retmsg$ "In the ambiguous declaration or statement ~x0, ~
                     both the declaration and the statement ~
@@ -3687,8 +3727,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-fundef ((fundef fundefp) (table dimb-tablep) (gcc/clang booleanp))
-  :returns (mv (erp maybe-msgp) (new-fundef fundefp) (new-table dimb-tablep))
+(define dimb-fundef ((fundef fundefp) (dstate dstatep) (gcc/clang booleanp))
+  :returns (mv (erp maybe-msgp) (new-fundef fundefp) (new-dstate dstatep))
   :short "Disambiguate a function definition."
   :long
   (xdoc::topstring
@@ -3705,12 +3745,12 @@
      with either parameter declarations or identifiers,
      after it has been processed.
      Because of the @('fundefp') flag set to @('t'),
-     the disambiguation table returned from @(tsee dimb-declor)
+     the disambiguation state returned from @(tsee dimb-declor)
      should contain a newly pushed scope for the function definition.
      But this may not be the case in invalid code,
      so we check that this is the case explicitly here;
      without this check, the disambiguator may throw hard errors
-     due to a violated expectation that the disambiguator table is not empty
+     due to a violated expectation that the disambiguation table is not empty
      (we observed this in an example of invalid code,
      which motivated the addition of the check just described).")
    (xdoc::p
@@ -3754,38 +3794,38 @@
     "At the end, we pop the scope for the function definition,
      and we add the function to the table,
      so that it is available in the rest of the translation unit."))
-  (b* (((reterr) (irr-fundef) (irr-dimb-table))
+  (b* (((reterr) (irr-fundef) (irr-dstate))
        ((fundef fundef) fundef)
-       ((erp new-specs & table)
-        (dimb-decl-spec-list fundef.specs (dimb-kind-objfun) table))
-       (nscopes (len table)) ; for checking it below
-       ((erp new-declor ident table)
-        (dimb-declor fundef.declor t table))
-       ((unless (= (len table) (1+ nscopes)))
+       ((erp new-specs & dstate)
+        (dimb-decl-spec-list fundef.specs (dimb-kind-objfun) dstate))
+       (nscopes (len (dstate->table dstate))) ; for checking it below
+       ((erp new-declor ident dstate)
+        (dimb-declor fundef.declor t dstate))
+       ((unless (= (len (dstate->table dstate)) (1+ nscopes)))
         (retmsg$ "The function definition ~x0 is invalid, ~
-                  because the disambiguation table after the declarator ~
+                  because the disambiguation dstate after the declarator ~
                   does not have one scope more than before the declarator. ~
                   This is indicative of invalid code."
                  (fundef-fix fundef)))
-       (table (dimb-add-ident-objfun-file-scope ident table))
-       ((erp new-declons table) (dimb-declon-list fundef.declons table))
-       (table (dimb-add-ident-objfun (ident "__func__") table))
-       (table (if gcc/clang
-                  (dimb-add-idents-objfun
-                   (list (ident "__FUNCTION__")
-                         (ident "__PRETTY_FUNCTION__"))
-                   table)
-                table))
-       ((erp new-body table) (dimb-comp-stmt fundef.body t table))
-       (table (dimb-pop-scope table))
-       (table (dimb-add-ident ident (dimb-kind-objfun) table)))
+       (dstate (dimb-add-ident-objfun-file-scope ident dstate))
+       ((erp new-declons dstate) (dimb-declon-list fundef.declons dstate))
+       (dstate (dimb-add-ident-objfun (ident "__func__") dstate))
+       (dstate (if gcc/clang
+                   (dimb-add-idents-objfun
+                    (list (ident "__FUNCTION__")
+                          (ident "__PRETTY_FUNCTION__"))
+                    dstate)
+                 dstate))
+       ((erp new-body dstate) (dimb-comp-stmt fundef.body t dstate))
+       (dstate (dimb-pop-scope dstate))
+       (dstate (dimb-add-ident ident (dimb-kind-objfun) dstate)))
     (retok (make-fundef :extension fundef.extension
                         :specs new-specs
                         :declor new-declor
                         :declons new-declons
                         :body new-body
                         :info fundef.info)
-           table))
+           dstate))
   :hooks (:fix)
 
   ///
@@ -3797,23 +3837,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-ext-declon ((extdecl ext-declonp)
-                         (table dimb-tablep)
+                         (dstate dstatep)
                          (gcc/clang booleanp))
-  :returns (mv (erp maybe-msgp) (new-extdecl ext-declonp) (new-table dimb-tablep))
+  :returns (mv (erp maybe-msgp) (new-extdecl ext-declonp) (new-dstate dstatep))
   :short "Disambiguate an external declaration."
-  (b* (((reterr) (irr-ext-declon) (irr-dimb-table)))
+  (b* (((reterr) (irr-ext-declon) (irr-dstate)))
     (ext-declon-case
      extdecl
      :fundef
-     (b* (((erp new-fundef table) (dimb-fundef extdecl.fundef table gcc/clang)))
-       (retok (ext-declon-fundef new-fundef) table))
+     (b* (((erp new-fundef dstate) (dimb-fundef extdecl.fundef dstate gcc/clang)))
+       (retok (ext-declon-fundef new-fundef) dstate))
      :declon
-     (b* (((erp new-decl table) (dimb-declon extdecl.declon table)))
-       (retok (ext-declon-declon new-decl) table))
+     (b* (((erp new-decl dstate) (dimb-declon extdecl.declon dstate)))
+       (retok (ext-declon-declon new-decl) dstate))
      :empty
-     (retok (ext-declon-fix extdecl) (dimb-table-fix table))
+     (retok (ext-declon-fix extdecl) (dstate-fix dstate))
      :asm
-     (retok (ext-declon-fix extdecl) (dimb-table-fix table))))
+     (retok (ext-declon-fix extdecl) (dstate-fix dstate))))
   :hooks (:fix)
 
   ///
@@ -3825,21 +3865,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-trans-item ((item trans-itemp)
-                         (table dimb-tablep)
+                         (dstate dstatep)
                          (gcc/clang booleanp))
-  :returns (mv (erp maybe-msgp) (new-item trans-itemp) (new-table dimb-tablep))
+  :returns (mv (erp maybe-msgp) (new-item trans-itemp) (new-dstate dstatep))
   :short "Disambiguate a translation item."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only support external declarations and comments.
      The latter are always considered disambiguated."))
-  (b* (((reterr) (irr-trans-item) (irr-dimb-table)))
+  (b* (((reterr) (irr-trans-item) (irr-dstate)))
     (trans-item-case
      item
-     :declon (b* (((erp declon table)
-                   (dimb-ext-declon item.declon table gcc/clang)))
-               (retok (trans-item-declon declon) table))
+     :declon (b* (((erp declon dstate)
+                   (dimb-ext-declon item.declon dstate gcc/clang)))
+               (retok (trans-item-declon declon) dstate))
      :include (reterr
                (msg "Disambiguator does not support #include directives yet."))
      :define (reterr
@@ -3848,7 +3888,7 @@
              (msg "Disambiguator does not support #undef directives yet."))
      :cond (reterr
             (msg "Disambiguator does not support conditional directives yet."))
-     :line-comment (retok (trans-item-fix item) (dimb-table-fix table))))
+     :line-comment (retok (trans-item-fix item) (dstate-fix dstate))))
   :hooks (:fix)
 
   ///
@@ -3860,18 +3900,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-trans-item-list ((items trans-item-listp)
-                              (table dimb-tablep)
+                              (dstate dstatep)
                               (gcc/clang booleanp))
   :returns (mv (erp maybe-msgp)
                (new-items trans-item-listp)
-               (new-table dimb-tablep))
+               (new-dstate dstatep))
   :short "Disambiguate a list of translation items."
-  (b* (((reterr) nil (irr-dimb-table))
-       ((when (endp items)) (retok nil (dimb-table-fix table)))
-       ((erp new-item table) (dimb-trans-item (car items) table gcc/clang))
-       ((erp new-items table)
-        (dimb-trans-item-list (cdr items) table gcc/clang)))
-    (retok (cons new-item new-items) table))
+  (b* (((reterr) nil (irr-dstate))
+       ((when (endp items)) (retok nil (dstate-fix dstate)))
+       ((erp new-item dstate) (dimb-trans-item (car items) dstate gcc/clang))
+       ((erp new-items dstate)
+        (dimb-trans-item-list (cdr items) dstate gcc/clang)))
+    (retok (cons new-item new-items) dstate))
   :hooks (:fix)
 
   ///
@@ -3884,34 +3924,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-trans-unit ((tunit trans-unitp)
-                         (table dimb-tablep)
+                         (dstate dstatep)
                          (gcc/clang booleanp))
   :returns (mv (erp maybe-msgp)
                (new-tunit trans-unitp)
-               (new-table dimb-tablep))
+               (new-dstate dstatep))
   :short "Disambiguate a translation unit."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This function takes and returns a disambiguation table
+    "This function takes and returns a disambiguation state
      in order to accommodate an upcoming extension of the disambiguator
      to handle translation units with @('#include') directives
      that have been preserved by our preprocessor.
      Similarly to what our preprocessor does for files,
      the disambiguator will disambiguate each included translation unit
      in two contexts,
-     namely in the current disambiguation table
-     and in a fresh disambiguation table,
+     namely in the current disambiguation state
+     and in a fresh disambiguation state,
      and then comparing the results to ensure that
      the @('#include') can be still preserved for disambiguation.
      When the included translation unit is disambiguated
      in the context of the including translation unit,
-     the output table from this function
+     the output state from this function
      is then used to disambiguate the rest of the including file."))
-  (b* (((reterr) (irr-trans-unit) (irr-dimb-table))
+  (b* (((reterr) (irr-trans-unit) (irr-dstate))
        (items (trans-unit->items tunit))
-       ((erp new-items table) (dimb-trans-item-list items table gcc/clang)))
-    (retok (make-trans-unit :items new-items :info nil) table))
+       ((erp new-items dstate) (dimb-trans-item-list items dstate gcc/clang)))
+    (retok (make-trans-unit :items new-items :info nil) dstate))
   :hooks (:fix)
 
   ///
@@ -3934,8 +3974,8 @@
    (xdoc::p
     "We disambiguate every translation unit in turn.
      The order is unimportant,
-     as each one is disambiguated in a fresh disambiguation table.
-     The disambiguation table at the end of each translation unit
+     as each one is disambiguated in a fresh disambiguation state.
+     The disambiguation state at the end of each translation unit
      is discarded.")
    (xdoc::p
     "We propagate errors if the @(':keep-going') flag is @('nil').
@@ -3943,9 +3983,9 @@
   (b* (((reterr) nil)
        ((when (omap::emptyp tumap)) (retok nil))
        ((mv path tunit) (omap::head tumap))
-       (table (dimb-init-table dialect))
+       (dstate (init-dstate dialect))
        (gcc/clang (c::dialect-gcc/clangp dialect))
-       ((mv erp new-tunit &) (dimb-trans-unit tunit table gcc/clang))
+       ((mv erp new-tunit &) (dimb-trans-unit tunit dstate gcc/clang))
        ((when erp)
         (if keep-going
             (prog2$ (cw "Error in translation unit ~x0: ~@1~%"

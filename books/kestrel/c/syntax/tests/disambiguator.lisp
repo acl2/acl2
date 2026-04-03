@@ -26,9 +26,9 @@
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         (table (dimb-init-table dialect))
+         (dstate (init-dstate dialect))
          (gcc/clang (c::dialect-gcc/clangp dialect))
-         ((mv erp2 ast &) (dimb-trans-unit ast table gcc/clang)))
+         ((mv erp2 ast &) (dimb-trans-unit ast dstate gcc/clang)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
             (t (and ,(or cond t)
@@ -44,9 +44,9 @@
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         (table (dimb-init-table dialect))
+         (dstate (init-dstate dialect))
          (gcc/clang (c::dialect-gcc/clangp dialect))
-         ((mv erp2 & &) (dimb-trans-unit ast table gcc/clang)))
+         ((mv erp2 & &) (dimb-trans-unit ast dstate gcc/clang)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))
             (t nil)))))
