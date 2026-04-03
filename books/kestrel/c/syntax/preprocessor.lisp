@@ -1935,8 +1935,7 @@
                    param))
            (arg (cdr param+arg))
            ;; Combine # and ARG into TOKEN.
-           (schars (stringize-lexeme-list arg))
-           (stringlit (make-stringlit :prefix? nil :schars schars))
+           (stringlit (stringize arg))
            (token (plexeme-string stringlit)))
         (append (space-lexeme-singleton? spacep)
                 (list token) ; string literal
