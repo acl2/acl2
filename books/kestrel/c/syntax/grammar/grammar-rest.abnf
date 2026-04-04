@@ -18,18 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing Numbers [C17:6.4.8] [C17:A.1.9]
-
-pp-number = digit
-          / "." digit
-          / pp-number digit
-          / pp-number identifier-nondigit
-          / pp-number %i"e" sign
-          / pp-number %i"p" sign
-          / pp-number "."
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Preprocessing Tokens [C17:A.1.1] [C17:6.4]
 
 preprocessing-token = header-name
