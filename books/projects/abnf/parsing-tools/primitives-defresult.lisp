@@ -27,7 +27,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These functions may be be useful when writing
+    "These functions may be useful when writing
      @(tsee fty::defresult)-based parsers for
      languages specified via ABNF grammars.
      These functions take lists of natural numbers as inputs

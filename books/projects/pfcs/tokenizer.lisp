@@ -100,7 +100,7 @@
        (repetition (car branches))
        ;; Repetition is a list of subtrees.
        ;; Here, the repetition should have exactly one item
-       ;; (which is the identifier, integer, operator, or separattor)
+       ;; (which is the identifier, integer, operator, or separator)
        ;; but we don't check that here).
        ((unless (equal (len repetition) 1))
         (reserrf "token repetition should have exactly one subtree"))

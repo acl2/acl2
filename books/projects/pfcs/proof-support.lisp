@@ -98,7 +98,7 @@
       and @(tsee constraint-list-satp-of-append),
       along with rules @(tsee constraint-list-satp-of-nil)
       and @(tsee constraint-list-satp-of-atom)
-      to resolve empty lists of constraints as alwasy satisfied.
+      to resolve empty lists of constraints as always satisfied.
       We also have a rule @(tsee constraint-list-satp-of-rev)
       that simplifies @(tsee rev) away,
       since constraint satisfaction is not ordered-dependent.")
