@@ -60,6 +60,8 @@
 ; (depends-on "grammar/header-names.abnf")
 ; (depends-on "grammar/preprocessing-numbers-c17.abnf")
 ; (depends-on "grammar/preprocessing-numbers-c23.abnf")
+; (depends-on "grammar/preprocessing-tokens-c17.abnf")
+; (depends-on "grammar/preprocessing-tokens-c23.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -330,6 +332,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar preprocessing-tokens-c17
+  "preprocessing tokens that are specific to the C17 dialects")
+
+(defgrammar preprocessing-tokens-c23
+  "preprocessing tokens that are specific to the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -419,6 +429,10 @@
      (c::standard-case dialect.std
                        :c17 *grammar-preprocessing-numbers-c17*
                        :c23 *grammar-preprocessing-numbers-c23*)
+     ;; preprocessing tokens:
+     (c::standard-case dialect.std
+                       :c17 *grammar-preprocessing-tokens-c17*
+                       :c23 *grammar-preprocessing-tokens-c23*)
      ;; rest (TODO: modularize):
      *grammar-rest*))
 

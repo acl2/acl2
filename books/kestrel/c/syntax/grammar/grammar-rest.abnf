@@ -18,18 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing Tokens [C17:A.1.1] [C17:6.4]
-
-preprocessing-token = header-name
-                    / identifier
-                    / pp-number
-                    / character-constant
-                    / string-literal
-                    / punctuator
-                    / character ; non-white-space-character none of the above
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Preprocessing Lexemes
 
 ; These are the lexical units during preprocessing.
