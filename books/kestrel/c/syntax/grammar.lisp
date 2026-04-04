@@ -51,6 +51,8 @@
 ; (depends-on "grammar/character-constants-c23.abnf")
 ; (depends-on "grammar/simple-escapes-std.abnf")
 ; (depends-on "grammar/simple-escapes-ext.abnf")
+; (depends-on "grammar/constants-c17.abnf")
+; (depends-on "grammar/constants-c23.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -284,6 +286,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar constants-c17
+  "constants that are specific to the C17 dialects")
+
+(defgrammar constants-c23
+  "constants that are specific to the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -355,6 +365,10 @@
        *grammar-simple-escapes-std*)
      ;; enumeration constants:
      *grammar-enumeration-constants*
+     ;; constants:
+     (c::standard-case dialect.std
+                       :c17 *grammar-constants-c17*
+                       :c23 *grammar-constants-c23*)
      ;; rest:
      *grammar-rest*))
 

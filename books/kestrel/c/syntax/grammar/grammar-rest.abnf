@@ -18,15 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Constants [C17:A.1.5] [C17:6.4.4]
-
-constant = integer-constant
-         / floating-constant
-         / enumeration-constant
-         / character-constant
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; String Literals [C17:A.1.6] [C17:6.4.5]
 
 string-literal =
