@@ -47,6 +47,11 @@
 ; (depends-on "grammar/floating-constants-c23-nogcc.abnf")
 ; (depends-on "grammar/floating-constants-c17-gcc.abnf")
 ; (depends-on "grammar/floating-constants-c23-gcc.abnf")
+; (depends-on "grammar/character-constants.abnf")
+; (depends-on "grammar/character-constants-c17.abnf")
+; (depends-on "grammar/character-constants-c23.abnf")
+; (depends-on "grammar/simple-escapes-std.abnf")
+; (depends-on "grammar/simple-escapes-ext.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -261,6 +266,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar character-constants
+  "character constants that are common to all the C dialects")
+
+(defgrammar character-constants-c17
+  "character constants that are specific to the C17 dialects")
+
+(defgrammar character-constants-c23
+  "character constants that are specific to the C23 dialects")
+
+(defgrammar simple-escapes-std
+  "simple escapes that are specific to
+   the dialects without GCC or Clang extensions")
+
+(defgrammar simple-escapes-ext
+  "simple escapes that are specific to
+   the dialects with GCC or Clang extensions")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -322,6 +346,14 @@
                    (if dialect.gcc
                        *grammar-floating-constants-c23-gcc*
                      *grammar-floating-constants-c23-nogcc*)))
+     ;; character-constants:
+     *grammar-character-constants*
+     (c::standard-case dialect.std
+                       :c17 *grammar-character-constants-c17*
+                       :c23 *grammar-character-constants-c23*)
+     (if (or dialect.gcc dialect.clang)
+         *grammar-simple-escapes-ext*
+       *grammar-simple-escapes-std*)
      ;; enumeration constants:
      *grammar-enumeration-constants*
      ;; rest:

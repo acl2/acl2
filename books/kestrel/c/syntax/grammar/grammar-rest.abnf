@@ -30,51 +30,12 @@ constant = integer-constant
          / enumeration-constant
          / character-constant
 
-character-constant = "'" c-char-sequence "'"
-                   / %s"L'" c-char-sequence "'"
-                   / %i"u'" c-char-sequence "'"
-
-c-char-sequence = c-char
-                / c-char-sequence c-char
-
-c-char = character-not-single-quote-or-backslash-or-new-line
-       / escape-sequence
-
-escape-sequence = simple-escape-sequence
-                / octal-escape-sequence
-                / hexadecimal-escape-sequence
-                / universal-character-name
-
-simple-escape-sequence = "\'"
-                       / "\" double-quote
-                       / "\?"
-                       / "\\"
-                       / %s"\a"
-                       / %s"\b"
-                       / %s"\f"
-                       / %s"\n"
-                       / %s"\r"
-                       / %s"\t"
-                       / %s"\v"
-                       / "\%" ; GCC extension
-
-octal-escape-sequence = "\" octal-digit
-                      / "\" octal-digit octal-digit
-                      / "\" octal-digit octal-digit octal-digit
-
-hexadecimal-escape-sequence = %s"\x" hexadecimal-digit
-                            / hexadecimal-escape-sequence hexadecimal-digit
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; String Literals [C17:A.1.6] [C17:6.4.5]
 
 string-literal =
     [ encoding-prefix ] double-quote [ s-char-sequence ] double-quote
-
-encoding-prefix = %s"u8"
-                / %i"u"
-                / %s"L"
 
 s-char-sequence = s-char
                 / s-char-sequence s-char
