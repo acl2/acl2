@@ -17,7 +17,6 @@
 (include-book "projects/abnf/operations/in-terminal-set" :dir :system)
 (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)
 
-(include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
 ; (depends-on "grammar/characters.abnf")
