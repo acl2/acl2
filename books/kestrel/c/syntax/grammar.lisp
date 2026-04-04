@@ -33,6 +33,10 @@
 ; (depends-on "grammar/keywords-c23-gcc.abnf")
 ; (depends-on "grammar/keywords-c23-clang.abnf")
 ; (depends-on "grammar/keywords-c23-clang-cheri.abnf")
+; (depends-on "grammar/identifiers.abnf")
+; (depends-on "grammar/identifiers-c17.abnf")
+; (depends-on "grammar/identifiers-c23.abnf")
+; (depends-on "grammar/universal-character-names.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
