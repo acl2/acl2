@@ -257,6 +257,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar enumeration-constants "enumeration constants")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -318,6 +322,8 @@
                    (if dialect.gcc
                        *grammar-floating-constants-c23-gcc*
                      *grammar-floating-constants-c23-nogcc*)))
+     ;; enumeration constants:
+     *grammar-enumeration-constants*
      ;; rest:
      *grammar-rest*))
 

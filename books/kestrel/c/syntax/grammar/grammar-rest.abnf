@@ -30,8 +30,6 @@ constant = integer-constant
          / enumeration-constant
          / character-constant
 
-enumeration-constant = identifier
-
 character-constant = "'" c-char-sequence "'"
                    / %s"L'" c-char-sequence "'"
                    / %i"u'" c-char-sequence "'"
