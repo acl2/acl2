@@ -233,6 +233,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(abnf::defgrammar *grammar-identifiers*
+  :short "Grammar rules for identifiers that are common to all the C dialects."
+  :file "grammar/identifiers.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-identifiers-c17*
+  :short "Grammar rules for identifiers that are specific to the C17 standard."
+  :file "grammar/identifiers-c17.abnf"
+  :untranslate t
+  :well-formed t)
+
+(abnf::defgrammar *grammar-identifiers-c23*
+  :short "Grammar rules for identifiers that are specific to the C23 standard."
+  :file "grammar/identifiers-c23.abnf"
+  :untranslate t
+  :well-formed t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-universal-character-names*
   :short "Grammar rules for universal character names."
   :file "grammar/universal-character-names.abnf"
@@ -259,10 +279,9 @@
     (append
      ;; characters:
      *grammar-characters*
-     (c::standard-case
-      dialect.std
-      :c17 *grammar-characters-c17*
-      :c23 *grammar-characters-c23*)
+     (c::standard-case dialect.std
+                       :c17 *grammar-characters-c17*
+                       :c23 *grammar-characters-c23*)
      ;; comments:
      *grammar-comments*
      ;; keywords:
@@ -279,6 +298,11 @@
                                     *grammar-keywords-c23-clang-cheri*
                                   *grammar-keywords-c23-clang*))
                  (t *grammar-keywords-c23*)))
+     ;; identifiers:
+     *grammar-identifiers*
+     (c::standard-case dialect.std
+                       :c17 *grammar-identifiers-c17*
+                       :c23 *grammar-identifiers-c23*)
      ;; universal character names:
      *grammar-universal-character-names*
      ;; rest:

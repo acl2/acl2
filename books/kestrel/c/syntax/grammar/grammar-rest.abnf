@@ -18,39 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Identifiers [C17:A.1.3] [C17:6.4.2.1]
-
-; For now we omit universal character names in identifiers.
-; These have requirements specified in [C17:D].
-; We could add them in the future if needed.
-
-; For now we omit other implementation-defined characters from identifiers.
-; We could add them in the future if needed.
-
-; Our ABNF rule for 'nondigit' is equivalent to the one in [C17],
-; but we use our 'letter' (defined above) instead of listing the letters.
-
-identifier = identifier-nondigit
-           / identifier identifier-nondigit
-           / identifier digit
-
-identifier-nondigit = nondigit
-                    ; omit universal-character-name
-                    ; omit other implementation-defined character
-
-nondigit = "_"
-         / letter
-
-; During preprocessing, ideniifiers include keywords:
-; see rule for 'preprocessing-token' in [C17:A.1.1] [C17:6.4].
-; After preprocessing, identifiers exclude keywords:
-; see rule for 'token' in [C17:A.1.1] [C17:6.4],
-; and the extra-grammatical requirement in [C17:6.4.2.1/4].
-; However, in the rule for 'identifier' in [C17:A.1.3] [C17:6.4.2.1],
-; grammatically identifiers include keywords, as does our ABNF grammar rule.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Constants [C17:A.1.5] [C17:6.4.4]
 
 ; As a GCC extension, we allow the '\%' escape.
@@ -278,6 +245,8 @@ pp-number = digit
           / pp-number %i"e" sign
           / pp-number %i"p" sign
           / pp-number "."
+
+identifier-nondigit = nondigit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
