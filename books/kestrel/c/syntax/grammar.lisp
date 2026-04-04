@@ -438,7 +438,7 @@
      (c::standard-case dialect.std
                        :c17 *grammar-preprocessing-tokens-c17*
                        :c23 *grammar-preprocessing-tokens-c23*)
-     ;; preprocessing tokens:
+     ;; preprocessing lexemes:
      *grammar-preprocessing-lexemes*
      ;; rest (TODO: modularize):
      *grammar-rest*))
