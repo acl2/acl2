@@ -2193,7 +2193,7 @@
                (>= n 0))
           n
         (er-hard-val 0 ,ctx
-                     "The object ~x0 is not a nonnagative fixnum (precisely:  ~
+                     "The object ~x0 is not a nonnegative fixnum (precisely:  ~
                       not a ~x1)."
                      n *fixnat-type*)))))
 
@@ -9447,11 +9447,11 @@
 ; variable.  However, now the live stobj corresponding to st is stored on the
 ; raw Lisp alist *user-stobj-alist* under the key st.
 
-; Back when we stored it under the value of the the-live-var, we thought that
-; one might wonder why we didn't choose to name this object $s.  Below we
-; explain our earlier thinking.  Now that we use only (the-live-var name) only
-; to store properties, perhaps we could instead store those properties on name;
-; but when we eliminated the special variable in October 2019, that didn't seem
+; Back when we stored it under the value of the-live-var, we thought that one
+; might wonder why we didn't choose to name this object $s.  Below we explain
+; our earlier thinking.  Now that we use only (the-live-var name) only to store
+; properties, perhaps we could instead store those properties on name; but when
+; we eliminated the special variable in October 2019, that didn't seem
 ; worthwhile to explore.
 
 ; Historical Plaque for Why the Live Var for $S Is Not $S

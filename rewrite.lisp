@@ -475,8 +475,8 @@
 
 ; (In my previous example I used memb.  Here I use member, the Common Lisp
 ; function.  When member succeeds, it returns the tail of its second arg that
-; starts with its first.  Thus, (member x a) is not necessary equal to (member
-; x b), even when a and b are set-equal.  But they are propositionally
+; starts with its first.  Thus, (member x a) is not necessarily equal to
+; (member x b), even when a and b are set-equal.  But they are propositionally
 ; equivalent, i.e., mutually nil or non-nil.  Iff is just another equivalence
 ; relation.)
 
