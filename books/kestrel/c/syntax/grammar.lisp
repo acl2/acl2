@@ -233,6 +233,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(abnf::defgrammar *grammar-universal-character-names*
+  :short "Grammar rules for universal character names."
+  :file "grammar/universal-character-names.abnf"
+  :untranslate t
+  :well-formed t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -271,6 +279,8 @@
                                     *grammar-keywords-c23-clang-cheri*
                                   *grammar-keywords-c23-clang*))
                  (t *grammar-keywords-c23*)))
+     ;; universal character names:
+     *grammar-universal-character-names*
      ;; rest:
      *grammar-rest*))
 

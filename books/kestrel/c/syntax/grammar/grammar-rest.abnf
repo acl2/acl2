@@ -51,18 +51,6 @@ nondigit = "_"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Universal Character Names [C17:A.1.4] [C17:6.4.3]
-
-universal-character-name = %s"\u" hex-quad
-                         / %s"\U" hex-quad hex-quad
-
-hex-quad =
-  hexadecimal-digit hexadecimal-digit hexadecimal-digit hexadecimal-digit
-
-; The rule name 'hexadecimal-digit' is defined below, as part of constants.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Constants [C17:A.1.5] [C17:6.4.4]
 
 ; As a GCC extension, we allow the '\%' escape.
