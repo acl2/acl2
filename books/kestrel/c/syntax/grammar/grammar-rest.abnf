@@ -25,47 +25,10 @@
 ; we encountered it in practical code, and we found this web page:
 ; https://stackoverflow.com/questions/34142682/what-is-the-backslash-percent-escape-in-c.
 
-; As a GCC extension, we allow floating suffixes
-; for the additional floating types of size 16, 32, 64, and 128
-; (https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html).
-
 constant = integer-constant
          / floating-constant
          / enumeration-constant
          / character-constant
-
-floating-constant = decimal-floating-constant
-                  / hexadecimal-floating-constant
-
-decimal-floating-constant =
-      fractional-constant [ exponent-part ] [ floating-suffix ]
-    / digit-sequence exponent-part [ floating-suffix ]
-
-hexadecimal-floating-constant =
-      hexadecimal-prefix hexadecimal-fractional-constant
-                         binary-exponent-part [floating-suffix ]
-    / hexadecimal-prefix hexadecimal-digit-sequence
-                         binary-exponent-part [ floating-suffix ]
-
-fractional-constant = [ digit-sequence ] "." digit-sequence
-                    / digit-sequence "."
-
-exponent-part = %i"e" [ sign ] digit-sequence
-
-sign = "+" / "-"
-
-digit-sequence = digit
-               / digit-sequence digit
-
-hexadecimal-fractional-constant =
-      [ hexadecimal-digit-sequence ] "." hexadecimal-digit-sequence
-    / hexadecimal-digit-sequence "."
-
-binary-exponent-part = %i"p" [ sign ] digit-sequence
-
-floating-suffix = %i"f"
-                / %i"l"
-                / %i"f" ( "16" / "32" / "64" / "128" ) %s"x" ; GCC extensions
 
 enumeration-constant = identifier
 

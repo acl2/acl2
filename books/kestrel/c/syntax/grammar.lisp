@@ -40,6 +40,13 @@
 ; (depends-on "grammar/integer-constants.abnf")
 ; (depends-on "grammar/integer-constants-c17.abnf")
 ; (depends-on "grammar/integer-constants-c23.abnf")
+; (depends-on "grammar/floating-constants.abnf")
+; (depends-on "grammar/floating-constants-c17.abnf")
+; (depends-on "grammar/floating-constants-c23.abnf")
+; (depends-on "grammar/floating-constants-c17-nogcc.abnf")
+; (depends-on "grammar/floating-constants-c23-nogcc.abnf")
+; (depends-on "grammar/floating-constants-c17-gcc.abnf")
+; (depends-on "grammar/floating-constants-c23-gcc.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -159,10 +166,10 @@
   "the source character set that are common to all the C dialects")
 
 (defgrammar characters-c17
-  "the source character set that are specific to the C17 standard")
+  "the source character set that are specific to the C17 dialects")
 
 (defgrammar characters-c23
-  "the source character set that are specific to the C23 standard")
+  "the source character set that are specific to the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,9 +213,9 @@
 
 (defgrammar identifiers "identifiers that are common to all the C dialects")
 
-(defgrammar identifiers-c17 "identifiers that are specific to the C17 standard")
+(defgrammar identifiers-c17 "identifiers that are specific to the C17 dialects")
 
-(defgrammar identifiers-c23 "identifiers that are specific to the C23 standard")
+(defgrammar identifiers-c23 "identifiers that are specific to the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -220,10 +227,33 @@
   "integer constants that are common to all the C dialects")
 
 (defgrammar integer-constants-c17
-  "integer constants that are specific to the C17 standard")
+  "integer constants that are specific to the C17 dialects")
 
 (defgrammar integer-constants-c23
-  "integer constants that are specific to the C23 standard")
+  "integer constants that are specific to the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar floating-constants
+  "floating constants that are common to all the C dialects")
+
+(defgrammar floating-constants-c17
+  "floating constants that are specific to C17 dialects")
+
+(defgrammar floating-constants-c23
+  "floating constants that are specific to C23 dialects")
+
+(defgrammar floating-constants-c17-nogcc
+  "floating constants that are specific to C17 dialects without GCC extensions")
+
+(defgrammar floating-constants-c23-nogcc
+  "floating constants that are specific to C23 dialects without GCC extensions")
+
+(defgrammar floating-constants-c17-gcc
+  "floating constants that are specific to C17 dialect with GCC extensions")
+
+(defgrammar floating-constants-c23-gcc
+  "floating constants that are specific to C23 dialect with GCC extensions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -276,6 +306,18 @@
      (c::standard-case dialect.std
                        :c17 *grammar-integer-constants-c17*
                        :c23 *grammar-integer-constants-c23*)
+     ;; floating constants:
+     *grammar-floating-constants*
+     (c::standard-case
+      dialect.std
+      :c17 (append *grammar-floating-constants-c17*
+                   (if dialect.gcc
+                       *grammar-floating-constants-c17-gcc*
+                     *grammar-floating-constants-c17-nogcc*))
+      :c23 (append *grammar-floating-constants-c23*
+                   (if dialect.gcc
+                       *grammar-floating-constants-c23-gcc*
+                     *grammar-floating-constants-c23-nogcc*)))
      ;; rest:
      *grammar-rest*))
 

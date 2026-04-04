@@ -1,0 +1,31 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for floating constants [C23:6.4.5.3]
+; that are specific to the C23 dialects with GCC extensions.
+; Together with the generic rules in floating-constants.abnf
+; and with the additional specialized rules in floating-constants-c23.abnf,
+; they form the rules for floating constants of
+; the C23 dialect with GCC extensions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; GCC adds floating suffixes for
+; the additional floating types of size 16, 32, 64, and 128
+; (https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html).
+
+floating-suffix = %i"f"
+                / %i"l"
+                / %s"df" / %s"DF"
+                / %s"dd" / %s"DD"
+                / %s"dl" / %s"DL"
+                / %i"f" ( "16" / "32" / "64" / "128" ) %s"x"
