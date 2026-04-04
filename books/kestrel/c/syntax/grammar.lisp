@@ -53,6 +53,8 @@
 ; (depends-on "grammar/simple-escapes-ext.abnf")
 ; (depends-on "grammar/constants-c17.abnf")
 ; (depends-on "grammar/constants-c23.abnf")
+; (depends-on "grammar/string-literals-c17.abnf")
+; (depends-on "grammar/string-literals-c23.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -294,6 +296,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar string-literals-c17
+  "string literals that are specific to the C17 dialects")
+
+(defgrammar string-literals-c23
+  "string literals that are specific to the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -369,6 +379,10 @@
      (c::standard-case dialect.std
                        :c17 *grammar-constants-c17*
                        :c23 *grammar-constants-c23*)
+     ;; string literals:
+     (c::standard-case dialect.std
+                       :c17 *grammar-string-literals-c17*
+                       :c23 *grammar-string-literals-c23*)
      ;; rest:
      *grammar-rest*))
 

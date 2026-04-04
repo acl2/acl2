@@ -18,19 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; String Literals [C17:A.1.6] [C17:6.4.5]
-
-string-literal =
-    [ encoding-prefix ] double-quote [ s-char-sequence ] double-quote
-
-s-char-sequence = s-char
-                / s-char-sequence s-char
-
-s-char = character-not-double-quote-or-backslash-or-new-line
-       / escape-sequence
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Punctuators [C17:A.1.7] [C17:6.4.6]
 
 punctuator = "["
