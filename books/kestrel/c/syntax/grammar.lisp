@@ -137,131 +137,79 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar-characters*
-  :short "Grammar rules for the source character set
-          that are common to all the C dialects."
-  :file "grammar/characters.abnf"
-  :untranslate t
-  :well-formed t)
+(defmacro defgrammar (name description)
+  (declare (xargs :guard (and (symbolp name) (stringp description))))
+  (b* ((const (packn-pos (list '*grammar- name '*) 'grammar))
+       (file (str::cat "grammar/"
+                       (str::downcase-string (symbol-name name))
+                       ".abnf"))
+       (short (str::cat "Grammar rules for " description ".")))
+    `(abnf::defgrammar ,const
+       :short ,short
+       :file ,file
+       :untranslate t
+       :well-formed t)))
 
-(abnf::defgrammar *grammar-characters-c17*
-  :short "Grammar rules for the source character set
-          that are specific to the C17 standard."
-  :file "grammar/characters-c17.abnf"
-  :untranslate t
-  :well-formed t)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar-characters-c23*
-  :short "Grammar rules for the source character set
-          that are specific to the C23 standard."
-  :file "grammar/characters-c23.abnf"
-  :untranslate t
-  :well-formed t)
+(defgrammar characters
+  "the source character set that are common to all the C dialects")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defgrammar characters-c17
+  "the source character set that are specific to the C17 standard")
 
-(abnf::defgrammar *grammar-comments*
-  :short "Grammar rules for comments."
-  :file "grammar/comments.abnf"
-  :untranslate t
-  :well-formed t)
+(defgrammar characters-c23
+  "the source character set that are specific to the C23 standard")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar-keywords*
-  :short "Grammar rules for keywords
-          that form subsets for the various C dialects."
-  :file "grammar/keywords.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c17*
-  :short "Grammar rules for keywords
-          that are specific to the C17 dialect without extensions."
-  :file "grammar/keywords-c17.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c23*
-  :short "Grammar rules for keywords
-          that are specific to the C23 dialect without extensions."
-  :file "grammar/keywords-c23.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c17-gcc*
-  :short "Grammar rules for keywords
-          that are specific to
-          the C17 dialect with GCC and without CHERI extensions."
-  :file "grammar/keywords-c17-gcc.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c23-gcc*
-  :short "Grammar rules for keywords
-          that are specific to
-          the C23 dialect with GCC and without CHERI extensions."
-  :file "grammar/keywords-c23-gcc.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c17-clang*
-  :short "Grammar rules for keywords
-          that are specific to
-          the C17 dialect with Clang and without CHERI extensions."
-  :file "grammar/keywords-c17-clang.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c23-clang*
-  :short "Grammar rules for keywords
-          that are specific to
-          the C23 dialect with Clang and without CHERI extensions."
-  :file "grammar/keywords-c23-clang.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c17-clang-cheri*
-  :short "Grammar rules for keywords
-          that are specific to the C17 dialect with Clang and CHERI extensions."
-  :file "grammar/keywords-c17-clang-cheri.abnf"
-  :untranslate t
-  :well-formed t)
-
-(abnf::defgrammar *grammar-keywords-c23-clang-cheri*
-  :short "Grammar rules for keywords
-          that are specific to the C23 dialect with Clang and CHERI extensions."
-  :file "grammar/keywords-c23-clang-cheri.abnf"
-  :untranslate t
-  :well-formed t)
+(defgrammar comments "comments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar-identifiers*
-  :short "Grammar rules for identifiers that are common to all the C dialects."
-  :file "grammar/identifiers.abnf"
-  :untranslate t
-  :well-formed t)
+(defgrammar keywords "keywords that form subsets for the various C dialects")
 
-(abnf::defgrammar *grammar-identifiers-c17*
-  :short "Grammar rules for identifiers that are specific to the C17 standard."
-  :file "grammar/identifiers-c17.abnf"
-  :untranslate t
-  :well-formed t)
+(defgrammar keywords-c17
+  "keywords that are specific to the C17 dialect without extensions")
 
-(abnf::defgrammar *grammar-identifiers-c23*
-  :short "Grammar rules for identifiers that are specific to the C23 standard."
-  :file "grammar/identifiers-c23.abnf"
-  :untranslate t
-  :well-formed t)
+(defgrammar keywords-c23
+  "keywords that are specific to the C23 dialect without extensions")
+
+(defgrammar keywords-c17-gcc
+  "keywords that are specific to
+   the C17 dialect with GCC and without CHERI extensions")
+
+(defgrammar keywords-c23-gcc
+  "keywords that are specific to
+   the C23 dialect with GCC and without CHERI extensions")
+
+(defgrammar keywords-c17-clang
+  "keywords that are specific to
+   the C17 dialect with Clang and without CHERI extensions")
+
+(defgrammar keywords-c23-clang
+  "keywords that are specific to
+   the C23 dialect with Clang and without CHERI extensions")
+
+(defgrammar keywords-c17-clang-cheri
+  "keywords that are specific to
+   the C17 dialect with Clang and CHERI extensions")
+
+(defgrammar keywords-c23-clang-cheri
+  "keywords that are specific to
+   the C23 dialect with Clang and CHERI extensions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar-universal-character-names*
-  :short "Grammar rules for universal character names."
-  :file "grammar/universal-character-names.abnf"
-  :untranslate t
-  :well-formed t)
+(defgrammar identifiers "identifiers that are common to all the C dialects")
+
+(defgrammar identifiers-c17 "identifiers that are specific to the C17 standard")
+
+(defgrammar identifiers-c23 "identifiers that are specific to the C23 standard")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar universal-character-names "universal character names")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
