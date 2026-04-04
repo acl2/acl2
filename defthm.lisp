@@ -933,7 +933,7 @@
 ; subsumption check you'd have to swap the orientation of conclusion.
 ; Furthermore, you'd find it would subsume any rule it was compared to, and
 ; you would find that no rule (except another form [2] rule) would subsume
-; it.  It short, it seems pointless to include form [2] rules in subsumption
+; it.  In short, it seems pointless to include form [2] rules in subsumption
 ; checks!  Recall that the :heuristic-info field of a rewrite-quoted-constant
 ; rule is (n . loop-stopper), where n is the form number.
 
