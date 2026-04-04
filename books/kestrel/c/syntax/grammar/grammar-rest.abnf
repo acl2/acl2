@@ -63,9 +63,6 @@ hexadecimal-fractional-constant =
 
 binary-exponent-part = %i"p" [ sign ] digit-sequence
 
-hexadecimal-digit-sequence = hexadecimal-digit
-                           / hexadecimal-digit-sequence hexadecimal-digit
-
 floating-suffix = %i"f"
                 / %i"l"
                 / %i"f" ( "16" / "32" / "64" / "128" ) %s"x" ; GCC extensions
@@ -211,8 +208,6 @@ pp-number = digit
           / pp-number %i"e" sign
           / pp-number %i"p" sign
           / pp-number "."
-
-identifier-nondigit = nondigit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

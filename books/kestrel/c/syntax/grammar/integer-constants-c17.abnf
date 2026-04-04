@@ -34,3 +34,10 @@ integer-suffix = unsigned-suffix [ long-suffix ]
                / unsigned-suffix [ long-long-suffix ]
                / long-suffix [ unsigned-suffix ]
                / long-long-suffix [ unsigned-suffix ]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; remove after the rules for floating constants have been modularized:
+
+hexadecimal-digit-sequence = hexadecimal-digit
+                           / hexadecimal-digit-sequence hexadecimal-digit
