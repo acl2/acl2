@@ -1,7 +1,7 @@
 ; Making a new array whose values are all the default value
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -34,7 +34,7 @@
            (xargs :guard-hints (("Goal" :in-theory (enable array1p)))))
   (compress1 name
              (acons :header (list :dimensions (list size)
-                                  ;;array1p require the :maximum-length to be at most *MAXIMUM-POSITIVE-32-BIT-INTEGER*
+                                  ;;array1p requires the :maximum-length to be at most *MAXIMUM-POSITIVE-32-BIT-INTEGER*
                                   :maximum-length (min (* 2 size) *max-array-maximum-length* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
                                                        )
                                   :default default
@@ -63,7 +63,7 @@
   :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
 
 (defthm default-of-make-empty-array-with-default
-  (equal (default dag-parent-array-name (make-empty-array-with-default dag-parent-array-name size default))
+  (equal (default array-name (make-empty-array-with-default array-name size default))
          default)
   :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
 
@@ -112,7 +112,7 @@
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 (defthm default-of-make-empty-array
-  (equal (default dag-parent-array-name (make-empty-array dag-parent-array-name size))
+  (equal (default array-name (make-empty-array array-name size))
          nil)
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
