@@ -18,23 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Header Names [C17:6.4.7] [C17:A.1.8]
-
-header-name = "<" h-char-sequence ">"
-            / double-quote q-char-sequence double-quote
-
-h-char-sequence = h-char
-                / h-char-sequence h-char
-
-h-char = character-not-greater-than-or-new-line
-
-q-char-sequence = q-char
-                / q-char-sequence q-char
-
-q-char = character-not-double-quote-or-new-line
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Preprocessing Numbers [C17:6.4.8] [C17:A.1.9]
 
 pp-number = digit

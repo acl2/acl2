@@ -57,6 +57,7 @@
 ; (depends-on "grammar/string-literals-c23.abnf")
 ; (depends-on "grammar/punctuators-c17.abnf")
 ; (depends-on "grammar/punctuators-c23.abnf")
+; (depends-on "grammar/header-names.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -314,6 +315,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar header-names
+  "header names that are specific to the C17 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -397,7 +403,9 @@
      (c::standard-case dialect.std
                        :c17 *grammar-punctuators-c17*
                        :c23 *grammar-punctuators-c23*)
-     ;; rest:
+     ;; header names:
+     *grammar-header-names*
+     ;; rest (TODO: modularize):
      *grammar-rest*))
 
   ///
