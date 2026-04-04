@@ -1,0 +1,43 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for integer constants
+; that are specific to the C17 standard [C17:6.4.4.1/1].
+; Together with the generic rules in integer-constants.abnf,
+; they form the rules for integer constants for the C17 dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+integer-constant = decimal-constant [ integer-suffix ]
+                 / octal-constant [ integer-suffix ]
+                 / hexadecimal-constant [ integer-suffix ]
+
+decimal-constant = nonzero-digit
+                 / decimal-constant digit
+
+octal-constant = "0"
+               / octal-constant octal-digit
+
+hexadecimal-constant = hexadecimal-prefix hexadecimal-digit
+                     / hexadecimal-constant hexadecimal-digit
+
+integer-suffix = unsigned-suffix [ long-suffix ]
+               / unsigned-suffix [ long-long-suffix ]
+               / long-suffix [ unsigned-suffix ]
+               / long-long-suffix [ unsigned-suffix ]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; remove after the rules for floating constants have been modularized:
+
+hexadecimal-digit-sequence = hexadecimal-digit
+                           / hexadecimal-digit-sequence hexadecimal-digit

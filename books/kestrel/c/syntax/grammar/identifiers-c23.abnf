@@ -1,0 +1,44 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for identifiers
+; that are specific to the C23 standard [C23:6.4.3.1].
+; Together with the generic rules in identifiers.abnf,
+; they form the rules for identifiers for the C23 dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; For now we omit universal character names in identifiers,
+; as well as XID_Start and XID_Continue characters.
+
+identifier = identifier-start
+           / identifier identifier-continue
+
+identifier-start = nondigit
+                 ; omit XID_Start character
+                 ; omit universal character name of class XID_Start
+
+
+identifier-continue = digit
+                    / nondigit
+                    ; omit XID_Continue character
+                    ; omit universal character name of class XID_Continue
+
+; The above rule for 'identifier'
+; is equivalent to the one in identifiers-c17.abnf,
+; but it has a different formulation.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; remove after more rules have been modularized:
+
+identifier-nondigit = nondigit
