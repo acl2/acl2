@@ -37,6 +37,9 @@
 ; (depends-on "grammar/identifiers-c17.abnf")
 ; (depends-on "grammar/identifiers-c23.abnf")
 ; (depends-on "grammar/universal-character-names.abnf")
+; (depends-on "grammar/integer-constants.abnf")
+; (depends-on "grammar/integer-constants-c17.abnf")
+; (depends-on "grammar/integer-constants-c23.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -213,6 +216,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar integer-constants
+  "integer constants that are common to all the C dialects")
+
+(defgrammar integer-constants-c17
+  "integer constants that are specific to the C17 standard")
+
+(defgrammar integer-constants-c23
+  "integer constants that are specific to the C23 standard")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -257,6 +271,11 @@
                        :c23 *grammar-identifiers-c23*)
      ;; universal character names:
      *grammar-universal-character-names*
+     ;; integer constants:
+     *grammar-integer-constants*
+     (c::standard-case dialect.std
+                       :c17 *grammar-integer-constants-c17*
+                       :c23 *grammar-integer-constants-c23*)
      ;; rest:
      *grammar-rest*))
 

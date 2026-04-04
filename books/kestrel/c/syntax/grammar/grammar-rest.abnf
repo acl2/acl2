@@ -34,40 +34,6 @@ constant = integer-constant
          / enumeration-constant
          / character-constant
 
-integer-constant = decimal-constant [ integer-suffix ]
-                 / octal-constant [ integer-suffix ]
-                 / hexadecimal-constant [ integer-suffix ]
-
-decimal-constant = nonzero-digit
-                 / decimal-constant digit
-
-octal-constant = "0"
-               / octal-constant octal-digit
-
-hexadecimal-constant = hexadecimal-prefix hexadecimal-digit
-                     / hexadecimal-constant hexadecimal-digit
-
-hexadecimal-prefix = %i"0x"
-
-nonzero-digit = %x31-39 ; 1-9
-
-octal-digit = %x30-37 ; 0-7
-
-hexadecimal-digit = %x30-39 ; 0-9
-                  / %x61-66 ; a-f
-                  / %x41-46 ; A-F
-
-integer-suffix = unsigned-suffix [ long-suffix ]
-               / unsigned-suffix [ long-long-suffix ]
-               / long-suffix [ unsigned-suffix ]
-               / long-long-suffix [ unsigned-suffix ]
-
-unsigned-suffix = %i"u"
-
-long-suffix = %i"l"
-
-long-long-suffix = %s"ll" / %s"LL" ; note that %i"ll" would include lL and Ll
-
 floating-constant = decimal-floating-constant
                   / hexadecimal-floating-constant
 

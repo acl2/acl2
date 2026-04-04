@@ -1,0 +1,51 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for integer constants
+; that are specific to the C23 standard [C23:6.4.5.2].
+; Together with the generic rules in integer-constants.abnf,
+; they form the rules for integer constants for the C23 dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+integer-constant = decimal-constant [ integer-suffix ]
+                 / octal-constant [ integer-suffix ]
+                 / hexadecimal-constant [ integer-suffix ]
+                 / binary-constant [ integer-suffix ]
+
+decimal-constant = nonzero-digit
+                 / decimal-constant [ "'" ] digit
+
+octal-constant = "0"
+               / octal-constant [ "'" ] octal-digit
+
+hexadecimal-constant = hexadecimal-prefix hexadecimal-digit-sequence
+
+binary-constant = binary-prefix binary-digit
+                / binary-constant [ "'" ] binary-digit
+
+binary-prefix = %i"0b"
+
+hexadecimal-digit-sequence =
+    hexadecimal-digit
+  / hexadecimal-digit-sequence [ "'" ] hexadecimal-digit
+
+binary-digit = "0" / "1"
+
+integer-suffix = unsigned-suffix [ long-suffix ]
+               / unsigned-suffix [ long-long-suffix ]
+               / unsigned-suffix [ bit-precise-int-suffix ]
+               / long-suffix [ unsigned-suffix ]
+               / long-long-suffix [ unsigned-suffix ]
+               / bit-precise-int-suffix [ unsigned-suffix ]
+
+bit-precise-int-suffix = %s"wb" / %s"WB"
