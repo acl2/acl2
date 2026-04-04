@@ -15,6 +15,13 @@
 ; Together with the rules in the dialect-specific files identifiers-*.abnf,
 ; they define the identifiers of each C dialect.
 
+; Although the formulation of our rules differs between C17 and C23,
+; the two formulations are equivalent:
+; we define an identifier as a non-empty sequence
+; that starts with a letter or underscore
+; and continues with letters, digits, and underscores;
+; note that our current rules are more restrictive than [C17] and [C23].
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The rule for nondigits is equivalent to [C17:6.4.2.1] and [C23:6.4.3.1],
