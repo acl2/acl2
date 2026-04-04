@@ -18,17 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing Lexemes
-
-; These are the lexical units during preprocessing.
-; [C17] and [C23] have no rule for preprocessing lexemes, but our grammar does.
-
-preprocessing-lexeme = preprocessing-token
-                     / comment
-                     / white-space-character
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Tokens [C17:A.1.1] [C17:6.4]
 
 ; We add header names (which in [C17] are preprocessing tokens, not tokens)

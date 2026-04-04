@@ -62,6 +62,7 @@
 ; (depends-on "grammar/preprocessing-numbers-c23.abnf")
 ; (depends-on "grammar/preprocessing-tokens-c17.abnf")
 ; (depends-on "grammar/preprocessing-tokens-c23.abnf")
+; (depends-on "grammar/preprocessing-lexemes.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -340,6 +341,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar preprocessing-lexemes "preprocessing lexemes")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -433,6 +438,8 @@
      (c::standard-case dialect.std
                        :c17 *grammar-preprocessing-tokens-c17*
                        :c23 *grammar-preprocessing-tokens-c23*)
+     ;; preprocessing tokens:
+     *grammar-preprocessing-lexemes*
      ;; rest (TODO: modularize):
      *grammar-rest*))
 
