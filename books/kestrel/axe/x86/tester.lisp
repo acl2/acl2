@@ -171,7 +171,7 @@
 ;; contain their signed forms.  (Note that the registers are signed; see rule X86ISA::I64P-XR-RGF.)
 ;; Returns (mv replacement-assumptions type-assumptions).
 ;; TODO: How do these interact with the input-assumptions?
-(defund make-register-replacement-assumptions64 (register-functions vars replacement-assumptions-acc type-assumptions-acc)
+(defund register-replacement-assumptions64 (register-functions vars replacement-assumptions-acc type-assumptions-acc)
   (declare (xargs :guard (and (symbol-listp register-functions)
                               (symbol-listp vars))))
   (if (or (endp register-functions) ; additional params will be on the stack
@@ -179,20 +179,20 @@
       (mv replacement-assumptions-acc type-assumptions-acc)
     (let ((register-name (first register-functions))
           (var (first vars)))
-      (make-register-replacement-assumptions64 (rest register-functions)
+      (register-replacement-assumptions64 (rest register-functions)
                                                (rest vars)
                                                (cons `(equal (,register-name x86) (logext '64 ,var)) replacement-assumptions-acc)
                                                (cons `(unsigned-byte-p '64 ,var) type-assumptions-acc)))))
 
 (local
-  (defthm make-register-replacement-assumptions64-return-type
+  (defthm register-replacement-assumptions64-return-type
     (implies (and (symbol-listp register-functions)
                   (symbol-listp vars)
                   (pseudo-term-listp replacement-assumptions-acc)
                   (pseudo-term-listp type-assumptions-acc))
-             (and (pseudo-term-listp (mv-nth 0 (make-register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))
-                  (pseudo-term-listp (mv-nth 1 (make-register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))))
-    :hints (("Goal" :induct t :in-theory (enable make-register-replacement-assumptions64)))))
+             (and (pseudo-term-listp (mv-nth 0 (register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))
+                  (pseudo-term-listp (mv-nth 1 (register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))))
+    :hints (("Goal" :induct t :in-theory (enable register-replacement-assumptions64)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,10 +213,12 @@
                            assume-bytes
                            stack-slots
                            existing-stack-slots
-                           position-independentp
+                           position-independent
                            feature-flags
                            state)
   (declare (xargs :guard (and (stringp function-name-string)
+                              (parsed-executablep parsed-executable)
+                              ;; param-names
                               (symbol-listp extra-rules)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp extra-lift-rules)
@@ -248,24 +250,24 @@
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (booleanp position-independentp)
-                              (feature-flagsp feature-flags))
+                              (member-eq position-independent '(t nil :auto))
+                              (or (feature-flagsp feature-flags) (eq :auto feature-flags)))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
-  (b* ((- (ensure-x86 parsed-executable))
+  (b* (((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       (- (cw "~%(Testing ~x0.~%" function-name-string))
+
+       (- (ensure-x86 parsed-executable))
        (executable-type (parsed-executable-type parsed-executable))
        (32-bitp (member-eq executable-type *executable-types32*))
        ;; This could perhaps be removed once we have some 32-bit formal unit tests:
        ((when 32-bitp)
         (er hard? 'test-function-core "32-bit mode is not yet supported in the Formal Unit Tester.")
         (mv t nil nil state))
-
        (stack-slots (if (eq :auto stack-slots) 100 stack-slots)) ; existing-stack-slots is dealt with in unroll-x86-code-core
        ;; Translate the assumptions supplied by the user:
        (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
 
-       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       (- (cw "~%(Testing ~x0.~%" function-name-string))
        ;; Check the param names, if any:
        ((when (not (or (eq :none param-names)
                        (and (symbol-listp param-names)
@@ -284,7 +286,7 @@
        ((mv register-replacement-assumptions register-type-assumptions)
         (if 32-bitp ;todo: add support for this in 32-bit mode, or is the calling convention too different?
             (mv nil nil)
-          (make-register-replacement-assumptions64 register-names64 param-names nil nil)))
+          (register-replacement-assumptions64 register-names64 param-names nil nil)))
        ;; Assumptions to be added to what unroll-x86-code-core already puts in:
        (extra-assumptions `(,@user-assumptions
                             ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
@@ -311,7 +313,7 @@
           assume-bytes
           stack-slots
           existing-stack-slots
-          position-independentp
+          position-independent
           feature-flags
           :skip ; no input assumptions -- todo
           nil ; type-assumptions-for-array-varsp -- todo
@@ -495,7 +497,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (feature-flagsp feature-flags)
+                              (or (feature-flagsp feature-flags) (eq :auto feature-flags))
                               (member-eq expected-result '(:pass :fail :any)))
                   :mode :program
                   :stobjs state))
@@ -509,15 +511,6 @@
           (mv nil executable state)))
        ((when erp) (mv erp nil state))
        (executable-type (parsed-executable-type parsed-executable))
-       ;; Handle a :position-independent of :auto: ; todo: eventually drop this (or move to test-function-core !)
-       (position-independentp (if (eq :auto position-independent)
-                                  (if (eq executable-type :mach-o-64)
-                                      t ; since clang seems to produce position-independent code by default
-                                    (if (eq executable-type :elf-64)
-                                        nil ; since gcc seems to not produce position-independent code by default
-                                      ;; TODO: Think about this case:
-                                      t))
-                                position-independent))
        (function-name-string
         (if (eq executable-type :mach-o-64)
             (concatenate 'string "_" function-name-string) ; todo: why do we always have to add the underscore?
@@ -526,7 +519,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags state))
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (print-to-hundredths elapsed)
@@ -550,71 +543,70 @@
               (mv :unexpected-result nil state)))))
 
 ;; Test a single function:
-(make-event
- `(defmacro test-function (&whole
-                             whole-form
-                             function-name-string
-                             executable ; a parsed-executable or a string (meaning read from that file) ; TODO: Disallow a parsed-executable here?
-                           &key
-                             (param-names ':none) ; specific to test-function
-                             (assumptions 'nil) ; different form compared to test-file?
+(defmacro test-function (&whole
+                           whole-form
+                           function-name-string
+                           executable ; a parsed-executable or a string (meaning read from that file) ; TODO: Disallow a parsed-executable here?
+                         &key
+                           (param-names ':none) ; specific to test-function
+                           (assumptions 'nil) ; different form compared to test-file?
 
-                             (extra-rules 'nil)
-                             (extra-assumption-rules 'nil)
-                             (extra-lift-rules 'nil)
-                             (extra-proof-rules 'nil)
-                             (remove-rules 'nil)
-                             (remove-assumption-rules 'nil)
-                             (remove-lift-rules 'nil)
-                             (remove-proof-rules 'nil)
-                             (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
-                             (count-hits 'nil)
-                             (print 'nil)
-                             (max-printed-term-size '10000)
-                             (monitor 'nil)
-                             (step-limit '1000000)
-                             (step-increment '100)
-                             (prune-precise '10000) ; t, nil, or a max size
-                             (prune-approx 't)      ; t, nil, or a max size
-                             (tactics '(:rewrite :stp)) ; todo: try something with :prune
-                             (max-conflicts '1000000)
-                             (inputs-disjoint-from ':code)
-                             (assume-bytes ':all)
-                             (stack-slots ':auto)
-                             (existing-stack-slots ':auto)
-                             (position-independent ':auto)
-                             (feature-flags ',*default-feature-flags*)
-                             (expected-result ':pass) ; todo: use :auto (look at the name)
-                             )
-    `(make-event-quiet
-      (acl2-unwind-protect ; enable cleanup on errors/interrupts
-       "acl2-unwind-protect for test-function"
-       (test-function-fn ',function-name-string
-                         ,executable              ; gets evaluated
-                         ,param-names             ; gets evaluated
-                         ,assumptions             ; gets evaluated
-                         ,extra-rules             ; gets evaluated
-                         ,extra-assumption-rules  ; gets evaluated
-                         ,extra-lift-rules        ; gets evaluated
-                         ,extra-proof-rules       ; gets evaluated
-                         ,remove-rules            ; gets evaluated
-                         ,remove-assumption-rules ; gets evaluated
-                         ,remove-lift-rules       ; gets evaluated
-                         ,remove-proof-rules      ; gets evaluated
-                         ',normalize-xors
-                         ',count-hits
-                         ',print
-                         ',max-printed-term-size
-                         ,monitor ; gets evaluated
-                         ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts
-                         ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',feature-flags ',expected-result ',whole-form state)
-       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
-       ;; Remove the temp-dir, if it exists:
-       (maybe-remove-temp-dir ; ,keep-temp-dir
-        state)
-       ;; Normal exit (remove the temp-dir, if it exists):
-       (maybe-remove-temp-dir ; ,keep-temp-dir
-        state)))))
+                           (extra-rules 'nil)
+                           (extra-assumption-rules 'nil)
+                           (extra-lift-rules 'nil)
+                           (extra-proof-rules 'nil)
+                           (remove-rules 'nil)
+                           (remove-assumption-rules 'nil)
+                           (remove-lift-rules 'nil)
+                           (remove-proof-rules 'nil)
+                           (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
+                           (count-hits 'nil)
+                           (print 'nil)
+                           (max-printed-term-size '10000)
+                           (monitor 'nil)
+                           (step-limit '1000000)
+                           (step-increment '100)
+                           (prune-precise '10000) ; t, nil, or a max size
+                           (prune-approx 't)      ; t, nil, or a max size
+                           (tactics '(:rewrite :stp)) ; todo: try something with :prune
+                           (max-conflicts '1000000)
+                           (inputs-disjoint-from ':code)
+                           (assume-bytes ':all)
+                           (stack-slots ':auto)
+                           (existing-stack-slots ':auto)
+                           (position-independent ':auto)
+                           (feature-flags ':auto)
+                           (expected-result ':pass) ; todo: use :auto (look at the name)
+                           )
+  `(make-event-quiet
+    (acl2-unwind-protect ; enable cleanup on errors/interrupts
+     "acl2-unwind-protect for test-function"
+     (test-function-fn ',function-name-string
+                       ,executable                ; gets evaluated
+                       ,param-names               ; gets evaluated
+                       ,assumptions               ; gets evaluated
+                       ,extra-rules               ; gets evaluated
+                       ,extra-assumption-rules    ; gets evaluated
+                       ,extra-lift-rules          ; gets evaluated
+                       ,extra-proof-rules         ; gets evaluated
+                       ,remove-rules              ; gets evaluated
+                       ,remove-assumption-rules   ; gets evaluated
+                       ,remove-lift-rules         ; gets evaluated
+                       ,remove-proof-rules        ; gets evaluated
+                       ',normalize-xors
+                       ',count-hits
+                       ',print
+                       ',max-printed-term-size
+                       ,monitor ; gets evaluated
+                       ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts
+                       ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',feature-flags ',expected-result ',whole-form state)
+     ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+     ;; Remove the temp-dir, if it exists:
+     (maybe-remove-temp-dir ; ,keep-temp-dir
+      state)
+     ;; Normal exit (remove the temp-dir, if it exists):
+     (maybe-remove-temp-dir ; ,keep-temp-dir
+      state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -632,7 +624,7 @@
                            assume-bytes
                            stack-slots
                            existing-stack-slots
-                           position-independentp
+                           position-independent
                            feature-flags
                            expected-failures
                            result-alist
@@ -672,8 +664,8 @@
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (booleanp position-independentp)
-                              (feature-flagsp feature-flags)
+                              (member-eq position-independent '(t nil :auto))
+                              (or (feature-flagsp feature-flags) (eq :auto feature-flags))
                               (string-listp expected-failures)
                               (alistp result-alist))
                   :mode :program
@@ -687,7 +679,7 @@
                               (lookup-equal function-name assumptions-alist)
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags state))
+                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -699,7 +691,7 @@
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                           normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags
+                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                           expected-failures
                           (acons function-name (list result expected-result elapsed) result-alist)
                           state))))
@@ -754,7 +746,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (feature-flagsp feature-flags)
+                              (or (feature-flagsp feature-flags) (eq :auto feature-flags))
                               (or (eq :auto expected-failures)
                                   (string-listp expected-failures)))
                   :mode :program
@@ -767,15 +759,6 @@
        ((when erp) (mv erp nil state))
        ;; Analyze the executable:
        (executable-type (parsed-executable-type parsed-executable))
-       ;; Handle a :position-independent of :auto:
-       (position-independentp (if (eq :auto position-independent)
-                                  (if (eq executable-type :mach-o-64)
-                                      t ; since clang seems to produce position-independent code by default
-                                    (if (eq executable-type :elf-64)
-                                        nil ; since gcc seems to not produce position-independent code by default
-                                      ;; TODO: Think about this case:
-                                      t))
-                                position-independent))
        (function-name-strings (if (eq :all include-fns)
                                   ;; We will test all functions whose names begin with test_ or fail_test_ or _test_ or _fail_test_:
                                   ;; Note that for MACH-O executables, the compiler prepends an underscore to function names.
@@ -831,7 +814,7 @@
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags
+                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                             expected-failures
                             nil ; empty result-alist
                             state))
@@ -862,7 +845,7 @@
                               (or (string-listp include-fns)
                                   (eq :all include-fns))
                               (string-listp exclude-fns)
-                              ;; assumptions
+                              ;; assumptions are (untranslated) terms
                               (symbol-listp extra-rules)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp extra-lift-rules)
@@ -895,7 +878,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (feature-flagsp feature-flags)
+                              (or (feature-flagsp feature-flags) (eq :auto feature-flags))
                               (or (eq :auto expected-failures)
                                   (string-listp expected-failures)))
                   :mode :program
@@ -929,69 +912,68 @@
 ;; By default, we test all the functions in the file whose names start with any
 ;; of the following: "test_", "fail_test_", "_test_", "_fail_test_".
 ;; The :include and :exclude options can be used to override this default.
-(make-event
- `(defmacro test-file (&whole
-                         whole-form
-                         executable ; a string
-                       &key
-                         (include ':all) ; names of functions (strings) to test, or can be :all
-                         (exclude 'nil) ; names of functions (strings) to exclude from testing
-                         (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                         (extra-rules 'nil)
-                         (extra-assumption-rules 'nil)
-                         (extra-lift-rules 'nil)
-                         (extra-proof-rules 'nil)
-                         (remove-rules 'nil)
-                         (remove-assumption-rules 'nil)
-                         (remove-lift-rules 'nil)
-                         (remove-proof-rules 'nil)
-                         (normalize-xors 't)
-                         (count-hits 'nil)
-                         (print 'nil)
-                         (max-printed-term-size '10000)
-                         (monitor 'nil)
-                         (step-limit '1000000)
-                         (step-increment '100)
-                         (prune-precise '10000) ; t, nil, or a max size
-                         (prune-approx 't)      ; t, nil, or a max size
-                         (tactics '(:rewrite :stp)) ; todo: try something with :prune
-                         (max-conflicts '1000000)
-                         (inputs-disjoint-from ':code)
-                         (assume-bytes ':all)
-                         (stack-slots ':auto)
-                         (existing-stack-slots ':auto)
-                         (position-independent ':auto)
-                         (feature-flags ',*default-feature-flags*)
-                         (expected-failures ':auto))
-    `(make-event-quiet
-      (acl2-unwind-protect ; enable cleanup on errors/interrupts
-       "acl2-unwind-protect for test-file"
-       (test-file-fn ,executable              ; gets evaluated
-                     ',include                ; todo: evaluate?
-                     ',exclude                ; todo: evaluate?
-                     ,assumptions             ; gets evaluated
-                     ,extra-rules             ; gets evaluated
-                     ,extra-assumption-rules  ; gets evaluated
-                     ,extra-lift-rules        ; gets evaluated
-                     ,extra-proof-rules       ; gets evaluated
-                     ,remove-rules            ; gets evaluated
-                     ,remove-assumption-rules ; gets evaluated
-                     ,remove-lift-rules       ; gets evaluated
-                     ,remove-proof-rules      ; gets evaluated
-                     ',normalize-xors
-                     ',count-hits
-                     ',print
-                     ',max-printed-term-size
-                     ,monitor ; gets evaluated
-                     ',step-limit ',step-increment ',prune-precise ',prune-approx
-                     ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',feature-flags
-                     ',expected-failures
-                     ',whole-form
-                     state)
-       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
-       ;; Remove the temp-dir, if it exists:
-       (maybe-remove-temp-dir ; ,keep-temp-dir
-        state)
-       ;; Normal exit (remove the temp-dir, if it exists):
-       (maybe-remove-temp-dir ; ,keep-temp-dir
-        state)))))
+(defmacro test-file (&whole
+                       whole-form
+                       executable ; a string
+                     &key
+                       (include ':all) ; names of functions (strings) to test, or can be :all
+                       (exclude 'nil) ; names of functions (strings) to exclude from testing
+                       (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
+                       (extra-rules 'nil)
+                       (extra-assumption-rules 'nil)
+                       (extra-lift-rules 'nil)
+                       (extra-proof-rules 'nil)
+                       (remove-rules 'nil)
+                       (remove-assumption-rules 'nil)
+                       (remove-lift-rules 'nil)
+                       (remove-proof-rules 'nil)
+                       (normalize-xors 't)
+                       (count-hits 'nil)
+                       (print 'nil)
+                       (max-printed-term-size '10000)
+                       (monitor 'nil)
+                       (step-limit '1000000)
+                       (step-increment '100)
+                       (prune-precise '10000)       ; t, nil, or a max size
+                       (prune-approx 't)            ; t, nil, or a max size
+                       (tactics '(:rewrite :stp)) ; todo: try something with :prune
+                       (max-conflicts '1000000)
+                       (inputs-disjoint-from ':code)
+                       (assume-bytes ':all)
+                       (stack-slots ':auto)
+                       (existing-stack-slots ':auto)
+                       (position-independent ':auto)
+                       (feature-flags ':auto)
+                       (expected-failures ':auto))
+  `(make-event-quiet
+    (acl2-unwind-protect ; enable cleanup on errors/interrupts
+     "acl2-unwind-protect for test-file"
+     (test-file-fn ,executable                ; gets evaluated
+                   ',include                  ; todo: evaluate?
+                   ',exclude                  ; todo: evaluate?
+                   ,assumptions               ; gets evaluated
+                   ,extra-rules               ; gets evaluated
+                   ,extra-assumption-rules    ; gets evaluated
+                   ,extra-lift-rules          ; gets evaluated
+                   ,extra-proof-rules         ; gets evaluated
+                   ,remove-rules              ; gets evaluated
+                   ,remove-assumption-rules   ; gets evaluated
+                   ,remove-lift-rules         ; gets evaluated
+                   ,remove-proof-rules        ; gets evaluated
+                   ',normalize-xors
+                   ',count-hits
+                   ',print
+                   ',max-printed-term-size
+                   ,monitor ; gets evaluated
+                   ',step-limit ',step-increment ',prune-precise ',prune-approx
+                   ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',feature-flags
+                   ',expected-failures
+                   ',whole-form
+                   state)
+     ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+     ;; Remove the temp-dir, if it exists:
+     (maybe-remove-temp-dir ; ,keep-temp-dir
+      state)
+     ;; Normal exit (remove the temp-dir, if it exists):
+     (maybe-remove-temp-dir ; ,keep-temp-dir
+      state))))
