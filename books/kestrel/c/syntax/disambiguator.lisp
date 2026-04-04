@@ -3866,8 +3866,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only support external declarations and comments.
-     The latter are always considered disambiguated."))
+    "For external declarations, we use a separate previous function.")
+   (xdoc::p
+    "A @('#define') or @('#undef') directive is considered unambiguous,
+     but it adds an entry (definition or undefinition) to the macro table.
+     Recall that, as a translation items,
+     a @('#define') directive is implicitly always
+     an object-like macro whose replacement list is just the macro name.")
+   (xdoc::p
+    "Comments are always considered unambiguous,
+     and undergo no transformation.")
+   (xdoc::p
+    "We do not yet support @('#include') and conditional directives."))
   (b* (((reterr) (irr-trans-item) (irr-dstate)))
     (trans-item-case
      item
@@ -3876,13 +3886,39 @@
                (retok (trans-item-declon declon) dstate))
      :include (reterr
                (msg "Disambiguator does not support #include directives yet."))
-     :define (reterr
-              (msg "Disambiguator does not support #define directives yet."))
-     :undef (reterr
-             (msg "Disambiguator does not support #undef directives yet."))
+     :define (b* ((name (ident->unwrap item.macro))
+                  ((unless (stringp name))
+                   (raise "Internal error: macro name ~x0." name)
+                   (reterr "irrelevant"))
+                  (info (macro-info-object
+                         (list (make-plexeme-ident :ident name
+                                                   :provenance nil))))
+                  (macros (dstate->macros dstate))
+                  ((mv erp new-macros) (macro-define name info macros))
+                  ((unless (maybe-msgp erp))
+                   (raise "Internal error: malformed error ~x0." erp)
+                   (reterr "irrelevant"))
+                  ((when erp) (mv erp (irr-trans-item) (irr-dstate)))
+                  (dstate (change-dstate dstate :macros new-macros)))
+               (retok (trans-item-fix item) dstate))
+     :undef (b* ((name (ident->unwrap item.macro))
+                 ((unless (stringp name))
+                  (raise "Internal error: macro name ~x0." name)
+                  (reterr "irrelevant"))
+                 (macros (dstate->macros dstate))
+                 ((mv erp new-macros) (macro-undefine name macros))
+                 ((unless (maybe-msgp erp))
+                  (raise "Internal error: malformed error ~x0." erp)
+                  (reterr "irrelevant"))
+                 ((when erp) (mv erp (irr-trans-item) (irr-dstate)))
+                 (dstate (change-dstate dstate :macros new-macros)))
+              (retok (trans-item-fix item) dstate))
      :cond (reterr
             (msg "Disambiguator does not support conditional directives yet."))
      :line-comment (retok (trans-item-fix item) (dstate-fix dstate))))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable plexeme-token/space-p
+                                           plexeme-tokenp)))
 
   ///
 
