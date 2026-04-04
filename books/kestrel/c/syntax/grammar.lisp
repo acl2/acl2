@@ -281,6 +281,10 @@
 
   ///
 
+  (defruled rulelist-wfp-of-grammar-for
+    (abnf::rulelist-wfp (grammar-for dialect))
+    :enable abnf::rulelist-wfp)
+
   (defruled rulelist-closedp-of-grammar-for
     (abnf::rulelist-closedp (grammar-for dialect))
     :enable abnf::rulelist-closedp)
