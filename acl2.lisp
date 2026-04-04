@@ -583,7 +583,7 @@
 ; We have tried to build under ECL (Embeddable Common-Lisp), and with some
 ; modifications, we made progress -- except there appears (as of Sept. 2011) to
 ; be no good way for us to save an executable image.  Specifically, it appears
-; that c:build-program not will suffice for saving state (properties etc.) --
+; that c:build-program will not suffice for saving state (properties etc.) --
 ; it's just for saving specified .o files.  (This impression seems to be
 ; confirmed at http://stackoverflow.com/questions/7686246/saving-lisp-state .)
 
@@ -823,9 +823,9 @@
                  package whose name begins with the ~%four letters ``ACL2'', ~
                  so ACL2 may not work in this Lisp." (package-name p))
         (cond ((package-use-list p)
-               (format t "~%~%Warning:  The package with name ~a ~
-                   USES the packages in the list ~a.  ACL2 will not work ~
-                   in state of affairs."
+               (format t "~%~%Warning:  The package with name ~a USES the ~
+                          packages in the list ~a.  ACL2 will not work in ~
+                          this state of affairs."
                        (package-name p) (package-use-list p)))))))
 
 (or (find-package "ACL2")

@@ -57,12 +57,12 @@
 ;    discuss BADGER.  These properties are not immediately obvious from the
 ;    defun of GUESS-ILKS-ALIST because it is iterative and is full of error
 ;    messages.  To state this theorem we will define the :LOGIC mode function
-;    CHECK-ILKS.  But the sources and the model differ in when they they do
-;    this.  In the sources, we just leave the essay to remind us that
-;    guess-ilks-alist is known to imply properties (b)-(e) and we don't
-;    actually define CHECK-ILKS.  That is done during :acl2-devel, during
-;    certification of books/system/apply.  In the model, we define CHECK-ILKS
-;    and do the proof, but only locally.
+;    CHECK-ILKS.  But the sources and the model differ in when they do this.
+;    In the sources, we just leave the essay to remind us that guess-ilks-alist
+;    is known to imply properties (b)-(e) and we don't actually define
+;    CHECK-ILKS.  That is done during :acl2-devel, during certification of
+;    books/system/apply.  In the model, we define CHECK-ILKS and do the proof,
+;    but only locally.
 
 ; 7. Functional Equivalence
 ;    Define the functional equivalence relation and prove that it is a
@@ -579,7 +579,7 @@
 ;           badged functions, then we wouldn't have to check that such
 ;           functions as sys-call are not involved.)
 
-;      (G2) fn's body is ancestrally dependent on apply$-usefn and
+;      (G2) fn's body is ancestrally dependent on apply$-userfn and
 
 ;        (a) one of these conditions hold:
 ;            * fn is not recursively defined, or
@@ -2132,7 +2132,7 @@
 ; (G1) fn's body is ancestrally independent of apply$-userfn and ancestrally
 ;      independent of inapplicative functions, like sys-call.
 
-; (G2) fn's body is ancestrally dependent on apply$-usefn and
+; (G2) fn's body is ancestrally dependent on apply$-userfn and
 
 ;  (a) one of these conditions hold:
 ;      * fn is not recursively defined, or

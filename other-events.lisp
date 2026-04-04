@@ -1030,7 +1030,7 @@
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
 
-; The following became necessary after Version_8.2, when we starting storing a
+; The following became necessary after Version_8.2, when we started storing a
 ; new 'recognizer-alist property on symbols (in the primordial-world) in place
 ; of using a world global for the recognizer-alist.
 
@@ -1112,7 +1112,7 @@
 ; whether a property should be set in end-prehistoric-world rather than here.
 ; But be careful; through Version_8.3 we had that issue in mind when we called
 ; a function to initialize invariant-risk for certain function symbols (see
-; *boot-strap-invariant-risk-alist*)a at the end of the boot-strap, in
+; *boot-strap-invariant-risk-alist*) at the end of the boot-strap, in
 ; end-prehistoric-world, instead of here.  But then the 'invariant-risk
 ; property was never set for aset1-lst, even though it calls aset1, which has
 ; invariant-risk.
@@ -1458,7 +1458,7 @@
              name))
         ((equal name "LISP")
          (er soft ctx
-             "~x0 is disallowed as a a package name for defpkg, because this ~
+             "~x0 is disallowed as a package name for defpkg, because this ~
               package name is used under the hood in some Common Lisp ~
               implementations."
              name))
@@ -12965,8 +12965,8 @@
 ; This function writes out, and returns, a certificate file.  We first give
 ; that file a temporary name, based originally on the expectation that
 ; afterwards, compilation is performed and then the certificate file is renamed
-; to its suitable .cert name.  This way, we expect that that the compiled file
-; will have a write date that is later than (or at least, not earlier than) the
+; to its suitable .cert name.  This way, we expect that the compiled file will
+; have a write date that is later than (or at least, not earlier than) the
 ; write date of the certificate file; yet, we can be assured that "make"
 ; targets that depend on the certificate file's existence will be able to rely
 ; implicitly on the compiled file's existence as well.  After Version_4.3 we

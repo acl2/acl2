@@ -61,7 +61,7 @@
 ; this list of functions is returned as the third value of ev-fncall+.  The
 ; function push-warrants then processes this list of functions as follows: for
 ; the warrant of each function in that list, either the warrant is known to be
-; true or it is forced (except that if it the warrant is known to be false, the
+; true or it is forced (except that if the warrant is known to be false, the
 ; evaluation is considered to have failed).
 
 ; Note that *aokp* must be true for the apply$-lambda and loop$ shortcuts.  So
@@ -1916,7 +1916,7 @@ its attachment is ignored during proofs"))))
 ; approach has allowed us to continue to use some existing functions, in
 ; particular geneqv-lst.
 
-; Another basic principle is that we deal with the inherently sequentiality of
+; Another basic principle is that we deal with the inherent sequentiality of
 ; rewrite-args, in the sense that unlike ordinary geneqvs, the use of patterned
 ; equivalences must be done one argument at a time.  Consider the following
 ; example.
@@ -2354,7 +2354,7 @@ its attachment is ignored during proofs"))))
 ; Thus, pequivs fail to be used heuristically in some places that ordinary
 ; congruences are used: for example, as in test-3 in community book
 ; books/demos/patterned-congruences.lisp, remove-trivial-equivalences and
-; fertilize-clause doesn't use patterned congruence rules.  If we decide to add
+; fertilize-clause don't use patterned congruence rules.  If we decide to add
 ; such support, then we should think carefully so that we don't introduce
 ; unsoundness.  See the examples in the above book involving congruence rules
 ; triv-equiv-implies-equal-some-consp-1 and
@@ -2363,7 +2363,7 @@ its attachment is ignored during proofs"))))
 ; remove-trivial-equivalences and fertilize-clause, we can imagine that such
 ; dangers exist.  Finally support for pequivs is provided in the function
 ; geneqv-at-subterm-top, used in the proof-builder, but is not provided in the
-; code the warns about missing opportunities for the use of double-rewrite
+; code that warns about missing opportunities for the use of double-rewrite
 ; (e.g., double-rewrite-opportunities).
 
 ; End of Essay on Patterned Congruences and Equivalences
@@ -4619,7 +4619,7 @@ its attachment is ignored during proofs"))))
 (defun obj-table (term ts ts-ttree obj geneqv wrld ttree)
 
 ; This function is (mv term' ttree'), where term' is equivalent modulo geneqv
-; (see the essay on Equivalence, Refinements and Congruence- based Rewriting)
+; (see the essay on Equivalence, Refinements and Congruence-based Rewriting)
 ; to term and ttree' includes ttree and may include additional stuff.
 ; Depending on ts, the type-set of term (which is supported by the ts-ttree),
 ; we may coerce term to 0, 1, t, or nil.
@@ -5116,7 +5116,7 @@ its attachment is ignored during proofs"))))
 ;                 ((xremove-invisible-fncalls * *) => *))
 
 ; We witness xtermp with rationalp, xterm-order with <= on the rationals,
-; and xremove-invisible-fncalls by the identify function.
+; and xremove-invisible-fncalls by the identity function.
 
 ;    (local (defun xtermp (x) (rationalp x)))
 ;    (local (defun xterm-order (x y)

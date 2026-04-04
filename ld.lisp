@@ -1377,7 +1377,7 @@
 (defun ld-read-eval-print (state)
 
 ; This is LD's read-eval-print step.  We read a form from standard-oi, eval it,
-; and print the result to standard-co, will lots of bells and whistles
+; and print the result to standard-co, with lots of bells and whistles
 ; controlled by the various LD specials.  The result of this function is a
 ; triple (mv signal val state), where signal is one of :CONTINUE, :RETURN,
 ; :ERROR, or (:EXIT n).  When the signal is :continue, :error, or (:exit n),
@@ -2674,7 +2674,7 @@
 ; ? (fact x) = y
 
 ; to obtain a variety of values of x and y that satisfy the relation.
-; Or might might merely be informed that that, yes, there do exist
+; Or one might merely be informed that that, yes, there do exist
 ; values of x and y satisfying the relation, without being given x and
 ; y explicitly.
 
@@ -3250,7 +3250,7 @@
 ; hand it has a non-empty signature and ntep (Non-Trivial-Encapsulate Property)
 ; is false, then it is not puffable.  The remaining case is that ntep is true
 ; and the signature is non-empty.  Then the encapsulate is puffable if and only
-; if any of its signature's function symbols are have unknown-constraints
+; if any of its signature's function symbols have unknown-constraints
 ; (equivalently, all of them).
 
   (and (eq (access-event-tuple-type cddr-car-wrld) 'encapsulate)

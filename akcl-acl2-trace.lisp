@@ -22,7 +22,7 @@
 
 ;                            TRACE stuff
 
-; We put over into old-trace the macro for trace that comes with ACKL.
+; We put over into old-trace the macro for trace that comes with AKCL.
 ; Thus one can type (old-trace foo) and get the effect that (trace
 ; foo) would have previously provided.  We do not guarantee that using
 ; old-trace works well with trace$, however.

@@ -307,7 +307,7 @@ with ordinary ACL2 builds on the same set of books."))))
    (t
 
 ; The absolute value of most-positive-fixnum or of most-negative-fixnum is too
-; sall for ACL2.
+; small for ACL2.
 
     (error "This Lisp implementation is not a suitable host for ACL2:
 the values of most-negative-fixnum and most-positive-fixnum are
@@ -440,7 +440,7 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
       (x arguments)
       (setq result (concatenate 'string result " " x)))
     #-unix
-    (excl::run-shell-commad result)
+    (excl::run-shell-command result)
     #+unix
 
 ; In Allegro CL in Unix, we can avoid spawning a new shell by calling

@@ -95,8 +95,8 @@
 ; imagining that the irregular bits are for floats, arrays,
 ; pathnames, etc., then ...1111000 can be thought of as representing
 ; the set of all floats, complexes, arrays, pathnames, ..., etc.
-; Since we there are an infinite number of these irregular bits the
-; only way we can say this without the ``etc.''  is to say ``not
+; Since there are an infinite number of these irregular bits, the
+; only way we can say this without the ``etc.'' is to say ``not
 ; conses, symbols, or characters.''
 
 ; When we first implemented ACL2 we did not use this approach.
@@ -304,7 +304,7 @@
 ; for converting a type-set into symbolic form is to note whether the type-set
 ; contains as a subset one of the type-sets mentioned here and if so include
 ; the corresponding name in the output and delete from the numeric type-set the
-; corresponding bits until all all bits are accounted for.
+; corresponding bits until all bits are accounted for.
 
   (list (cons '*ts-unknown* *ts-unknown*)
         (cons '*ts-non-nil* *ts-non-nil*)

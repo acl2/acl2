@@ -24,7 +24,7 @@
 
 ; This file need not be distributed with ACL2 and is unimportant for
 ; the correct operation of ACL2.  This file is loaded automatically by
-; ACKL when it starts up, but not by ACL2 when running in any other
+; AKCL when it starts up, but not by ACL2 when running in any other
 ; Common Lisp.
 
 ; Bob Boyer sometimes uses the following for debugging in CCL:

@@ -100,16 +100,18 @@
     (msg
      "A :REWRITE-QUOTED-CONSTANT rule generated from ~x0 is illegal because ~
       the conclusion is not compatible with any of the allowed forms.  To be ~
-      Form [1], the conclusion must be an equivalence (other than EQUAL) ~
+      Form [1], the conclusion must be an equivalence (other than ~x1) ~
       between two quoted constants.  To be Form [2], the conclusion must be ~
-      an equivalence (other than EQUAL) between, on the left, a call of a ~
+      an equivalence (other than ~x1) between, on the left, a call of a ~
       monadic function symbol on a variable symbol and, on the right, that ~
       same variable symbol.  To be of Form [3], the conclusion must be an ~
       equivalence relation and the left-hand side must be a variable, a ~
-      quoted constant, or a call of one of the function symbols in ~
-      *ONE-WAY-UNifY1-IMPLICIT-FNS* so that the left-hand side can match a ~
-      quoted constant.  But the conclusion of ~x0 is ~x1."
+      quoted constant, or a call of one of the function symbols in ~x2 so ~
+      that the left-hand side can match a quoted constant.  But the ~
+      conclusion of ~x0 is ~x3."
      name
+     'equal
+     '*one-way-unify1-implicit-fns*
      (list equiv lhs rhs)))
    ((and (not qc-flg)
          (or (variablep lhs)
@@ -508,12 +510,13 @@
 ; LAMBDA, then fns-i is nil.
 
 ; Note: John Cowles first suggested the idea that led to the idea of invisible
-; function symbols as implemented here.  Cowles observation was that it would
+; function symbols as implemented here.  Cowles's observation was that it would
 ; be very useful if x and (- x) were moved into adjacency by permutative rules.
 ; His idea was to redefine term-order so that those two terms were of virtually
 ; equal weight.  Our notion of invisible function symbols and the handling of
-; loop-stopper is meant to address Cowles original concern without complicating
-; term-order, which is used in places besides permutative rewriting.
+; loop-stopper is meant to address Cowles's original concern without
+; complicating term-order, which is used in places besides permutative
+; rewriting.
 
   (mv-let (ans unify-subst)
     (variantp lhs rhs)
@@ -914,7 +917,7 @@
 ; the first rule and determines whether there is some hypothesis that
 ; cannot possibly be matched against the hyps of the other rule.
 
-; The caller is responsible for insuring that both rules are ordinary
+; The caller is responsible for ensuring that both rules are ordinary
 ; :rewrite rules (e.g., of :subclass abbreviation, backchain, etc) or
 ; :rewrite-quoted-constant rules (e.g., :subclass rewrite-quoted-constant).
 ; This is done by chk-rewrite-rule-warnings when it checks a new :rewrite
@@ -931,7 +934,7 @@
 ; Furthermore, you'd find it would subsume any rule it was compared to, and
 ; you would find that no rule (except another form [2] rule) would subsume
 ; it.  It short, it seems pointless to include form [2] rules in subsumption
-; checks!  Recal that the :heuristic-info field of a rewrite-quoted-constant
+; checks!  Recall that the :heuristic-info field of a rewrite-quoted-constant
 ; rule is (n . loop-stopper), where n is the form number.
 
   (and (not (eql (car (access rewrite-rule rule1 :heuristic-info)) 2))

@@ -958,7 +958,7 @@
 ; searching only the ``new'' part of each type-alist (new since the last
 ; attempt to guess free vars).  However, that idea doesn't work because
 ; we cannot determine what part of the type-alist is ``new'' since we do
-; not necessary just add pairs to a type-alist.  End of Plaque.
+; not necessarily just add pairs to a type-alist.  End of Plaque.
 
 ; When we advance an activation we keep the inst-hyp, hyp, unify-subst,
 ; and ttree fields in variables and only put them back into the activation
@@ -1515,9 +1515,9 @@
 ; fc-activation that gave rise to this conclusion, thereby saving the
 ; time of consing up so much in this record.  But (a) the activation is
 ; not already consed up at the time we build this fc-derivation ``from''
-; it -- we are only holding its pieces in advance-fc-activation2.  (b)
-; To do that would slow down access to those buried pieces.  (c) And
-; risk having move the declaration of fc-activations into linear-a.lisp
+; it -- we are only holding its pieces in advance-fc-activation2.
+; To do that would (b) slow down access to those buried pieces and (c)
+; risk having to move the declaration of fc-activations into linear-a.lisp
 ; too.  So we just tear the activation apart and put the pieces into the
 ; derivation.
 
@@ -1996,10 +1996,10 @@
 (defun translate-fc-criteria (lst state)
 
 ; We either cause an error or return a properly translated forward chaining
-; criteria.  Recall that a criteria is a true-list of triples, each of the form
-; (rune inst-trigger inst-concl), where any of the three components may be nil
-; but when a component is not nil, the rune must be a rune, and the other two
-; must be terms.
+; criteria.  Recall that a criterion is a true-list of triples, each of the
+; form (rune inst-trigger inst-concl), where any of the three components may be
+; nil but when a component is not nil, the rune must be a rune, and the other
+; two must be terms.
 
   (cond ((atom lst)
          (cond ((equal lst nil) (value nil))
@@ -3834,7 +3834,7 @@
 ; ttree . fcd) and adds it to the list of disjunction-triples.  Note that the
 ; first component of a disjunction-triple is in fact a clause.  After extending
 ; the type-alist with all the newly derived concls and extending
-; disjuction-triples as necessary, we map over disjunction-triples and call
+; disjunction-triples as necessary, we map over disjunction-triples and call
 ; type-set on each literal of each clause.  We throw away any triple whose
 ; clause contains a true literal; we delete any false literal, accumulate the
 ; proof of falsity ttree into the ttree of the triple, and, in the event that
@@ -3845,7 +3845,7 @@
 ; ``unit propagation'' except instead of knocking off literals with unit
 ; clauses we knock them off with type-set.  The function that does all this is
 ; called process-disjunction-triples and it returns a contradictionp flag, a
-; modified list of disjuction-triples, either the ttree associated with the
+; modified list of disjunction-triples, either the ttree associated with the
 ; contradiction or a new (not fcd-free) type-alist, and the new
 ; disjunction-triples.  The modified disjunction-triples and type-alist are
 ; passed on to the next round of forward chaining.
@@ -4749,9 +4749,9 @@
 ; We have tried three approaches: (append lits new-clause (cdr tail)), (append
 ; new-clause (cdr tail) lits), and a ``smart'' approach in which we sort the
 ; literals to put the smaller ones first, thereby allowing their type-sets to
-; improve, perhaps, the type-sets computed for larger literals (like disjunctive
-; ones (IF a a b)) involving the some of the smaller ones.  The code deleted
-; below was part of this ``smart'' approach.  All of these reordering
+; improve, perhaps, the type-sets computed for larger literals (like
+; disjunctive ones (IF a a b)) involving some of the smaller ones.  The code
+; deleted below was part of this ``smart'' approach.  All of these reordering
 ; strategies must maintain the correspondence between the forward-chained
 ; literals and the ttrees that produced them and some of the code below deals
 ; with how to permute two lists so as to order one by size and keep the result
@@ -4876,7 +4876,7 @@
 ; become Version_6.2.  In all the examples we looked at, the type-alists
 ; produced by this method were at least as strong as those produced by the
 ; earlier method.  Sometimes they are actually better, especially when the
-; conclusions produced by forward-chained are disjunctions, e.g., (IF a a b),
+; conclusions produced by forward-chaining are disjunctions, e.g., (IF a a b),
 ; where earlier assumptions about a or b may give us stronger type-sets about b
 ; or a.
 

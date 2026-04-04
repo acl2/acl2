@@ -269,7 +269,7 @@
 ; Historical Note: Once upon a time (Version 3.6 and earlier) the wormhole
 ; function had a pseudo-flg argument which allowed the user a quick way to
 ; determine whether it was appropriate to incur the expense of going into the
-; wormhole.  The idea was that the form could have one a free var in it,
+; wormhole.  The idea was that the form could have one free var in it,
 ; wormhole-output, and that when it was evaluated in raw Lisp that variable was
 ; bound to the last value returned by the wormhole.  Since wormhole always
 ; returned nil anyway, this screwy semantics didn't matter.  However, it was
@@ -287,7 +287,7 @@
 ; with, printed, etc.  This is very handy because it means code executed in the
 ; wormhole can easily access the previously inaccessible status.
 
-; But the emphemeral whs cannot be directly changed.  That is: wormhole-status
+; But the ephemeral whs cannot be directly changed.  That is: wormhole-status
 ; is untouchable, even from within the wormhole: (f-put-global 'wormhole-status
 ; new-whs state) will cause an error.  This is necessary to prevent the
 ; interactive user from violating invariants we maintain on system wormholes.
@@ -890,7 +890,7 @@
   (cond ((endp decls) ())
 
 ; Here we do a cheap check that the declare form is illegal.  It is tempting to
-; use collect-declarations, but it take state.  Anyhow, there is no soundness
+; use collect-declarations, but it takes state.  Anyhow, there is no soundness
 ; issue; the user will just be a bit surprised when the error shows up later as
 ; the macro defined by the defabbrev is applied.
 
@@ -1529,7 +1529,7 @@
 
 (defun iprint-blockedp (state)
 
-; Check for the effect off block-iprint-ar.
+; Check for the effect of block-iprint-ar.
 
   (declare (xargs :guard (array1p 'iprint-ar (f-get-global 'iprint-ar state))))
   (let ((x (aref1 'iprint-ar (f-get-global 'iprint-ar state) 0)))
@@ -1994,7 +1994,7 @@
 
 ; A ppr tuple has the form (token n . z).  In the display below, the variables
 ; ti represent ppr tuples and the variables xi represent objects to be printed
-; directly.  Any xi could an eviscerated object, a list whose car is the
+; directly.  Any xi could be an eviscerated object, a list whose car is the
 ; evisceration mark.
 
 ; (FLAT n x1 ... xk) - Print the xi, separated by spaces, all on one
