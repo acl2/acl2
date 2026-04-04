@@ -55,6 +55,8 @@
 ; (depends-on "grammar/constants-c23.abnf")
 ; (depends-on "grammar/string-literals-c17.abnf")
 ; (depends-on "grammar/string-literals-c23.abnf")
+; (depends-on "grammar/punctuators-c17.abnf")
+; (depends-on "grammar/punctuators-c23.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -304,6 +306,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar punctuators-c17
+  "punctuators that are specific to the C17 dialects")
+
+(defgrammar punctuators-c23
+  "punctuators that are specific to the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -383,6 +393,10 @@
      (c::standard-case dialect.std
                        :c17 *grammar-string-literals-c17*
                        :c23 *grammar-string-literals-c23*)
+     ;; punctuators:
+     (c::standard-case dialect.std
+                       :c17 *grammar-punctuators-c17*
+                       :c23 *grammar-punctuators-c23*)
      ;; rest:
      *grammar-rest*))
 
