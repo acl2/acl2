@@ -82,7 +82,7 @@
                                        (acl2::string=>nats ,input)
                                        dialect
                                        t))
-         (dstate (c$::init-dstate dialect))
+         (dstate (c$::init-dstate "" dialect))
          ((mv erp2 ast &) (c$::dimb-trans-unit ast dstate))
          ((mv erp3 fundef) (trans-unit-find-fundef (c$::ident ,fun) ast))
          ((mv fundef$ -)

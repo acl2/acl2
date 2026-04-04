@@ -26,7 +26,7 @@
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         (dstate (init-dstate dialect))
+         (dstate (init-dstate "" dialect))
          ((mv erp2 ast &) (dimb-trans-unit ast dstate)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
@@ -43,7 +43,7 @@
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         (dstate (init-dstate dialect))
+         (dstate (init-dstate "" dialect))
          ((mv erp2 & &) (dimb-trans-unit ast dstate)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))

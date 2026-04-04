@@ -249,6 +249,7 @@
     "This consists of
      a (mutable) disambiguation table,
      a (mutable) macro table,
+     an immutable string containing the path of the file,
      and an immutable flag saying whether GCC or Clang extensions are enabled.")
    (xdoc::p
     "This could be turned into a stobj, if needed for efficiency.
@@ -262,6 +263,7 @@
     "We pick the short name `@('dstate')' since it is used a lot."))
   ((table dimb-table)
    (macros macro-table)
+   (file string)
    (gcc/clang bool))
   :pred dstatep)
 
@@ -270,7 +272,7 @@
 (defirrelevant irr-dstate
   :short "An irrelevant disambiguation state."
   :type dstatep
-  :body (dstate (irr-dimb-table) (irr-macro-table) nil))
+  :body (dstate (irr-dimb-table) (irr-macro-table) "" nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -415,7 +417,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-dstate ((dialect c::dialectp))
+(define init-dstate ((file stringp) (dialect c::dialectp))
   :returns (dstate dstatep)
   :short "Initial disambiguation state."
   :long
@@ -477,6 +479,7 @@
        (macros (macro-init dialect))
        (dstate (make-dstate :table table
                             :macros macros
+                            :file file
                             :gcc/clang (c::dialect-gcc/clangp dialect))))
     (dimb-add-idents-objfun (built-ins-for dialect) dstate)))
 
@@ -4006,7 +4009,11 @@
   (b* (((reterr) nil)
        ((when (omap::emptyp (filepath-trans-unit-map-fix tumap))) (retok nil))
        ((mv path tunit) (omap::head tumap))
-       (dstate (init-dstate dialect))
+       (file (filepath->unwrap path))
+       ((unless (stringp file))
+        (raise "Internal error: malformed file path ~x0." path)
+        (reterr "irrelevant"))
+       (dstate (init-dstate file dialect))
        ((mv erp new-tunit &) (dimb-trans-unit tunit dstate))
        ((when erp)
         (if keep-going
@@ -4024,6 +4031,7 @@
                                       dialect
                                       keep-going)))
     (retok (omap::update path new-tunit new-tumap)))
+  :no-function nil
   :verify-guards :after-returns
 
   ///
