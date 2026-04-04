@@ -14,7 +14,7 @@
 (defun delete-fake-runes (runes)
 
 ; This is similar to drop-fake-runes in kestrel/utilities/runes, but avoid name
-; conflictt of *fake-rule-classes* with the version in
+; conflict of *fake-rule-classes* with the version in
 ; books/workshops/2017/coglio-kaufmann-smith/support/runes.lisp.
 
 ; This could be put into guard-verified :logic mode, but we keep it in :program
@@ -78,7 +78,7 @@
 
 (defun mark-removable-runes (augmented-runes)
 
-; Accumulate onto acc the pairs mapping the rune of of each given augumented
+; Accumulate onto acc the pairs mapping the rune of each given augmented
 ; rune to the :REMOVE value.
 
   (cond ((endp augmented-runes) nil)
@@ -135,7 +135,7 @@
 ; order given by the random$ call in remove-rune-checkpoints, so arrange for
 ; mark-removable-runes to keep the order of seen so that we can simply
 ; accumulate into acc, to support the property that remove-rune-checkpoints-1
-; revrses the order of the given runes.
+; reverses the order of the given runes.
 
     (value (append (mark-removable-runes seen) acc)))
    (t (let* ((rune (car runes))
