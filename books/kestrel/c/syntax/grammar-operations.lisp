@@ -56,4 +56,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::deftreeops *grammar-c17* :prefix cst)
+(abnf::deftreeops *grammar-c17* :prefix c17-cst)
