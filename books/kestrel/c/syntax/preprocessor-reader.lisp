@@ -79,15 +79,15 @@
      we also map trigraph sequences to the single characters they represent;
      although our tools aim at preserving concrete syntax information,
      trigraph sequences are a legacy feature that no longer seems useful
-     (in fact, it is no longer present in [C23]).
+     (in fact, it is no longer present in C23).
      Line splicing also loses some of the original layout information,
      but we favor simplicity for now (we may revisit this later).")
    (xdoc::p
-    "Since UTF-8 decoding is context-free,
-     given all the bytes of a file,
+    "Since UTF-8 decoding, trigraph processing, and line splicing
+     are all context-free,
+     then given all the bytes of a file,
      we can map them to a sequence of Unicode characters:
      this is how we initialize the character array in @(tsee ppstate).
-     Trigraph sequences, if applicable, are handled as part of this.
      As we obtain the characters, we also obtain their positions in the file:
      thus, we can also initialize the array of positions in @(tsee ppstate).")
    (xdoc::p
@@ -128,7 +128,7 @@
      which is eliminated along with the new line to splice the line.
      The output @('next-pos') is the next position just after @('char?'),
      i.e. the position where the next character may be.
-     If there is not character at @('pos'),
+     If there is no character at @('pos'),
      we are at the end of the file:
      we return @('nil') as the character,
      and both @('char-pos') and @('next-pos') are equal to @('pos').
@@ -136,7 +136,7 @@
      if there is no character, we retun @('nil') as the @('new-bytes') output.")
    (xdoc::p
     "A character can take one, two, three, or four bytes,
-     according to the UTF8-decoding.
+     according to the UTF-8 decoding.
      Additionally, if the C standard is C17,
      we turn three bytes that form three ASCII characters
      that form a trigraph sequence [C17:5.2.1.1]
@@ -184,16 +184,18 @@
      trigraph sequences are processed in phase 1,
      while line splicing is processed in phase 2.")
    (xdoc::p
-    "Looking at the rules in the ABNF grammar for basic and extended characters,
-     we see that the codes of the three ASCII non-new-line extended characters
-     (namely dollar, at sign, and backquote)
-     fill gaps in the ASCII codes of the basic characters,
-     so that the codes 9, 11, 12, and 32-126 are all valid ASCII characters.
+    "Our ABNF grammar rules for basic and extended characters vary slightly,
+     based on the fact that C17 lacks three basic characters from C23,
+     namely the $ and @ and ` characters.
+     However, our grammar rules for C17 make them extended characters,
+     so either way they are among the allowed characters, as in C23.
+     In summary, the valid ASCII codes, other than 10 and 13 for new lines,
+     are 9, 11, 12, and 32-126.
      Note that, by the time we reach the case of normal ASCII characters,
      we have skipped the case for carriage return (13) and line feed (10).")
    (xdoc::p
     "We exclude most ASCII control characters,
-     except for the basic ones and for the new-line ones,
+     except for the basic ones (see above) and for the new-line ones,
      since there should be little need to use those in C code.
      Furthermore, some are dangerous, particularly backspace,
      since it may make the code look different from what it is,

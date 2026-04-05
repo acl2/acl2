@@ -2233,7 +2233,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Constant folding is important in processing definitions.  If the user has
 ; written (1- x), we translate that to (binary-+ -1 x) instead of to the more
 ; mechanical (binary-+ (unary-- 1) x).  Note that the type of the former is
-; easier to determine that the latter because type-set knows about the effect
+; easier to determine than the latter because type-set knows about the effect
 ; of adding the constant -1 to a positive, but not about adding the term (- 1).
 
   (if binary-casep
@@ -2274,11 +2274,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (in-theory (disable booleanp))
 
-; integer-abs is just abs if x is an integer and is 0 otherwise.
-; integer-abs is used because we don't know that that (abs x) is a
-; nonnegative integer when x is an integer.  By using integer-abs in
-; the defun of acl2-count below we get that the type-prescription for
-; acl2-count is a nonnegative integer.
+; Integer-abs is just abs if x is an integer and is 0 otherwise.  Integer-abs
+; is used because we don't know that (abs x) is a nonnegative integer when x is
+; an integer.  By using integer-abs in the defun of acl2-count below we get
+; that the type-prescription for acl2-count is a nonnegative integer.
 
 (defun integer-abs (x)
   (declare (xargs :guard t :mode :logic))
@@ -2329,7 +2328,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; But we do the check above, potentially (though unlikely) causing this error,
 ; to be faithful to the ftype declaim form above.
 
-               (error "~s was given a a list whose length is not a fixnum!"
+               (error "~s was given a list whose length is not a fixnum!"
                       'len)
              (incf acc))
         finally (return acc))
@@ -2742,8 +2741,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; This function is actually faster than strip-cars: 5.530 seconds!  That is
 ; surprising because this function does TWICE as many conses, since it conses
 ; up the final answer from the accumulated partial one.  The reason this
-; function beats strip-cars can only be that that the tail-recursive jump is
-; quite a lot faster than a function call.
+; function beats strip-cars can only be that the tail-recursive jump is quite a
+; lot faster than a function call.
 
 ; But Common Lisp allows to avoid consing to do a reverse if we are willing to
 ; smash the existing spine.  And in this case we are, since we have just consed
@@ -3998,7 +3997,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; (disassemble (defun f (x) (declare (type double-float x)) (df+ 5 x)))
 
 ; We use (float x 0.0D0) here, rather than (coerce x 'double-float), since we
-; rely an the float-rational identity discussed in a comment in
+; rely on the float-rational identity discussed in a comment in
 ; constrained-to-df-idempotent.
 
 ; It is however tempting to avoid (float x 0.0D0) in favor of (coerce x
@@ -6667,7 +6666,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; This variable should always have a non-nil value.  Its only use is in
 ; throw-nonexec-error, so as to defeat a GCL 2.7.0 warning reported by Camm
 ; Maguire.  That warning was about a type mismatch from a term (to-df (non-exec
-; (constrained-df-expt-fn x y))): non-exec was deduces as returning nil.  The
+; (constrained-df-expt-fn x y))): non-exec was deduced as returning nil.  The
 ; reason is that throw-nonexec-error doesn't return: (non-exec X) expands to
 ; (prog2$ (throw-nonexec-error :non-exec 'X) X).  We defeat that warning by
 ; having throw-nonexec-error consult this variable before throwing or causing
@@ -8674,7 +8673,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; nothing wrong with this generalization except that it is hard to
 ; implement.  In order for TRANSLATE to determine whether test-fn
 ; approves of the term it must ev an expression.  If that expression
-; involved STATE then translated must pass in its STATE in that
+; involved STATE then translate must pass in its STATE in that
 ; position.  This requires coercing the state to an object, an act
 ; which is done with some trepidation in trans-eval and which could,
 ; presumably, be allowed earlier in translate.
@@ -27261,7 +27260,7 @@ Lisp definition."
 ; d    (:definition rewrite-lambda-modep)
 
 ; if e is enabled and d is enabled:
-;    then rewrite-lambda-object does a a recursive rewrite
+;    then rewrite-lambda-object does a recursive rewrite
 ;    of the body.
 
 ; if e is enabled, but d is disabled,

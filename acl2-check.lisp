@@ -110,7 +110,7 @@ is using two characters to indicate a new line?"))
 ; character set.  As explained above, we only intend soundness in the case that
 ; all books are certified from scratch using the same host Lisp, and we do not
 ; actually assume ASCII characters -- more precisely, we do not assume any
-; particular values for code-char and code-char -- so this check is not really
+; particular values for code-char and char-code -- so this check is not really
 ; necessary, except for a claim about ASCII characters in "Precise Description
 ; of the ACL2 Logic", which should perhaps be removed.  However, as of January
 ; 2012 we seem to be able to make the following check in all supported Lisps,
@@ -272,11 +272,11 @@ is using two characters to indicate a new line?"))
                     (code-char (- (char-code ch) 32))
                   ch)))))
 
-; The following test supports the partial-encapslate in axioms.lisp that
+; The following test supports the partial-encapsulate in axioms.lisp that
 ; introduces alpha-char-p-non-standard, upper-case-p-non-standard,
 ; lower-case-p-non-standard, char-downcase-non-standard, and
-; char-upcase-non-standard.  See comments there referencing:
-; "Checks on character case".
+; char-upcase-non-standard.  See comments there referencing: "Checks on
+; character case".
 
 (dotimes (i 256)
   (let ((ch (code-char i))
@@ -390,7 +390,7 @@ NOTE: Please update your cmucl to the 8/2024 snapshot or later."
   (if badvars
       (exit-with-build-error
        "The following constants or special variables in the main~%Lisp ~
-        package needs to be included in the ~
+        package need to be included in the ~
         list~%*common-lisp-specials-and-constants*:~%~s."
        badvars)))
 

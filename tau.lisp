@@ -159,7 +159,7 @@
 ; This function returns a list of pairs (hyps . concl) such that the
 ; conjunction of all (implies (and . hyps) concl) is equivalent to
 ; term.  Hyps is a list of hypotheses, implicitly conjoined.  Concl
-; does not begin with an AND (of course, its a macro, but concl
+; does not begin with an AND (of course, it's a macro, but concl
 ; doesn't begin with an IF that represents an AND) or IMPLIES.
 ; In addition concl doesn't begin with an open lambda.
 
@@ -938,21 +938,21 @@
 ; We were tempted to call such a set a ``type'' of the term but felt that was
 ; inappropriate because the literature on types is so extensive and we have no
 ; interest in defending the proposition that our objects are ``types''.  We
-; really don't think of them as anything more than sets of recognizers known
-; known to be true.  We could not use the words ``sorts'' or ``kinds'' for
-; similar reasons.  So we temporarily adopted the name ``recognizer sets''
-; abbreviated ``rs.''  But this was an unfortunate acronym for two reasons:
-; typically pronounced ``are ess'' it was unclear whether to write ``given an
-; rs'' or ``given a rs'' since the former ``sounds right'' when ``rs'' is
-; pronounced ``are ess'' but wrong when ``rs'' is read ``recognizer set.''
-; Furthermore, is ``rs'' singular or plural?  Did we really want to write
-; ``Given a set of rses?''  Nevertheless, we got this idea working, in a
-; stand-alone way, under the name rs.  Only when it was integrated into ACL2
-; proper did adopt the name ``tau'' for these objects.  We chose ``tau''
-; because it had no fixed connotation in the literature, it is short, and it
-; started with a pronounced consonant.  We use ``tau'' as both a singular noun
-; and a plural one.  We might say ``t1 is a tau'' and we might say that the
-; ``tau of x and y are t1 and t2 respectively''.
+; really don't think of them as anything more than sets of recognizers known to
+; be true.  We could not use the words ``sorts'' or ``kinds'' for similar
+; reasons.  So we temporarily adopted the name ``recognizer sets'' abbreviated
+; ``rs.''  But this was an unfortunate acronym for two reasons: typically
+; pronounced ``are ess'' it was unclear whether to write ``given an rs'' or
+; ``given a rs'' since the former ``sounds right'' when ``rs'' is pronounced
+; ``are ess'' but wrong when ``rs'' is read ``recognizer set.''  Furthermore,
+; is ``rs'' singular or plural?  Did we really want to write ``Given a set of
+; rses?''  Nevertheless, we got this idea working, in a stand-alone way, under
+; the name rs.  Only when it was integrated into ACL2 proper did adopt the name
+; ``tau'' for these objects.  We chose ``tau'' because it had no fixed
+; connotation in the literature, it is short, and it started with a pronounced
+; consonant.  We use ``tau'' as both a singular noun and a plural one.  We
+; might say ``t1 is a tau'' and we might say that the ``tau of x and y are t1
+; and t2 respectively''.
 
 ; On Some Basic Ideas
 
@@ -1637,7 +1637,7 @@
     (and
      (or (null lo) ; represents negative infinity
          (<?-rational-v-number (access tau-interval interval :lo-rel) lo x))
-     (or (null hi) ; represents negative infinity
+     (or (null hi) ; represents positive infinity
          (<?-number-v-rational (access tau-interval interval :hi-rel) x hi)))))
 
 (defun eval-tau-interval (interval evg)
@@ -1657,7 +1657,7 @@
 
 (defun decode-tau-interval (interval e skip-domain-flg)
 ; This function actually returns a list of untranslated terms whose
-; conjunction is describes the interval.
+; conjunction describes the interval.
   (cond
    ((null interval) nil)
    ((and (eq (access tau-interval interval :domain) nil)
@@ -1913,7 +1913,7 @@
 ; that some p in :pos-pairs evaluates to false on evg or some p in :neg-pairs
 ; evaluates to true on evg or is outside the given interval.  For example, if
 ; :pos-pairs includes NATP, it is illegal to include (the singleton list
-; containing) LOAD in :neg-evgs.  That inequality is implied by :pos-evgs.
+; containing) LOAD in :neg-evgs.  That inequality is implied by :pos-pairs.
 
 ; Restriction 5: The interval of a tau has as its domain one of INTEGERP,
 ; RATIONALP, ACL2-NUMBERP, or NIL; if INTEGERP both relations are nil (<=) and
@@ -1999,7 +1999,7 @@
 
 ; We will be more precise about the database later, but Simple rules are used
 ; to populate the database, storing all the implications of a given
-; recognizers truth or falsity.  These implications are just tau representing
+; recognizer's truth or falsity.  These implications are just tau representing
 ; the set of all truths that follow.  For example, under NATP we will store the
 ; tau of all known recognizers implied by t/NATP, as well as all known
 ; recognizers implied by nil/NATP.  The database is used to collect known
@@ -2018,7 +2018,7 @@
 ; one of the elements of C and if so we can add the negation of the omitted
 ; element of C.
 
-; This brings us to Signature rules of both forms.  Signature rules tells us
+; This brings us to Signature rules of both forms.  Signature rules tell us
 ; facts about the value of a function given facts about its inputs.  Signature
 ; rules play the primary role in determining the tau of a term (or of its
 ; MV-NTH components) given tau assumptions about subterms.
@@ -2038,7 +2038,7 @@
 ; mixing of the hypotheses.  The representation of such a formula as a
 ; signature-rule is:
 
-; :inputs-tau-list  - (tau_1 ... tau_n) -- required tau of corresponding vars
+; :input-tau-list   - (tau_1 ... tau_n) -- required tau of corresponding vars
 ; :vars             - (v1 ... vn) -- the vars used in the conclusion
 ; :dependent-hyps   - list of terms in vars ((dhyp_1 v1 ... vn) ...)
 ; :output-sign      - T (positive) or NIL (negative)
@@ -3266,7 +3266,7 @@
 ; neg-evgs2, or (b) subsumed by the tau-interval interval2, (c) subsumed by an
 ; element of pos-pairs2, or (d) subsumed by an element of neg-pairs2.  For
 ; example, if an element of neg-evgs1 is /=7 then it might be subsumed in
-; another tau by with an explicit /=7 in it, or by an interval not including 7,
+; another tau by an explicit /=7 in it, or by an interval not including 7,
 ; or by some sign/recognizer in the other tau being false on it.  We could do
 ; this by mapping over neg-evgs1 and just check member-neg-evgs and the other
 ; checks each element.  But that method is quadratic in the lengths of the two
@@ -12691,7 +12691,7 @@
 ; - multi-sig-cnt-1: how many functions have more than 1 form 1 signature
 ; - multi-sig-cnt-2: how many functions have more than 1 form 2 signature
 ;    for some slot
-; - multi-sig-cnt-alist: for each fn with with more than one signature
+; - multi-sig-cnt-alist: for each fn with more than one signature
 ;    (of either form)
 
 (defun tau-get-all-sig-fns (wrld fns-seen)

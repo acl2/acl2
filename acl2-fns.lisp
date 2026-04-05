@@ -209,8 +209,8 @@
 ; true, compile-acl2 had by default used a file-by-file load/proclaim/compile
 ; process, while load-acl2 had proclaimed all files after loading the compiled
 ; files.  We believe that this process allowed load-acl2 to come up with more
-; specific function types during load-acl2 than had been used by compile-acl2
-; We may have this change in types lead to buggy behavior.
+; specific function types during load-acl2 than had been used by compile-acl2.
+; It is conceivable that this change in types could lead to buggy behavior.
 
 ; So in order to proclaim during the boot-strap, we use steps as shown below.
 ; First, here is the general process, which is currently unused.  But we could

@@ -1804,10 +1804,10 @@
 ; then clauses just the singleton list contain the same clause the :OR was
 ; attached to.  But ttree contains an :or tag with value (parent-cl-id nil
 ; ((user-hint1 . hint-settings1)...))  indicating what is to be done to the
-; clause.  Eventually the nil we be replaced, on each branch, by the number of
-; that branch.  See change-or-hit-history-entry.  The number of branches is the
-; length of the third element.  The parent-cl-id in the value is the same as
-; the cl-id passed in.
+; clause.  Eventually the nil will be replaced, on each branch, by the number
+; of that branch.  See change-or-hit-history-entry.  The number of branches is
+; the length of the third element.  The parent-cl-id in the value is the same
+; as the cl-id passed in.
 
   (let* ((val (tagged-object :or ttree))
          (branch-cnt (length (nth 2 val))))
@@ -2031,7 +2031,7 @@
 
 ; NOTE: This function has not been called since Version_2.5.  However,
 ; we reference the comment below in a comment in settled-down-clause,
-; so for now we keep this comment, if for no other other reason than
+; so for now we keep this comment, if for no other reason than
 ; historical.
 
 ; Context: We are about to print cl-id and clause in waterfall-msg.

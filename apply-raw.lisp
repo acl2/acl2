@@ -95,9 +95,9 @@
 ; This function is a gatekeeper for the execution of badge-userfn and
 ; apply$-userfn (q.v.).
 
-; It is important that if this function returns a non-nil badge a world then it
-; returns that same answer for all extensions of the world!  The guard on the
-; badge table, badge-table-guard, guarantees this invariant.
+; It is important that if this function returns a non-nil badge for a world
+; then it returns that same answer for all extensions of the world!  The guard
+; on the badge table, badge-table-guard, guarantees this invariant.
 
 ; Programming Note: This function assumes fn is being used as a ``userfn,''
 ; i.e., by badge-userfn or apply$-userfn.  It fails to answer correctly if, for
@@ -781,7 +781,7 @@
 ; not an extension of the world in which the apply$-lambda was called.  In this
 ; case, the attempt to apply$-lambda <obj> to x1 would reset the :status to
 ; :BAD (if indeed, <obj> was not well-formed and compliant in the current
-; world) ans set the line's world to the current world; then when <obj> was
+; world) and set the line's world to the current world; then when <obj> was
 ; applied to x2, no additional checks were made: <obj> is :BAD in the world of
 ; the line and *1* apply$-lambda was used.
 

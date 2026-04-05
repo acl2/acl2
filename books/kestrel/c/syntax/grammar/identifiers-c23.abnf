@@ -36,9 +36,3 @@ identifier-continue = digit
 ; The above rule for 'identifier'
 ; is equivalent to the one in identifiers-c17.abnf,
 ; but it has a different formulation.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; remove after more rules have been modularized:
-
-identifier-nondigit = nondigit

@@ -935,7 +935,7 @@
 
 ; Given a clause cl, we build a type-alist and linear pot-lst with all of the
 ; literals in cl assumed false.  The pot-lst is built with the heavy-linearp
-; flag onff, which means we do not rewrite terms before turning them into polys
+; flag off, which means we do not rewrite terms before turning them into polys
 ; and we add no linear lemmas.  We ensure that the type-alist has no
 ; assumptions or forced hypotheses.  FYI: Just to be doubly sure that we are
 ; not ignoring assumptions and forced hypotheses, you will note that in
@@ -2088,7 +2088,7 @@
 
 ; We next extend the notion of intrinsic induction scheme to a scheme suggested
 ; by a semi-concrete do$ term.  But first we have to introduce the notion of
-; ruler-extenders because its needed when we try to create the machines
+; ruler-extenders because it's needed when we try to create the machines.
 
 (defconst *no-ruler-extenders*
   :none)
@@ -2895,15 +2895,15 @@
 
 (defun quick-block-info (name formals t-machine)
 
-; This function should be called a singly recursive function, name, and
-; its termination machine.  It should not be called on a function
-; in a non-trivial mutually recursive clique because the we don't know
-; how to analyze a call to a function other than name in the t-machine.
+; This function should be called on a singly recursive function, name, and its
+; termination machine.  It should not be called on a function in a non-trivial
+; mutually recursive clique because we don't know how to analyze a call to a
+; function other than name in the t-machine.
 
-; We return a list in 1:1 correspondence with the formals of name.
-; Each element of the list is either 'unchanging, 'self-reflexive,
-; or 'questionable.  The list is used to help quickly decide if a
-; blocked formal can be tolerated in induction.
+; We return a list in 1:1 correspondence with the formals of name.  Each
+; element of the list is either 'unchanging, 'self-reflexive, or 'questionable.
+; The list is used to help quickly decide if a blocked formal can be tolerated
+; in induction.
 
   (quick-block-down-t-machine name
                               (quick-block-initial-settings formals)

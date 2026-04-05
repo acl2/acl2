@@ -141,7 +141,7 @@
 ; while we actually go to work on lit3' above, we will actually have in
 ; our hand the fact that lit3 is its parent.  Keeping track of the parents
 ; of the literals we are working on is made harder by the fact that
-; sometimes literal merge.  For example, in {lit1 lit2 lit3} lit1 may
+; sometimes literals merge.  For example, in {lit1 lit2 lit3} lit1 may
 ; simplify to lit3 and thus we may merge them.  The surviving literal is
 ; given the parent tree that contains both 1 and 3 so we know not to use
 ; conclusions derived from either.  The rewrite-constant, rcnst, in use
@@ -280,7 +280,7 @@
 ; Note: Tag-tree primitive
 
 ; In this function we do not assume that tag is a key of ttree.  See also
-; remove-tag-from-tag-tree, which does make that assumption.
+; remove-tag-from-tag-tree!, which does make that assumption.
 
   (cond ((assoc-eq tag ttree)
          (remove1-assoc-eq tag ttree))
@@ -1853,9 +1853,9 @@
 ; new field :derived-from-not-equalityp.  This function was much more
 ; conservative in its judgement and threw out any poly which descended from an
 ; inequality in any way, rather than only those which were derived directly
-; from a (negated) equality.  Matt Kaufmann noticed difference and provoked an
-; email exchange with Robert Krug, who did the research and initial coding
-; leading to this version of linear).  Here is Robert's reply.
+; from a (negated) equality.  Matt Kaufmann noticed this difference and
+; provoked an email exchange with Robert Krug, who did the research and initial
+; coding leading to this version of linear).  Here is Robert's reply.
 
 ;   Matt is right, I did inadvertently change ACL2's meaning for
 ;   descends-from-not-equalityp.  Perhaps this change is also responsible
