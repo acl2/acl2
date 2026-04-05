@@ -11,7 +11,7 @@
 (in-package "C$")
 
 (include-book "kestrel/c/syntax/abstract-syntax-trees" :dir :system)
-(include-book "kestrel/c/syntax/concrete-syntax" :dir :system)
+(include-book "grammar-operations")
 
 (acl2::controlled-configuration)
 
@@ -40,25 +40,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *grammar-c17*
-  :short "Grammar constant for the C17 dialect without extensions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since currently @(tsee abnf::deftreeops) (used below)
-     only operates on grammar constants,
-     we pick a particular C dialect to start,
-     defining a grammar constant for it.
-     We plan to generalize @(tsee abnf::deftreeops)
-     to operate on parameterized grammars,
-     specifically a function like @(tsee grammar-for)."))
-  (grammar-for (c::make-dialect :std (c::standard-c17))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(abnf::deftreeops *grammar-c17* :prefix cst)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; For now we use the operations on
+; the specific fixed grammar used in grammar-operations.lisp,
+; but we plan to generalize this to be parameterized over the dialect.
 
 (define abs-uppercase-letter ((cst abnf::treep))
   :guard (cst-matchp cst "uppercase-letter")
