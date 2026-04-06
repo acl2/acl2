@@ -51,7 +51,7 @@
        function for some set of inputs from the input intervals.  More
        formally, for arbitrary intervals @('i0'), @('i1'), ... @('in'):")
     (xdoc::codeblock
-      "(implies (inp r (inv-f i0 i1 ... in))"
+      "(implies (inp r (ivl-f i0 i1 ... in))"
       "         (exists (x0 x1 ... xn)"
       "                 (and (inp x0 i0)"
       "                      (inp x1 i1)"
@@ -60,7 +60,7 @@
       "                      (equal r (f x0 x1 ... xn)))))")
     (xdoc::p
       "Note that the tightest interval extension will be precise if it extends
-       a continue function, but not necessarily if it extends a discontinuous
+       a continuous function, but not necessarily if it extends a discontinuous
        function. This is because an interval cannot represent any ``gaps''.
        Consider the tightest extension of the @(tsee floor) function.
        The output of @(tsee floor) is always an integer, but any nonempty,
