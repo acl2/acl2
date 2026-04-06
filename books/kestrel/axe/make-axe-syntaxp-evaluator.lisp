@@ -30,6 +30,8 @@
 
 (local (in-theory (disable myquotep)))
 
+;; todo: make some of these local:
+
 ;name clash with std
 ;move
 (local
@@ -43,7 +45,7 @@
            (integer-listp (strip-cars (acons-unique key val alist))))
   :hints (("Goal" :in-theory (enable acons-unique INTEGER-LISTP))))
 
-(defthm symbol-list-listp-of-strip-cars-of-acons-unique
+(defthm symbol-list-listp-of-strip-cdrs-of-acons-unique
   (implies (and (symbol-list-listp (strip-cdrs alist))
                 (symbol-listp val))
            (symbol-list-listp (strip-cdrs (acons-unique key val alist))))

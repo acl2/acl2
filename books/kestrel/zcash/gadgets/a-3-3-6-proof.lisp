@@ -280,7 +280,7 @@
 
 ;gen?
 (defthm solve-1
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'first_doubling/u3/num var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'first_doubling/u3/num var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep var p)
@@ -292,7 +292,7 @@
 
 ;todo: a way to specialize a rule for a var
 (defthm solve-2
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'SECOND_DOUBLING/U3/NUM var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'SECOND_DOUBLING/U3/NUM var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep var p)
@@ -303,7 +303,7 @@
                     (equal var (div x y p))))))
 
 (defthm solve-3
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'THIRD_DOUBLING/U3/NUM var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'THIRD_DOUBLING/U3/NUM var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep var p)
@@ -322,7 +322,7 @@
  :hints (("Goal" :in-theory (enable pfield::add-same))))
 
 (defthm solve-4
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'first_DOUBLING/V3/NUM var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'first_DOUBLING/V3/NUM var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep z p)
@@ -341,7 +341,7 @@
                                 p))))))
 
 (defthm solve-5
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'second_DOUBLING/V3/NUM var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'second_DOUBLING/V3/NUM var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep z p)
@@ -360,7 +360,7 @@
                                 p))))))
 
 (defthm solve-6
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'THIRD_DOUBLING/V3/NUM var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'THIRD_DOUBLING/V3/NUM var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep z p)
