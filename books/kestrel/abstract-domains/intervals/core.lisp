@@ -392,8 +392,7 @@
 (defruled max-when-emptyp
   (implies (emptyp interval)
            (equal (max interval)
-                  nil))
-  :enable max)
+                  nil)))
 
 (defrule max-when-emptyp-cheap
   (implies (emptyp interval)
@@ -404,8 +403,7 @@
 
 (defrule max-of-empty
   (equal (max (empty))
-         nil)
-  :enable max)
+         nil))
 
 (defruled max-when-not-intervalp
   (implies (not (intervalp interval))
