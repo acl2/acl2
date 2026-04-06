@@ -1006,7 +1006,7 @@
            3fix
            3p))
 
-(defrule 3xor-of-arg1-or-nil
+(defrule 3xor-of-arg1-and-nil
   (equal (3xor x nil)
          (3fix x))
   :enable (3xor
@@ -1104,7 +1104,7 @@
          t)
   :enable 3implies)
 
-(defrule 3implies-of-arg1-or-nil
+(defrule 3implies-of-arg1-and-nil
   (equal (3implies x nil)
          (3not x))
   :enable (3implies
@@ -1117,7 +1117,7 @@
          (3fix y))
   :enable 3implies)
 
-(defrule 3implies-of-arg1-or-t
+(defrule 3implies-of-arg1-and-t
   (equal (3implies x t)
          t)
   :enable 3implies)
