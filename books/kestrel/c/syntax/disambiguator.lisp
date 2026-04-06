@@ -3864,10 +3864,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-trans-item ((item trans-itemp) (dstate dstatep))
-  :returns (mv (erp maybe-msgp) (new-item trans-itemp) (new-dstate dstatep))
+  :returns (mv (erp maybe-msgp)
+               (new-items trans-item-listp)
+               (new-dstate dstatep))
   :short "Disambiguate a translation item."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This returns a list of translation items,
+     to accommodate the case in which a @('#include') translation item
+     must be expanded in place, which results in a list.
+     In all other cases, the resulting list is a singleton,
+     i.e. the translation item is disambiguated to a translation item.")
    (xdoc::p
     "For external declarations, we use a separate previous function.")
    (xdoc::p
@@ -3881,12 +3889,12 @@
      and undergo no transformation.")
    (xdoc::p
     "We do not yet support @('#include') and conditional directives."))
-  (b* (((reterr) (irr-trans-item) (irr-dstate)))
+  (b* (((reterr) nil (irr-dstate)))
     (trans-item-case
      item
      :declon (b* (((erp declon dstate)
                    (dimb-ext-declon item.declon dstate)))
-               (retok (trans-item-declon declon) dstate))
+               (retok (list (trans-item-declon declon)) dstate))
      :include (reterr
                (msg "Disambiguator does not support #include directives yet."))
      :define (b* ((name (ident->unwrap item.macro))
@@ -3901,9 +3909,9 @@
                   ((unless (maybe-msgp erp))
                    (raise "Internal error: malformed error ~x0." erp)
                    (reterr "irrelevant"))
-                  ((when erp) (mv erp (irr-trans-item) (irr-dstate)))
+                  ((when erp) (mv erp nil (irr-dstate)))
                   (dstate (change-dstate dstate :macros new-macros)))
-               (retok (trans-item-fix item) dstate))
+               (retok (list (trans-item-fix item)) dstate))
      :undef (b* ((name (ident->unwrap item.macro))
                  ((unless (stringp name))
                   (raise "Internal error: macro name ~x0." name)
@@ -3913,21 +3921,24 @@
                  ((unless (maybe-msgp erp))
                   (raise "Internal error: malformed error ~x0." erp)
                   (reterr "irrelevant"))
-                 ((when erp) (mv erp (irr-trans-item) (irr-dstate)))
+                 ((when erp) (mv erp nil (irr-dstate)))
                  (dstate (change-dstate dstate :macros new-macros)))
-              (retok (trans-item-fix item) dstate))
+              (retok (list (trans-item-fix item)) dstate))
      :cond (reterr
             (msg "Disambiguator does not support conditional directives yet."))
-     :line-comment (retok (trans-item-fix item) (dstate-fix dstate))))
+     :line-comment (retok (list (trans-item-fix item)) (dstate-fix dstate))))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable plexeme-token/space-p
                                            plexeme-tokenp)))
 
   ///
 
+  (more-returns
+   (new-items true-listp :rule-classes :type-prescription))
+
   (defret trans-item-unambp-of-dimb-trans-item
     (implies (not erp)
-             (trans-item-unambp new-item))))
+             (trans-item-list-unambp new-items))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3938,10 +3949,10 @@
   :short "Disambiguate a list of translation items."
   (b* (((reterr) nil (irr-dstate))
        ((when (endp items)) (retok nil (dstate-fix dstate)))
-       ((erp new-item dstate) (dimb-trans-item (car items) dstate))
-       ((erp new-items dstate)
+       ((erp new-items-car dstate) (dimb-trans-item (car items) dstate))
+       ((erp new-items-cdr dstate)
         (dimb-trans-item-list (cdr items) dstate)))
-    (retok (cons new-item new-items) dstate))
+    (retok (append new-items-car new-items-cdr) dstate))
 
   ///
 
