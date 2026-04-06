@@ -129,7 +129,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->uchar-max ((ienv ienvp))
-  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :returns (max posp)
   :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
@@ -153,7 +153,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->schar-max ((ienv ienvp))
-  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :returns (max posp)
   :short "The ACL2 integer value of @('SCHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
@@ -205,7 +205,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->char-max ((ienv ienvp))
-  :returns (max integerp)
+  :returns (max posp)
   :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
