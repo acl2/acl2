@@ -393,7 +393,7 @@
   (implies (emptyp interval)
            (equal (max interval)
                   nil))
-  :enable min)
+  :enable max)
 
 (defrule max-when-emptyp-cheap
   (implies (emptyp interval)
@@ -599,7 +599,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by max-when-not-bounded-above-p)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule <=-of-min-and-max
   (implies (and (bounded-below-p interval)
@@ -759,7 +759,7 @@
                          (< max min))
                     (empty)
                   (cons min max)))
-       :exec(cons min max))
+       :exec (cons min max))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
