@@ -85,20 +85,17 @@
       We will lift this restriction if needed in the future.")))
   ((std standard)
    (gcc booleanp
-        :reqfix (if (or (and gcc clang)
-                        (and cheri (not clang)))
+        :reqfix (if (and gcc clang)
                     nil
                   gcc)
         :default nil)
    (clang booleanp
-          :reqfix (if (or (and gcc clang)
-                          (and cheri (not clang)))
-                      nil
+          :reqfix (if (and gcc clang)
+                      (if cheri t nil)
                     clang)
           :default nil)
    (cheri booleanp
-          :reqfix (if (or (and gcc clang)
-                          (and cheri (not clang)))
+          :reqfix (if (and cheri (not clang))
                       nil
                     cheri)
           :default nil))
