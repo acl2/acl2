@@ -81,7 +81,7 @@
    (xdoc::p
     "This directly derives from @('CHAR_BIT'),
      as discussed in @(tsee uchar-format),
-     and in footnote 50 of [C17:6.2.6.1//3],
+     and in footnote 50 of [C17:6.2.6.1/3],
      which says that @('unsigned char') values
      range from 0 to @($2^{\\mathtt{CHAR\\_BIT}}-1$).")
    (xdoc::p
