@@ -413,7 +413,7 @@
 
 (defrec td-candidate
 
-; Let C be a td-candidate record.  The :roots-alist field of C is a a list of
+; Let C be a td-candidate record.  The :roots-alist field of C is a list of
 ; roots-alist-entry records.  For each such record, R, when its :book field is
 ; included then its :root has as its 'justification property the one stored in
 ; the :justification field of C, up to alpha-equivalence (see
