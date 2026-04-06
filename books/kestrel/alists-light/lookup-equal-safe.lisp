@@ -11,18 +11,18 @@
 
 (in-package "ACL2")
 
-;; STATUS: In-progress
+(include-book "lookup-equal") ;; included because we rewrite lookup-equal-safe to lookup-equal
 
-(include-book "lookup-equal")
-
-;what about when the value is nil?
+;; Looks up KEY in ALIST, using equal as the test.
+;; Throws an error if KEY is not bound in ALIST.
 (defund lookup-equal-safe (key alist)
   (declare (xargs :guard (alistp alist)))
   (let ((result (assoc-equal key alist)))
     (if result
         (cdr result)
-      (er hard? 'lookup-equal-safe "There is no binding for key ~x0 in the alist ~x1.~%" key alist))))
+      (er hard? 'lookup-equal-safe "There is no binding for key ~x0 in alist ~x1." key alist))))
 
+;; For reasoning, we immediately turn lookup-equal-safe into lookup-equal.
 (defthm lookup-equal-safe-becomes-lookup-equal
   (equal (lookup-equal-safe key alist)
          (lookup-equal key alist))

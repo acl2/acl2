@@ -1,6 +1,6 @@
 ; A utility to build "opener" rules
 ;
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -102,7 +102,8 @@
 (local
   (defthm pseudo-term-listp-of-strip-cdrs-of-keep-pairs
     (implies (pseudo-term-listp (strip-cdrs alist))
-             (pseudo-term-listp (strip-cdrs (keep-pairs keys alist))))))
+             (pseudo-term-listp (strip-cdrs (keep-pairs keys alist))))
+    :hints (("Goal" :in-theory (enable keep-pairs)))))
 
 ;move
 ;; Removes any pair which binds a key to itself.
