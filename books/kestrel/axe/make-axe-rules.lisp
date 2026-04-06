@@ -1,7 +1,7 @@
 ; Making Axe rules and rule-alists from formulas
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -66,14 +66,6 @@
             (not (equal a (car x))))
    :hints (("Goal" :expand (fns-in-term x)
             :in-theory (enable fns-in-term)))))
-
-(local
- (defthm not-member-equal-of-fns-in-term-of-expand-lambdas-in-term
-   (implies (and (pseudo-termp term)
-                 (not (member-equal fn (fns-in-term term))))
-            (not (member-equal fn (fns-in-term (expand-lambdas-in-term term)))))
-   :hints (("Goal" :use (:instance not-member-equal-of-fns-in-term-of-expand-lambdas-in-term)
-            :in-theory (disable not-member-equal-of-fns-in-term-of-expand-lambdas-in-term)))))
 
 ;; (local
 ;;  (defthm not-memberp-of-fns-in-term-of-cadr
@@ -251,21 +243,27 @@
 
 ;; If the function takes dag-array as its last formal, drop the corresponding arg.
 ;; TODO: Check that dag-array is passed as the arg to the dag-array-formal, if any.
-(defund process-axe-syntaxp-function-application (expr wrld)
+(defund process-axe-syntaxp-function-application (expr wrld rule-symbol)
   (declare (xargs :guard (and (pseudo-termp expr)
                               (axe-syntaxp-function-applicationp expr)
-                              (plist-worldp wrld))
+                              (plist-worldp wrld)
+                              (symbolp rule-symbol))
                   :guard-hints (("Goal" :in-theory (enable axe-syntaxp-function-applicationp)))))
   (let* ((fn (ffn-symb expr))
          (args (fargs expr)))
     (if (eq fn 'axe-quotep) ;special case, we know dag-array isn't mentioned
         expr
-      (let* ((formals (fn-formals fn wrld))
-             (fn-uses-dagp (and (consp formals)
-                                (eq 'dag-array (car (last formals)))))
-             (args-to-store (if fn-uses-dagp
-                                (butlast args 1)
-                              args)))
+      (b* ((formals (fn-formals fn wrld))
+           (fn-uses-dagp (and (consp formals)
+                              (eq 'dag-array (car (last formals)))))
+           ((when (and fn-uses-dagp
+                       (not (eq 'dag-array (car (last args))))))
+            (er hard? 'process-axe-syntaxp-function-application "Error in rule ~x0: Final arg in ~x1 must be ~x2." rule-symbol expr 'acl2::dag-array)
+            *nil* ; just some pseudo-term (irrelevant)
+            )
+           (args-to-store (if fn-uses-dagp
+                              (butlast args 1)
+                            args)))
         `(,fn ,@args-to-store)))))
 
 (local
@@ -274,7 +272,7 @@
                  (axe-syntaxp-function-applicationp expr)
                 ;;(not (eq 'quote (ffn-symb expr)))
                  )
-            (pseudo-termp (process-axe-syntaxp-function-application expr wrld)))
+            (pseudo-termp (process-axe-syntaxp-function-application expr wrld rule-symbol)))
    :hints (("Goal" :in-theory (enable process-axe-syntaxp-function-application axe-syntaxp-function-applicationp)))))
 
 (local
@@ -286,76 +284,84 @@
                  (not (eq 'not (ffn-symb expr)))
         ;        (not (eq 'axe-quotep (ffn-symb expr))) ;ok?
                  )
-            (axe-syntaxp-exprp (process-axe-syntaxp-function-application expr wrld)))
+            (axe-syntaxp-exprp (process-axe-syntaxp-function-application expr wrld rule-symbol)))
    :hints (("Goal" :expand (axe-syntaxp-exprp expr)
             :in-theory (enable process-axe-syntaxp-function-application axe-syntaxp-function-applicationp axe-syntaxp-exprp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Drops dag-array formals passed as the last args to functions
-(defund process-axe-syntaxp-expr (expr wrld)
+(defund process-axe-syntaxp-expr (expr wrld rule-symbol)
   (declare (xargs :guard (and (pseudo-termp expr)
                               (axe-syntaxp-exprp expr)
-                              (plist-worldp wrld))
+                              (plist-worldp wrld)
+                              (symbolp rule-symbol))
                   :guard-hints (("Goal" :in-theory (enable axe-syntaxp-exprp)))))
   (case (ffn-symb expr)
     (quote expr)
-    (if `(if ,(process-axe-syntaxp-expr (farg1 expr) wrld)
-             ,(process-axe-syntaxp-expr (farg2 expr) wrld)
-           ,(process-axe-syntaxp-expr (farg3 expr) wrld)))
-    (not `(not ,(process-axe-syntaxp-expr (farg1 expr) wrld)))
-    (t (process-axe-syntaxp-function-application expr wrld))))
+    (if `(if ,(process-axe-syntaxp-expr (farg1 expr) wrld rule-symbol)
+             ,(process-axe-syntaxp-expr (farg2 expr) wrld rule-symbol)
+           ,(process-axe-syntaxp-expr (farg3 expr) wrld rule-symbol)))
+    (not `(not ,(process-axe-syntaxp-expr (farg1 expr) wrld rule-symbol)))
+    (t (process-axe-syntaxp-function-application expr wrld rule-symbol))))
 
 (local
  (defthm pseudo-termp-of-process-axe-syntaxp-expr
    (implies (and (pseudo-termp expr)
                  (axe-syntaxp-exprp expr))
-            (pseudo-termp (process-axe-syntaxp-expr expr wrld)))
+            (pseudo-termp (process-axe-syntaxp-expr expr wrld rule-symbol)))
    :hints (("Goal" :in-theory (enable process-axe-syntaxp-expr axe-syntaxp-exprp)))))
 
 (local
  (defthm axe-syntaxp-exprpp-of-process-axe-syntaxp-expr
    (implies (and (pseudo-termp expr)
                  (axe-syntaxp-exprp expr))
-            (axe-syntaxp-exprp (process-axe-syntaxp-expr expr wrld)))
+            (axe-syntaxp-exprp (process-axe-syntaxp-expr expr wrld rule-symbol)))
    :hints (("Goal" :in-theory (enable process-axe-syntaxp-expr axe-syntaxp-exprp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; If the function takes dag-array as its last formal, drop the corresponding arg.
-;; TODO: Check that dag-array is passed as the arg to the dag-array-formal, if any.
-(defund process-axe-bind-free-function-application (expr wrld)
+;; Returns (mv erp axe-bind-free-expr).
+(defund process-axe-bind-free-function-application (expr wrld rule-symbol)
   (declare (xargs :guard (and (pseudo-termp expr)
                               (axe-bind-free-function-applicationp expr)
-                              (plist-worldp wrld))
+                              (plist-worldp wrld)
+                              (symbolp rule-symbol))
                   :guard-hints (("Goal" :in-theory (enable axe-bind-free-function-applicationp)))))
-  (let* ((fn (ffn-symb expr))
-         (args (fargs expr)))
-    (let* ((formals (fn-formals fn wrld))
-           (fn-uses-dagp (and (consp formals)
-                              (eq 'dag-array (car (last formals)))))
-           (args-to-store (if fn-uses-dagp
-                              (butlast args 1)
-                            args)))
-      `(,fn ,@args-to-store))))
+  (b* ((fn (ffn-symb expr))
+       (args (fargs expr))
+       (formals (fn-formals fn wrld))
+       (fn-uses-dagp (and (consp formals)
+                          (eq 'dag-array (car (last formals)))))
+       ((when (and fn-uses-dagp
+                   (not (eq 'dag-array (car (last args))))))
+        (er hard? 'process-axe-bind-free-function-application "Error in rule ~x0: Final arg in ~x1 must be ~x2." rule-symbol expr 'acl2::dag-array)
+        (mv :bad-axe-bind-free nil))
+       (args-to-store (if fn-uses-dagp
+                          (butlast args 1)
+                        args)))
+    (mv (erp-nil) `(,fn ,@args-to-store))))
 
 (local
- (defthm pseudo-termp-of-process-axe-bind-free-function-application
-   (implies (and (pseudo-termp expr)
-                 (axe-bind-free-function-applicationp expr)
-                ;;(not (eq 'quote (ffn-symb expr)))
-                 )
-            (pseudo-termp (process-axe-bind-free-function-application expr wrld)))
-   :hints (("Goal" :in-theory (enable process-axe-bind-free-function-application axe-bind-free-function-applicationp)))))
+  (defthm pseudo-termp-of-mv-nth-1-of-process-axe-bind-free-function-application
+    (implies (and ;; (not (mv-nth 0 (process-axe-bind-free-function-application expr wrld rule-symbol)))
+                  (pseudo-termp expr)
+                  (axe-bind-free-function-applicationp expr)
+                  ;;(not (eq 'quote (ffn-symb expr)))
+                  )
+             (pseudo-termp (mv-nth 1 (process-axe-bind-free-function-application expr wrld rule-symbol))))
+    :hints (("Goal" :in-theory (enable process-axe-bind-free-function-application axe-bind-free-function-applicationp)))))
 
 (local
- (defthm axe-bind-free-function-applicationp-of-process-axe-bind-free-function-application
-   (implies (and (pseudo-termp expr)
-                 (axe-bind-free-function-applicationp expr)
-                ;;(not (eq 'quote (ffn-symb expr)))
-                 )
-            (axe-bind-free-function-applicationp (process-axe-bind-free-function-application expr wrld)))
-   :hints (("Goal" :in-theory (enable process-axe-bind-free-function-application axe-bind-free-function-applicationp)))))
+  (defthm axe-bind-free-function-applicationp-of-mv-nth1-of-process-axe-bind-free-function-application
+    (implies (and (not (mv-nth 0 (process-axe-bind-free-function-application expr wrld rule-symbol)))
+                  (pseudo-termp expr)
+                  (axe-bind-free-function-applicationp expr)
+                  ;;(not (eq 'quote (ffn-symb expr)))
+                  )
+             (axe-bind-free-function-applicationp (mv-nth 1 (process-axe-bind-free-function-application expr wrld rule-symbol))))
+    :hints (("Goal" :in-theory (enable process-axe-bind-free-function-application axe-bind-free-function-applicationp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -425,7 +431,7 @@
                   (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-syntaxp argument ~x0 in rule ~x1." expr rule-symbol)
                   (mv :bad-syntaxp-argument *unrelievable-hyps* bound-vars))
                  ;; Drops dag-array formals passed as last args to functions:
-                 (processed-expr (process-axe-syntaxp-expr expr wrld))
+                 (processed-expr (process-axe-syntaxp-expr expr wrld rule-symbol))
                  (mentioned-vars (free-vars-in-term processed-expr)) ;dag-array has been perhaps removed
                  (allowed-vars bound-vars ;(cons 'dag-array bound-vars)
                                )
@@ -451,7 +457,8 @@
                    ((when (not (axe-bind-free-function-applicationp axe-bind-free-expr)))
                     (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-bind-free argument ~x0 in rule ~x1." axe-bind-free-expr rule-symbol)
                     (mv :bad-bind-free-argument *unrelievable-hyps* bound-vars))
-                   (axe-bind-free-expr (process-axe-bind-free-function-application axe-bind-free-expr wrld))
+                   ((mv erp axe-bind-free-expr) (process-axe-bind-free-function-application axe-bind-free-expr wrld rule-symbol))
+                   ((when erp) (mv erp *unrelievable-hyps* bound-vars))
                    (mentioned-vars (free-vars-in-term axe-bind-free-expr))
                    (allowed-vars bound-vars ;(cons 'dag-array bound-vars)
                                  )
