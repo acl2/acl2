@@ -239,9 +239,58 @@ struct S2 {
   unsigned int x;
 };
 
+struct S1 s1;
+
+struct S2 s2;
+
+struct S1 s1;
+
+struct S2 s2 = {.x = 0};
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files '("extern-struct2.c")
+                   :const *old*)
+
+  (split-gso *old*
+             *new*
+             :object-name "s"
+             :object-filepath "extern-struct2.c"
+             :new-object1 "s1"
+             :new-object2 "s2"
+             :new-type1 "S1"
+             :new-type2 "S2"
+             :split-members ("x"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/extern-struct2.c"
+    :content "struct S {
+  unsigned int x;
+  unsigned int y;
+};
+
+struct S1 {
+  unsigned int y;
+};
+
+struct S2 {
+  unsigned int x;
+};
+
 extern struct S1 s1;
 
-extern struct S2 s2 = {.x = 0};
+extern struct S2 s2;
+
+struct S1 s1;
+
+struct S2 s2 = {.x = 0};
 ")
 
   :with-output-off nil)
@@ -330,9 +379,13 @@ struct S2 {
   unsigned int x;
 };
 
-extern struct S1 s1;
+struct S1 s1;
 
-extern struct S2 s2 = {.x = 0};
+struct S2 s2;
+
+struct S1 s1;
+
+struct S2 s2 = {.x = 0};
 ")
 
   :with-output-off nil)
@@ -415,7 +468,9 @@ int foo(void) {
   unsigned int y;
 };
 
-extern struct S s = {.x = 0};
+struct S s;
+
+struct S s = {.x = 0};
 ")
 
   :with-output-off nil)
@@ -492,7 +547,9 @@ int foo(void) {
   unsigned int y;
 };
 
-extern struct S s = {.x = 0};
+struct S s;
+
+struct S s = {.x = 0};
 ")
 
   :with-output-off nil)
