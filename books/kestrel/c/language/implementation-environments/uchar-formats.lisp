@@ -90,7 +90,7 @@
 
   ///
 
-  (defret uchar-format->-max-type-prescription
+  (defret uchar-format->max-type-prescription
     (and (posp max)
          (> max 1))
     :rule-classes :type-prescription
