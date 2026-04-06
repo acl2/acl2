@@ -121,8 +121,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There is very large overlap between the of extensions
-     supported by GCC and by Clang.
+    "There is a very large overlap between the GCC and Clang extensions.
      Therefore, it is most often sufficient to check
      if the dialect includes either."))
   (or (dialect->gcc dialect)
