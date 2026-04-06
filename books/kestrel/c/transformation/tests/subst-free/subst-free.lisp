@@ -83,7 +83,7 @@
                                        dialect
                                        t))
          (dstate (c$::init-dstate "" dialect))
-         ((mv erp2 ast &) (c$::dimb-trans-unit ast dstate))
+         ((mv erp2 ast & &) (c$::dimb-trans-unit ast dstate nil nil nil))
          ((mv erp3 fundef) (trans-unit-find-fundef (c$::ident ,fun) ast))
          ((mv fundef$ -)
           ;; (fundef-subst-free fundef (mergesort ',subst) nil))
@@ -94,7 +94,8 @@
                           (c::make-dialect :std (c::standard-c17)
                                            :gcc t)
                           t))
-         ((mv erp5 ast-expected &) (c$::dimb-trans-unit ast-expected dstate))
+         ((mv erp5 ast-expected & &)
+          (c$::dimb-trans-unit ast-expected dstate nil nil nil))
          ((mv erp6 fundef-expected)
           (trans-unit-find-fundef (c$::ident ,fun) ast-expected)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))

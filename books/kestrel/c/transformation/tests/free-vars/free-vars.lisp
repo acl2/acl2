@@ -79,7 +79,7 @@
                                         dialect
                                         t))
          (dstate (c$::init-dstate "" dialect))
-         ((mv erp2 ast &) (c$::dimb-trans-unit ast dstate))
+         ((mv erp2 ast & &) (c$::dimb-trans-unit ast dstate nil nil nil))
          ((mv erp3 fundef) (trans-unit-find-fundef (c$::ident ,fun) ast))
          (free-vars (free-vars-fundef fundef nil))
          (expected (mergesort (ident-map (list ,@vars)))))
