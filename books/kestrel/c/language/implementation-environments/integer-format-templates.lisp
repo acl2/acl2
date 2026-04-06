@@ -972,7 +972,6 @@
   (defret integer-format->bit-size-type-prescription
     (and (posp size)
          (> size 1))
-    :hyp (integer-formatp format)
     :rule-classes :type-prescription
     :hints (("Goal" :in-theory (e/d (integer-format->bit-size-alt-def
                                      (:e tau-system))
