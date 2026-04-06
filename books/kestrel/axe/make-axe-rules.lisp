@@ -1027,13 +1027,13 @@
           (cons first-res rest-res)))))
 
 (local
- (defthm axe-rule-hyp-listp-of-mv-nth-1-io-make-axe-rule-hyps-for-loop-stoppers
+ (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-hyps-for-loop-stoppers
    (axe-rule-hyp-listp (mv-nth 1 (make-axe-rule-hyps-for-loop-stoppers loop-stoppers rule-name)))
    :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-loop-stoppers
                                       axe-rule-hyp-listp)))))
 
 (local
- (defthm all-axe-syntaxp-hypsp-of-mv-nth-1-io-make-axe-rule-hyps-for-loop-stoppers
+ (defthm all-axe-syntaxp-hypsp-of-mv-nth-1-of-make-axe-rule-hyps-for-loop-stoppers
    (all-axe-syntaxp-hypsp (mv-nth 1 (make-axe-rule-hyps-for-loop-stoppers loop-stoppers rule-name)))
    :hints (("Goal" :in-theory (enable make-axe-rule-hyps-for-loop-stoppers
                                       make-axe-rule-hyp-for-loop-stopper
@@ -1529,7 +1529,7 @@
            (b* ((theorem-body (defthm-body rule-name wrld))
                 (rule-classes (defthm-rule-classes rule-name wrld))
                 ((when (not (symbol-alistp rule-classes)))
-                 (er hard? 'make-add-axe-rules-for-rule "Bad rule-classes: ~x0" rule-classes)
+                 (er hard? 'add-axe-rules-for-rule "Bad rule-classes: ~x0" rule-classes)
                  (mv :bad-rule-classes nil))
                 ;;otherwise, unrolling rules of functions using mbe can loop:
                 (theorem-body ;(strip-return-last theorem-body)
