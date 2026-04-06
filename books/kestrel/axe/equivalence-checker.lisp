@@ -1003,8 +1003,7 @@
       (let ((expr (aref1 dag-array-name dag-array nodenum)))
         (if (or (not (consp expr))
                 (eq 'quote (ffn-symb expr)))
-            (hard-error 'get-trace-for-node "Unexpected a recursive function call but got ~x0"
-                        (acons #\0 expr nil))
+            (er hard? 'get-trace-for-node "Expected a recursive function call but got ~x0" expr)
           ;;regular function call
           (let* ((fn (ffn-symb expr))
                  (dargs (dargs expr))
