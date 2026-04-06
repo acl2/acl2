@@ -662,7 +662,7 @@
                                    ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
 
 (defthmd add-of-mul-of-65536-special
-  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize dag-array) '(ysize))
+  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
                 (equal ysize 16)
                 (unsigned-byte-p 16 x)
                 (unsigned-byte-p 16 y)
@@ -712,7 +712,7 @@
                                    ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
 
 (defthmd add-of-mul-of-1048576-special
-  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize dag-array) '(ysize))
+  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
                 (equal ysize 20)
                 (unsigned-byte-p 12 x)
                 (unsigned-byte-p 20 y)
@@ -734,7 +734,7 @@
                                    ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
 
 (defthm add-of-mul-of-1048576-and-add-extra-special
-  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize dag-array) '(ysize))
+  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
                 (equal ysize 20)
                 (unsigned-byte-p 12 x)
                 (unsigned-byte-p 20 y)
