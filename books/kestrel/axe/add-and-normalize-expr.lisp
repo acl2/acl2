@@ -1,7 +1,7 @@
 ; A utility for adding a node but normalizing its xors first.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -590,7 +590,7 @@
               (add-and-normalize-expr fn args ; can we often save consing FN onto ARGS in this?
                                       (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2))))
            ((when erp) (mv erp nodenum-or-quotep rewrite-stobj2))
-           ;; todo: optimize this stuf by building versions of the dag-builders that traffic in the rewrite-stobj2
+           ;; todo: optimize this stuff by building versions of the dag-builders that traffic in the rewrite-stobj2
            (rewrite-stobj2 (put-dag-array dag-array rewrite-stobj2))
            (rewrite-stobj2 (put-dag-len dag-len rewrite-stobj2))
            (rewrite-stobj2 (put-dag-parent-array dag-parent-array rewrite-stobj2))
