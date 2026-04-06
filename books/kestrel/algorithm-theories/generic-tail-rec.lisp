@@ -62,7 +62,7 @@
                   )
              (generic-tail-inv (generic-tail-update params))))
 
-  ;;the invariant must impliy the postcondition after we do the base case work,
+  ;;the invariant must imply the postcondition after we do the base case work,
   ;;assuming we exit:
   (defthm generic-tail-post-of-generic-tail-base
     (implies (and (generic-tail-inv params)
