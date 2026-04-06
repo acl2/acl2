@@ -1,6 +1,6 @@
 ; Rules that use the R1CS axe-syntax functions
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -46,7 +46,7 @@
 
 ;for axe, since member-equal is not a known boolean, todo: why isn't that ok (can't make the axe rule)?
 (defthm pfield::fep-when-fe-listp-and-memberp
-  (implies (and (acl2::axe-syntaxp (acl2::syntactic-variablep x dag-array)) ;for now, we only generate the fe-listp assumptions for vars
+  (implies (and (acl2::axe-syntaxp (acl2::syntactic-variablep x acl2::dag-array)) ;for now, we only generate the fe-listp assumptions for vars
                 (fe-listp free p)
                 (acl2::memberp x free))
            (fep x p)))
