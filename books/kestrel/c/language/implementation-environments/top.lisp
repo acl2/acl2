@@ -184,7 +184,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "See @(tsee schar-format->min)"))
+    "See @(tsee schar-format->min)."))
   (schar-format->min
    (char+short+int+long+llong+bool-format->schar
     (ienv->char+short+int+long+llong+bool-format ienv))
@@ -571,7 +571,7 @@
 
 (define ienv-uchar-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned char')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->uchar-max ienv))))
@@ -580,7 +580,7 @@
 
 (define ienv-schar-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed char')."
   (and (<= (ienv->schar-min ienv) (ifix val))
        (<= (ifix val) (ienv->schar-max ienv))))
@@ -589,7 +589,7 @@
 
 (define ienv-char-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('char')."
   (and (<= (ienv->char-min ienv) (ifix val))
        (<= (ifix val) (ienv->char-max ienv))))
@@ -598,7 +598,7 @@
 
 (define ienv-ushort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned short')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->ushort-max ienv))))
@@ -607,7 +607,7 @@
 
 (define ienv-sshort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed short')."
   (and (<= (ienv->sshort-min ienv) (ifix val))
        (<= (ifix val) (ienv->sshort-max ienv))))
@@ -616,7 +616,7 @@
 
 (define ienv-uint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned int')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->uint-max ienv))))
@@ -625,7 +625,7 @@
 
 (define ienv-sint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed int')."
   (and (<= (ienv->sint-min ienv) (ifix val))
        (<= (ifix val) (ienv->sint-max ienv))))
@@ -634,7 +634,7 @@
 
 (define ienv-ulong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned long')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->ulong-max ienv))))
@@ -643,7 +643,7 @@
 
 (define ienv-slong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed long')."
   (and (<= (ienv->slong-min ienv) (ifix val))
        (<= (ifix val) (ienv->slong-max ienv))))
@@ -652,7 +652,7 @@
 
 (define ienv-ullong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned long long')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->ullong-max ienv))))
@@ -661,7 +661,7 @@
 
 (define ienv-sllong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed long long')."
   (and (<= (ienv->sllong-min ienv) (ifix val))
        (<= (ifix val) (ienv->sllong-max ienv))))
