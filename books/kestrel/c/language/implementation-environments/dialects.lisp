@@ -106,7 +106,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-dialect
-  :short "An irrelevant C dialect"
+  :short "An irrelevant C dialect."
   :type dialectp
   :body (make-dialect :std (standard-c17)))
 
