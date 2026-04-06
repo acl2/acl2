@@ -256,7 +256,6 @@
                   :stobjs state))
   (b* (((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (cw "~%(Testing ~x0.~%" function-name-string))
-
        (- (ensure-x86 parsed-executable))
        (executable-type (parsed-executable-type parsed-executable))
        (32-bitp (member-eq executable-type *executable-types32*))
@@ -317,7 +316,7 @@
           feature-flags
           :skip ; no input assumptions -- todo
           nil ; type-assumptions-for-array-varsp -- todo
-          '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
+          :al ;; We expect the function to return a boolean.  For C, we check the low byte of RAX/EAX.  TODO: Consider what other languages do.
           ;; t                   ; use-internal-contextsp
           prune-precise
           prune-approx
@@ -368,7 +367,7 @@
        ((when (quotep result-dag-or-quotep))
         (mv-let (elapsed state)
           (real-time-since start-real-time state)
-          (if (equal result-dag-or-quotep ''1)
+          (if (equal result-dag-or-quotep ''1) ; todo: or check for anything nonzero?
               (progn$ (cw "Test ~s0 passed in " function-name-string)
                       (print-to-hundredths elapsed)
                       (cw "s.)~%")
@@ -412,7 +411,7 @@
                                    ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
                                    register-type-assumptions ;TODO: We may need separateness assumptions!
                                    nil ; interpreted-fns
-                                   :bit ; type (means try to prove that the DAG is 1)
+                                   :bit ; type (means try to prove that the DAG is 1) ; todo: should it be "nonzero"?
                                    ;; tests ;a natp indicating how many tests to run
                                    tactics
                                    proof-rules

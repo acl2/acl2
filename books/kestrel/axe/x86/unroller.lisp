@@ -904,7 +904,7 @@
                     ))))
     (mv (erp-nil) result-dag-or-quotep assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp event state)
 ;; TODO: Consider using the current print-base (:auto value) by default.
@@ -949,7 +949,9 @@
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
                               (lifter-targetp target)
-                              ;; executable
+                              ;; executable - add guard, or check all inputs
+                              (or (eq :skip inputs) (names-and-typesp inputs))
+                              ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
                               ;; extra-assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -959,9 +961,7 @@
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
                               (or (feature-flagsp feature-flags) (eq :auto feature-flags))
-                              (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
-                              ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
                                   (natp prune-precise))
