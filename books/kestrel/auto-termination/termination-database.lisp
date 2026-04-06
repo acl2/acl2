@@ -57,7 +57,7 @@
                            (acons (car trip)
 
 ; We store normed values, anticipating their use as keys in a fast-alist.  This
-; isn't acctually necessary, since the call of make-fast-alist at the end
+; isn't actually necessary, since the call of make-fast-alist at the end
 ; should take care of that.
 
                                   sysfile

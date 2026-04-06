@@ -612,8 +612,8 @@
                   (and inv-var-ubd
                        (< inv-var-ubd 0)))
 
-; We try to gather bounds polys in four stages --- a upper bound for inv-var,
-; a upper bound for var, an lower bound for inv-var, and an lower bound
+; We try to gather bounds for polys in four stages --- an upper bound for
+; inv-var, an upper bound for var, a lower bound for inv-var, and a lower bound
 ; for var.
 
               (let* ((ttree1 (cons-tag-trees ttree

@@ -824,8 +824,8 @@
 
 (defmacro mcons-term* (fn &rest args)
 
-; The "m" in "mcons-term*" is for "maybe fast".  Some of calls of this macro
-; can probably be replaced with fcons-term*.
+; The "m" in "mcons-term*" is for "maybe fast".  Some calls of this macro can
+; probably be replaced with fcons-term*.
 
   `(cons-term* ,fn ,@args))
 

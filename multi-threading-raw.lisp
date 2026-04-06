@@ -29,7 +29,7 @@
 
 (in-package "ACL2")
 
-; For readability we use #+sb-thread" instead of #+(and sbcl sbl-thread).  We
+; For readability we use #+sb-thread" instead of #+(and sbcl sb-thread).  We
 ; therefore make the following check to ensure that these two readtime
 ; conditionals are equivalent.
 
@@ -224,7 +224,7 @@
 
   (null x))
 
-; Make-lock and with-lock were originally defined in this file, but has been
+; Make-lock and with-lock were originally defined in this file, but have been
 ; moved to acl2-fns.lisp to help support multi-threading in memoize-raw.lisp.
 
 (defmacro reset-lock (bound-symbol)
@@ -1075,7 +1075,7 @@
 
 ; We could increase the following coefficient from 4 and further guarantee that
 ; consumers have parallelism work to process, but this would come at the
-; expense of backlogging the *work-queue".  We prefer simply to avoid the
+; expense of backlogging the *work-queue*.  We prefer simply to avoid the
 ; otherwise parallelized computations in favor of their serial equivalents.
 
   (* 4 *core-count*))

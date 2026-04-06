@@ -381,7 +381,7 @@
 
 (defun most-recent-enabled-elim-rule1 (lst ens)
 
-; This function finds the first elim-rule in lst whose whose :nume is
+; This function finds the first elim-rule in lst whose :nume satisfies
 ; enabled-numep.
 
   (cond ((endp lst) nil)

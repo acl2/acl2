@@ -83,7 +83,7 @@
 ;   (read-file "foo.cert" state)
 
 ; We see that the :CERT-DATA in foo.cert has :TYPE-PRESCRIPTION entries for f1
-; and f3, but has no :TRANSLATE entries.
+; and g, but has no :TRANSLATE entries.
 
 ; Part 2: Type Prescriptions
 
@@ -366,7 +366,7 @@
 ; (6) Because of our calls of make-fast-alist in the definition of the function
 ; cert-data-fal, it is unnecessary to store cert-data entries as fast-alists
 ; in the .cert file.  But profiling has suggested that it is harmless to do so.
-; The type-prescription cert-data is already a fast-alists anyhow; we'd have to
+; The type-prescription cert-data is already a fast-alist anyhow; we'd have to
 ; free it if we want to avoid storing it as a fast-alist.
 
 ; (7) As a sort of optimization, saving space in .cert files at the expense of
@@ -999,7 +999,7 @@
 
 (defun guess-measure (name defun-flg args pos t-machine ctx wrld state)
 
-; T-machine is a termination machine, i.e., a lists of tests-and-call.  Because
+; T-machine is a termination machine, i.e., a list of tests-and-call.  Because
 ; of mutual recursion, we do not know that the call of a tests-and-call is a
 ; call of name; it may be a call of a sibling of name.  We look for the first
 ; formal that is (a) somehow tested in every test and (b) somehow changed in
@@ -1464,7 +1464,7 @@
 ; definductor, that takes the name of an admitted loop$ recursive function and
 ; produces an induction scheme for it.  But our current understanding of this
 ; problem produces plausible schemes only for plain, possibly nested loop$s
-; targetting formal variables or car/cdr nests of formal variables.
+; targeting formal variables or car/cdr nests of formal variables.
 ; Furthermore, these schemes impose additional restrictions on the acceptable
 ; measures justifying the loop$ recursive functions -- restrictions that are
 ; not necessary just for admission.  Finally, our current understanding has not
@@ -4986,8 +4986,8 @@
 (defun verify-guards-fn1 (names hints otf-flg guard-debug
                                 guard-simplify ctx state)
 
-; This function is called on a either a singleton list containing a theorem
-; name or a well-formed lambda expression or a list of one or more recursively
+; This function is called on either a singleton list containing a theorem name
+; or a well-formed lambda expression or a list of one or more recursively
 ; defined fns.
 
 ; In any case, we know the theorem/functions are composed entirely of compliant

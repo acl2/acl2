@@ -294,7 +294,7 @@
 ; probably most efficient to look for apply$ and ev$ instead of just
 ; apply$-userfn.  Would it be more efficient still to include the loop$ scions
 ; in this list?  On the one hand it would save us from exploring them.  On the
-; other, we'd the list would be longer and more often than not we wouldn't find
+; other hand, the list would be longer and more often than not we wouldn't find
 ; fn on it anyway.  We opt not to include the loop$ scions.
 
 (defconst *apply$-userfn-callers*

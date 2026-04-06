@@ -714,7 +714,7 @@
 ; (equal (df-round 1/3) #d0.3333333333333333) and all other such equalities.
 ; Moreover, we consider all roundings of (+ 0.0 x) where x is a double-float --
 ; there are only finitely many -- and note that since that sum is surely x,
-; therefore x rounds to itself (see [WRND2] below).  So to summmarize, our
+; therefore x rounds to itself (see [WRND2] below).  So to summarize, our
 ; intended (and implicit) local witness for df-round, WRND, is defined as
 ; follows.
 

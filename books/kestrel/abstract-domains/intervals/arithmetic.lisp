@@ -192,14 +192,16 @@
          (fix x))
   :enable exact)
 
-(defrule +-of-full
-  (equal (+ (intersect nil nil) y)
-         (intersect nil nil))
+(defrule +-of-full-when-not-emptyp
+  (implies (not (emptyp y))
+           (equal (+ (interval nil nil) y)
+                  (interval nil nil)))
   :enable +)
 
-(defrule +-of-arg1-and-full
-  (equal (+ x (intersect nil nil))
-         (intersect nil nil))
+(defrule +-of-arg1-and-full-when-not-emptyp
+  (implies (not (emptyp x))
+           (equal (+ x (interval nil nil))
+                  (interval nil nil)))
   :enable +)
 
 (defrule +-of-exact-exact

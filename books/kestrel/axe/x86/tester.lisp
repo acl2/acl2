@@ -252,8 +252,8 @@
                               (feature-flagsp feature-flags))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
-  (b* ((- (acl2::ensure-x86 parsed-executable))
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+  (b* ((- (ensure-x86 parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        (32-bitp (member-eq executable-type *executable-types32*))
        ;; This could perhaps be removed once we have some 32-bit formal unit tests:
        ((when 32-bitp)
@@ -382,18 +382,18 @@
        (result-dag result-dag-or-quotep)
        ;; Always print the DAG, so we can see the nodenums (e.g., if one is non-pure):
        (- (progn$ (cw "(DAG after lifting:~%")
-                  (acl2::print-list result-dag)
+                  (print-list result-dag)
                   (cw ")~%")))
        ;; Print the term if small:
-       (- (and (acl2::dag-or-quotep-size-less-thanp result-dag 1000)
-               (cw "(Term after lifting: ~X01)~%" (acl2::dag-to-term result-dag) nil)))
+       (- (and (dag-or-quotep-size-less-thanp result-dag 1000)
+               (cw "(Term after lifting: ~X01)~%" (dag-to-term result-dag) nil)))
        (result-dag-fns (dag-fns result-dag))
        ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first ; todo: compare this to what def-unrolled-fn does.
         (cw "ERROR in test ~x0: Did not finish the run.  See DAG above.)~%" function-name-string)
         (mv-let (elapsed state)
           (real-time-since start-real-time state)
           (mv :did-not-finish-the-run nil elapsed state)))
-       (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
+       (- (and (not (dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
        ;; Prove the test routine always returns 1 (we pass :bit for the type):
        (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
@@ -406,7 +406,7 @@
                                                  ;;acl2::boolif-when-quotep-arg3
                                                  ))))
        ((mv result info-acc state)
-        (acl2::apply-tactic-prover result-dag
+        (apply-tactic-prover result-dag
                                    ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
                                    register-type-assumptions ;TODO: We may need separateness assumptions!
                                    nil ; interpreted-fns
@@ -425,9 +425,9 @@
                                    t ; normalize-xors
                                    state))
        ((mv elapsed state) (real-time-since start-real-time state)))
-    (if (eq result acl2::*error*)
+    (if (eq result *error*)
         (mv :error-in-tactic-proof nil nil state)
-      (if (eq result acl2::*valid*)
+      (if (eq result *valid*)
           (progn$ (cw "Test ~s0 passed in " function-name-string)
                   (print-to-hundredths elapsed)
                   (cw "s.)~%")
@@ -505,10 +505,10 @@
         (mv nil '(value-triple :redundant) state))
        ((mv erp parsed-executable state)
         (if (stringp executable)
-            (acl2::parse-executable executable state)
+            (parse-executable executable state)
           (mv nil executable state)))
        ((when erp) (mv erp nil state))
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        ;; Handle a :position-independent of :auto: ; todo: eventually drop this (or move to test-function-core !)
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
@@ -679,7 +679,7 @@
                   :mode :program
                   :stobjs state))
   (if (endp function-name-strings)
-      (mv (erp-nil) (acl2::reverse-list result-alist) state)
+      (mv (erp-nil) (reverse-list result-alist) state)
     (b* ((function-name (first function-name-strings))
          ((mv erp passedp elapsed state)
           (test-function-core function-name parsed-executable
@@ -763,10 +763,10 @@
        (- (cw "(Testing functions in ~s0:~%" executable))
        ;; Parse the executable (TODO: Can we parse less than the whole thing?):
        ((mv erp parsed-executable state)
-        (acl2::parse-executable executable state))
+        (parse-executable executable state))
        ((when erp) (mv erp nil state))
        ;; Analyze the executable:
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
@@ -781,35 +781,35 @@
                                   ;; Note that for MACH-O executables, the compiler prepends an underscore to function names.
                                   (let ((all-functions
                                           (if (eq :elf-64 executable-type)
-                                              (acl2::parsed-elf-symbols parsed-executable)
+                                              (parsed-elf-symbols parsed-executable)
                                             (if (eq :mach-o-64 executable-type)
-                                                (acl2::get-all-mach-o-symbols parsed-executable)
+                                                (get-all-mach-o-symbols parsed-executable)
                                               (if (eq :pe-64 executable-type)
-                                                  (acl2::get-all-pe-symbols parsed-executable)
+                                                  (get-all-pe-symbols parsed-executable)
                                                 (er hard? 'test-functions-fn "Unsupported executable type: ~x0" executable-type))))))
-                                    (append (acl2::strings-starting-with "test_" all-functions)
-                                            (acl2::strings-starting-with "fail_test_" all-functions)
-                                            (acl2::strings-starting-with "_test_" all-functions)
-                                            (acl2::strings-starting-with "_fail_test_" all-functions)))
+                                    (append (strings-starting-with "test_" all-functions)
+                                            (strings-starting-with "fail_test_" all-functions)
+                                            (strings-starting-with "_test_" all-functions)
+                                            (strings-starting-with "_fail_test_" all-functions)))
                                 ;; The functions to test were given explicitly:
                                 ;; TODO: Should we require the underscore when referring to a mach-o function?
                                 (if (eq executable-type :mach-o-64)
                                     ;; todo: why do we have to add the underscore?
-                                    (acl2::add-prefix-to-strings "_" include-fns)
+                                    (add-prefix-to-strings "_" include-fns)
                                   include-fns)))
        ;; Handle any excludes:
        (exclude-fns (if (eq executable-type :mach-o-64)
-                        (acl2::add-prefix-to-strings "_" exclude-fns)
+                        (add-prefix-to-strings "_" exclude-fns)
                       exclude-fns))
        (function-name-strings (set-difference-equal function-name-strings exclude-fns))
        ;; Determine which test functions are expected to fail:
        (expected-failures (if (eq expected-failures :auto)
-                              (append (acl2::strings-starting-with "fail_test_" function-name-strings)
-                                      (acl2::strings-starting-with "_fail_test_" function-name-strings))
+                              (append (strings-starting-with "fail_test_" function-name-strings)
+                                      (strings-starting-with "_fail_test_" function-name-strings))
                             ;; The expected failures were given explicitly:
                             expected-failures))
        ;; Sort the functions (TODO: What determines the order in the executable? Would that be better to use?  Would like to match the source code, if available)
-       (function-name-strings (acl2::merge-sort-string< function-name-strings))
+       (function-name-strings (merge-sort-string< function-name-strings))
        ;; Associate functions with their assumptions:
        (assumption-alist (if (null assumptions)
                              nil

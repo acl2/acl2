@@ -331,7 +331,7 @@
      the remaining input of @(tsee parse-concatenation)
      is smaller than the initial input to @(tsee parse-alternation)
      (which is also the input to @(tsee parse-concatenation)).
-     This way the termination proof can proceeed.
+     This way the termination proof can proceed.
      However, since those tests are always true,
      they can be wrapped in @(tsee mbt),
      which engenders the obligation to prove that are always true,

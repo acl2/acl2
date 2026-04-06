@@ -1385,14 +1385,8 @@
     x86isa::*ip+delta))
 
 (defconst *axe-x86-implementation-functions*
-  '(ensure-x86
-    parse-executable
-    parsed-executable-type
-    parsed-elf-type
-    parsed-elf-program-header-table
-    ensure-target-exists-in-executable
-    simplify-dag-x86
-    ))
+  '(ensure-x86 ; should these just be in the X or X86ISA package?
+    simplify-dag-x86))
 
 (defpkg "X"
     (append *symbols-from-acl2-package*

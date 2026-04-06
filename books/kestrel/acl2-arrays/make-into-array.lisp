@@ -1,7 +1,7 @@
 ; A function to turn an alist into an array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,7 +28,7 @@
            (type symbol array-name))
   (let* ((len (if (consp alist)
                   ;; normal case:
-                  (+ 1 (max-key alist 0)) ;could save this max if we know it's a dag-lst...
+                  (+ 1 (max-key alist 0)) ;todo: could save this max if we know it's decreasing (like a dag)
                 ;; compress1 must be given a dimension of at least 1
                 1)))
     (make-into-array-with-len array-name alist len)))

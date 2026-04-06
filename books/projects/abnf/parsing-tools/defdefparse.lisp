@@ -224,7 +224,7 @@
   (xdoc::topstring
    (xdoc::p
     "If successful, we return the inputs,
-     except that we return the package witnesss
+     except that we return the package witness
      instead of the package input."))
   (b* (((fun (irr)) (list nil nil nil nil))
        ((mv erp name options)
@@ -757,7 +757,7 @@
    (xdoc::p
     "A concatenation is parsed by parsing each repetition in order.
      We also generate a final @(tsee b*) binder that
-     puts all the lists of trees from the repetiitons
+     puts all the lists of trees from the repetitions
      into a list of lists of trees for the concatenation."))
   (b* (((when (endp conc)) (raise "Empty concatenation."))
        ((mv code vars)

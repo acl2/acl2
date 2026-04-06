@@ -42,7 +42,7 @@
     (xdoc::ahref "https://www.rfc-editor.org/info/rfc7230" "RFC 7230")
     " includes rules defined by prose value notations
      that refer to the URI grammar specified in "
-    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3968")
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3986")
     ". The intended way to compose the two grammars is
      to replace the prose HTTP rules with the corresponding URI rules.")
    (xdoc::p

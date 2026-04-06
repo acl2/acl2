@@ -359,7 +359,7 @@
 
 (std::defaggregate block$ ;todo: remove-block-p from the package imports
                    ((header block-headerp)
-                    (transations all-transactionp)
+                    (transactions all-transactionp)
                     (ommer-headers all-block-headerp)))
 
 ; "I"
@@ -1303,7 +1303,7 @@
   (declare (xargs :guard (n256p word)))
   (acl2::unpackbv 32 8 word))
 
-;; Convert an array of 32 bytes into a 256-bit word, in big-endian fashoon,
+;; Convert an array of 32 bytes into a 256-bit word, in big-endian fashion,
 ;; with the first byte occupying the most significant bits of the result, and
 ;; so on.
 (defun bytes-to-word (bytes)
@@ -1769,7 +1769,7 @@
                      (list mnemonic (take (+ -1 inst-len) (cdr c)))
                    mnemonic)))
       (cons (list i info)
-            (disassemble-evm-code-aux (+ 1 i) (nthcdr inst-len c))))))
+            (disassemble-evm-code-aux (+ inst-len i) (nthcdr inst-len c))))))
 
 ;; Given the program as a list of bytes, return an array mapping program locations to instruction mnemonics.
 (defun disassemble-evm-code (c)

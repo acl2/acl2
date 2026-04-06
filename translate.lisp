@@ -965,7 +965,7 @@
 ; We failed to parse the phrase.  Args1 is the same as args (and non-nil, so
 ; there is at least an iteration variable) and we now have to discover where we
 ; failed!  We start by looking at the token right after the variable, i.e., at
-; (nth 1 args), which should be an OF-TYPE, IN, OR, or FROM.  And then we just
+; (nth 1 args), which should be an OF-TYPE, IN, ON, or FROM.  And then we just
 ; keep working through the cases.  But at least we know there are enough tokens
 ; to just look at each expected token with nth.
 
@@ -1038,7 +1038,7 @@
           (mv 3 (nthcdr 3 args) (msg "TO~@0" unusual-var-msg)))
          (t (mv 3
                 (nthcdr 1 args)
-                (msg "OF-TYPE, IN, OR, or FROM~0@"
+                (msg "OF-TYPE, IN, ON, or FROM~0@"
                      unusual-var-msg))))))))))
 
 (defun parse-loop$-vsts (stmt args vsts ans)
@@ -1505,7 +1505,7 @@
            (list (unquote (car arg-exprs))))
           (t (er hard 'actual-stobjs-out
                  "Unable to determine stobjs-out for application of ~x0 to ~
-                  translate arguments ~x1."
+                  translated arguments ~x1."
                  fn arg-exprs))))
    (t
     (let ((stobjs-out (stobjs-out fn wrld)))
@@ -3886,7 +3886,7 @@
 ; term.
 
 ; Initially guard is NIL, meaning we have not yet seen a guard.  There can be
-; be only one (XARGS :GUARD ...) form and this flag is used to confirm that we
+; only one (XARGS :GUARD ...) form and this flag is used to confirm that we
 ; haven't seen a guard yet.  If the user writes (XARGS :GUARD NIL ...) we will
 ; act like he or she wrote (XARGS :GUARD 'NIL ...) to avoid confusion (though a
 ; case could be made that a lambda expression with a nil guard is pretty
@@ -4127,7 +4127,7 @@
 ; one time we also checked that every var is used, but that is not actually an
 ; invariant of well-formed terms, even though it is enforced at translate-
 ; time.  In particular ((lambda (e x) (declare (ignorable e x)) x) a b)
-; translates non-erroneously to ((LAMBDA (E X) X) A B), where E is unusued in
+; translates non-erroneously to ((LAMBDA (E X) X) A B), where E is unused in
 ; the lambda.
 
                 (subsetp-eq used-vars formals)))
@@ -4211,7 +4211,7 @@
 
 (defun syntactically-plausible-lambda-objectsp-within (gflg body)
 
-; Body is a pseudo-termp and we call syntactically-plause-lambda-objectsp on
+; Body is a pseudo-termp and we call syntactically-plausible-lambda-objectp on
 ; every quoted lambda-like object in it and return one of nil (meaning we found
 ; a syntactically illegal quoted lambda-like object), t (meaning there were no
 ; quoted lambda-like objects found), or a list of all the splo-extracts-tuples
@@ -4304,14 +4304,14 @@
 
 ; Essay on the Badge-Table
 
-; The badge-table is a table.  It's :guard is badge-table-guard and the table
-; is initialized in apply.lisp.  The table has only one entry, named
-; :badge-userfn-structure.  (Once upon a time it had another entry but that
-; that was eliminated and we never simplified its structure.)  The
-; :badge-userfn-structure is an alist with entries of the form
-; (fn warrantp badge), where fn is a function symbol, warrantp is t or nil
-; indicating whether there is a warrant for fn, and badge is the apply$-badge
-; record for fn.
+; The badge-table is a table.  Its :guard is badge-table-guard and the table is
+; initialized in apply.lisp.  The table has only one entry, named
+; :badge-userfn-structure.  (Once upon a time it had another entry but that was
+; eliminated and we never simplified its structure.)  The
+; :badge-userfn-structure is an alist with entries of the form (fn warrantp
+; badge), where fn is a function symbol, warrantp is t or nil indicating
+; whether there is a warrant for fn, and badge is the apply$-badge record for
+; fn.
 
 ; Note: As documented in apply-constraints.lisp, there are three categories of
 ; function symbols known to apply$: primitives like CONS and BINARY-+, boot
@@ -4762,7 +4762,7 @@
 ; calls in the body and drop the wrld arguments there as well, the result is
 ; the logical definition of tamep.  So that's a sort of informal inductive
 ; proof that they're equivalent if we could do the same ``inductive'' proof for
-; every ``executatable-'' definition involved.  But badge and executable-badge
+; every ``executable-'' definition involved.  But badge and executable-badge
 ; are very different.  Executable-badge, above, accesses the
 ; badge-userfn-structure of the badge-table in the world, whereas badge calls
 ; badge-userfn which is just constrained to return a badge.  The actual values

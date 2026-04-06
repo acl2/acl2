@@ -263,8 +263,10 @@
     dag-node-to-term
     dag-or-constant-to-term
     dag-or-quotep-size
+    dag-or-quotep-size-less-thanp
     dag-or-quotep-fns
     dag-or-quotep-vars
+    dag-is-purep
     print-as-term-or-dag
 
     remove-assumptions-about
@@ -348,6 +350,8 @@
     print-test-summary
     any-result-unexpectedp
 
+    reverse-list
+
     make-event-quiet
     print-list
     print-dag-info
@@ -357,8 +361,6 @@
     get-non-built-in-supporting-fns-list
     *axe-evaluator-functions*
     get-conjuncts-of-terms2
-    parsed-executablep
-    parsed-executable-type
 
     maybe-remove-temp-dir
 
@@ -367,13 +369,23 @@
 
     ;; could split out these binary related symbols (vs symbols for core axe tool implementation)
     parse-executable
+    parsed-executablep
+    parsed-executable-type
+    parsed-elf-type ; more
+    parsed-elf-symbols
+    parsed-elf-program-header-table
+    parsed-elf-entry-point
     parse-elf-file-bytes ; helpful for tracing ; todo: more
     parsed-elfp
-    parsed-elf-entry-point
     subroutine-address-elf
     elf-position-independentp
 
+    get-all-mach-o-symbols ; rename parsed-mach-o-symbols?
+
+    get-all-pe-symbols ; rename parsed-pe-symbols?
+
     ensure-target-exists-in-executable
+
     make-flag
     with-supporters
 
@@ -389,7 +401,16 @@
     redundancy-table-event
     lifter-event-names
     print-missing-rules
-    merge-sort-symbol<))
+    merge-sort-symbol<
+
+    apply-tactic-prover
+    *error*
+    *valid*
+
+    strings-starting-with
+    add-prefix-to-strings
+    merge-sort-string<
+    ))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg

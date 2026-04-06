@@ -1,0 +1,36 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains rules for integer constants
+; that are common to all the C dialects
+; [C17:6.4.4.1/1] [C23:6.4.5.2].
+; Together with the rules
+; in the dialect-specific files integer-constants-*.abnf,
+; they define the integer constants of each C dialect.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+hexadecimal-prefix = %i"0x"
+
+nonzero-digit = %x31-39 ; 1-9
+
+octal-digit = %x30-37 ; 0-7
+
+hexadecimal-digit = %x30-39 ; 0-9
+                  / %x61-66 ; a-f
+                  / %x41-46 ; A-F
+
+unsigned-suffix = %i"u"
+
+long-suffix = %i"l"
+
+long-long-suffix = %s"ll" / %s"LL"

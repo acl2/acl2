@@ -22,7 +22,7 @@
 
 (defxdoc+ convenience-constructors
   :parents (abstract-syntax)
-  :short "Utilities to convniently construct PFCS abstract syntax."
+  :short "Utilities to conveniently construct PFCS abstract syntax."
   :long
   (xdoc::topstring
    (xdoc::p

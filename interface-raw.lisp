@@ -422,7 +422,7 @@
 ;     (bad-fn)
 ;     :rule-classes nil)
 
-; Second book, which includes the one above::
+; Second book, which includes the one above:
 
 ;   (in-package "ACL2")
 ;
@@ -2418,7 +2418,7 @@
 ; foundational stobj always satisfies its recognizer.  It is easy to imagine a
 ; defabsstobj :export field that specifies the identify function for its :logic
 ; component, returning the stobj unchanged, but for the :exec component makes
-; an ill-guarded call to update the stobj, corrupting the Lisp imagine, before
+; an ill-guarded call to update the stobj, corrupting the Lisp image, before
 ; restoring the stobj.  In raw Lisp, this could really happen because the
 ; export is a macro that calls the :exec function directly; the only guard that
 ; need be met before this happens is a variant of the :logic function's guard,
@@ -2679,7 +2679,7 @@
 
                                  (let ((**1*-as-raw* t))
 
-; One reason that we bind **1*-as-raw* above and use labels below is to helps
+; One reason that we bind **1*-as-raw* above and use labels below is to help
 ; compilers remove tail recursions, since we believe that special variable
 ; binding can get in the way of that.  (We do this regardless of the presence
 ; of recursion, simply because that is simplest and we expect, or at least,
@@ -2985,9 +2985,9 @@
 
 (defg *dmr-counter*
 
-; For the sake of GCL, we may want to consider consider using a 0-dimensional
-; fixnum array instead.  If so, then consider whether *dmr-interval* should
-; also be similarly changed.
+; For the sake of GCL, we may want to consider using a 0-dimensional fixnum
+; array instead.  If so, then consider whether *dmr-interval* should also be
+; similarly changed.
 
   0)
 
@@ -10012,7 +10012,7 @@
                          (not (eql *acl2-time-limit* 0))))))
            #+ccl ; for CCL revisions before 12090
            (declare (ignorable ccl::*break-hook*))
-           (terpri t)
+           (terpri)
            (format t
                    "***********************************************")
            (cond

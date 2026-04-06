@@ -300,7 +300,7 @@
      we run it in one step:
      we use @(tsee call-primitive-function),
      and if it returns @('nil') we go into the error state,
-     otherwise we replace the term in the curren frame
+     otherwise we replace the term in the current frame
      with the quoted result of the primitive function call.
      Note that, in this case, the primitive function is never @(tsee if),
      because that case would have already been handled non-strictly.

@@ -968,7 +968,7 @@
 ; if a proof attempt was aborted then we had to carefully clean up the property
 ; list structures so that they once again reflected the current (global)
 ; theory.  The beauty of the ACL2 approach is that local hint settings have no
-; affect on the global theory and yet involve no overhead.
+; effect on the global theory and yet involve no overhead.
 
 ; A delicacy of the current implementation however concerns the relation
 ; between the global enabled structure and undoing.  If the world is backed up
@@ -3110,7 +3110,7 @@
 
 (defun most-recent-enabled-recog-tuple1 (lst ens)
 
-; This function finds the first recognizer-tuple in lst whose whose :nume is
+; This function finds the first recognizer-tuple in lst whose :nume is
 ; enabled-numep.  Thus, primitive recognizer tuples, like that for rationalp,
 ; are always "enabled."
 
@@ -3121,7 +3121,7 @@
 
 (defun most-recent-enabled-recog-tuple (fn wrld ens)
 
-; This function finds the first recognizer-tuple for fn whose whose :nume is
+; This function finds the first recognizer-tuple for fn whose :nume is
 ; enabled-numep.  Thus, primitive recognizer tuples, like that for rationalp,
 ; are always "enabled."
 

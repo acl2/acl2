@@ -534,7 +534,7 @@
 
 (defparameter *record-time*
 
-; If *RECORD-TIME* is not NIL the time a function is memoized, we record the
+; If *RECORD-TIME* is not NIL at the time a function is memoized, we record the
 ; elapsed time for each outermost call of the function.
 
   t)
@@ -812,7 +812,7 @@
 ; of ma.  (Here is a technical explanation, which one may wish to ignore.  For
 ; example, memoize-fn binds the variable fn-col-base to (ma-index fnn), which
 ; is computed based on the size of ma at the time the function is memoized.
-; Fn-col-base is passed to memoize-fn-outer-body, where it is used to generated
+; Fn-col-base is passed to memoize-fn-outer-body, where it is used to generate
 ; code for the memoized function.)
 
 ; Here is an ASCII picture of the *memoize-call-array* with a key to explain
