@@ -13,8 +13,6 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "noninterval-arith-support"))
-
 (include-book "kestrel/arithmetic-light/max" :dir :system)
 (include-book "kestrel/arithmetic-light/min" :dir :system)
 
