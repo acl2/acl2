@@ -998,7 +998,7 @@
 ;; Returns an axe-type, or nil to indicate that no type could be determined.
 ;; If a type is returned, the NODENUM can be safely assumed to be of that type,
 ;; without loss of generality, with respect to its appearance in this
-;; PARENT-EXPR (if it appeals in multiple parent-exprs, the types should be
+;; PARENT-EXPR (if it appears in multiple parent-exprs, the types should be
 ;; unioned together).  That is, if X only appears in argument positions of
 ;; exprs that are chopped to 32 bits (see the THMs above that justify this), then
 ;; we can transform a proof about all Xs to a proof about Xs that are
@@ -1287,7 +1287,7 @@
 ;; nodes where we know the return type and can always translate (e.g., constants; (bvxor 32 .. ..) - args can be chopped)
 ;; nodes where we know the return type and can sometimes translate (e.g., equal, unsigned-byte-p - arg types must be known)
 ;; nodes where we know the return type but can't translate (e.g., < - can replace with a boolean variable)
-;; nodes where we don't know the return type and can't translate (e.g., varaiables, calls to foo - but assumptions may tell us the type)
+;; nodes where we don't know the return type and can't translate (e.g., variables, calls to foo - but assumptions may tell us the type)
 ; If a node whose type we don't know (not obvious, not in the known-type-alist) appears sometimes as a choppable arg (e.g., to XOR) and sometimes as an arg to equal (cannot chop), we'll use the induced type (the largest type of all the choppable uses of the term) and the equal will just have to be made into a boolean variable.
 ;
 ;ffixme other possibilities:

@@ -4613,7 +4613,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; We don't actually have any reason for (1.a).  The bootstrap process works
 ; fine either way, as of this writing (Aug, 2011) when the tau system was first
-; integrated into ACL2.  But we feel (1.b) is important: it is convenient if  <------ ???? tau to do
+; integrated into ACL2.  But we feel (1.b) is important: it is convenient if
 ; the tau database contains the rules laid down during the bootstrap process,
 ; e.g., the tau signatures of the primitives so that if the user immediately
 ; selects automatic mode for the session, the tau database is up to date as of
@@ -4621,7 +4621,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; After Bootstrapping:
 ; (2.a) tau is disabled -- not available for use in proofs, BUT
-; (2.b) tau is in automatic mode -- makes :tau-system rules out of  <---- ??? actually in manual mode
+; (2.b) tau is in automatic mode -- makes :tau-system rules out of
 ; non-:tau-system rules
 
 ; We feel that after booting, (2.a) is important because of backwards
@@ -13741,7 +13741,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (cdar tl))))))
 
 ; Determine whether l is already in normal form (header first,
-; strictly ascending keys, no default values, n extra header.)
+; strictly ascending keys, no default values, no extra header.)
 
       (setq in-order t)
       (cond ((eq (caar l) :header)
@@ -15081,7 +15081,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; to versions in some non-standard form.  In Lisp comments we tend to write
 ; these with an underscore instead of a space before the number.  Thus, `ACL2
 ; Version_2.5' is a fixed reference to that version.  In :DOC strings we tend
-; to write ACL2 Version 2.5.  Note the two spaces.  This is cool because HTML
+; to write ACL2 Version  2.5.  Note the two spaces.  This is cool because HTML
 ; etc removes the redundant spaces so the output of this string is perfect.
 ; Unfortunately, if you use the double space convention in Lisp comments the
 ; double space is collapsed by ctrl-meta-q when comments are formatted.  They
@@ -23053,8 +23053,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; (typep (logcount x) 'fixnum)
 
-; Note that  nonstandard integers integers (like (H)) are not an issue
-; because all Common Lisp integers are "real" integers, hence standard.
+; Note that nonstandard integers (like (H)) are not an issue because all Common
+; Lisp integers are "real" integers, hence standard.
 
          nil)
         ((typep x 'symbol)
@@ -23612,9 +23612,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; The length expression below is roughly arity, which could have been used
 ; instead except that it is not defined yet in axioms.lisp.  Note that since
-; (length nil) = 1, this works even when we have do not have a
-; function-symbolp.  Actually we avoid length in order to ease the
-; guard verification process at this point.
+; (length nil) = 1, this works even when we do not have a function-symbolp.
+; Actually we avoid length in order to ease the guard verification process at
+; this point.
 
 ; (= (length formals) 1)...
                 (let ((formals (getpropc (car lst) 'formals nil wrld)))

@@ -106,9 +106,6 @@
                                  expand thm-name thm-enable
                                  simplify-body untranslate must-simplify
                                  rule-classes verbose ctx state)
-
-; Actually returns (when not an error) the value (cons full-form defun-sk-form).
-
   (b* ((wrld (w state))
        ((er tterm)
         (acl2::translate uterm t t t ctx wrld state))

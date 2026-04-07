@@ -392,8 +392,7 @@
 (defruled max-when-emptyp
   (implies (emptyp interval)
            (equal (max interval)
-                  nil))
-  :enable min)
+                  nil)))
 
 (defrule max-when-emptyp-cheap
   (implies (emptyp interval)
@@ -404,8 +403,7 @@
 
 (defrule max-of-empty
   (equal (max (empty))
-         nil)
-  :enable max)
+         nil))
 
 (defruled max-when-not-intervalp
   (implies (not (intervalp interval))
@@ -599,7 +597,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by max-when-not-bounded-above-p)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule <=-of-min-and-max
   (implies (and (bounded-below-p interval)
@@ -759,7 +757,7 @@
                          (< max min))
                     (empty)
                   (cons min max)))
-       :exec(cons min max))
+       :exec (cons min max))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;

@@ -12065,7 +12065,7 @@
 ; The manipulation of non-trivial guards, including both the generation of
 ; guard clauses and the attempt to prove them with Tau, during the top-level
 ; evaluation of forms suggests that lambda objects should always be found in
-; some standard form so that fully translated guards encorporating all TYPE
+; some standard form so that fully translated guards incorporating all TYPE
 ; declarations can be recovered quickly from the object.
 
 ; Another new feature after Version_8.1 is that when verify-guards is called on
@@ -26184,7 +26184,7 @@
                         (cadr x)))
 
 ; Because (cadr x) has not yet been translated, we do not really know it is not
-; a stobj!  It could be a macro call that expands to a stobj.'  The error
+; a stobj!  It could be a macro call that expands to a stobj.  The error
 ; message above is just to be helpful.  An accurate check is made below.
 
             (t
@@ -27194,7 +27194,7 @@
 
 ; We could define this recursively, but proofs about logical-termp can involve
 ; program-termp and hence its mutual-recursion nest-mate, program-term-listp.
-; So we here we avoid introducing a second recursion.
+; So here we avoid introducing a second recursion.
 
   (declare (xargs :guard (plist-worldp-with-formals w)))
   (and (term-listp x w)
@@ -28256,7 +28256,7 @@
   (cond ((or (eq x t) (symbol-listp x))
          (f-put-global 'temp-touchable-fns x state))
         (t (prog2$ (er hard 'set-temp-touchable-fns
-                       "The first argument to ~x0 may must be either ~x1 or a ~
+                       "The first argument to ~x0 must be either ~x1 or a ~
                         true list of symbols, unlike:~| ~x2"
                        'set-temp-touchable-fns
                        t
@@ -28274,7 +28274,7 @@
   (cond ((or (eq x t) (symbol-listp x))
          (f-put-global 'temp-touchable-vars x state))
         (t (prog2$ (er hard 'set-temp-touchable-vars
-                       "The first argument to ~x0 may must be either ~x1 or a ~
+                       "The first argument to ~x0 must be either ~x1 or a ~
                         true list of symbols, unlike:~| ~x2"
                        'set-temp-touchable-vars
                        t

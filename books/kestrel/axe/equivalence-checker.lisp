@@ -140,7 +140,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; move, so we can use it in other tools?
-;; Can throw an error or pring a warning if the vars disagree.  Returns nil.
+;; Can throw an error or print a warning if the vars disagree.  Returns nil.
 (defun maybe-check-dag-vars (check-vars
                              dag-or-quotep1
                              dag-or-quotep2
@@ -163,12 +163,12 @@
       (if (not vars-differp)
           nil
         (progn$ (and (not (subsetp-eq vars1 vars2)) ; todo: optimize these set operations, given that the lists are sorted
-                     (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
+                     (prog2$ (and (eq :warn check-vars) (cw "WARNING: "))
                              (cw "The first DAG has vars, ~x0, not in the second DAG.~%" (set-difference-eq vars1 vars2))))
                 (and (not (subsetp-eq vars2 vars1))
-                     (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
+                     (prog2$ (and (eq :warn check-vars) (cw "WARNING: "))
                              (cw "The second DAG has vars, ~x0, not in the first DAG.~%" (set-difference-eq vars2 vars1))))
-                (if (eq :warning check-vars)
+                (if (eq :warn check-vars)
                     nil ; no error
                   (er hard? ctx "Mismatch in DAG vars (see above).")))))))
 
@@ -1003,8 +1003,7 @@
       (let ((expr (aref1 dag-array-name dag-array nodenum)))
         (if (or (not (consp expr))
                 (eq 'quote (ffn-symb expr)))
-            (hard-error 'get-trace-for-node "Unexpected a recursive function call but got ~x0"
-                        (acons #\0 expr nil))
+            (er hard? 'get-trace-for-node "Expected a recursive function call but got ~x0" expr)
           ;;regular function call
           (let* ((fn (ffn-symb expr))
                  (dargs (dargs expr))
@@ -4041,7 +4040,7 @@
 ;;         (filter-explanations (cdr explanations) formals)))))
 
 
-;; ;seperates out the explanations that are about lengths
+;; ;separates out the explanations that are about lengths
 ;; ;; Returns (list length-explanations formal-or-component-explanations)
 ;; (defun filter-explanations (explanations length-explanations-acc formal-or-component-explanations-acc)
 ;;   (if (endp explanations)
@@ -7176,7 +7175,7 @@
                     ;;don't want to unroll if there are no reps on any test case:
                     nil))
         (if (symbolp match)
-            (prog2$ (cw "Found symbol pattern: ~x0. (FAILING since we don't yet derive bounds for vars)%" match)
+            (prog2$ (cw "Found symbol pattern: ~x0. (FAILING since we don't yet derive bounds for vars)~%" match)
                     nil) ;ffixme if the rep-count is some input, what we do here depends on whether we have a (small) bound on the input - pass in the assumptions?
           (if (and (call-of 'mod match)
                    (quotep (farg2 match))) ;the bound of (mod x <constant>) is that constant (assuming it's a natp)
@@ -19177,7 +19176,7 @@
 ;;                     (mv nil nil nil)))))))))
 
 ;; ;decides which literals to translate and tags the relevant nodes for translation
-;; ;fixme should be able to translate almost any literal (as a boolean variable in the worst case, unless it's not clearly a a boolean...)
+;; ;fixme should be able to translate almost any literal (as a boolean variable in the worst case, unless it's not clearly a boolean...)
 ;; ;returns (mv literal-nodenums-to-translate translation-tag-array cut-nodenum-type-alist)
 ;; ;extends cut-nodenum-type-alist
 ;; ;rename

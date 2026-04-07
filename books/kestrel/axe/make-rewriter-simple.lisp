@@ -1063,7 +1063,7 @@
                                         `(;; Maybe try to relieve the hyp using SMT:
                                           ((mv result state)
                                            (if axe-smtp
-                                               ;; Tries to prove that the rewriten HYP is true or some assumption is false:
+                                               ;; Tries to prove that the rewritten HYP is true or some assumption is false:
                                                (prove-disjunction-with-stp (cons new-nodenum (get-negated-smt-assumptions rewrite-stobj2))
                                                                            (get-dag-array rewrite-stobj2)
                                                                            (get-dag-len rewrite-stobj2)

@@ -733,6 +733,15 @@
                               split-members
                               (first initdeclors))))
 
+(define has-extern-p ((specs decl-spec-listp))
+  (and (not (endp specs))
+       (or (let ((spec (first specs)))
+             (decl-spec-case
+               spec
+               :stoclass (c$::stor-spec-case spec.spec :extern)
+               :otherwise nil))
+           (has-extern-p (rest specs)))))
+
 (define split-gso-split-object-declon
   ((original identp)
    (linkage c$::linkagep)
@@ -762,6 +771,7 @@
               :otherwise (mv nil nil nil nil)))
            ((unless match)
             (retok nil (list (declon-fix declon))))
+           (explicit-extern (has-extern-p declon.specs))
            (decl-new1-type
              (c$::decl-spec-typespec
                (c$::type-spec-struct
@@ -784,7 +794,11 @@
                            :internal (list (c$::decl-spec-stoclass
                                              (c$::stor-spec-static))
                                            decl-new1-type)
-                           :otherwise (list decl-new1-type))
+                           :otherwise (if explicit-extern
+                                          (list (c$::decl-spec-stoclass
+                                                  (c$::stor-spec-extern))
+                                                decl-new1-type)
+                                        (list decl-new1-type)))
                   :declors (list (c$::make-init-declor
                                   :declor (c$::make-declor
                                            :direct (c$::dirdeclor-ident new1))
@@ -795,7 +809,11 @@
                            :internal (list (c$::decl-spec-stoclass
                                              (c$::stor-spec-static))
                                            decl-new2-type)
-                           :otherwise (list decl-new2-type))
+                           :otherwise (if explicit-extern
+                                          (list (c$::decl-spec-stoclass
+                                                  (c$::stor-spec-extern))
+                                                decl-new2-type)
+                                        (list decl-new2-type)))
                   :declors (list (c$::make-init-declor
                                   :declor (c$::make-declor
                                            :direct (c$::dirdeclor-ident new2))
@@ -890,7 +908,7 @@
   (b* (((reterr) nil)
        ((when (endp items))
         (retok nil))
-       ((erp found new-items1)
+       ((erp - new-items1)
         (split-gso-split-object-trans-item
           original
           linkage
@@ -900,9 +918,6 @@
           new2-type
           split-members
           (first items)))
-       ((when found)
-        (retok (append new-items1
-                       (trans-item-list-fix (rest items)))))
        ((erp new-items2)
         (split-gso-split-object-trans-item-list
           original

@@ -13391,7 +13391,7 @@
 ; We could be more restrictive here in the lambda-application case, by moving
 ; (car env) into clause only if there is some call (tbl-get 'st ...) in (car
 ; env) for which some (possibly other) (tbl-get 'st ...) call, with the same
-; st, occurs in clause.  But we'll go ahead an move every lambda application
+; st, occurs in clause.  But we'll go ahead and move every lambda application
 ; from env to clause.
 
          (mv-let (env1 clause1)
@@ -18210,17 +18210,17 @@
 ;   (defun f (x) x)
 
 ; When we process the final defun with fast-cert mode active, we will see that
-; it is redundant with a local event.  We then go ahead an add its cltl-command
-; to the cltl-command-stack, resulting in a cltl-command-stack with two such
-; cltl-commands.  Of course, for the second defun we could have looked in the
-; cltl-command-stack to see if there is already an entry; but in the worst case
-; that is quadratic behavior as we go through the book, unless we use a
-; fast-alist -- but then we'd need to be careful to maintain that fast-alist as
-; we undo events before the second pass of encapsulate.  Instead, we allow such
-; duplication, which is ultimately removed by the "compress" process mentioned
-; earlier, i.e., the call of compress-cltl-command-stack (which does use a
-; fast-alist) in certify-book-fn.  That compression is careful regarding
-; defun-mode, in particular the reclassifying case.
+; it is redundant with a local event.  We then go ahead and add its
+; cltl-command to the cltl-command-stack, resulting in a cltl-command-stack
+; with two such cltl-commands.  Of course, for the second defun we could have
+; looked in the cltl-command-stack to see if there is already an entry; but in
+; the worst case that is quadratic behavior as we go through the book, unless
+; we use a fast-alist -- but then we'd need to be careful to maintain that
+; fast-alist as we undo events before the second pass of encapsulate.  Instead,
+; we allow such duplication, which is ultimately removed by the "compress"
+; process mentioned earlier, i.e., the call of compress-cltl-command-stack
+; (which does use a fast-alist) in certify-book-fn.  That compression is
+; careful regarding defun-mode, in particular the reclassifying case.
 
 ; When the function put-cltl-command is given a cltl-command for a redundant
 ; event with fast-cert mode active, it extends the cltl-command-stack only if

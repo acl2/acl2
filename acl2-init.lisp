@@ -1682,7 +1682,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; We pass options "-init -" and "-siteinit -" to inhibit loading init and patch
 ; files because we assume that whatever such files were to be loaded, were in
 ; fact loaded at the time the original Lispworks executable was saved.  Of
-; course, individual users who doesn't like this decision and know better could
+; course, individual users who don't like this decision and know better could
 ; always edit this script file, i.e., lw-exec-file, in the same spirit as
 ; changing the underlying Lisp implementation before building ACL2 (again,
 ; presumably based on knowledge of the host Lisp implementation).

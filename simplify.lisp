@@ -3104,7 +3104,7 @@
 
 ; This hyp cannot be evaluated, e.g., perhaps it contains a constrained
 ; function.  So we must either force it or wait for it to come up on the
-; type-alist.  Note that in this part be ignore type-set's ttree1 and
+; type-alist.  Note that in this part we ignore type-set's ttree1 and
 ; the evaluator's ttree2.
 
                           (mv-let
@@ -4047,7 +4047,7 @@
 ; irrelevant since we don't need a justification to leave the literal in place.
 ; Efficiency Note: we know the type-set of lit here and yet we forget it
 ; and, if lit turns out to be the only surviving lit, we'll do a lot of that
-; type-set work again as we assume it true.  We might be able to same some work
+; type-set work again as we assume it true.  We might be able to save some work
 ; by passing ts and ttree1 down along with lit!
 
             (mv-let

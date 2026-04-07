@@ -11210,7 +11210,7 @@
                                    LEN-OF-CDR
                                    CDR-OF-TAKE)))))
 
-;fixme gen the 0 (may not be true becuase of the clear)
+;fixme gen the 0 (may not be true because of the clear)
 (defthm equal-of-repeat-of-0-and-bv-array-write
   (implies (and (equal len (len data))
                 (natp index)

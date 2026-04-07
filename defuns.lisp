@@ -6920,7 +6920,7 @@
                            (fetch-dcl-fields '(type :guard)
                                              all-but-body2)))
                (msg "although the proposed and existing definitions for ~x0 ~
-                     agree on the their type and :guard declarations, they ~
+                     agree on their type and :guard declarations, they ~
                      disagree on the combined orders of those declarations."
                     (car def1))))))
      ((let ((split-types1 (fetch-dcl-field :split-types all-but-body1))
@@ -11832,7 +11832,7 @@
 
                       *t*
                       wrld)))))))))))
-  (& (er hard 'store-signature "Unrecognized signature!"))))
+  (& (er hard 'intro-udf "Unrecognized signature!"))))
 
 (defun intro-udf-lst1 (insigs wrld)
   (cond ((null insigs) wrld)

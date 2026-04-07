@@ -42,7 +42,7 @@
          ;; We consider every BL to be a subroutine call since it saves the return address in the LR
          (+ 1 call-stack-height))
         ;; TODO: Add checks.  For now, we assume every BX is a return
-        ;; TODO: Add suport for other return idioms, including moving to the PC and popping values into a register set that includes the PC
+        ;; TODO: Add support for other return idioms, including moving to the PC and popping values into a register set that includes the PC
         (:bx
          (+ -1 call-stack-height))
         (otherwise call-stack-height)))))
