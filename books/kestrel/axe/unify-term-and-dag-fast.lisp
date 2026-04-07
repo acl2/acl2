@@ -26,8 +26,8 @@
 ;; TODO: Consider marking variables that occur only once in the rule and don't
 ;; bother binding them in the alist.
 
-;; TODO: Consider marking each occurence of a var in the lhs according to
-;; whether it is the first occurence of that var (don't bother to look it up in
+;; TODO: Consider marking each occurrence of a var in the lhs according to
+;; whether it is the first occurrence of that var (don't bother to look it up in
 ;; the alist) or a later occurrence (check the alist but don't consider binding
 ;; the var because it is bound).
 

@@ -1,7 +1,7 @@
 ; Indicating the final value(s) of interest when lifting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -279,5 +279,5 @@
                   :guard-hints (("Goal" :in-theory (enable output-indicator-for-return-type))))) ; todo
   (let ((simple-output-indicator (desugar-output-indicator output-indicator return-type)))
     (if (not simple-output-indicator)
-        (er hard? 'output-extraction-term "Failed to resove output indicator.")
+        (er hard? 'output-extraction-term "Failed to resolve output indicator.")
       (wrap-term-with-output-extractor simple-output-indicator initial-locals-term 'replace-me class-table-alist))))

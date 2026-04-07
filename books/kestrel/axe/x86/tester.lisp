@@ -450,7 +450,7 @@
 ;;If the test passes, EVENT is just (value-triple :invisible).  throws an error if the test failed.
 (defun test-function-fn (function-name-string
                          executable ; a parsed-executable or a string (meaning read from that file)
-                         param-names ; todo: can we somehoe get these from the executable?
+                         param-names ; todo: can we somehow get these from the executable?
                          assumptions
                          extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                          remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules

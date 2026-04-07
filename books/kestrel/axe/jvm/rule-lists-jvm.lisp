@@ -211,8 +211,8 @@
           (step-state-with-pc-and-call-stack-height-rules)
           '(run-until-return-from-stack-height-of-myif-axe ;chooses a state to step and introduces STEP-STATE-WITH-PC-AND-CALL-STACK-HEIGHT
             ;; run-until-return-from-stack-height-of-myif-axe-alt ;fixme which of these do we prefer?
-            run-until-return-from-stack-height-of-myif-axe-split-1 ;in case there are exeception states
-            run-until-return-from-stack-height-of-myif-axe-split-2 ;in case there are exeception states
+            run-until-return-from-stack-height-of-myif-axe-split-1 ;in case there are exception states
+            run-until-return-from-stack-height-of-myif-axe-split-2 ;in case there are exception states
             )))
 
 ;; Since Axe cannot natively evaluate these functions

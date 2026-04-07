@@ -4040,7 +4040,7 @@
 ;;         (filter-explanations (cdr explanations) formals)))))
 
 
-;; ;seperates out the explanations that are about lengths
+;; ;separates out the explanations that are about lengths
 ;; ;; Returns (list length-explanations formal-or-component-explanations)
 ;; (defun filter-explanations (explanations length-explanations-acc formal-or-component-explanations-acc)
 ;;   (if (endp explanations)
@@ -19176,7 +19176,7 @@
 ;;                     (mv nil nil nil)))))))))
 
 ;; ;decides which literals to translate and tags the relevant nodes for translation
-;; ;fixme should be able to translate almost any literal (as a boolean variable in the worst case, unless it's not clearly a a boolean...)
+;; ;fixme should be able to translate almost any literal (as a boolean variable in the worst case, unless it's not clearly a boolean...)
 ;; ;returns (mv literal-nodenums-to-translate translation-tag-array cut-nodenum-type-alist)
 ;; ;extends cut-nodenum-type-alist
 ;; ;rename

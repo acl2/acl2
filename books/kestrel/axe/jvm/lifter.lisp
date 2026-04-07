@@ -187,7 +187,7 @@
                                                     (cons (first lst) seen-items))
                       lst))))
 
-;; This version keeps the first occurence if there are duplicates
+;; This version keeps the first occurrence if there are duplicates
 (defun remove-duplicates-equal2 (lst)
   (declare (xargs :guard (true-listp lst)))
   (remove-duplicates-equal2-aux lst nil))
