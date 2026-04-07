@@ -574,7 +574,7 @@ then if @('wrapper') is a wrapper function then @('foo') is transformed to the f
             ((lambda (y) (foo$1 y)) (foo x))))) ;; the argument is unchanged
    })</li>
 
-<li>If the term @('(lambda (x) (nth '2 x))') is wrapped around a function that returns @('(list x y z)'), then the new functions simply returns @('z').  (This is useful for
+<li>If the term @('(lambda (x) (nth '2 x))') is wrapped around a function that returns @('(list x y z)'), then the new function simply returns @('z').  (This is useful for
 functions that axe has lifted).</li>
 </ul>
 

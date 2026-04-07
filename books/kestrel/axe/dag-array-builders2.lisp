@@ -636,7 +636,7 @@
                    (alen1 dag-array-name (mv-nth 2 (add-function-call-expr-to-dag-array-with-name fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))))
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-name))))
 
-;; drop?  it's just unchaged
+;; drop?  it's just unchanged
 (defthmd dag-variable-alist-correct-after-add-function-call-expr-to-dag-array-with-name
   (implies (and (not (mv-nth 0 (add-function-call-expr-to-dag-array-with-name fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))
                 (equal dag-variable-alist (make-dag-variable-alist dag-array-name dag-array dag-len))

@@ -176,7 +176,7 @@
   (make-symbolic-valuation-for-alist-aux (acl2::reverse-list alist) acl2::*nil*))
 
 ;; Makes a nest of calls to filter-and-combine-symbol-alists
-;; Alist may pair r1cs vars (which may be keywords) with their correspinding acl2 vars
+;; Alist may pair r1cs vars (which may be keywords) with their corresponding acl2 vars
 ;; Alist should be sorted by symbol< applied to the cars of its entries.
 (defun make-efficient-symbolic-valuation-for-alist-aux (alist)
   (declare (xargs :guard (symbol-alistp alist)

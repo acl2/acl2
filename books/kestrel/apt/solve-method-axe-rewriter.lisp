@@ -86,7 +86,7 @@
                         nil ; fns-to-elide
                         ))
        ((when erp) (er-soft+ ctx t nil
-                             "The Axe rewiter failed on the term ~x0, ~
+                             "The Axe rewriter failed on the term ~x0, ~
                               with error ~x1 and result ~x2."
                              matrix erp term)))
     (value term)))

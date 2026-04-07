@@ -97,7 +97,7 @@
                             (mv *sat* state))
                   (if (call-of *possible-counterexample* last-info)
                       ;;counterexample may be spurious, so we print it but return unknown
-                      (prog2$ (cw "(Possible counterexample: ~X01)~%." (cdr last-info) nil)
+                      (prog2$ (cw "(Possible counterexample: ~X01.)~%" (cdr last-info) nil)
                               (mv *unknown* state))
                     (if (eq :simplified-to-nil last-info)
                         (prog2$ (cw "(True for all values!)~%")

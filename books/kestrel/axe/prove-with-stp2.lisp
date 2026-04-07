@@ -1013,7 +1013,7 @@
                     state))
       (prog2$ (and (eq result *timedout*) (cw "STP timed out.~%"))
               (mv (erp-nil)
-                  (eq result *valid*) ;ttodo: user the counterexample, if present?
+                  (eq result *valid*) ; ttodo: use the counterexample, if present?
                   nodenums-to-translate
                   state)))))
 

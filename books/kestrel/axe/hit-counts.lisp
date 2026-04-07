@@ -303,7 +303,7 @@
         t ; the entry with the greater count comes first
       (if (< count1 count2)
           nil
-        ;; counts are equal, some compare the rule names:
+        ;; counts are equal, so compare the rule names:
         ;; the names should not be the same (todo: prove this)
         (symbol< (car e1) (car e2))))))
 
@@ -488,7 +488,7 @@
       ;; removes :fake:
       (make-hit-count-alist hit-counts))))
 
-(defthm hitps-of-hit-counts-to-hits
+(defthm hitsp-of-hit-counts-to-hits
   (implies (hit-countsp hit-counts)
            (hitsp (hit-counts-to-hits hit-counts)))
   :hints (("Goal" :in-theory (enable hit-counts-to-hits hitsp hit-countsp))))

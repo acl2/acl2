@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-;; This book deals with printing dags-arrays, typically only printing the relevant nodes.
+;; This book deals with printing dag-arrays, typically only printing the relevant nodes.
 ;; See also dag-array-printing2.lisp.
 
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)

@@ -1653,7 +1653,7 @@
 
 ;; Returns (mv erp rule-sets).
 ;; Add the given rules to each rule set in RULE-SETS.
-;todo: optimze?
+;todo: optimize?
 ; rename extend-rule-sets
 (defun add-rules-to-rule-sets (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
@@ -1713,7 +1713,7 @@
                                     (cons this-axe-rule acc))))))
 
 ;; Remove the RULE-NAMES from each rule set in RULE-SETS.
-;todo: optimze?
+;todo: optimize?
 (defund remove-rules-from-rule-sets (rule-names rule-sets)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-setsp rule-sets))))
