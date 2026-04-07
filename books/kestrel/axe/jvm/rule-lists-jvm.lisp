@@ -1,7 +1,7 @@
 ; Lists of rule names (JVM-related)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1647,7 +1647,7 @@
 (set-axe-rule-priority run-until-return-from-stack-height-opener-axe -10)
 (set-axe-rule-priority run-until-return-from-stack-height-base-axe -9)
 
-(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -13)
+(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame-of-push-frame -13)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -12)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame -11)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame -10)
