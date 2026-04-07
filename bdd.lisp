@@ -80,10 +80,9 @@
 ; DILEMMA:  Do we let this macro box (1+ x) or not, and if so, when?  Here are
 ; some thoughts on the issue.
 
-; Use this macro to increment mx-id,in order to guarantee that mx-id remains a
+; Use this macro to increment mx-id, in order to guarantee that mx-id remains a
 ; fixnum.  X is known to be a nonnegative fixnum; this macro checks that we
-; keep it a fixnum by adding 1 to it.  It actually checks even more, namely,
-; that
+; keep it a fixnum by adding 1 to it.
 
   `(the-fixnum
     (let ((x ,x))
@@ -290,7 +289,7 @@
         ((complex-rationalp x) 'complex-rational)
         ((stringp x) 'string)
         ((characterp x) 'character)
-        (t (er hard 'fn-symb "Unexpected object, ~x0."
+        (t (er hard 'evg-type "Unexpected object, ~x0."
                x))))
 
 (defun make-if-cst (unique-id tst tbr fbr bdd-constructors)
@@ -318,10 +317,10 @@
                    (cond
                     ((and (leafp fbr)
                           (bdd-constructor-trm-p (trm fbr) bdd-constructors))
-                     (msg "true branch with ~#0~[function symbol ~x1~/explicit ~
-                         value of type ~x2~] and false branch with ~
-                         ~#3~[function symbol ~x4~/explicit value  of type ~
-                         ~x5~]"
+                     (msg "true branch with ~#0~[function symbol ~
+                           ~x1~/explicit value of type ~x2~] and false branch ~
+                           with ~#3~[function symbol ~x4~/explicit value of ~
+                           type ~x5~]"
                           (if (eq (car true-fn) 'quote) 1 0)
                           (car true-fn)
                           (and (eq (car true-fn) 'quote)

@@ -1,7 +1,7 @@
 ; Lists of rule names (JVM-related)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -211,8 +211,8 @@
           (step-state-with-pc-and-call-stack-height-rules)
           '(run-until-return-from-stack-height-of-myif-axe ;chooses a state to step and introduces STEP-STATE-WITH-PC-AND-CALL-STACK-HEIGHT
             ;; run-until-return-from-stack-height-of-myif-axe-alt ;fixme which of these do we prefer?
-            run-until-return-from-stack-height-of-myif-axe-split-1 ;in case there are exeception states
-            run-until-return-from-stack-height-of-myif-axe-split-2 ;in case there are exeception states
+            run-until-return-from-stack-height-of-myif-axe-split-1 ;in case there are exception states
+            run-until-return-from-stack-height-of-myif-axe-split-2 ;in case there are exception states
             )))
 
 ;; Since Axe cannot natively evaluate these functions
@@ -1647,7 +1647,7 @@
 (set-axe-rule-priority run-until-return-from-stack-height-opener-axe -10)
 (set-axe-rule-priority run-until-return-from-stack-height-base-axe -9)
 
-(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -13)
+(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame-of-push-frame -13)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -12)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame -11)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame -10)

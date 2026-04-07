@@ -1,6 +1,6 @@
 ; Implementation notes for Axe
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; Data Strutctures ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Data Structures ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Major data structures used by Axe:
   term - pseudo-termp
@@ -37,7 +37,7 @@ Converting a dag to a term (may explode!):
   dag-to-term-with-lets-simple
 
 Functions to build dag-arrays:
-  dag-array-builder2.lisp: Assume the standard array names
+  dag-array-builders.lisp: Assume the standard array names
   dag-array-builders2.lisp: Take the array names as arguments
   dag-array-builders3.lisp: Assume the standard array names, update the memoization
 

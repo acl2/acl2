@@ -72,7 +72,7 @@ save-gprof.lsp
 serialize.lisp
 serialize-raw.lisp
 simplify.lisp
-# The following two are distributed but is not under source control:
+# The following two are distributed but are not under source control:
 TAGS
 TAGS-acl2-doc
 tau.lisp

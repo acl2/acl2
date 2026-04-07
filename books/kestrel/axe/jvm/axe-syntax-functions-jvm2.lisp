@@ -1,7 +1,7 @@
 ; Additional JVM-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -301,7 +301,7 @@
                         :error
                       (b* ((then-branch-pc-designator-stack (choose-state-to-step-helper then-branch base-stack segment-pcs loop-headers dag-array))
                            (else-branch-pc-designator-stack (choose-state-to-step-helper else-branch base-stack segment-pcs loop-headers dag-array)))
-                        ;; If either is :error, chose the other one:
+                        ;; If either is :error, choose the other one:
                         (if (eq :error then-branch-pc-designator-stack)
                             else-branch-pc-designator-stack
                           (if (eq :error else-branch-pc-designator-stack)

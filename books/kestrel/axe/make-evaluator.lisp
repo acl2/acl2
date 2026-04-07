@@ -459,7 +459,7 @@
                                                    (farg3 form)  ;else part
                                                    )
                                                  interpreted-function-alist array-depth))
-                        ;;not an if, so evalate all arguments:
+                        ;;not an if, so evaluate all arguments:
                         (let ((args (,eval-list-function-name alist (fargs form) interpreted-function-alist array-depth)))
                           ;;regular function call:
                           (,apply-function-name fn

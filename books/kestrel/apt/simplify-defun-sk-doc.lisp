@@ -422,14 +422,13 @@
  @({
  (defun-sk foo (lst)
    (exists x (member-equal x (fix-true-list lst))))
- ; redundant (see above)
  (defthm member-equal-fix-true-list
    (iff (member-equal a (fix-true-list lst))
         (member-equal a lst)))
  (simplify-defun-sk foo
                     :new-name foo-simp
                     :thm-name foo-simplified
-                    :function-disabled nil
+                    :new-enable t
                     :thm-enable t
                     :skolem-name foo-simp-sk)
  })
@@ -473,9 +472,8 @@
  })
 
  <p>Notice that new function symbol @('FOO-SIMP') and new theorem
- @('FOO-SIMPLIFIED') are disabled and enabled, respectively, because of keyword
- arguments supplied @(':function-disabled t') and @(':thm-enable t'),
- respectively.</p>
+ @('FOO-SIMPLIFIED') are enabled because of keyword arguments supplied
+ @(':new-enable t') and @(':thm-enable t'), respectively.</p>
 
  <p>On the other hand, if you want less output, not more, use
  @('simplify-defun-sk') with @(':print nil').  For example:</p>
@@ -484,7 +482,7 @@
  ACL2 !>(simplify-defun-sk foo
                            :new-name foo-simp
                            :thm-name foo-simplified
-                           :function-disabled t
+                           :new-enable t
                            :thm-enable t
                            :skolem-name foo-simp-sk
                            :print nil)

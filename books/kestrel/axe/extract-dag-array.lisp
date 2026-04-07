@@ -1,7 +1,7 @@
 ; Extracting parts of DAG arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -55,7 +55,7 @@
                          expr
                        (let* ((fn (ffn-symb expr))
                               (args (dargs expr))
-                              ;;could we use something like adjust-nodneums-down2?
+                              ;;could we use something like adjust-nodenums-down2?
                               (args (translate-args args translation-array)))
                          (cons fn args)))))
           (extract-dag-array-aux (+ 1 old-dag-nodenum)

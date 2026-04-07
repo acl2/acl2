@@ -908,7 +908,7 @@
   (b* (((reterr) nil)
        ((when (endp items))
         (retok nil))
-       ((erp found new-items1)
+       ((erp - new-items1)
         (split-gso-split-object-trans-item
           original
           linkage
@@ -918,9 +918,6 @@
           new2-type
           split-members
           (first items)))
-       ((when found)
-        (retok (append new-items1
-                       (trans-item-list-fix (rest items)))))
        ((erp new-items2)
         (split-gso-split-object-trans-item-list
           original

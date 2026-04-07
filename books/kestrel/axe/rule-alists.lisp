@@ -1,7 +1,7 @@
 ; Rule-alists: databases of rules used by Axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -27,7 +27,7 @@
 
 ;; A rule-alist is a database of rules used by Axe.  It is a list of entries,
 ;; where each entry maps a function symbol to a list of stored-rules that can
-;; rewrite calls of that function.  (Every Axe rules must have a topmost function
+;; rewrite calls of that function.  (Every Axe rule must have a topmost function
 ;; symbol that can be used as a key for this alist; that is, the LHS of a rule
 ;; can't be a constant or a variable.)
 (defund rule-alistp (alist)
@@ -484,7 +484,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Only used in once, in equivalence checker.
+;; Only used once, in equivalence-checker.
 (defund make-rule-alists-simple (rule-sets remove-duplicate-rulesp priorities)
   (declare (xargs :guard (and (axe-rule-setsp rule-sets)
                               (alistp priorities)

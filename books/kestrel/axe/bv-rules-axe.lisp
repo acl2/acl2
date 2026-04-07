@@ -131,7 +131,7 @@
   :hints (("Goal" :do-not '(preprocess) :in-theory (enable bvcat UNSIGNED-BYTE-P-FORCED))))
 
 ;or should we bring heavier terms to the front to increase sharing?
-;ffixme these differe from what simplify-bitxors does in terms of the order of terms?!
+;ffixme these differ from what simplify-bitxors does in terms of the order of terms?!
 (defthmd bitxor-commutative-axe
   (implies (axe-syntaxp (should-commute-axe-argsp 'bitxor x y dag-array))
            (equal (bitxor x y)

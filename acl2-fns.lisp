@@ -971,7 +971,7 @@ be SPECIAL.")
         ((eq (car x) *comma-atsign*) nil)
 
 ; See backquote comments below.  We could have a more restrictive test for
-; LAMBDA objects but that's probably not worth it.  Returnig nil is safe.
+; LAMBDA objects but that's probably not worth it.  Returning nil is safe.
 
         ((eq (car x) 'lambda) nil)
         (t (constant-backquote-lst-p x))))
@@ -2037,7 +2037,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun ser-cons-reader-macro (stream subchar arg)
   (declare (ignorable subchar arg))
-  ;; This is the reader macro for #Y.  When it is called the #Z part has
+  ;; This is the reader macro for #Y.  When it is called the #Y part has
   ;; already been read, so we just want to read the serialized object.
   (ser-decode-from-stream nil :never stream))
 

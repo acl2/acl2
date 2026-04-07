@@ -163,7 +163,7 @@
 (defun trace-exit-rec (name original-name l state exit evisc-tuple)
 
 ; We construct the (excl:advise <fn-name> :after ...) form that performs the
-; tracing on entry.
+; tracing on exit.
 
   (cond ((null l)
          (cond

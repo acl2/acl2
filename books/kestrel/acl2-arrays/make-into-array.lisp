@@ -56,8 +56,7 @@
                 alist
                 (symbolp array-name)
                 (natp index)
-                (< index (max-key alist 0))
-                )
+                (<= index (max-key alist 0)))
            (equal (aref1 array-name (make-into-array array-name alist) index)
                   (cdr (assoc-equal index alist))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
