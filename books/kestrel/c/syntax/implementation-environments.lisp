@@ -13,8 +13,6 @@
 
 (include-book "../language/implementation-environments/top")
 
-(include-book "std/util/defirrelevant" :dir :system)
-
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
