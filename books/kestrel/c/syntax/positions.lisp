@@ -126,14 +126,8 @@
    (xdoc::p
     "The line number is unchanged."))
   (change-position pos :column (+ (the unsigned-byte (position->column pos))
-                                  (the unsigned-byte columns)))
-  :inline t
-  :hooks nil
-
-  ///
-
-  (fty::deffixequiv position-inc-column
-    :args ((pos positionp))))
+                                  (the unsigned-byte (lnfix columns))))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,15 +140,9 @@
     "The column is reset to 0."))
   (change-position pos
                    :line (+ (the (integer 1 *) (position->line pos))
-                            (the (integer 1 *) lines))
+                            (the (integer 1 *) (lposfix lines)))
                    :column 0)
-  :inline t
-  :hooks nil
-
-  ///
-
-  (fty::deffixequiv position-inc-line
-    :args ((pos positionp))))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
