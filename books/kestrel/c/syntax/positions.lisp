@@ -118,7 +118,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define position-inc-column ((columns natp) (pos positionp))
+(define position-inc-column ((columns posp) (pos positionp))
   :returns (new-pos positionp)
   :short "Increment a position by a number of columns."
   :long
@@ -126,7 +126,7 @@
    (xdoc::p
     "The line number is unchanged."))
   (change-position pos :column (+ (the unsigned-byte (position->column pos))
-                                  (the unsigned-byte (lnfix columns))))
+                                  (the unsigned-byte (lposfix columns))))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
