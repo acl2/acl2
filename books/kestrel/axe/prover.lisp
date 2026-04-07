@@ -1022,7 +1022,7 @@
                                                      ;;dag-constant-alist dag-variable-alist
                                                      ;;hit-counts tries)
                                                      ))))))
-                                       ;; No rule fired, so no simplifcation can be done:
+                                       ;; No rule fired, so no simplification can be done:
                                        ;; This node is ready to add to the dag
                                        ;; in-line this?
                                        (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)

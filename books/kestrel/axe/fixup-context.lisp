@@ -1,7 +1,7 @@
 ; Renaming nodes that occur in contexts
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -87,7 +87,7 @@
                   :guard-hints (("Goal" :in-theory (enable bounded-contextp)))))
   (fixup-possibly-negated-nodenums context renaming-array-name renaming-array))
 
-(defthm contextp-of-fixup-fixup-non-false-context
+(defthm contextp-of-fixup-non-false-context
   (implies (and (contextp context)
                 (not (false-contextp context))
                 (renaming-arrayp renaming-array-name renaming-array (+ 1 (max-nodenum-in-possibly-negated-nodenums context)))

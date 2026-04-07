@@ -284,7 +284,7 @@
   (declare (xargs :guard (character-listp chars)))
   (if (not (eql #\[ (first chars)))
       (mv nil chars)
-    ;; there is an index t parse:
+    ;; there is an index to parse:
     (b* ((chars (rest chars)) ;skip the [
          ((mv matchp chars)
           (match-chars '(#\0 #\b) chars))

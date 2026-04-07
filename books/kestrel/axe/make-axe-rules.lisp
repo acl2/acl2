@@ -1,7 +1,7 @@
 ; Making Axe rules and rule-alists from formulas
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1646,7 +1646,7 @@
 
 ;; Returns (mv erp rule-sets).
 ;; Add the given rules to each rule set in RULE-SETS.
-;todo: optimze?
+;todo: optimize?
 ; rename extend-rule-sets
 (defun add-rules-to-rule-sets (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
@@ -1706,7 +1706,7 @@
                                     (cons this-axe-rule acc))))))
 
 ;; Remove the RULE-NAMES from each rule set in RULE-SETS.
-;todo: optimze?
+;todo: optimize?
 (defund remove-rules-from-rule-sets (rule-names rule-sets)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-setsp rule-sets))))

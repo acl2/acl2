@@ -94,12 +94,16 @@
 ;; symbolic execution is incomplete:
 (defconst *incomplete-run-fns* '(run-until-return-aux
                                  run-until-return-or-reach-pc-aux
-                                 step32))
+                                 step
+                                 run
+                                 run-subroutine
+                                 run-until-return
+                                 run-until-return-or-reach-pc))
 
 ;; The presence of any of these functions in the term/DAG indicates an error state
 ;; arising during lifting (perhaps only on one branch of the execution, and
 ;; perhaps we can prune away that branch later):
-(defconst *error-fns* '(error32))
+(defconst *error-fns* '(update-error))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

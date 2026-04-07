@@ -1,7 +1,7 @@
 ; General-purpose syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -95,7 +95,7 @@
     (if (consp y) ; checks for quotep
         t
 
-      ;;recent change... if we put this back, add a check that the prefered term isn't a superterm of the other term..
+      ;;recent change... if we put this back, add a check that the preferred term isn't a superterm of the other term..
 
 
       (if nil ;(and (BV-TERM-SYNTAXP y dag-array) ;store in variable!

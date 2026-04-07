@@ -371,7 +371,7 @@
                       *max-1d-array-length*)))
         (cw "ERROR: Dags too large.")
         (mv *error* nil state))
-       (- (and print (cw "Done applying the Axe rewriter wiith contexts (term size: ~x0, DAG size: ~x1))~%"
+       (- (and print (cw "Done applying the Axe rewriter with contexts (term size: ~x0, DAG size: ~x1))~%"
                          (dag-or-quotep-size dag-or-quotep)
                          (if (quotep dag-or-quotep)
                              1
@@ -651,7 +651,7 @@
        ((mv provedp negated-assumption-nodenums) ; todo: can there really be constants in negated-assumption-nodenum-or-quoteps?
         (handle-constant-disjuncts negated-assumption-nodenum-or-quoteps nil))
        ((when provedp)
-        (cw "NOTE: STP tactic proved it due to a assumption of false.)~%") ; balances "(Applying STP tactic"
+        (cw "NOTE: STP tactic proved it due to an assumption of false.)~%") ; balances "(Applying STP tactic"
         (mv *valid* nil state))
        ;; We'll try prove that either the conclusion is true or one of the assumptions is false:
        (disjunct-nodenums (cons top-nodenum negated-assumption-nodenums))

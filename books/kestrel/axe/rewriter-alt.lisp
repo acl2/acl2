@@ -1,7 +1,7 @@
 ; Another Axe Rewriter (not used much yet)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -143,7 +143,7 @@
 ;; term), a new stack is pushed and rewritten fully.  the result is the
 ;; rewritten version of the top node of the current stack ex: ((a b) (c d e) (f
 ;; g h)) means we are rewriting h but to do so we must rewrite its supporters f
-;; and g.  a rule rewrote f to e, and to rewrite that we are writing its
+;; and g.  a rule rewrote f to e, and to rewrite that we are rewriting its
 ;; supporters c and d.  a rule rewrote c to b, and to rewrite it we must rewrite
 ;; its supporter a
 

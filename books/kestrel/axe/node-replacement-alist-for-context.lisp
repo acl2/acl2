@@ -1,7 +1,7 @@
 ; Computing a node-replacement-alist from a context
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,7 +21,7 @@
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
-;dup in kestrel-acl2/utilities/string-utilities.lisp
+;dup
 (local
  (defthm consp-when-true-listp
   (implies (true-listp x)

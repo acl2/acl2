@@ -1830,7 +1830,7 @@
 ;; ;generated-defun-names
 ;;                                                                ))
 ;;                                               (dummy1000 (cw "defining terms: ~X01" defining-terms nil))
-;;                                               ;; this uses the test-dag simplied using the invariant
+;;                                               ;; this uses the test-dag simplified using the invariant
 ;;                                               (termination-test-dag (if (eql (unquote then-part-pc) loop-pc)
 ;;                                                                         ;;fixme simplify this (maybe with not-of-not)?
 ;;                                                                         (wrap-term-around-dag '(not x) 'x test-dag)
@@ -5524,8 +5524,8 @@
               ;; Build the term that represents the loop:
 
               ;; Apply the loop function to the intial values of the params:
-              ((mv erp loop-function-call-dag) (wrap-term-around-dag `(,loop-function-name :inital-params)
-                                                                 :inital-params
+              ((mv erp loop-function-call-dag) (wrap-term-around-dag `(,loop-function-name :initial-params)
+                                                                 :initial-params
                                                                  initial-params-dag))
               ((when erp) (mv erp nil nil nil nil nil nil nil state))
               ;; Write the values computed by the loop back into the state:
