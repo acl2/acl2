@@ -3,6 +3,6 @@ struct S {
   unsigned int y;
 };
 
-struct S s;
+extern struct S s;
 
 struct S s = { .x = 0 };
