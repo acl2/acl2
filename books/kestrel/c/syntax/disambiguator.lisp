@@ -250,7 +250,7 @@
      a (mutable) disambiguation table,
      a (mutable) macro table,
      an immutable string containing the path of the file,
-     and an immutable flag saying whether GCC or Clang extensions are enabled.")
+     and an immutable C dialect.")
    (xdoc::p
     "This could be turned into a stobj, if needed for efficiency.
      But note that
@@ -264,7 +264,7 @@
   ((table dimb-table)
    (macros macro-table)
    (file string)
-   (gcc/clang bool))
+   (dialect c::dialect))
   :pred dstatep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -272,7 +272,7 @@
 (defirrelevant irr-dstate
   :short "An irrelevant disambiguation state."
   :type dstatep
-  :body (dstate (irr-dimb-table) (irr-macro-table) "" nil))
+  :body (dstate (irr-dimb-table) (irr-macro-table) "" (c::irr-dialect)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -480,7 +480,7 @@
        (dstate (make-dstate :table table
                             :macros macros
                             :file file
-                            :gcc/clang (c::dialect-gcc/clangp dialect))))
+                            :dialect dialect)))
     (dimb-add-idents-objfun (built-ins-for dialect) dstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3813,7 +3813,7 @@
        (dstate (dimb-add-ident-objfun-file-scope ident dstate))
        ((erp new-declons dstate) (dimb-declon-list fundef.declons dstate))
        (dstate (dimb-add-ident-objfun (ident "__func__") dstate))
-       (dstate (if (dstate->gcc/clang dstate)
+       (dstate (if (c::dialect-gcc/clangp (dstate->dialect dstate))
                    (dimb-add-idents-objfun
                     (list (ident "__FUNCTION__")
                           (ident "__PRETTY_FUNCTION__"))
