@@ -41,7 +41,7 @@
   (b* (((when (omap::emptyp fileset-map)) nil)
        ((mv filepath filedata) (omap::head fileset-map)))
     (omap::update (filepath->unwrap filepath)
-                  (acl2::nats=>string (filedata->unwrap filedata))
+                  (acl2::nats=>string (filedata->bytes filedata))
                   (fileset-map-to-string-map (omap::tail fileset-map)))))
 
 (defun fileset-to-string-map (fileset)

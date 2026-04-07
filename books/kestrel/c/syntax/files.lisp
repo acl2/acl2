@@ -59,7 +59,7 @@
     "This represents the raw content of a file,
      as a list (i.e. finite sequence) of bytes.
      We wrap that into this fixtype for separation and extensibility."))
-  ((unwrap byte-list))
+  ((bytes byte-list))
   :pred filedatap)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -169,7 +169,7 @@
                          but it contains ~x0 instead."
                         file-string)))
           (path-to-write (str::cat (str-fix base-dir) "/" file-string))
-          ((mv erp state) (acl2::write-bytes-to-file! (filedata->unwrap data)
+          ((mv erp state) (acl2::write-bytes-to-file! (filedata->bytes data)
                                                       path-to-write
                                                       'output-files
                                                       state))
