@@ -163,12 +163,12 @@
       (if (not vars-differp)
           nil
         (progn$ (and (not (subsetp-eq vars1 vars2)) ; todo: optimize these set operations, given that the lists are sorted
-                     (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
+                     (prog2$ (and (eq :warn check-vars) (cw "WARNING: "))
                              (cw "The first DAG has vars, ~x0, not in the second DAG.~%" (set-difference-eq vars1 vars2))))
                 (and (not (subsetp-eq vars2 vars1))
-                     (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
+                     (prog2$ (and (eq :warn check-vars) (cw "WARNING: "))
                              (cw "The second DAG has vars, ~x0, not in the first DAG.~%" (set-difference-eq vars2 vars1))))
-                (if (eq :warning check-vars)
+                (if (eq :warn check-vars)
                     nil ; no error
                   (er hard? ctx "Mismatch in DAG vars (see above).")))))))
 
@@ -1003,8 +1003,7 @@
       (let ((expr (aref1 dag-array-name dag-array nodenum)))
         (if (or (not (consp expr))
                 (eq 'quote (ffn-symb expr)))
-            (hard-error 'get-trace-for-node "Unexpected a recursive function call but got ~x0"
-                        (acons #\0 expr nil))
+            (er hard? 'get-trace-for-node "Expected a recursive function call but got ~x0" expr)
           ;;regular function call
           (let* ((fn (ffn-symb expr))
                  (dargs (dargs expr))

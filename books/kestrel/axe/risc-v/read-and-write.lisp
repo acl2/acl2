@@ -1,6 +1,6 @@
 ; Read and write operations for 32-bit RISC-V code reasoning
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -211,7 +211,7 @@
                         (:instance read-byte-of-bvchop-arg1 (addr (+ x y z))))
            :in-theory (disable read-byte-of-bvchop-arg1))))
 
-(defthm bvchop-of-+-of-bvimunus-arg3
+(defthm bvchop-of-+-of-bvuminus-arg3
   (implies (and (integerp x)
                 (integerp y)
                 (integerp z))
@@ -429,9 +429,9 @@
 (defthm car-of-read-bytes
   (implies (and (posp n)
                 (integerp addr))
-           (equal (car (read-bytes n addr x86))
-                  (read-byte addr x86)))
-  :hints (("Goal" :expand (read-bytes n addr x86))))
+           (equal (car (read-bytes n addr stat))
+                  (read-byte addr stat)))
+  :hints (("Goal" :expand (read-bytes n addr stat))))
 
 (local
  (defun inc-dec-dec-induct (x y z)
@@ -444,10 +444,10 @@
                 (natp n1)
                 (natp n2)
                 (integerp addr))
-           (equal (nth n1 (read-bytes n2 addr x86))
-                  (read-byte (bvplus 32 addr n1) x86)))
+           (equal (nth n1 (read-bytes n2 addr stat))
+                  (read-byte (bvplus 32 addr n1) stat)))
   :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
-           :expand (read-bytes n2 addr x86)
+           :expand (read-bytes n2 addr stat)
            :in-theory (enable read-bytes
                               acl2::bvplus-of-+-arg3))))
 

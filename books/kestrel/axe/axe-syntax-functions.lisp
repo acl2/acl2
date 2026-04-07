@@ -134,7 +134,7 @@
        (consp quoted-var) ; checks for quotep
        (let ((var (unquote quoted-var)))
          (if (not (symbolp var)) ; drop this check?
-             (er hard? 'is-the-variablep "Bad fn argument: ~x0." quoted-var)
+             (er hard? 'is-the-variablep "Bad var argument: ~x0." quoted-var)
            (equal var (aref1 'dag-array dag-array darg))))))
 
 ;; ;deprecate?  allows an expr to be constant, but that should be very rare
