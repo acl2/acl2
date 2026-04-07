@@ -8538,25 +8538,25 @@
     (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state forcep))
 
   (defun-overrides mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
-    (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state forcep))
-  (defun-overrides mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
     (mv-let (ans ttree)
             (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state
                         forcep)
             (declare (ignore ttree))
             ans))
+  (defun-overrides mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
+    (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state forcep))
 
-  (defun-overrides mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
-                                           forcep)
-    (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
-                         forcep))
-  (defun-overrides mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc
+  (defun-overrides mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc
                                               state forcep)
     (mv-let (ans ttree)
             (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
                                  forcep)
             (declare (ignore ttree))
             ans))
+  (defun-overrides mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc
+                                              state forcep)
+    (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
+                         forcep))
 
   (defun-overrides mfc-ap-fn (term mfc state forcep)
     (mfc-ap-raw term mfc state forcep)))
@@ -10039,8 +10039,8 @@
 
 ; This extra information is a bit dodgy, since it comes from the low-level
 ; definition of function ccl::%break-message in CCL source file
-; level-1/l1-readloop-lds.lisp (circa late 2017).  It is also may be unhelpful
-; in many cases, or not ideal; for example, the same function as above,
+; level-1/l1-readloop-lds.lisp (circa late 2017).  It also may be unhelpful in
+; many cases, or not ideal; for example, the same function as above,
 ; CCL::BIGNUM-ASHIFT-LEFT-DIGITS, is reported when attempting to evaluate (expt
 ; 2 (expt 2 48)).  However, you get what you get with raw Lisp errors, and we
 ; are happy to make them a bit more useful in some cases.

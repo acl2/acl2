@@ -7052,7 +7052,7 @@
 ;
 ;   (2) We tried such a change.  Our implementation actually caused
 ;       eliminate-irrelevance-clause to hide the irrelevant literals rather
-;       then to delete then; then, induction would unhide them immediately
+;       than to delete them; then, induction would unhide them immediately
 ;       after choosing an induction scheme.
 ;
 ;   (3) The regression exhibited failures, however, because subsumption was no

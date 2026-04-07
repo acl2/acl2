@@ -1949,11 +1949,11 @@
 
 (defun good-pot-varp (x)
   (and (not (quotep x))
-       (not (equal (fn-symb x) 'BINARY-+))
-       (not (and (equal (fn-symb x) 'BINARY-*)
+       (not (eq (fn-symb x) 'BINARY-+))
+       (not (and (eq (fn-symb x) 'BINARY-*)
                  (quotep (fargn x 1))
                  (real/rationalp (unquote (fargn x 1)))))
-       (not (and (equal (fn-symb x) 'UNARY--)
+       (not (and (eq (fn-symb x) 'UNARY--)
                  (quotep (fargn x 1))
                  (real/rationalp (unquote (fargn x 1)))))))
 
@@ -2357,7 +2357,7 @@
              (cond
               ((and (quotep (fargn term 1))
                     (real/rationalp (unquote (fargn term 1)))
-                    (equal (fn-symb (fargn term 2)) 'BINARY-+))
+                    (eq (fn-symb (fargn term 2)) 'BINARY-+))
                (add-linear-term
                 (mcons-term* 'BINARY-+
                              (mcons-term* 'BINARY-*
@@ -2370,7 +2370,7 @@
                 p))
               ((and (quotep (fargn term 1))
                     (real/rationalp (unquote (fargn term 1)))
-                    (equal (fn-symb (fargn term 2)) 'BINARY-*)
+                    (eq (fn-symb (fargn term 2)) 'BINARY-*)
                     (quotep (fargn (fargn term 2) 1))
                     (real/rationalp (unquote (fargn (fargn term 2) 1))))
                (add-linear-term
@@ -3073,7 +3073,7 @@
 ; return must find its way into the hist entry for that
 ; simplify-clause.
 
-; Historical note: The affect of the newly (v2_8) introduced field,
+; Historical note: The effect of the newly (v2_8) introduced field,
 ; :derived-from-not-equalityp, is different from that of the
 ; earlier function descends-from-not-equalityp.  We are now more
 ; liberal about the polys we can generate here.  See the discussion
@@ -3171,7 +3171,7 @@
 ; the cancellation yielded a trivially true poly) or is the newly
 ; formed poly.
 
-; Historical note: The affect of the newly (v2_8) introduced field,
+; Historical note: The effect of the newly (v2_8) introduced field,
 ; :derived-from-not-equalityp, is different from that of the
 ; earlier function descends-from-not-equalityp.  See the discussion
 ; accompanying the definition of a poly.  (Search for ``(defrec poly''.))

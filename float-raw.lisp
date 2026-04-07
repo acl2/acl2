@@ -99,9 +99,9 @@
 
 ; We can perhaps avoid calling df-signal? in cases where overflow is
 ; impossible, e.g., if op is sin.  But since df-signal? is needed on most df
-; operations, so we already likely have slowdown from df-signal? in LispWorks
-; and Allegro CL, we keep things simple and apply df-signal? unconditionally.
-; That could change if there are complaints.
+; operations, then we already likely have slowdown from df-signal? in LispWorks
+; and Allegro CL; so we keep things simple and apply df-signal?
+; unconditionally.  That could change if there are complaints.
 
   (let ((body `(df-signal? (,op (the double-float x))
                            ,op)))

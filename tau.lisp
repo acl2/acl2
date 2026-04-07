@@ -6732,7 +6732,7 @@
 ; add all the implicants of q to the implicants of p.  However, if adding q to
 ; the implicants of p didn't really change p (and provided the database was
 ; already closed), then we don't have to do anything.  Also, if q-recog is not
-; a tau-pair but is a singleton evg list, we don't chase it's implicants.
+; a tau-pair but is a singleton evg list, we don't chase its implicants.
 
                (tau-put*-tau
                 p-sign p-recog
@@ -8704,7 +8704,7 @@
 ; return a list of lists of terms.  If cnfp is t, the answer should be
 ; interpreted as a conjunction of disjunctions.  If cnfp is nil, the answer
 ; should be interpreted as a disjunction of conjunctions.  This function is not
-; particularly efficient; it's only intended use at the time of its
+; particularly efficient; its only intended use at the time of its
 ; creation is to preprocess the hypotheses of rules so that from
 ; (AND p (OR q r) s) we could get (OR (AND p q r) (AND p r s)), as in
 ; the following use:
@@ -9320,8 +9320,8 @@
 ; Note on Terminology: Below we use the expression ``ancestor literal'' which
 ; was introduced by Bob Kowalski in the early 1970s to name a literal
 ; previously resolved upon in an SL-resolution proof.  Our ancestor literals
-; are similar in spirit but we make no claim that they are the exactly the same
-; as Kowalski's; they may be, but we haven't thought about it.  The word
+; are similar in spirit but we make no claim that they are exactly the same as
+; Kowalski's; they may be, but we haven't thought about it.  The word
 ; ``ancestor'' is just appropriate.  We define our use of the term below.
 
 (defun subsumes-but-for-one-negation (hyps1 hyps2 ancestor-lits)
@@ -9634,10 +9634,10 @@
 ; functions.  It will expand the (AB x) in the hypothesis, because it is a
 ; conjunction, but it will not expand it in the conclusion.  The result is that
 ; tau-clausep is presented with: ((NOT (A x)) (NOT (B x)) (AB (fn x))) and
-; without some more work, tau does not know know that A & B --> AB.  That is
-; the role of tau-subrs below.  It essentially recognizes nonrecursive
-; conjunctions of tau and adds the appropriate tau rules in both directions:
-; (A & B) --> AB and AB --> A and AB --> B.
+; without some more work, tau does not know that A & B --> AB.  That is the
+; role of tau-subrs below.  It essentially recognizes nonrecursive conjunctions
+; of tau and adds the appropriate tau rules in both directions: (A & B) --> AB
+; and AB --> A and AB --> B.
 
 ; Below is an example.  The first thm below failed until tau-subrs was implemented.
 
@@ -9971,7 +9971,7 @@
 ; exists after the defchoose is not syntactically acceptable for a tau Boolean
 ; rule and the revelation that pick-a-bool is in fact Boolean only comes via a
 ; subsequent defthm event which will be visited eventually.  By similar
-; reasoning, we the defchoose axiom can never be a big-switch or an mv-nth
+; reasoning, the defchoose axiom can never be a big-switch or an mv-nth
 ; synonym.
 
   (mv-let (msgp wrld1)
@@ -11449,7 +11449,7 @@
 
 ; Assuming term true produces a contradiction, so it must be false.  But
 ; the negation of term must be false, which means term must be true.  A
-; global contradiction has be discovered.
+; global contradiction has been discovered.
 
 ; ctr1   mbt1   mbf1   ctr2   mbt2   mbf2        short answer
 ; (NIL    T      NIL    NIL    NIL    T  )       mbt!
@@ -11857,11 +11857,10 @@
 ; may involve a little linear reasoning).  But we do not use tau reasoning
 ; because of the issue reported in On Loops in Relieving Dependent Hyps in Tau
 ; Signature Rules.  However, in case we find a better heuristic, we continue to
-; pass both tau-alist and  into this function.  Note that this also means
-; that the incoming calist is always equal to the outgoing calist for this
-; function, but we don't code for that.  We return the calist to our callers,
-; so that we could change the heuristic later without damage to the rest of
-; this nest.
+; pass tau-alist into this function.  Note that this also means that the
+; incoming calist is always equal to the outgoing calist for this function, but
+; we don't code for that.  We return the calist to our callers, so that we
+; could change the heuristic later without damage to the rest of this nest.
 
   (cond
    ((endp hyps) (mv t calist))

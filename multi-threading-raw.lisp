@@ -29,7 +29,7 @@
 
 (in-package "ACL2")
 
-; For readability we use #+sb-thread" instead of #+(and sbcl sb-thread).  We
+; For readability we use #+sb-thread instead of #+(and sbcl sb-thread).  We
 ; therefore make the following check to ensure that these two readtime
 ; conditionals are equivalent.
 
@@ -94,7 +94,7 @@
 ; achieves two things: (1) The code is there if we decide we want to use it
 ; again later (maybe after reading on the SBCL email lists that a bug with
 ; these atomic operations was fixed) and (2) We will have an on-going record of
-; the code that causes us to observe this bug (note that ACL2  4.2 also
+; the code that causes us to observe this bug (note that ACL2_4.2 also
 ; contains the implementation that uses atomic operations).  Maybe someone will
 ; be able to tell us what we are doing wrong.
 

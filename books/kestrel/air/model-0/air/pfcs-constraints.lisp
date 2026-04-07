@@ -568,7 +568,7 @@
      The opcodes are the ones on that path,
      and the accumulators are constrained to be bytes
      (see @(tsee pfcs-accumulators) for a discussion of this)."))
-  (b* ((n (1+ (min-termination-limit prog input0)))
+  (b* ((n (min-termination-limit prog input0))
        (path (execution-path prog input0))
        (opcodes (fetch-list prog path)))
     (list (pfcs-initial)

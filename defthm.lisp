@@ -6120,7 +6120,7 @@
 ; There are at least two reasons we require equivalence relations to be
 ; Boolean.  One is to simplify assume-true-false.  When we assume (fn x y)
 ; true, we pair it with *ts-t* rather than its full type-set take away
-; *ts-nil*.  The other is that from reflexivity and Boolean we get than fn is
+; *ts-nil*.  The other is that from reflexivity and Boolean we get that fn is
 ; commutative and so can freely use (fn y x) for (fn x y).  If we did not have
 ; the Boolean condition we would have to be more careful about, say,
 ; commutative unification.
