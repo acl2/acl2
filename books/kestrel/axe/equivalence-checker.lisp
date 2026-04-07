@@ -140,7 +140,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; move, so we can use it in other tools?
-;; Can throw an error or pring a warning if the vars disagree.  Returns nil.
+;; Can throw an error or print a warning if the vars disagree.  Returns nil.
 (defun maybe-check-dag-vars (check-vars
                              dag-or-quotep1
                              dag-or-quotep2
@@ -4040,7 +4040,7 @@
 ;;         (filter-explanations (cdr explanations) formals)))))
 
 
-;; ;seperates out the explanations that are about lengths
+;; ;separates out the explanations that are about lengths
 ;; ;; Returns (list length-explanations formal-or-component-explanations)
 ;; (defun filter-explanations (explanations length-explanations-acc formal-or-component-explanations-acc)
 ;;   (if (endp explanations)
@@ -7175,7 +7175,7 @@
                     ;;don't want to unroll if there are no reps on any test case:
                     nil))
         (if (symbolp match)
-            (prog2$ (cw "Found symbol pattern: ~x0. (FAILING since we don't yet derive bounds for vars)%" match)
+            (prog2$ (cw "Found symbol pattern: ~x0. (FAILING since we don't yet derive bounds for vars)~%" match)
                     nil) ;ffixme if the rep-count is some input, what we do here depends on whether we have a (small) bound on the input - pass in the assumptions?
           (if (and (call-of 'mod match)
                    (quotep (farg2 match))) ;the bound of (mod x <constant>) is that constant (assuming it's a natp)
@@ -19176,7 +19176,7 @@
 ;;                     (mv nil nil nil)))))))))
 
 ;; ;decides which literals to translate and tags the relevant nodes for translation
-;; ;fixme should be able to translate almost any literal (as a boolean variable in the worst case, unless it's not clearly a a boolean...)
+;; ;fixme should be able to translate almost any literal (as a boolean variable in the worst case, unless it's not clearly a boolean...)
 ;; ;returns (mv literal-nodenums-to-translate translation-tag-array cut-nodenum-type-alist)
 ;; ;extends cut-nodenum-type-alist
 ;; ;rename

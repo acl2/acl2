@@ -42,6 +42,7 @@
 
 ;; TODO: Can we unify this with the unrolling lifter?
 
+(include-book "lifter-support")
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
@@ -2578,7 +2579,7 @@
        ((when (not (stringp target)))
         (er hard? 'lift-subroutine-fn "No :target supplied (must be the name of a subroutine).")
         (mv (erp-t) nil state))
-       ;; Check the executable argument:
+       ;; Check and resolve the executable argument:
        ((when (eq :none executable))
         (er hard? 'lift-subroutine-fn "No :executable supplied (should usually be a string (file name or path).") ; todo: mention the parsed-executable option
         (mv (erp-t) nil state))
@@ -2586,6 +2587,15 @@
                        (acl2::parsed-executablep executable))))
         (er hard? 'lift-subroutine-fn "Bad value for :executable argument: ~x0." executable)
         (mv (erp-t) nil state))
+       ((mv erp parsed-executable state)
+        (if (stringp executable)
+            ;; it's a filename, so parse the file:
+            (acl2::parse-executable executable state)
+          ;; it's already a parsed-executable:
+          (mv nil executable state)))
+       ((when erp)
+        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (mv t nil state))
        ;; Check the inputs argument:
        ((when (not (or (eq :skip inputs) (names-and-typesp inputs))))
         (er hard? 'lift-subroutine-fn "Bad value for :inputs argument: ~x0." inputs)
@@ -2607,10 +2617,11 @@
                        (eq :auto existing-stack-slots))))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for existing-stack-slots: ~x0" existing-stack-slots)
                 (mv (erp-t) nil state)))
-       ;; Check the position-independent argument:
-       ((when (not (booleanp position-independent)))
+       ;; Check and resolve the position-independent argument:
+       ((when (not (member-eq position-independent '(t nil :auto))))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for position-independent ~x0" position-independent)
                 (mv (erp-t) nil state)))
+       (position-independentp (resolve-position-independent position-independent parsed-executable))
        ;; Check the feature-flags argument:
        ((when (not (feature-flagsp feature-flags)))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for feature-flags ~x0" feature-flags)
@@ -2634,15 +2645,7 @@
        ;; Done checking args:
        (- (cw "(Lifting subroutine ~x0:~%" target))
        ;; Generate assumptions for lifting:
-       ((mv erp parsed-executable state)
-        (if (stringp executable)
-            ;; it's a filename, so parse the file:
-            (acl2::parse-executable executable state)
-          ;; it's already a parsed-executable:
-          (mv nil executable state)))
-       ((when erp)
-        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
-        (mv t nil state))
+
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Throws an error if we have a non-x86 executable:
        (- (acl2::ensure-x86 parsed-executable))
@@ -2657,7 +2660,7 @@
        ((mv erp tool-assumptions &)
         (if (eq :mach-o-64 executable-type)
             (assumptions-macho64-new target
-                                     position-independent
+                                     position-independentp
                                      feature-flags
                                      stack-slots
                                      existing-stack-slots
@@ -2669,7 +2672,7 @@
                                      parsed-executable)
           (if (eq :pe-64 executable-type)
               (assumptions-pe64-new target
-                                    position-independent
+                                    position-independentp
                                     feature-flags
                                     stack-slots
                                     existing-stack-slots
@@ -2681,7 +2684,7 @@
                                     parsed-executable)
             (if (eq :elf-64 executable-type)
                 (assumptions-elf64-new target
-                                       position-independent
+                                       position-independentp
                                        feature-flags
                                        stack-slots
                                        existing-stack-slots
@@ -2818,7 +2821,7 @@
                            (assume-bytes ':all) ; todo: change the default to :non-write
                            (stack-slots '10)
                            (existing-stack-slots ':auto)
-                           (position-independent 't)
+                           (position-independent ':auto)
                            (feature-flags ',*default-feature-flags*)
                            (loops ':none) ; required (for now)
                            (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops

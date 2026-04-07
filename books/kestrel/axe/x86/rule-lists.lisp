@@ -1255,9 +1255,9 @@
   '(acl2::logand-becomes-bvand-arg1-axe
     acl2::logand-becomes-bvand-arg2-axe
     acl2::logior-becomes-bvor-arg1-axe ; based on the form of arg1
-    acl2::logior-becomes-bvor-arg1-axe ; based on the form of arg2
+    acl2::logior-becomes-bvor-arg2-axe ; based on the form of arg2
     acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg1
-    acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg2
+    acl2::logxor-becomes-bvxor-arg2-axe ; based on the form of arg2
     ;acl2::logxor-bvchop-bvchop        ; introduce bvxor
     ;acl2::logxor-of-bvchop-becomes-bvxor-arg1 ; introduce bvxor
     ;;            acl2::bvplus-of-logxor-arg1                     ; introduce bvxor

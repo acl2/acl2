@@ -24,7 +24,7 @@
   (make-ord 1
             (if (consp nodenum-or-quotep)   ;check for quotep
                 1                           ;ordinal coeff must be positive
-              (+ 2 (nfix nodenum-or-quotep))) ;add 2 to make this greater than in the other branch (necesary?)
+              (+ 2 (nfix nodenum-or-quotep))) ;add 2 to make this greater than in the other branch (necessary?)
             0))
 
 (defun dag-walker-measure-for-items (nodenum-or-quoteps)

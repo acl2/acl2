@@ -12,6 +12,7 @@
 (in-package "X")
 
 (include-book "kestrel/x86/portcullis" :dir :system)
+(include-book "kestrel/executable-parsers/parsed-executable-tools" :dir :system)
 
 ;; These assumptions get removed during pruning (unlikely to help and lead to
 ;; messages about non-known-boolean literals being dropped)
@@ -27,3 +28,18 @@
     cr4bits-p$inline
     alignment-checking-enabled-p
     app-view))
+
+;; Returns a boolean
+(defund resolve-position-independent (position-independent parsed-executable)
+  (declare (xargs :guard (and (member-eq position-independent '(t nil :auto))
+                              (parsed-executablep parsed-executable))))
+  (let ((executable-type (parsed-executable-type parsed-executable)))
+    (if (eq :auto position-independent)
+        (if (eq executable-type :mach-o-64)
+            t ; since clang seems to produce position-independent code by default ; todo: look at the PIE bit in the header.
+          (if (eq executable-type :elf-64) ; todo: allow ELF32 as well?
+              (elf-position-independentp parsed-executable)
+            ;; TODO: Think about the other cases:
+            t))
+      ;; position-independent is t or nil, not :auto:
+      position-independent)))

@@ -224,7 +224,7 @@
      acl2::boolif-of-nil-and-t
      acl2::not-of-not
 
-     acl2::bvplus-commute-constant ; hope these are ok -- want it for addresses but nore for giant nests of crypto ops.  so limit the size of the nests?
+     acl2::bvplus-commute-constant ; hope these are ok -- want it for addresses but not for giant nests of crypto ops.  so limit the size of the nests?
      acl2::bvplus-commute-constant2
 
      acl2::equal-of-bvif-safe ; add to core-rules-bv
