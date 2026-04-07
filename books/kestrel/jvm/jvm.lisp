@@ -5759,12 +5759,11 @@
                               (match-offset-pairsp pairs))))
   (lookup key pairs))
 
-;; (LOOKUPSWITCH <match-offset-pairs> <default-value>)
+;; (LOOKUPSWITCH <default-value> <match-offset-pairs>)
 ;todo: test this
 (defun execute-LOOKUPSWITCH (inst th s)
-  (let* ((match-offset-pairs (farg1 inst))
-         (default-value (farg2 inst))
-         ;;(inst-len (farg3 inst))
+  (let* ((default-value (farg1 inst))
+         (match-offset-pairs (farg2 inst))
          (key (decode-signed (top-operand (stack (thread-top-frame th s))))) ;todo: think about the decode-signed
          (match (lookup-offset-for-match key match-offset-pairs))
          (offset (if match match default-value)))

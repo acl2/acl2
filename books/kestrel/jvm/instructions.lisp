@@ -1,7 +1,7 @@
 ; JVM instructions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "fields") ;for field-idp
 (include-book "method-descriptors")
 (include-book "method-names")
+(include-book "kestrel/bv-lists/signed-byte-listp-def" :dir :system)
 
 (local (in-theory (disable member-equal jvm::typep))) ;for speed
 
@@ -620,15 +621,15 @@
                    (signed-byte-p 32 (farg2 inst))
                    (signed-byte-p 32 (farg3 inst))
                    (and (true-listp (farg4 inst))
-                        ;(all-signed-byte-p 32 (farg4 inst))
+                        (acl2::signed-byte-listp 32 (farg4 inst))
                         )))
              (:lookupswitch
               (and (= 2 (len (instruction-args inst)))
-                   (and (alistp (farg1 inst))
-                        ;(all-signed-byte-p 32 (strip-cars (farg1 inst)))
-                        ;(all-signed-byte-p 32 (strip-cdrs (farg1 inst)))
-                        )
-                   (signed-byte-p 32 (farg2 inst))))
+                   (signed-byte-p 32 (farg1 inst)) ; default
+                   (and (alistp (farg2 inst)) ; match-offset pairs
+                        ;; todo: avoid consing here (also avoid walking down the alist twice):
+                        (acl2::signed-byte-listp 32 (strip-cars (farg2 inst)))
+                        (acl2::signed-byte-listp 32 (strip-cdrs (farg2 inst))))))
              ;; :wide is handled specially
              (otherwise (er hard? 'jvm-instruction-okayp "Unknown opcode: ~x0" (car inst)))))))
 
