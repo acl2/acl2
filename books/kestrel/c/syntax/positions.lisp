@@ -54,7 +54,7 @@
    (xdoc::p
     "We also include an indication of the file that the position refers to,
      for now represented as a string, which we use for a file path.
-     Although generally each file is (pre)procesed individually
+     Although generally each file is (pre)processed individually
      (so that the file in question is contextually known),
      the preprocessing directive @('#line') [C17:6.10.4]
      can change the `presumed' line number and file name.
