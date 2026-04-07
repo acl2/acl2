@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function mod.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; For mod-sum-cases, see the copyright on the RTL library.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -610,8 +610,7 @@
            (equal (* 2 (floor i 2))
                   (if (equal 1 (mod i 2))
                       (+ -1 i)
-                    i)))
-  :hints (("Goal" :in-theory (enable))))
+                    i))))
 
 ;two ways of saying that i is even
 (defthmd equal-of-*-2-of-floor-of-2-same

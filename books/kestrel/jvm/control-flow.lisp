@@ -77,6 +77,7 @@
 ;the leaders are the targets of the branches and the instructions after the branches/returns (even for unconditional branches/returns)
 ;returns nil if the instr is not a branch/return
 ;fixme what about exceptions? can leaders be the PCs to which control can jump upon an exception?
+;; todo: in jvm.lisp, we use "inst" instead of "instr" to represent the instruction
 (defun leaders-after-branch-or-return (pc instr)
   (let ((opcode (first instr)))
     (if (eq ':goto opcode)
@@ -98,17 +99,19 @@
                               :IFLE
                               :IFLT
                               :IFNE
-                              :IFNONNUL
+                              :IFNONNULL
                               :IFNULL))
           (list (+ pc (second instr))        ;the target of the branch
                 (+ pc 3 ;(jvm::inst-length instr)
                    ) ;the instruction after the branch
                 )
         (if (member-eq opcode '(:areturn
+                                :dreturn
+                                :freturn
                                 :ireturn
                                 :lreturn
                                 :return))
-            (list (+ pc 4 ;(jvm::inst-length instr)
+            (list (+ pc 1 ;(jvm::inst-length instr)
                      )) ;the instruction after the return
           (if (eq opcode :tableswitch)
               (let ((default-offset (farg1 instr))
@@ -116,10 +119,15 @@
                     )
                 (cons (+ pc default-offset)
                       (add-to-all pc jump-offsets)))
-          nil))))))
+            (if (eq opcode :lookupswitch)
+                (let ((default-value (farg1 instr))
+                      (match-offset-pairs (farg2 instr)))
+                  (cons (+ pc default-value)
+                        (add-to-all pc (strip-cdrs match-offset-pairs))))
+              ;; other instructions give rise to no leaders:
+              nil)))))))
 
 ;these do not include the instructions after returns or unconditional branches
-;fixme where do we handle returns?
 (defun successors-of-instruction (pc instr next-pc)
   (let ((opcode (first instr)))
     (if (eq ':goto opcode)
@@ -139,13 +147,31 @@
                               :IFLE
                               :IFLT
                               :IFNE
-                              :IFNONNUL
+                              :IFNONNULL
                               :IFNULL))
           (list (+ pc (second instr)) ;the target of the branch
                 next-pc               ;the instruction after the branch
                 )
-        ;; it's a reular instruction, so the (single) succesor is just the next instruction
-        (list next-pc)))))
+        (if (member-eq opcode '(:areturn
+                                :dreturn
+                                :freturn
+                                :ireturn
+                                :lreturn
+                                :return))
+            nil ; returns have no successors
+          (if (eq opcode :tableswitch)
+              (let ((default-offset (farg1 instr))
+                    (jump-offsets (farg4 instr)) ;each is a signed-byte-p
+                    )
+                (cons (+ pc default-offset)
+                      (add-to-all pc jump-offsets)))
+            (if (eq opcode :lookupswitch)
+                (let ((default-value (farg1 instr))
+                      (match-offset-pairs (farg2 instr)))
+                  (cons (+ pc default-value)
+                        (add-to-all pc (strip-cdrs match-offset-pairs))))
+              ;; for other instructions, the (single) succesor is just the next instruction:
+              (list next-pc))))))))
 
 ;leaders are the starts of basic blocks
 ;FIXME be sure i handle all jvm instructions!
