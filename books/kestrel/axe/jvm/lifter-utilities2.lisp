@@ -145,7 +145,7 @@
                             TERM PARAM-NAME-TO-SLOT-ALIST
                             PARAM-SLOT-TO-STACK-ITEM-ALIST)))
     :FLAG DESUGAR-PARAMS-IN-ASSUMPTION-TERM-TO-STACK-ITEMS)
-  (DEFTHM pseudo-term-listp-of--DESUGAR-PARAMS-IN-ASSUMPTION-TERMS-TO-STACK-ITEMS
+  (DEFTHM pseudo-term-listp-of-DESUGAR-PARAMS-IN-ASSUMPTION-TERMS-TO-STACK-ITEMS
     (IMPLIES (and (pseudo-term-listp terms)
                   (symbol-alistp param-name-to-slot-alist)
                   (alistp param-slot-to-stack-item-alist)
