@@ -1,7 +1,7 @@
 ; JVM-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -475,7 +475,7 @@
            (rationalp (mv-nth 1 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array))))
   :hints (("Goal" :in-theory (enable get-stack-height-and-pc-to-step-from-myif-nest-helper rationalp-when-natp))))
 
-(defthm rationalp-of-mv-nth-0-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
+(defthm rationalp-of-mv-nth-2-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
   (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)))
            (rationalp (mv-nth 2 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array))))
   :hints (("Goal" :in-theory (enable get-stack-height-and-pc-to-step-from-myif-nest-helper
