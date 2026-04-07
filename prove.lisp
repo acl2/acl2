@@ -1879,7 +1879,7 @@
 
 ; The presence of :use indicates that a :use hint was applied to one
 ; or more clauses to give the output clauses.  If there is also a
-; :cases tag in the ttree, then the input clause was split into to 2
+; :cases tag in the ttree, then the input clause was split into two
 ; or more cases first and then the :use hint was applied to each.  If
 ; there is no :cases tag, the :use hint was applied to the input
 ; clause alone.  Each application of the :use hint adds literals to
@@ -3387,7 +3387,7 @@
 ; Observe also that if we added to type-alist2 the binding (u
 ; *ts-cons*) then condition (1) of our definition still holds but (2)
 ; does not.  Further, if we mistakenly regarded type-alist2 as the
-; weaker then proving (consp u) under type-alist2 would not ensure a
+; weaker, then proving (consp u) under type-alist2 would not ensure a
 ; proof of (consp u) under type-alist1.
 
   (and (dumb-type-alist-implicationp1 type-alist1 type-alist2 nil)

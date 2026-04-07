@@ -3161,7 +3161,7 @@
          (without-interrupts
 
 ; By using without-interrupts, we intend to preserve the invariant that the two
-; state globals beingn set here are either both :ignore or else neither is
+; state globals being set here are either both :ignore or else neither is
 ; :ignore.
 
           (f-put-global 'raw-include-book-dir-alist
@@ -4660,7 +4660,7 @@
     (PPE PE)
     (PROVE THM)
     (PROVEALL .     "See :DOC ld and :DOC certify-book.  The latter
-                     corresponds to Nqthm's PROVE-FILE,which may be
+                     corresponds to Nqthm's PROVE-FILE, which may be
                      what you're interested in, really.")
     (PROVE-FILE CERTIFY-BOOK)
     (PROVE-FILE-OUT CERTIFY-BOOK)
