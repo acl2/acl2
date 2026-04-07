@@ -361,7 +361,7 @@
           ((mv filepath data) (omap::head map))
           (file-string (filepath->string filepath))
           (path-to-write (str::cat base-dir "/" file-string))
-          ((mv erp state) (acl2::write-bytes-to-file! (filedata->unwrap data)
+          ((mv erp state) (acl2::write-bytes-to-file! (filedata->bytes data)
                                                       path-to-write
                                                       'output-files
                                                       state))

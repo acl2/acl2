@@ -12543,7 +12543,7 @@
           ((mv filepath filedata) (omap::head filemap))
           ((mv erp tunit)
            (parse-file filepath
-                       (filedata->unwrap filedata)
+                       (filedata->bytes filedata)
                        dialect
                        skip-control-lines))
           ((when erp)

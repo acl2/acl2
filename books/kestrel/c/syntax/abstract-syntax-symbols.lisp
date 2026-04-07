@@ -489,7 +489,7 @@
 
     filedatap
     filedata
-    filedata->unwrap
+    filedata->bytes
 
     filesetp
     fileset
