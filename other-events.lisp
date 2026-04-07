@@ -6135,7 +6135,7 @@
 ; This is the second pass of the encapsulate event.  We assume that the
 ; installed world in state is wrld1 of the encapsulate essay.  We assume that
 ; chk-acceptable-encapsulate1 has approved of wrld1 and
-; chk-acceptable-encapsulate2 has approved of the wrld2 generated in with
+; chk-acceptable-encapsulate2 has approved of the wrld2 generated with
 ; ld-skip-proofsp nil.  Insigs is the internal form signatures list.  We either
 ; cause an error and return a state in which wrld1 is current or else we return
 ; normally and return a state in which wrld3 of the essay is current.  In the
@@ -24608,7 +24608,7 @@
       (er-let* ((recognizer0
 
 ; Since the call of chk-acceptable-defabsstobj requires st$ap, we need to
-; expand the recognizer here (rather than letting it getting expanded by
+; expand the recognizer here (rather than letting it get expanded by
 ; chk-acceptable-defabsstobj).  We really only need the :logic recognizer
 ; (st$ap) here, not the :exec recognizer, but we might as well do the full
 ; expansion of the recognizer function spec.
@@ -36262,7 +36262,7 @@
 ; unless and until there is a demonstrated need.
 
 ; For (memoize 'f :invoke 'g), must f and/or g be in logic mode and even
-; guard-verified?  Well, they must in be logic mode, because otherwise the
+; guard-verified?  Well, they must be in logic mode, because otherwise the
 ; necessary equality theorem won't exist.  We further require g to be
 ; guard-verified; otherwise we can't trust that the guard of f is sufficient to
 ; ensure a well-guarded call of g.  Should we also require f to be
@@ -36963,7 +36963,7 @@
 
 (defun old-and-new-event-data-fn (book-string name namep dir ctx state)
 
-; This function returns (old-event-data . new-event-date), where the car and
+; This function returns (old-event-data . new-event-data), where the car and
 ; cdr are event-data values (see :DOC get-event-data) that are intended to
 ; correspond, where new-event-data is the most recent event-data -- associated
 ; with name, if namep is true -- and old-event-data is intended to be the
@@ -37682,12 +37682,12 @@
 
 ; - Case: u is (with-local-stobj st body).  We skip the easy check that the
 ;   recursive call (cl-eval body a' gs') is coherent, where a' and gs' are as
-;   defined for this case of cl-eval, thus accommodating a new root note for
+;   defined for this case of cl-eval, thus accommodating a new root node for
 ;   local stobj st.  Then conclusion (a) follows from the inductive hypothesis,
 ;   which also gives us that the update of gs' from the recursive call
 ;   satisfies the disjointness specified by (C1).  Conclusion (b) also follows
 ;   from the inductive hypothesis; in particular, the update of gs from the
-;   original call satisfies (C1) since it is the same the update of gs' from
+;   original call satisfies (C1) since it is the same as the update of gs' from
 ;   the recursive call with one exception: the child stobj memories of the new
 ;   (local-stobj) node added to gs' disappear when finally updating gs.
 

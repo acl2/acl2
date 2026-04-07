@@ -3160,7 +3160,7 @@ its attachment is ignored during proofs"))))
 
 ; Converts assumptions to the opposite parity on the most recent
 ; assumption.  I.e., if assumptions was created by assuming term true,
-; the after this switch, the assumptions assume term false.
+; then after this switch, the assumptions assume term false.
 
   (cond ((eq (car assumptions) :not) (cdr assumptions))
         (t (cons :not assumptions))))

@@ -147,7 +147,7 @@
 ; then build the public image of ACL2 in which we trustingly use
 ; *system-verify-guards-alist* to assert that the functions terminate and are
 ; guard verified.  The books in the Bootstrapping group must track the
-; definitions in the Source Code group: changing one without the changing the
+; definitions in the Source Code group: changing one without changing the
 ; other will probably result in the failure of the :acl2-devel certification of
 ; the system/ books.)
 

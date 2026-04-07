@@ -267,8 +267,8 @@ is using two characters to indicate a new line?"))
                  ~s)~%is ~s but should be ~s."
                 ch
                 (char-upcase ch)
-                (if (and (>= i 65)
-                         (<= i 90))
+                (if (and (>= i 97)
+                         (<= i 122))
                     (code-char (- (char-code ch) 32))
                   ch)))))
 
@@ -319,10 +319,8 @@ is using two characters to indicate a new line?"))
                  (equal (char-downcase
                          (char-upcase ch))
                         ch)))
-         (4 '(unless (<= (char-code (char-downcase ch)) 255)
-               (setq bad 4)))
-         (5 '(unless (<= (char-code (char-upcase ch)) 255)
-               (setq bad 5)))
+         (4 '(<= (char-code (char-downcase ch)) 255))
+         (5 '(<= (char-code (char-upcase ch)) 255))
          (otherwise
           "Implementation Error!   Please contact the ACL2 implementors."))
        #-cmucl ""

@@ -3687,7 +3687,6 @@
                         when (eq tablename
                                  (car (symbol-value (the symbol s))))
                         do (pop (symbol-value (the symbol s)))))
-             (setq fn nil) ; in case we decide not to cause an error
              (error "Memoize-fn:  Failed to memoize ~s." fn))))))))
   fn)
 
@@ -3721,7 +3720,6 @@
                 (type (simple-array mfixnum (*)) ma))
        (unwind-protect
            (progn
-             (format nil "unmemoizing ~s" fn)
              (let (#+ccl (ccl:*warn-if-redefine-kernel* nil))
                (let ((old-fn (access memoize-info-ht-entry rec :old-fn)))
                  (assert old-fn)
