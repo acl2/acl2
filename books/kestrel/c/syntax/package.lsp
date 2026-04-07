@@ -56,6 +56,7 @@
                 keyword-value-list-to-alist
                 lifix
                 lnfix
+                lposfix
                 make-event-terse
                 maybe-msgp
                 msg$
