@@ -167,7 +167,7 @@
    (xdoc::p
     "This is used in user-oriented error messages.
      It consists of file, line, and column, separated by colons."))
-  (msg "~s0:~x1:~x2:"
+  (msg "~s0:~x1:~x2"
        (position->file pos)
        (position->line pos)
        (position->column pos)))
