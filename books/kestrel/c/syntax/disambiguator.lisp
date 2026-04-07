@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 
@@ -54,17 +55,17 @@
       but some of them may be enumeration constants.
       The disambiguator re-classifies the latter as required.")
     (xdoc::li
-     "Some constructs include ambiguous expressions or type names,
+     "Some constructs contain ambiguous expressions or type names,
       represented by the type @(tsee amb-expr/tyname).
       The disambiguator turns those constructs into unambiguous ones,
       by choosing either an expression or a type name.")
     (xdoc::li
-     "Some constructs include ambiguous declarators or abstract declarators,
+     "Some constructs contain ambiguous declarators or abstract declarators,
       represented by the type @(tsee amb-declor/absdeclor).
       The disambiguator turns those constructs into unambiguous ones,
       by choosing either a declarator or an abstract declarator.")
     (xdoc::li
-     "Some constructs include ambiguous declarations or statements,
+     "Some constructs contain ambiguous declarations or statements,
       represented by the type @(tsee amb-declon/stmt).
       The disambiguator turns those constructs into unambiguous ones,
       by choosing either a declaration or a statement.")
@@ -122,14 +123,54 @@
      even though they may contain expression.
      Some initial experiments reveal that we will need to
      treat these GCC extensions in a more dedicated way.
-     For instance, the @('access') attribute may include
+     For instance, the @('access') attribute may contain
      the arguments @('read_only'), @('write_only'), and @('read_write').
      Grammatically these are expressions,
      but it seems that they have just a special meaning, like keywords,
      in the context of the @('access') attribute,
      but they are likely not keywords elsewhere.
      A naive treatment would attempt to resolve those arguments,
-     which are not in the disambiguation table."))
+     which are not in the disambiguation table.")
+   (xdoc::p
+    "We try to preserve @('#include') directives, as in our @(see preprocessor).
+     The approach is similar to the one used by our preprocessor,
+     which is described in @(see preservable-inclusions).
+     It is possible that a @('#include')
+     that is preservable (and preserved) in the preprocessor
+     cannot be preserved in the disambiguator.
+     An example is")
+   (xdoc::codeblock
+    "+-F.c----+"
+    "| x * y; |"
+    "+--------+"
+    ""
+    "+-G.c----------+"
+    "| int x;       |"
+    "| #include F.c |"
+    "+--------------+"
+    ""
+    "+-H.c------------+"
+    "| typedef int x; |"
+    "| #include F.h   |"
+    "+----------------+")
+   (xdoc::p
+    "The @('x * y;') from @('F.c') results is disambiguated
+     into different constructs in @('G.c') and @('H.c'),
+     namely an expression statement vs. a declaration.
+     (This code is invalid, but it can be made valid with a few changes;
+     here we are focusing on disambiguation only.)
+     Indeed, @('F.c') cannot be disambiguated stand-alone,
+     because it would fail when encountering @('x'),
+     since it has no information about @('x') at that point.")
+   (xdoc::p
+    "Maybe there are examples in which @('F.c')
+     could be disambiguated stand-alone,
+     but give different results in @('G.c') and @('H.c').
+     We are not sure yet; we need further investigation.
+     We treat the case of @('F.c') failing stand-alone disambiguation
+     the same as giving a different AST than
+     when disambiguated in the context of the including file;
+     the latter is a similar check as done in our preprocessor."))
   :order-subtopics t
   :default-parent t)
 
@@ -780,7 +821,7 @@
      which has therefore lower priority than a cast expression.
      This makes it necessary to adjust the expression
      so that the actual priorities match the expected priorities
-     (where `matching' includes being higher, besides being equal).")
+     (where `matching' means being higher, besides being equal).")
    (xdoc::p
     "For instance, @('~ (a) + b') is parsed as
      the unary operator @('~') applied to the ambiguous @('(a) + b'),
@@ -2007,7 +2048,7 @@
        those identifiers denote, which, for declarators,
        is either @(':objfun') or @(':typedef').
        It is @(':typedef') if the list of declaration specifiers
-       includes the @('typedef') storage class specifier;
+       contains the @('typedef') storage class specifier;
        otherwise, it is @(':objfun').
        Thus, when going through the declaration specifiers,
        we initialize the kind to @(':objfun'),
@@ -3744,7 +3785,7 @@
     "Then we process the declarator,
      passing @('t') as the @('fundefp') flag,
      because we are processing the declarator of a defined function.
-     In valid code, this declarator will include a function declarator
+     In valid code, this declarator will contain a function declarator
      with either parameter declarations or identifiers,
      after it has been processed.
      Because of the @('fundefp') flag set to @('t'),
@@ -3863,213 +3904,356 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-trans-item ((item trans-itemp)
-                         (dstate dstatep)
-                         (tumap filepath-trans-unit-mapp)
-                         (resolved-includes string-header-name-string-map-mapp)
-                         (disamb filepath-trans-unit-mapp))
-  :returns (mv (erp maybe-msgp)
-               (new-items trans-item-listp)
-               (new-dstate dstatep)
-               (new-disamb filepath-trans-unit-mapp))
-  :short "Disambiguate a translation item."
+(defines dimb-trans-items/units
+  :short "Disambiguate translation items and units."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('tumap') input consists of the original translation unit map,
+    "We use an artificial limit to ensure termination.
+     A proper termination proof would require
+     the explication of certain invariants,
+     which we plan to do.")
+   (xdoc::p
+    "In all the functions in this clique,
+     the @('tumap-orig') input consists of the original translation unit map,
      which may need to be looked up when disambiguating a @('#include'),
      also using the @('resolved-includes') input.
      The newly disambiguated translation units are threaded through,
+     as the @('tumap-dimb') inputs and @('new-tumap-dimb') outputs,
      because the disambiguation of a @('#include')
-     may involve the disambiguation of additional translation units.")
-   (xdoc::p
-    "This function returns a list of translation items,
-     to accommodate the case in which a @('#include') translation item
-     must be expanded in place, which results in a list.
-     In all other cases, the resulting list is a singleton,
-     i.e. the translation item is disambiguated to a translation item.")
-   (xdoc::p
-    "For external declarations, we use a separate previous function.")
-   (xdoc::p
-    "A @('#define') or @('#undef') directive is considered unambiguous,
-     but it adds an entry (definition or undefinition) to the macro table.
-     Recall that, as a translation items,
-     a @('#define') directive is implicitly always
-     an object-like macro whose replacement list is just the macro name.")
-   (xdoc::p
-    "Comments are always considered unambiguous,
-     and undergo no transformation.")
-   (xdoc::p
-    "We do not yet support @('#include') and conditional directives."))
-  (declare (ignore tumap resolved-includes)) ; temporary
-  (b* (((reterr) nil (irr-dstate) nil))
-    (trans-item-case
-     item
-     :declon (b* (((erp declon dstate)
-                   (dimb-ext-declon item.declon dstate)))
-               (retok (list (trans-item-declon declon))
-                      dstate
-                      (filepath-trans-unit-map-fix disamb)))
-     :include (reterr
-               (msg "Disambiguator does not support #include directives yet."))
-     :define (b* ((name (ident->unwrap item.macro))
-                  ((unless (stringp name))
-                   (raise "Internal error: macro name ~x0." name)
-                   (reterr "irrelevant"))
-                  (info (macro-info-object
-                         (list (make-plexeme-ident :ident name
-                                                   :provenance nil))))
-                  (macros (dstate->macros dstate))
-                  ((mv erp new-macros) (macro-define name info macros))
-                  ((unless (maybe-msgp erp))
-                   (raise "Internal error: malformed error ~x0." erp)
-                   (reterr "irrelevant"))
-                  ((when erp) (mv erp nil (irr-dstate) nil))
-                  (dstate (change-dstate dstate :macros new-macros)))
-               (retok (list (trans-item-fix item))
-                      dstate
-                      (filepath-trans-unit-map-fix disamb)))
-     :undef (b* ((name (ident->unwrap item.macro))
-                 ((unless (stringp name))
-                  (raise "Internal error: macro name ~x0." name)
-                  (reterr "irrelevant"))
-                 (macros (dstate->macros dstate))
-                 ((mv erp new-macros) (macro-undefine name macros))
-                 ((unless (maybe-msgp erp))
-                  (raise "Internal error: malformed error ~x0." erp)
-                  (reterr "irrelevant"))
-                 ((when erp) (mv erp nil (irr-dstate) nil))
-                 (dstate (change-dstate dstate :macros new-macros)))
-              (retok (list (trans-item-fix item))
-                     dstate
-                     (filepath-trans-unit-map-fix disamb)))
-     :cond (reterr
-            (msg "Disambiguator does not support conditional directives yet."))
-     :line-comment (retok (list (trans-item-fix item))
-                          (dstate-fix dstate)
-                          (filepath-trans-unit-map-fix disamb))))
-  :no-function nil
-  :guard-hints (("Goal" :in-theory (enable plexeme-token/space-p
-                                           plexeme-tokenp)))
+     may involve the recursive disambiguation
+     of additional translation units."))
 
-  ///
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (more-returns
-   (new-items true-listp :rule-classes :type-prescription))
+  (define dimb-include ((header header-namep)
+                        (dstate dstatep)
+                        (tumap-orig filepath-trans-unit-mapp)
+                        (resolved-includes string-header-name-string-map-mapp)
+                        (tumap-dimb filepath-trans-unit-mapp)
+                        (limit natp))
+    :returns (mv (erp maybe-msgp)
+                 (new-items trans-item-listp)
+                 (new-dstate dstatep)
+                 (new-tumap-dimb filepath-trans-unit-mapp))
+    :parents (disambiguator dim-trans-items/units)
+    :short "Disambiguate a @('#include') directive."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We need to see whether the directive can be preserved or not:
+       the approach is overviewed in @(see disambiguator).")
+     (xdoc::p
+      "We resolve the header name to a translation unit, via three map lookups.
+       First we disambiguate the translation unit
+       in the current disambiguation state;
+       then we disambiguate it in a fresh disambiguation state,
+       unless that has been already done,
+       i.e. if it is already in the @('tumap-dimb') map.
+       If stand-alone disambiguation fails,
+       the @('#include') cannot be preserved.
+       Otherwise, we compare the two obtained ASTS:
+       if they are equal, we can preserve the @('#include');
+       otherwise, we need to expand it in place.
+       This is an initial comparison,
+       which needs to be refined to take into account
+       conditional preprocessing constructs,
+       which we do not support in the disambiguator yet."))
+    (b* (((reterr) nil (irr-dstate) nil)
+         ((when (zp limit))
+          (raise "Internal error: limit exhausted.")
+          (reterr "irrelevant"))
+         ;; Look up translation unit through the 3 maps.
+         (including (dstate->file dstate))
+         (including+inner (omap::assoc including
+                                       (string-header-name-string-map-map-fix
+                                        resolved-includes)))
+         ((unless including+inner)
+          (raise "Internal error: ~x0 not in ~x1."
+                 including
+                 (string-header-name-string-map-map-fix resolved-includes))
+          (reterr "irrelevant"))
+         (inner (cdr including+inner))
+         (header+included (omap::assoc (header-name-fix header) inner))
+         ((unless header+included)
+          (raise "Internal error: ~x0 not in ~x1."
+                 (header-name-fix header)
+                 inner)
+          (reterr "irrelevant"))
+         (included (cdr header+included))
+         (included+tunit (omap::assoc (filepath included)
+                                      (filepath-trans-unit-map-fix tumap-orig)))
+         ((unless included+tunit)
+          (raise "Internal error: ~x0 not in ~x1."
+                 included
+                 (filepath-trans-unit-map-fix tumap-orig))
+          (reterr "irrelevant"))
+         (tunit (cdr included+tunit))
+         ;; Dismbiguate the included translation unit in context.
+         ;; This must not fail; if it does,
+         ;; the disambiguation of the including translation unit fails.
+         ((erp new-tunit-in-context dstate tumap-dimb)
+          (dimb-trans-unit tunit
+                           dstate
+                           tumap-orig
+                           resolved-includes
+                           tumap-dimb
+                           (1- limit)))
+         ;; Disambiguate the included translation unit stand-alone.
+         ;; This may fail, so we do not use the ERP binder,
+         ;; which would propagate the error.
+         ((mv erp new-tunit-stand-alone tumap-dimb)
+          (b* (((reterr) (irr-trans-unit) nil)
+               (included+tunit
+                (omap::assoc (filepath included)
+                             (filepath-trans-unit-map-fix tumap-dimb)))
+               ((when included+tunit)
+                (retok (cdr included+tunit) tumap-dimb))
+               (dstate-fresh (init-dstate included (dstate->dialect dstate)))
+               ((erp new-tunit-stand-alone & tumap-dimb)
+                (dimb-trans-unit tunit
+                                 dstate-fresh
+                                 tumap-orig
+                                 resolved-includes
+                                 tumap-dimb
+                                 (1- limit))))
+            (retok new-tunit-stand-alone tumap-dimb)))
+         ;; If the included translation unit was disambiguated stand-alone,
+         ;; and gave the same result as the disambiguation in context,
+         ;; we preserve the #include, and update the disambiguated map.
+         ((when (and (not erp)
+                     (equal new-tunit-stand-alone new-tunit-in-context)))
+          (retok (list (trans-item-include header))
+                 dstate
+                 (omap::update (filepath included)
+                               new-tunit-stand-alone
+                               (filepath-trans-unit-map-fix tumap-dimb)))))
+      ;; Otherwise, we expand the #include in place.
+      (retok (trans-unit->items new-tunit-in-context)
+             dstate
+             (filepath-trans-unit-map-fix tumap-dimb)))
+    :no-function nil
+    :measure (nfix limit))
 
-  (defret trans-item-list-unambp-of-dimb-trans-item
-    (implies (not erp)
-             (trans-item-list-unambp new-items)))
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret filepath-trans-unit-map-unambp-of-dimb-trans-item
-    (filepath-trans-unit-map-unambp new-disamb)
-    :hyp (filepath-trans-unit-map-unambp disamb)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define dimb-trans-item-list ((items trans-item-listp)
-                              (dstate dstatep)
-                              (tumap filepath-trans-unit-mapp)
-                              (resolved-includes
-                               string-header-name-string-map-mapp)
-                              (disamb filepath-trans-unit-mapp))
-  :returns (mv (erp maybe-msgp)
-               (new-items trans-item-listp)
-               (new-dstate dstatep)
-               (new-disamb filepath-trans-unit-mapp))
-  :short "Disambiguate a list of translation items."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('tumap') input consists of the original translation unit map,
-     which may need to be looked up when disambiguating a @('#include'),
-     also using the @('resolved-includes') input.
-     The newly disambiguated translation units are threaded through,
-     because the disambiguation of a @('#include')
-     may involve the disambiguation of additional translation units."))
-  (b* (((reterr) nil (irr-dstate) nil)
-       ((when (endp items))
-        (retok nil
-               (dstate-fix dstate)
-               (filepath-trans-unit-map-fix disamb)))
-       ((erp new-items-car dstate disamb)
-        (dimb-trans-item (car items)
-                         dstate
-                         tumap
-                         resolved-includes
-                         disamb))
-       ((erp new-items-cdr dstate disamb)
-        (dimb-trans-item-list (cdr items)
+  (define dimb-trans-item ((item trans-itemp)
+                           (dstate dstatep)
+                           (tumap-orig filepath-trans-unit-mapp)
+                           (resolved-includes
+                            string-header-name-string-map-mapp)
+                           (tumap-dimb filepath-trans-unit-mapp)
+                           (limit natp))
+    :returns (mv (erp maybe-msgp)
+                 (new-items trans-item-listp)
+                 (new-dstate dstatep)
+                 (new-tumap-dimb filepath-trans-unit-mapp))
+    :parents (disambiguator dim-trans-items/units)
+    :short "Disambiguate a translation item."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This function returns a list of translation items,
+       to accommodate the case in which a @('#include') translation item
+       must be expanded in place, which results in a list.
+       In all other cases, the resulting list is a singleton,
+       i.e. the translation item is disambiguated to a translation item.")
+     (xdoc::p
+      "For external declarations and @('#include') directives,
+       we use separate functions.")
+     (xdoc::p
+      "A @('#define') or @('#undef') directive is considered unambiguous,
+       but it adds an entry (definition or undefinition) to the macro table.
+       Recall that, as a translation items,
+       a @('#define') directive is implicitly always
+       an object-like macro whose replacement list is just the macro name.")
+     (xdoc::p
+      "Comments are always considered unambiguous,
+       and undergo no transformation.")
+     (xdoc::p
+      "We do not support conditional preprocessing constructs yet."))
+    (b* (((reterr) nil (irr-dstate) nil)
+         ((when (zp limit))
+          (raise "Internal error: limit exhausted.")
+          (reterr "irrelevant")))
+      (trans-item-case
+       item
+       :declon (b* (((erp declon dstate)
+                     (dimb-ext-declon item.declon dstate)))
+                 (retok (list (trans-item-declon declon))
+                        dstate
+                        (filepath-trans-unit-map-fix tumap-dimb)))
+       :include (dimb-include item.header
                               dstate
-                              tumap
+                              tumap-orig
                               resolved-includes
-                              disamb)))
-    (retok (append new-items-car new-items-cdr) dstate disamb))
+                              tumap-dimb
+                              (1- limit))
+       :define (b* ((name (ident->unwrap item.macro))
+                    ((unless (stringp name))
+                     (raise "Internal error: macro name ~x0." name)
+                     (reterr "irrelevant"))
+                    (info (macro-info-object
+                           (list (make-plexeme-ident :ident name
+                                                     :provenance nil))))
+                    (macros (dstate->macros dstate))
+                    ((mv erp new-macros) (macro-define name info macros))
+                    ((unless (maybe-msgp erp))
+                     (raise "Internal error: malformed error ~x0." erp)
+                     (reterr "irrelevant"))
+                    ((when erp) (mv erp nil (irr-dstate) nil))
+                    (dstate (change-dstate dstate :macros new-macros)))
+                 (retok (list (trans-item-fix item))
+                        dstate
+                        (filepath-trans-unit-map-fix tumap-dimb)))
+       :undef (b* ((name (ident->unwrap item.macro))
+                   ((unless (stringp name))
+                    (raise "Internal error: macro name ~x0." name)
+                    (reterr "irrelevant"))
+                   (macros (dstate->macros dstate))
+                   ((mv erp new-macros) (macro-undefine name macros))
+                   ((unless (maybe-msgp erp))
+                    (raise "Internal error: malformed error ~x0." erp)
+                    (reterr "irrelevant"))
+                   ((when erp) (mv erp nil (irr-dstate) nil))
+                   (dstate (change-dstate dstate :macros new-macros)))
+                (retok (list (trans-item-fix item))
+                       dstate
+                       (filepath-trans-unit-map-fix tumap-dimb)))
+       :cond (reterr
+              (msg "Disambiguator does not support conditional directives yet."))
+       :line-comment (retok (list (trans-item-fix item))
+                            (dstate-fix dstate)
+                            (filepath-trans-unit-map-fix tumap-dimb))))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dimb-trans-item-list ((items trans-item-listp)
+                                (dstate dstatep)
+                                (tumap-orig filepath-trans-unit-mapp)
+                                (resolved-includes
+                                 string-header-name-string-map-mapp)
+                                (tumap-dimb filepath-trans-unit-mapp)
+                                (limit natp))
+    :returns (mv (erp maybe-msgp)
+                 (new-items trans-item-listp)
+                 (new-dstate dstatep)
+                 (new-tumap-dimb filepath-trans-unit-mapp))
+    :parents (disambiguator dim-trans-items/units)
+    :short "Disambiguate a list of translation items."
+    (b* (((reterr) nil (irr-dstate) nil)
+         ((when (zp limit))
+          (raise "Internal error: limit exhausted.")
+          (reterr "irrelevant"))
+         ((when (endp items))
+          (retok nil
+                 (dstate-fix dstate)
+                 (filepath-trans-unit-map-fix tumap-dimb)))
+         ((erp new-items-car dstate tumap-dimb)
+          (dimb-trans-item (car items)
+                           dstate
+                           tumap-orig
+                           resolved-includes
+                           tumap-dimb
+                           (1- limit)))
+         ((erp new-items-cdr dstate tumap-dimb)
+          (dimb-trans-item-list (cdr items)
+                                dstate
+                                tumap-orig
+                                resolved-includes
+                                tumap-dimb
+                                (1- limit))))
+      (retok (append new-items-car new-items-cdr) dstate tumap-dimb))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dimb-trans-unit ((tunit trans-unitp)
+                           (dstate dstatep)
+                           (tumap-orig filepath-trans-unit-mapp)
+                           (resolved-includes
+                            string-header-name-string-map-mapp)
+                           (tumap-dimb filepath-trans-unit-mapp)
+                           (limit natp))
+    :returns (mv (erp maybe-msgp)
+                 (new-tunit trans-unitp)
+                 (new-dstate dstatep)
+                 (new-tumap-dimb filepath-trans-unit-mapp))
+    :parents (disambiguator dim-trans-items/units)
+    :short "Disambiguate a translation unit."
+    (b* (((reterr) (irr-trans-unit) (irr-dstate) nil)
+         ((when (zp limit))
+          (raise "Internal error: limit exhausted.")
+          (reterr "irrelevant"))
+         (items (trans-unit->items tunit))
+         ((erp new-items dstate tumap-dimb)
+          (dimb-trans-item-list items
+                                dstate
+                                tumap-orig
+                                resolved-includes
+                                tumap-dimb
+                                (1- limit))))
+      (retok (make-trans-unit :items new-items :info nil) dstate tumap-dimb))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :guard-hints (("Goal" :in-theory (enable plexeme-token/space-p
+                                           plexeme-tokenp
+                                           ;; trans-item-listp ==> true-listp:
+                                           (:e tau-system))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ///
 
-  (defret trans-item-list-unambp-of-dimb-trans-item-list
-    (implies (not erp)
-             (trans-item-list-unambp new-items))
-    :hints (("Goal" :induct t)))
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret filepath-trans-unit-map-unambp-of-dimb-trans-item-list
-    (filepath-trans-unit-map-unambp new-disamb)
-    :hyp (filepath-trans-unit-map-unambp disamb)
-    :hints (("Goal" :induct t))))
+  (defret-mutual trans-items/units-unambp-of-dimb-trans-items/units
+    (defret trans-item-list-unambp-of-dimb-include
+      (implies (not erp)
+               (trans-item-list-unambp new-items))
+      :fn dimb-include)
+    (defret trans-item-list-unambp-of-dimb-trans-item
+      (implies (not erp)
+               (trans-item-list-unambp new-items))
+      :fn dimb-trans-item)
+    (defret trans-item-list-unambp-of-dimb-trans-item-list
+      (implies (not erp)
+               (trans-item-list-unambp new-items))
+      :fn dimb-trans-item-list)
+    (defret trans-unit-unambp-of-dimb-trans-unit
+      (implies (not erp)
+               (trans-unit-unambp new-tunit))
+      :fn dimb-trans-unit))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-trans-unit ((tunit trans-unitp)
-                         (dstate dstatep)
-                         (tumap filepath-trans-unit-mapp)
-                         (resolved-includes string-header-name-string-map-mapp)
-                         (disamb filepath-trans-unit-mapp))
-  :returns (mv (erp maybe-msgp)
-               (new-tunit trans-unitp)
-               (new-dstate dstatep)
-               (new-disamb filepath-trans-unit-mapp))
-  :short "Disambiguate a translation unit."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('tumap') input consists of the original translation unit map,
-     which may need to be looked up when disambiguating a @('#include'),
-     also using the @('resolved-includes') input.
-     The newly disambiguated translation units are threaded through,
-     because the disambiguation of a @('#include')
-     may involve the disambiguation of additional translation units.")
-   (xdoc::p
-    "This function takes and returns a disambiguation state
-     in order to accommodate an upcoming extension of the disambiguator
-     to handle translation units with @('#include') directives
-     that have been preserved by our preprocessor.
-     Similarly to what our preprocessor does for files,
-     the disambiguator will disambiguate each included translation unit
-     in two contexts,
-     namely in the current disambiguation state
-     and in a fresh disambiguation state,
-     and then comparing the results to ensure that
-     the @('#include') can be still preserved for disambiguation.
-     When the included translation unit is disambiguated
-     in the context of the including translation unit,
-     the output state from this function
-     is then used to disambiguate the rest of the including file."))
-  (b* (((reterr) (irr-trans-unit) (irr-dstate) nil)
-       (items (trans-unit->items tunit))
-       ((erp new-items dstate disamb)
-        (dimb-trans-item-list items dstate tumap resolved-includes disamb)))
-    (retok (make-trans-unit :items new-items :info nil) dstate disamb))
-
-  ///
-
-  (defret trans-unit-unambp-of-dimb-trans-unit
-    (implies (not erp)
-             (trans-unit-unambp new-tunit)))
-
-  (defret filepath-trans-unit-map-unambp-of-dimb-trans-unit
-    (filepath-trans-unit-map-unambp new-disamb)
-    :hyp (filepath-trans-unit-map-unambp disamb)))
+  (defret-mutual filepath-trans-unit-map-unambp-of-dimb-trans-items/units
+    (defret filepath-trans-unit-map-unambp-of-dimb-include
+      (filepath-trans-unit-map-unambp new-tumap-dimb)
+      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
+      :fn dimb-include)
+    (defret filepath-trans-unit-map-unambp-of-dimb-trans-item
+      (filepath-trans-unit-map-unambp new-tumap-dimb)
+      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
+      :fn dimb-trans-item)
+    (defret filepath-trans-unit-map-unambp-of-dimb-trans-item-list
+      (filepath-trans-unit-map-unambp new-tumap-dimb)
+      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
+      :fn dimb-trans-item-list)
+    (defret filepath-trans-unit-map-unambp-of-dimb-trans-unit
+      (filepath-trans-unit-map-unambp new-tumap-dimb)
+      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
+      :fn dimb-trans-unit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4102,7 +4286,7 @@
    resolved-includes
    dialect
    keep-going
-   nil) ; disamb
+   nil) ; tumap-dimb
 
   :prepwork
   ((define dimb-filepath-trans-unit-map-loop
@@ -4111,24 +4295,32 @@
       (resolved-includes string-header-name-string-map-mapp)
       (dialect c::dialectp)
       (keep-going booleanp)
-      (disamb filepath-trans-unit-mapp))
+      (tumap-dimb filepath-trans-unit-mapp))
      :returns (mv (erp maybe-msgp)
-                  (new-disamb filepath-trans-unit-mapp))
+                  (new-tumap-dimb filepath-trans-unit-mapp))
      :parents nil
      (b* (((reterr) nil)
           ((when (set::emptyp (filepath-set-fix paths)))
-           (retok (filepath-trans-unit-map-fix disamb)))
+           (retok (filepath-trans-unit-map-fix tumap-dimb)))
+          (tumap (filepath-trans-unit-map-fix tumap))
+          (tumap-dimb (filepath-trans-unit-map-fix tumap-dimb))
+          (resolved-includes
+           (string-header-name-string-map-map-fix resolved-includes))
           (path (set::head paths))
-          (path+tunit (omap::assoc path (filepath-trans-unit-map-fix tumap)))
+          (path+tunit (omap::assoc path tumap))
           ((unless path+tunit)
-           (raise "Internal error: ~x0 not in ~x1."
-                  path (filepath-trans-unit-map-fix tumap))
+           (raise "Internal error: ~x0 not in ~x1." path tumap)
            (reterr "irrelevant"))
           (tunit (cdr path+tunit))
           (file (filepath->string path))
           (dstate (init-dstate file dialect))
-          ((mv erp new-tunit & disamb)
-           (dimb-trans-unit tunit dstate tumap resolved-includes disamb))
+          ((mv erp new-tunit & tumap-dimb)
+           (dimb-trans-unit tunit
+                            dstate
+                            tumap
+                            resolved-includes
+                            tumap-dimb
+                            1000000000))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%" file erp)
@@ -4137,23 +4329,23 @@
                                                           resolved-includes
                                                           dialect
                                                           keep-going
-                                                          disamb))
+                                                          tumap-dimb))
              (retmsg$ "Error in translation unit ~x0: ~@1" file erp)))
-          (disamb (omap::update path new-tunit disamb)))
+          (tumap-dimb (omap::update path new-tunit tumap-dimb)))
        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                           tumap
                                           resolved-includes
                                           dialect
                                           keep-going
-                                          disamb))
+                                          tumap-dimb))
      :no-function nil
      :prepwork ((local (in-theory (enable emptyp-of-filepath-set-fix))))
 
      ///
 
      (defret filepath-trans-unit-map-unambp-of-dimb-trans-unit-map
-       (filepath-trans-unit-map-unambp new-disamb)
-       :hyp (filepath-trans-unit-map-unambp disamb)
+       (filepath-trans-unit-map-unambp new-tumap-dimb)
+       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
        :hints (("Goal" :induct t)))))
 
   ///
