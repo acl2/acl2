@@ -192,7 +192,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         [:normalize-xors]    ;; Whether to apply special handling to nests of XORs, Default: t
         [:produce-function]  ;; Whether to produce a function, in addition to a constant DAG, Default: nil
         [:disable-function]  ;; Whether to disable the function produced, Default: nil
-        [:produce-theorem]   ;; Whether to produce a theorem (without proof), asserting that lifiting produces the given result, Default: nil
+        [:produce-theorem]   ;; Whether to produce a theorem (without proof), asserting that lifting produces the given result, Default: nil
         )
 })
 

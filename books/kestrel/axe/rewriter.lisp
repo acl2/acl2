@@ -16,7 +16,7 @@
 ;; rewriter-jvm or another custom rewriter if possible.  Unlike this one, they
 ;; do not depend on any skip-proofs.
 
-;; NOTE: This currentlty depends on the JVM model, for the axe-syntaxp and
+;; NOTE: This currently depends on the JVM model, for the axe-syntaxp and
 ;; axe-bind-free functions.
 
 ;; TODO: Consider adding support for normalizing bvxor and bitxor nests during
@@ -549,7 +549,7 @@
  ;;returns (mv erp renaming-array2 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
  (defund merge-embedded-dag-into-dag (rev-dag
                                      renaming-array-name
-                                     renaming-array2 ;associates nodenums in the embedded dag with the nodenums (or qupteps) they rewrote to in the main dag
+                                     renaming-array2 ;associates nodenums in the embedded dag with the nodenums (or quoteps) they rewrote to in the main dag
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                      embedded-dag-var-alist ;associates vars in the embedded dag with their nodenums (or quoteps) in the main dag
                                      rewriter-rule-alist
@@ -717,7 +717,7 @@
                           (mv (erp-nil)
                               (aref1 renaming-array-for-merge-embedded-dag-name renaming-array-for-merge-embedded-dag (top-nodenum embedded-dag))
                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))))
-                  ;; No rule fired, so no simplifcation can be done:
+                  ;; No rule fired, so no simplification can be done:
                   ;; This node is ready to add to the dag
                   ;; in-line this?
                   (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization)
@@ -1248,7 +1248,7 @@
 ;; TODO: Consider having this return an array.
 ;change this to load the dag into the array first and to use assumptions that refer to that array (instead of possibly being huge terms)??
 ;; TODO: consider doing a top-down pass using a worklist to determine which nodes actually need to be simplified (making use of ifs, etc.)
-;ffffixme include only the necesary nodes in the context?!
+;ffffixme include only the necessary nodes in the context?!
 ;; TODO: external contexts could allow us to drop whole subdags and not waste time simplifying them..
 ;; Smashes 'dag-array, 'dag-parent-array, and 'renaming-array (fixme anything else?)
 (defun simplify-dag (dag ;; must not be a quotep, (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?),

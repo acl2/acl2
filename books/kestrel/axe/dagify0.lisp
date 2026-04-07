@@ -443,7 +443,7 @@
                             CONSP-OF-CDR
                             )))))
 
-(defthm dag-constant-alistp-of-mv-nth-5-of-merge-embedded-dag-into-dag-array
+(defthm dag-constant-alistp-of-mv-nth-5-of-merge-embedded-dag-into-dag-array-gen ; fewer hyps
   (implies (and (dag-constant-alistp dag-constant-alist)
                 (natp dag-len))
            (dag-constant-alistp (mv-nth
@@ -559,7 +559,7 @@
 ;;            :in-theory (e/d (make-nodes-for-vars-with-name)
 ;;                            (pseudo-dag-arrayp)))))
 
-(defthm dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name
+(defthm dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name-gen ; fewer hyps
   (implies (and (dag-constant-alistp dag-constant-alist)
                 (natp dag-len))
            (dag-constant-alistp (mv-nth 5 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
@@ -596,7 +596,7 @@
 ;;                   (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
 ;;   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
 
-(defthm bounded-dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name
+(defthm bounded-dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name-gen ;fewer hyps
   (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)
                 (natp dag-len))
            (bounded-dag-variable-alistp (mv-nth 6 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))

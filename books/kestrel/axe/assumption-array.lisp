@@ -115,7 +115,7 @@
                             myquotep
                             type-of-aref1-when-assumption-arrayp)))))
 
-;; In the equiv is 'iff, we either get back the nodenum itself or a quoted t or nil.
+;; If the equiv is 'iff, we either get back the nodenum itself or a quoted t or nil.
 ;; Just a check, because of how we will use the result.
 (defthmd maybe-replace-nodenum-using-assumption-array-of-iff-return-type
   (implies (and (assumption-arrayp 'assumption-array assumption-array)

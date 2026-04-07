@@ -475,7 +475,7 @@
   ;;                             (< nodenum (alen1 'sweep-array sweep-array)))
   ;;                 :verify-guards nil ; todo (but need the notion of a bounded-sweep-array)
   ;;                 ))
-  (let* (;; We know *probable-constant* wasn't set or we would have tried to prove the node constant instead of proving it each to another node.
+  (let* (;; We know *probable-constant* wasn't set or we would have tried to prove the node constant instead of proving it equal to another node.
          ;; TODO: Once we change the sweep to increment past the node, delete this:
          ;; (sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-array)) ;don't try to prove it equal to anything else
          ;;don't try to prove some other node is equal to this one (we've essentially removed this one from the dag):

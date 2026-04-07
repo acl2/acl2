@@ -572,7 +572,7 @@
 
 ;; Check that there are no MYIF branches in NEST that we want to step.  If this
 ;; is true of both branches of a MYIF, we might as well push the
-;; run-until-return over the branches of the MYIF.  NOTE: Assumes the presens
+;; run-until-return over the branches of the MYIF.  NOTE: Assumes the presence
 ;; of a dummy frame, so any state to be stepped must have at least 2 frames
 ;; about base-stack.
 (defund no-state-to-step-p (nest base-stack dag-array)

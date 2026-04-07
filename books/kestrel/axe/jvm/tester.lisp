@@ -42,7 +42,7 @@
 
 ;; Setup
 
-;; 1. Ensure that a recent verson of STP is installed and findable on your
+;; 1. Ensure that a recent version of STP is installed and findable on your
 ;; path.
 
 ;; 2. Ensure that the ACL2_ROOT environment variable points to your ACL2

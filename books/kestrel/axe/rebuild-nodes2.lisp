@@ -528,7 +528,7 @@
             unchanged-literal-nodenums)
         (maybe-translate-literals literal-nodenums
                                translation-array
-                               ;; Initialize accumulator to include all uneffected nodes
+                               ;; Initialize accumulator to include all unaffected nodes
                                nil nil)))
     (mv (erp-nil)
         ;; We put the changed nodes first, in the hope that we will use them to

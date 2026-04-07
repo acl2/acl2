@@ -108,7 +108,7 @@
 
 (defthm bounded-integer-alistp-of-compress1
   (implies (and (bounded-integer-alistp array n)
-                (natp n) ;drop?
+                ;; (natp n)
                 )
            (iff (bounded-integer-alistp (compress1 array-name array) n)
                 (header array-name array)                 ;why?

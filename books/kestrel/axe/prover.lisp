@@ -112,7 +112,7 @@
 
 ;TODO: possible optimization: before unifying for real (which involves building an alist), quickly check whether the term is of the right shape (ex: "foo of bar of baz of 255").  most tries will probably fail at that stage, especially in a large rule-set (could mark certain rules (e.g., ones of the form (foo <var> <var>) that we know will not fail this stage.
 ;TODO: possible optimization: mark variables that occur only once in the rule and don't bother making pairs for them in the alist until we know there is a structural match
-;TODO: possible optimization: mark each occurence of a vars in the lhs according to whether it is the first occurence of that var (don't bother to lookup in alist) or a later occurrence (check the alist but don't ever need to bind the var because it will already be bound)
+;TODO: possible optimization: mark each occurrence of a vars in the lhs according to whether it is the first occurrence of that var (don't bother to lookup in alist) or a later occurrence (check the alist but don't ever need to bind the var because it will already be bound)
 
 (local (in-theory (enable natp-of-car-when-bounded-darg-listp-gen)))
 
@@ -1022,7 +1022,7 @@
                                                      ;;dag-constant-alist dag-variable-alist
                                                      ;;hit-counts tries)
                                                      ))))))
-                                       ;; No rule fired, so no simplifcation can be done:
+                                       ;; No rule fired, so no simplification can be done:
                                        ;; This node is ready to add to the dag
                                        ;; in-line this?
                                        (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
