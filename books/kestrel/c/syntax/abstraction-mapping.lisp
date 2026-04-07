@@ -11,7 +11,7 @@
 (in-package "C$")
 
 (include-book "kestrel/c/syntax/abstract-syntax-trees" :dir :system)
-(include-book "kestrel/c/syntax/concrete-syntax" :dir :system)
+(include-book "grammar-operations")
 
 (acl2::controlled-configuration)
 
@@ -40,58 +40,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *grammar-c17*
-  :short "Grammar constant for the C17 dialect without extensions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since currently @(tsee abnf::deftreeops) (used below)
-     only operates on grammar constants,
-     we pick a particular C dialect to start,
-     defining a grammar constant for it.
-     We plan to generalize @(tsee abnf::deftreeops)
-     to operate on parameterized grammars,
-     specifically a function like @(tsee grammar-for)."))
-  (grammar-for (c::make-dialect :std (c::standard-c17))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(abnf::deftreeops *grammar-c17* :prefix cst)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; For now we use the operations on
+; the specific fixed grammar used in grammar-operations.lisp,
+; but we plan to generalize this to be parameterized over the dialect.
 
 (define abs-uppercase-letter ((cst abnf::treep))
-  :guard (cst-matchp cst "uppercase-letter")
+  :guard (c17-cst-matchp cst "uppercase-letter")
   :returns (achar characterp)
   :short "Abstract an @('uppercase-letter') CST
           to an ACL2 uppercase letter character."
-  (b* ((cst (cst-uppercase-letter-conc-rep-elem cst))
-       (nat (cst-%x41-5a-nat cst)))
+  (b* ((cst (c17-cst-uppercase-letter-conc-rep-elem cst))
+       (nat (c17-cst-%x41-5a-nat cst)))
     (code-char nat)))
 
 (define abs-lowercase-letter ((cst abnf::treep))
-  :guard (cst-matchp cst "lowercase-letter")
+  :guard (c17-cst-matchp cst "lowercase-letter")
   :returns (achar characterp)
   :short "Abstract a @('lowercase-letter') CST
           to an ACL2 lowercase letter character."
-  (b* ((cst (cst-lowercase-letter-conc-rep-elem cst))
-       (nat (cst-%x61-7a-nat cst)))
+  (b* ((cst (c17-cst-lowercase-letter-conc-rep-elem cst))
+       (nat (c17-cst-%x61-7a-nat cst)))
     (code-char nat)))
 
 (define abs-letter ((cst abnf::treep))
-  :guard (cst-matchp cst "letter")
+  :guard (c17-cst-matchp cst "letter")
   :returns (achar characterp)
   :short "Abstract a @('letter') CST to an ACL2 letter character."
-  (case (cst-letter-conc? cst)
-    (1 (abs-uppercase-letter (cst-letter-conc1-rep-elem cst)))
-    (2 (abs-lowercase-letter (cst-letter-conc2-rep-elem cst)))))
+  (case (c17-cst-letter-conc? cst)
+    (1 (abs-uppercase-letter (c17-cst-letter-conc1-rep-elem cst)))
+    (2 (abs-lowercase-letter (c17-cst-letter-conc2-rep-elem cst)))))
 
 (define abs-digit ((cst abnf::treep))
-  :guard (cst-matchp cst "digit")
+  :guard (c17-cst-matchp cst "digit")
   :returns (achar characterp)
   :short "Abstract a @('digit') CST to an ACL2 digit character."
-  (b* ((cst (cst-digit-conc-rep-elem cst))
-       (nat (cst-%x30-39-nat cst)))
+  (b* ((cst (c17-cst-digit-conc-rep-elem cst))
+       (nat (c17-cst-%x30-39-nat cst)))
     (code-char nat)))
 
 ; TODO: continue
