@@ -195,9 +195,9 @@
   :hints (("Goal" :in-theory (enable bvand))))
 
 (defthmd bvand-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-axe-argsp 'bvand y x dag-array))
-           (equal (bvand size y (bvand size x z))
-                  (bvand size x (bvand size y z))))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'bvand x y dag-array))
+           (equal (bvand size x (bvand size y z))
+                  (bvand size y (bvand size x z))))
   :hints (("Goal" :use (:instance bvand-commutative-2)
            :in-theory (disable bvand-commutative-2))))
 
@@ -210,9 +210,9 @@
   :hints (("Goal" :in-theory (enable bvor))))
 
 (defthmd bvor-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-axe-argsp 'bvor y x dag-array))
-           (equal (bvor size y (bvor size x z))
-                  (bvor size x (bvor size y z))))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'bvor x y dag-array))
+           (equal (bvor size x (bvor size y z))
+                  (bvor size y (bvor size x z))))
   :hints (("Goal" :use (:instance bvor-commutative-2)
            :in-theory (disable bvor-commutative-2))))
 
