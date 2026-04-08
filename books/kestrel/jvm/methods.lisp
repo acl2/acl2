@@ -1,7 +1,7 @@
 ; JVM methods, including the method-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,6 +21,9 @@
 ;(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system) ; todo: just include the def?
 (local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
+
+(local (in-theory (disable strip-cars)))
 
 (local
  (defthm keyword-listp-forward-to-true-listp
@@ -79,60 +82,66 @@
            (pcp (+ pc2 pc1)))
   :hints (("Goal" :in-theory (enable pcp))))
 
-
-
-;fixme check that the pcs increment correctly for each instruction
 ;fixme check that relative jumps are in bounds (or at least don't go negative, which may be enough for now to show the PC is a natp)
-(defund jvm-instructions-okayp (program valid-pcs)
-  (declare (xargs :guard (and (true-listp valid-pcs)
-                              (acl2::all-pcp valid-pcs))))
+;; PROGRAM is a list of (<pc> . <inst>) pairs
+;; VALID-PCS is all the valid PCs in the current method (allowable jump targets)
+;; todo: check that the last inst is a return?
+(defund jvm-instructions-okayp (program next-pc valid-pcs)
+  (declare (xargs :guard (and (pcp next-pc)
+                              (true-listp valid-pcs)
+                              (acl2::all-pcp valid-pcs))
+                  :guard-hints (("Goal" :in-theory (enable pcp acl2::acl2-numberp-when-natp)))))
   (if (atom program)
-      (equal program nil)
+      (null program)
     (let* ((entry (first program)))
       (and (consp entry)
            (let* ((pc (car entry))
                   (inst (cdr entry)))
-             (and (pcp pc)
+             (and (equal pc next-pc)
                   (jvm-instruction-okayp inst pc valid-pcs)
-                  (jvm-instructions-okayp (rest program) valid-pcs)))))))
+                  (jvm-instructions-okayp (rest program) (+ (inst-len inst) next-pc) valid-pcs)))))))
 
 (defthm alistp-when-jvm-instructions-okayp
-  (implies (jvm-instructions-okayp program valid-pcs)
+  (implies (jvm-instructions-okayp program next-pc valid-pcs)
            (alistp program))
   :hints (("Goal" :in-theory (enable jvm-instructions-okayp alistp))))
 
 (defthm integer-listp-of-strip-cars-when-jvm-instructions-okayp
-  (implies (jvm-instructions-okayp program valid-pcs)
-           (integer-listp (strip-cars program)))
-  :hints (("Goal" :in-theory (enable jvm-instructions-okayp strip-cars))))
+  (implies (and (jvm-instructions-okayp program next-pc valid-pcs)
+                (pcp next-pc))
+           (acl2::all-pcp (strip-cars program)))
+  :hints (("Goal" :in-theory (enable jvm-instructions-okayp strip-cars acl2::all-pcp))))
 
-;fixme should this have a guard of true-list?
-
-(defun increasing-pcsp (pcs prev-pc)
-  (declare (xargs :guard (and (true-listp pcs)
-                              (pcp prev-pc)
-                              (acl2::all-pcp pcs))))
-  (if (endp pcs)
-      t
-    (and (pc< prev-pc (first pcs))
-         (increasing-pcsp (rest pcs) (first pcs)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: constrain to only apply to non-native methods?  should always be preceded by a check?
+;; Recognizes the code for a method, a non-empty sequence of (<pc> . <inst>) pairs.
 (defund method-programp (program)
   (declare (xargs :guard t))
-  (and (alistp program)
-       (let ((pcs (strip-cars program)))
-         (and (acl2::all-pcp pcs)
-              (consp program)        ;the program cannot be empty
-              (eql 0 (first pcs)) ;the first instruction should be at PC 0
-              (increasing-pcsp (rest pcs) 0)
-              (jvm-instructions-okayp program pcs)))))
+  (and (consp program) ; the program cannot be empty
+       (alistp program) ; needed for strip-cars ; todo: separate out the valid-pcs check from the rest?
+       (let ((valid-pcs (strip-cars program)))
+         (and (acl2::all-pcp valid-pcs) ; for the guard of jvm-instructions-okayp
+              ;; the first instruction should be at PC 0:
+              (jvm-instructions-okayp program 0 valid-pcs)))))
 
 ;todo: slow?
 (defthm alistp-when-method-programp
   (implies (method-programp program)
            (alistp program))
   :hints (("Goal" :in-theory (enable method-programp alistp))))
+
+(local
+ (defthm eqlable-alistp-when-alistp-and-all-pcp-of-strip-cars
+   (implies (and (alistp x)
+                 (acl2::all-pcp (strip-cars x)))
+            (eqlable-alistp x))
+   :hints (("Goal" :in-theory (enable acl2::all-pcp strip-cars)))))
+
+(defthm eqlable-alistp-when-method-programp
+  (implies (method-programp x)
+           (eqlable-alistp x))
+  :hints (("Goal" :in-theory (enable method-programp))))
 
 (defun get-pcs-from-program (program)
   (declare (xargs :guard (method-programp program)))
@@ -433,7 +442,7 @@
 (defthm method-infop-of-make-dummy-method-info
   (implies (method-programp program)
            (method-infop (make-dummy-method-info program)))
-  :hints (("Goal" :in-theory (enable method-infop))))
+  :hints (("Goal" :in-theory (enable method-infop strip-cars))))
 
 (defthm true-listp-of-lookup-equal-of-parameter-type-when-method-infop
   (implies (method-infop method-info)

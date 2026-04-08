@@ -5221,16 +5221,6 @@
 ;;           (method-programp (PROGRAM (TOP-OPERAND (GET-CALL-STACK (BINDING TH (THREAD-TABLE S)))))))
 ;;  :hints (("Goal" :in-theory (enable JVM-STATEP THREAD-TABLEP))))
 
-(defthm eqlable-alistp-when-alistp-and-integer-listp-of-strip-cars
-  (implies (and (alistp x)
-                (integer-listp (strip-cars x)))
-           (eqlable-alistp x)))
-
-(defthm eqlable-alistp-when-method-programp
-  (implies (method-programp x)
-           (eqlable-alistp x))
-  :hints (("Goal" :in-theory (enable method-programp))))
-
 (defun execute-D2F (th s)
   (let* ((value (top-long (stack (thread-top-frame th s))))
          (result (d2f value)))
