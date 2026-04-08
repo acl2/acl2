@@ -109,7 +109,7 @@ used inside a syntactic evaluation environment such as @(see syntax-interp).</p>
  })
 
 
-<h4>@('reference-ctrex-fgl-object-eval)</h4>
+<h4>@('reference-ctrex-fgl-object-eval')</h4>
 
 <p>This function attempts to evaluate an FGL object under the Boolean
 assignment (and theorem variable assignment, if any) of the reference
@@ -126,7 +126,7 @@ bind-var) or the first argument of @(see fgl-prog2). It calls @(see
 syntax-interp) for itself so it should not be used inside a syntactic
 evaluation environment such as @(see syntax-interp).</p>
 
-<h3>Pitfalls<h3>
+<h3>Pitfalls</h3>
 
 <p>The functions that use the reference counterexample assume that the current
 symbolic simulation has generated a prefix of the Boolean variables of those
