@@ -246,26 +246,25 @@
   (declare (xargs :guard t))
   (natp len))
 
-;; todo: remove JVM from name
-(defund jvm-instructionp (inst)
+(defund instructionp (inst)
   (declare (xargs :guard t))
   (and (consp inst)
        (member-eq (car inst) acl2::*opcodes*)
        (not (eq (car inst) :wide)) ; gets handled in the parser
        (true-listp (cdr inst))))
 
-(defthm jvm-instructionp-forward-to-consp
-  (implies (jvm-instructionp inst)
+(defthm instructionp-forward-to-consp
+  (implies (instructionp inst)
            (consp inst))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable jvm-instructionp))))
+  :hints (("Goal" :in-theory (enable instructionp))))
 
 (defun instruction-opcode (inst)
-  (declare (xargs :guard (jvm-instructionp inst)))
+  (declare (xargs :guard (instructionp inst)))
   (car inst))
 
 (defun instruction-args (inst)
-  (declare (xargs :guard (jvm-instructionp inst)))
+  (declare (xargs :guard (instructionp inst)))
   (cdr inst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -454,8 +453,8 @@
 ;; Returns the length of the instruction INST.  Instructions that can be
 ;; preceded by :wide have their lengths stored in the instruction.
 (defund inst-len (inst)
-  (declare (xargs :guard (jvm-instructionp inst)
-                  :guard-hints (("Goal" :in-theory (enable jvm-instructionp member-equal)))))
+  (declare (xargs :guard (instructionp inst)
+                  :guard-hints (("Goal" :in-theory (enable instructionp member-equal)))))
   (let ((opcode (instruction-opcode inst)))
     (if (member-eq opcode *one-byte-ops*)
         1
@@ -506,10 +505,10 @@
 
 ;; todo: strengthen to posp
 (defthm natp-of-inst-len
-  (implies (jvm-instructionp inst)
+  (implies (instructionp inst)
            (natp (inst-len inst)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable inst-len jvm-instructionp member-equal))))
+  :hints (("Goal" :in-theory (enable inst-len instructionp member-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -570,17 +569,17 @@
   (pcp (len-of-invoke-instruction opcode))
   :hints (("Goal" :in-theory (enable len-of-invoke-instruction))))
 
-;fixme move or copy some of these checks (the ones not involving PC) into jvm-instructionp
+;fixme move or copy some of these checks (the ones not involving PC) into instructionp
 ;fixme improve to check the args of the instructions (e.g., that the inst-len stored is an integer for those instructions that can be preceded by WIDE)
 ;we need the pc here to make sure that relative jumps are okay
 (defund jvm-instruction-okayp (inst pc valid-pcs)
   (declare (xargs :guard (and (pcp pc)
                               (true-listp valid-pcs)
                               (acl2::all-pcp valid-pcs))
-                  :guard-hints (("Goal" :in-theory (e/d (jvm-instructionp len-of-invoke-instruction)
+                  :guard-hints (("Goal" :in-theory (e/d (instructionp len-of-invoke-instruction)
                                                         ( ;memberp-of-cons
                                                          ))))))
-  (and (jvm-instructionp inst) ;fixme eventually drop this (or at least the member-eq)
+  (and (instructionp inst) ;fixme eventually drop this (or at least the member-eq)
        ;; (not (cw "Checking ~x0~%" inst))
        (or (member-eq (car inst) *one-byte-ops*) ; no args to check for these
            (case (car inst)
@@ -702,14 +701,14 @@
              ;; :wide is handled specially (not a valid instruction)
              (otherwise (er hard? 'jvm-instruction-okayp "Unknown opcode: ~x0" (car inst)))))))
 
-(defthm jvm-instructionp-when-jvm-instruction-okayp
+(defthm instructionp-when-jvm-instruction-okayp
   (implies (jvm-instruction-okayp inst pc valid-pcs)
-           (jvm-instructionp inst))
+           (instructionp inst))
   :hints (("Goal" :in-theory (enable jvm-instruction-okayp))))
 
 ;extract the op-code from an instruction
 ;make a macro? (why?)
 (defund op-code (inst)
-  (declare (xargs :guard (jvm-instructionp inst)
-                  :guard-hints (("Goal" :in-theory (enable jvm-instructionp)))))
+  (declare (xargs :guard (instructionp inst)
+                  :guard-hints (("Goal" :in-theory (enable instructionp)))))
   (car inst))

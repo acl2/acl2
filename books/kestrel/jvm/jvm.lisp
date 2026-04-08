@@ -4780,7 +4780,7 @@
 ; where the tagged-value contains a BV32, a java-floatp, a string, or class-namep
 ;wide-flag indicates whether the instruction is LDC_W or LDC.  the only difference is the amount the PC should be advanced (3 or 2 bytes, resp.).
 (defun execute-LDC (inst th s wide-flag)
-  ;; (declare (xargs :guard (and (JVM-INSTRUCTIONP inst)
+  ;; (declare (xargs :guard (and (INSTRUCTIONP inst)
   ;;                             (jvm-statep s))))
   (let* ((tagged-value (farg1 inst))
          (tag (car tagged-value))

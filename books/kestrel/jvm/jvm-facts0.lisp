@@ -680,7 +680,7 @@
                             obtain-and-throw-exception
                             ;;thread-top-frame ;why?  don't we have rules about this (maybe later in the development)?
                             SKIP-INVOKESTATIC-INSTRUCTION
-                            JVM-INSTRUCTIONP
+                            INSTRUCTIONP
 ;                            acl2::mv-nth-becomes-nth
                             ;JVM-STATEP
                             ;make-state
