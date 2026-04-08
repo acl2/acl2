@@ -519,10 +519,6 @@
                         (class-namep (farg1 inst))
                         (valid-pcp (+ 3 pc) valid-pcs) ;todo: either drop these or change to a more efficient check
                         ))
-             (:putfield (and (= 3 (len (instruction-args inst)))
-                             (class-namep (farg1 inst))
-                             (field-idp (farg2 inst))
-                             (valid-pcp (+ 3 pc) valid-pcs)))
              ((:invokevirtual :invokeinterface)
               (and (= 4 (len (instruction-args inst)))
                    (reference-typep (farg1 inst)) ;todo: think about array types
@@ -557,7 +553,9 @@
               (and (= 3 (len (instruction-args inst)))
                    (class-namep (farg1 inst))
                    (field-idp (farg2 inst))
-                   (booleanp (farg3 inst))))
+                   (booleanp (farg3 inst))
+                   ;; (valid-pcp (+ 3 pc) valid-pcs) ; todo: do we want these, for non-jumps?
+                   ))
              ((:iload :lload :fload
                       :dload :aload :istore
                       :lstore
