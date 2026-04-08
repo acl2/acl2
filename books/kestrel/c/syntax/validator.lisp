@@ -7526,7 +7526,7 @@
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
-                           (filepath->unwrap path)
+                           (filepath->string path)
                            erp)
                        (valid-trans-ensemble-loop (omap::tail map)
                                                   externals
@@ -7535,7 +7535,7 @@
                                                   ienv
                                                   keep-going))
              (retmsg$ "Error in translation unit ~x0: ~@1"
-                      (filepath->unwrap path)
+                      (filepath->string path)
                       erp)))
           ((valid-table table) table)
           ((erp new-map -) (valid-trans-ensemble-loop (omap::tail map)

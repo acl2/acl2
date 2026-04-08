@@ -679,7 +679,7 @@
        (-
          (if warnings?
              (cw "Warning in ~x0: ~@1~%"
-                 (filepath->unwrap (omap::head-key map))
+                 (filepath->string (omap::head-key map))
                  warnings?)
            nil))
        ((erp any-foundp map$)

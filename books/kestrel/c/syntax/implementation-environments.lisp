@@ -13,8 +13,6 @@
 
 (include-book "../language/implementation-environments/top")
 
-(include-book "std/util/defirrelevant" :dir :system)
-
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
@@ -63,7 +61,7 @@
     "We include an indication of the dialect of C; see @(tsee c::dialect).
      Currently we mainly support C17,
      with and without GCC and Clang extensions,
-     but we are starting to adding some support for C23 as well.")
+     but we are starting to add some support for C23 as well.")
    (xdoc::p
     "We assume that bytes are 8 bits,
      that signed integers use two's complement,
@@ -73,7 +71,7 @@
      are defined by five numbers,
      i.e. the numbers of bytes of @('_Bool'), and (signed and unsigned)
      @('short'), @('int'), @('long'), and @('long long');
-     constraints on those number are derived from
+     constraints on those numbers are derived from
      [C17:5.2.4.2.1] (for the minima)
      and [C17:6.2.5/8] (for the increasing sizes).")
    (xdoc::p
@@ -359,7 +357,7 @@
 
 (define ienv->char-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
   (if (ienv->plain-char-signedp ienv)
       -128
     0)
@@ -675,7 +673,7 @@
 
 (define ienv-uchar-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned char')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->uchar-max ienv)))
@@ -692,7 +690,7 @@
 
 (define ienv-schar-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed char')."
   (and (<= (ienv->schar-min ienv) (lifix val))
        (<= (lifix val) (ienv->schar-max ienv)))
@@ -710,7 +708,7 @@
 
 (define ienv-char-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('char')."
   (and (<= (ienv->char-min ienv) (lifix val))
        (<= (lifix val) (ienv->char-max ienv)))
@@ -728,7 +726,7 @@
 
 (define ienv-ushort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned short')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->ushort-max ienv)))
@@ -745,7 +743,7 @@
 
 (define ienv-sshort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed short')."
   (and (<= (ienv->sshort-min ienv) (lifix val))
        (<= (lifix val) (ienv->sshort-max ienv)))
@@ -763,7 +761,7 @@
 
 (define ienv-uint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned int')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->uint-max ienv)))
@@ -780,7 +778,7 @@
 
 (define ienv-sint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed int')."
   (and (<= (ienv->sint-min ienv) (lifix val))
        (<= (lifix val) (ienv->sint-max ienv)))
@@ -798,7 +796,7 @@
 
 (define ienv-ulong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned long')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->ulong-max ienv)))
@@ -815,7 +813,7 @@
 
 (define ienv-slong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed long')."
   (and (<= (ienv->slong-min ienv) (lifix val))
        (<= (lifix val) (ienv->slong-max ienv)))
@@ -833,7 +831,7 @@
 
 (define ienv-ullong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned long long')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->ullong-max ienv)))
@@ -850,7 +848,7 @@
 
 (define ienv-sllong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed long long')."
   (and (<= (ienv->sllong-min ienv) (lifix val))
        (<= (lifix val) (ienv->sllong-max ienv)))
@@ -904,7 +902,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There is very large overlap between the of extensions
+    "There is a very large overlap between the extensions
      supported by GCC and by Clang.
      Therefore, it is most often sufficient to check
      if the dialect includes either."))

@@ -85,20 +85,17 @@
       We will lift this restriction if needed in the future.")))
   ((std standard)
    (gcc booleanp
-        :reqfix (if (or (and gcc clang)
-                        (and cheri (not clang)))
+        :reqfix (if (and gcc clang)
                     nil
                   gcc)
         :default nil)
    (clang booleanp
-          :reqfix (if (or (and gcc clang)
-                          (and cheri (not clang)))
-                      nil
+          :reqfix (if (and gcc clang)
+                      (if cheri t nil)
                     clang)
           :default nil)
    (cheri booleanp
-          :reqfix (if (or (and gcc clang)
-                          (and cheri (not clang)))
+          :reqfix (if (and cheri (not clang))
                       nil
                     cheri)
           :default nil))
@@ -109,7 +106,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-dialect
-  :short "An irrelevant C dialect"
+  :short "An irrelevant C dialect."
   :type dialectp
   :body (make-dialect :std (standard-c17)))
 
@@ -121,8 +118,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There is very large overlap between the of extensions
-     supported by GCC and by Clang.
+    "There is a very large overlap between the GCC and Clang extensions.
      Therefore, it is most often sufficient to check
      if the dialect includes either."))
   (or (dialect->gcc dialect)

@@ -485,11 +485,11 @@
 
     filepathp
     filepath
-    filepath->unwrap
+    filepath->string
 
     filedatap
     filedata
-    filedata->unwrap
+    filedata->bytes
 
     filesetp
     fileset
