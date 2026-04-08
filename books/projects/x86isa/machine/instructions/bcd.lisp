@@ -85,3 +85,48 @@
        (x86 (!flgi-undefined :zf x86))
        (x86 (!flgi-undefined :pf x86)))
     x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-aas
+
+  :parents (one-byte-opcodes)
+
+  :short "AAA: ASCII Adjust After Subtraction."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "3F AAS"))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* (;; See pseudocode in Intel manual for AAS.
+       ((the (unsigned-byte 16) ax) (rr16 #.*eax* x86))
+       ((the (unsigned-byte 8) al) (part-select ax :low 0 :width 8))
+       ((the (unsigned-byte 32) rflags) (rflags x86))
+       ((the (unsigned-byte 1) af) (rflagsBits->af rflags))
+       (adjustp (or (> (logand al #x0f) 9)
+                    (= af 1)))
+       ((mv (the (unsigned-byte 16) ax)
+            (the (unsigned-byte 1) af)
+            (the (unsigned-byte 1) cf))
+        (if adjustp
+            (b* ((ax (n16 (- ax 6)))
+                 (ah (part-select ax :low 8 :width 8))
+                 (ah (n08 (- ah 1)))
+                 (ax (part-install ah ax :low 8 :width 8)))
+              (mv ax 1 1))
+          (mv ax 0 0)))
+       (al (logand ax #x000f))
+       (ax (part-install al ax :low 0 :width 8))
+       (x86 (wr16 #.*eax* ax x86))
+       (x86 (!flgi :af af x86))
+       (x86 (!flgi :cf cf x86))
+       (x86 (!flgi-undefined :of x86))
+       (x86 (!flgi-undefined :sf x86))
+       (x86 (!flgi-undefined :zf x86))
+       (x86 (!flgi-undefined :pf x86)))
+    x86))
