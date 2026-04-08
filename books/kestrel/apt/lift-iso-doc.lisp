@@ -64,7 +64,7 @@
       (xdoc::desc
         "@('iso-pred-name')"
         (xdoc::p
-          "The name to be used for the generated predicate. If not providd,e @('lift-iso') generates
+          "The name to be used for the generated predicate. If not provided, @('lift-iso') generates
            a name from the provided predicate and the isomorphism names."))
 
       )))

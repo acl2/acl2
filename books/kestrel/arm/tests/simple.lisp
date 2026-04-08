@@ -1,4 +1,4 @@
-; Simple tests of the AMR32 model
+; Simple tests of the ARM32 model
 ;
 ; Copyright (C) 2026 Kestrel Institute
 ;

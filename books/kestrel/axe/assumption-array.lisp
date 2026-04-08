@@ -1,6 +1,6 @@
 ; An array to track information from assumptions
 ;
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -100,7 +100,6 @@
   (implies (and (assumption-arrayp 'assumption-array assumption-array)
                 (natp nodenum)
                 ;; (equivp equiv)
-                (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
            (or (equal nodenum (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print))
@@ -116,12 +115,11 @@
                             myquotep
                             type-of-aref1-when-assumption-arrayp)))))
 
-;; In the equiv is 'iff, we either get back the nodenum itself or a quoted t or nil.
+;; If the equiv is 'iff, we either get back the nodenum itself or a quoted t or nil.
 ;; Just a check, because of how we will use the result.
 (defthmd maybe-replace-nodenum-using-assumption-array-of-iff-return-type
   (implies (and (assumption-arrayp 'assumption-array assumption-array)
                 (natp nodenum)
-                (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
            (or (equal nodenum (maybe-replace-nodenum-using-assumption-array nodenum 'iff assumption-array assumption-array-num-valid-nodes print))
@@ -141,7 +139,6 @@
   (implies (and (assumption-arrayp 'assumption-array assumption-array)
                 (natp nodenum)
 ;(equivp equiv)
-                (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
            (dargp (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print)))
@@ -153,7 +150,6 @@
   (implies (and (assumption-arrayp 'assumption-array assumption-array)
                 (natp nodenum)
 ;(equivp equiv)
-                (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
            (equal (natp (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print))
@@ -166,7 +162,6 @@
                 (natp nodenum)
                 (< nodenum bound)
                 ;(equivp equiv)
-                (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
            (dargp-less-than (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print)
@@ -179,7 +174,6 @@
                 (natp nodenum)
                 (< nodenum bound)
                 ;;(equivp equiv)
-                (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
            (< (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print)
@@ -191,7 +185,6 @@
   (implies (and (assumption-arrayp 'assumption-array assumption-array)
                 (natp nodenum)
                 ;(equivp equiv)
-                (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
            (not (equal 1 (len (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print)))))

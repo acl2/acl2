@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,40 +15,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-dimb (input &key std gcc cond)
+(defmacro test-dimb (input &key dialect cond)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; DIALECT indicates the C dialect.
   ;; Optional COND may be over variable AST.
   `(assert-event
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
-                                    version
+                                    dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ast) (dimb-transunit ast ,gcc)))
+         (dstate (init-dstate "" dialect))
+         ((mv erp2 ast & &) (dimb-trans-unit ast dstate nil nil nil 1000)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
             (t (and ,(or cond t)
                     (prog2$ (cw "~%Output:~%~x0~|" ast) t)))))))
 
-(defmacro test-dimb-fail (input &key std gcc)
+(defmacro test-dimb-fail (input &key dialect)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; DIALECT indicates the C dialect.
   `(assert-event
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
-                                    version
+                                    dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ?ast) (dimb-transunit ast ,gcc)))
+         (dstate (init-dstate "" dialect))
+         ((mv erp2 & & &) (dimb-trans-unit ast dstate nil nil nil 1000)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))
             (t nil)))))
@@ -98,7 +94,7 @@
   int y = _Alignof(x);
   }
 "
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-dimb
  "typedef char x;
@@ -106,7 +102,7 @@
   int y = _Alignof(x);
   }
 "
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-dimb
  "int x;
@@ -296,8 +292,9 @@
  return (char *) (a) - b;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (trans-unit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -312,8 +309,9 @@
  return a + (b) + c;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (trans-unit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -343,8 +341,9 @@
   return (a) + (b) + c;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (trans-unit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -376,8 +375,9 @@
   return a + (b) + (c) + d;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (trans-unit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -415,8 +415,9 @@
   return ~ (a) + b;
 }
 "
- :cond (b* ((edecls (transunit->declons ast))
-            (edecl (car edecls))
+ :cond (b* ((items (trans-unit->items ast))
+            (item (car items))
+            (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
@@ -434,7 +435,7 @@
   return (x->y >= (f()) && x->y < (g()));
 }
 "
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (not (cw "~x0" ast)))
 
 (test-dimb
@@ -443,7 +444,7 @@
    goto mylabel;
 }
 "
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-dimb-fail
  "typedef union __attribute__((transparent_union))

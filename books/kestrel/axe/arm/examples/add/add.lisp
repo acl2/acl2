@@ -16,17 +16,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm conditionpassed-of-14
- (equal (arm::conditionpassed 14 arm)
-        t)
- :hints (("Goal" :in-theory (enable arm::conditionpassed))))
-
-(defthm conditionpassed-of-9
-  (equal (arm::conditionpassed 9 arm)
-         (not (and (equal (apsr.c arm) 1)
-                   (equal (apsr.z arm) 0))))
- :hints (("Goal" :in-theory (enable arm::conditionpassed))))
-
 ;; (depends-on "add.elf32-musl-static")
 
 ;; Lift the code, creating the dag *add*.

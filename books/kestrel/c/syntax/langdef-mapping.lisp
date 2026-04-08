@@ -1757,29 +1757,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-ext-declon-list ((extdecls ext-declon-listp))
-  :guard (ext-declon-list-unambp extdecls)
+(define ldm-trans-item ((item trans-itemp))
+  :guard (trans-item-unambp item)
+  :returns (mv erp (extdecl1 c::ext-declonp))
+  :short "Map a translation item to the language definition."
+  (b* (((reterr) (c::ext-declon-fundef
+                  (c::fundef (c::tyspecseq-void)
+                             (c::fun-declor-base (c::ident "irrelevant") nil)
+                             nil))))
+    (trans-item-case
+     item
+     :declon (ldm-ext-declon item.declon)
+     :include (reterr (msg "Unsupported #include directives."))
+     :define (reterr (msg "Unsupported #define directives."))
+     :undef (reterr (msg "Unsupported #undef directives."))
+     :cond (reterr (msg "Unsupported conditional directives."))
+     :line-comment (reterr (msg "Unsupported line comment."))))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-trans-item-ok-when-trans-item-formalp
+    (not erp)
+    :hyp (trans-item-formalp item)
+    :hints (("Goal" :in-theory (enable trans-item-formalp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ldm-trans-item-list ((items trans-item-listp))
+  :guard (trans-item-list-unambp items)
   :returns (mv erp (extdecls1 c::ext-declon-listp))
-  :short "Map a list of external declarations to the language definition."
+  :short "Map a list of translation items to the language definition."
   (b* (((reterr) nil)
-       ((when (endp extdecls)) (retok nil))
-       ((erp extdecl1) (ldm-ext-declon (car extdecls)))
-       ((erp extdecls1) (ldm-ext-declon-list (cdr extdecls))))
+       ((when (endp items)) (retok nil))
+       ((erp extdecl1) (ldm-trans-item (car items)))
+       ((erp extdecls1) (ldm-trans-item-list (cdr items))))
     (retok (cons extdecl1 extdecls1)))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-ext-declon-list-ok-when-ext-declon-list-formalp
+  (defret ldm-ext-declon-list-ok-when-trans-item-list-formalp
     (not erp)
-    :hyp (ext-declon-list-formalp extdecls)
-    :hints (("Goal" :induct t :in-theory (enable ext-declon-list-formalp)))))
+    :hyp (trans-item-list-formalp items)
+    :hints (("Goal" :induct t :in-theory (enable trans-item-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-transunit ((tunit transunitp))
-  :guard (transunit-unambp tunit)
-  :returns (mv erp (tunit1 c::transunitp))
+(define ldm-trans-unit ((tunit trans-unitp))
+  :guard (trans-unit-unambp tunit)
+  :returns (mv erp (tunit1 c::trans-unitp))
   :short "Map a translation unit to the language definition."
   :long
   (xdoc::topstring
@@ -1787,56 +1814,54 @@
     "A translation unit consists of a list of external declarations.
      We map all of them to the language definition (if possible),
      obtaining a corresponding list of external declaration,
-     which we put into a @(tsee c::transunit)."))
-  (b* (((reterr) (c::transunit nil))
-       ((when (transunit->includes tunit))
-        (reterr (msg "Unsupported #include directives.")))
-       (extdecls (transunit->declons tunit))
-       ((erp extdecls1) (ldm-ext-declon-list extdecls)))
-    (retok (c::make-transunit :declons extdecls1)))
+     which we put into a @(tsee c::trans-unit)."))
+  (b* (((reterr) (c::trans-unit nil))
+       (items (trans-unit->items tunit))
+       ((erp extdecls1) (ldm-trans-item-list items)))
+    (retok (c::make-trans-unit :declons extdecls1)))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-transunit-ok-when-transunit-formalp
+  (defret ldm-trans-unit-ok-when-trans-unit-formalp
     (not erp)
-    :hyp (transunit-formalp tunit)
-    :hints (("Goal" :in-theory (enable transunit-formalp)))))
+    :hyp (trans-unit-formalp tunit)
+    :hints (("Goal" :in-theory (enable trans-unit-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-transunit-ensemble ((tunits transunit-ensemblep))
-  :guard (transunit-ensemble-unambp tunits)
-  :returns (mv erp (tunits1 c::transunit-ensemblep))
-  :short "Map a translation unit ensemble to the language definition."
+(define ldm-trans-ensemble ((tunits trans-ensemblep))
+  :guard (trans-ensemble-unambp tunits)
+  :returns (mv erp (tunits1 c::trans-ensemblep))
+  :short "Map a translation ensemble to the language definition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently we only support translation unit ensembles
+    "Currently we only support translation ensembles
      consisting of a single translation unit.
-     We map that to a @(tsee c::transunit-ensemblep)
+     We map that to a @(tsee c::trans-ensemblep)
      without header, just with a source file
      that corresponds to the translation unit.
-     We set the path of the @(tsee c::transunit-ensemble)
+     We set the path of the @(tsee c::trans-ensemble)
      to the empty string for now,
      as we are not concerned with any actual interaction with the file system."))
-  (b* (((reterr) (c::transunit-ensemble "" nil (c::transunit nil)))
-       (map (transunit-ensemble->units tunits))
+  (b* (((reterr) (c::trans-ensemble "" nil (c::trans-unit nil)))
+       (map (trans-ensemble->units tunits))
        ((unless (= (omap::size map) 1))
-        (reterr (msg "Unsupported translation unit ensemble ~
+        (reterr (msg "Unsupported translation ensemble ~
                       with ~x0 translation units."
                      (omap::size map))))
        (tunit (omap::head-val map))
-       ((erp tunit1) (ldm-transunit tunit)))
-    (retok (c::make-transunit-ensemble :path-wo-ext ""
-                                       :dot-h nil
-                                       :dot-c tunit1)))
+       ((erp tunit1) (ldm-trans-unit tunit)))
+    (retok (c::make-trans-ensemble :path-wo-ext ""
+                                   :dot-h nil
+                                   :dot-c tunit1)))
   :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-transunit-ensemble-ok-when-transunit-ensemble-formalp
+  (defret ldm-trans-ensemble-ok-when-trans-ensemble-formalp
     (not erp)
-    :hyp (transunit-ensemble-formalp tunits)
-    :hints (("Goal" :in-theory (enable transunit-ensemble-formalp)))))
+    :hyp (trans-ensemble-formalp tunits)
+    :hints (("Goal" :in-theory (enable trans-ensemble-formalp)))))

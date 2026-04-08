@@ -46,7 +46,7 @@
       implementation with @(tsee mbe))."))
   (if (tree-empty-p tree)
       nil
-    (or (equal x (tagged-element->elem (tree->head tree)))
+    (or (equal x (tree-element->val (tree->head tree)))
         (tree-in x (tree->left tree))
         (tree-in x (tree->right tree)))))
 
@@ -63,7 +63,7 @@
 
 (defrule tree-in-of-tree-node
   (equal (tree-in x (tree-node head left right))
-         (or (equal x (tagged-element->elem head))
+         (or (equal x (tree-element->val head))
              (tree-in x left)
              (tree-in x right)))
   :enable tree-in)
@@ -83,19 +83,8 @@
   (not (tree-in x nil))
   :enable tree-in-when-tree-empty-p)
 
-(defruled tree-in-when-tree-empty-p
-  (implies (tree-empty-p tree)
-           (not (tree-in x tree)))
-  :enable tree-in)
-
-(defrule tree-in-when-tree-empty-p-cheap
-  (implies (tree-empty-p tree)
-           (not (tree-in x tree)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by tree-in-when-tree-empty-p)
-
 (defrule tree-in-of-tree->head
-  (equal (tree-in (tagged-element->elem (tree->head tree)) tree)
+  (equal (tree-in (tree-element->val (tree->head tree)) tree)
          (not (tree-empty-p tree))))
 
 (defruled tree-in-when-tree-in-of-tree->left
@@ -193,14 +182,14 @@
 (defrulel tree-in-tree->right-when-not-<<-of-tree->head
   (implies (and (bstp tree)
                 (not (tree-empty-p tree))
-                (not (<< (tagged-element->elem (tree->head tree)) x)))
+                (not (<< (tree-element->val (tree->head tree)) x)))
            (not (tree-in x (tree->right tree))))
   :enable tree-in-when-<<-all-r)
 
 (defrulel tree-in-tree->right-when-not-<<-of-tree->head-weak
   (implies (and (bstp tree)
                 (not (tree-empty-p tree))
-                (<< x (tagged-element->elem (tree->head tree))))
+                (<< x (tree-element->val (tree->head tree))))
            (not (tree-in x (tree->right tree))))
   :enable data::<<-rules)
 
@@ -209,14 +198,14 @@
 (defrulel tree-in-tree->left-when-not->>-of-tree->head
   (implies (and (bstp tree)
                 (not (tree-empty-p tree))
-                (not (<< x (tagged-element->elem (tree->head tree)))))
+                (not (<< x (tree-element->val (tree->head tree)))))
            (not (tree-in x (tree->left tree))))
   :enable tree-in-when-<<-all-l)
 
 (defrulel tree-in-tree->left-when-not->>-of-tree->head-weak
   (implies (and (bstp tree)
                 (not (tree-empty-p tree))
-                (<< (tagged-element->elem (tree->head tree)) x))
+                (<< (tree-element->val (tree->head tree)) x))
            (not (tree-in x (tree->left tree))))
   :enable data::<<-rules)
 
@@ -225,7 +214,7 @@
 (defrule heap<-of-tree->head-and-arg2-when-tree-in-of-arg2
   (implies (and (heapp tree)
                 (tree-in x tree))
-           (not (heap< (tagged-element->elem (tree->head tree)) x)))
+           (not (heap< (tree-element->val (tree->head tree)) x)))
   :induct (tree-in x tree)
   :enable (tree-in
            heapp
@@ -234,8 +223,8 @@
 (defrule heap<-of-arg1-and-tree->head-when-tree-in-of-arg1
   (implies (and (heapp tree)
                 (tree-in x tree))
-           (equal (heap< x (tagged-element->elem (tree->head tree)))
-                  (not (equal x (tagged-element->elem (tree->head tree))))))
+           (equal (heap< x (tree-element->val (tree->head tree)))
+                  (not (equal x (tree-element->val (tree->head tree))))))
   :induct (tree-in x tree)
   :enable (tree-in
            heapp
@@ -245,12 +234,12 @@
 
 (defrule tree-in-of-tree->head-and-tree->left
   (implies (bstp tree)
-           (not (tree-in (tagged-element->elem (tree->head tree))
+           (not (tree-in (tree-element->val (tree->head tree))
                          (tree->left tree)))))
 
 (defrule tree-in-of-tree->head-and-tree->right
   (implies (bstp tree)
-           (not (tree-in (tagged-element->elem (tree->head tree))
+           (not (tree-in (tree-element->val (tree->head tree))
                          (tree->right tree)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -290,24 +279,24 @@
 (defruled tree->head-when-heapp-and-tree-in-tree->head
   (implies (and (heapp x)
                 (heapp y)
-                (tree-in (tagged-element->elem (tree->head x)) y)
-                (tree-in (tagged-element->elem (tree->head y)) x))
-           (equal (tagged-element->elem (tree->head x))
-                  (tagged-element->elem (tree->head y))))
+                (tree-in (tree-element->val (tree->head x)) y)
+                (tree-in (tree-element->val (tree->head y)) x))
+           (equal (tree-element->val (tree->head x))
+                  (tree-element->val (tree->head y))))
   :use ((:instance heap<-of-arg1-and-tree->head-when-tree-in-of-arg1
-                   (x (tagged-element->elem (tree->head x)))
+                   (x (tree-element->val (tree->head x)))
                    (tree y)))
   :enable heap<-rules
   :disable heap<-of-arg1-and-tree->head-when-tree-in-of-arg1)
 
 (defruled tree->head-when-heapp-and-tree-in-tree->head-syntaxp
-  (implies (and (tree-in (tagged-element->elem (tree->head x)) y)
+  (implies (and (tree-in (tree-element->val (tree->head x)) y)
                 (syntaxp (<< y x))
                 (heapp x)
                 (heapp y)
-                (tree-in (tagged-element->elem (tree->head y)) x))
-           (equal (tagged-element->elem (tree->head x))
-                  (tagged-element->elem (tree->head y))))
+                (tree-in (tree-element->val (tree->head y)) x))
+           (equal (tree-element->val (tree->head x))
+                  (tree-element->val (tree->head y))))
   :by tree->head-when-heapp-and-tree-in-tree->head)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -382,7 +371,7 @@
   :short "A performant variant of @(tsee tree-in) which uses a BST assumption."
   (if (tree-empty-p tree)
       nil
-    (let ((head-elem (tagged-element->elem (tree->head tree))))
+    (let ((head-elem (tree-element->val (tree->head tree))))
       (or (equal x head-elem)
           (if (<< x head-elem)
               (tree-search-in x (tree->left tree))
@@ -427,7 +416,7 @@
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil
-               (let ((head-elem (tagged-element->elem (tree->head tree))))
+               (let ((head-elem (tree-element->val (tree->head tree))))
                  (or (= x head-elem)
                      (if (data::acl2-number-<< x head-elem)
                          (acl2-number-tree-search-in x (tree->left tree))
@@ -445,7 +434,7 @@
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil
-               (let ((head-elem (tagged-element->elem (tree->head tree))))
+               (let ((head-elem (tree-element->val (tree->head tree))))
                  (or (eq x head-elem)
                      (if (data::symbol-<< x head-elem)
                          (symbol-tree-search-in x (tree->left tree))
@@ -463,7 +452,7 @@
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil
-               (let ((head-elem (tagged-element->elem (tree->head tree))))
+               (let ((head-elem (tree-element->val (tree->head tree))))
                  (or (eql x head-elem)
                      (if (data::eqlable-<< x head-elem)
                          (eqlable-tree-search-in x (tree->left tree))

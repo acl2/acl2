@@ -1,7 +1,7 @@
 ; BV Library: bvplus
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -413,17 +413,12 @@
   :hints (("Goal" :in-theory (enable bvplus)
            :cases ((natp size)))))
 
-
-
-
 ;todo: instead, introduce bvminus
 ;todo: rename
 (defthm bvplus-minus-cancel
   (implies (and (integerp x)
                 (integerp y)
-                (integerp z)
-                (natp size)
-                )
+                (natp size))
            (equal (bvplus size y (bvplus size (- y) x))
                   (bvchop size x)))
     :hints (("Goal" :in-theory (enable bvplus))))

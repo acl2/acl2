@@ -484,65 +484,89 @@
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription)))
 
-(define split-fn-ext-declon-list
+(define split-fn-trans-item
   ((target-fn identp)
    (new-fn-name identp)
-   (extdecls ext-declon-listp)
+   (item trans-itemp)
+   (split-point natp))
+  :short "Transform an external declaration."
+  :returns (mv (er? maybe-msgp)
+               (target-found booleanp)
+               (items trans-item-listp))
+  (b* (((reterr) nil nil))
+    (trans-item-case
+      item
+      :declon (b* (((erp target-found extdecls)
+                    (split-fn-ext-declon target-fn
+                                         new-fn-name
+                                         item.declon
+                                         split-point)))
+                (retok target-found
+                       (c$::trans-item-list-declon extdecls)))
+      :include (retmsg$ "#include directives not supported.")
+      :define (retmsg$ "#define directives not supported.")
+      :undef (retmsg$ "#undef directives not supported.")
+      :cond (retmsg$ "Conditional directives not supported.")
+      :line-comment (retok nil (list (trans-item-fix item)))))
+  ///
+  (more-returns
+   (items true-listp :rule-classes :type-prescription)))
+
+(define split-fn-trans-item-list
+  ((target-fn identp)
+   (new-fn-name identp)
+   (items trans-item-listp)
    (split-point natp))
   :short "Transform a list of external declarations."
   :returns (mv (er? maybe-msgp)
-               (new-extdecls ext-declon-listp))
+               (new-items trans-item-listp))
   (b* (((reterr) nil)
-       ((when (endp extdecls))
+       ((when (endp items))
         (retok nil))
-       ((erp target-found extdecls1)
-        (split-fn-ext-declon target-fn new-fn-name (first extdecls) split-point))
+       ((erp target-found items1)
+        (split-fn-trans-item target-fn new-fn-name (first items) split-point))
        ((when target-found)
-        (retok (append extdecls1 (ext-declon-list-fix (rest extdecls)))))
-       ((erp extdecls2)
-        (split-fn-ext-declon-list target-fn new-fn-name (rest extdecls) split-point)))
-    (retok (append extdecls1 extdecls2))))
+        (retok (append items1 (trans-item-list-fix (rest items)))))
+       ((erp items2)
+        (split-fn-trans-item-list target-fn new-fn-name (rest items) split-point)))
+    (retok (append items1 items2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define split-fn-transunit
+(define split-fn-trans-unit
   ((target-fn identp)
    (new-fn-name identp)
-   (tunit transunitp)
+   (tunit trans-unitp)
    (split-point natp))
   :short "Transform a translation unit."
   :returns (mv (er? maybe-msgp)
-               (new-tunit transunitp))
-  (b* (((reterr) (irr-transunit))
-       ((transunit tunit) tunit)
-       ((when tunit.includes)
-        (retmsg$ "Unsupported #include directives."))
-       ((mv er extdecls)
-        (split-fn-ext-declon-list target-fn new-fn-name tunit.declons split-point)))
-    (mv er (make-transunit :comment nil
-                           :includes nil
-                           :declons extdecls
+               (new-tunit trans-unitp))
+  (b* (((reterr) (irr-trans-unit))
+       ((trans-unit tunit) tunit)
+       ((mv er items)
+        (split-fn-trans-item-list target-fn new-fn-name tunit.items split-point)))
+    (mv er (make-trans-unit :items items
                            :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define split-fn-filepath-transunit-map
+(define split-fn-filepath-trans-unit-map
   ((target-fn identp)
    (new-fn-name identp)
-   (map filepath-transunit-mapp)
+   (map filepath-trans-unit-mapp)
    (split-point natp))
   :short "Transform a filepath."
   :returns (mv (er? maybe-msgp)
-               (new-map filepath-transunit-mapp
-                        :hyp (filepath-transunit-mapp map)))
+               (new-map filepath-trans-unit-mapp
+                        :hyp (filepath-trans-unit-mapp map)))
   (b* (((reterr) nil)
        ((when (omap::emptyp map))
         (retok nil))
        ((mv path tunit) (omap::head map))
        ((erp new-tunit)
-        (split-fn-transunit target-fn new-fn-name tunit split-point))
+        (split-fn-trans-unit target-fn new-fn-name tunit split-point))
        ((erp new-map)
-        (split-fn-filepath-transunit-map target-fn
+        (split-fn-filepath-trans-unit-map target-fn
                                          new-fn-name
                                          (omap::tail map)
                                          split-point)))
@@ -551,21 +575,21 @@
                          new-map)))
   :verify-guards :after-returns)
 
-(define split-fn-transunit-ensemble
+(define split-fn-trans-ensemble
   ((target-fn identp)
    (new-fn-name identp)
-   (tunits transunit-ensemblep)
+   (tunits trans-ensemblep)
    (split-point natp))
-  :short "Transform a translation unit ensemble."
+  :short "Transform a translation ensemble."
   :returns (mv (er? maybe-msgp)
-               (new-tunits transunit-ensemblep))
-  (b* (((transunit-ensemble tunits) tunits)
+               (new-tunits trans-ensemblep))
+  (b* (((trans-ensemble tunits) tunits)
        ((mv er map)
-        (split-fn-filepath-transunit-map target-fn
+        (split-fn-filepath-trans-unit-map target-fn
                                          new-fn-name
                                          tunits.units
                                          split-point)))
-    (mv er (c$::make-transunit-ensemble :units map))))
+    (mv er (c$::make-trans-ensemble :units map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -579,11 +603,11 @@
   :short "Transform a code ensemble."
   (b* (((code-ensemble code) code)
        ((reterr) (irr-code-ensemble))
-       ((erp tunits) (split-fn-transunit-ensemble target-fn
-                                                  new-fn-name
-                                                  code.transunits
-                                                  split-point)))
-    (retok (change-code-ensemble code :transunits tunits))))
+       ((erp tunits) (split-fn-trans-ensemble target-fn
+                                              new-fn-name
+                                              code.trans-units
+                                              split-point)))
+    (retok (change-code-ensemble code :trans-units tunits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,7 +13,8 @@
 
 (include-book "expression-generation")
 (include-book "object-tables")
-(include-book "pure-expression-execution")
+
+(include-book "../proof-support/pure-expression-execution")
 
 (include-book "std/system/close-lambdas" :dir :system)
 (include-book "std/system/make-mv-let-call" :dir :system)
@@ -906,7 +907,7 @@
               (reterr
                (msg "A call ~x0 of the function ~x1, which returns void, ~
                      is being used where ~
-                     an expression term returning a a non-void C type ~
+                     an expression term returning a non-void C type ~
                      is expected."
                     term called-fn)))
              ((unless (equal affect gin.affect))
@@ -2142,7 +2143,7 @@
         (reterr
          (msg "The array ~x0 of type ~x1 ~
                is being written to with ~
-               an element ~x2 of type x3, ~
+               an element ~x2 of type ~x3, ~
                instead of type ~x4 as expected.
                This is indicative of ~
                unreachable code under the guards, ~
@@ -6844,7 +6845,7 @@
             (atc-gen-return-stmt (car terms) t gin state))
            (t (reterr
                (msg "When generating C code for the function ~x0, ~
-                     a term ~x0 has been encountered, ~
+                     a term ~x1 has been encountered, ~
                      which is disallowed."
                     gin.fn term))))))
        ((mv okp loop-fn loop-args in-types loop-affect loop-stmt loop-limit)

@@ -2664,7 +2664,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-transunit ((tunit transunitp))
+(define check-trans-unit ((tunit trans-unitp))
   :returns (wf wellformed-resultp)
   :short "Check a translation unit."
   :long
@@ -2692,9 +2692,9 @@
      However, as we look at a translation unit in isolation here,
      we do not have the rest of the program,
      and thus we make the stricter check for now."))
-  (b* (((transunit tunit) tunit)
+  (b* (((trans-unit tunit) tunit)
        ((unless (consp tunit.declons))
-        (reserrf (list :transunit-empty)))
+        (reserrf (list :trans-unit-empty)))
        (funtab (fun-table-init))
        (vartab (var-table-init))
        (tagenv (tag-env-init))
@@ -2705,27 +2705,27 @@
        (overlap (set::intersect (omap::keys funtab)
                                 (omap::keys (car vartab))))
        ((unless (set::emptyp overlap))
-        (reserrf (list :transunit-fun-obj-overlap overlap)))
+        (reserrf (list :trans-unit-fun-obj-overlap overlap)))
        ((unless (var-table-add-block vartab))
-        (reserrf (list :transunit-has-undef-var vartab)))
+        (reserrf (list :trans-unit-has-undef-var vartab)))
        ((unless (fun-table-all-definedp funtab))
-        (reserrf (list :transunit-has-undef-fun funtab))))
+        (reserrf (list :trans-unit-has-undef-fun funtab))))
     :wellformed)
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define preprocess ((tunits transunit-ensemblep))
-  :returns (tunit transunit-resultp)
-  :short "Preprocess a translation unit ensemble [C17:5.1.1.2/4]."
+(define preprocess ((tunits trans-ensemblep))
+  :returns (tunit trans-unit-resultp)
+  :short "Preprocess a translation ensemble [C17:5.1.1.2/4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a very simplified model of C preprocessing [C17:6.10].
      If there is no header, this is essentially a no-op:
      we return the translation unit for the source file.
-     If there is a header, as explained in @(tsee transunit-ensemble),
+     If there is a header, as explained in @(tsee trans-ensemble),
      it is implicitly included in the source file
      (without an explicit representation of the @('#include') directive):
      we concatenate the external declarations from the header
@@ -2734,27 +2734,27 @@
      This amounts to replacing the (implicit) @('#include')
      with the included header,
      which is assumed to be at the beginning of the source file.
-     The path without extension component of the translation unit ensemble
+     The path without extension component of the translation ensemble
      is currently ignored, because the @('#include') is implicit."))
-  (b* ((h-extdecls (and (transunit-ensemble->dot-h tunits)
-                        (transunit->declons
-                         (transunit-ensemble->dot-h tunits))))
-       (c-extdecls (transunit->declons
-                    (transunit-ensemble->dot-c tunits))))
-    (make-transunit :declons (append h-extdecls c-extdecls))))
+  (b* ((h-extdecls (and (trans-ensemble->dot-h tunits)
+                        (trans-unit->declons
+                         (trans-ensemble->dot-h tunits))))
+       (c-extdecls (trans-unit->declons
+                    (trans-ensemble->dot-c tunits))))
+    (make-trans-unit :declons (append h-extdecls c-extdecls))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-transunit-ensemble ((tunits transunit-ensemblep))
+(define check-trans-ensemble ((tunits trans-ensemblep))
   :returns (wf wellformed-resultp)
-  :short "Check a translation unit ensemble."
+  :short "Check a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
-    "First we preprocess the translation unit ensemble.
+    "First we preprocess the translation ensemble.
      If preprocessing is successful,
      we check the translation unit."))
   (b* (((okf tunit) (preprocess tunits)))
-    (check-transunit tunit))
+    (check-trans-unit tunit))
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :no-function nil)

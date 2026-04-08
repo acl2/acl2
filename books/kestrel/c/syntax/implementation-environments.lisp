@@ -13,8 +13,6 @@
 
 (include-book "../language/implementation-environments/top")
 
-(include-book "std/util/defirrelevant" :dir :system)
-
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
@@ -60,10 +58,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We include an indication of the version of C; see @(tsee c::version).
+    "We include an indication of the dialect of C; see @(tsee c::dialect).
      Currently we mainly support C17,
      with and without GCC and Clang extensions,
-     but we are starting to adding some support for C23 as well.")
+     but we are starting to add some support for C23 as well.")
    (xdoc::p
     "We assume that bytes are 8 bits,
      that signed integers use two's complement,
@@ -73,7 +71,7 @@
      are defined by five numbers,
      i.e. the numbers of bytes of @('_Bool'), and (signed and unsigned)
      @('short'), @('int'), @('long'), and @('long long');
-     constraints on those number are derived from
+     constraints on those numbers are derived from
      [C17:5.2.4.2.1] (for the minima)
      and [C17:6.2.5/8] (for the increasing sizes).")
    (xdoc::p
@@ -97,7 +95,7 @@
      alignment and padding policies,
      endianness,
      and so on."))
-  ((version c::version)
+  ((dialect c::dialect)
    (bool-bytes pos)
    (short-bytes pos
                 :reqfix (if (and (<= short-bytes int-bytes)
@@ -167,7 +165,7 @@
    (xdoc::p
     "This can be used as a dummy value of the type."))
   :type ienvp
-  :body (make-ienv :version (c::irr-version)
+  :body (make-ienv :dialect (c::irr-dialect)
                    :bool-bytes 1
                    :short-bytes 2
                    :int-bytes 2
@@ -225,7 +223,7 @@
                                                   llong-format
                                                   bool-format)))
     (c::make-ienv
-     :version ienv.version
+     :dialect ienv.dialect
      :char+short+int+long+llong+bool-format
      char+short+int+long+llong+bool-format))
   :guard-hints (("Goal" :in-theory (enable ldm-ienv-wfp-lemma)))
@@ -359,7 +357,7 @@
 
 (define ienv->char-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
   (if (ienv->plain-char-signedp ienv)
       -128
     0)
@@ -675,7 +673,7 @@
 
 (define ienv-uchar-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned char')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->uchar-max ienv)))
@@ -692,7 +690,7 @@
 
 (define ienv-schar-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed char')."
   (and (<= (ienv->schar-min ienv) (lifix val))
        (<= (lifix val) (ienv->schar-max ienv)))
@@ -710,7 +708,7 @@
 
 (define ienv-char-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('char')."
   (and (<= (ienv->char-min ienv) (lifix val))
        (<= (lifix val) (ienv->char-max ienv)))
@@ -728,7 +726,7 @@
 
 (define ienv-ushort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned short')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->ushort-max ienv)))
@@ -745,7 +743,7 @@
 
 (define ienv-sshort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed short')."
   (and (<= (ienv->sshort-min ienv) (lifix val))
        (<= (lifix val) (ienv->sshort-max ienv)))
@@ -763,7 +761,7 @@
 
 (define ienv-uint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned int')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->uint-max ienv)))
@@ -780,7 +778,7 @@
 
 (define ienv-sint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed int')."
   (and (<= (ienv->sint-min ienv) (lifix val))
        (<= (lifix val) (ienv->sint-max ienv)))
@@ -798,7 +796,7 @@
 
 (define ienv-ulong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned long')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->ulong-max ienv)))
@@ -815,7 +813,7 @@
 
 (define ienv-slong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed long')."
   (and (<= (ienv->slong-min ienv) (lifix val))
        (<= (lifix val) (ienv->slong-max ienv)))
@@ -833,7 +831,7 @@
 
 (define ienv-ullong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned long long')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->ullong-max ienv)))
@@ -850,7 +848,7 @@
 
 (define ienv-sllong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed long long')."
   (and (<= (ienv->sllong-min ienv) (lifix val))
        (<= (lifix val) (ienv->sllong-max ienv)))
@@ -887,14 +885,14 @@
 (define ienv->gcc ((ienv ienvp))
   :returns (yes/no booleanp)
   :short "Flag saying whether GCC extensions are enabled or not."
-  (c::version-gccp (ienv->version ienv)))
+  (c::dialect->gcc (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->clang ((ienv ienvp))
   :returns (yes/no booleanp)
   :short "Flag saying whether Clang extensions are enabled or not."
-  (c::version-clangp (ienv->version ienv)))
+  (c::dialect->clang (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -904,37 +902,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There is very large overlap between the of extensions
+    "There is a very large overlap between the extensions
      supported by GCC and by Clang.
      Therefore, it is most often sufficient to check
-     if the version includes either."))
-  (c::version-gcc/clangp (ienv->version ienv)))
+     if the dialect includes either."))
+  (c::dialect-gcc/clangp (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->std ((ienv ienvp))
-  :returns (number posp
-                   :rule-classes (:rewrite :type-prescription)
-                   :hints (("Goal" :in-theory (enable c::version-std-c17p
-                                                      c::version-std-c23p))))
-  :short "Numeric version of the C standard (regardless of GCC extensions)."
-  (b* (((ienv ienv) ienv))
-    (cond ((c::version-std-c17p ienv.version) 17)
-          ((c::version-std-c23p ienv.version) 23)))
-  :guard-hints (("Goal" :in-theory (enable c::version-std-c17p
-                                           c::version-std-c23p))))
+  :returns (std c::standardp)
+  :short "The base C standard (regardless of extensions)."
+  (c::dialect->std (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ienv-default (&key
-                      ((std (or (eq std :auto)
-                                (equal std 17)
-                                (equal std 23)))
-                       ':auto)
-                      ((extensions (or (eq extensions nil)
-                                       (eq extensions :gcc)
-                                       (eq extensions :clang)))
-                       'nil))
+(define ienv-default (&key ((dialect (or (eq dialect :auto)
+                                         (c::dialectp dialect)))
+                            ':auto))
   :short "A default implementation environment."
   :long
   (xdoc::topstring
@@ -943,29 +928,20 @@
      In particular, it could be used as default for tests
      that do not necessarily involve @(tsee input-files).")
    (xdoc::p
-    "We default to the C17 standard without GCC extensions.
-     This is the C version with the strongest support.
+    "We default to the C17 standard without any extensions.
+     This is the C dialect with the strongest support.
      Optionally, this can be overridden
-     with the @(':std') and @(':extensions') keyword arguments.
-     The legal arguments for @(':std') are @(':auto'), @('17'), and @('23').
-     The legal arguments for @(':extensions') are
-     @('nil'), @(':gcc'), and @(':clang').")
+     with the @(':dialect') keyword argument.
+     The argument provided for the @(':dialect') keyword, if provided,
+     must be @(':auto') or a @(see c::dialect).")
    (xdoc::p
     "For the type sizes and signedness options,
      we use values which have anecdotally appeared common
      on 64-bit machines."))
-  (b* ((std (if (eq std :auto) 17 std))
-       (version (if (int= std 17)
-                    (cond ((eq extensions nil) (c::version-c17))
-                          ((eq extensions :gcc) (c::version-c17+gcc))
-                          (t ; :clang
-                           (c::version-c17+clang)))
-                  (cond
-                   ((eq extensions nil) (c::version-c23))
-                   ((eq extensions :gcc) (c::version-c23+gcc))
-                   (t ; :clang
-                    (c::version-c23+clang))))))
-    (make-ienv :version version
+  (b* ((dialect (if (eq dialect :auto)
+                    (c::make-dialect :std (c::standard-c17))
+                  dialect)))
+    (make-ienv :dialect dialect
                :bool-bytes 1
                :short-bytes 2
                :int-bytes 4

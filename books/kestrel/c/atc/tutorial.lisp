@@ -1060,7 +1060,7 @@
    "ATC generates a named constant whose value is
     the AST of the generated C program.
     More precisely, it is the AST of the generated C file,
-    which is a value of the fixtype @(tsee transunit-ensemble) in "
+    which is a value of the fixtype @(tsee trans-ensemble) in "
    (xdoc::seetopic "abstract-syntax" "the abstract syntax of C")
    ". More precisely, it is the content of the generated file on disk:
     the AST is "
@@ -1093,7 +1093,7 @@
    "  (equal (check-file <constant>) :wellformed))")
   (xdoc::p
    "This asserts that
-    when @(tsee check-transunit-ensemble) is applied
+    when @(tsee check-trans-ensemble) is applied
     to the named constant described above
     (i.e. the abstract syntax of the generated C program),
     the result is the value @(':wellformed').
@@ -1104,7 +1104,7 @@
 
   (xdoc::p
    "Since the program AST is a constant
-    and @(tsee check-transunit-ensemble) is executable,
+    and @(tsee check-trans-ensemble) is executable,
     the theorem is proved easily by execution.")
 
   (xdoc::p

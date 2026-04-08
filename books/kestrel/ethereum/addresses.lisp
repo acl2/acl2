@@ -76,6 +76,6 @@
   (xdoc::topstring
    (xdoc::p
     "We calculate the public key from the private key,
-     and then use @(tsee public-key-to-address) to calculate the addres."))
+     and then use @(tsee public-key-to-address) to calculate the address."))
   (public-key-to-address (secp256k1-priv-to-pub priv-key))
   :hooks (:fix))

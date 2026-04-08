@@ -1,7 +1,7 @@
 ; More DAG builders
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -443,7 +443,7 @@
                             CONSP-OF-CDR
                             )))))
 
-(defthm dag-constant-alistp-of-mv-nth-5-of-merge-embedded-dag-into-dag-array
+(defthm dag-constant-alistp-of-mv-nth-5-of-merge-embedded-dag-into-dag-array-gen ; fewer hyps
   (implies (and (dag-constant-alistp dag-constant-alist)
                 (natp dag-len))
            (dag-constant-alistp (mv-nth
@@ -559,7 +559,7 @@
 ;;            :in-theory (e/d (make-nodes-for-vars-with-name)
 ;;                            (pseudo-dag-arrayp)))))
 
-(defthm dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name
+(defthm dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name-gen ; fewer hyps
   (implies (and (dag-constant-alistp dag-constant-alist)
                 (natp dag-len))
            (dag-constant-alistp (mv-nth 5 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
@@ -596,7 +596,7 @@
 ;;                   (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
 ;;   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
 
-(defthm bounded-dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name
+(defthm bounded-dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name-gen ;fewer hyps
   (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)
                 (natp dag-len))
            (bounded-dag-variable-alistp (mv-nth 6 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
@@ -1568,7 +1568,7 @@
   (mv-let (erp dag-or-quotep)
     (compose-term-and-dag term var-to-replace dag)
     (if erp
-        (er hard? 'compose-term-and-dag! "Error composing term and DAG: ~x0.")
+        (er hard? 'compose-term-and-dag! "Error composing term and DAG: ~x0." erp)
       dag-or-quotep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

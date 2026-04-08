@@ -39,8 +39,8 @@
     (xdoc::p
       "Attributes may either be associated to @(see qualified-ident)s, or to
        @(see c$::UID)s directly
-       (see @(tsee transunit-ensemble-add-attributes-with-qualified-idents)
-       and @(tsee transunit-ensemble-add-attributes), respectively).")
+       (see @(tsee trans-ensemble-add-attributes-with-qualified-idents)
+       and @(tsee trans-ensemble-add-attributes), respectively).")
     (xdoc::p
       "When adding attributes to declaration, it is not clear whether it is
        necessary to add the attribute to <i>each</i> declaration of the same
@@ -110,8 +110,8 @@
 
 (define resolve-qualified-ident-attrib-spec-list-map
   ((map qualified-ident-attrib-spec-list-mapp)
-   (ensemble transunit-ensemblep))
-  :guard (transunit-ensemble-annop ensemble)
+   (ensemble trans-ensemblep))
+  :guard (trans-ensemble-annop ensemble)
   :returns (mv (er? maybe-msgp)
                (map$ uid-attrib-spec-list-mapp))
   (b* (((reterr) nil)
@@ -154,6 +154,14 @@
       nil
     (cons (ext-declon-declon (first declons))
           (map-ext-declon-declon (rest declons)))))
+
+(define map-trans-item-declon
+  ((edeclons ext-declon-listp))
+  :returns (items trans-item-listp)
+  (if (endp edeclons)
+      nil
+    (cons (trans-item-declon (first edeclons))
+          (map-trans-item-declon (rest edeclons)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -255,9 +263,12 @@
               fundef
               ext-declon
               ext-declon-list
-              transunit
-              filepath-transunit-map
-              transunit-ensemble)
+              hash-if/elif-expr
+              hash-if/ifdef/ifndef
+              trans-items
+              trans-unit
+              filepath-trans-unit-map
+              trans-ensemble)
   :extra-args
   ((attrs uid-attrib-spec-list-mapp))
   :override
@@ -303,28 +314,33 @@
        (c$::change-fundef
          fundef$
          :specs (append decl-specs fundef$.specs))))
-   (c$::ext-declon-list
-     (b* (((when (endp c$::ext-declon-list))
-           nil)
-          (ext-declon (ext-declon-add-attributes (first c$::ext-declon-list) attrs))
-          (split-ext-declons
-            (ext-declon-case
-              ext-declon
-              :declon (map-ext-declon-declon
-                        (declon-add-attrib-split ext-declon.declon attrs))
-              :otherwise (list ext-declon))))
-       (append split-ext-declons
-               (ext-declon-list-add-attributes (rest c$::ext-declon-list) attrs))))))
+   (c$::trans-item-list
+    (b* (((when (endp c$::trans-item-list))
+          nil)
+         (trans-item (trans-item-add-attributes (first c$::trans-item-list) attrs))
+         (split-trans-items
+          (trans-item-case
+           trans-item
+           :declon
+           (ext-declon-case
+            trans-item.declon
+            :declon (map-trans-item-declon
+                     (map-ext-declon-declon
+                      (declon-add-attrib-split trans-item.declon.declon attrs)))
+            :otherwise (list trans-item))
+           :otherwise (list trans-item))))
+      (append split-trans-items
+              (trans-item-list-add-attributes (rest c$::trans-item-list) attrs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-ensemble-add-attributes-with-qualified-idents
-  ((ensemble transunit-ensemblep)
+(define trans-ensemble-add-attributes-with-qualified-idents
+  ((ensemble trans-ensemblep)
    (attrs qualified-ident-attrib-spec-list-mapp))
-  :guard (transunit-ensemble-annop ensemble)
+  :guard (trans-ensemble-annop ensemble)
   :returns (mv (er? maybe-msgp)
-               (ensemble$ transunit-ensemblep))
-  (b* (((reterr) (irr-transunit-ensemble))
+               (ensemble$ trans-ensemblep))
+  (b* (((reterr) (irr-trans-ensemble))
        ((erp attrs$)
         (resolve-qualified-ident-attrib-spec-list-map attrs ensemble)))
-    (retok (transunit-ensemble-add-attributes ensemble attrs$))))
+    (retok (trans-ensemble-add-attributes ensemble attrs$))))

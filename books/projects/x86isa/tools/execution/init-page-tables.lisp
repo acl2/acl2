@@ -39,8 +39,7 @@
 
 (in-package "X86ISA")
 
-(include-book "init-state"
-              :ttags (:syscall-exec))
+(include-book "init-state" :ttags (:syscall-exec))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

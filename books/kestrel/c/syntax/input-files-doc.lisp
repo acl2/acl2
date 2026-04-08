@@ -141,22 +141,22 @@
        the input files are preprocessed using an external preprocessor.
        For each file, we provide the @('-E') flag to that preprocessor,
        as well as some instantiation of the @('-std=') flag.
-       This latter flag is based on the @('version') field of the "
+       This latter flag is based on the @('dialect') field of the "
       (xdoc::seetopic "implementation-environments"
                       "implementation environment")
        ", as indicated by the following table.")
      (xdoc::table_
-      (xdoc::tr (xdoc::th "@(see c::Version)")
+      (xdoc::tr (xdoc::th "@(see c::Dialect)")
                 (xdoc::th "Standard Flag"))
-      (xdoc::tr (xdoc::td "@('(c::version-c17)')")
+      (xdoc::tr (xdoc::td "@('(c::dialect-c17)')")
                 (xdoc::td "@('-std=c17')"))
-      (xdoc::tr (xdoc::td "@('(c::version-c23)')")
+      (xdoc::tr (xdoc::td "@('(c::dialect-c23)')")
                 (xdoc::td "@('-std=c23')"))
-      (xdoc::tr (xdoc::td "@('(c::version-c17+gcc)') /
-                           @('(c::version-c17+clang)')")
+      (xdoc::tr (xdoc::td "@('(c::dialect-c17+gcc)') /
+                           @('(c::dialect-c17+clang)')")
                 (xdoc::td "@('-std=gnu17')"))
-      (xdoc::tr (xdoc::td "@('(c::version-c23+gcc)') /
-                           @('(c::version-c23+clang)')")
+      (xdoc::tr (xdoc::td "@('(c::dialect-c23+gcc)') /
+                           @('(c::dialect-c23+clang)')")
                 (xdoc::td "@('-std=gnu23')")))
      (xdoc::p
       "The @(':preprocess-args') input specifies additional arguments
@@ -292,7 +292,7 @@
       "If @(':process') is @(':parse'),
        the value of the constant named by @(':const') is a "
       (xdoc::seetopic "code-ensembles" "code ensemble")
-      " consisting of the translation unit ensemble
+      " consisting of the translation ensemble
        resulting from the parser,
        paired with the implementation environment
        determined by the inputs described below.
@@ -302,7 +302,7 @@
       "If @(':process') is @(':disambiguate'),
        the value of the constant named by @(':const') is a "
       (xdoc::seetopic "code-ensembles" "code ensemble")
-      " consisting of the translation unit ensemble
+      " consisting of the translation ensemble
        resulting from the disambiguator,
        paired with the implementation environment
        determined by the inputs described below.
@@ -311,14 +311,14 @@
       "If @(':process') is @(':validate'),
        the value of the constant named by @(':const') is a "
       (xdoc::seetopic "code-ensembles" "code ensemble")
-      " consisting of the translation unit ensemble
+      " consisting of the translation ensemble
        resulting from the validator,
        paired with the implementation environment
        determined by the inputs described below.
        This representation has no ambiguous constructs
        and is annotated with validation information.")
      (xdoc::p
-      "In all cases, the keys of the translation unit ensemble map
+      "In all cases, the keys of the translation ensemble map
        are the file paths specified in the @(':files') input,
        without the @(':base-dir') prefix.")
      (xdoc::p

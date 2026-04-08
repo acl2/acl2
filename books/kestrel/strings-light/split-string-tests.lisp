@@ -1,6 +1,6 @@
 ; Tests of split-string
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,7 +29,7 @@
         (equal after ""))))
 
 ;; test where the given character appears multiple times
-;; note that we use the *last* occurrence.
+;; note that we use the *first* occurrence.
 (assert-event
  (mv-let (foundp before after)
    (split-string "ABCDEDEFGH" #\D)

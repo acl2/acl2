@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -583,7 +583,7 @@
 ; We have tried to build under ECL (Embeddable Common-Lisp), and with some
 ; modifications, we made progress -- except there appears (as of Sept. 2011) to
 ; be no good way for us to save an executable image.  Specifically, it appears
-; that c:build-program not will suffice for saving state (properties etc.) --
+; that c:build-program will not suffice for saving state (properties etc.) --
 ; it's just for saving specified .o files.  (This impression seems to be
 ; confirmed at http://stackoverflow.com/questions/7686246/saving-lisp-state .)
 
@@ -754,50 +754,8 @@
 
 )
 
-#+lispworks
-(when (and (string>= (lisp-implementation-version) "8.1.0")
-
-; Starting with Version 8.1.0 of Lispworks, characters 223 and 255 are treated
-; as lower-case but their upper-casing produces a non-ACL2 character, e.g.,
-; (char-code (char-upcase (code-char 223))) evalutes to 7838.  We fix that
-; issue here.
-
-; The following conjunct avoids running this code twice (just in case somehow
-; acl2.lisp is loaded twice).
-
-           (not (boundp '*char-223*)))
-  (defconstant *char-223* (code-char 223))
-  (defconstant *char-255* (code-char 255))
-  (defconstant *lower-case-p-old* (symbol-function 'lower-case-p))
-  (defconstant *char-upcase-old* (symbol-function 'char-upcase))
-  (defconstant *string-upcase-old* (symbol-function 'string-upcase))
-  (defun lower-case-p-new (c)
-    (declare (type character c))
-    (if (or (eql c *char-223*) (eql c *char-255*))
-        nil
-      (funcall *lower-case-p-old* c)))
-  (defun char-upcase-new (c)
-    (declare (type character c))
-    (if (or (eql c *char-223*) (eql c *char-255*))
-        c
-      (funcall *char-upcase-old* c)))
-  (defun string-upcase-new (s)
-    (declare (type string s))
-    (if (or (position *char-223* s) (position *char-255* s))
-        (coerce (loop for i from 0 to (1- (length s))
-                      collect (char-upcase-new (char s i)))
-                'string)
-      (funcall *string-upcase-old* s)))
-  (compile 'char-upcase-new)
-  (compile 'lower-case-p-new)
-  (compile 'string-upcase-new)
-  (let ((*handle-warn-on-redefinition* nil))
-    (setf (symbol-function 'lower-case-p)
-          (symbol-function 'lower-case-p-new))
-    (setf (symbol-function 'char-upcase)
-          (symbol-function 'char-upcase-new))
-    (setf (symbol-function 'string-upcase)
-          (symbol-function 'string-upcase-new))))
+; See acl2-fns.lisp for changes to lower-case-p, char-upcase, and
+; string-upcase, which are installed later below after loading acl2-fns.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
@@ -865,9 +823,9 @@
                  package whose name begins with the ~%four letters ``ACL2'', ~
                  so ACL2 may not work in this Lisp." (package-name p))
         (cond ((package-use-list p)
-               (format t "~%~%Warning:  The package with name ~a ~
-                   USES the packages in the list ~a.  ACL2 will not work ~
-                   in state of affairs."
+               (format t "~%~%Warning:  The package with name ~a USES the ~
+                          packages in the list ~a.  ACL2 will not work in ~
+                          this state of affairs."
                        (package-name p) (package-use-list p)))))))
 
 (or (find-package "ACL2")
@@ -1220,7 +1178,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 8.6"
+                      "ACL2 Version 8.7"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))
@@ -1730,13 +1688,21 @@ ACL2 from scratch.")
 ; lock.  This macro suppresses the package lock on "COMMON-LISP" for Lisps
 ; where we know this is necessary, and also inhibits some warnings.
 
-  #-(or sbcl clisp) `(with-warnings-suppressed ,@forms)
-  #+sbcl `(sb-ext:with-unlocked-packages
-           ("COMMON-LISP")
-           (with-warnings-suppressed ,@forms))
-  #+clisp `(ext:without-package-lock
-            ("COMMON-LISP")
-            (with-warnings-suppressed ,@forms)))
+  `(#+sbcl
+    sb-ext:with-unlocked-packages #+sbcl ("COMMON-LISP")
+    #+clisp
+    ext:without-package-lock #+clisp ("COMMON-LISP")
+    #+allegro
+    excl::without-package-locks
+    #+ccl
+    let #+ccl ((ccl:*warn-if-redefine-kernel* nil))
+    #+lispworks
+    let #+lispworks ((hcl:*packages-for-warn-on-redefinition* nil))
+    #+cmucl
+    lisp::without-package-locks
+    #-(or sbcl clisp allegro ccl lispworks cmucl)
+    progn
+    (with-warnings-suppressed ,@forms)))
 
 ; The following may prevent an error when SBCL compiles ec-calls in the
 ; definition of apply$-lambda.  We may do something more principled in the
@@ -1884,20 +1850,41 @@ ACL2 from scratch.")
 ; the system with Allegro under Linux, the same ".fasl" extension could fool us
 ; into thinking that recompilation is not necessary.
 
- (progn
-   (load "acl2-fns.lisp") ;we like to load before compiling
-   (let ((acl2-fns-compiled
-          (make-pathname :name "acl2-fns"
-                         :type *compiled-file-extension*)))
-     (when (probe-file acl2-fns-compiled)
-       (delete-file acl2-fns-compiled))
-     (when (not *suppress-compile-build-time*)
-       (compile-file "acl2-fns.lisp")
+ (with-suppression
+  (load "acl2-fns.lisp") ;we like to load before compiling
+  (let ((acl2-fns-compiled
+         (make-pathname :name "acl2-fns"
+                        :type *compiled-file-extension*)))
+    (when (probe-file acl2-fns-compiled)
+      (delete-file acl2-fns-compiled))
+    (when (not *suppress-compile-build-time*)
+      (compile-file "acl2-fns.lisp")
 
 ; Note that load-compiled is not used below, but on the other hand we are still
 ; using the original readtable here so that's not a problem.
 
-       (load acl2-fns-compiled)))))
+      (load acl2-fns-compiled)))))
+
+; Load some redefinitions from acl2-fns.lisp, except for GCL; see redefinitions
+; of lower-case-p-new etc. in acl2-fns.lisp.
+#-gcl
+(defvar *case-mods-completed* nil)
+#-gcl
+(when (not *case-mods-completed*)
+  (format t "; Redefining lower-case-p, char-upcase, and string-upcase.~%")
+  (setq *case-mods-completed* t)
+; The following declaim form is necessary for at least CCL in order to pass the
+; check that mentions "Checks on character case" in acl2-check.lisp.  Without
+; it, we have seen the check fail, presumably because char-upcase is somehow
+; inlined to be the original char-upcase.
+  (declaim (notinline lower-case-p char-upcase string-upcase))
+  (with-suppression
+   (defun lower-case-p (c)
+     (lower-case-p-new c))
+   (defun char-upcase (c)
+     (char-upcase-new c))
+   (defun string-upcase (c)
+     (string-upcase-new c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                          FP SUPPORT CHECKS
@@ -2024,7 +2011,21 @@ ACL2 from scratch.")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defparameter *acl2-readtable*
-  (copy-readtable nil)
+  (let ((rt (copy-readtable nil)))
+
+; Eric McCarthy made the following suggestion for SBCL on 3/26/2026, citing the
+; following as an example for why it is needed.
+;    (char-code (char (symbol-name
+;                      (read-from-string (format nil "~c" (code-char 181))))
+;                     0))
+;    => 924  ; GREEK CAPITAL LETTER MU
+; A bit of investigation suggests that none of the other five Lisp that can
+; host ACL2 have this behavior of returning other than 181 (via so-called "NFKC
+; normalization" for Unicode).
+    #+sbcl
+    (setf (sb-ext:readtable-normalization rt) nil)
+
+    rt)
   "*acl2-readtable* is the readtable we use (a) to restrict the use of
 #. to cause evaluation during READing (b) and to define our own version
 of backquote.")

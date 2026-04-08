@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -824,8 +824,8 @@
 
 (defmacro mcons-term* (fn &rest args)
 
-; The "m" in "mcons-term*" is for "maybe fast".  Some of calls of this macro
-; can probably be replaced with fcons-term*.
+; The "m" in "mcons-term*" is for "maybe fast".  Some calls of this macro can
+; probably be replaced with fcons-term*.
 
   `(cons-term* ,fn ,@args))
 
@@ -3161,7 +3161,7 @@
          (without-interrupts
 
 ; By using without-interrupts, we intend to preserve the invariant that the two
-; state globals beingn set here are either both :ignore or else neither is
+; state globals being set here are either both :ignore or else neither is
 ; :ignore.
 
           (f-put-global 'raw-include-book-dir-alist
@@ -4660,7 +4660,7 @@
     (PPE PE)
     (PROVE THM)
     (PROVEALL .     "See :DOC ld and :DOC certify-book.  The latter
-                     corresponds to Nqthm's PROVE-FILE,which may be
+                     corresponds to Nqthm's PROVE-FILE, which may be
                      what you're interested in, really.")
     (PROVE-FILE CERTIFY-BOOK)
     (PROVE-FILE-OUT CERTIFY-BOOK)

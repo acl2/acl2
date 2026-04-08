@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -224,3 +224,18 @@
   (difference (rulelist-defined-rules rules)
               (rulelist-called-rules rules))
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define rulelist-nonclosed ((rules rulelistp))
+  :returns (rulenames rulename-setp)
+  :short "Return the rule names that make a rule list non-closed, if any."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is @('nil') if the rule list is closed.
+     Otherwise, we return the set of rule names
+     that are called but not defined."))
+  (set::difference (rulelist-called-rules rules)
+                   (rulelist-defined-rules rules))
+  :no-function nil)

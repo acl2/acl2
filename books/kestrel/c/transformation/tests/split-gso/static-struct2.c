@@ -12,12 +12,12 @@ struct S {
   int x;
 };
 
-extern struct S s;
+static struct S static_s;
 
 int foo(void) {
   int x = my.a + (-my.b);
   struct myStruct my;
-  if (s.x) {
+  if (static_s.x) {
     return my.a + (-my.b);
   }
   return 0;

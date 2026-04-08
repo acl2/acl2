@@ -478,15 +478,11 @@
   :returns (preprocess-arg stringp)
   :short "Return the @('-std=') flag reflecting the implementation
           environment."
-  (b* (((ienv ienv) ienv))
-    (c::version-case
-      ienv.version
-      :c17 "-std=c17"
-      :c23 "-std=c23"
-      :c17+gcc "-std=gnu17"
-      :c23+gcc "-std=gnu23"
-      :c17+clang "-std=gnu17"
-      :c23+clang "-std=gnu23")))
+  (b* (((c::dialect dialect) (ienv->dialect ienv)))
+    (c::standard-case
+      dialect.std
+      :c17 (if (c::dialect-gcc/clangp dialect) "-std=gnu17" "-std=c17")
+      :c23 (if (c::dialect-gcc/clangp dialect) "-std=gnu23" "-std=c23"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -616,47 +612,59 @@
        ;; Initialize list of generated events.
        (events nil)
        ;; Preprocess if required, or just read files from file system.
-       ((erp files state)
-        (cond ((equal preprocessor "") ; internal preprocessor
-               (preprocess files base-dir include-dirs options ienv state))
-              ((not preprocessor)
-               (input-files-read-files files base-dir state))
-              (t ; external preprocessor
-               (preprocess-files
-                files
-                :path base-dir
-                :preprocessor preprocessor
-                :extra-args (input-files-complete-preprocess-extra-args
-                             preprocess-extra-args
-                             ienv)))))
+       ;; Unless we use our own internal preprocessor,
+       ;; the RESOLVED-INCLUDES mapping is empty (NIL).
+       ((erp files resolved-includes state)
+        (b* (((reterr) (irr-fileset) nil state))
+          (cond ((equal preprocessor "") ; internal preprocessor
+                 (preprocess files base-dir include-dirs options ienv state))
+                ((not preprocessor)
+                 (b* (((erp files state)
+                       (input-files-read-files files base-dir state)))
+                   (retok files nil state)))
+                (t ; external preprocessor
+                 (b* (((erp files state)
+                       (preprocess-files
+                        files
+                        :path base-dir
+                        :preprocessor preprocessor
+                        :extra-args (input-files-complete-preprocess-extra-args
+                                     preprocess-extra-args
+                                     ienv))))
+                   (retok files nil state))))))
        ;; Parsing is always required.
        (skip-control-lines (not (equal preprocessor "")))
        ((erp tunits) (parse-fileset files
-                                    (ienv->version ienv)
+                                    (ienv->dialect ienv)
                                     skip-control-lines
                                     keep-going))
+       ;; We add the RESOLVED-INCLUDES mapping to the translation ensemble.
+       ;; This will no longer be necessary once we store that information
+       ;; directly in the #include ASTs, coming from our preprocessor.
+       (tunits (change-trans-ensemble tunits
+                                      :resolved-includes resolved-includes))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))
-        (b* ((code (make-code-ensemble :transunits tunits :ienv ienv))
+        (b* ((code (make-code-ensemble :trans-units tunits :ienv ienv))
              (events (if (not progp)
                          (rcons `(defconst ,const ',code) events)
                        events)))
           (retok events code state)))
        ;; Disambiguation is required, if we get here.
        ((erp tunits)
-        (dimb-transunit-ensemble tunits (ienv->gcc/clang ienv) keep-going))
+        (dimb-trans-ensemble tunits (ienv->dialect ienv) keep-going))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
-        (b* ((code (make-code-ensemble :transunits tunits :ienv ienv))
+        (b* ((code (make-code-ensemble :trans-units tunits :ienv ienv))
              (events (if (not progp)
                          (rcons `(defconst ,const ',code) events)
                        events)))
           (retok events code state)))
        ;; Validation is required, if we get here.
-       ((erp tunits) (valid-transunit-ensemble tunits ienv keep-going))
-       (code (make-code-ensemble :transunits tunits :ienv ienv))
+       ((erp tunits) (valid-trans-ensemble tunits ienv keep-going))
+       (code (make-code-ensemble :trans-units tunits :ienv ienv))
        ;; Generate :CONST constant with the validated translation unit.
        (events (if (not progp)
                    (rcons `(defconst ,const ',code) events)
@@ -702,7 +710,7 @@
    (xdoc::p
     "The event is an empty @(tsee progn) if
      this is called via the programmatic interface.
-     We also return the translation unit ensemble
+     We also return the translation ensemble
      resulting from processing the (possibly preprocessed) files."))
   (b* (((reterr) '(_) (irr-code-ensemble) state)
        ((erp files

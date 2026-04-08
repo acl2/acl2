@@ -62,7 +62,7 @@
       in the definition of other relations.
       This explicates the natural hierarchical structure
       of zero-knowledge gadgets (in R1CS or other form),
-      and can supports more modular
+      and can support more modular
       verification, analysis, transformation, and synthesis."))
    (xdoc::p
     "Currently this library contains
@@ -80,7 +80,7 @@
      into shallowly embedded PFCSes;
      see the documentation of these artifacts for more information.
      The library also includes a characterization of
-     PFCSes that only use R!CS constraints,
+     PFCSes that only use R1CS constraints,
      and a translator from R1CSes to PFCSes.
      This library also includes some examples.
      This library is a work in progress;

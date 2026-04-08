@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -534,7 +534,7 @@
 
 (defparameter *record-time*
 
-; If *RECORD-TIME* is not NIL the time a function is memoized, we record the
+; If *RECORD-TIME* is not NIL at the time a function is memoized, we record the
 ; elapsed time for each outermost call of the function.
 
   t)
@@ -812,7 +812,7 @@
 ; of ma.  (Here is a technical explanation, which one may wish to ignore.  For
 ; example, memoize-fn binds the variable fn-col-base to (ma-index fnn), which
 ; is computed based on the size of ma at the time the function is memoized.
-; Fn-col-base is passed to memoize-fn-outer-body, where it is used to generated
+; Fn-col-base is passed to memoize-fn-outer-body, where it is used to generate
 ; code for the memoized function.)
 
 ; Here is an ASCII picture of the *memoize-call-array* with a key to explain
@@ -3687,7 +3687,6 @@
                         when (eq tablename
                                  (car (symbol-value (the symbol s))))
                         do (pop (symbol-value (the symbol s)))))
-             (setq fn nil) ; in case we decide not to cause an error
              (error "Memoize-fn:  Failed to memoize ~s." fn))))))))
   fn)
 
@@ -3721,7 +3720,6 @@
                 (type (simple-array mfixnum (*)) ma))
        (unwind-protect
            (progn
-             (format nil "unmemoizing ~s" fn)
              (let (#+ccl (ccl:*warn-if-redefine-kernel* nil))
                (let ((old-fn (access memoize-info-ht-entry rec :old-fn)))
                  (assert old-fn)

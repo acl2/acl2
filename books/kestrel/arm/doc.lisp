@@ -57,7 +57,7 @@
 
        An error flag, indicating whether an error has occurred.
 
-       The major version of the ARM architecture being modelled (an integer in the
+       The major version of the ARM architecture being modeled (an integer in the
        range 4-7, representing ARMv4, ARMv5, ARMv6, or ARMv7)."
       )
 
@@ -189,7 +189,7 @@ boilerplate code inserted by @('def-inst') does the following:"
        special value of @('#b1111'), which requires special handling for almost
        all instructions.
 
-       Optionally handles the other possible values of the the @('cond') field,
+       Optionally handles the other possible values of the @('cond') field,
        which determine whether the instruction should execute (for almost all
        instructions).
 

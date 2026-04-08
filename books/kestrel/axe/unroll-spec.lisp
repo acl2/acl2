@@ -1,7 +1,7 @@
 ; A tool to rewrite a term, e.g., to unroll a spec
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -52,7 +52,7 @@
   (declare (xargs :stobjs state
                   :mode :program ;; because this calls translate
                   :guard (and (symbolp defconst-name)
-                              ;; (pseudo-termp term) ;; really an untranlated term
+                              ;; (pseudo-termp term) ;; really an untranslated term
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp rules)
@@ -95,7 +95,7 @@
             (mv (erp-nil)
                 (list res)))))
        ((when erp) (mv erp nil state))
-       ((mv erp dag state)
+       ((mv erp dag-or-constant state)
         (simp-term term
                    :rule-alists rule-alists
                    :monitor monitor
@@ -105,6 +105,10 @@
                    :check-inputs nil))
        ((when erp)
         (mv erp nil state))
+       ((when (quotep dag-or-constant)) ;; TODO: Should we allow this?
+        (er hard? 'unroll-spec-fn "Spec unexpectedly rewrote to the constant ~x0." dag-or-constant)
+        (mv :unexpected-quotep nil state))
+       (dag dag-or-constant) ; it is a DAG, not a constant
        ;; build the function:
        (function-name (intern-in-package-of-symbol
                        ;;todo: why is the re-interning needed here?
@@ -188,7 +192,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         [:normalize-xors]    ;; Whether to apply special handling to nests of XORs, Default: t
         [:produce-function]  ;; Whether to produce a function, in addition to a constant DAG, Default: nil
         [:disable-function]  ;; Whether to disable the function produced, Default: nil
-        [:produce-theorem]   ;; Whether to produce a theorem (without proof), asserting that lifiting produces the given result, Default: nil
+        [:produce-theorem]   ;; Whether to produce a theorem (without proof), asserting that lifting produces the given result, Default: nil
         )
 })
 
@@ -206,7 +210,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               (rules 'nil) ;to completely replace the usual set of rules (TODO: default should be auto?)
                               (rule-alists 'nil) ;to completely replace the usual set of rules (TODO: default should be auto?) ;TODO: Deprecate but used in rc2 (use rule-lists instead)
                               (extra-rules 'nil) ; to add to the usual set of rules
-                              (remove-rules 'nil) ; to remove from to the usual set of rules
+                              (remove-rules 'nil) ; to remove from the usual set of rules
                               ;; TODO: Add support for rule-lists...
                               (assumptions 'nil)
                               (monitor 'nil)

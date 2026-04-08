@@ -13,12 +13,10 @@
 (include-book "file-paths")
 (include-book "files")
 (include-book "grammar")
+(include-book "grammar-operations")
 (include-book "grammar-characters")
-
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(include-book "positions")
+(include-book "spans")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,4 +55,7 @@
   :order-subtopics (file-paths
                     files
                     grammar
-                    grammar-characters))
+                    grammar-operations
+                    grammar-characters
+                    positions
+                    spans))

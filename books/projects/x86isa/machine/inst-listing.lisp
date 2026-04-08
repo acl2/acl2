@@ -319,7 +319,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "AAA" (OP :OP #x37 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-AAA)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x37 :MODE :O64)
@@ -355,7 +356,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "AAS" (OP :OP #x3F :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-AAS)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x3F :MODE :O64)
@@ -4063,7 +4065,7 @@
           (ARG :OP1 '(V DQ)
                :OP2 '(H Q)
                :OP3 '(U Q))
-          'NIL
+          '(X86-MOVLHPS-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
     (INST "MOVHPD"
           (OP :OP #xF16
@@ -7315,7 +7317,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PACKSSWB-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKSSWB"
           (OP :OP #xF63 :PFX :66 :FEAT '(:SSE2))
@@ -7513,7 +7515,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PACKUSWB-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKUSWB"
           (OP :OP #xF67 :PFX :66 :FEAT '(:SSE2))
@@ -7705,7 +7707,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PACKSSDW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKSSDW"
           (OP :OP #xF6B :PFX :66 :FEAT '(:SSE2))
@@ -9015,9 +9017,11 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
     (INST "EMMS" (OP :OP #xF77 :PFX :NO-PREFIX)
-          NIL 'NIL
+          NIL
+          '(X86-EMMS)
           '((:UD (UD-LOCK-USED)
-                 (EQUAL (CR0BITS->EM (CR0)) #x1))))
+                 (EQUAL (CR0BITS->EM (CR0)) #x1))
+            (:NM (NM-CR0-TS-IS-1))))
     (INST "VZEROALL"
           (OP :OP #xF77
               :VEX '(:0F :256 :WIG)
@@ -10084,7 +10088,7 @@
           'NIL)
     (INST "BTS" (OP :OP #xFAB)
           (ARG :OP1 '(E V) :OP2 '(G V))
-          '(X86-BT-0F-AB)
+          '(X86-BTS-0F-AB)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "SHRD" (OP :OP #xFAC)
           (ARG :OP1 '(E V)
@@ -10271,7 +10275,7 @@
               :SUPERSCRIPTS '(:1A :1C)
               :GROUP '(:GROUP-15)
               :FEAT '(:SSE))
-          NIL 'NIL
+          NIL '(X86-TWO-BYTE-NOP)
           '((:UD (UD-LOCK-USED))))
     (INST "VLDMXCSR"
           (OP :OP #xFAE
@@ -10349,7 +10353,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E V) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED))))
     (INST "BTS"
           (OP :OP #xFBA
@@ -10357,7 +10361,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTR"
           (OP :OP #xFBA
@@ -10365,7 +10369,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTC"
           (OP :OP #xFBA
@@ -10373,11 +10377,11 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTC" (OP :OP #xFBB)
           (ARG :OP1 '(E V) :OP2 '(G V))
-          'NIL
+          '(X86-BTC-0F-BB)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BSF" (OP :OP #xFBC :PFX :NO-PREFIX)
           (ARG :OP1 '(G V) :OP2 '(E V))

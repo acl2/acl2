@@ -1,7 +1,7 @@
 ; Mixed x86 supporting material
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -490,7 +490,6 @@
                                   (
                                    acl2::bvchop-identity-cheap
                                    acl2::bvchop-identity
-                                   ;acl2::trim-to-n-bits-meta-rule-for-bvcat ;looped
                                    acl2::bvcat-of-bvchop-low ;looped
                                    acl2::slice-of-bvchop-low ;looped
                                    acl2::slice-of-bvchop-low-gen ;looped
@@ -542,7 +541,6 @@
                                                 acl2::getbit)
                                   (ACL2::BVCHOP-IDENTITY-CHEAP
                                    ACL2::BVCHOP-IDENTITY
-                                   ;ACL2::TRIM-TO-N-BITS-META-RULE-FOR-BVCAT ;looped
                                    ACL2::BVCAT-OF-BVCHOP-LOW ;looped
                                    ))
            :use (:instance acl2::split-bv
@@ -1221,8 +1219,6 @@
 
 ;; todo: more
 (defthmd n64-becomes-bvchop (equal (x86isa::n64 x) (acl2::bvchop 64 x)))
-
-(local (include-book "kestrel/bv/rules3" :dir :system)) ;drop?
 
 ;todo: gen the 2
 (defthm idiv-64-by-2-no-error

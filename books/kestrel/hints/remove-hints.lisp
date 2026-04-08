@@ -1,6 +1,6 @@
 ; Utilities for removing hints and parts of hints
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,7 +28,7 @@
       (:remove-by (concatenate 'string "Drop :by " (print-to-string arg)))
       (:remove-cases (concatenate 'string "Drop :cases " (print-to-string arg)))
       (:remove-induct (concatenate 'string "Drop :induct " (print-to-string arg)))
-      (:remove-nonlinearp (concatenate 'string "Drop :nonlinearp  " (print-to-string arg)))
+      (:remove-nonlinearp (concatenate 'string "Drop :nonlinearp " (print-to-string arg)))
       (:remove-do-not (concatenate 'string "Drop :do-not " (print-to-string arg)))
       (:remove-do-not-item (concatenate 'string "Drop :do-not item " (print-to-string arg)))
       (:remove-expand (concatenate 'string "Drop :expand " (print-to-string arg)))
@@ -130,7 +130,7 @@
 ;; n is 0-based and is known to be less than the number of ways to remove the hint-setting.
 ;; Returns (mv removal-type result), where RESULT is a list (possibly nil) to be spliced into the hint settings, replacing the KEYWORD and VAL.
 ;; WARNING: Keep this in sync with num-ways-to-remove-hint-setting.
-;; WANRING: Keep this in sync with decode-removal-type.
+;; WARNING: Keep this in sync with decode-removal-type.
 (defun remove-hint-setting-in-nth-way (n keyword val)
   (declare (xargs :guard (and (natp n)
                               (keywordp keyword)

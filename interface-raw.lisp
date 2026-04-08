@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -422,7 +422,7 @@
 ;     (bad-fn)
 ;     :rule-classes nil)
 
-; Second book, which includes the one above::
+; Second book, which includes the one above:
 
 ;   (in-package "ACL2")
 ;
@@ -2418,7 +2418,7 @@
 ; foundational stobj always satisfies its recognizer.  It is easy to imagine a
 ; defabsstobj :export field that specifies the identify function for its :logic
 ; component, returning the stobj unchanged, but for the :exec component makes
-; an ill-guarded call to update the stobj, corrupting the Lisp imagine, before
+; an ill-guarded call to update the stobj, corrupting the Lisp image, before
 ; restoring the stobj.  In raw Lisp, this could really happen because the
 ; export is a macro that calls the :exec function directly; the only guard that
 ; need be met before this happens is a variant of the :logic function's guard,
@@ -2679,7 +2679,7 @@
 
                                  (let ((**1*-as-raw* t))
 
-; One reason that we bind **1*-as-raw* above and use labels below is to helps
+; One reason that we bind **1*-as-raw* above and use labels below is to help
 ; compilers remove tail recursions, since we believe that special variable
 ; binding can get in the way of that.  (We do this regardless of the presence
 ; of recursion, simply because that is simplest and we expect, or at least,
@@ -2985,9 +2985,9 @@
 
 (defg *dmr-counter*
 
-; For the sake of GCL, we may want to consider consider using a 0-dimensional
-; fixnum array instead.  If so, then consider whether *dmr-interval* should
-; also be similarly changed.
+; For the sake of GCL, we may want to consider using a 0-dimensional fixnum
+; array instead.  If so, then consider whether *dmr-interval* should also be
+; similarly changed.
 
   0)
 
@@ -8538,25 +8538,25 @@
     (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state forcep))
 
   (defun-overrides mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
-    (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state forcep))
-  (defun-overrides mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
     (mv-let (ans ttree)
             (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state
                         forcep)
             (declare (ignore ttree))
             ans))
+  (defun-overrides mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
+    (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state forcep))
 
-  (defun-overrides mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
-                                           forcep)
-    (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
-                         forcep))
-  (defun-overrides mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc
+  (defun-overrides mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc
                                               state forcep)
     (mv-let (ans ttree)
             (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
                                  forcep)
             (declare (ignore ttree))
             ans))
+  (defun-overrides mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc
+                                              state forcep)
+    (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
+                         forcep))
 
   (defun-overrides mfc-ap-fn (term mfc state forcep)
     (mfc-ap-raw term mfc state forcep)))
@@ -10012,7 +10012,7 @@
                          (not (eql *acl2-time-limit* 0))))))
            #+ccl ; for CCL revisions before 12090
            (declare (ignorable ccl::*break-hook*))
-           (terpri t)
+           (terpri)
            (format t
                    "***********************************************")
            (cond
@@ -10039,8 +10039,8 @@
 
 ; This extra information is a bit dodgy, since it comes from the low-level
 ; definition of function ccl::%break-message in CCL source file
-; level-1/l1-readloop-lds.lisp (circa late 2017).  It is also may be unhelpful
-; in many cases, or not ideal; for example, the same function as above,
+; level-1/l1-readloop-lds.lisp (circa late 2017).  It also may be unhelpful in
+; many cases, or not ideal; for example, the same function as above,
 ; CCL::BIGNUM-ASHIFT-LEFT-DIGITS, is reported when attempting to evaluate (expt
 ; 2 (expt 2 48)).  However, you get what you get with raw Lisp errors, and we
 ; are happy to make them a bit more useful in some cases.
@@ -11851,15 +11851,19 @@ such that feature :acl2-loop-only is true."))
 ; Returns nil or else a keyword -- currently :darwin, :linux, or :freebsd -- to
 ; indicate the result of shell command "uname".
 
-  (multiple-value-bind
-   (exit-code val)
-   (system-call+ "uname" nil)
-   (and (eql exit-code 0)
-        (stringp val)
-        (<= 6 (length val))
-        (cond ((string-equal (subseq val 0 6) "Darwin") :darwin)
-              ((string-equal (subseq val 0 5) "Linux") :linux)
-              ((string-equal (subseq val 0 7) "FreeBSD") :freebsd)))))
+; The memory allocation created by the use of string-upcase could be avoided by
+; defining a case-insensitive version of string-prefixp, but we don't expect
+; heavy use of our-uname, so we prefer not to complicate things by adding such
+; code.
+
+  (multiple-value-bind (exit-code val)
+      (system-call+ "uname" nil)
+    (and (eql exit-code 0)
+         (stringp val)
+         (let ((val (string-upcase val)))
+           (cond ((string-prefixp "DARWIN" val) :darwin)
+                 ((string-prefixp "LINUX" val) :linux)
+                 ((string-prefixp "FREEBSD" val) :freebsd))))))
 
 (defun meminfo (&optional arg)
 
@@ -12089,21 +12093,19 @@ such that feature :acl2-loop-only is true."))
 ; bytes), calls USE-LISP-HEAP-GC-THRESHOLD to raise the ceiling to 0.5G, then
 ; sets the threshold back to 0.125GB, and the process repeats.
 ;
-; A subtlety about this scheme is that post-GC hooks runs in a separate
-; thread from the main execution.  A possible bug is that in step 4,
-; between checking the amount of memory in use and calling
-; USE-LISP-HEAP-GC-THRESHOLD, more memory might be used up by the main
-; execution, which would set the ceiling higher than we intended.  To
-; prevent this, we initially interrupted the main thread to run step 4.
-; However, discussions with Gary Byers led us to avoid calling
-; process-interrupt, which seemed to be leading to errors.
+; A subtlety about this scheme is that post-GC hooks runs in a separate thread
+; from the main execution.  A possible bug is that in step 4, between checking
+; the amount of memory in use and calling USE-LISP-HEAP-GC-THRESHOLD, more
+; memory might be used up by the main execution, which would set the ceiling
+; higher than we intended.  To prevent this, we initially interrupted the main
+; thread to run step 4.  However, discussions with Gary Byers led us to avoid
+; calling process-interrupt, which seemed to be leading to errors.
 
-; The following settings are highly heuristic.  We arrange that gc
-; occurs at 1/8 of the physical memory size in bytes, in order to
-; leave room for the gc point to grow (as per
-; set-and-reset-gc-thresholds).  If we can determine the physical
-; memory; great; otherwise we assume that it it contains at least 4GB,
-; a reasonable assumption we think for anyone using ACL2 in 2015 or beyond.
+; The following settings are highly heuristic.  We arrange that gc occurs at
+; 1/8 of the physical memory size in bytes, in order to leave room for the gc
+; point to grow (as per set-and-reset-gc-thresholds).  If we can determine the
+; physical memory; great; otherwise we assume that it contains at least 4GB, a
+; reasonable assumption we think for anyone using ACL2 in 2015 or beyond.
 
   (without-interrupts ; leave us in a sane state
    (ccl:egc nil)

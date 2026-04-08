@@ -40,8 +40,8 @@
 (defun fileset-map-to-string-map (fileset-map)
   (b* (((when (omap::emptyp fileset-map)) nil)
        ((mv filepath filedata) (omap::head fileset-map)))
-    (omap::update (filepath->unwrap filepath)
-                  (acl2::nats=>string (filedata->unwrap filedata))
+    (omap::update (filepath->string filepath)
+                  (acl2::nats=>string (filedata->bytes filedata))
                   (fileset-map-to-string-map (omap::tail fileset-map)))))
 
 (defun fileset-to-string-map (fileset)
@@ -58,19 +58,10 @@
                         full-expansion
                         (keep-comments 't)
                         (trace-expansion 't)
-                        std
-                        gcc
-                        clang
+                        dialect
                         expected)
   `(assert!-stobj
-    (b* ((version (if (or (not ,std)
-                          (= ,std 17))
-                      (cond (,gcc (c::version-c17+gcc))
-                            (,clang (c::version-c17+clang))
-                            (t (c::version-c17)))
-                    (cond (,gcc (c::version-c23+gcc))
-                          (,clang (c::version-c23+clang))
-                          (t (c::version-c23)))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -78,13 +69,13 @@
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
                                   :no-errors/warnings nil))
-         (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state) (preprocess files
-                                             base-dir
-                                             include-dirs
-                                             options
-                                             ienv
-                                             state)))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
+         ((mv erp fileset & state) (preprocess files
+                                               base-dir
+                                               include-dirs
+                                               options
+                                               ienv
+                                               state)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
@@ -105,18 +96,14 @@
                           full-expansion
                           (keep-comments 't)
                           (trace-expansion 't)
-                          std
-                          gcc
-                          clang)
+                          dialect)
   `(test-preproc '(,file)
                  :base-dir ,base-dir
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
                  :trace-expansion ,trace-expansion
-                 :std ,std
-                 :gcc ,gcc
-                 :clang ,clang
+                 :dialect ,dialect
                  :expected (fileset-of ,file ,expected)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -129,18 +116,9 @@
                               full-expansion
                               (keep-comments 't)
                               (trace-expansion 't)
-                              std
-                              gcc
-                              clang)
+                              dialect)
   `(assert!-stobj
-    (b* ((version (if (or (not ,std)
-                          (= ,std 17))
-                      (cond (,gcc (c::version-c17+gcc))
-                            (,clang (c::version-c17+clang))
-                            (t (c::version-c17)))
-                    (cond (,gcc (c::version-c23+gcc))
-                          (,clang (c::version-c23+clang))
-                          (t (c::version-c23)))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -148,13 +126,13 @@
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
                                   :no-errors/warnings nil))
-         (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state) (preprocess files
-                                             base-dir
-                                             include-dirs
-                                             options
-                                             ienv
-                                             state))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
+         ((mv erp fileset & state) (preprocess files
+                                               base-dir
+                                               include-dirs
+                                               options
+                                               ienv
+                                               state))
          (- (if erp
                 (cw "~@0" erp)
               (cw "Result:~%~x0" (fileset-to-string-map fileset)))))
@@ -172,27 +150,32 @@
                           full-expansion
                           (keep-comments 't)
                           (trace-expansion 't)
-                          std
-                          gcc
-                          clang)
+                          dialect)
   `(show-preproc '(,file)
                  :base-dir ,base-dir
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
                  :trace-expansion ,trace-expansion
-                 :std ,std
-                 :gcc ,gcc
-                 :clang ,clang))
+                 :dialect ,dialect))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Check directive-preserving expansion against full expansion.
 
+(defun strip-provenance (lexemes)
+  (b* (((when (endp lexemes)) nil)
+       (lexeme (car lexemes))
+       (lexeme (if (plexeme-case lexeme :ident)
+                   (change-plexeme-ident lexeme :provenance nil)
+                 lexeme))
+       (lexemes (strip-provenance (cdr lexemes))))
+    (cons lexeme lexemes)))
+
 (defun ppart-to-tokens (part)
   (ppart-case
    part
-   :line (plexemes-without-nontokens part.lexemes)
+   :line (strip-provenance (plexemes-without-nontokens part.lexemes))
    :cond (er hard? 'ppart-to-tokens "Found conditional section ~x0." part)))
 
 (defun ppart-list-to-tokens (parts)
@@ -226,8 +209,8 @@
 (defun filemap-relativize-absolute-paths (filemap)
   (b* (((when (omap::emptyp filemap)) nil)
        ((mv path data) (omap::head filemap))
-       (new-path (if (path-absolutep (filepath->unwrap path))
-                     (filepath (subseq (filepath->unwrap path) 1 nil))
+       (new-path (if (path-absolutep (filepath->string path))
+                     (filepath (subseq (filepath->string path) 1 nil))
                    path))
        (new-filemap-tail
         (filemap-relativize-absolute-paths (omap::tail filemap))))
@@ -248,19 +231,10 @@
                                 (out-dir-prefix '"tmp") ; relative to base-dir
                                 (keep-comments 't)
                                 (trace-expansion 't)
-                                std
-                                gcc
-                                clang)
+                                dialect)
   `(assert!-stobj
     (b* (;; Setup.
-         (version (if (or (not ,std)
-                          (= ,std 17))
-                      (cond (,gcc (c::version-c17+gcc))
-                            (,clang (c::version-c17+clang))
-                            (t (c::version-c17)))
-                    (cond (,gcc (c::version-c23+gcc))
-                          (,clang (c::version-c23+clang))
-                          (t (c::version-c23)))))
+         (dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -268,7 +242,7 @@
          (out-dir-initial (str::cat base-dir "/" out-dir-prefix "-initial"))
          (out-dir-original (str::cat base-dir "/" out-dir-prefix "-original"))
          (out-dir-transformed (str::cat base-dir "/" out-dir-prefix "-transformed"))
-         (ienv (change-ienv (ienv-default) :version version))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
          (options-preserve (make-ppoptions :full-expansion nil
                                            :keep-comments ,keep-comments
                                            :trace-expansion ,trace-expansion
@@ -278,7 +252,7 @@
                                          :trace-expansion nil
                                          :no-errors/warnings nil))
          ;; Initial preprocessing.
-         ((mv erp fileset-initial state)
+         ((mv erp fileset-initial & state)
           (preprocess files base-dir include-dirs options-preserve ienv state))
          ((when erp)
           (mv (cw "Initial preprocessing fails: ~@0" erp) state))
@@ -289,7 +263,7 @@
          ((when erp)
           (mv (cw "Initial file set writing fails: ~x0" erp) state))
          ;; Full-expansion preprocessing of original files.
-         ((mv erp pfiles-original state)
+         ((mv erp pfiles-original & state)
           (pproc-files files base-dir include-dirs
                        options-expand ienv state 1000000000))
          ((when erp)
@@ -308,7 +282,7 @@
          ;; Full-expansion preprocessing of transformed files.
          (include-dirs-initial
           (relativize-include-dirs include-dirs out-dir-initial))
-         ((mv erp pfiles-transformed state)
+         ((mv erp pfiles-transformed & state)
           (pproc-files files out-dir-initial include-dirs-initial
                        options-expand ienv state 1000000000))
          ((when erp)
@@ -339,18 +313,9 @@
                          (keep-comments 't)
                          (trace-expansion 't)
                          (full-expansion 'nil)
-                         std
-                         gcc
-                         clang)
+                         dialect)
   `(assert!-stobj
-    (b* ((version (if (or (not ,std)
-                          (= ,std 17))
-                      (cond (,gcc (c::version-c17+gcc))
-                            (,clang (c::version-c17+clang))
-                            (t (c::version-c17)))
-                    (cond (,gcc (c::version-c23+gcc))
-                          (,clang (c::version-c23+clang))
-                          (t (c::version-c23)))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -359,13 +324,13 @@
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
                                   :no-errors/warnings nil))
-         (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state) (preprocess files
-                                             base-dir
-                                             include-dirs
-                                             options
-                                             ienv
-                                             state))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
+         ((mv erp fileset & state) (preprocess files
+                                               base-dir
+                                               include-dirs
+                                               options
+                                               ienv
+                                               state))
          ((when erp) (mv (cw "Preprocessing fails: ~@0" erp) state))
          (fileset (fileset-relativize-absolute-paths fileset))
          ((mv erp state) (write-fileset fileset out-dir state))

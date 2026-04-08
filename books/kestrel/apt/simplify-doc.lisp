@@ -24,7 +24,7 @@
   :parents (apt)
   :short "Simplify the definition of a given function."
   :long "<p>For any function symbol @('f') defined using @(tsee defun), @(tsee
- defun-sk), or the the @(see soft::SOFT) tool, @('defun-sk2'), @('simplify')
+ defun-sk), or the @(see soft::SOFT) tool, @('defun-sk2'), @('simplify')
  defines a corresponding new function whose body results from simplifying the
  body of the definition of @('f').  @('Simplify') may also be used to simplify
  a given term.</p>
@@ -135,7 +135,7 @@
  @('verify-guards') that generated the checkpoints that you considered.</li>
 
  <li>Provide a @(':hints') option (for the measure theorem) or
- @(':guard-hints') option (for guard verification), @('(simplify FN :hitns
+ @(':guard-hints') option (for guard verification), @('(simplify FN :hints
  ... :guard-hints ...)'), that specifies a suitable theory and, perhaps,
  include @(':use (:termination-theorem FN)') (for the measure theorem) or
  @(':use (:guard-theorem FN)') (for guard verification).</li>

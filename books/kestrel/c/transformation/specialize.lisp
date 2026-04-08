@@ -174,72 +174,99 @@
    :empty (mv nil (ext-declon-fix extdecl))
    :asm (mv nil (ext-declon-fix extdecl))))
 
-(define specialize-ext-declon-list
-  ((extdecls ext-declon-listp)
+(define specialize-trans-item
+  ((item trans-itemp)
    (target-fn identp)
    (target-param identp)
    (const exprp))
-  :short "Transform a list of external declarations."
-  :returns (new-extdecls ext-declon-listp)
-  (b* (((when (endp extdecls))
+  :short "Transform a translation item."
+  :returns (mv (found booleanp)
+               (new-item trans-itemp))
+  (trans-item-case
+   item
+   :declon (b* (((mv found declon)
+                 (specialize-ext-declon item.declon
+                                        target-fn
+                                        target-param
+                                        const)))
+             (mv found (trans-item-declon declon)))
+   :include (prog2$
+             (raise "#include directives not supported.")
+             (mv nil (irr-trans-item)))
+   :define (prog2$
+            (raise "#define directives not supported.")
+            (mv nil (irr-trans-item)))
+   :undef (prog2$
+           (raise "#undef directives not supported.")
+           (mv nil (irr-trans-item)))
+   :cond (prog2$
+          (raise "Conditional directives not supported.")
+          (mv nil (irr-trans-item)))
+   :line-comment (mv nil (trans-item-fix item)))
+  :no-function nil)
+
+(define specialize-trans-item-list
+  ((items trans-item-listp)
+   (target-fn identp)
+   (target-param identp)
+   (const exprp))
+  :short "Transform a list of translation items."
+  :returns (new-items trans-item-listp)
+  (b* (((when (endp items))
         nil)
-       ((mv found extdecl)
-        (specialize-ext-declon (first extdecls) target-fn target-param const)))
-    (cons extdecl
+       ((mv found item)
+        (specialize-trans-item (first items) target-fn target-param const)))
+    (cons item
           (if found
-              (ext-declon-list-fix (rest extdecls))
-            (specialize-ext-declon-list (rest extdecls) target-fn target-param const)))))
+              (trans-item-list-fix (rest items))
+            (specialize-trans-item-list (rest items) target-fn target-param const)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define specialize-transunit
-  ((tunit transunitp)
+(define specialize-trans-unit
+  ((tunit trans-unitp)
    (target-fn identp)
    (target-param identp)
    (const exprp))
   :short "Transform a translation unit."
-  :returns (new-tunit transunitp)
-  (b* (((transunit tunit) tunit)
-       ((when tunit.includes)
-        (raise "Unsupported #include directives.")
-        (transunit-fix tunit)))
-    (make-transunit
-     :comment nil
-     :declons (specialize-ext-declon-list tunit.declons target-fn target-param const)
+  :returns (new-tunit trans-unitp)
+  (b* (((trans-unit tunit) tunit))
+    (make-trans-unit
+     :items (specialize-trans-item-list tunit.items target-fn target-param const)
      :info tunit.info))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define specialize-filepath-transunit-map
-  ((map filepath-transunit-mapp)
+(define specialize-filepath-trans-unit-map
+  ((map filepath-trans-unit-mapp)
    (target-fn identp)
    (target-param identp)
    (const exprp))
   :short "Transform a filepath."
-  :returns (new-map filepath-transunit-mapp
-                    :hyp (filepath-transunit-mapp map))
+  :returns (new-map filepath-trans-unit-mapp
+                    :hyp (filepath-trans-unit-mapp map))
   (b* (((when (omap::emptyp map))
         nil)
        ((mv path tunit) (omap::head map)))
     (omap::update (c$::filepath-fix path)
-                  (specialize-transunit tunit target-fn target-param const)
-                  (specialize-filepath-transunit-map (omap::tail map)
-                                                     target-fn
-                                                     target-param
-                                                     const)))
+                  (specialize-trans-unit tunit target-fn target-param const)
+                  (specialize-filepath-trans-unit-map (omap::tail map)
+                                                      target-fn
+                                                      target-param
+                                                      const)))
   :verify-guards :after-returns)
 
-(define specialize-transunit-ensemble
-  ((tunits transunit-ensemblep)
+(define specialize-trans-ensemble
+  ((tunits trans-ensemblep)
    (target-fn identp)
    (target-param identp)
    (const exprp))
-  :short "Transform a translation unit ensemble."
-  :returns (new-tunits transunit-ensemblep)
-  (b* (((transunit-ensemble tunits) tunits))
-    (c$::make-transunit-ensemble
-      :units (specialize-filepath-transunit-map tunits.units
+  :short "Transform a translation ensemble."
+  :returns (new-tunits trans-ensemblep)
+  (b* (((trans-ensemble tunits) tunits))
+    (c$::make-trans-ensemble
+     :units (specialize-filepath-trans-unit-map tunits.units
                                                 target-fn
                                                 target-param
                                                 const))))
@@ -255,10 +282,10 @@
   :returns (new-code code-ensemblep)
   (b* (((code-ensemble code) code))
     (make-code-ensemble
-     :transunits (specialize-transunit-ensemble code.transunits
-                                                target-fn
-                                                target-param
-                                                const)
+     :trans-units (specialize-trans-ensemble code.trans-units
+                                             target-fn
+                                             target-param
+                                             const)
      :ienv code.ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

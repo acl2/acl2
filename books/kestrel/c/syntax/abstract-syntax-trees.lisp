@@ -34,17 +34,19 @@
   (xdoc::topstring
    (xdoc::p
     "We define fixtypes for constructs that closely correspond to
-     the grammar in [C17], which is summarized in [C17:A].
-     For now we cover all the constructs after preprocessing,
-     but we are working on adding some preprocessing constructs.")
+     the grammar in [C17], which is summarized in [C17:A].")
    (xdoc::p
-    "We also include certain GCC extensions,
+    "We also include certain GCC and Clang extensions,
      as mentioned in @(see syntax-for-tools).")
    (xdoc::p
     "According to the rationale explained in @(see syntax-for-tools),
      here we capture much of the information from the concrete syntax,
      e.g. the distinction between
-     the @('0x') and @('0X') hexadecimal prefixes.")
+     the @('0x') and @('0X') hexadecimal prefixes.
+     Importantly, we also capture some preprocessing constructs,
+     most notably @('#include') directives that are "
+    (xdoc::seetopic "preservable-inclusions" "preservable")
+    ".")
    (xdoc::p
     "We try and pick short yet clear names for these fixtypes,
      so that code that manipulates these fixtypes
@@ -55,7 +57,7 @@
      but uses no qualifications for certain decimal entities,
      our fixtype names are more symmetric,
      using @('dec') and @('hex') and @('bin') qualifiers
-     for certain ``parallel'' entities.")
+     for certain ``parallel'' entities in different numerical bases.")
    (xdoc::p
     "Some library fixtypes already correspond to
      certain nonterminals in the grammar in [C17]
@@ -72,7 +74,7 @@
      generates conflicting theorems if used
      both with @(':non-emptyp t') and with (default) @(':non-emptyp nil')
      (although this could be remedied).
-     It is fine (and common) for the abstract syntax
+     It is acceptable (and common) for the abstract syntax
      to be more general than the concrete syntax.
      Restrictions on well-formed code can be formulated
      via separate predicates on the abstract syntax.
@@ -88,7 +90,8 @@
      which include ASCII codes as a subset.
      Although natural numbers are more general that Unicode code points,
      and also more general than <i>c-char</i> and <i>s-char</i>,
-     it is fine for abstract syntax to be more general than concrete syntax.")
+     it is fine for abstract syntax to be more general than concrete syntax.
+     However, we should probably switch to using @(tsee uchar).")
    (xdoc::p
     "The syntax of C has some known ambiguities,
      which cannot be disambiguated purely syntactically,
@@ -994,6 +997,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption stringlit-option
+  stringlit
+  :short "Fixtype of optional string literals."
+  :pred stringlit-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist stringlit-list
   :short "Fixtype of lists of string literals."
   :long
@@ -1368,6 +1378,9 @@
      to the @(':volatile') case.")
    (xdoc::p
     "we also include the GCC extensions for x86 named address spaces.
+     See the ABNF grammar.")
+   (xdoc::p
+    "We also include the Clang extensions for nullability qualifiers.
      See the ABNF grammar."))
   (:const ())
   (:restrict ((uscores keyword-uscores)))
@@ -1375,6 +1388,10 @@
   (:atomic ())
   (:seg-fs ())
   (:seg-gs ())
+  (:nonnull ())
+  (:null-unspecified ())
+  (:nullable ())
+  (:nullable-result ())
   :pred type-qualp
   :layout :fulltree)
 
@@ -3740,63 +3757,318 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit
+(fty::deftagsum hash-if/elif-expr
+  :short "Fixtype of expressions in @('#if') and @('#elif') conditions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is almost identical to @(tsee pexpr),
+     but we use @(tsee iconst) instead of @(tsee pnumber)
+     in the @(':number') summand,
+     and we use @(tsee ident) instead of @('string')
+     in the @(':defined') summand.
+     This form of expressions is used in the @('#if') and @('#elif') directives
+     that are preserved by our preprocessor and that
+     become part of @(':cond') constructs in @(tsee trans-item).
+     The change from preprocessing numbers to integer constants
+     is motivated by the fact that we build these ASTs
+     only if preprocessing succeeds,
+     in which case the preprocessing number
+     has been recognized as an integer constant.
+     The change from strings to identifiers
+     is motivated by the fact that identifiers are represented
+     as strings only in the preprocessor,
+     but as @(tsee ident) values in these ASTs.
+     Despite the repetition between this fixtype and @(tsee pexpr),
+     we prefer a more clear delineation before and after preprocessing."))
+  (:number ((number iconst)))
+  (:char ((char cconst)))
+  (:paren ((inner hash-if/elif-expr)))
+  (:plus ((arg hash-if/elif-expr)))
+  (:minus ((arg hash-if/elif-expr)))
+  (:bitnot ((arg hash-if/elif-expr)))
+  (:lognot ((arg hash-if/elif-expr)))
+  (:mul ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:div ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:rem ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:add ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:sub ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:shl ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:shr ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:lt ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:gt ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:le ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:ge ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:eq ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:ne ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:bitand ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:bitxor ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:bitior ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:logand ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:logor ((arg1 hash-if/elif-expr) (arg2 hash-if/elif-expr)))
+  (:cond ((test hash-if/elif-expr)
+          (then hash-if/elif-expr)
+          (else hash-if/elif-expr)))
+  (:defined ((name ident)))
+  :pred hash-if/elif-exprp
+  :prepwork ((set-induction-depth-limit 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum hash-if/ifdef/ifndef
+  :short "Fixtype of @('#if')s, @('#ifdef')s, and @('#ifndef')s."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are quite analogous to @(tsee pif),
+     but they are used in ASTs after preprocessing and parsing,
+     and thus they use @(tsee hash-if/elif-expr) instead of @(tsee pexpr),
+     and @(tsee ident) instead of @('string'),
+     for the same motivation explained in @(tsee hash-if/elif-expr).")
+   (xdoc::p
+    "The values of this fixtype are used to represent
+     the @('#if'), @('#ifdef'), and @('#ifndef') directives
+     that are preserved by our preprocessor
+     and make their way to @(':cond') translation items
+     (see @(tsee trans-item))."))
+  (:if ((expr hash-if/elif-expr)))
+  (:ifdef ((name ident)))
+  (:ifndef ((name ident)))
+  :pred hash-if/ifdef/ifndef-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes trans-items
+  :short "Fixtypes of translation items and related entities."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum trans-item
+    :parents (abstract-syntax-trees trans-items)
+    :short "Fixtype of translation items."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This notion has no explicit counterpart in [C17],
+       but it has a meaning in our abstract syntax for tools:
+       it consists of the entities that may appear
+       at the top level of a translation unit.
+       These are external declarations,
+       @('#include') directives (in direct form),
+       @('#define') directives (of a particular form),
+       @('#undef') directives,
+       preprocessing conditionals (which recursively contain translation items),
+       and line comments;
+       we also plan to add more forms of directives and comments.")
+     (xdoc::p
+      "An alternative approach is to extend our ASTs for external declarations
+       with these additional constructs.
+       But it seems an excessive terminological abuse,
+       and would give external declarations
+       a recursive structure that does not match
+       the normal notion of external declaration.
+       Thus, it seems best to introduce this new notion.")
+     (xdoc::p
+      "A @('#include') directive, as a translation item,
+       is represented by the header name.
+       So we do not represent indirect @('#include') directives,
+       i.e. ones whose header name is obtained from macro replacement,
+       which has already happened by the time we parse the ASTs.")
+     (xdoc::p
+      "A @('#define') directive, as a translation item,
+       is represented by the macro name;
+       implicitly, the body is also the macro name,
+       e.g. @('#define N N').
+       The reason is that, as discussed in @(see preservable-inclusions),
+       that is the form in which our preprocessor retains
+       the necessary information about @('#define') directives,
+       at least for now (we may be more liberal in the future).")
+     (xdoc::p
+      "For now the only comments that we allow as translation items
+       are line comments, represented by their content (character codes).
+       The content excludes the initial double slash and the final new line.
+       The line comment is regarded as taking the whole line,
+       i.e. the first slash of the double slash is at column 0.")
+     (xdoc::p
+      "A conditional translation item has the same structure as
+       a conditional preprocessor group part,
+       i.e. the @(':cond') summand of @(tsee ppart)."))
+    (:declon ((declon ext-declon)))
+    (:include ((header header-name)))
+    (:define ((macro ident)))
+    (:undef ((macro ident)))
+    (:cond ((if/ifdef/ifndef hash-if/ifdef/ifndef)
+            (items trans-item-list)
+            (elifs hash-elif-list)
+            (else hash-else-option)))
+    (:line-comment ((content nat-listp)))
+    :pred trans-itemp
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist trans-item-list
+    :parents (abstract-syntax-trees trans-items)
+    :short "Fixtype of lists of translation items."
+    :elt-type trans-item
+    :true-listp t
+    :pred trans-item-listp
+    :elementp-of-nil nil
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod hash-elif
+    :parents (abstract-syntax-trees trans-items)
+    :short "Fixtype of @('#elif')s."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "These represent @('#elif') directives,
+       and all the translation items that immediately follow the @('#elif'),
+       until and excluding the next @('#elif') or @('#else') or @('#endif')
+       that is at the same nesting level.
+       This is used when these preprocessing constructs
+       are preserved by our preprocessor,
+       and make their way into @(':cond') translation items.")
+     (xdoc::p
+      "This is quite analogous to @(tsee pelif),
+       but for ASTs after preprocessing and parsing."))
+    ((expr hash-if/elif-expr)
+     (items trans-item-list))
+    :pred hash-elifp
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist hash-elif-list
+    :parents (abstract-syntax-trees trans-items)
+    :short "Fixtype of lists of @('#elif')s."
+    :elt-type hash-elif
+    :true-listp t
+    :pred hash-elif-listp
+    :elementp-of-nil nil
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod hash-else
+    :parents (abstract-syntax-trees trans-items)
+    :short "Fixtype of @('#else')s."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "These represent @('#else') directives,
+       and all the translation items that immediately follow the @('#elif'),
+       until and excluding the @('#endif') that is at the same nesting level.
+       This is used when these preprocessing constructs
+       are preserved by our preprocessor,
+       and make their way into @(':cond') translation items.")
+     (xdoc::p
+      "This is quite analogous to @(tsee pelse),
+       but for ASTs after preprocessing and parsing."))
+    ((items trans-item-list))
+    :pred hash-elsep
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum hash-else-option
+    :parents (abstract-syntax-trees trans-items)
+    :short "Fixtype of optional @('#else')s."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We cannot use a @(tsee fty::defoption) here
+       because the @(':layout :fulltree') of @(tsee hash-else)
+       means that @('nil') could be a valid value of that type."))
+    (:some ((val hash-else)))
+    (:none ())
+    :pred hash-else-optionp
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable nfix fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod trans-unit
   :short "Fixtype of translation units [C17:6.9] [C17:A.2.4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>translation-unit</i> in the grammar in [C17].")
    (xdoc::p
-    "A translation unit consists of a list of external declarations,
-     optionally preceded by a line comment
-     and by zero or more @('#include') directives.
-     The comment comes first, if present;
-     then the @('#include') directives;
-     then the external declarations.")
-   (xdoc::p
-    "The line comment is represented as its content,
-     namely a list of character codes;
-     the comment is absent if the list is empty.
-     This is useful when generating code:
-     the comment can convey information about the generation.
-     We may eventually generalize this to allow
-     both line and block comments at the top level,
-     intermixed with external declarations,
-     also extending our parser to recognize and preserve those comments
-     (now the tokenizer skips over all comments.")
-   (xdoc::p
-    "The @('#include') directives are represented as their header names,
-     in a list of zero or more.
-     Eventually, we may generalize this to allow @('#include') directives
-     in other (top-level) places in the translation unit.")
+    "As discussed in @(tsee trans-item),
+     we allow other entities, besides external declaration.
+     Thus, a translation unit, in our abstract syntax,
+     consists of zero or more translation items.")
    (xdoc::p
     "We also add a slot with additional information, e.g. from validation."))
-  ((comment nat-list)
-   (includes header-name-list)
-   (declons ext-declon-list)
+  ((items trans-item-list)
    (info any))
-  :pred transunitp
+  :pred trans-unitp
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap filepath-transunit-map
+(fty::defomap header-name-string-map
+  :short "Fixtype of maps from header names to strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to record how header names in @('#include') directives
+     resolve to files identified by strings.
+     A map from header names to strings pertains to one file;
+     see @(tsee string-header-name-string-map-map)."))
+  :key-type header-name
+  :val-type string
+  :pred header-name-string-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-header-name-string-map-map
+  :short "Fixtype of maps from strings to
+          maps from header names to strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As in other types and recognizers used in the ACL2 community books,
+     the name of this type used a postfix structure, like
+     @('(string (header-name string map) map)').
+     These maps are used to record how header name resolve
+     for all the files in a file set or translation ensemble:
+     the keys of the outer map identify the files or translation units,
+     and each inner map records the mapping for that file."))
+  :key-type string
+  :val-type header-name-string-map
+  :pred string-header-name-string-map-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap filepath-trans-unit-map
   :short "Fixtype of omaps from file paths to translation units."
   :key-type filepath
-  :val-type transunit
-  :pred filepath-transunit-mapp
+  :val-type trans-unit
+  :pred filepath-trans-unit-mapp
+
   ///
 
-  (defrule filepath-setp-of-keys-when-filepath-transunit-mapp
-    (implies (filepath-transunit-mapp map)
+  (defrule filepath-setp-of-keys-when-filepath-trans-unit-mapp
+    (implies (filepath-trans-unit-mapp map)
              (filepath-setp (omap::keys map)))
     :induct t
     :enable omap::keys))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-ensemble
-  :short "Fixtype of ensembles of translation units."
+(fty::defprod trans-ensemble
+  :short "Fixtype of translation ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3805,23 +4077,18 @@
      a collection of translation units that form
      a C program or library or other component.
      Since translation units are contained in files,
-     it is natural to view a translation unit ensemble
+     it is natural to view a translation ensemble
      as a collection of (parsed) files.
      Since @(tsee fileset) models a collection of files
      as a map from file paths to file data (bytes),
      we use a finite map from file paths to translation units
      to model ensembles in the abstract syntax.")
    (xdoc::p
-    "Currently we do not model preprocessing constructs in our abstract syntax,
-     and so a translation unit as formalized in @(tsee transunit)
-     corresponds exactly to the notion of translation unit in [C17].
-     As we add support for preprocessing constructs,
-     our translation units will be more like something in between
-     proper traslation units and preprocessing translation units.
-     The notion of file set as formalized here will still apply to that case,
-     with some elements of the ensembles
-     that may be headers instead of source files."))
-  ((units filepath-transunit-map)
+    "We also have a map of resolved header names.
+     This is temporary, because we plan to put that information
+     directly in the ASTs for the @('#include') directives."))
+  ((units filepath-trans-unit-map)
+   (resolved-includes string-header-name-string-map-map)
    (info any))
-  :pred transunit-ensemblep
+  :pred trans-ensemblep
   :layout :fulltree)

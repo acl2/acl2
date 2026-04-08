@@ -23,20 +23,12 @@
                                     input
                                     chars ; expected
                                     poss ; expected
-                                    (std '17)
-                                    (gcc 'nil)
-                                    (clang 'nil)
+                                    (dialect 'nil)
                                     (fail 'nil))
   `(assert!
-    (b* ((version (case ,std
-                    (17 (cond (,gcc (c::version-c17+gcc))
-                              (,clang (c::version-c17+clang))
-                              (t (c::version-c17))))
-                    (23 (cond (,gcc (c::version-c23+gcc))
-                              (,clang (c::version-c23+clang))
-                              (t (c::version-c23))))))
-         (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp chars poss) (read-chars+positions ,input ienv)))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
+         ((mv erp chars poss) (read-chars+positions "" ,input ienv)))
       (if ,fail
           (and erp (not (cw "~@0" erp)))
         (and (not erp)
@@ -44,14 +36,14 @@
              (equal poss ,poss))))))
 
 (defmacro pos (line column)
-  `(position ,line ,column))
+  `(position "" ,line ,column))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-bytes-to-chars+poss
  :input nil ; empty file
  :chars nil
- :poss (list (position 1 0)))
+ :poss (list (pos 1 0)))
 
 (test-bytes-to-chars+poss
  :input '(0) ; disallowed character 0

@@ -128,7 +128,7 @@
       (plexeme-case
        lexeme?
        :header "a header name"
-       :ident (msg "the identifier ~x0" (ident->unwrap lexeme?.ident))
+       :ident (msg "the identifier ~x0" lexeme?.ident)
        :number "a preprocessing number"
        :char "a character constant"
        :string "a string literal"

@@ -67,8 +67,7 @@
 (include-book "segmentation")
 (include-book "signextend")
 (include-book "string")
-(include-book "syscall"
-              :ttags (:syscall-exec))
+(include-book "syscall" :ttags (:syscall-exec))
 (include-book "pack")
 (include-book "subroutine")
 (include-book "fp/top")
@@ -82,6 +81,8 @@
 (include-book "punpck")
 (include-book "pcmp")
 (include-book "pshuf")
+(include-book "emms")
+(include-book "bcd")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

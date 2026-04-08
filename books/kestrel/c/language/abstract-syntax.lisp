@@ -1034,7 +1034,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit
+(fty::defprod trans-unit
   :short "Fixtype of translation units [C17:6.9]."
   :long
   (xdoc::topstring
@@ -1046,31 +1046,31 @@
      so that in the future it may be easier to extend this fixtype
      with more information if needed."))
   ((declons ext-declon-list))
-  :tag :transunit
-  :pred transunitp)
+  :tag :trans-unit
+  :pred trans-unitp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption transunit-option
-  transunit
+(fty::defoption trans-unit-option
+  trans-unit
   :short "Fixtype of optional translation units."
-  :pred transunit-optionp)
+  :pred trans-unit-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult transunit-result
+(fty::defresult trans-unit-result
   :short "Fixtype of errors and translation units."
-  :ok transunit
-  :pred transunit-resultp)
+  :ok trans-unit
+  :pred trans-unit-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-ensemble
-  :short "Fixtype of translation unit ensembles."
+(fty::defprod trans-ensemble
+  :short "Fixtype of translation ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A translation unit ensemble is a collection of related translation units.
+    "A translation ensemble is a collection of related translation units.
      This is not an explicit notion in [C17],
      but it is a useful one in a language formalization:
      a program, or a portion of a program,
@@ -1080,8 +1080,8 @@
      a library, or a program without a library that it uses,
      would not qualify as a program in this sense.")
    (xdoc::p
-    "For now, a translation unit ensemble consists of
-     one or two translation units (see @(tsee transunit)),
+    "For now, a translation ensemble consists of
+     one or two translation units (see @(tsee trans-unit)),
      one for an optional header and one for a source file,
      which have the same name except for the extension.
      (The preceding sentence uses the terminology in [C17:5.1.1/1],
@@ -1104,7 +1104,7 @@
      but we take the term `translation unit', in this context,
      to also encompass preprocessing translation units."))
   ((path-wo-ext string)
-   (dot-h transunit-option)
-   (dot-c transunit))
-  :tag :transunit-ensemble
-  :pred transunit-ensemblep)
+   (dot-h trans-unit-option)
+   (dot-c trans-unit))
+  :tag :trans-ensemble
+  :pred trans-ensemblep)

@@ -26,7 +26,7 @@
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (natp max-term-size))))
   (if (dag-or-quotep-size-less-than dag max-term-size)
-      (cw "~X01" (dag-to-term dag) nil) ; todo: untranslate (see below)
+      (cw "~X01" (dag2term dag) nil) ; todo: untranslate (see below)
     (cw "~X01" dag nil)))
 
 ;; Returns state.
@@ -43,7 +43,7 @@
            (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
                       (set-print-base-radix print-base state)
                     state))
-           (term (dag-to-term dag))
+           (term (dag2term dag))
            (term (if untranslatep (untranslate$ term nil state) term))
            (- (cw "~X01" term nil))
            (state (set-print-base-radix 10 state)) ;make-event sets it to 10
@@ -260,7 +260,7 @@
               (this-step-increment (this-step-increment step-increment steps-done))
               (desired-steps-for-this-iteration (min (- step-limit steps-done) this-step-increment))
               ((when (not (posp desired-steps-for-this-iteration))) ; todo: add MBT
-               (er hard? ',name "Temination problem: Desired steps is ~x0." desired-steps-for-this-iteration)
+               (er hard? ',name "Termination problem: Desired steps is ~x0." desired-steps-for-this-iteration)
                (mv :termination-problem nil nil state))
               (- (cw "(Running (up to ~x0 steps):~%" desired-steps-for-this-iteration))
               ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -440,3 +440,30 @@
 
 (defmacro make-repeatedly-run-function (name simplify-dag-name)
   `(make-event (make-repeatedly-run-function-fn ',name ',simplify-dag-name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; maybe extends acc
+(defund add-lifter-event-name (event acc)
+  (declare (xargs :guard (true-listp acc)))
+  (if (not (and (consp event)
+                (true-listp event)))
+      (er hard? 'lifter-event-name "Bad event encountered: ~x0." event)
+    (case (car event)
+      ;; These events don't have names:
+      ((include-book) acc)
+      ((skip-proofs) (add-lifter-event-name (cadr event) acc))
+      ;; probably anything local should be ignored?
+      ((defconst defun defun-nx defund defund-nx defthm defthmd)
+       (cons (cadr event) acc))
+      (otherwise (er hard? 'lifter-event-name "Unhandled event type: ~x0." event)))))
+
+;; These are passed to value-triple for printing as the 'return value' of the lifter.
+(defund lifter-event-names (events acc)
+  (declare (xargs :guard (and (true-listp events)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable add-lifter-event-name)))))
+  (if (endp events)
+      (reverse acc)
+    (lifter-event-names (rest events)
+                        (add-lifter-event-name (first events) acc))))

@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -381,7 +381,7 @@
 
 (defun most-recent-enabled-elim-rule1 (lst ens)
 
-; This function finds the first elim-rule in lst whose whose :nume is
+; This function finds the first elim-rule in lst whose :nume satisfies
 ; enabled-numep.
 
   (cond ((endp lst) nil)
@@ -391,8 +391,7 @@
 
 (defun most-recent-enabled-elim-rule (fn wrld ens)
 
-; This function finds the first elim-rule for fn whose whose :nume is
-; enabled-numep.
+; This function finds the first elim-rule for fn whose :nume is enabled-numep.
 
   (let ((lst (getpropc fn 'eliminate-destructors-rules nil wrld)))
     (and lst ; optimization
@@ -1897,7 +1896,7 @@
                                             unlike ~x0!"
                                            new-lit2))
                                    (prog2$
-                                    (or (equal lit2 new-lit2) ; should be eq
+                                    (or (equal lit2 new-lit2) ; presumably eq
                                         (er hard 'fertilize-clause1
                                             "Internal error in ~
                                              fertilize-clause1!~|Old lit2: ~

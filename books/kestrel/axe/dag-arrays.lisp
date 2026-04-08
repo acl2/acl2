@@ -677,8 +677,7 @@
 
 (defthm pseudo-dag-arrayp-list-when-bounded-darg-listp-special-alt
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (bounded-darg-listp lst dag-len)
-                (natp nodenum))
+                (bounded-darg-listp lst dag-len))
            (pseudo-dag-arrayp-list lst dag-array-name dag-array))
   :hints (("Goal" :in-theory (enable bounded-darg-listp pseudo-dag-arrayp-list dargp-less-than))))
 
@@ -1539,7 +1538,7 @@
 ;; (defthm <-of-lemma-for-arg3-when-pseudo-dag-arrayp-aux-alt
 ;;   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
 ;;                 (<= 4 (len (dargs (aref1 dag-array-name dag-array nodenum))))
-;; ;                (not (EQUAL 'QUOTE (NTH 0 (AREF1 DAG-ARRAY-NAME DAG-ARRAY nodeum))))
+;; ;                (not (EQUAL 'QUOTE (NTH 0 (AREF1 DAG-ARRAY-NAME DAG-ARRAY nodenum))))
 ;;                 (not (consp (cadr (cdddr (aref1 dag-array-name dag-array nodenum))))) ;rules out a quotep
 ;;                 (natp nodenum)
 ;;                 )
@@ -1696,7 +1695,6 @@
                 (pseudo-dag-arrayp array-name array n)
                 (array1p array-name array)
                 (natp index)
-                (integerp top-nodenum-to-check)
                 (<= index *max-1d-array-index*)
                 (bounded-dag-exprp index val))
            (pseudo-dag-arrayp array-name (aset1-expandable array-name array index val) n))

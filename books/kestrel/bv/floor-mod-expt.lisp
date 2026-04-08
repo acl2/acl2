@@ -1,7 +1,7 @@
 ; A book about floor, mod, and expt.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,12 +20,11 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system)) ;for floor-of-floor
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor-mod-expt" :dir :system))
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system)) ;for floor-of-floor
 
 (defthm floor-of-shifting-lemma2-helper
   (implies (and (equal 0 (mod y x)) ;y is a mult of x (todo: consider not using mod to express this)

@@ -53,9 +53,12 @@
           c$::fundef-option
           c$::ext-declon
           c$::ext-declon-list
-          transunit
-          c$::filepath-transunit-map
-          transunit-ensemble)
+          c$::hash-if/elif-expr
+          c$::hash-if/ifdef/ifndef
+          c$::trans-items
+          trans-unit
+          c$::filepath-trans-unit-map
+          trans-ensemble)
   :result ident-setp
   :default nil
   :combine union

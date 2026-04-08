@@ -1,7 +1,7 @@
 ; A utility to gather the let-bound vars in a term
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,7 +22,7 @@
 
 (mutual-recursion
  ;; Gather all the vars that are bound in lambdas in TERM, except don't include
- ;; variable that ar simply bound to themselves.  Vars may appear only once in
+ ;; vars that are simply bound to themselves.  Vars may appear only once in
  ;; the result.  Does not include vars that are free (unless they are also
  ;; bound by a lambda).
  (defun let-vars-in-term (term)

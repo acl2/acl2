@@ -1,7 +1,7 @@
-; An simple evaluator supporting a basic set of functions
+; A simple evaluator supporting a basic set of functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -27,7 +27,7 @@
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrayp" :dir :system) ; todo: split out def
+(include-book "kestrel/bv-arrays/bv-arrayp" :dir :system) ; todo: split out def
 
 ;; TODO: Add more functions!  Add more bv functions.
 (defconst *axe-evaluator-basic-fns-and-aliases*

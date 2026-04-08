@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,30 +16,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; for ASSERT!-STOBJ
+(make-event (er-progn (add-global-stobj 'parstate state)
+                      (value '(value-triple nil)))
+            :check-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Test parsing functions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key pos more-inputs std gcc cond)
+(defmacro test-parse (fn
+                      input
+                      &key
+                      pos
+                      more-inputs
+                      dialect
+                      skip-control-lines
+                      cond)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
-  ;; Optional COND may be over variables AST, SPAN, PARSTATE
-  ;; and also EOF-POS for PARSE-*-EXTERNAL-DECLARATION.
+  ;; DIALECT indicates the C dialect.
+  ;; SKIP-CONTROL-LINES flag says to skip #... control lines.
+  ;; Optional COND may be over variables AST, SPAN, PARSTATE.
   `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (acl2::string=>nats ,input)
-                                  version
-                                  t
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
+         (parstate (init-parstate ""
+                                  (acl2::string=>nats ,input)
+                                  dialect
+                                  ,skip-control-lines
                                   parstate))
-         (,(cond ((eq fn 'parse-*-external-declaration)
-                  '(mv erp ?ast ?span ?eofpos parstate))
-                 ((eq fn 'parse-translation-unit)
+         (,(cond ((eq fn 'parse-translation-unit)
                   '(mv erp ?ast parstate))
                  (t '(mv erp ?ast ?span parstate)))
           (,fn ,@more-inputs parstate))
@@ -51,24 +61,27 @@
           parstate))
     parstate))
 
-(defmacro test-parse-fail (fn input &key pos more-inputs std gcc)
+(defmacro test-parse-fail (fn
+                           input
+                           &key
+                           pos
+                           more-inputs
+                           dialect
+                           skip-control-lines)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; DIALECT indicates the C dialect.
+  ;; SKIP-CONTROL-LINES flag says to skip #... control lines.
   `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (acl2::string=>nats ,input)
-                                  version
-                                  t
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
+         (parstate (init-parstate ""
+                                  (acl2::string=>nats ,input)
+                                  dialect
+                                  ,skip-control-lines
                                   parstate))
-         (,(cond ((eq fn 'parse-*-external-declaration)
-                  '(mv erp ?ast ?span ?eofpos parstate))
-                 ((eq fn 'parse-translation-unit)
+         (,(cond ((eq fn 'parse-translation-unit)
                   '(mv erp ?ast parstate))
                  (t '(mv erp ?ast ?span parstate)))
           (,fn ,@more-inputs parstate))
@@ -125,7 +138,7 @@
 (test-parse
  parse-cast-expression
  "(T) && x"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :cast/logand-ambig))
 
 (test-parse
@@ -194,7 +207,7 @@
 (test-parse
  parse-unary-expression
  "_Alignof y"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :unary))
 
 (test-parse
@@ -213,38 +226,38 @@
 (test-parse
  parse-unary-expression
  "_Alignof (x+y)"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :unary))
 
 (test-parse
  parse-unary-expression
  "__alignof__ (_Atomic(int))"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :alignof))
 
 (test-parse
  parse-unary-expression
  "_Alignof (var_or_tydef)"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :alignof-ambig))
 
 (test-parse
  parse-unary-expression
  "__alignof(also(ambig))"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :alignof-ambig))
 
 (test-parse
  parse-unary-expression
  "__alignof__(x).m"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :unary)
             (expr-case (expr-unary->arg ast) :member)))
 
 (test-parse
  parse-unary-expression
  "_Alignof(x)->m"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :unary)
             (expr-case (expr-unary->arg ast) :memberp)))
 
@@ -255,7 +268,7 @@
 (test-parse
  parse-unary-expression
  "&&label"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :label-addr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -286,7 +299,7 @@
 (test-parse
  parse-postfix-expression
  "(int) {}.x"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :member))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -300,23 +313,23 @@
 (test-parse
  parse-expression
  "__builtin_types_compatible_p(typeof(a), signed long long)"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "__builtin_offsetof(struct pt_regs, ss)"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "__builtin_va_arg(args, ngx_str_t *)"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "({x = 0;})(x)"
- :cond (expr-case ast :funcall)
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (expr-case ast :funcall))
 
 (test-parse
  parse-expression
@@ -327,61 +340,61 @@
 (test-parse
  parse-expression
  "__extension__ x"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "__extension__ x + y"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "__extension__ (x + y)"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "((int) {}.x)"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :paren)
             (expr-case (expr-paren->inner ast) :member)))
 
 (test-parse
  parse-expression
  "sizeof ((struct s) {}.x)"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :unary))
 
 (test-parse
  parse-expression
  "((struct s) {}.x)"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :paren)
             (expr-case (expr-paren->inner ast) :member)))
 
 (test-parse
  parse-expression
  "(struct s) {}.x"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :member))
 
 (test-parse
  parse-expression
  "((struct s) {})"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :paren)
             (expr-case (expr-paren->inner ast) :complit)))
 
 (test-parse
  parse-expression
  "(id) {}.x)"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :member))
 
 (test-parse
  parse-expression
  "((id) {}.x))"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (expr-case ast :paren)
             (expr-case (expr-paren->inner ast) :member)))
 
@@ -393,31 +406,31 @@
 (test-parse
  parse-expression
  "(x->y >= (f()) && x->y < (g()))"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-expression
  "true"
- :std 17
+ :dialect (c::make-dialect :std (c::standard-c17))
  :cond (expr-case ast :ident))
 
 (test-parse
  parse-expression
  "false"
- :std 17
+ :dialect (c::make-dialect :std (c::standard-c17))
  :cond (expr-case ast :ident))
 
 (test-parse
  parse-expression
  "true"
- :std 23
+ :dialect (c::make-dialect :std (c::standard-c23))
  :cond (and (expr-case ast :const)
             (const-case (expr-const->const ast) :int)))
 
 (test-parse
  parse-expression
  "false"
- :std 23
+ :dialect (c::make-dialect :std (c::standard-c23))
  :cond (and (expr-case ast :const)
             (const-case (expr-const->const ast) :int)))
 
@@ -432,7 +445,7 @@
 (test-parse
  parse-designator
  "[0 ... 9]"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse-fail
  parse-designator
@@ -449,17 +462,17 @@
 (test-parse
  parse-struct-or-union-specifier
  "empty {}"
- :pos (position 1 7)
- :more-inputs (t (span (position 1 0) (position 1 6)))
- :gcc t
+ :pos (position "" 1 7)
+ :more-inputs (t (span (position "" 1 0) (position "" 1 6)))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (type-spec-case ast :struct-empty))
 
 (test-parse
  parse-struct-or-union-specifier
  "{}"
- :pos (position 1 7)
- :more-inputs (t (span (position 1 0) (position 1 6)))
- :gcc t
+ :pos (position "" 1 7)
+ :more-inputs (t (span (position "" 1 0) (position "" 1 6)))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (type-spec-case ast :struct-empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -714,7 +727,7 @@
 (test-parse
  parse-type-name
  "bool"
- :std 17
+ :dialect (c::make-dialect :std (c::standard-c17))
  :cond (and (equal (tyname->specquals ast)
                    (list (spec/qual-typespec
                           (type-spec-typedef (ident "bool")))))
@@ -724,7 +737,7 @@
 (test-parse
  parse-type-name
  "bool"
- :std 23
+ :dialect (c::make-dialect :std (c::standard-c23))
  :cond (and (equal (tyname->specquals ast)
                    (list (spec/qual-typespec (type-spec-bool))))
             (equal (tyname->declor? ast)
@@ -812,17 +825,46 @@
  parse-declaration
  "extern int remove (const char *__filename)
     __attribute__ ((__nothrow__ , __leaf__));"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-declaration
  "int __seg_fs *x;"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-declaration
  "int __seg_gs *x;"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-parse
+ parse-declaration
+ "int * _Nonnull ptr = 0;"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-parse
+ parse-declaration
+ "int * _Null_unspecified ptr = 0;"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-parse
+ parse-declaration
+ "int * _Nullable ptr = 0;"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-parse
+ parse-declaration
+ "int * _Nullable_result f();"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-parse-fail
+ parse-declaration
+ "int * _Nonnull ptr = 0;") ; no Clang extensions
+
+(test-parse-fail
+ parse-declaration
+ "int * _Nonnull ptr = 0;"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)) ; Clang-only extension
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -841,12 +883,12 @@
 (test-parse
  parse-statement
  "return (*(const volatile typeof( _Generic((*(unsigned long *)addr), char: (char)0, unsigned char: (unsigned char)0, signed char: (signed char)0, unsigned short: (unsigned short)0, signed short: (signed short)0, unsigned int: (unsigned int)0, signed int: (signed int)0, unsigned long: (unsigned long)0, signed long: (signed long)0, unsigned long long: (unsigned long long)0, signed long long: (signed long long)0, default: (*(unsigned long *)addr))) *)&(*(unsigned long *)addr));"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-statement
  "case 'a' ... 'z': return;"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-statement
@@ -864,7 +906,7 @@
   __label__ lab;
   int x = 0;
 }"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (stmt-case ast :compound)
             (equal (comp-stmt->labels (stmt-compound->stmt ast))
                    (list (list (ident "lab"))))))
@@ -875,7 +917,7 @@
   __label__ lab1, lab2;
   int x = 0;
 }"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (stmt-case ast :compound)
             (equal (comp-stmt->labels (stmt-compound->stmt ast))
                    (list (list (ident "lab1")
@@ -888,7 +930,7 @@
   __label__ lab3;
   int x = 0;
 }"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (stmt-case ast :compound)
             (equal (comp-stmt->labels (stmt-compound->stmt ast))
                    (list (list (ident "lab1")
@@ -898,19 +940,19 @@
 (test-parse
  parse-statement
  "__attribute__((fallthrough));"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (stmt-case ast :null-attrib))
 
 (test-parse
  parse-statement
  "__attribute__((assume(x == 42)));"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (stmt-case ast :null-attrib))
 
 (test-parse
  parse-statement
  "__attribute__((musttail)) return bar();"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (stmt-case ast :return-attrib))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -924,21 +966,21 @@
 (test-parse
  parse-block-item
  "__attribute__((fallthrough));"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (block-item-case ast :stmt)
             (stmt-case (block-item-stmt->stmt ast) :null-attrib)))
 
 (test-parse
  parse-block-item
  "__attribute__((assume(x == 42)));"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (block-item-case ast :stmt)
             (stmt-case (block-item-stmt->stmt ast) :null-attrib)))
 
 (test-parse
  parse-block-item
  "__attribute__((musttail)) return bar();"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (and (block-item-case ast :stmt)
             (stmt-case (block-item-stmt->stmt ast) :return-attrib)))
 
@@ -950,21 +992,155 @@
  parse-external-declaration
  ";"
  :cond (ext-declon-case ast :empty)
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; parse-*-external-declaration
+; parse-hash-if-or-ifdef-or-ifndef
 
 (test-parse
- parse-*-external-declaration
+ parse-hash-if-or-ifdef-or-ifndef
+ "if defined(M)"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-if
+               (hash-if/elif-expr-defined (ident "M")))))
+
+(test-parse
+ parse-hash-if-or-ifdef-or-ifndef
+ "if 2 + 3"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-if
+               (hash-if/elif-expr-add
+                (hash-if/elif-expr-number
+                 (iconst (dec/oct/hex-const-dec 2) nil nil))
+                (hash-if/elif-expr-number
+                 (iconst (dec/oct/hex-const-dec 3) nil nil))))))
+
+(test-parse
+ parse-hash-if-or-ifdef-or-ifndef
+ "ifdef X"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-ifdef (ident "X"))))
+
+(test-parse
+ parse-hash-if-or-ifdef-or-ifndef
+ "ifndef X"
+ :pos (position "" 1 7)
+ :more-inputs ((span (position "" 1 6) (position "" 1 6)))
+ :cond (equal ast
+              (hash-if/ifdef/ifndef-ifndef (ident "X"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-translation-item
+
+(test-parse
+ parse-translation-item
+ "#include \"f.c\"")
+
+(test-parse
+ parse-translation-item
+ "#include <f.h>")
+
+(test-parse
+ parse-translation-item
+ "#define X X")
+
+(test-parse-fail
+ parse-translation-item
+ "#define X Y")
+
+(test-parse
+ parse-translation-item
+ "#undef X")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #else
+  int y;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #elif defined (N)
+  int y;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#if defined(M)
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #else
+  int w;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#ifdef X
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #else
+  int w;
+  #endif")
+
+(test-parse
+ parse-translation-item
+ "#ifndef Y
+  int x;
+  #elif defined (N)
+  int y;
+  #elif defined (O)
+  int z;
+  #else
+  int w;
+  #endif")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-*-translation-item
+
+(test-parse
+ parse-*-translation-item
  "struct mystruct
 {
    int *val;
 };")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "typedef void foo;
 struct bar
 {
@@ -972,57 +1148,57 @@ struct bar
 };")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int ith(int *a) {
  return a[0];
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int ith(int a[]) {
  return a[0];
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo (int val) {
  printf(\"Val = %d\\n\", val);
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int main() { }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo (unsigned int v)
 {
  return (v >> 1);
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void encrypt (uint32_t* v) {
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void encrypt () {
   uint32_t v0=1;
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo () {
   gen_config_t gen_config = {100};
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int A [] = {0,1,2,3};")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int spec_int(unsigned int v)
 {
   unsigned int c;
@@ -1032,7 +1208,7 @@ struct bar
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int sum(int a[], int n) {
   int s = 0;
   for (int i = 1; i <= n; ++i)
@@ -1041,19 +1217,19 @@ struct bar
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo (char x, char y) { return x < y && y < x; }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo (int x, int y) { return x < y || y < x; }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo (int x) { int z = 0 ; z &= x; }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo () {
   while (x > y) {
     x++;
@@ -1061,94 +1237,94 @@ struct bar
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo () {
   int i = 0;
   i--;
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int main() {
  int a = 10, b = 5;
  a %= b;
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "char string[] = \"\";")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo () {
   managedtask * newtask = (managedtask *) malloc(sizeof(managedtask));
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo () {
  idx = (arr)[3];
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void test(int i)
 {
     y[i] = (i ? inv : src)[i];
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern char *tmpnam (char[20]);")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern int __uflow (FILE *);")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int c[1][2];")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "struct A
 {
   int c1, c2;
 };")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "long long foo () {
   return 1LL;
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern int sscanf (const char *__s, const char *__format, ...);")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern int remove (const char *__filename) __attribute__ ((__nothrow__ , __leaf__));"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "typedef int register_t __attribute__ ((__mode__ (__word__)));"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern int fscanf (FILE *__restrict __stream, const char *__restrict __format, ...) __asm__ (\"\" \"__isoc99_fscanf\") ;"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void foo() {
   for (size_t bar; ; ) {}
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "static int func_1(void)
 {
    int i;
@@ -1157,7 +1333,7 @@ lbl_15:
 }")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern __inline __attribute__ ((__always_inline__)) __attribute__ ((__gnu_inline__)) void
 error (int __status, int __errnum, const char *__format, ...)
 {
@@ -1166,37 +1342,37 @@ error (int __status, int __errnum, const char *__format, ...)
  else
    __error_alias (__status, __errnum, __format, __builtin_va_arg_pack ());
 }"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo asm (\"myfoo\") = 2;"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "extern struct static_call_key __SCK__might_resched; extern typeof(__cond_resched) __SCT__might_resched;;"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "static ngx_thread_value_t __stdcall ngx_iocp_timer(void *data);"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "__declspec(thread) int nevents = 0;"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "__declspec(thread) WSAEVENT events[WSA_MAXIMUM_WAIT_EVENTS + 1];"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "__declspec(thread) ngx_connection_t *conn[WSA_MAXIMUM_WAIT_EVENTS + 1];"
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-block-item-list
@@ -1205,11 +1381,11 @@ error (int __status, int __errnum, const char *__format, ...)
     : \"=a\" (eax), \"=b\" (ebx), \"=c\" (ecx), \"=d\" (edx) : \"a\" (i) );
   buf[0] = eax;
   }"
- :gcc t
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal (len ast) 2))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "const void *x = 0;
   // foo
   void *y = (void *) x;
@@ -1217,7 +1393,7 @@ error (int __status, int __errnum, const char *__format, ...)
 ")
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "void * foo(void) {
   const void *x = 0;
 #pragma GCC diagnostic push
@@ -1225,10 +1401,11 @@ error (int __status, int __errnum, const char *__format, ...)
   return (void *) x;
 #pragma GCC diagnostic pop
 }
-")
+"
+ :skip-control-lines t)
 
 (test-parse-fail
- parse-*-external-declaration
+ parse-*-translation-item
  "void * foo(void) {
   const #pragma GCC diagnostic push
     void *x = 0;
@@ -1236,65 +1413,70 @@ error (int __status, int __errnum, const char *__format, ...)
   return (void *) x;
 #pragma GCC diagnostic pop
 }
-")
+"
+ :skip-control-lines t)
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "#pragma once
   int x;
-")
+"
+ :skip-control-lines t)
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  " #pragma once
   int x;
-")
+"
+ :skip-control-lines t)
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "#pragma once
   int x;
-")
+"
+ :skip-control-lines t)
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "#pragma onceint x;
 "
- :cond (equal (len ast) 1))
+ :cond (equal (len ast) 1)
+ :skip-control-lines t)
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo (int arg __attribute__((unused))) {
   return 0;
 }
 "
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "struct s x = {};
 "
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "double __cabs (_Complex double z) {
   return __hypot (__real__ z, __imag__ z);
 }
 "
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "int foo(void) {
   my_label: __attribute__((unused))
   return 1;
 }
 "
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
- parse-*-external-declaration
+ parse-*-translation-item
  "struct __attribute__((aligned(64))) secret {
   char secret_top_str[20];
   union secret_data {
@@ -1305,7 +1487,7 @@ error (int __status, int __errnum, const char *__format, ...)
   char secret_bot_str[20];
 };
 "
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1318,7 +1500,7 @@ error (int __status, int __errnum, const char *__format, ...)
 (test-parse
  parse-translation-unit
  ""
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-translation-unit
@@ -1335,7 +1517,7 @@ error (int __status, int __errnum, const char *__format, ...)
  __alignof__ x;
 }
 "
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-parse
  parse-translation-unit
@@ -1349,4 +1531,4 @@ error (int __status, int __errnum, const char *__format, ...)
   }
 }
 "
- :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))

@@ -21,4 +21,5 @@
 (include-book "def-inst")
 (include-book "instructions")
 (include-book "step")
+(include-book "rules")
 (include-book "doc")

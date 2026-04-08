@@ -44,13 +44,15 @@
 ;(include-book "kestrel/utilities/real-time-since" :dir :system)
 ;(include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
+(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
 (include-book "basic-rules")
 (include-book "arithmetic-rules-axe")
 (include-book "bv-array-rules-axe") ; not all are needed, but we need integerp-of-bv-array-read
 (include-book "bv-intro-rules")
-(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
+(include-book "kestrel/bv-arrays/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BVCHOP, etc?
@@ -369,7 +371,7 @@
                       *max-1d-array-length*)))
         (cw "ERROR: Dags too large.")
         (mv *error* nil state))
-       (- (and print (cw "Done applying the Axe rewriter wiith contexts (term size: ~x0, DAG size: ~x1))~%"
+       (- (and print (cw "Done applying the Axe rewriter with contexts (term size: ~x0, DAG size: ~x1))~%"
                          (dag-or-quotep-size dag-or-quotep)
                          (if (quotep dag-or-quotep)
                              1
@@ -494,7 +496,7 @@
                   ))
   (b* ((dag (first problem))
        (assumptions (second problem))
-       (term (dag-to-term dag))
+       (term (dag-or-constant-to-term dag))
        (- (and print (cw "(Calling ACL2 on term ~x0.~%" term)))
        ((mv & provedp state)
         (prove$ ;TODO: Add support for hints
@@ -649,7 +651,7 @@
        ((mv provedp negated-assumption-nodenums) ; todo: can there really be constants in negated-assumption-nodenum-or-quoteps?
         (handle-constant-disjuncts negated-assumption-nodenum-or-quoteps nil))
        ((when provedp)
-        (cw "NOTE: STP tactic proved it due to a assumption of false.)~%") ; balances "(Applying STP tactic"
+        (cw "NOTE: STP tactic proved it due to an assumption of false.)~%") ; balances "(Applying STP tactic"
         (mv *valid* nil state))
        ;; We'll try prove that either the conclusion is true or one of the assumptions is false:
        (disjunct-nodenums (cons top-nodenum negated-assumption-nodenums))
@@ -876,7 +878,7 @@
                  (cw "The DAG is:~%")
                  (print-dag-or-quotep dag)
                  (if (< (dag-or-quotep-size dag) 10000)
-                     (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
+                     (cw "~%(Term: ~X01)~%" (dag-or-constant-to-term dag) nil)
                    nil)
                  (mv *unknown* info-acc state)))
      (b* ((tactic (first tactics))
@@ -1134,7 +1136,7 @@
              (maybe-theorem
                (and produce-theoremp
                     (b* ((theorem-conclusion (if (< (dag-or-quotep-size dag-or-constant) 1000)
-                                                 (if (quotep dag-or-constant) dag-or-constant (dag-to-term dag-or-constant))
+                                                 (if (quotep dag-or-constant) dag-or-constant (dag-or-constant-to-term dag-or-constant))
                                                (embed-dag-in-term dag-or-constant (w state))))
                          (defthm-name (or name (fresh-name-in-world-with-$s 'prove-with-tactics nil (w state))))
                          (disablep (if rule-classes t nil)) ;can't disable if :rule-classes nil ;todo: make this an option

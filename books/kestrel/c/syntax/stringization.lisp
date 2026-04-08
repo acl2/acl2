@@ -29,12 +29,7 @@
      Here we define a family of functions to perform this conversion.")
    (xdoc::p
     "The term `stringize' is used in [C17],
-     although not in [C17:6.10.3.2].")
-   (xdoc::p
-    "In general, stringization may be applied to lexmarks,
-     as they result from macro replacements.
-     The markers themselves are not stringized,
-     but we still need to handle them with respect to the disabled multiset."))
+     although not in [C17:6.10.3.2]."))
   :order-subtopics t
   :default-parent t)
 
@@ -342,11 +337,7 @@
   (plexeme-case
    lexeme
    :header (raise "Internal error: header name ~x0." (plexeme-fix lexeme))
-   :ident (b* ((astring (ident->unwrap lexeme.ident))
-               ((unless (stringp astring))
-                (raise "Internal error: non-string ~x0 in identifier."
-                       astring)))
-            (stringize-astring astring))
+   :ident (stringize-astring lexeme.ident)
    :number (stringize-pnumber lexeme.number)
    :char (stringize-cconst lexeme.const)
    :string (stringize-stringlit lexeme.literal)
@@ -373,67 +364,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We concatenate all the stringizations.")
-   (xdoc::p
-    "This is not actually used in @(tsee stringize),
-     which operates on lexmarks,
-     but it is useful to have for other purposes."))
+    "We concatenate all the stringizations."))
   (cond ((endp lexemes) nil)
         (t (append (stringize-lexeme (car lexemes))
                    (stringize-lexeme-list (cdr lexemes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stringize ((lexmarks lexmark-listp))
-  :returns (mv (stringlit stringlitp) (markers lexmark-listp))
-  :short "Stringize the lexemes in a list of lexmarks,
-          collecting the markers in a list."
+(define stringize ((lexemes plexeme-listp))
+  :returns (stringlit stringlitp)
+  :short "Stringize a list of lexemes, obtaining a string literal."
   :long
   (xdoc::topstring
    (xdoc::p
-    "In our preprocessor, the @('#') operator may be applied
-     to a macro argument that contains markers,
-     resulting from the expansion of other macros.
-     Although direct arguments of the macro that contains @('#')
-     do not get expanded [C17:6.10.3.1],
-     indirect arguments may be expanded, e.g. given")
-   (xdoc::codeblock
-    "#define F(x) # x"
-    "#define G(x) F(x)"
-    "#define M a b c")
-   (xdoc::p
-    "the macro call @('G(M)')
-     expands to @('F(start(M) a b c end(M))'),
-     where we are showing the markers @('start(M)') and @('end(M)'),
-     which then expands to @('\"a b c\"'),
-     but note that that the markers are passed,
-     along with the lexemes between them, to the @('#') operator.")
-   (xdoc::p
-    "The markers are not stringized, but must not lose them.
-     So we collect them as we go through the lexemes we stringize,
-     and return all the markers in a separate list.")
-   (xdoc::p
-    "The characters obtained by stringizing the lexemes
-     are concatenated all together,
-     and then wrapper into a string literal.
+    "This wraps the string characters into a string literal.
      The string literal has no encoding prefix,
      because the term `character string literal' in [C17:6.10.3.2/2]
      denotes a string literal without prefix,
      as opposed to `UTF-8 string literals' and `wide string literals'
      [C17:6.4.5/3]."))
-  (b* (((mv schars markers) (stringize-loop lexmarks)))
-    (mv (make-stringlit :prefix? nil :schars schars)
-        markers))
-
-  :prepwork
-  ((define stringize-loop ((lexmarks lexmark-listp))
-     :returns (mv (schars s-char-listp) (markers lexmark-listp))
-     :parents nil
-     (b* (((when (endp lexmarks)) (mv nil nil))
-          (lexmark (car lexmarks))
-          ((mv schars markers) (stringize-loop (cdr lexmarks))))
-       (if (lexmark-case lexmark :lexeme)
-           (mv (append (stringize-lexeme (lexmark-lexeme->lexeme lexmark))
-                       schars)
-               markers)
-         (mv schars (cons (lexmark-fix lexmark) markers)))))))
+  (b* ((schars (stringize-lexeme-list lexemes)))
+    (make-stringlit :prefix? nil :schars schars)))

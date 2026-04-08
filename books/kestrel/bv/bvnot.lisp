@@ -182,12 +182,6 @@
 ;bvchop-of-logtail
                                   )))))
 
-(defthm bvnot-of-all-ones
-  (implies (natp width)
-           (equal (bvnot width (+ -1 (expt 2 width)))
-                  0))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
 ;can loop
 (defthmd bvnot-of-0
   (implies (natp width)
@@ -236,5 +230,5 @@
            (equal (equal (bvnot size x) k)
                   (and (unsigned-byte-p size k)
                        (equal (bvchop size x) (bvnot size k)))))
-  :hints (("Goal" :in-theory (enable bvnot lognot acl2::bvchop-of-sum-cases
+  :hints (("Goal" :in-theory (enable bvnot lognot bvchop-of-sum-cases
                                      unsigned-byte-p))))

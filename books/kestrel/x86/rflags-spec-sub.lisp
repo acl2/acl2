@@ -1,7 +1,7 @@
 ; Some changes to the open-source x86 model
 ;
 ; Copyright (C) 2022 Kestrel Technology, LLC
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 ;(include-book "std/basic/arith-equiv-defs" :dir :system) ; for bool->bit
 (include-book "projects/x86isa/machine/rflags-spec" :dir :system)
 (include-book "kestrel/bv/bvlt-def" :dir :system)
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 

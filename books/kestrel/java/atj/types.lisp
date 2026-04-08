@@ -1453,7 +1453,7 @@
         ((booleanp val) (atj-type-acl2 (atj-atype-boolean)))
         ((symbolp val) (atj-type-acl2 (atj-atype-symbol)))
         ((consp val) (atj-type-acl2 (atj-atype-cons)))
-        (t (prog2$ (raise "Internal errror: ~
+        (t (prog2$ (raise "Internal error: ~
                            the value ~x0 is not a number, ~
                            a character, a string, a symbol, or a CONS."
                           val)

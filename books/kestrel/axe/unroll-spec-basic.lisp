@@ -1,7 +1,7 @@
 ; A version of unroll-spec that uses rewriter-basic.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -121,7 +121,7 @@
                               whole-form
                               state)
   (declare (xargs :guard (and (symbolp defconst-name)
-                              ;; term is an untranlated term
+                              ;; term is an untranslated term
                               (or (eq :standard rules)
                                   (eq :auto rules)
                                   (symbol-listp rules))
@@ -224,7 +224,7 @@
           ;; The user supplied one, so use it:
           interpreted-function-alist))
        ;; Call the rewriter:
-       ((mv erp dag &) ; use the hits?
+       ((mv erp dag-or-constant &) ; use the hits?
         (simplify-term-basic term
                              assumptions
                              rule-alist
@@ -240,9 +240,10 @@
                              nil ; fns-to-elide
                              ))
        ((when erp) (mv erp nil state))
-       ((when (quotep dag)) ;; TODO: Should we allow this?
-        (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag)
+       ((when (quotep dag-or-constant)) ;; TODO: Should we allow this?
+        (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag-or-constant)
         (mv :unexpected-quotep nil state))
+       (dag dag-or-constant) ; it is a DAG, not a constant
        ;; Make a theorem if the term is small enough.  We must use skip-proofs
        ;; because Axe does not yet produce an ACL2 proof. TODO: We could
        ;; support adding the theorem even if the DAG is large if we use
@@ -259,7 +260,7 @@
                           ;; the function-params given should be a permutation of the dag-vars
                           (let ((diff1 (set-difference-eq dag-vars function-params))
                                 (diff2 (set-difference-eq function-params dag-vars)))
-                            (if (or diff1 diff1)
+                            (if (or diff1 diff2)
                                 (er hard? 'unroll-spec-basic-fn "Mismatch between supplied :function-params and the variables of the dag.  Dag has ~x0 vars.  :function-params has ~x1 vars.
 Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                     (len dag-vars)
@@ -339,7 +340,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                        (rules ':standard) ;to completely replace the usual set of rules
                                        ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                        (extra-rules 'nil) ; to add to the usual set of rules
-                                       (remove-rules 'nil) ; to remove from to the usual set of rules
+                                       (remove-rules 'nil) ; to remove from the usual set of rules
                                        (normalize-xors 'nil)
                                        ;; Options that affect performance:
                                        (memoizep 't)
@@ -397,7 +398,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
          (disable-function "Whether to disable the produced function.")
          (function-type "How to create a function for the DAG (:term, :embedded-dag, :lets, or :auto).")
          (function-params "The param to use for the produced function (specifies their order).")
-         (produce-theorem "Whether to create a theorem stating that the dag is equal to the orignal term (using skip-proofs).")
+         (produce-theorem "Whether to create a theorem stating that the dag is equal to the original term (using skip-proofs).")
          (local "Whether to make the result of @('unroll-spec-basic') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-spec-basic') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-spec-basic') is not included by other books."))
   :description ("Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
                 "To decide which rewrite rules to use, the tool starts with either the @(':rules') if supplied, or a basic default set of rules, @('unroll-spec-basic-rules').  Then the @(':extra-rules') are added and then the @(':remove-rules') are removed."))

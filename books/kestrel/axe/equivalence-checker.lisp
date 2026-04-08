@@ -1,7 +1,7 @@
 ; The Axe equivalence checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -65,7 +65,7 @@
 (local (include-book "kestrel/bv/arith" :dir :system))
 (include-book "kestrel/bv-lists/packing" :dir :system) ;bring in some stuff in axe-runes
 (include-book "unify-term-and-dag-with-name")
-(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 (include-book "lists-axe")
 (include-book "group-axe")
 (include-book "dag-to-term-with-lets")
@@ -140,7 +140,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; move, so we can use it in other tools?
-;; Can throw an error or pring a warning if the vars disagree.  Returns nil.
+;; Can throw an error or print a warning if the vars disagree.  Returns nil.
 (defun maybe-check-dag-vars (check-vars
                              dag-or-quotep1
                              dag-or-quotep2
@@ -163,12 +163,12 @@
       (if (not vars-differp)
           nil
         (progn$ (and (not (subsetp-eq vars1 vars2)) ; todo: optimize these set operations, given that the lists are sorted
-                     (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
+                     (prog2$ (and (eq :warn check-vars) (cw "WARNING: "))
                              (cw "The first DAG has vars, ~x0, not in the second DAG.~%" (set-difference-eq vars1 vars2))))
                 (and (not (subsetp-eq vars2 vars1))
-                     (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
+                     (prog2$ (and (eq :warn check-vars) (cw "WARNING: "))
                              (cw "The second DAG has vars, ~x0, not in the first DAG.~%" (set-difference-eq vars2 vars1))))
-                (if (eq :warning check-vars)
+                (if (eq :warn check-vars)
                     nil ; no error
                   (er hard? ctx "Mismatch in DAG vars (see above).")))))))
 
@@ -1003,8 +1003,7 @@
       (let ((expr (aref1 dag-array-name dag-array nodenum)))
         (if (or (not (consp expr))
                 (eq 'quote (ffn-symb expr)))
-            (hard-error 'get-trace-for-node "Unexpected a recursive function call but got ~x0"
-                        (acons #\0 expr nil))
+            (er hard? 'get-trace-for-node "Expected a recursive function call but got ~x0" expr)
           ;;regular function call
           (let* ((fn (ffn-symb expr))
                  (dargs (dargs expr))
@@ -1140,7 +1139,7 @@
                               (test-case-array-alistp test-case-array-alist (+ 1 bignodenum))
                               (<= (len test-cases) (len test-case-array-alist)))))
   (if (equal smallnodenum bignodenum)
-      (er hard? 'get-traces-for-two-nodes "the two nodes should not be the same" nil)
+      (er hard? 'get-traces-for-two-nodes "the two nodes should not be the same")
     (prog2$
      (cw "(Getting traces from ~x0 test cases:~%" (len test-cases))
      (let ((traces-pair (get-traces-for-two-nodes-aux test-cases ;can this be too many? used to use 100 (if we are taking just a few, choose a better sample?)
@@ -1877,7 +1876,7 @@
 
                ;;upper bound:
                (if (all-same upper-bounds)
-                   ;; all traces count up the the same value:
+                   ;; all traces count up to the same value:
                    `((not (sbvlt '32 ',(first upper-bounds) ,term)))
 
                  ;; the traces count up to different values, so try to find an expression for the ending values
@@ -4041,7 +4040,7 @@
 ;;         (filter-explanations (cdr explanations) formals)))))
 
 
-;; ;seperates out the explanations that are about lengths
+;; ;separates out the explanations that are about lengths
 ;; ;; Returns (list length-explanations formal-or-component-explanations)
 ;; (defun filter-explanations (explanations length-explanations-acc formal-or-component-explanations-acc)
 ;;   (if (endp explanations)
@@ -7176,7 +7175,7 @@
                     ;;don't want to unroll if there are no reps on any test case:
                     nil))
         (if (symbolp match)
-            (prog2$ (cw "Found symbol pattern: ~x0. (FAILING since we don't yet derive bounds for vars)%" match)
+            (prog2$ (cw "Found symbol pattern: ~x0. (FAILING since we don't yet derive bounds for vars)~%" match)
                     nil) ;ffixme if the rep-count is some input, what we do here depends on whether we have a (small) bound on the input - pass in the assumptions?
           (if (and (call-of 'mod match)
                    (quotep (farg2 match))) ;the bound of (mod x <constant>) is that constant (assuming it's a natp)
@@ -7575,7 +7574,7 @@
            (evaluated-term (sublis-var-and-eval (enquote-cdrs test-case) ;gross?
                                                   term interpreted-function-alist)))
       (if (not (myquotep evaluated-term))
-          (prog2$ (er hard? 'partition-test-cases "Unable to evaluate test case: ~x0.  Got: ~x1." (acons #\0 test-case (acons #\1 evaluated-term nil)))
+          (prog2$ (er hard? 'partition-test-cases "Unable to evaluate test case: ~x0.  Got: ~x1." test-case evaluated-term)
                   (mv nil nil))
         (if (unquote evaluated-term)
             (partition-test-cases (rest test-cases) term interpreted-function-alist (cons test-case true-acc) false-acc)
@@ -9756,8 +9755,8 @@
            (new-update-dags-in-order (lookup-eq-lst new-formals full-formals-update-dag-alist))
            (new-fn (packnew fn '-with-duplicated-numcdrs-param-for-consumer))
            ;;fffixme can these calls to dag-to-term blow up?
-           (new-exit-test-expr (embed-dag-as-term new-exit-test-dag interpreted-function-alist)) ;(dag-to-term new-exit-test-dag)
-           (new-base-case-expr (embed-dag-as-term new-base-case-dag interpreted-function-alist)) ;(dag-to-term new-base-case-dag)
+           (new-exit-test-expr (embed-dag-as-term new-exit-test-dag interpreted-function-alist)) ;(dag2term new-exit-test-dag)
+           (new-base-case-expr (embed-dag-as-term new-base-case-dag interpreted-function-alist)) ;(dag2term new-base-case-dag)
            (new-update-exprs (embed-dags-as-terms new-update-dags-in-order interpreted-function-alist)) ;(dags-to-terms new-update-dags-in-order)
            (defthm-name (packnew fn '--becomes-- new-fn))
            (exit-test-dags-agree-defthm-name (packnew defthm-name '-dags-agree-for-exit-test))
@@ -10000,7 +9999,7 @@
            ((mv erp dag-for-base-case-expr state)
             (get-dag-for-expr-no-theorem base-case-expr interpreted-function-alist state))
            ((when erp) (mv erp nil state))
-           (base-case-term (dag-to-term dag-for-base-case-expr)))
+           (base-case-term (dag2term dag-for-base-case-expr)))
         (if (not (member-eq base-case-term formals)) ;a producer must return a single formal (fixme relax this restriction?)
             (mv (erp-nil) nil state)
           (b* ((formal-update-expr-alist (pairlis$-fast formals update-expr-list))
@@ -10012,12 +10011,12 @@
                      (call-of 'add-to-end (top-expr update-dag-for-returned-formal))
                      (eq base-case-term (lookup (farg2 (top-expr update-dag-for-returned-formal))
                                                 update-dag-for-returned-formal)))
-                (let* ((nodenunm-or-quotep-for-value-added-on (farg1 (top-expr update-dag-for-returned-formal)))
+                (let* ((nodenum-or-quotep-for-value-added-on (farg1 (top-expr update-dag-for-returned-formal)))
                        (dag-for-value-added-on
-                        (if (quotep nodenunm-or-quotep-for-value-added-on)
-                            nodenunm-or-quotep-for-value-added-on
+                        (if (quotep nodenum-or-quotep-for-value-added-on)
+                            nodenum-or-quotep-for-value-added-on
                           ;;fixme destroys 'dag-array! <-- old comment?
-                          (drop-non-supporters (drop-nodes-past nodenunm-or-quotep-for-value-added-on update-dag-for-returned-formal)))))
+                          (drop-non-supporters (drop-nodes-past nodenum-or-quotep-for-value-added-on update-dag-for-returned-formal)))))
                   (if (member-eq base-case-term (dag-vars-unsorted dag-for-value-added-on))
                       ;;if the element produced depends on previous elements, it's not a producer in this sense (we can't get rid of the list argument when combining it with a consumer)
                       (mv (erp-nil) nil state)
@@ -10272,7 +10271,7 @@
                  :check-inputs nil)
       (if erp
           (mv erp nil nil state)
-        (let* ((simplified-conclusion (dag-to-term simplified-dag))
+        (let* ((simplified-conclusion (dag2term simplified-dag))
                (defthm-name (packnew rule-base conclusion-number))
                (state (submit-event-brief `(defthm ,defthm-name
                                        (implies ,(make-conjunction-from-list hyps)
@@ -10440,7 +10439,7 @@
                              (equal 1 (len dag))                 ;slow?
                              (equal 0 (car (car dag)))           ;just to check
                              (symbolp (cdr (car dag))))
-                            (dag-to-term dag)
+                            (dag2term dag)
                           `(dag-val-with-axe-evaluator ',dag
                                                        ,(make-acons-nest (dag-vars-unsorted dag))
                                                        ',(supporting-interpreted-function-alist
@@ -10684,7 +10683,7 @@
                    :check-inputs nil))
        ((when erp)
         (mv erp nil nil nil nil nil state))
-       (simplified-expanded-new-exit-test-expr (dag-to-term simplified-expanded-new-exit-test-expr-dag)) ;do the equivalence proof of this sooner? make a simplify-and-prove function?
+       (simplified-expanded-new-exit-test-expr (dag2term simplified-expanded-new-exit-test-expr-dag)) ;do the equivalence proof of this sooner? make a simplify-and-prove function?
        ;;new-formals is a slightly deceptive name, since it doesn't include the old vars
 ;fffffffixme check for name clashes
        (new-update-fns ;(make-var-names (pack$ new-fn '-update-) (len new-formals))  ;may not all be used?? ;also, no update fns for orig vars
@@ -11253,7 +11252,7 @@
                :check-inputs nil)
     (if erp
         (mv erp nil nil state)
-      (let ((simplified-fact (dag-to-term simplified-fact))) ; i hope this never blows up
+      (let ((simplified-fact (dag2term simplified-fact))) ; i hope this never blows up
         (if (equal fact simplified-fact)
             ;;no change:
             (mv nil nil nil state)
@@ -11668,7 +11667,7 @@
                            :normalize-xors nil
                            :check-inputs nil)))
        ((when erp) (mv erp nil nil nil analyzed-function-table rand state))
-       (simplified-expanded-exit-test-expr (dag-to-term simplified-expanded-exit-test-expr))
+       (simplified-expanded-exit-test-expr (dag2term simplified-expanded-exit-test-expr))
        (- (cw "Simplified exit test: ~x0)~%" simplified-expanded-exit-test-expr))
        (simplified-expanded-exit-test-theorem-name (packnew fn '-simplified-expanded-exit-test-theorem))
        ;;make sure to include here anything we used above to simplify the exit test (fffixme do the simplification and the proof simultaneously?):
@@ -13743,7 +13742,7 @@
                       :check-inputs nil)
            (if erp
                (mv erp nil nil rand state)
-             (let* ((simplified-exit-test-expr1 (dag-to-term simplified-exit-test-expr1))
+             (let* ((simplified-exit-test-expr1 (dag2term simplified-exit-test-expr1))
                     (dummy9 (cw "Simplified exit test expr 1: ~x0)~%" simplified-exit-test-expr1))
                     (dummy10 (cw "(Simplifying exit test 2:~%")))
                (declare (ignore dummy9 dummy10))
@@ -13764,7 +13763,7 @@
                             :check-inputs nil)
                  (if erp
                      (mv erp nil nil rand state)
-                   (let* ((simplified-exit-test-expr2 (dag-to-term simplified-exit-test-expr2))
+                   (let* ((simplified-exit-test-expr2 (dag2term simplified-exit-test-expr2))
                           (dummy11 (cw "Simplified exit test expr 2: ~x0)~%" simplified-exit-test-expr2))
                           (simplified-exit-test1-theorem-name (packnew fn1 '-simplified-exit-test-theorem))
                           (simplified-exit-test2-theorem-name (packnew fn2 '-simplified-exit-test-theorem))
@@ -17187,7 +17186,7 @@
             (cw "DAG for error message below:~%")
             (print-list dag)             ; always print the DAG
             (if (< (dag-size dag) 10000) ; print the term too, if small
-                (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
+                (cw "~%(Term: ~X01)~%" (dag2term dag) nil)
               nil)
             (er hard? 'prove-with-axe-core "If the tactic is :rewrite, the DAG must simplify to true, but it simplified to the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
             (mv :no-test-cases nil nil state))
@@ -19177,7 +19176,7 @@
 ;;                     (mv nil nil nil)))))))))
 
 ;; ;decides which literals to translate and tags the relevant nodes for translation
-;; ;fixme should be able to translate almost any literal (as a boolean variable in the worst case, unless it's not clearly a a boolean...)
+;; ;fixme should be able to translate almost any literal (as a boolean variable in the worst case, unless it's not clearly a boolean...)
 ;; ;returns (mv literal-nodenums-to-translate translation-tag-array cut-nodenum-type-alist)
 ;; ;extends cut-nodenum-type-alist
 ;; ;rename
@@ -20035,7 +20034,7 @@
 ;;                                :print print
 ;;                                :assumptions facts-acc
 ;;                                :normalize-xors nil)
-;;                 (let ((result-term (dag-to-term result)))
+;;                 (let ((result-term (dag2term result)))
 ;;                   (if (equal result-term *t*) ;skip any t..
 ;;                       (simplify-facts-aux (rest facts)
 ;;                                           facts-acc

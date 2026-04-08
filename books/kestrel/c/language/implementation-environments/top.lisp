@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "versions")
+(include-book "dialects")
 (include-book "uchar-formats")
 (include-book "signed-formats")
 (include-book "schar-formats")
@@ -76,7 +76,7 @@
     "For now this only contains the following information:")
    (xdoc::ul
     (xdoc::li
-     "The version of C.")
+     "The dialect of C.")
     (xdoc::li
      "The formats of the three character types.")
     (xdoc::li
@@ -90,7 +90,7 @@
      is the same as explained in @(tsee integer-format)
      about the ``intermediate'' fixtype used there.
      We may eliminate this at some point."))
-  ((version versionp)
+  ((dialect dialectp)
    (char+short+int+long+llong+bool-format
     char+short+int+long+llong+bool-format
     :reqfix (if (char+short+int+long+llong+bool-format-wfp
@@ -129,7 +129,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->uchar-max ((ienv ienvp))
-  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :returns (max posp)
   :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
@@ -153,7 +153,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->schar-max ((ienv ienvp))
-  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :returns (max posp)
   :short "The ACL2 integer value of @('SCHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
@@ -184,7 +184,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "See @(tsee schar-format->min)"))
+    "See @(tsee schar-format->min)."))
   (schar-format->min
    (char+short+int+long+llong+bool-format->schar
     (ienv->char+short+int+long+llong+bool-format ienv))
@@ -205,7 +205,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->char-max ((ienv ienvp))
-  :returns (max integerp)
+  :returns (max posp)
   :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
@@ -571,7 +571,7 @@
 
 (define ienv-uchar-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned char')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->uchar-max ienv))))
@@ -580,7 +580,7 @@
 
 (define ienv-schar-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed char')."
   (and (<= (ienv->schar-min ienv) (ifix val))
        (<= (ifix val) (ienv->schar-max ienv))))
@@ -589,7 +589,7 @@
 
 (define ienv-char-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('char')."
   (and (<= (ienv->char-min ienv) (ifix val))
        (<= (ifix val) (ienv->char-max ienv))))
@@ -598,7 +598,7 @@
 
 (define ienv-ushort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned short')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->ushort-max ienv))))
@@ -607,7 +607,7 @@
 
 (define ienv-sshort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed short')."
   (and (<= (ienv->sshort-min ienv) (ifix val))
        (<= (ifix val) (ienv->sshort-max ienv))))
@@ -616,7 +616,7 @@
 
 (define ienv-uint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned int')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->uint-max ienv))))
@@ -625,7 +625,7 @@
 
 (define ienv-sint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed int')."
   (and (<= (ienv->sint-min ienv) (ifix val))
        (<= (ifix val) (ienv->sint-max ienv))))
@@ -634,7 +634,7 @@
 
 (define ienv-ulong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned long')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->ulong-max ienv))))
@@ -643,7 +643,7 @@
 
 (define ienv-slong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed long')."
   (and (<= (ienv->slong-min ienv) (ifix val))
        (<= (ifix val) (ienv->slong-max ienv))))
@@ -652,7 +652,7 @@
 
 (define ienv-ullong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned long long')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->ullong-max ienv))))
@@ -661,7 +661,7 @@
 
 (define ienv-sllong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed long long')."
   (and (<= (ienv->sllong-min ienv) (ifix val))
        (<= (ifix val) (ienv->sllong-max ienv))))

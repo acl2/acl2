@@ -80,6 +80,82 @@
  <p>The current version of ACL2 is the value of the constant @('(@
  acl2-version)').</p>")
 
+(defxdoc note-8-8-books
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in (xdoc::h3 ...)
+; (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  (xdoc::h4 "Your Library Title")
+;  (xdoc::p "Details go here.")
+
+; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
+; You can also use (xdoc::h5 ...) under each h4, e.g. for sub-libraries:
+; There is no need to order the h5's alphabetically,
+; but please precede each h5 by 20 semicolons.
+; If you are stuck, see the entries about other libraries.
+
+  :parents (note-8-8 release-notes-books)
+
+  :short "Release notes for the ACL2 Community Books for ACL2 8.8"
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "The following is a brief summary of
+     changes made to the @(see community-books)
+     between the releases of ACL2 8.7 and 8.8.")
+
+   (xdoc::p
+    "See also @(see note-8-8) for the changes made to ACL2 itself.
+     For additional details,
+     you may also see the raw "
+    (xdoc::ahref "https://github.com/acl2/acl2/commits/master" "commit log")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "New Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
+
+   (xdoc::p
+    "A new data structure,"
+    (xdoc::seetopic "treemap::treemap" "treemaps")
+    ", was introduced, representing finite maps with ordered keys.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Documentation")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Licensing Changes")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Build System Updates")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Testing")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Miscellaneous")
+
+   ))
+
 (defxdoc note-8-7-books
 
 ; Please add information about your library in the appropriate
@@ -133,6 +209,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "ACL2-IN-HOL Link Support")
+
+   (xdoc::p
+    "See @('[books]/projects/acl2-in-hol/README-acl2').  That directory provides
+     modifications
+     of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
+     that link to work with the latest versions of ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "air::air" "AIR"))
 
    (xdoc::p
@@ -155,12 +241,39 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "ACL2-IN-HOL Link Support")
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
+
+   (xdoc::p "A new @(see simplify-conjunctions) transformation was added (in
+   progress), and @('def-equality-transformation') was improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "arm::arm32" "ARM32"))
 
    (xdoc::p
-    "See projects/acl2-in-hol/README-acl2.  That directory provides modifications
-     of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
-     that link to work with the latest versions of ACL2.")
+    "A formal model of the ARM32 CPU has been added.  This is still in progress,
+     but it supports a variety of instructions seen in real-world ARM32 code.
+     It is suitable for use with @(see axe).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
+
+   (xdoc::p
+    "Data-lib is a library for efficient data structures. Currently, it only
+     includes "
+    (xdoc::seetopic "treeset::treeset" "treesets")
+    ", a tree-based implementation of finite sets, and the supporting "
+    (xdoc::seetopic "hash::hashes" "hash")
+    " function.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Executable Parsers")
+
+   (xdoc::p "A new library, @('[books]/kestrel/executable-parsers/') was added to collect
+   parsers for ELF, PE, and MACH-O executables.  The parsers, which previously
+   lived elsewhere, were also improved in various ways.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -171,6 +284,15 @@
      from HOL4 to ACL2 &mdash; more specifically, a translator to the
      integration of set theory with ACL2 supported by directory
      @('[books]/projects/set-theory/').  Examples are included.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Memory library")
+
+   (xdoc::p "A new library, @('[books]/kestrel/memory/') was added to help in
+   reasoning about memory spaces whose sizes are powers of 2.  Supported
+   concepts include memory regions, subregions, and rules about disjointness of
+   regions and non-equality of addresses.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -187,15 +309,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "treeset::treeset" "Treesets"))
-
-   (xdoc::p
-    "A tree-based implementation of finite sets. This library offers a similar
-     interface to @(see std/osets), but with improved performance
-     (generally scaling logarithmically instead of linearly).")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 (xdoc::seetopic "zfc" "Set Theory Library"))
 
    (xdoc::p
@@ -209,10 +322,125 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Alists-light Library")
+
+   (xdoc::p "Various rules were added, as was the function @('acons-unique-eq'). See
+   @('[books]/kestrel/alists-light/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "arithmetic-5" "Arithmetic-5 Library"))
+
+   (xdoc::p
+    "Certain rewrite loops involving function @('find-constant-addend') are now
+     avoided.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "arithmetic-light" "Arithmetic-light Library"))
+
+   (xdoc::p
+    "A variety of improvements have been made, including adding new functions and
+    proving various new rules (e.g., about functions such as @('ceiling'),
+    @('floor'), @('mod'), @('ceiling-of-log'), @('min'), @('max'), etc.).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "axe" "Axe Toolkit"))
+
+   (xdoc::p "Extensive improvements have been made to the general-purpose tools
+   in the Axe Toolkit, including adding capabilities/features, adding new
+   rules, improving rule-lists, simplifying and optimizing the implementation,
+   and adding documentation.  To give just one example of a new feature, Axe
+   Rewriters can now use an SMT solver to relieve hypotheses of conditional
+   rules.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "axe-arm" "ARM variant"))
+
+   (xdoc::p
+    "A variant of Axe for reasoning about ARM32 binaries has been added.  This is
+     still in progress but is capable of lifting simple ARM32 binary programs
+     into logic.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "axe-jvm" "JVM variant"))
+
+   (xdoc::p "Improvements were made to the unroller, which lifts JVM bytecode
+   into logic while unrolling loops, and to the Formal Unit Tester.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "axe-risc-v" "RISC-V variant"))
+
+   (xdoc::p
+    "A variant of Axe for reasoning about RISC-V binaries has been added.  This is
+     still in progress but is capable of lifting simple RISC-V binary programs
+     into logic.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "axe-x86" "x86 variant"))
+
+   (xdoc::p
+     "Extensive improvements were made to the x86 variant of Axe, including the
+     lifters-into-logic and the Formal Unit Tester.  These included
+     improvements to robustness, generality, performance, documentation, etc.")
+
+   (xdoc::p
+    "Several new x86 binary lifting examples were added,
+     including switch statement and jump table examples
+     and string (@('char*')) examples.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "bigmems::bigmems" "Bigmems Library"))
+
+   (xdoc::p
+    "The @('bigmem::mem') and @('bigmem::mem$c') stobjs are now non-executable,
+     saving memory in cases where they are not directly used.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "crypto::bls12-377-curves" "BLS12-377 Curves"))
+
+   (xdoc::p
+    "The BLS12-377 elliptic curve files were moved from
+     @('[books]/kestrel/crypto/') to a new project directory
+     @('[books]/projects/bls12-377-curves/').
+     A Pratt certificate for the BLS12-377 base field prime was added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "bridge::bridge" "Bridge"))
 
    (xdoc::p
-    "Python bindings are available in @('[books]/centaur/bridge/python').")
+    "Python bindings for the ACL2 Bridge are available in
+     @('[books]/centaur/bridge/python/').")
+
+   (xdoc::p
+    "Support for using the ACL2 Bridge with SBCL has been added in
+     @('[books]/centaur/bridge/bridge-sbcl-raw.lsp').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "bv" "BV Library"))
+
+   (xdoc::p "A large number of improvements have been made to this library
+   about bit-vectors, including adding and improving rules and improving
+   definitions. See @('[books]/kestrel/bv/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "BV-lists Library")
+
+   (xdoc::p "Various rules have been added/improved about functions that deal
+   with lists and arrays of bit-vectors.  Definitions have been improved.  The
+   functions bv-list-read-chunk-little, map-packbv-little, map-unpackbv-little,
+   map-bvsx, and map-bvplus-val have been added.  See
+   @('[books]/kestrel/bv-lists/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -237,6 +465,54 @@
    (xdoc::p
     "We have added several transformations,
      along with proof generation capabilities for some of the transformations.")
+
+   (xdoc::p
+    "A command-line interface to the C Transformations was also added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Clause-processors Library")
+
+   (xdoc::p "Additional verified clause-processors were added (e.g., for
+   pushing unary functions into @('if') branches).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptography Library"))
+
+   (xdoc::p "Specifications for the BLAKE2b hash function and the CHACHA20
+   stream cipher have been added, and the specifications/proofs for AES,
+   BLAKE2s, SHA-3, and TEA have been improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL Library"))
+
+   (xdoc::p
+    "Add @(see fgl::annotate) mechanism, a way of preventing of trivial rewrite
+     loops by setting and detecting annotations on subterms.")
+
+   (xdoc::p
+    "Add various rewriter features: @(see fgl::fgl-hide), @(see fgl::trigger-constraints),
+     @(see fgl::unconditional), @(see fgl::left-to-right), @(see fgl::conditionalize).")
+
+   (xdoc::p
+    "Add so-called identity congruences (see @(see fgl::add-fgl-id-congruence)), which indicate
+     that a certain argument of a function can be rewritten under any equivalence that
+     is applied to the function call.")
+
+   (xdoc::p
+    "Improved user interface for tracing applications of rewrite rules:
+     see @(see fgl::fgl-rewrite-tracing), @(see fgl::fgl-trace), and
+     @(see fgl::fgl-advanced-tracing).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "file-io-light" "File-IO-Light Library"))
+
+   (xdoc::p "Various rules were added, and new function
+   @('read-file-into-character-list-safe') was added to support reading the
+   same file more than once.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -276,6 +552,22 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Helpers library")
+
+   (xdoc::p "Improvements have been made to the tools to improve, speed-up, and lint check
+   ACL2 books as well as to the Proof Advice tool that uses ML models to help
+   with ACL2 proofs.  A tool was added to find duplicate rules in the world.  See
+   @('[books]/kestrel/helpers/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "JVM model")
+
+   (xdoc::p "Various rules were added and small improvements made.  See
+   @('[books]/kestrel/jvm/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
 
    (xdoc::p
@@ -298,6 +590,18 @@
      The book @('arith-fix-and-equiv-defs.lisp')
      contains all of the definitions with no theorems and no dependencies.")
 
+   (xdoc::p
+     "Various other improvements/additions were made to the utilities in
+     @('[books]/kestrel/utilities/'), such as @('defstobj+'),
+     @('defmergesort'), @('defopeners') and @('xdoc::topparas').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "lists-light" "Lists Light Library"))
+
+   (xdoc::p "Various improvements have been made, including adding new
+   functions and new rules.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "oslib" "Oslib"))
@@ -310,13 +614,73 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
+                             "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "Unary negation and binary subtraction
+     were added to the PFCS abstract syntax,
+     concrete syntax (ABNF grammar),
+     parser, semantics, and lifter.
+     The R1CS-translatable subset recognizer
+     and the PFCS string representations of AleoVM circuits
+     were updated accordingly.")
+
+   (xdoc::p
+    "Parenthesized expressions were added
+     as a primary expression alternative in the PFCS parser.
+     A convenience function @('parse-def') was added
+     for parsing a single PFCS definition from a string.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "primes::primes" "Primes Library"))
+
+   (xdoc::p
+    "Pratt certificate primality proofs were added for
+     the KoalaBear prime (@('2^31 - 2^24 + 1'),
+     used in the Plonky3 proving system),
+     the Ed25519 base field and group order primes,
+     and the NIST P-256 base field and group order primes.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "r1cs::r1cs" "R1CS Library"))
+
+   (xdoc::p
+    "A human-readable R1CS constraint printer @('p1cs') was added,
+     supporting both the BN-254 and BLS12-377 scalar field primes.")
+
+   (xdoc::p
+    "The element recognizer for sparse vectors was factored out
+     and renamed from @('r1cs-termp') to @('sparse-vector-elementp').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "rstobj2::defrstobj" "Rstobj2 Library"))
+
+   (xdoc::p
+    "The concrete stobj generated by @(tsee rstobj2::defrstobj) is now
+     non-executable, saving memory since this stobj is an implementation detail
+     abstracted away from the user.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Schroeder-Bernstein Library")
 
    (xdoc::p
-    "This library has moved from @('[books]/projects/schroder-bernstein') to
-     @('[books]/projects/schroeder-bernstein') in order to reflect the
+    "This library has moved from @('[books]/projects/schroder-bernstein/') to
+     @('[books]/projects/schroeder-bernstein/') in order to reflect the
      prevailing German convention of printing an @('\"o\"') with umlaut as
      @('\"oe\"') when umlaut letters are unavailable.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Sequences Library")
+
+   (xdoc::p "@('Defforall') can now be local and can now be used inside
+   @('encapsulate') (when the @(':suppress-includes') option is used).  See
+   @('[books]/kestrel/sequences/defforall.lisp').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -383,6 +747,17 @@
     (xdoc::seetopic "declare" "declarations")
     ".")
 
+   (xdoc::p
+    "The @(tsee std::defaggregate) utility was fixed to support the tagless
+    :tree case.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Terms-light Library")
+
+   (xdoc::p "Various rules were added, and small improvements/additions were made to the
+   functions that process terms.  See @('[books]/kestrel/terms-light/').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Tools Library")
@@ -410,39 +785,77 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Typed-lists-light Library")
+
+   (xdoc::p "Various rules were added/improved, and various functions over typed lists,
+   such as @('all->='), were moved here.  See @('[books]/kestrel/typed-lists-light/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
 
-   (xdoc::p "Support for several instructions has been added.
+   (xdoc::p
+    "A new summary of implemented and unimplemented instructions has been added.
+     at @(see x86isa::sdm-instruction-set-summary).
+     It is organized according to the sections of
+     Chapter 5 of Volume 1 of Intel's Software Development Manual (SFM).
+     The summary is generated from the opcode maps,
+     and thus it is always automatically up to date.")
+
+   (xdoc::p
+    "Support for several instructions has been added.
      Currently supported instructions can be seen at
-     @(see x86isa::sdm-instruction-set-summary),
-     organized according to some sections of the Intel manuals.")
+     @(see x86isa::sdm-instruction-set-summary).")
+
+   (xdoc::p "Several instruction bugs were fixed:")
+   (xdoc::ul
+    (xdoc::li "Incorrect flag computation in CMPXCHG, SBB (AF flag), and SAR.")
+    (xdoc::li "Incorrect results from SHLD, BTS, and BTR.")
+    (xdoc::li "Incorrect decoding of PSLLDQ/PSRLDQ and SSE2 shifts with immediate counts.")
+    (xdoc::li "Byte arithmetic operations incorrectly promoting to 64-bit results.")
+    (xdoc::li "SSE2 packed shifts with large XMM-register counts causing Lisp errors.")
+    (xdoc::li "Fix VPAND, VPANDN, VANDP, VANDNP, and VORP implementations.")
+    (xdoc::li "PSHUFLW performing PSHUFHW instead.")
+    (xdoc::li "Packed subtraction performing addition.")
+    (xdoc::li "MOVSLDUP and MOVDDUP being mapped to an incorrect implementation."))
 
    (xdoc::p
     "Added a new framework @(see x86isa::asmtest) for testing instruction
      implementations against assembly snippets.")
 
+   (xdoc::p
+    "Added a test generator @('testgen') for @(see x86isa::asmtest) that uses
+     XED to iterate over x86 instructions and automatically generate test
+     snippets.")
+
+   (xdoc::p
+    "The Linux loader memory layout was updated to provide more space
+     for larger initrd images, and it now writes disk images directly into the
+     model memory instead of first being read into an intermediate byte list,
+     reducing peak memory usage.")
+
+   (xdoc::p
+    "The TTY peripheral raw lisp code now supports a @('TTY_DEBUG') environment
+     variable that enables the @(':reuse-address') option on the TTY TCP
+     socket.")
+
+   (xdoc::p
+     "Refactoring was done to reduce the scope of trust tags and to avoid
+     unnecessary dependencies, which speeds up certification.")
+
+   (xdoc::p
+     "Various other improvements were made, e.g., to @('defbitstruct'), to @('flgi')
+     and related macros, and to linear memory operations like @('rml128').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL Library"))
+   (xdoc::h4 "X86 Library")
 
    (xdoc::p
-    "Add @(see fgl::annotate) mechanism, a way of preventing of trivial rewrite
-     loops by setting and detecting annotations on subterms.")
+     "Many improvements were made to the @('[books]/kestrel/x86/') library,
+     which is based on and extends the X86ISA library.  These improvements
+     support symbolic execution with the x86 variant of Axe.")
 
-   (xdoc::p
-    "Add various rewriter features: @(see fgl::fgl-hide), @(see fgl::trigger-constraints),
-     @(see fgl::unconditional), @(see fgl::left-to-right), @(see fgl::conditionalize).")
-
-   (xdoc::p
-    "Add so-called identity congruences (see @(see fgl::add-fgl-id-congruence)), which indicate
-     that a certain argument of a function can be rewritten under any equivalence that
-     is applied to the function call.")
-
-   (xdoc::p
-    "Improved user interface for tracing applications of rewrite rules:
-     see @(see fgl::fgl-rewrite-tracing), @(see fgl::fgl-trace), and
-     @(see fgl::fgl-advanced-tracing).")
-   
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
@@ -462,18 +875,90 @@
    (xdoc::p
     "Display of typewriter font has been improved for dark backgrounds.")
 
+   (xdoc::p
+    "A bibtex parser was introduced, as well as tools to generate XDOC from
+     bibtex entries. See @('[books]/kestrel/bibtex/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "XML Parser")
+
+   (xdoc::p "The XML parser in @('[books]/kestrel/xml') is now guard-verified
+   and handles errors better.  See @('[books]/kestrel/xml/').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Documentation")
 
    (xdoc::p
+     "The bleeding-edge version of the ACL2+Books manual is now available at "
+     (xdoc::ahref "https://acl2.org/doc" "acl2.org/doc")
+     ".  It tracks the latest development snapshot of ACL2 from GitHub and
+      is automatically updated every time the master branch builds
+      successfully.")
+
+   (xdoc::p
+    "The @(see installation-instructions) and related topics have been updated and
+    clarified.")
+
+   (xdoc::p
     "A new topic, @(see how-to-contribute), was added.
-     The existing @(see best-practices) topic was greatly extended.")
+     The existing @(see best-practices) topic was greatly extended.
+     Git-related topics, such as @(see git-quick-start) have been simplified
+     and clarified.")
+
+   (xdoc::p
+    "A new topic, @(see emacs-workflow), has been added to describe a typical
+    Emacs-based workflow that many ACL2 users rely on.")
+
+   (xdoc::p
+    "The publications page available from the ACL2 home page has been replaced
+     by the :DOC topic, @(see publications).  Also, a new topic, @(see
+     pubs::pubs-workshops), lists all the ACL2 Workshop papers since 1999.")
+
+   (xdoc::p
+    "A new topic, @(see pubs::pubs-videos), has been added to collect links to videos
+    about ACL2.  It includes links to an in-depth multi-part tutorial series
+    for learning ACL2.")
+
+   (xdoc::p
+    "A new topic, @(see community), has been added about how to get help with ACL2
+    and become involved in the ACL2 Community.")
+
+   (xdoc::p
+    "A new topic, @(see mailing-lists), has been added with information about the
+    various ACL2 mailing lists.")
+
+   (xdoc::p
+    "Several changes were made to the "
+    (xdoc::ahref "https://acl2.org/doc" "web manual")
+    ". The ``jump to'' bar now shows more results in the preview.
+     If the current text is not a prefix of an topic, the preview now shows
+     substring matches. General improvements were made to the local ``search''
+     functionality, including improving tokenization and searching through
+     @(':short') forms. Finally, when the manual is deployed with a database
+     (in contrast to viewing a local copy, see @(see xdoc::deploying-manuals)),
+     we offer server-side searching using sqlite's built-in search
+     capabilities. This searches through @(':long')s,
+     in addition to @(':short')s and topic names.")
+
+   (xdoc::p
+    "@(see character-encoding) has been updated to remove old advice and to
+     link to a new topic, @(see using-utf-8).")
 
    (xdoc::p
     "A new topic, @(see osicat), was added. It describes an occasional
      build issue caused by a race condition in the build logic,
      as well as the fix.")
+
+   (xdoc::p
+    "Options have been added for stricter checking of documentation (causing an
+    error when a topic has no parents or has parents that are not valid
+    topics).  These stricter checks have been enabled for the main manual
+    build.  Also, various broken links have been fixed.")
+
+   (xdoc::p
+    "The main GitHub README for the ACL2 project has been updated and clarified.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -483,9 +968,20 @@
 
    (xdoc::h3 "Build System Updates")
 
+   (xdoc::p
+     "The Makefile for the Community Books was improved in various ways,
+     including speeding up the @('basic') target and refining the list of slow
+     books excluded from most builds.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")
+
+   (xdoc::p
+     "Additional test plans have been added to the "
+     (xdoc::ahref "https://leeroy.defthm.com/" "Jenkins server for
+      ACL2 regression testing")
+     ".  Related scripts have been improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -513,24 +1009,11 @@
      floating-point operations in ACL2.  Note that an extensive test suite for
      floating-point operations may be found in
      @('demos/floating-point-input.lsp'), with associated output file
-     @('demos/floating-point-log.txt'), with associated output file")
+     @('demos/floating-point-log.txt').")
 
    (xdoc::p
-    "The publications page available from the ACL2 home page has been replaced
-     by the :DOC topic, @(see publications).")
-
-   (xdoc::p
-    "Several changes were made to the "
-    (xdoc::ahref "https:://acl2.org/doc" "web manual")
-    ". The ``jump to'' bar now shows more results in the preview.
-     If the current text is not a prefix of an topic, the preview now shows
-     substring matches. General improvements were made to the local ``search''
-     functionality, including improving tokenization and searching through
-     @(':short') forms. Finally, when the manual is deployed with a database
-     (in contrast to viewing a local copy, see @(see xdoc::deploying-manuals)),
-     we offer server-side searching using sqlite's built-in search
-     capabilities. This searches through @(':long')s,
-     in addition to @(':short')s and topic names.")
+    "Some books that previously did not work with ACL2(r) @(see real) have been
+    made compatible with ACL2(r).")
 
    ))
 
@@ -1997,7 +2480,7 @@ additional theorems from the list have also been added by the ACL2 community.")
      lines come from the @('cert.out') file.")
 
    (xdoc::p
-     "`The Makefile and scripts used by the Jenkins continuous integration system
+     "The Makefile and scripts used by the Jenkins continuous integration system
 were improved (especially comments and printing).  The CPU load is now limited
 to the value of the @('BOOK_PARALLELISM_LEVEL') variable.")
 
@@ -4566,7 +5049,7 @@ specialization of @(tsee r1cs::verify-r1cs).")
      argument, @(':enable'), specifying whether the generated @(tsee defthm)
      event is enabled.  In addition to Boolean values, it allows the default
      value, @(':auto'), specifying that the new rule is enabled if and only if
-     the original defintion is enabled.  This is a change in default behavior,
+     the original definition is enabled.  This is a change in default behavior,
      since before, the new rule was always enabled.")
 
    ))

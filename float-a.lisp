@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -305,8 +305,8 @@
 
 (encapsulate () (logic)
 
-; We use a surrounding encapsulate for logic mode, rather than of putting
-; (logic) inside the partial-encapsulate, to support redundancy in pass 2.
+; We use a surrounding encapsulate for logic mode, rather than putting (logic)
+; inside the partial-encapsulate, to support redundancy in pass 2.
 
 (partial-encapsulate
  (((constrained-to-df *) => * :formals (x) :guard (rationalp x)))
@@ -625,8 +625,8 @@
 
 (encapsulate () (logic)
 
-; We use a surrounding encapsulate for logic mode, rather than of putting
-; (logic) inside the partial-encapsulate, to support redundancy in pass 2.
+; We use a surrounding encapsulate for logic mode, rather than putting (logic)
+; inside the partial-encapsulate, to support redundancy in pass 2.
 
 (partial-encapsulate
  (((df-round *) => * :formals (x) :guard (rationalp x)))
@@ -689,7 +689,7 @@
 ; Let WRND be our (implicit) local witness for df.  We want to base WRND on the
 ; rounding function used by the host Lisp.  In the future we might tie down
 ; WRND so that it rounds to nearest even; in that case we might replace this
-; partial-encapsulate. with a suitable defun and theorems.  We could do this
+; partial-encapsulate with a suitable defun and theorems.  We could do this
 ; because the IEEE Spec (2019 version) defines RoundTiesToEven as one would
 ; expect, in Section 4.3.1, and Section 4.3.3 says the following.
 
@@ -714,7 +714,7 @@
 ; (equal (df-round 1/3) #d0.3333333333333333) and all other such equalities.
 ; Moreover, we consider all roundings of (+ 0.0 x) where x is a double-float --
 ; there are only finitely many -- and note that since that sum is surely x,
-; therefore x rounds to itself (see [WRND2] below).  So to summmarize, our
+; therefore x rounds to itself (see [WRND2] below).  So to summarize, our
 ; intended (and implicit) local witness for df-round, WRND, is defined as
 ; follows.
 
@@ -750,7 +750,7 @@
 ; float-rational identity (see constrained-to-df-idempotent) tells us that
 ; (float (rational x) 0.0D0) = x; Applying rational to both sides and using s =
 ; (rational x), we have (rational (float s 0.0D0)) = s.  So by [WDF3], we can
-; prove (equal (to-df s)) s); that is, (equal (to-df (WRND r)) (WRND r)).
+; prove (equal (to-df s) s); that is, (equal (to-df (WRND r)) (WRND r)).
 
   (dfp (df-round r)))
 

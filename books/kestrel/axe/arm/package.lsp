@@ -40,7 +40,10 @@
     arm::write
     arm::arm32-decode
     arm::pc
+
     arm::step
+    arm::run
+
     arm::reg
     arm::set-reg
     arm::pc
@@ -95,6 +98,17 @@
     ;; arm::run-until-return-aux
     ;; arm::run-until-return
     ;; arm::run-subroutine
+
+    arm::cmn-sign
+    arm::cmn-zero
+    arm::cmn-carry
+    arm::cmn-overflow
+    arm::cmp-sign
+    arm::cmp-zero
+    arm::cmp-carry
+    arm::cmp-overflow
+
+    arm::update-error ; todo: more
     ))
 
 ;; (defconst *arm-symbols-in-acl2-package*

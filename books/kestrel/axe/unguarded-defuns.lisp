@@ -1,7 +1,7 @@
 ; Versions of functions with guards of t
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,11 +21,11 @@
 ;; foo-unguarded and foo.
 
 (include-book "kestrel/bv/trim" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
 (include-book "kestrel/bv/bvplus-def" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
-(include-book "kestrel/bv/bvxor" :dir :system)
+(include-book "kestrel/bv/bvxor-def" :dir :system)
 (include-book "kestrel/bv/leftrotate" :dir :system)
 (include-book "kestrel/bv/leftrotate32" :dir :system)
 ;(include-book "kestrel/bv/bvlt" :dir :system)

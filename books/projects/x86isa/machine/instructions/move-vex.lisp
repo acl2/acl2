@@ -60,7 +60,7 @@
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVUPS, VMOVUPD, VMMOVDQU:
+  :short "VMOVUPS, VMOVUPD, VMOVDQU:
           move unaligned packed single/double-precision floating-point values
           and unaligned packed integer values
           (VEX encoding, Op/En A)."
@@ -178,7 +178,7 @@
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVUPS, VMOVUPD, VMMOVDQU:
+  :short "VMOVUPS, VMOVUPD, VMOVDQU:
           move unaligned packed single/double-precision floating-point values
           and unaligned packed integer values
           (VEX encoding, Op/En B)"
@@ -191,7 +191,7 @@
    <p>
    This semantic function covers the two VEX-encoded variants
    (of each of VMOVUPS, MOVUPD, and VMOVDQU)
-   that move from register to to register or memory (i.e. Op/En B).
+   that move from register to register or memory (i.e. Op/En B).
    </p>
    <p>
    The three instructions behave in the same way at the ISA level,
@@ -315,7 +315,7 @@
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVAPS, VMOVAPD, VMMOVDQA:
+  :short "VMOVAPS, VMOVAPD, VMOVDQA:
           move aligned packed single/double-precision floating-point values
           and aligned packed integer values
           (VEX encoding, Op/En A)."
@@ -433,9 +433,9 @@
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVAPS, VMOVAPD, VMMOVDQA:
-          move unaligned packed single/double-precision floating-point values
-          and unaligned packed integer values
+  :short "VMOVAPS, VMOVAPD, VMOVDQA:
+          move aligned packed single/double-precision floating-point values
+          and aligned packed integer values
           (VEX encoding, Op/En B)"
 
   :long
@@ -446,7 +446,7 @@
    <p>
    This semantic function covers the two VEX-encoded variants
    (of each of VMOVAPS, MOVAPD, and VMOVDQA)
-   that move from register to to register or memory (i.e. Op/En B).
+   that move from register to register or memory (i.e. Op/En B).
    </p>
    <p>
    The three instructions behave in the same way at the ISA level,

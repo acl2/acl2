@@ -36,9 +36,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel all-bytep-when-byte-listp
+(defrulel unsigned-byte-listp-8-when-byte-listp
   (implies (byte-listp x)
-           (acl2::all-bytep x))
+           (acl2::unsigned-byte-listp 8 x))
   :induct t
   :enable (byte-listp bytep unsigned-byte-p))
 
@@ -121,8 +121,8 @@
                       contains non-all-ASCII identifiers."
                      code desc)))
        ((unless (or (ienv->gcc/clang (code-ensemble->ienv code))
-                    (transunit-ensemble-standardp
-                     (code-ensemble->transunits code))))
+                    (trans-ensemble-standardp
+                     (code-ensemble->trans-units code))))
         (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       uses non-standard syntax (i.e. GCC/Clang extensions), ~
                       but the implementation environment indicates that ~
@@ -203,7 +203,7 @@
                             *output-files-printer-options*))
         (reterr (msg "The list of keywords in the :PRINTER-OPTIONS input ~
                       must be among ~&0, ~
-                      but the supplied :PRINTER-OPTIONS input ~x0 ~
+                      but the supplied :PRINTER-OPTIONS input ~x1 ~
                       violates that requirement."
                      *output-files-printer-options*
                      printer-options)))
@@ -341,10 +341,10 @@
        ;; Print the abstract syntax.
        (options (make-priopt :indent-size indent-size
                              :paren-nested-conds paren-nested-conds))
-       (tunits (code-ensemble->transunits code))
+       (tunits (code-ensemble->trans-units code))
        (files (print-fileset tunits
                              options
-                             (ienv->version (code-ensemble->ienv code))))
+                             (ienv->dialect (code-ensemble->ienv code))))
        ;; Write the files to the file system.
        ((erp state)
         (output-files-gen-files-loop (fileset->unwrap files) base-dir state)))
@@ -359,13 +359,9 @@
      (b* (((reterr) state)
           ((when (omap::emptyp map)) (retok state))
           ((mv filepath data) (omap::head map))
-          (file-string (filepath->unwrap filepath))
-          ((unless (stringp file-string))
-           (reterr (msg "File path must contain a string, ~
-                         but it contains ~x0 instead."
-                        file-string)))
+          (file-string (filepath->string filepath))
           (path-to-write (str::cat base-dir "/" file-string))
-          ((mv erp state) (acl2::write-bytes-to-file! (filedata->unwrap data)
+          ((mv erp state) (acl2::write-bytes-to-file! (filedata->bytes data)
                                                       path-to-write
                                                       'output-files
                                                       state))

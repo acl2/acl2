@@ -17,7 +17,7 @@
 
 (defines remove-dead-if-branches
   :parents (std/system/term-transformations)
-  :short "Remove all the dead @(tsee if) bramches in a term."
+  :short "Remove all the dead @(tsee if) branches in a term."
   :long
   (xdoc::topstring
    (xdoc::p

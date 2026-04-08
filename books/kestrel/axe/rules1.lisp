@@ -1,7 +1,7 @@
 ; Mixed rules 1
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -24,10 +24,10 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system) ; why?
 ;(include-book "kestrel/bv-lists/bvnth" :dir :system) ; todo: split out
-(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-read-of-bvchop-list?
-(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-clear-range" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-rules" :dir :system) ;drop?
+(include-book "kestrel/bv-arrays/bv-arrays" :dir :system) ; for bv-array-read-of-bvchop-list?
+(include-book "kestrel/bv-arrays/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-clear-range" :dir :system)
 ;(include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/lists-light/update-subrange" :dir :system)
@@ -555,7 +555,6 @@
                             ;NTH-OF-BVNOT-LIST
                             ;BV-ARRAY-READ-OF-TAKE
                             ;BV-ARRAY-READ-OF-BVCHOP
-                            ;BV-ARRAY-READ-OF-BVCHOP-HELPER
                               ))))))
 
 (local
@@ -635,7 +634,6 @@
              :cases ((equal 0 (getbit 0 x)))
              :in-theory (e/d (nth-sum-when-nthcdr-known bvcat-special-opener bv-array-read ceiling-of-lg subrange)
                              (NTH-OF-NTHCDR
-                              BV-ARRAY-READ-OF-BVCHOP-HELPER
                               BV-ARRAY-READ-OF-BVCHOP
                               BV-ARRAY-READ-OF-TAKE))))))
 
@@ -866,11 +864,6 @@
                                   (unsigned-byte-p-of-+-of-minus-alt
                                    unsigned-byte-p-of-+-of-minus)))))
 
-;; (thm
-;;  (equal (repeatbit 1 bit)
-;;         (getbit 0 bit))
-;;  :hints (("Goal" :in-theory (enable repeatbit))))
-
 (defthm getbit-list-of-bv-array-write
   (implies (and (< n esize) ;other case (all zeros)?
                 (equal len (len lst)) ;drop?
@@ -913,23 +906,23 @@
 ;;   :hints (("Goal" :in-theory (enable bvnth all-integerp-when-all-natp
 ;;                                      ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4-ALT))))
 
-;needed for 2d arrays - BOZO gen!
-(defthm split-nth-access-hack
-  (equal (nth (bvcat 1 a 1 b) vals)
-         (if (equal 0 (getbit 0 a))
-             (if (equal 0 (getbit 0 b))
-                 (nth 0 vals)
-               (nth 1 vals))
-           (if (equal 0 (getbit 0 b))
-               (nth 2 vals)
-             (nth 3 vals))))
-  :hints (("Goal"
-           :cases ((and (equal 1 (getbit 0 a)) (equal 1 (getbit 0 b)))
-                   (and (not (equal 1 (getbit 0 a))) (equal 1 (getbit 0 b)))
-                   (and (equal 1 (getbit 0 a)) (not (equal 1 (getbit 0 b)))))
-           :in-theory (disable ;GETBIT-WHEN-NOT-0
-                       ;;GETBIT-WHEN-NOT-1
-                               ))))
+;; ;needed for 2d arrays - BOZO gen!
+;; (defthmd split-nth-access-hack
+;;   (equal (nth (bvcat 1 a 1 b) vals)
+;;          (if (equal 0 (getbit 0 a))
+;;              (if (equal 0 (getbit 0 b))
+;;                  (nth 0 vals)
+;;                (nth 1 vals))
+;;            (if (equal 0 (getbit 0 b))
+;;                (nth 2 vals)
+;;              (nth 3 vals))))
+;;   :hints (("Goal"
+;;            :cases ((and (equal 1 (getbit 0 a)) (equal 1 (getbit 0 b)))
+;;                    (and (not (equal 1 (getbit 0 a))) (equal 1 (getbit 0 b)))
+;;                    (and (equal 1 (getbit 0 a)) (not (equal 1 (getbit 0 b)))))
+;;            :in-theory (disable ;GETBIT-WHEN-NOT-0
+;;                        ;;GETBIT-WHEN-NOT-1
+;;                                ))))
 
 (defthmd nth-of-if-arg2
   (equal (nth n (if test a b))
@@ -1882,8 +1875,7 @@
                 (<= width width2)
                 (posp len)
                 (natp index1)
-                (natp index2)
-                (integerp len))
+                (natp index2))
            (equal (bv-array-read width len index1 (bv-array-clear width2 len index2 lst))
                   (if (not (equal index1 index2))
                       (bv-array-read width len index1 lst)

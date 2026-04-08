@@ -41,6 +41,7 @@
 (local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/bv/leftrotate-rules" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -130,7 +131,7 @@
   :hints (("Goal" :do-not '(preprocess) :in-theory (enable bvcat UNSIGNED-BYTE-P-FORCED))))
 
 ;or should we bring heavier terms to the front to increase sharing?
-;ffixme these differe from what simplify-bitxors does in terms of the order of terms?!
+;ffixme these differ from what simplify-bitxors does in terms of the order of terms?!
 (defthmd bitxor-commutative-axe
   (implies (axe-syntaxp (should-commute-axe-argsp 'bitxor x y dag-array))
            (equal (bitxor x y)
@@ -1944,7 +1945,6 @@
                 (< n size)
                 (integerp n)
                 (integerp size)
-                (integerp xsize)
                 (unsigned-byte-p-forced ysize y))
            (equal (getbit n (bvor size x y))
                   (getbit n x)))

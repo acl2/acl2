@@ -56,6 +56,7 @@
                 keyword-value-list-to-alist
                 lifix
                 lnfix
+                lposfix
                 make-event-terse
                 maybe-msgp
                 msg$
@@ -91,4 +92,5 @@
                 str::oct-digit-char-list
                 str::oct-digit-char-listp
                 str::str-fix
+                str::string-list
                 str::string-list-fix)))

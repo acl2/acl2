@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -15,10 +15,7 @@
 
 (local (include-book "oset-lib-ext"))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,7 +98,7 @@
       and @(tsee constraint-list-satp-of-append),
       along with rules @(tsee constraint-list-satp-of-nil)
       and @(tsee constraint-list-satp-of-atom)
-      to resolve empty lists of constraints as alwasy satisfied.
+      to resolve empty lists of constraints as always satisfied.
       We also have a rule @(tsee constraint-list-satp-of-rev)
       that simplifies @(tsee rev) away,
       since constraint satisfaction is not ordered-dependent.")
@@ -318,16 +315,14 @@
                  (and (equal (len args) (len def.para))
                       (b* ((vals (eval-expr-list args asg p)))
                         (and (nat-listp vals)
-                             (b* ((asg-para-vals (omap::from-lists def.para
-                                                                   vals)))
+                             (b* ((asgpara (omap::from-lists def.para vals)))
                                (and (equal (omap::keys asgfree)
                                            (definition-free-vars def))
-                                    (b* ((asg-sub (omap::update*
-                                                   asgfree
-                                                   asg-para-vals)))
+                                    (b* ((asgall
+                                          (omap::update* asgfree asgpara)))
                                       (constraint-list-satp def.body
                                                             defs
-                                                            asg-sub
+                                                            asgall
                                                             p))))))))))))
   :guard-hints (("Goal" :in-theory (enable acl2::not-reserrp-when-nat-listp))))
 
@@ -470,11 +465,8 @@
            (and (equal (len args) (len def.para))
                 (b* ((vals (eval-expr-list args asg p)))
                   (and (nat-listp vals)
-                       (b* ((asg-para-vals (omap::from-lists def.para vals)))
-                         (constraint-list-satp def.body
-                                               defs
-                                               asg-para-vals
-                                               p))))))))
+                       (b* ((asgpara (omap::from-lists def.para vals)))
+                         (constraint-list-satp def.body defs asgpara p))))))))
   :guard-hints (("Goal" :in-theory (enable acl2::not-reserrp-when-nat-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

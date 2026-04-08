@@ -44,30 +44,30 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "The result might not be a intersection if the input trees are not binary search
-      trees."))
+     "The result might not be an intersection if the input trees are not binary
+      search trees."))
   :returns (tree treep)
   (cond ((or (tree-empty-p x)
              (tree-empty-p y))
          nil)
-        ((heap<-with-tagged-element (tree->head x) (tree->head y))
+        ((heap<-with-tree-element (tree->head x) (tree->head y))
          (mv-let (in left right)
-                 (tree-split (tagged-element->elem (tree->head y)) x)
+                 (tree-split (tree-element->val (tree->head y)) x)
            (let ((left (tree-intersect left (tree->left y)))
                  (right (tree-intersect right (tree->right y))))
              (if in
                  (tree-node (tree->head y) left right)
-               (mbe :logic (tree-join-at (tagged-element->elem (tree->head y))
+               (mbe :logic (tree-join-at (tree-element->val (tree->head y))
                                          left right)
                     :exec (tree-join left right))))))
         (t
          (mv-let (in left right)
-                 (tree-split (tagged-element->elem (tree->head x)) y)
+                 (tree-split (tree-element->val (tree->head x)) y)
            (let ((left (tree-intersect (tree->left x) left))
                  (right (tree-intersect (tree->right x) right)))
              (if in
                  (tree-node (tree->head x) left right)
-               (mbe :logic (tree-join-at (tagged-element->elem (tree->head x))
+               (mbe :logic (tree-join-at (tree-element->val (tree->head x))
                                          left right)
                     :exec (tree-join left right)))))))
   :measure (+ (acl2-count x)
@@ -190,28 +190,29 @@
        (cond ((or (tree-empty-p x)
                   (tree-empty-p y))
               nil)
-             ((heap<-with-tagged-element (tree->head x) (tree->head y))
+             ((heap<-with-tree-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (acl2-number-tree-split
-                        (tagged-element->elem (tree->head y)) x)
-                (let ((left (tree-intersect left (tree->left y)))
-                      (right (tree-intersect right (tree->right y))))
+                        (tree-element->val (tree->head y)) x)
+                (let ((left (acl2-number-tree-intersect left (tree->left y)))
+                      (right (acl2-number-tree-intersect right (tree->right y))))
                   (if in
                       (tree-node (tree->head y) left right)
                     (tree-join left right)))))
              (t
               (mv-let (in left right)
                       (acl2-number-tree-split
-                        (tagged-element->elem (tree->head x)) y)
-                (let ((left (tree-intersect (tree->left x) left))
-                      (right (tree-intersect (tree->right x) right)))
+                        (tree-element->val (tree->head x)) y)
+                (let ((left (acl2-number-tree-intersect (tree->left x) left))
+                      (right (acl2-number-tree-intersect (tree->right x) right)))
                   (if in
                       (tree-node (tree->head x) left right)
                     (tree-join left right)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-join-at
-                                           tree-intersect
-                                           tree-all-acl2-numberp))))
+  :guard-hints (("Goal" :in-theory (enable tree-intersect
+                                           acl2-number-tree-intersect
+                                           tree-all-acl2-numberp
+                                           tree-join-at))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -223,28 +224,29 @@
        (cond ((or (tree-empty-p x)
                   (tree-empty-p y))
               nil)
-             ((heap<-with-tagged-element (tree->head x) (tree->head y))
+             ((heap<-with-tree-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (symbol-tree-split
-                        (tagged-element->elem (tree->head y)) x)
-                (let ((left (tree-intersect left (tree->left y)))
-                      (right (tree-intersect right (tree->right y))))
+                        (tree-element->val (tree->head y)) x)
+                (let ((left (symbol-tree-intersect left (tree->left y)))
+                      (right (symbol-tree-intersect right (tree->right y))))
                   (if in
                       (tree-node (tree->head y) left right)
                     (tree-join left right)))))
              (t
               (mv-let (in left right)
                       (symbol-tree-split
-                        (tagged-element->elem (tree->head x)) y)
-                (let ((left (tree-intersect (tree->left x) left))
-                      (right (tree-intersect (tree->right x) right)))
+                        (tree-element->val (tree->head x)) y)
+                (let ((left (symbol-tree-intersect (tree->left x) left))
+                      (right (symbol-tree-intersect (tree->right x) right)))
                   (if in
                       (tree-node (tree->head x) left right)
                     (tree-join left right)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-join-at
-                                           tree-intersect
-                                           tree-all-symbolp))))
+  :guard-hints (("Goal" :in-theory (enable tree-intersect
+                                           symbol-tree-intersect
+                                           tree-all-symbolp
+                                           tree-join-at))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eqlable-tree-intersect
@@ -255,25 +257,26 @@
        (cond ((or (tree-empty-p x)
                   (tree-empty-p y))
               nil)
-             ((heap<-with-tagged-element (tree->head x) (tree->head y))
+             ((heap<-with-tree-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (eqlable-tree-split
-                        (tagged-element->elem (tree->head y)) x)
-                (let ((left (tree-intersect left (tree->left y)))
-                      (right (tree-intersect right (tree->right y))))
+                        (tree-element->val (tree->head y)) x)
+                (let ((left (eqlable-tree-intersect left (tree->left y)))
+                      (right (eqlable-tree-intersect right (tree->right y))))
                   (if in
                       (tree-node (tree->head y) left right)
                     (tree-join left right)))))
              (t
               (mv-let (in left right)
                       (eqlable-tree-split
-                        (tagged-element->elem (tree->head x)) y)
-                (let ((left (tree-intersect (tree->left x) left))
-                      (right (tree-intersect (tree->right x) right)))
+                        (tree-element->val (tree->head x)) y)
+                (let ((left (eqlable-tree-intersect (tree->left x) left))
+                      (right (eqlable-tree-intersect (tree->right x) right)))
                   (if in
                       (tree-node (tree->head x) left right)
                     (tree-join left right)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-join-at
-                                           tree-intersect
-                                           tree-all-eqlablep))))
+  :guard-hints (("Goal" :in-theory (enable tree-intersect
+                                           eqlable-tree-intersect
+                                           tree-all-eqlablep
+                                           tree-join-at))))

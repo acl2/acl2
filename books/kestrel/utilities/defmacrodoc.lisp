@@ -22,6 +22,20 @@
 
 (local (in-theory (disable mv-nth)))
 
+(verify-termination set-ppr-flat-right-margin)
+;(verify-guards set-ppr-flat-right-margin) ; todo: needs (posp val) guard
+(verify-termination chk-current-package)
+;(verify-guards chk-current-package) ; todo: needs (error1-state-p state) guard
+(verify-termination set-current-package)
+;; (verify-guards set-current-package)
+(verify-termination set-current-package-state)
+(verify-termination set-iprint-ar)
+;(verify-guards set-iprint-ar)
+(verify-termination block-iprint-ar)
+(verify-termination override-global-evisc-table)
+;; (verify-guards override-global-evisc-table)
+(verify-termination fmt1-to-string-fn (declare (xargs :verify-guards nil)))
+
 ;; ;; Skips all strings at the front of the list ITEMS.
 ;; (defund skip-leading-strings (items)
 ;;   (declare (xargs :guard t))
@@ -58,9 +72,10 @@
     (append (list "<p>" (first forms) "</p>" (newline-string))
             (xdoc-make-paragraphs (rest forms)))))
 
+;; does something like this exist elsewhere?
 (defund object-to-string (obj package)
   (declare (xargs :guard (stringp package)
-                  :mode :program))
+                  :verify-guards nil))
   (mv-let (col string)
     (fmt1-to-string "~x0" (acons #\0 obj nil) 0 :fmt-control-alist (acons 'acl2::current-package package nil))
     (declare (ignore col))
@@ -169,8 +184,7 @@
                               (booleanp firstp)
                               (natp max-len)
                               (stringp package))
-                  :mode :program ; because we call object-to-string
-                  ))
+                  :verify-guards nil))
   (mv-let (name default)
     (keyword-or-optional-arg-name-and-default macro-arg)
     (let* ((name (string-downcase-gen (symbol-name name)))
@@ -191,7 +205,7 @@
                               (booleanp firstp)
                               (natp max-len)
                               (stringp package))
-                  :mode :program))
+                  :verify-guards nil))
   (if (endp macro-args)
       ""
     (string-append (xdoc-for-macro-general-form-optional-arg (first macro-args) indent-space firstp max-len package)
@@ -204,8 +218,7 @@
                               (booleanp firstp)
                               (natp max-len)
                               (stringp package))
-                  :mode :program ; because we call object-to-string
-                  ))
+                  :verify-guards nil))
   (mv-let (name default)
     (keyword-or-optional-arg-name-and-default macro-arg)
     (let* ((name (string-downcase-gen (symbol-name name)))
@@ -226,7 +239,7 @@
                               (booleanp firstp)
                               (natp max-len)
                               (stringp package))
-                  :mode :program))
+                  :verify-guards nil))
   (if (endp macro-args)
       ""
     (string-append (xdoc-for-macro-general-form-keyword-arg (first macro-args) indent-space firstp max-len package)
@@ -238,7 +251,7 @@
   (declare (xargs :guard (and (macro-arg-listp macro-args)
                               (stringp indent-space)
                               (stringp package))
-                  :mode :program))
+                  :verify-guards nil))
   (b* (((mv required-args optional-args keyword-args)
         (extract-required-and-optional-and-keyword-args macro-args))
        (max-len (max (len-of-longest-macro-formal required-args 0)
@@ -269,10 +282,10 @@
 
 ;; Returns a string
 (defun xdoc-for-macro-general-form (name macro-args package)
-  (declare (xargs :mode :program
-                  :guard (and (symbolp name)
+  (declare (xargs :guard (and (symbolp name)
                               (macro-arg-listp macro-args)
-                              (stringp package))))
+                              (stringp package))
+                  :verify-guards nil))
   (let* ((name-string (string-downcase-gen (symbol-name name)))
          (name-len (length name-string))
          (indent-space (string-append-lst (make-list (+ 2 name-len) :initial-element " "))))
@@ -406,20 +419,19 @@
 ;; Returns a defxdoc form.
 ;; TODO: Think about all the & things that can occur in the macro-args
 (defund defxdoc-for-macro-fn (name    ; the name of the macro being documented
-                              macro-args ; :auto, or the exact formals of the macro, possibly with initial values, and suppliedp variables (also includes &whole, &key, etc.)
+                              macro-args ; :auto (meaning get the macro-args from the macro's definition), or the exact formals of the macro, possibly with initial values, and suppliedp variables (also includes &whole, &key, etc.)
                               parents ; a list of symbols
                               short ; a form that evaluates to a string or to nil
                               arg-descriptions
                               description ; a form that evaluates to a string, or a list of such forms
-                              state
-                              )
+                              state)
   (declare (xargs :guard (and (symbolp name)
                               (or (eq :auto macro-args)
                                   (macro-arg-listp macro-args))
                               (symbol-listp parents)
                               (macro-arg-descriptionsp arg-descriptions))
-                  :mode :program ; why?
-                  :stobjs state))
+                  :stobjs state
+                  :verify-guards nil))
   (b* (((when (not (consp parents)))
         (er hard? 'defxdoc-for-macro-fn "No :parents supplied for ~x0." name))
        ;; If the macro does exist, make sure the supplied macro-args are correct (todo: support just getting them?)
@@ -433,8 +445,7 @@
                    (not (equal macro-args expected-macro-args))))
         (er hard? 'defxdoc-for-macro-fn "Mismatch between supplied macro args (not counting &whole), ~X01, and existing args, ~X23."
             macro-args nil expected-macro-args nil))
-
-       (macro-arg-names (macro-arg-names macro-args))
+       (macro-arg-names (macro-arg-names macro-args)) ; todo: what about &rest ?
        (described-arg-names (strip-cars arg-descriptions))
        ((when (not (subsetp-eq described-arg-names macro-arg-names)))
         (er hard? 'defxdoc-for-macro-fn "Descriptions given for arguments, ~x0, that are not among the macro args, ~x1."
@@ -488,12 +499,12 @@
 
 ;; Returns a progn including the defmacro form and a defxdoc form.
 (defun defmacrodoc-fn (name macro-args
-                            rest ; has the declares, the body, and xdoc stuff
-                            state)
-  (declare (xargs :mode :program
-                  :guard (and (symbolp name)
+                       rest ; has the declares, the body, and xdoc stuff (:parents, :short, :description, :args)
+                       state)
+  (declare (xargs :guard (and (symbolp name)
                               (macro-arg-listp macro-args))
-                  :stobjs state))
+                  :stobjs state
+                  :verify-guards nil))
   (b* (((mv declares rest) ;first come optional declares (no legacy doc strings)
         (get-declares rest))
        (body (first rest))      ;then the body
@@ -506,7 +517,7 @@
        (parents (lookup-keyword :parents xdoc-stuff))
        (short (lookup-keyword :short xdoc-stuff))
        (description (lookup-keyword :description xdoc-stuff))
-       (arg-descriptions (lookup-keyword :args xdoc-stuff)) ;; repetitions of the pattern: symbol followed by 1 or more strings describing it
+       (arg-descriptions (lookup-keyword :args xdoc-stuff)) ;; satisfies macro-arg-descriptionsp
        ((when (not (symbol-alistp arg-descriptions)))
         (er hard? 'defmacrodoc "Ill-formed :args: ~x0." arg-descriptions))
        ((when (not (no-duplicatesp-equal (strip-cars arg-descriptions))))
@@ -528,4 +539,16 @@
   ;; This previously used make-event to avoid a problem with calling FLPR in safe mode via fmt1-to-string.
   `(make-event (defmacrodoc-fn ',name ',macro-args ',rest state)))
 
-;; See tests in doc-tests.lisp.
+;; TODO:  handle &rest?
+;; ;; Documents defmacrodoc itself:
+;; (defxdoc-for-macro defmacrodoc
+;;   :parents (defmacro)
+;;   :short "A replacement for defmacro that generates xdoc."
+;;   :arg-descriptions
+;;   ((name "The name of the macro being defined and documented.")
+;;    (macro-args "The list of arguments to the macro")
+;;    ;; (rest "This should include any declares (optional), followed by the macro body, followed by xdoc stuff, as keys alternating with values.  Supported keywords include :short, :parents, :description (to describe what the macro does), and :args (a list of doublets that associates arguments to their descriptions).  The :long xdoc section created from the :description and the :args and includes a representation of the General Form.")
+;;    )
+;;   :description "defmacrodoc is a replacement for defmacro that supports extra arguments for creating xdoc.")
+
+;; See tests in defmacrodoc-tests.lisp.

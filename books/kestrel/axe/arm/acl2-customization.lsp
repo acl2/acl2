@@ -11,7 +11,7 @@
 ;; load the user's acl2-customization.lsp, if any:
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 
-(include-book "kestrel/risc-v/portcullis" :dir :system)
+(include-book "kestrel/arm/portcullis" :dir :system)
 
 (ld "package.lsp")
 (in-package "A")

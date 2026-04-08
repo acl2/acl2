@@ -1,7 +1,7 @@
 ; Rules to convert bitops operations to operations from the Kestrel BV library
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,7 @@
 (include-book "bitor")
 (include-book "bitxor")
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "rules"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
@@ -149,7 +150,7 @@
                                           low
                                           x)))))
   :hints (("Goal" :cases ((NATP (+ 1 (- LOW) M)))
-           :in-theory (e/d (bitops::part-install-width-low ifix getbit-of-logand)
+           :in-theory (e/d (bitops::part-install-width-low ifix getbit-of-logand getbit-of-lognot)
                            (ash logmask)))))
 
 (defthm bvchop-of-part-install-width-low-same

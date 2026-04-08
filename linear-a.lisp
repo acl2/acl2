@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -141,7 +141,7 @@
 ; while we actually go to work on lit3' above, we will actually have in
 ; our hand the fact that lit3 is its parent.  Keeping track of the parents
 ; of the literals we are working on is made harder by the fact that
-; sometimes literal merge.  For example, in {lit1 lit2 lit3} lit1 may
+; sometimes literals merge.  For example, in {lit1 lit2 lit3} lit1 may
 ; simplify to lit3 and thus we may merge them.  The surviving literal is
 ; given the parent tree that contains both 1 and 3 so we know not to use
 ; conclusions derived from either.  The rewrite-constant, rcnst, in use
@@ -280,7 +280,7 @@
 ; Note: Tag-tree primitive
 
 ; In this function we do not assume that tag is a key of ttree.  See also
-; remove-tag-from-tag-tree, which does make that assumption.
+; remove-tag-from-tag-tree!, which does make that assumption.
 
   (cond ((assoc-eq tag ttree)
          (remove1-assoc-eq tag ttree))
@@ -1853,9 +1853,9 @@
 ; new field :derived-from-not-equalityp.  This function was much more
 ; conservative in its judgement and threw out any poly which descended from an
 ; inequality in any way, rather than only those which were derived directly
-; from a (negated) equality.  Matt Kaufmann noticed difference and provoked an
-; email exchange with Robert Krug, who did the research and initial coding
-; leading to this version of linear).  Here is Robert's reply.
+; from a (negated) equality.  Matt Kaufmann noticed this difference and
+; provoked an email exchange with Robert Krug, who did the research and initial
+; coding leading to this version of linear).  Here is Robert's reply.
 
 ;   Matt is right, I did inadvertently change ACL2's meaning for
 ;   descends-from-not-equalityp.  Perhaps this change is also responsible
@@ -1949,11 +1949,11 @@
 
 (defun good-pot-varp (x)
   (and (not (quotep x))
-       (not (equal (fn-symb x) 'BINARY-+))
-       (not (and (equal (fn-symb x) 'BINARY-*)
+       (not (eq (fn-symb x) 'BINARY-+))
+       (not (and (eq (fn-symb x) 'BINARY-*)
                  (quotep (fargn x 1))
                  (real/rationalp (unquote (fargn x 1)))))
-       (not (and (equal (fn-symb x) 'UNARY--)
+       (not (and (eq (fn-symb x) 'UNARY--)
                  (quotep (fargn x 1))
                  (real/rationalp (unquote (fargn x 1)))))))
 
@@ -2357,7 +2357,7 @@
              (cond
               ((and (quotep (fargn term 1))
                     (real/rationalp (unquote (fargn term 1)))
-                    (equal (fn-symb (fargn term 2)) 'BINARY-+))
+                    (eq (fn-symb (fargn term 2)) 'BINARY-+))
                (add-linear-term
                 (mcons-term* 'BINARY-+
                              (mcons-term* 'BINARY-*
@@ -2370,7 +2370,7 @@
                 p))
               ((and (quotep (fargn term 1))
                     (real/rationalp (unquote (fargn term 1)))
-                    (equal (fn-symb (fargn term 2)) 'BINARY-*)
+                    (eq (fn-symb (fargn term 2)) 'BINARY-*)
                     (quotep (fargn (fargn term 2) 1))
                     (real/rationalp (unquote (fargn (fargn term 2) 1))))
                (add-linear-term
@@ -3073,7 +3073,7 @@
 ; return must find its way into the hist entry for that
 ; simplify-clause.
 
-; Historical note: The affect of the newly (v2_8) introduced field,
+; Historical note: The effect of the newly (v2_8) introduced field,
 ; :derived-from-not-equalityp, is different from that of the
 ; earlier function descends-from-not-equalityp.  We are now more
 ; liberal about the polys we can generate here.  See the discussion
@@ -3171,7 +3171,7 @@
 ; the cancellation yielded a trivially true poly) or is the newly
 ; formed poly.
 
-; Historical note: The affect of the newly (v2_8) introduced field,
+; Historical note: The effect of the newly (v2_8) introduced field,
 ; :derived-from-not-equalityp, is different from that of the
 ; earlier function descends-from-not-equalityp.  See the discussion
 ; accompanying the definition of a poly.  (Search for ``(defrec poly''.))

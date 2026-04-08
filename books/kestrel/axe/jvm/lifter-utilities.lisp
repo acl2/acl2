@@ -1,7 +1,7 @@
 ; Utilities supporting the lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -201,7 +201,7 @@
 
 ; A dummy function that has special meaning when used in invariants (it gets
 ; replaced by a term representing the field of the given object with the given
-; class-name-field-name pair in the headp of the over-arching state).
+; class-name-field-name pair in the heap of the over-arching state).
 (defstub field (address pair) t)
 
 ;; ; A dummy function that has special meaning when used in invariants (it gets
@@ -457,7 +457,7 @@
                                                      param-names
                                                    (rest param-names)))))
       (if (member-eq name (strip-cdrs res))
-          ;; Can happen if two param names differe only in case:
+          ;; Can happen if two param names differ only in case:
           (er hard? 'make-param-slot-to-name-alist-aux "Parameter name clash on ~x0." name)
         (acons slot name res)))))
 

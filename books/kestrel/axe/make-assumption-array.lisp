@@ -1,6 +1,6 @@
 ; Populating the assumption-array
 ;
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -196,7 +196,7 @@
 (in-theory (disable assumption-itemp))
 
 ;; Returns (mv provedp literals assumption-array redundancy-presentp).  Walk
-;; through the NODENUMS-TO_ASSUME false, populating the ASSUMPTION-ARRAY with
+;; through the NODENUMS-TO-ASSUME false, populating the ASSUMPTION-ARRAY with
 ;; information from them.  This can prove the clause if a contradiction is
 ;; discovered, and it can drop literals with redundant information.  Tricky
 ;; case: If an earlier literal told us a nodenum was :non-nil but the current
@@ -204,9 +204,9 @@
 ;; dropped the earlier literal, but it is too late.  So we store the constant
 ;; but set the redundancy-presentp flag to indicate that we need to make a
 ;; second pass to drop weaker literals whose information is implied by the
-;; assumption-array.  The reason we don't want reundnant literals is that when
+;; assumption-array.  The reason we don't want redundant literals is that when
 ;; rewriting a literal we clear its assumption info in the array, which would
-;; present us from detecting contradictions and redundant info at that point.
+;; prevent us from detecting contradictions and redundant info at that point.
 (defund make-assumption-array-aux (literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans print)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (nat-listp literals)
@@ -254,7 +254,7 @@
          ;; Get the nodenum and assumption-item which together represent the information in this literal:
          ((mv assumption-nodenum assumption-item)
           (assumption-array-info-for-literal literal dag-array dag-len known-booleans print))
-         ;; Get the existing inforation for assumption-nodenum in the assumption-array, if any:
+         ;; Get the existing information for assumption-nodenum in the assumption-array, if any:
          (existing-assumption-item (aref1 'assumption-array assumption-array assumption-nodenum)))
       (if (not existing-assumption-item)
           ;; No existing info to check for contradictions or redundancy:
@@ -332,7 +332,7 @@
                       ;; They are both quoteps:
                       (if (not (equal (unquote existing-assumption-item)
                                       (unquote assumption-item)))
-                          ;; This literal gives us a contradiction (the node can't be two differerent constants):
+                          ;; This literal gives us a contradiction (the node can't be two different constants):
                           (prog2$ (and print (cw "NOTE: Contradiction found among literals.~%")) ;todo: print it?
                                   (mv t ;proved the entire clause
                                       nil assumption-array redundancy-presentp))
@@ -482,7 +482,7 @@
          ;; Get the nodenum and assumption-item which together represent the information in this literal:
          ((mv assumption-nodenum assumption-item)
           (assumption-array-info-for-literal literal dag-array dag-len known-booleans print))
-         ;; Get the existing inforation for assumption-nodenum in the assumption-array (probably some such info will always exist):
+         ;; Get the existing information for assumption-nodenum in the assumption-array (probably some such info will always exist):
          (existing-assumption-item (aref1 'assumption-array assumption-array assumption-nodenum)))
       (if (and (eq :non-nil assumption-item)
                ;; existing-assumption-item is some non-nil constant:

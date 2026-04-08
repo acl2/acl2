@@ -1,7 +1,7 @@
 ; A book about boolif (boolean-valued if-then-else)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -149,19 +149,19 @@
   (equal (boolif (if test test1 test2) x y)
          (boolif (boolif test test1 test2) x y)))
 
-(theory-invariant (incompatible (:rewrite boolif-of-if-arg1) (:defintion boolif)))
+(theory-invariant (incompatible (:rewrite boolif-of-if-arg1) (:definition boolif)))
 
 (defthmd boolif-of-if-arg2
   (equal (boolif test (if test2 x1 x2) y)
          (boolif test (boolif test2 x1 x2) y)))
 
-(theory-invariant (incompatible (:rewrite boolif-of-if-arg2) (:defintion boolif)))
+(theory-invariant (incompatible (:rewrite boolif-of-if-arg2) (:definition boolif)))
 
 (defthmd boolif-of-if-arg3
   (equal (boolif test x (if test3 y1 y2))
          (boolif test x (boolif test3 y1 y2))))
 
-(theory-invariant (incompatible (:rewrite boolif-of-if-arg3) (:defintion boolif)))
+(theory-invariant (incompatible (:rewrite boolif-of-if-arg3) (:definition boolif)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,8 +182,8 @@
 ;todo: rename to have 'same' in the name
 (defthm boolif-of-boolif-of-t-and-nil
   (equal (boolif (boolif x t y) x nil)
-         (acl2::bool-fix x))
-  :hints (("Goal" :in-theory (enable acl2::bool-fix))))
+         (bool-fix x))
+  :hints (("Goal" :in-theory (enable bool-fix))))
 
 ;; This reduces one mention of X and only increases the mentions of nil
 (defthm boolif-combine-1
@@ -195,7 +195,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; These can help when we have a genealized boolean as an arg:
+;; These can help when we have a generalized boolean as an arg:
 
 (defthmd boolif-when-not-booleanp-arg1
   (implies (not (booleanp test))

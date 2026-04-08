@@ -130,73 +130,91 @@
    :empty (mv nil (list (ext-declon-fix extdecl)))
    :asm (mv nil (list (ext-declon-fix extdecl)))))
 
-(define copy-fn-ext-declon-list
-  ((extdecls ext-declon-listp)
+(define copy-fn-trans-item
+  ((item trans-itemp)
    (target-fn identp)
    (new-fn identp))
-  :guard (ext-declon-list-annop extdecls)
+  :guard (trans-item-annop item)
+  :short "Transform a translation item."
+  :returns (mv (found booleanp)
+               (items trans-item-listp))
+  (trans-item-case
+   item
+   :declon (b* (((mv found extdecls)
+                 (copy-fn-ext-declon item.declon target-fn new-fn)))
+             (mv found (c$::trans-item-list-declon extdecls)))
+   :include (prog2$ (raise "#include directives not supported.")
+                    (mv nil nil))
+   :define (prog2$ (raise "#define directives not supported.")
+                   (mv nil nil))
+   :undef (prog2$ (raise "#undef directives not supported.")
+                  (mv nil nil))
+   :cond (prog2$ (raise "Conditional directives not supported.")
+                 (mv nil nil))
+   :line-comment (mv nil (list (trans-item-fix item)))))
+
+(define copy-fn-trans-item-list
+  ((items trans-item-listp)
+   (target-fn identp)
+   (new-fn identp))
+  :guard (trans-item-list-annop items)
   :short "Transform a list of external declarations."
-  :returns (new-extdecls ext-declon-listp)
-  (b* (((when (endp extdecls))
+  :returns (new-items trans-item-listp)
+  (b* (((when (endp items))
         nil)
-       ((mv found new-extdecls)
-        (copy-fn-ext-declon (first extdecls) target-fn new-fn)))
-    (append new-extdecls
+       ((mv found new-items)
+        (copy-fn-trans-item (first items) target-fn new-fn)))
+    (append new-items
             (if found
-                (ext-declon-list-fix (rest extdecls))
-              (copy-fn-ext-declon-list (rest extdecls) target-fn new-fn))))
+                (trans-item-list-fix (rest items))
+              (copy-fn-trans-item-list (rest items) target-fn new-fn))))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define copy-fn-transunit
-  ((tunit transunitp)
+(define copy-fn-trans-unit
+  ((tunit trans-unitp)
    (target-fn identp)
    (new-fn identp))
-  :guard (transunit-annop tunit)
+  :guard (trans-unit-annop tunit)
   :short "Transform a translation unit."
-  :returns (new-tunit transunitp)
-  (b* (((transunit tunit) tunit)
-       ((when tunit.includes)
-        (raise "Unsupported #include directives.")
-        (transunit-fix tunit)))
-    (make-transunit :comment nil
-                    :includes nil
-                    :declons (copy-fn-ext-declon-list tunit.declons target-fn new-fn)
-                    :info tunit.info)))
+  :returns (new-tunit trans-unitp)
+  (b* (((trans-unit tunit) tunit))
+    (make-trans-unit :items (copy-fn-trans-item-list tunit.items target-fn new-fn)
+                     :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define copy-fn-filepath-transunit-map
-  ((map filepath-transunit-mapp)
+(define copy-fn-filepath-trans-unit-map
+  ((map filepath-trans-unit-mapp)
    (target-fn identp)
    (new-fn identp))
-  :guard (filepath-transunit-map-annop map)
+  :guard (filepath-trans-unit-map-annop map)
   :short "Transform a filepath."
-  :returns (new-map filepath-transunit-mapp
-                    :hyp (filepath-transunit-mapp map))
+  :returns (new-map filepath-trans-unit-mapp
+                    :hyp (filepath-trans-unit-mapp map))
   (b* (((when (omap::emptyp map))
         nil)
        ((mv path tunit) (omap::head map)))
     (omap::update (c$::filepath-fix path)
-                  (copy-fn-transunit tunit target-fn new-fn)
-                  (copy-fn-filepath-transunit-map (omap::tail map)
-                                                  target-fn
-                                                  new-fn)))
+                  (copy-fn-trans-unit tunit target-fn new-fn)
+                  (copy-fn-filepath-trans-unit-map (omap::tail map)
+                                                   target-fn
+                                                   new-fn)))
   :verify-guards :after-returns)
 
-(define copy-fn-transunit-ensemble
-  ((tunits transunit-ensemblep)
+(define copy-fn-trans-ensemble
+  ((tunits trans-ensemblep)
    (target-fn identp)
    (new-fn identp))
-  :guard (transunit-ensemble-annop tunits)
-  :short "Transform a translation unit ensemble."
-  :returns (new-tunits transunit-ensemblep)
-  (b* (((transunit-ensemble tunits) tunits))
-    (c$::make-transunit-ensemble
-      :units (copy-fn-filepath-transunit-map tunits.units
-                                             target-fn
-                                             new-fn))))
+  :guard (trans-ensemble-annop tunits)
+  :short "Transform a translation ensemble."
+  :returns (new-tunits trans-ensemblep)
+  (b* (((trans-ensemble tunits) tunits))
+    (c$::make-trans-ensemble
+      :units (copy-fn-filepath-trans-unit-map tunits.units
+                                              target-fn
+                                              new-fn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,5 +228,5 @@
   (b* (((code-ensemble code) code))
     (change-code-ensemble
      code
-     :transunits
-     (copy-fn-transunit-ensemble code.transunits target-fn new-fn))))
+     :trans-units
+     (copy-fn-trans-ensemble code.trans-units target-fn new-fn))))

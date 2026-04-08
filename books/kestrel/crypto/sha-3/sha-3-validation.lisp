@@ -1,6 +1,6 @@
 ; Validation proofs for SHA-3 spec
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -60,12 +60,16 @@
            (equal (a x y z (bits-to-state-array s w) w)
                   (nth (+ (* w (+ (* 5 y) x)) z)
                        s)))
-  :otf-flg t
   :hints (("Goal"
-           :in-theory (enable bits-to-state-array
+           :in-theory (e/d (bits-to-state-array
                               BIT-STRING-TO-PLANE NTH-LANE helper a
                               nth-bit ;todo
-                              ))))
+                              )
+                           (;; For speed:
+                            acl2::<-of-*-same-linear-2
+                            acl2::<-of-*-and-*-same-linear-1
+                            acl2::<-of-*-same-linear-special
+                            acl2::<-of-*-and-*-same-linear-2)))))
 
 ;;;
 ;;; Correctness of theta
@@ -108,7 +112,6 @@
                 (< n (- 5 x))
                 (w-valp w)
                 (state-arrayp a w)
-                (natp n)
 ;               (< x 5)
                 (natp x))
            (equal (nth-lane n (theta-c-lanes x a w) w)
@@ -156,8 +159,7 @@
   (implies (and (natp n)
                 (< n (- 5 x))
                 (w-valp w)
-                (state-arrayp a w)
-                (natp n)
+                ;; (state-arrayp a w)
 ;               (< x 5)
                 (natp x))
            (equal (nth-lane n (theta-d-lanes x c w) w)
@@ -169,8 +171,8 @@
   (implies (and (natp n)
                 (< n 5)
                 (w-valp w)
-                (state-arrayp a w)
-                (natp n))
+                ;; (state-arrayp a w)
+                )
            (equal (nth-lane n (theta-d c w) w)
                   (theta-d-lane 0 n c w)))
   :hints (("Goal" :in-theory (enable theta-d))))
@@ -178,7 +180,7 @@
 ;; D[x,z] = ... (Algorithm 1, Step 2)
 (defthm theta-d-correct
   (implies (and (w-valp w)
-                (state-arrayp a w)
+                ;; (state-arrayp a w)
                 (planep c w)
                 (natp x)
                 (< x 5)
@@ -193,7 +195,6 @@
                 (< n (- 5 x))
                 (w-valp w)
                 (state-arrayp a w)
-                (natp n)
                 (natp x))
            (equal (nth-lane n (theta-lanes x y a d w) w)
                   (theta-lane 0 (+ x n) y a d w)))
@@ -219,7 +220,6 @@
                 (< n (- 5 y))
                 (w-valp w)
                 (state-arrayp a w)
-                (natp n)
 ;               (< x 5)
                 (natp y))
            (equal (nth-plane n (theta-planes y a d w) w)
@@ -261,7 +261,6 @@
                 (< n (- 5 x))
                 (w-valp w)
                 (state-arrayp a w)
-                (natp n)
                 (natp x))
            (equal (nth-lane n (pi-lanes x y a w) w)
                   (get-lane (mod (+ x n (* 3 y)) 5) (+ x n) a w)))
@@ -273,7 +272,6 @@
                 (< n (- 5 y))
                 (w-valp w)
                 (state-arrayp a w)
-                (natp n)
                 (natp y))
            (equal (nth-plane n (pi-planes y a w) w)
                   (pi-lanes 0 (+ y n) a w)))
@@ -340,7 +338,6 @@
                 (< n (- 5 x))
                 (w-valp w)
                 (state-arrayp a w)
-                (natp n)
                 (natp x))
            (equal (nth-lane n (chi-lanes x y a w) w)
                   (chi-lane 0 (+ x n) y a w)))
@@ -352,7 +349,6 @@
                 (< n (- 5 y))
                 (w-valp w)
                 (state-arrayp a w)
-                (natp n)
                 (natp y))
            (equal (nth-plane n (chi-planes y a w) w)
                   (chi-lanes 0 (+ y n) a w)))

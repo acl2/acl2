@@ -184,7 +184,7 @@ x334;
 
 (test-preproc-1 "c17-std-example-6.10.3.4.c"
                 "
-2*9*g
+2*f(9)
 "
                 :base-dir "preproc-examples"
                 :full-expansion t)

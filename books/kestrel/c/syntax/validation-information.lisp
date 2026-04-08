@@ -485,9 +485,9 @@
         (type-composite x y table.completions table.next-uid ienv)))
     (mv composite
         (change-valid-table
-          table
-          :completions completions
-          :next-uid next-uid))))
+         table
+         :completions completions
+         :next-uid next-uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -715,7 +715,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-info
+(fty::defprod trans-unit-info
   :short "Fixtype of validation information for translation units."
   :long
   (xdoc::topstring
@@ -725,21 +725,21 @@
      The information consists of
      the final validation table for the translation unit."))
   ((table-end valid-table))
-  :pred transunit-infop)
+  :pred trans-unit-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-ensemble-info
-  :short "Fixtype of validation information for translation unit ensembles."
+(fty::defprod trans-ensemble-info
+  :short "Fixtype of validation information for translation ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the type of the annotations that
-     the validator adds to translation unit ensembles.
+     the validator adds to translation ensembles.
      The information consists of
-     the final validation table for the translation unit ensemble."))
+     the final validation table for the translation ensemble."))
   ((table-end valid-table))
-  :pred transunit-ensemble-infop)
+  :pred trans-ensemble-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -790,9 +790,12 @@
             fundef
             ext-declon
             ext-declon-list
-            transunit
-            filepath-transunit-map
-            transunit-ensemble
+            hash-if/elif-expr
+            hash-if/ifdef/ifndef
+            trans-items
+            trans-unit
+            filepath-trans-unit-map
+            trans-ensemble
             code-ensemble)
     :result booleanp
     :default t
@@ -870,16 +873,17 @@
                   (declon-list-annop (fundef->declons fundef))
                   (comp-stmt-annop (fundef->body fundef))
                   (fundef-infop (fundef->info fundef))))
-     (transunit (and (ext-declon-list-annop (transunit->declons transunit))
-                     (transunit-infop (transunit->info transunit))))
-     (transunit-ensemble (and (filepath-transunit-map-annop
-                                (transunit-ensemble->units transunit-ensemble))
-                              (transunit-ensemble-infop
-                                (transunit-ensemble->info transunit-ensemble)))))))
+     (trans-unit (and (trans-item-list-annop (trans-unit->items trans-unit))
+                      (trans-unit-infop (trans-unit->info trans-unit))))
+     (trans-ensemble (and (filepath-trans-unit-map-annop
+                           (trans-ensemble->units trans-ensemble))
+                          (trans-ensemble-infop
+                           (trans-ensemble->info
+                            trans-ensemble)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection abstract-syntax-anno-additional-theroems
+(defsection abstract-syntax-anno-additional-theorems
   :short "Additional theorems about the annotation predicates."
   :long
   (xdoc::topstring
@@ -983,18 +987,20 @@
              (fundef extension specs declor asm? attribs declons body info))
     :enable identity)
 
-  (defruled transunit-annop-of-transunit
-    (equal (transunit-annop (transunit comment includes declons info))
-           (and (ext-declon-list-annop declons)
-                (transunit-infop info)))
-    :expand (transunit-annop (transunit comment includes declons info))
+  (defruled trans-unit-annop-of-trans-unit
+    (equal (trans-unit-annop (trans-unit items info))
+           (and (trans-item-list-annop items)
+                (trans-unit-infop info)))
+    :expand (trans-unit-annop (trans-unit items info))
     :enable identity)
 
-  (defruled transunit-ensemble-annop-of-transunit-ensemble
-    (equal (transunit-ensemble-annop (transunit-ensemble units info))
-           (and (filepath-transunit-map-annop units)
-                (transunit-ensemble-infop info)))
-    :expand (transunit-ensemble-annop (transunit-ensemble units info))
+  (defruled trans-ensemble-annop-of-trans-ensemble
+    (equal (trans-ensemble-annop
+            (trans-ensemble units resolved-includes info))
+           (and (filepath-trans-unit-map-annop units)
+                (trans-ensemble-infop info)))
+    :expand (trans-ensemble-annop
+             (trans-ensemble units resolved-includes info))
     :enable identity)
 
   ;; theorems about accessors:
@@ -1162,34 +1168,34 @@
              (fundef-infop (fundef->info fundef)))
     :enable fundef-annop)
 
-  (defruled ext-declon-list-annop-of-transunit->declons
-    (implies (transunit-annop transunit)
-             (ext-declon-list-annop (transunit->declons transunit)))
-    :enable transunit-annop)
+  (defruled trans-item-list-annop-of-trans-unit->items
+    (implies (trans-unit-annop trans-unit)
+             (trans-item-list-annop (trans-unit->items trans-unit)))
+    :enable trans-unit-annop)
 
-  (defruled transunit-annop-of-cdr-assoc
-    (implies (and (filepath-transunit-map-annop map)
-                  (filepath-transunit-mapp map)
+  (defruled trans-unit-annop-of-cdr-assoc
+    (implies (and (filepath-trans-unit-map-annop map)
+                  (filepath-trans-unit-mapp map)
                   (omap::assoc filepath map))
-             (transunit-annop (cdr (omap::assoc filepath map))))
+             (trans-unit-annop (cdr (omap::assoc filepath map))))
     :induct t
     :enable (omap::assoc
-             filepath-transunit-map-annop))
+             filepath-trans-unit-map-annop))
 
-  (defruled transunit-infop-of-transunit->info
-    (implies (transunit-annop transunit)
-             (transunit-infop (transunit->info transunit)))
-    :enable transunit-annop)
+  (defruled trans-unit-infop-of-trans-unit->info
+    (implies (trans-unit-annop trans-unit)
+             (trans-unit-infop (trans-unit->info trans-unit)))
+    :enable trans-unit-annop)
 
-  (defruled filepath-transunit-map-annop-of-transunit-ensemble->units
-    (implies (transunit-ensemble-annop ensemble)
-             (filepath-transunit-map-annop (transunit-ensemble->units ensemble)))
-    :enable transunit-ensemble-annop)
+  (defruled filepath-trans-unit-map-annop-of-trans-ensemble->units
+    (implies (trans-ensemble-annop ensemble)
+             (filepath-trans-unit-map-annop (trans-ensemble->units ensemble)))
+    :enable trans-ensemble-annop)
 
-  (defruled transunit-ensemble-infop-of-transunit-ensemble->info
-    (implies (transunit-ensemble-annop ensemble)
-             (transunit-ensemble-infop (transunit-ensemble->info ensemble)))
-    :enable transunit-ensemble-annop)
+  (defruled trans-ensemble-infop-of-trans-ensemble->info
+    (implies (trans-ensemble-annop ensemble)
+             (trans-ensemble-infop (trans-ensemble->info ensemble)))
+    :enable trans-ensemble-annop)
 
   ;; Add the above theorems to the rule set.
 
@@ -1208,8 +1214,8 @@
      param-declor-nonabstract-infop-of-param-declor-nonabstract->info
      init-declor-annop-of-init-declor
      fundef-annop-of-fundef
-     transunit-annop-of-transunit
-     transunit-ensemble-annop-of-transunit-ensemble
+     trans-unit-annop-of-trans-unit
+     trans-ensemble-annop-of-trans-ensemble
      iconst-infop-of-iconst->info
      var-infop-of-expr-ident->info
      const-annop-of-expr-const->const
@@ -1238,11 +1244,11 @@
      declon-list-annop-of-fundef->declons
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
-     ext-declon-list-annop-of-transunit->declons
-     transunit-annop-of-cdr-assoc
-     transunit-infop-of-transunit->info
-     filepath-transunit-map-annop-of-transunit-ensemble->units
-     transunit-ensemble-infop-of-transunit-ensemble->info)))
+     trans-item-list-annop-of-trans-unit->items
+     trans-unit-annop-of-cdr-assoc
+     trans-unit-infop-of-trans-unit->info
+     filepath-trans-unit-map-annop-of-trans-ensemble->units
+     trans-ensemble-infop-of-trans-ensemble->info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

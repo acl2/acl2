@@ -24,7 +24,7 @@
 ;operands to bitxor/bvxor are sorted into decreasing order - i hope that helps with sharing
 ;all constants are combined and put first
 
-;this may now efficiently handle even xor nests with an exponetial number of leaves.. - how will that apply to functions that don't have the nice property of xor that x xor x = 0
+;this may now efficiently handle even xor nests with an exponential number of leaves.. - how will that apply to functions that don't have the nice property of xor that x xor x = 0
 ;well, for and and or, you can drop all but one of a set of equal operands
 
 ;BBOZO handle negations! -well, we handle xoring with 1, right?
@@ -1050,7 +1050,7 @@
    :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
                                    (pseudo-dag-arrayp))))))
 
-(defthm integer-of-mv-nth-1-of-bvxor-nest-leaves-aux
+(defthm integerp-of-mv-nth-1-of-bvxor-nest-leaves-aux
   (implies (integerp accumulated-constant)
            (integerp (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))
   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp)))))
