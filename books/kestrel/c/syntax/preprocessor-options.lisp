@@ -42,7 +42,7 @@
     "We support options to specify whether:")
    (xdoc::ul
     (xdoc::li
-     "The preprocessing directives should be fully expanded,
+     "The preprocessing constructs should be fully expanded,
       as opposed to preserved under suitable conditions.")
     (xdoc::li
      "Comments should be preserved or not.")
