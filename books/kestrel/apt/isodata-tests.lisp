@@ -1294,7 +1294,7 @@
   (isodata p ((x nat-id)) :predicate t :print :error)
   :with-output-off nil)
 
- ;; result output::
+ ;; result output:
  (must-succeed
   (isodata f ((x (natp natp identity identity))) :print :result)
   :with-output-off nil)

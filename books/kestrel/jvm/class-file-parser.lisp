@@ -1,7 +1,7 @@
 ; A parser for Java class files (passed in as sequences of bytes)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1400,14 +1400,12 @@
                                 4 ;for default value
                                 4 ;for npairs value
                                 (* 4 2 npairs) ;we have npairs pairs, each of which has two, four-byte quantities
-                                ))
-           ;;(inst-len (+ 1 extra-byte-count))
-           )
+                                )))
         (mv (erp-nil)
             (list opcode-name
-                  (pairlis$ (evens matches-and-offsets) (odds matches-and-offsets)) ;make the alist
                   default-value
-                  ;; inst-len ;I guess we don't need this
+                  ;; no need to store npairs
+                  (pairlis$ (evens matches-and-offsets) (odds matches-and-offsets)) ;make the alist
                   )
             extra-byte-count))))
    ((member-eq opcode-name jvm::*one-byte-ops*)
