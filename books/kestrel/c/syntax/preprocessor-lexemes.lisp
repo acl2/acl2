@@ -470,7 +470,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, check if the lexeme is the punctuator @('#'),
+    "That is, check if the lexeme is the punctuator @('##'),
      or also if the lexeme is the digraph @('%:%:') [C17:6.4.6/3]."))
   (and (plexeme-case lexeme :punctuator)
        (b* ((string (plexeme-punctuator->punctuator lexeme)))
