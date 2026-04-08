@@ -415,6 +415,24 @@ there is no soundness requirements on the correctness of the evaluation.</p>"
     `(binder (conditionalize! . ,args))))
 
 
+(define disallow-boolean-var-intro (x)
+  :enabled t
+  :parents (fgl-rewrite-rules)
+  :short "Special identity function that disallows the introduction of Boolean variables
+during the rewriting of its argument. An @(':intro-bvars-fail') error will be
+produced if necessary."
+  x)
+
+(define handle-error (errtype x &optional on-error)
+  :enabled t
+  :parents (fgl-rewrite-rules)
+  (declare (ignore errtype on-error))
+  :short "Special identity function that (in an unequiv context only) catches an error of
+the given type during rewriting of its second argument. If such an error
+occurs, the result is that of rewriting the third argument instead."
+  x)
+
+
 
 ;; (defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y z)) :namedp t)
 

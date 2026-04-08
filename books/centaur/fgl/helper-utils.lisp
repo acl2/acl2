@@ -95,6 +95,8 @@
 
 (fancy-ev-add-primitive fgl-interp-store-debug-info (not (eq msg :unreachable)))
 
+(fancy-ev-add-primitive interp-st-get-term->bvar (fgl-object-p x))
+
 (define interp-st-print-aignet-stats ((name stringp) interp-st)
   (stobj-let ((logicman (interp-st->logicman interp-st)))
              (ans)
