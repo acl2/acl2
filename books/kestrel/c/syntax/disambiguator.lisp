@@ -3936,7 +3936,7 @@
                  (new-items trans-item-listp)
                  (new-dstate dstatep)
                  (new-tumap-dimb filepath-trans-unit-mapp))
-    :parents (disambiguator dim-trans-items/units)
+    :parents (disambiguator dimb-trans-items/units)
     :short "Disambiguate a @('#include') directive."
     :long
     (xdoc::topstring
@@ -4048,7 +4048,7 @@
                  (new-items trans-item-listp)
                  (new-dstate dstatep)
                  (new-tumap-dimb filepath-trans-unit-mapp))
-    :parents (disambiguator dim-trans-items/units)
+    :parents (disambiguator dimb-trans-items/units)
     :short "Disambiguate a translation item."
     :long
     (xdoc::topstring
@@ -4141,7 +4141,7 @@
                  (new-items trans-item-listp)
                  (new-dstate dstatep)
                  (new-tumap-dimb filepath-trans-unit-mapp))
-    :parents (disambiguator dim-trans-items/units)
+    :parents (disambiguator dimb-trans-items/units)
     :short "Disambiguate a list of translation items."
     (b* (((reterr) nil (irr-dstate) nil)
          ((when (zp limit))
@@ -4182,7 +4182,7 @@
                  (new-tunit trans-unitp)
                  (new-dstate dstatep)
                  (new-tumap-dimb filepath-trans-unit-mapp))
-    :parents (disambiguator dim-trans-items/units)
+    :parents (disambiguator dimb-trans-items/units)
     :short "Disambiguate a translation unit."
     (b* (((reterr) (irr-trans-unit) (irr-dstate) nil)
          ((when (zp limit))
