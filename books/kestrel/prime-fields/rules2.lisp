@@ -18,6 +18,7 @@
 (local (include-book "kestrel/prime-fields/equal-of-add-move-negs-bind-free" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/booleans/bool-fix" :dir :system))
 
 ;; (defthm solve-1
 ;;   (implies (and (fep z p)
