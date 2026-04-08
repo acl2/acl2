@@ -12479,18 +12479,13 @@
   (with-local-stobj
     parstate
     (mv-let (erp tunit parstate)
-        (b* ((file (filepath->unwrap path))
-             ((unless (stringp file))
-              (raise "Internal error: malformed file path ~x0."
-                     (filepath-fix path))
-              (mv t (irr-trans-unit) parstate))
+        (b* ((file (filepath->string path))
              (parstate
               (init-parstate file data dialect skip-control-lines parstate))
              ((mv erp tunit parstate) (parse-translation-unit parstate)))
           (if erp
               (if (msgp erp)
-                  (mv (msg "Error in file ~x0: ~@1"
-                           (filepath->unwrap path) erp)
+                  (mv (msg "Error in file ~x0: ~@1" file erp)
                       (irr-trans-unit)
                       parstate)
                 (prog2$
@@ -12548,7 +12543,7 @@
           ((mv filepath filedata) (omap::head filemap))
           ((mv erp tunit)
            (parse-file filepath
-                       (filedata->unwrap filedata)
+                       (filedata->bytes filedata)
                        dialect
                        skip-control-lines))
           ((when erp)

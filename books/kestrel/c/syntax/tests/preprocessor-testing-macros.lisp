@@ -40,8 +40,8 @@
 (defun fileset-map-to-string-map (fileset-map)
   (b* (((when (omap::emptyp fileset-map)) nil)
        ((mv filepath filedata) (omap::head fileset-map)))
-    (omap::update (filepath->unwrap filepath)
-                  (acl2::nats=>string (filedata->unwrap filedata))
+    (omap::update (filepath->string filepath)
+                  (acl2::nats=>string (filedata->bytes filedata))
                   (fileset-map-to-string-map (omap::tail fileset-map)))))
 
 (defun fileset-to-string-map (fileset)
@@ -209,8 +209,8 @@
 (defun filemap-relativize-absolute-paths (filemap)
   (b* (((when (omap::emptyp filemap)) nil)
        ((mv path data) (omap::head filemap))
-       (new-path (if (path-absolutep (filepath->unwrap path))
-                     (filepath (subseq (filepath->unwrap path) 1 nil))
+       (new-path (if (path-absolutep (filepath->string path))
+                     (filepath (subseq (filepath->string path) 1 nil))
                    path))
        (new-filemap-tail
         (filemap-relativize-absolute-paths (omap::tail filemap))))

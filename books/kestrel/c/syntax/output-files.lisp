@@ -359,13 +359,9 @@
      (b* (((reterr) state)
           ((when (omap::emptyp map)) (retok state))
           ((mv filepath data) (omap::head map))
-          (file-string (filepath->unwrap filepath))
-          ((unless (stringp file-string))
-           (reterr (msg "File path must contain a string, ~
-                         but it contains ~x0 instead."
-                        file-string)))
+          (file-string (filepath->string filepath))
           (path-to-write (str::cat base-dir "/" file-string))
-          ((mv erp state) (acl2::write-bytes-to-file! (filedata->unwrap data)
+          ((mv erp state) (acl2::write-bytes-to-file! (filedata->bytes data)
                                                       path-to-write
                                                       'output-files
                                                       state))
