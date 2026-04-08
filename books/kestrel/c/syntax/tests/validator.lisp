@@ -44,7 +44,7 @@
     :plain-char-signedp
     :cond))
 
-(define make-dummy-filepath-filedata-map ((filepath-names true-listp) input)
+(define make-dummy-filepath-filedata-map ((filepath-names string-listp) input)
   :returns (map filepath-filedata-mapp)
   (b* (((when (endp filepath-names))
         (raise "Too many translation units provided."))

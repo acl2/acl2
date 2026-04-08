@@ -127,7 +127,7 @@
          (+ 1 (log2-double-induct (/ x 2) (/ y 2)))
        (if (< x 1)
            (+ -1 (log2-double-induct (* x 2) (* 2 y)))
-         ;; x is in [1,2), so it's log2 is 0:
+         ;; x is in [1,2), so its log2 is 0:
          0)))))
 
 (defthm log2-monotonic-weak

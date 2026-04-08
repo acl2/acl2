@@ -66,11 +66,15 @@
 
 
 (acl2::defstobj-clone bitarr acl2::bitarr :pkg fgl-pkg)
+(acl2::defstobj-clone bitarr2 bitarr :suffix "2")
 
 (stobjs::defnicestobj env$
   (alist :initially nil)
   (bitarr :type bitarr)
   (obj-alist :type (satisfies obj-alist-p) :fix obj-alist-fix))
+
+(acl2::defstobj-clone env$2 env$ :suffix "2")
+(acl2::defstobj-clone bvar-db2 bvar-db :suffix "2")
 
 
 (local (defthmd equal-of-len
@@ -93,6 +97,48 @@
                           (bitarr)
                           (resize-bits 0 bitarr)
                           env$))))
+
+
+
+
+(stobjs::defnicestobj reference-ctrex
+  (invals :type bitarr)
+  (bvar-db :type bvar-db)
+  (env :type env$)
+  (initialized-ins :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+  (initialized-fanins :type (integer 0 *) :initially 0 :fix lnfix :pred natp))
+
+(acl2::defstobj-clone reference-ctrex2 reference-ctrex :suffix "2")
+
+(define reference-ctrex-init (reference-ctrex)
+  :guard-hints (("goal" :in-theory (e/d* (reference-ctrex-defs
+                                           equal-of-len
+                                           (init-bvar-db$c))
+                                         (default-car default-cdr cons-equal
+                                           (:t update-nth) (:t true-listp)
+                                           (:t true-listp-update-nth)
+                                           len set::sets-are-true-lists-cheap
+                                           acl2::consp-of-nth-when-atom-listp))))
+  :prepwork ((local (defthm update-nth-open
+                      (implies (syntaxp (quotep n))
+                               (equal (update-nth n v x)
+                                      (if (zp n) (cons v (cdr x))
+                                        (cons (car x)
+                                              (update-nth (1- n) v (cdr x))))))
+                      :hints(("Goal" :in-theory (enable update-nth))))))
+  :enabled t
+  (mbe :logic (non-exec (create-reference-ctrex))
+       :exec (b* ((reference-ctrex (update-reference-ctrex->initialized-ins 0 reference-ctrex))
+                  (reference-ctrex (update-reference-ctrex->initialized-fanins 0 reference-ctrex)))
+               (stobj-let ((bitarr (reference-ctrex->invals reference-ctrex))
+                           (bvar-db (reference-ctrex->bvar-db reference-ctrex))
+                           (env$ (reference-ctrex->env reference-ctrex)))
+                          (bitarr bvar-db env$)
+                          (b* ((bitarr (resize-bits 0 bitarr))
+                               (bvar-db (init-bvar-db 0 bvar-db))
+                               (env$ (env$-init env$)))
+                            (mv bitarr bvar-db env$))
+                          reference-ctrex))))
 
 (fty::defmap trace-alist :key-type fgl-generic-rune :val-type true-listp :true-listp t :keyp-of-nil nil)
 (fty::deflist trace-alistlist :elt-type trace-alist :true-listp t :elementp-of-nil t)
@@ -140,6 +186,8 @@
       (ctrex-env :type env$)
       (sat-ctrex :type bitarr)
 
+      (reference-ctrex :type reference-ctrex)
+
       (user-scratch :type (satisfies obj-alist-p) :initially nil :fix obj-alist-fix)
       (trace-scratch :type t :initially nil)
       (trace-depth :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
@@ -163,15 +211,8 @@
 
 (define interp-st-init (interp-st)
   :guard-hints (("goal" :in-theory (e/d* (interp-st-defs
-                                           update-nth
                                            equal-of-len
-                                           (init-bvar-db$c)
-                                           ;; update-term-bvars$c
-                                           ;; update-bvar-fn-indices$c
-                                           ;; update-term-equivs$c
-                                           ;; update-next-bvar1$c
-                                           ;; update-base-bvar$c
-                                           )
+                                           (init-bvar-db$c))
                                          (default-car default-cdr cons-equal
                                            (:t update-nth) (:t true-listp)
                                            (:t true-listp-update-nth)
@@ -181,6 +222,14 @@
                                            pathcondp-implies-update-bdd-equal
                                            pathcondp-implies-update-aignet-equal
                                            acl2::consp-of-nth-when-atom-listp))))
+  :prepwork ((local (defthm update-nth-open
+                      (implies (syntaxp (quotep n))
+                               (equal (update-nth n v x)
+                                      (if (zp n) (cons v (cdr x))
+                                        (cons (car x)
+                                              (update-nth (1- n) v (cdr x))))))
+                      :hints(("Goal" :in-theory (enable update-nth))))))
+                               
   (mbe :logic
        (non-exec (b* ((logicman (interp-st->logicman interp-st))
                       (interp-st (create-interp-st)))
@@ -192,8 +241,9 @@
                          (constraint-pathcond (interp-st->constraint interp-st))
                          (interp-profiler (interp-st->prof interp-st))
                          (env$ (interp-st->ctrex-env interp-st))
-                         (bitarr (interp-st->sat-ctrex interp-st)))
-                        (stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr)
+                         (bitarr (interp-st->sat-ctrex interp-st))
+                         (reference-ctrex (interp-st->reference-ctrex interp-st)))
+                        (stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr reference-ctrex)
                         (b* ((stack (stack-empty stack))
                              (logicman (logicman-init))
                              (bvar-db (init-bvar-db 0 bvar-db))
@@ -201,8 +251,9 @@
                              (constraint-pathcond (pathcond-init constraint-pathcond))
                              (interp-profiler (interp-profiler-init interp-profiler))
                              (env$ (env$-init env$))
-                             (bitarr (resize-bits 0 bitarr)))
-                          (mv stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr))
+                             (bitarr (resize-bits 0 bitarr))
+                             (reference-ctrex (reference-ctrex-init reference-ctrex)))
+                          (mv stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr reference-ctrex))
                         (b* ((interp-st (update-interp-st->constraint-db (make-constraint-db) interp-st))
                              (interp-st (update-interp-st->backchain-limit -1 interp-st))
                              (interp-st (update-interp-st->equiv-contexts nil interp-st))
@@ -833,22 +884,50 @@
              (get-term->bvar (normalize-equal-order x) bvar-db)
              bvar))
 
+(define interp-st-set-error (msg interp-st)
+  :returns new-interp-st
+  (if (interp-st->errmsg interp-st)
+      interp-st
+    (update-interp-st->errmsg msg interp-st))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret interp-st->errmsg-of-<fn>
+    (implies msg
+             (interp-st->errmsg new-interp-st)))
+
+  (defret errmsg-differs-of-<fn>
+    (implies (and msg2 (not (equal msg2 msg)))
+             (equal (equal (interp-st->errmsg new-interp-st) msg2)
+                    (equal (interp-st->errmsg interp-st) msg2)))))
+
 
 (define interp-st-add-term-bvar (left-to-rightp (x fgl-object-p) interp-st state)
   :returns (mv bfr new-interp-st)
   :guard (interp-st-nvars-ok interp-st)
   :guard-hints (("goal" :in-theory (enable interp-st-get-term->bvar)))
   :prepwork ((local (in-theory (enable interp-st-nvars-ok))))
-  (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
-              (logicman (interp-st->logicman interp-st)))
-             (bfr bvar-db logicman)
-             (b* ((nextvar (next-bvar bvar-db))
-                  (bvar-db (add-term-bvar (normalize-equal-order x) bvar-db))
-                  (bvar-db (maybe-add-equiv-term left-to-rightp (fgl-object-fix x) nextvar bvar-db state))
-                  (logicman (logicman-add-var logicman))
-                  (bfr (bfr-var nextvar logicman)))
-               (mv bfr bvar-db logicman))
-             (mv bfr interp-st))
+  (b* (((unless (interp-flags->intro-bvars (interp-st->flags interp-st)))
+        (b* ((interp-st (interp-st-set-error :intro-bvars-fail interp-st)))
+          (mv nil interp-st))))
+    (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
+                (logicman (interp-st->logicman interp-st)))
+               (bfr bvar-db logicman)
+               (b* ((nextvar (next-bvar bvar-db))
+                    (bvar-db (add-term-bvar (normalize-equal-order x) bvar-db))
+                    (bvar-db (maybe-add-equiv-term left-to-rightp (fgl-object-fix x) nextvar bvar-db state))
+                    (logicman (logicman-add-var logicman))
+                    (bfr (bfr-var nextvar logicman)))
+                 (mv bfr bvar-db logicman))
+               (mv bfr interp-st)))
   ///
   (defret interp-st-nvars-ok-of-interp-st-add-term-bvar
     (implies (interp-st-nvars-ok interp-st)
@@ -861,9 +940,19 @@
 
   (defret interp-st-get-of-<fn>
     (implies (and (not (equal (interp-st-field-fix key) :logicman))
-                  (not (equal (interp-st-field-fix key) :bvar-db)))
+                  (not (equal (interp-st-field-fix key) :bvar-db))
+                  (not (equal (interp-st-field-fix key) :errmsg)))
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret <fn>-error-not-unreachable
+    (implies (not (eq (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
 
   (defret logicman-extension-p-of-<fn>
     (implies (equal old-logicman (interp-st->logicman interp-st))
@@ -876,9 +965,9 @@
                     (bfr-nvars (interp-st->logicman new-interp-st)))))
 
   (defret bvar-db-bfrlist-of-<fn>
-    (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
-                     (append (fgl-object-bfrlist x)
-                             (bvar-db-bfrlist (interp-st->bvar-db interp-st)))))
+    (subsetp-equal (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
+                   (append (fgl-object-bfrlist x)
+                           (bvar-db-bfrlist (interp-st->bvar-db interp-st)))))
 
   (defret logicman-get-of-<fn>
     (implies (not (equal (logicman-field-fix key) :aignet))
@@ -890,19 +979,22 @@
   :guard (interp-st-nvars-ok interp-st)
   :prepwork ((local (in-theory (enable interp-st-nvars-ok
                                        bfr-varname-p))))
-  (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
-              (logicman (interp-st->logicman interp-st)))
-             (bfr bvar-db logicman)
-             (b* ((var (get-term->bvar (normalize-equal-order x) bvar-db))
-                  ((when var)
-                   (mv (bfr-var var logicman) bvar-db logicman))
-                  (nextvar (next-bvar bvar-db))
-                  (bvar-db (add-term-bvar (normalize-equal-order x) bvar-db))
-                  (bvar-db (maybe-add-equiv-term nil (fgl-object-fix x) nextvar bvar-db state))
-                  (logicman (logicman-add-var logicman))
-                  (bfr (bfr-var nextvar logicman)))
-               (mv bfr bvar-db logicman))
-             (mv bfr interp-st))
+  (b* (((unless (interp-flags->intro-bvars (interp-st->flags interp-st)))
+        (b* ((interp-st (interp-st-set-error :intro-bvars-fail interp-st)))
+          (mv nil interp-st))))
+    (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
+                (logicman (interp-st->logicman interp-st)))
+               (bfr bvar-db logicman)
+               (b* ((var (get-term->bvar (normalize-equal-order x) bvar-db))
+                    ((when var)
+                     (mv (bfr-var var logicman) bvar-db logicman))
+                    (nextvar (next-bvar bvar-db))
+                    (bvar-db (add-term-bvar (normalize-equal-order x) bvar-db))
+                    (bvar-db (maybe-add-equiv-term nil (fgl-object-fix x) nextvar bvar-db state))
+                    (logicman (logicman-add-var logicman))
+                    (bfr (bfr-var nextvar logicman)))
+                 (mv bfr bvar-db logicman))
+               (mv bfr interp-st)))
   ///
   (defret interp-st-nvars-ok-of-interp-st-add-term-bvar-unique
     (implies (interp-st-nvars-ok interp-st)
@@ -915,9 +1007,19 @@
 
   (defret interp-st-get-of-<fn>
     (implies (and (not (equal (interp-st-field-fix key) :logicman))
-                  (not (equal (interp-st-field-fix key) :bvar-db)))
+                  (not (equal (interp-st-field-fix key) :bvar-db))
+                  (not (equal (interp-st-field-fix key) :errmsg)))
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret <fn>-error-not-unreachable
+    (implies (not (eq (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
 
   (defret logicman-extension-p-of-<fn>
     (implies (equal old-logicman (interp-st->logicman interp-st))
@@ -930,9 +1032,9 @@
                     (bfr-nvars (interp-st->logicman new-interp-st)))))
 
   (defret bvar-db-bfrlist-of-<fn>
-    (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
-                     (append (fgl-object-bfrlist x)
-                             (bvar-db-bfrlist (interp-st->bvar-db interp-st))))
+    (subsetp-equal (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
+                   (append (fgl-object-bfrlist x)
+                           (bvar-db-bfrlist (interp-st->bvar-db interp-st))))
     :hints (("goal" :use ((:instance fgl-object-bfrlist-of-normalize-equal-order))
              :in-theory (disable fgl-object-bfrlist-of-normalize-equal-order))))
 
@@ -1080,30 +1182,6 @@
         `(mv ,@(acl2::repeat nvals nil) interp-st state))))
 
 
-(define interp-st-set-error (msg interp-st)
-  :returns new-interp-st
-  (if (interp-st->errmsg interp-st)
-      interp-st
-    (update-interp-st->errmsg msg interp-st))
-  ///
-  (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :errmsg))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st))))
-
-  (defret <fn>-preserves-error
-    (implies (interp-st->errmsg interp-st)
-             (equal (interp-st->errmsg new-interp-st)
-                    (interp-st->errmsg interp-st))))
-
-  (defret interp-st->errmsg-of-<fn>
-    (implies msg
-             (interp-st->errmsg new-interp-st)))
-
-  (defret errmsg-differs-of-<fn>
-    (implies (and msg2 (not (equal msg2 msg)))
-             (equal (equal (interp-st->errmsg new-interp-st) msg2)
-                    (equal (interp-st->errmsg interp-st) msg2)))))
 
 (define interp-st-bvar-db-debug (interp-st)
   (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))

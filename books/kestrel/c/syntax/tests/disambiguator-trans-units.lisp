@@ -15,6 +15,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Disambiguator tests for single translation units.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro test-dimb (input &key dialect cond)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
   ;; DIALECT indicates the C dialect.
@@ -27,7 +31,7 @@
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
          (dstate (init-dstate "" dialect))
-         ((mv erp2 ast &) (dimb-trans-unit ast dstate)))
+         ((mv erp2 ast & &) (dimb-trans-unit ast dstate nil nil nil 1000)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
             (t (and ,(or cond t)
@@ -44,7 +48,7 @@
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
          (dstate (init-dstate "" dialect))
-         ((mv erp2 & &) (dimb-trans-unit ast dstate)))
+         ((mv erp2 & & &) (dimb-trans-unit ast dstate nil nil nil 1000)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))
             (t nil)))))

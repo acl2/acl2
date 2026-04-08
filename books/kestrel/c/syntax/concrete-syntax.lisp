@@ -13,6 +13,7 @@
 (include-book "file-paths")
 (include-book "files")
 (include-book "grammar")
+(include-book "grammar-operations")
 (include-book "grammar-characters")
 (include-book "positions")
 (include-book "spans")
@@ -54,6 +55,7 @@
   :order-subtopics (file-paths
                     files
                     grammar
+                    grammar-operations
                     grammar-characters
                     positions
                     spans))
