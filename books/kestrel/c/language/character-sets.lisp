@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -393,7 +393,7 @@
     "The ACL2 character with ASCII code 0 corresponds to the null character.
      The ACL2 character with ASCII code 7 corresponds to alert.
      The ACL2 character with ASCII code 8 corresponds to backspace.
-     The ACL2 charater @('#\\Return') has ASCII code 13
+     The ACL2 character @('#\\Return') has ASCII code 13
      and corresponds to carriage return.
      The ACL2 character @('#\\Newline') has ASCII code 10
      and corresponds to new line."))

@@ -357,7 +357,7 @@
    (xdoc::p
      "This function will walk over a list of block items until it reaches the
       designated split point. Until then, it processes each declaration,
-      associating locally introduced identifers to parameter declarations
+      associating locally introduced identifiers to parameter declarations
       compatible with their original declaration. When the split point is
       reached, @(tsee abstract-fn) is invoked to generate the new function with
       parameters derived from this parameter declaration map. The previous

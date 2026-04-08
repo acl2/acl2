@@ -2310,7 +2310,7 @@
      (xdoc::p
       "As explained in @(tsee dimb-declor),
        a (direct) declarator adds an identifier to the scope.
-       So here we return the identifer,
+       So here we return the identifier,
        recursively extracted from the direct declarator.
        The actual addition to the disambiguation table
        is performed outside this function.")
@@ -3798,7 +3798,7 @@
      (we observed this in an example of invalid code,
      which motivated the addition of the check just described).")
    (xdoc::p
-    "So with the check on the the validation tables described above,
+    "So with the check on the validation tables described above,
      we know that we have added a scope to the disambiguation table.
      If the (disambiguated) declarator has parameter declarations,
      those will have added the formal parameters of the function to that scope.
