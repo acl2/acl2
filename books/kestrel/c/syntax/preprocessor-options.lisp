@@ -26,9 +26,7 @@
    (xdoc::p
     "Our preprocessor can work in slightly different ways,
      under the control of user options.
-     Here we define a data structure for these options.
-     We start with something simple,
-     and we will add more in the future."))
+     Here we define a data structure for these options."))
   :order-subtopics t
   :default-parent t)
 
