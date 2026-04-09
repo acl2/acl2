@@ -948,6 +948,7 @@
             ;bvand-of-logext
             ;bvand-of-logext-alt
 
+            array-length ; try array-length-of-set-field-both instead?
             ;; rules about get-field:
             get-field-of-set-field-both ;todo: try this one first
             ;; don't need these 3 if we have get-field-of-set-field-both:

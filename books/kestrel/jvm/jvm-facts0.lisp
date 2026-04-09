@@ -396,6 +396,7 @@
                   alist))
   :hints (("goal" :in-theory (enable bind assoc-equal binding assoc-equal))))
 
+;; todo: causes many case splits in Android app proofs
 (defthm bind-to-binding-better
   (implies (and (case-split (alistp alist))
                 (case-split (assoc-equal field alist)))
