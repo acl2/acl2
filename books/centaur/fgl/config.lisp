@@ -81,6 +81,8 @@
 (defenum fgl-toplevel-sat-check-mode-p
   (t nil :insert))
 
+(defenum reference-ctrex-action-p
+  (:preserve :set nil))
 
 (defconst *fgl-config-fields*
   '((trace-rewrites booleanp :default 'nil
@@ -141,7 +143,13 @@ that the SAT check will be attempted when the interpreter gets there.. If
                         "If NIL, we use SAT to check vacuity of the
 hypotheses. Set to T to disable this vacuity check.")
     (evisc-tuple t :default '(nil 12 100 nil)
-                 "Evisc tuple to use for printing potentially large objects.")))
+                 "Evisc tuple to use for printing potentially large objects.")
+    (reference-ctrex-action
+     reference-ctrex-action-p :default 'nil
+     "If set to :set, copies the counterexample from the previous run into the
+reference counterexample. If :preserve, preserves the reference counterexample
+as-is. By default (nil), empties the reference counterexample. See @(see
+reference-ctrex) for details.")))
 
 (local
  (defun fgl-config-process-field (field)

@@ -4,7 +4,7 @@
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Author: Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,6 +52,7 @@
    (include-book "lists-light/doc")
    (include-book "number-theory/top")
    (include-book "prime-fields/doc")
+   (include-book "remora/top")
    (include-book "risc-v/top")
    (include-book "simpl-imp/top")
    (include-book "soft/top")

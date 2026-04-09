@@ -2720,7 +2720,9 @@ registers are not used.</p>"
     equal not if iff int bool
     concrete match-assums return-last synp cons car cdr
     intcons intcons* endint intcar intcdr int-endp
-    typespec-check implies fgl-sat-check))
+    typespec-check implies fgl-sat-check
+    disallow-boolean-var-intro
+    handle-error-fn))
 
 (defun def-fgl-object-eval-fn (prefix fns union-previous wrld)
   (declare (xargs :mode :program))
