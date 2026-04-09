@@ -12517,7 +12517,7 @@
      and for the translation ensembles
      (they are the keys of the maps)."))
   (b* (((reterr) (irr-trans-ensemble))
-       (filemap (fileset->unwrap fileset))
+       (filemap (fileset->files fileset))
        ((erp tunitmap)
         (parse-fileset-loop filemap dialect skip-control-lines keep-going))
        (- (if keep-going
@@ -12578,4 +12578,4 @@
     (implies (and (not keep-going)
                   (not erp))
              (equal (omap::keys (trans-ensemble->units tunits))
-                    (omap::keys (fileset->unwrap fileset))))))
+                    (omap::keys (fileset->files fileset))))))
