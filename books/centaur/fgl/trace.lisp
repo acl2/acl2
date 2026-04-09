@@ -641,7 +641,7 @@ evaluating the metafunction, it is populated with the bindings returned by the
 metafunction (for a primitive, it remains empty).</li>
 </ul>
 
-<p>The following variables can be used in some situtations:</p>
+<p>The following variables can be used in some situations:</p>
 
 <ul>
 
