@@ -1,7 +1,7 @@
 ; Fields (names, ids, attributes, etc) and the field-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -141,16 +141,16 @@
 
 (defund field-publicp (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::member-eq :acc_public (field-access-flags field-info)))
+  (member-eq :acc_public (field-access-flags field-info)))
 
 (defund field-privatep (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::member-eq :acc_private (field-access-flags field-info)))
+  (member-eq :acc_private (field-access-flags field-info)))
 
 (defund field-protectedp (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::member-eq :acc_protected (field-access-flags field-info)))
+  (member-eq :acc_protected (field-access-flags field-info)))
 
 (defund field-staticp (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::member-eq :acc_static (field-access-flags field-info)))
+  (member-eq :acc_static (field-access-flags field-info)))

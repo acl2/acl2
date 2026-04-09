@@ -39,7 +39,7 @@
 
 (in-theory (disable ;acl2::member-of-cons
                     ;acl2::subsetp-car-member
-                    acl2::MEMBER-EQUAL)) ;for speed
+                    member-EQUAL)) ;for speed
 
 
 ;; Note that method-namep is defined in instructions.lisp
@@ -303,8 +303,8 @@
                                                :acc_strict
                                                :acc_synthetic))
               ;; The program is a well-formed program iff the method is not native or abstract (in either case, it would have no program).
-              (if (and (not (acl2::member-eq :acc_native access-flags))
-                       (not (acl2::member-eq :acc_abstract access-flags)))
+              (if (and (not (member-eq :acc_native access-flags))
+                       (not (member-eq :acc_abstract access-flags)))
                   (method-programp (acl2::lookup-eq :program method-info))
                 (eq :no-program  (acl2::lookup-eq :program method-info)))
               (return-typep (acl2::lookup-eq :return-type method-info))
@@ -357,31 +357,31 @@
 
 (defun method-publicp (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_public (method-access-flags method-info)))
+  (member-eq :acc_public (method-access-flags method-info)))
 
 (defun method-privatep (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_private (method-access-flags method-info)))
+  (member-eq :acc_private (method-access-flags method-info)))
 
 (defun method-protectedp (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_protected (method-access-flags method-info)))
+  (member-eq :acc_protected (method-access-flags method-info)))
 
 (defun method-synchronizedp (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_synchronized (method-access-flags method-info)))
+  (member-eq :acc_synchronized (method-access-flags method-info)))
 
 (defun method-staticp (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_static (method-access-flags method-info)))
+  (member-eq :acc_static (method-access-flags method-info)))
 
 (defun method-nativep (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_native (method-access-flags method-info)))
+  (member-eq :acc_native (method-access-flags method-info)))
 
 (defun method-abstractp (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_abstract (method-access-flags method-info)))
+  (member-eq :acc_abstract (method-access-flags method-info)))
 
 (defun method-program (method-info)
   (declare (xargs :guard (method-infop method-info)))
