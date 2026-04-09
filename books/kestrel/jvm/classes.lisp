@@ -1,7 +1,7 @@
 ; Classes in the JV, including the class-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -205,12 +205,12 @@
   (and (alistp class-info)
        (equal (strip-cars class-info)
               '(:superclass :interfaces :access-flags :fields :static-fields :methods))
-       (let ((superclass (acl2::lookup-eq :superclass class-info))
-             (interfaces (acl2::lookup-eq :interfaces class-info))
-             (access-flags (acl2::lookup-eq :access-flags class-info))
-             (fields (acl2::lookup-eq :fields class-info))
-             (static-fields (acl2::lookup-eq :static-fields class-info))
-             (methods (acl2::lookup-eq :methods class-info)))
+       (let ((superclass (lookup-eq :superclass class-info))
+             (interfaces (lookup-eq :interfaces class-info))
+             (access-flags (lookup-eq :access-flags class-info))
+             (fields (lookup-eq :fields class-info))
+             (static-fields (lookup-eq :static-fields class-info))
+             (methods (lookup-eq :methods class-info)))
          (and (or (eq :none superclass)
                   (class-namep superclass))
               (true-listp interfaces)
@@ -239,10 +239,10 @@
   (and
    (class-infop0 class-info)
    ;; Check the super class:
-   (let ((superclass (acl2::lookup-eq :superclass class-info)))
+   (let ((superclass (lookup-eq :superclass class-info)))
      (if (equal class-name "java.lang.Object")
          (eq :none superclass)
-       (if  (member-eq :acc_interface (acl2::lookup-eq :access-flags class-info))
+       (if  (member-eq :acc_interface (lookup-eq :access-flags class-info))
            ;; The superclass of an interface is java.lang.Object (see JVMS: The ClassFile Structure)
            (equal "java.lang.Object" superclass)
          (class-namep superclass))))
@@ -263,19 +263,19 @@
 ;fixme these apply to interfaces too, not just classes, despite their names
 ;fixme these should be macros?
 ;a list of the direct superinterfaces implemented by the class (i.e., a list of strings):
-(defund class-decl-interfaces        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :interfaces    class-info))
+(defund class-decl-interfaces        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :interfaces    class-info))
 ;just the name of the class (a string), or :none for java.lang.Object's superclass:
-(defund class-decl-superclass        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :superclass   class-info))
-(defund class-decl-non-static-fields (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :fields        class-info))
-(defund class-decl-static-fields     (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :static-fields class-info))
+(defund class-decl-superclass        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :superclass   class-info))
+(defund class-decl-non-static-fields (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :fields        class-info))
+(defund class-decl-static-fields     (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :static-fields class-info))
 ;format?
-(defund class-decl-methods           (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :methods       class-info))
-(defund class-decl-access-flags      (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :access-flags  class-info))
+(defund class-decl-methods           (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :methods       class-info))
+(defund class-decl-access-flags      (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :access-flags  class-info))
 
 (defund class-decl-interfacep (class-info)
   (declare (xargs :guard (class-infop0 class-info)
                   :guard-hints (("Goal" :in-theory (enable class-infop0)))))
-  (member-eq :acc_interface (acl2::lookup-eq :access-flags class-info)))
+  (member-eq :acc_interface (lookup-eq :access-flags class-info)))
 
 
 ;; A "normal" class is one that is not java.lang.Object
@@ -285,7 +285,7 @@
   (and
    (class-infop0 class-info)
    ;; the superclass is a class name (if there is a superclass):
-   (let ((superclass (acl2::lookup-eq :superclass class-info)))
+   (let ((superclass (lookup-eq :superclass class-info)))
      (if (class-decl-interfacep class-info)
          ;; The superclass of an interface is java.lang.Object (see JVMS: The ClassFile Structure)
          (equal "java.lang.Object" superclass)
@@ -469,12 +469,12 @@
 
 (defthm method-infop-of-lookup-equal-helper
   (implies (and (all-keys-bound-to-method-infosp method-info-alist)
-                (acl2::lookup-equal method-id method-info-alist))
-           (method-infop (acl2::lookup-equal method-id method-info-alist)))
-  :hints (("Goal" :in-theory (enable acl2::lookup-equal all-keys-bound-to-method-infosp assoc-equal))))
+                (lookup-equal method-id method-info-alist))
+           (method-infop (lookup-equal method-id method-info-alist)))
+  :hints (("Goal" :in-theory (enable lookup-equal all-keys-bound-to-method-infosp assoc-equal))))
 
 (defthm method-infop-of-lookup-equal
   (implies (and (method-info-alistp method-info-alist)
-                (acl2::lookup-equal method-id method-info-alist))
-           (method-infop (acl2::lookup-equal method-id method-info-alist)))
+                (lookup-equal method-id method-info-alist))
+           (method-infop (lookup-equal method-id method-info-alist)))
   :hints (("Goal" :in-theory (enable method-info-alistp all-keys-bound-to-method-infosp))))

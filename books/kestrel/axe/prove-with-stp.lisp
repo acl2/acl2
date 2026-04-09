@@ -82,7 +82,7 @@
 ;; appropriate abstraction level (abstract away too much and the STP goal may
 ;; no longer be true, abstract away too little and the solver may time out).
 
-;; We now parse, process, and return the counter-examples found by STP.  This
+;; We now parse, process, and return the counterexamples found by STP.  This
 ;; forms the basis of our query answering capability; we pose a query to STP
 ;; that attempts to prove that some behavior is impossible, and it returns a
 ;; concrete input showing when the behavior is in fact possible.

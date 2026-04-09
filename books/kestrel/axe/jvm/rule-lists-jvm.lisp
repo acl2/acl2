@@ -918,7 +918,7 @@
             logext-when-usb-cheap ;new, since logext is still used a little bit (for arraycopy?)
             logext-identity-when-usb-smaller-axe
 
-            jvm::op-code
+            jvm::instruction-opcode
 
             jvm::call-stack
 
@@ -948,6 +948,7 @@
             ;bvand-of-logext
             ;bvand-of-logext-alt
 
+            array-length ; try array-length-of-set-field-both instead?
             ;; rules about get-field:
             get-field-of-set-field-both ;todo: try this one first
             ;; don't need these 3 if we have get-field-of-set-field-both:

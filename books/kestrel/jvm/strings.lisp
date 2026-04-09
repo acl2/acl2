@@ -1,7 +1,7 @@
 ; Material on Java strings.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,28 +18,28 @@
 (include-book "kestrel/bv/bvchop" :dir :system)
 
 ;todo: change to JVM package
-(defun acl2::all-java-charp (x)
+(defun all-java-charp (x)
   (declare (xargs :guard t))
   (if (atom x)
       t
       (and (acl2::java-charp (first x))
-           (acl2::all-java-charp (rest x)))))
+           (all-java-charp (rest x)))))
 
 ;todo use defmap
 (defun code-char-list (characters)
   (declare (xargs :guard (and (true-listp characters)
-                              (acl2::all-java-charp characters))
-                  :guard-hints (("Goal" :expand ((ACL2::ALL-JAVA-CHARP CHARACTERS))
-                                 :in-theory (enable acl2::all-java-charp ACL2::JAVA-CHARP UNSIGNED-BYTE-P)))
+                              (all-java-charp characters))
+                  :guard-hints (("Goal" :expand ((ALL-JAVA-CHARP CHARACTERS))
+                                 :in-theory (enable all-java-charp ACL2::JAVA-CHARP UNSIGNED-BYTE-P)))
                   ))
   (if (endp characters)
       nil
-    (cons (code-char (acl2::bvchop 8 (first characters))) ;;TTODO: Drop the bvchop (actually, use Alessandro's representation of Java strings)
+    (cons (code-char (bvchop 8 (first characters))) ;;TTODO: Drop the bvchop (actually, use Alessandro's representation of Java strings)
           (code-char-list (rest characters)))))
 
 (defun char-list-to-string (java-chars)
   (declare (xargs :guard (and (true-listp java-chars)
-                              (acl2::all-java-charp java-chars))))
+                              (all-java-charp java-chars))))
   (let ((acl2-characters (code-char-list java-chars)))
     (coerce acl2-characters 'string)))
 
