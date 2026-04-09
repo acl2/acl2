@@ -1,7 +1,7 @@
 ; The string intern-table of the JVM
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -144,7 +144,7 @@
   (declare (xargs :guard (and (stringp string)
                               (intern-tablep intern-table))
                   :guard-hints (("Goal" :in-theory (enable INTERN-TABLEP)))))
-  (let* ((looked-up-string (acl2::lookup-equal string intern-table)) ;will be a heap reference (a natural) or nil if the string isn't in the table
+  (let* ((looked-up-string (lookup-equal string intern-table)) ;will be a heap reference (a natural) or nil if the string isn't in the table
          )
     (not (equal looked-up-string nil))))
 
@@ -165,7 +165,7 @@
   (declare (xargs :guard (and (stringp string)
                               (intern-tablep intern-table))
                   :guard-hints (("Goal" :in-theory (enable INTERN-TABLEP)))))
-  (let* ((looked-up-string (acl2::lookup-equal string intern-table)))
+  (let* ((looked-up-string (lookup-equal string intern-table)))
     looked-up-string))
 
 ;; (defthm get-interned-string-of-nil
@@ -232,9 +232,9 @@
 
 ;; (defthm lookup-equal-when-not-consp
 ;;   (implies (not (consp alist))
-;;            (equal (acl2::lookup-equal key alist)
+;;            (equal (lookup-equal key alist)
 ;;                   nil))
-;;   :hints (("Goal" :in-theory (enable acl2::lookup-equal))))
+;;   :hints (("Goal" :in-theory (enable lookup-equal))))
 
 ;drop, if we keep get-class diabled?
 (defthm get-field-of-get-interned-string-and-class-pair
@@ -242,20 +242,20 @@
                 (intern-table-okp intern-table heap))
            (equal (acl2::get-field (get-interned-string string intern-table) '(:special-data . :class) heap)
                   "java.lang.String"))
-  :hints (("Goal" :in-theory (enable acl2::lookup-equal intern-table-okp intern-table-okp acl2::get-class))))
+  :hints (("Goal" :in-theory (enable lookup-equal intern-table-okp intern-table-okp acl2::get-class))))
 
 (defthm intern-table-okp-of-acons
-  (implies (and (jvm::intern-table-okp intern-table heap)
+  (implies (and (intern-table-okp intern-table heap)
                 (equal (acl2::get-field ad '(:special-data . :class) heap)
                        "java.lang.String"))
-           (jvm::intern-table-okp (acons string ad intern-table) heap))
-  :hints (("Goal" :in-theory (enable jvm::intern-table-okp acl2::get-class))))
+           (intern-table-okp (acons string ad intern-table) heap))
+  :hints (("Goal" :in-theory (enable intern-table-okp acl2::get-class))))
 
 (defthm not-member-equal-of-new-ad-of-rkeys-and-strip-cdrs-when-intern-table-okp
-  (implies (jvm::intern-table-okp intern-table heap)
+  (implies (intern-table-okp intern-table heap)
            (not (member-equal (acl2::new-ad (acl2::rkeys heap)) (acl2::strip-cdrs intern-table)))))
 
 (defthm not-null-refp-of-get-interned-string
-  (implies (jvm::intern-tablep intern-table)
-           (not (null-refp (jvm::get-interned-string string intern-table))))
-  :hints (("Goal" :in-theory (enable jvm::intern-tablep strip-cdrs))))
+  (implies (intern-tablep intern-table)
+           (not (null-refp (get-interned-string string intern-table))))
+  :hints (("Goal" :in-theory (enable intern-tablep strip-cdrs))))

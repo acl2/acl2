@@ -1,7 +1,7 @@
 ; Fields (names, ids, attributes, etc) and the field-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -82,7 +82,7 @@
 
 (defun get-ConstantValue-attribute (attributes)
   (declare (xargs :guard (attributesp attributes)))
-  (acl2::lookup-equal "ConstantValue" attributes))
+  (lookup-equal "ConstantValue" attributes))
 
 ;;These are the only keys allowed in the field-info alist:
 (defconst *field-info-keys*
@@ -93,8 +93,8 @@
   (declare (xargs :guard t))
   (and (alistp field-info)
        (acl2::subsetp-eq (strip-cars field-info) *field-info-keys*)
-       (attributesp (acl2::lookup-eq :attributes field-info))
-       (let ((access-flags (acl2::lookup-eq :access-flags field-info)))
+       (attributesp (lookup-eq :attributes field-info))
+       (let ((access-flags (lookup-eq :access-flags field-info)))
          (and (acl2::keyword-listp access-flags)
               (acl2::no-duplicatesp access-flags)
               (acl2::subsetp-eq access-flags
@@ -122,7 +122,7 @@
 
 (defund field-attributes (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::lookup-eq :attributes field-info))
+  (lookup-eq :attributes field-info))
 
 (defthm attributesp-of-field-attributes
   (implies (field-infop field-info)
@@ -131,7 +131,7 @@
 
 (defund field-access-flags (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::lookup-eq :access-flags field-info))
+  (lookup-eq :access-flags field-info))
 
 (defthm true-listp-of-field-access-flags-forward
   (implies (field-infop field-info)
@@ -141,16 +141,16 @@
 
 (defund field-publicp (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::member-eq :acc_public (field-access-flags field-info)))
+  (member-eq :acc_public (field-access-flags field-info)))
 
 (defund field-privatep (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::member-eq :acc_private (field-access-flags field-info)))
+  (member-eq :acc_private (field-access-flags field-info)))
 
 (defund field-protectedp (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::member-eq :acc_protected (field-access-flags field-info)))
+  (member-eq :acc_protected (field-access-flags field-info)))
 
 (defund field-staticp (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::member-eq :acc_static (field-access-flags field-info)))
+  (member-eq :acc_static (field-access-flags field-info)))

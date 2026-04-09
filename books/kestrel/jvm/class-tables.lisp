@@ -1,7 +1,7 @@
 ; The class-table structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -128,8 +128,8 @@
            (class-infop0 (get-class-info key class-table)))
   :hints (("Goal" :use (:instance use-all-keys-bound-to-class-infosp-alt)
            :in-theory (disable use-all-keys-bound-to-class-infosp-alt
-                               jvm::use-all-keys-bound-to-class-infosp-2
-                               jvm::use-all-keys-bound-to-class-infosp))))
+                               use-all-keys-bound-to-class-infosp-2
+                               use-all-keys-bound-to-class-infosp))))
 
 ;equivalent to subsetp-equal but also prints a message
 ;todo: add a version of defforall that prints a message if any element fails to satisfy the predicate, then use that here
@@ -219,10 +219,10 @@
   (implies (and (all-superinterfaces-bound class-names class-table (set::2list (acl2::rkeys class-table)))
                 (memberp class-name class-names))
            (all-bound-in-class-tablep (class-decl-interfaces (get-class-info class-name class-table)) class-table))
-  :hints (("Goal" :use (:instance jvm::use-all-superinterfaces-bound (acl2::free-class-name class-names)
+  :hints (("Goal" :use (:instance use-all-superinterfaces-bound (acl2::free-class-name class-names)
                                   (all-class-names (set::2list (acl2::rkeys class-table)))
                                   (acl2::x class-name))
-           :in-theory (e/d (all-bound-in-class-tablep-alt) (jvm::use-all-superinterfaces-bound)))))
+           :in-theory (e/d (all-bound-in-class-tablep-alt) (use-all-superinterfaces-bound)))))
 
 
 (defthm class-namep-of-class-decl-superclass-of-get-class-info
