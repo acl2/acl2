@@ -52,7 +52,7 @@
     "We may generalize these ASTs to encompass untyped and type-erased Remora,
      or we might define alternative ASTs for those, with suitable mappings.")
    (xdoc::p
-    "In line with the Remora publications, which defines a core language,
+    "In line with the Remora publications, which define a core language,
      we do not yet define any higher-level constructs such as ``programs'',
      intended as collections of named definitions.
      But we plan to add such constructs at some point."))
@@ -106,7 +106,7 @@
      but they do provide a partial list.
      Here we define some initial representative primitive operators,
      consisting of the ones listed in the publications,
-     which we may extetend in the future.
+     which we may extend in the future.
      We may also parameterize our abstract syntax
      over the exact choice of these primitive operators."))
   (:add ())
@@ -198,7 +198,7 @@
     (xdoc::topstring
      (xdoc::p
       "There are
-       mamed variables,
+       named variables,
        constants (natural numbers),
        shapes (consisting of zero or more dimensions),
        additions of indices,
@@ -236,7 +236,7 @@
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
        product types (quantified over sorted variables),
-       and sum types (quantifier over sorted variables)."))
+       and sum types (quantified over sorted variables)."))
     (:var ((name string)))
     (:base ((type base-type)))
     (:array ((type type)
@@ -298,7 +298,7 @@
        non-empty frames with at least one expression,
        empty frames with the cell type,
        applications of expressions to expressions
-       (called `term applications' in the Remora publications)
+       (called `term applications' in the Remora publications),
        applications of expressions to types,
        applications of expressions to indices,
        and unboxing of expressions;
