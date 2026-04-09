@@ -5010,5 +5010,5 @@
   ///
 
   (defret keys-of-print-fileset
-    (equal (omap::keys (fileset->unwrap fileset))
+    (equal (omap::keys (fileset->files fileset))
            (omap::keys (trans-ensemble->units tunits)))))
