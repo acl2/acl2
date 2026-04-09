@@ -13,7 +13,7 @@
 
 (include-book "built-in")
 (include-book "unambiguity")
-(include-book "macro-tables")
+(include-book "hash-conditional-evaluation")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -3926,117 +3926,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-include ((header header-namep)
-                        (dstate dstatep)
-                        (tumap-orig filepath-trans-unit-mapp)
-                        (resolved-includes string-header-name-string-map-mapp)
-                        (tumap-dimb filepath-trans-unit-mapp)
-                        (limit natp))
-    :returns (mv (erp maybe-msgp)
-                 (new-items trans-item-listp)
-                 (new-dstate dstatep)
-                 (new-tumap-dimb filepath-trans-unit-mapp))
-    :parents (disambiguator dimb-trans-items/units)
-    :short "Disambiguate a @('#include') directive."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We need to see whether the directive can be preserved or not:
-       the approach is overviewed in @(see disambiguator).")
-     (xdoc::p
-      "We resolve the header name to a translation unit, via three map lookups.
-       First we disambiguate the translation unit
-       in the current disambiguation state;
-       then we disambiguate it in a fresh disambiguation state,
-       unless that has been already done,
-       i.e. if it is already in the @('tumap-dimb') map.
-       If stand-alone disambiguation fails,
-       the @('#include') cannot be preserved.
-       Otherwise, we compare the two obtained ASTS:
-       if they are equal, we can preserve the @('#include');
-       otherwise, we need to expand it in place.
-       This is an initial comparison,
-       which needs to be refined to take into account
-       conditional preprocessing constructs,
-       which we do not support in the disambiguator yet."))
-    (b* (((reterr) nil (irr-dstate) nil)
-         ((when (zp limit))
-          (raise "Internal error: limit exhausted.")
-          (reterr "irrelevant"))
-         ;; Look up translation unit through the 3 maps.
-         (including (dstate->file dstate))
-         (including+inner (omap::assoc including
-                                       (string-header-name-string-map-map-fix
-                                        resolved-includes)))
-         ((unless including+inner)
-          (raise "Internal error: ~x0 not in ~x1."
-                 including
-                 (string-header-name-string-map-map-fix resolved-includes))
-          (reterr "irrelevant"))
-         (inner (cdr including+inner))
-         (header+included (omap::assoc (header-name-fix header) inner))
-         ((unless header+included)
-          (raise "Internal error: ~x0 not in ~x1."
-                 (header-name-fix header)
-                 inner)
-          (reterr "irrelevant"))
-         (included (cdr header+included))
-         (included+tunit (omap::assoc (filepath included)
-                                      (filepath-trans-unit-map-fix tumap-orig)))
-         ((unless included+tunit)
-          (raise "Internal error: ~x0 not in ~x1."
-                 included
-                 (filepath-trans-unit-map-fix tumap-orig))
-          (reterr "irrelevant"))
-         (tunit (cdr included+tunit))
-         ;; Dismbiguate the included translation unit in context.
-         ;; This must not fail; if it does,
-         ;; the disambiguation of the including translation unit fails.
-         ((erp new-tunit-in-context dstate tumap-dimb)
-          (dimb-trans-unit tunit
-                           dstate
-                           tumap-orig
-                           resolved-includes
-                           tumap-dimb
-                           (1- limit)))
-         ;; Disambiguate the included translation unit stand-alone.
-         ;; This may fail, so we do not use the ERP binder,
-         ;; which would propagate the error.
-         ((mv erp new-tunit-stand-alone tumap-dimb)
-          (b* (((reterr) (irr-trans-unit) nil)
-               (included+tunit
-                (omap::assoc (filepath included)
-                             (filepath-trans-unit-map-fix tumap-dimb)))
-               ((when included+tunit)
-                (retok (cdr included+tunit) tumap-dimb))
-               (dstate-fresh (init-dstate included (dstate->dialect dstate)))
-               ((erp new-tunit-stand-alone & tumap-dimb)
-                (dimb-trans-unit tunit
-                                 dstate-fresh
-                                 tumap-orig
-                                 resolved-includes
-                                 tumap-dimb
-                                 (1- limit))))
-            (retok new-tunit-stand-alone tumap-dimb)))
-         ;; If the included translation unit was disambiguated stand-alone,
-         ;; and gave the same result as the disambiguation in context,
-         ;; we preserve the #include, and update the disambiguated map.
-         ((when (and (not erp)
-                     (equal new-tunit-stand-alone new-tunit-in-context)))
-          (retok (list (trans-item-include header))
-                 dstate
-                 (omap::update (filepath included)
-                               new-tunit-stand-alone
-                               (filepath-trans-unit-map-fix tumap-dimb)))))
-      ;; Otherwise, we expand the #include in place.
-      (retok (trans-unit->items new-tunit-in-context)
-             dstate
-             (filepath-trans-unit-map-fix tumap-dimb)))
-    :no-function nil
-    :measure (nfix limit))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (define dimb-trans-item ((item trans-itemp)
                            (dstate dstatep)
                            (tumap-orig filepath-trans-unit-mapp)
@@ -4171,6 +4060,117 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define dimb-include ((header header-namep)
+                        (dstate dstatep)
+                        (tumap-orig filepath-trans-unit-mapp)
+                        (resolved-includes string-header-name-string-map-mapp)
+                        (tumap-dimb filepath-trans-unit-mapp)
+                        (limit natp))
+    :returns (mv (erp maybe-msgp)
+                 (new-items trans-item-listp)
+                 (new-dstate dstatep)
+                 (new-tumap-dimb filepath-trans-unit-mapp))
+    :parents (disambiguator dimb-trans-items/units)
+    :short "Disambiguate a @('#include') directive."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We need to see whether the directive can be preserved or not:
+       the approach is overviewed in @(see disambiguator).")
+     (xdoc::p
+      "We resolve the header name to a translation unit, via three map lookups.
+       First we disambiguate the translation unit
+       in the current disambiguation state;
+       then we disambiguate it in a fresh disambiguation state,
+       unless that has been already done,
+       i.e. if it is already in the @('tumap-dimb') map.
+       If stand-alone disambiguation fails,
+       the @('#include') cannot be preserved.
+       Otherwise, we compare the two obtained ASTS:
+       if they are equal, we can preserve the @('#include');
+       otherwise, we need to expand it in place.
+       This is an initial comparison,
+       which needs to be refined to take into account
+       conditional preprocessing constructs,
+       which we do not support in the disambiguator yet."))
+    (b* (((reterr) nil (irr-dstate) nil)
+         ((when (zp limit))
+          (raise "Internal error: limit exhausted.")
+          (reterr "irrelevant"))
+         ;; Look up translation unit through the 3 maps.
+         (including (dstate->file dstate))
+         (including+inner (omap::assoc including
+                                       (string-header-name-string-map-map-fix
+                                        resolved-includes)))
+         ((unless including+inner)
+          (raise "Internal error: ~x0 not in ~x1."
+                 including
+                 (string-header-name-string-map-map-fix resolved-includes))
+          (reterr "irrelevant"))
+         (inner (cdr including+inner))
+         (header+included (omap::assoc (header-name-fix header) inner))
+         ((unless header+included)
+          (raise "Internal error: ~x0 not in ~x1."
+                 (header-name-fix header)
+                 inner)
+          (reterr "irrelevant"))
+         (included (cdr header+included))
+         (included+tunit (omap::assoc (filepath included)
+                                      (filepath-trans-unit-map-fix tumap-orig)))
+         ((unless included+tunit)
+          (raise "Internal error: ~x0 not in ~x1."
+                 included
+                 (filepath-trans-unit-map-fix tumap-orig))
+          (reterr "irrelevant"))
+         (tunit (cdr included+tunit))
+         ;; Dismbiguate the included translation unit in context.
+         ;; This must not fail; if it does,
+         ;; the disambiguation of the including translation unit fails.
+         ((erp new-tunit-in-context dstate tumap-dimb)
+          (dimb-trans-unit tunit
+                           dstate
+                           tumap-orig
+                           resolved-includes
+                           tumap-dimb
+                           (1- limit)))
+         ;; Disambiguate the included translation unit stand-alone.
+         ;; This may fail, so we do not use the ERP binder,
+         ;; which would propagate the error.
+         ((mv erp new-tunit-stand-alone tumap-dimb)
+          (b* (((reterr) (irr-trans-unit) nil)
+               (included+tunit
+                (omap::assoc (filepath included)
+                             (filepath-trans-unit-map-fix tumap-dimb)))
+               ((when included+tunit)
+                (retok (cdr included+tunit) tumap-dimb))
+               (dstate-fresh (init-dstate included (dstate->dialect dstate)))
+               ((erp new-tunit-stand-alone & tumap-dimb)
+                (dimb-trans-unit tunit
+                                 dstate-fresh
+                                 tumap-orig
+                                 resolved-includes
+                                 tumap-dimb
+                                 (1- limit))))
+            (retok new-tunit-stand-alone tumap-dimb)))
+         ;; If the included translation unit was disambiguated stand-alone,
+         ;; and gave the same result as the disambiguation in context,
+         ;; we preserve the #include, and update the disambiguated map.
+         ((when (and (not erp)
+                     (equal new-tunit-stand-alone new-tunit-in-context)))
+          (retok (list (trans-item-include header))
+                 dstate
+                 (omap::update (filepath included)
+                               new-tunit-stand-alone
+                               (filepath-trans-unit-map-fix tumap-dimb)))))
+      ;; Otherwise, we expand the #include in place.
+      (retok (trans-unit->items new-tunit-in-context)
+             dstate
+             (filepath-trans-unit-map-fix tumap-dimb)))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-trans-unit ((tunit trans-unitp)
                            (dstate dstatep)
                            (tumap-orig filepath-trans-unit-mapp)
@@ -4218,10 +4218,6 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual trans-items/units-unambp-of-dimb-trans-items/units
-    (defret trans-item-list-unambp-of-dimb-include
-      (implies (not erp)
-               (trans-item-list-unambp new-items))
-      :fn dimb-include)
     (defret trans-item-list-unambp-of-dimb-trans-item
       (implies (not erp)
                (trans-item-list-unambp new-items))
@@ -4230,6 +4226,10 @@
       (implies (not erp)
                (trans-item-list-unambp new-items))
       :fn dimb-trans-item-list)
+    (defret trans-item-list-unambp-of-dimb-include
+      (implies (not erp)
+               (trans-item-list-unambp new-items))
+      :fn dimb-include)
     (defret trans-unit-unambp-of-dimb-trans-unit
       (implies (not erp)
                (trans-unit-unambp new-tunit))
@@ -4238,10 +4238,6 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual filepath-trans-unit-map-unambp-of-dimb-trans-items/units
-    (defret filepath-trans-unit-map-unambp-of-dimb-include
-      (filepath-trans-unit-map-unambp new-tumap-dimb)
-      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
-      :fn dimb-include)
     (defret filepath-trans-unit-map-unambp-of-dimb-trans-item
       (filepath-trans-unit-map-unambp new-tumap-dimb)
       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
@@ -4250,6 +4246,10 @@
       (filepath-trans-unit-map-unambp new-tumap-dimb)
       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
       :fn dimb-trans-item-list)
+    (defret filepath-trans-unit-map-unambp-of-dimb-include
+      (filepath-trans-unit-map-unambp new-tumap-dimb)
+      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
+      :fn dimb-include)
     (defret filepath-trans-unit-map-unambp-of-dimb-trans-unit
       (filepath-trans-unit-map-unambp new-tumap-dimb)
       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
