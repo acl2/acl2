@@ -89,7 +89,7 @@
 (defund jvm-instructions-okayp (program next-pc valid-pcs)
   (declare (xargs :guard (and (pcp next-pc)
                               (true-listp valid-pcs)
-                              (acl2::all-pcp valid-pcs))
+                              (all-pcp valid-pcs))
                   :guard-hints (("Goal" :in-theory (enable pcp acl2::acl2-numberp-when-natp)))))
   (if (atom program)
       (null program)
@@ -109,8 +109,8 @@
 (defthm integer-listp-of-strip-cars-when-jvm-instructions-okayp
   (implies (and (jvm-instructions-okayp program next-pc valid-pcs)
                 (pcp next-pc))
-           (acl2::all-pcp (strip-cars program)))
-  :hints (("Goal" :in-theory (enable jvm-instructions-okayp strip-cars acl2::all-pcp))))
+           (all-pcp (strip-cars program)))
+  :hints (("Goal" :in-theory (enable jvm-instructions-okayp strip-cars all-pcp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,7 +121,7 @@
   (and (consp program) ; the program cannot be empty
        (alistp program) ; needed for strip-cars ; todo: separate out the valid-pcs check from the rest?
        (let ((valid-pcs (strip-cars program)))
-         (and (acl2::all-pcp valid-pcs) ; for the guard of jvm-instructions-okayp
+         (and (all-pcp valid-pcs) ; for the guard of jvm-instructions-okayp
               ;; the first instruction should be at PC 0:
               (jvm-instructions-okayp program 0 valid-pcs)))))
 
@@ -134,9 +134,9 @@
 (local
  (defthm eqlable-alistp-when-alistp-and-all-pcp-of-strip-cars
    (implies (and (alistp x)
-                 (acl2::all-pcp (strip-cars x)))
+                 (all-pcp (strip-cars x)))
             (eqlable-alistp x))
-   :hints (("Goal" :in-theory (enable acl2::all-pcp strip-cars)))))
+   :hints (("Goal" :in-theory (enable all-pcp strip-cars)))))
 
 (defthm eqlable-alistp-when-method-programp
   (implies (method-programp x)
@@ -154,6 +154,8 @@
 (defthm method-programp-of-empty-program
   (method-programp (empty-program)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun exception-table-entryp (entry)
   (declare (xargs :guard t))
   (and (= 4 (len entry))
@@ -164,18 +166,17 @@
            (class-namep (fourth entry))) ;exception "type"
        ))
 
-;;move to jvm package!
-(defun acl2::all-exception-table-entryp (x)
+(defun all-exception-table-entryp (x)
   (declare (xargs :guard t))
   (if (atom x)
       t
       (and (jvm::exception-table-entryp (first x))
-           (acl2::all-exception-table-entryp (rest x)))))
+           (all-exception-table-entryp (rest x)))))
 
 (defund exception-tablep (table)
   (declare (xargs :guard t))
   (and (true-listp table)
-       (acl2::all-exception-table-entryp table)))
+       (all-exception-table-entryp table)))
 
 (defund local-variable-table-entryp (entry)
   (declare (xargs :guard t))
@@ -239,7 +240,7 @@
   :hints (("Goal" :in-theory (enable local-variable-tablep))))
 
 ;returns (list name type) for the local, or nil
-(defund acl2::lookup-in-local-variable-table (localnum pc local-variable-table)
+(defund lookup-in-local-variable-table (localnum pc local-variable-table)
   (declare (xargs :guard (and (local-variable-tablep local-variable-table)
                               (natp localnum)
                               (natp pc))
@@ -257,14 +258,14 @@
                (<= start-pc pc)
                (<= pc end-pc))
           (list name type)
-        (acl2::lookup-in-local-variable-table localnum pc (rest local-variable-table))))))
+        (lookup-in-local-variable-table localnum pc (rest local-variable-table))))))
 
 (defthm stringp-of-car-of-lookup-in-local-variable-table
   (implies (and (local-variable-tablep local-variable-table)
-                (acl2::lookup-in-local-variable-table localnum pc local-variable-table))
-           (stringp (car (acl2::lookup-in-local-variable-table localnum pc local-variable-table))))
+                (lookup-in-local-variable-table localnum pc local-variable-table))
+           (stringp (car (lookup-in-local-variable-table localnum pc local-variable-table))))
   :hints (("Goal" :in-theory (enable local-variable-tablep
-                                     acl2::lookup-in-local-variable-table
+                                     lookup-in-local-variable-table
                                      local-variable-table-entryp))))
 
 ;;The keys in the method-info alist must be in this list:

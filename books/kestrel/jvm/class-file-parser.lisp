@@ -1322,7 +1322,7 @@
     (b* (((when (not (consp bytes)))
           (mv :not-enough-bytes nil 0))
          (opcode-after-wide (first bytes))
-         (opcode-after-wide-name (lookup opcode-after-wide *opcode-to-name-table*)))
+         (opcode-after-wide-name (lookup opcode-after-wide jvm::*opcode-to-name-table*)))
       (if (member-eq opcode-after-wide-name '(:iload
                                               :fload
                                               :aload
@@ -1674,7 +1674,7 @@
           (mv :not-enough-bytes nil))
          (opcode (first bytes))
          (bytes (rest bytes))
-         (opcode-name (lookup opcode *opcode-to-name-table*))
+         (opcode-name (lookup opcode jvm::*opcode-to-name-table*))
          ((when (not opcode-name))
           (er hard? 'translate-code-bytes-aux "Unknown opcode: ~x0." opcode)
           (mv :bad-opcode nil))
@@ -1694,16 +1694,16 @@
                 (alistp acc))
            (alistp (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc))))
   :hints (("Goal" :in-theory (enable translate-code-bytes-aux
-                                     all-pcp))))
+                                     jvm::all-pcp))))
 
 (defthm all-pcp-of-strip-cars-of-mv-nth-1-of-translate-code-bytes-aux
   (implies (and (not (mv-nth 0 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))
-                (all-pcp (strip-cars acc))
+                (jvm::all-pcp (strip-cars acc))
                 (true-listp acc)
                 (natp byte-number-of-opcode))
-           (all-pcp (strip-cars (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))))
+           (jvm::all-pcp (strip-cars (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))))
   :hints (("Goal" :in-theory (enable translate-code-bytes-aux
-                                     all-pcp))))
+                                     jvm::all-pcp))))
 
 (defthm car-of-car-of-mv-nth-1-of-translate-code-bytes-aux
   (implies (and (not (mv-nth 0

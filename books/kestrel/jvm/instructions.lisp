@@ -22,7 +22,7 @@
 ;takes the decimal number version of the opcode and gives back the symbolic name
 ;fixme could use an array for this, for speed.
 ;fixme generalize this to map from the number to the format of the opcode?
-(defconst acl2::*opcode-to-name-table*
+(defconst *opcode-to-name-table*
   '((0 . :nop)
     (1 . :aconst_null)
     (2 . :iconst_m1)
@@ -228,7 +228,7 @@
 
 ;;todo package
 ;;todo: remove :wide?
-(defconst acl2::*opcodes* (strip-cdrs acl2::*opcode-to-name-table*))
+(defconst *opcodes* (strip-cdrs *opcode-to-name-table*))
 
 ;fixme add into the below.  or deprecate?
 (defun invokevirtual-instructionp (x)
@@ -249,7 +249,7 @@
 (defund instructionp (inst)
   (declare (xargs :guard t))
   (and (consp inst)
-       (member-eq (car inst) acl2::*opcodes*)
+       (member-eq (car inst) *opcodes*)
        (not (eq (car inst) :wide)) ; gets handled in the parser
        (true-listp (cdr inst))))
 
@@ -453,7 +453,8 @@
     :SWAP))
 
 ;; Returns the length of the instruction INST.  Instructions that can be
-;; preceded by :wide have their lengths stored in the instruction.
+;; preceded by :wide have their lengths stored in the instruction, as do
+;; :lookupswitch and :tableswitch.
 (defund inst-len (inst)
   (declare (xargs :guard (instructionp inst)
                   :guard-hints (("Goal" :in-theory (enable instructionp member-equal instruction-opcode)))))
@@ -522,42 +523,42 @@
   (natp val))
 
 ;; Recognize a list of program counters.
-(defund acl2::all-pcp (pcs)
+(defund all-pcp (pcs)
   (declare (xargs :guard t))
   (if (atom pcs)
       t
     (and (jvm::pcp (first pcs))
-         (acl2::all-pcp (rest pcs)))))
+         (all-pcp (rest pcs)))))
 
 (defthm all-pcp-of-revappend
-  (implies (and (acl2::all-pcp x)
-                (acl2::all-pcp y))
-           (acl2::all-pcp (revappend x y)))
+  (implies (and (all-pcp x)
+                (all-pcp y))
+           (all-pcp (revappend x y)))
   :hints (("Goal" :induct t
-           :in-theory (enable acl2::all-pcp revappend))))
+           :in-theory (enable all-pcp revappend))))
 
 (defthm all-pcp-of-reverse
-  (implies (and (acl2::all-pcp x)
+  (implies (and (all-pcp x)
                 (true-listp x))
-           (acl2::all-pcp (acl2::reverse x)))
+           (all-pcp (acl2::reverse x)))
   :hints (("Goal" ; :induct t
            :in-theory (enable acl2::reverse))))
 
 (defthm pcp-of-car
-  (implies (acl2::all-pcp pcs)
+  (implies (all-pcp pcs)
            (equal (pcp (car pcs))
                   (consp pcs)))
-  :hints (("Goal" :in-theory (enable acl2::all-pcp))))
+  :hints (("Goal" :in-theory (enable all-pcp))))
 
 (defthm all-pcp-of-cdr
-  (implies (acl2::all-pcp pcs)
-           (acl2::all-pcp (cdr pcs)))
-  :hints (("Goal" :in-theory (enable acl2::all-pcp))))
+  (implies (all-pcp pcs)
+           (all-pcp (cdr pcs)))
+  :hints (("Goal" :in-theory (enable all-pcp))))
 
 (defund valid-pcp (pc valid-pcs)
   (declare (xargs :guard (and; (pcp pc)
                               (true-listp valid-pcs)
-                              (acl2::all-pcp valid-pcs))
+                              (all-pcp valid-pcs))
                  :guard-hints (("Goal" :in-theory (enable pcp)))))
   (and (pcp pc) ;drop?
        (member pc valid-pcs)))
@@ -577,7 +578,7 @@
 (defund jvm-instruction-okayp (inst pc valid-pcs)
   (declare (xargs :guard (and (pcp pc)
                               (true-listp valid-pcs)
-                              (acl2::all-pcp valid-pcs))
+                              (all-pcp valid-pcs))
                   :guard-hints (("Goal" :in-theory (e/d (instructionp len-of-invoke-instruction)
                                                         ( ;memberp-of-cons
                                                          ))))))

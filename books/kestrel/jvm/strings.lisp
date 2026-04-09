@@ -18,19 +18,19 @@
 (include-book "kestrel/bv/bvchop" :dir :system)
 
 ;todo: change to JVM package
-(defun acl2::all-java-charp (x)
+(defun all-java-charp (x)
   (declare (xargs :guard t))
   (if (atom x)
       t
       (and (acl2::java-charp (first x))
-           (acl2::all-java-charp (rest x)))))
+           (all-java-charp (rest x)))))
 
 ;todo use defmap
 (defun code-char-list (characters)
   (declare (xargs :guard (and (true-listp characters)
-                              (acl2::all-java-charp characters))
-                  :guard-hints (("Goal" :expand ((ACL2::ALL-JAVA-CHARP CHARACTERS))
-                                 :in-theory (enable acl2::all-java-charp ACL2::JAVA-CHARP UNSIGNED-BYTE-P)))
+                              (all-java-charp characters))
+                  :guard-hints (("Goal" :expand ((ALL-JAVA-CHARP CHARACTERS))
+                                 :in-theory (enable all-java-charp ACL2::JAVA-CHARP UNSIGNED-BYTE-P)))
                   ))
   (if (endp characters)
       nil
@@ -39,7 +39,7 @@
 
 (defun char-list-to-string (java-chars)
   (declare (xargs :guard (and (true-listp java-chars)
-                              (acl2::all-java-charp java-chars))))
+                              (all-java-charp java-chars))))
   (let ((acl2-characters (code-char-list java-chars)))
     (coerce acl2-characters 'string)))
 

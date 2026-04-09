@@ -3175,7 +3175,7 @@
   (declare (xargs :mode :program :measure (nfix (+ 1 local-num)) :stobjs state))
   (if (not (natp local-num))
       (mv (erp-nil) next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state)
-    (b* ((local-name-and-type (lookup-in-local-variable-table local-num pc local-variable-table)) ;might be nil
+    (b* ((local-name-and-type (jvm::lookup-in-local-variable-table local-num pc local-variable-table)) ;might be nil
          (local-name (first local-name-and-type))
          (local-type (second local-name-and-type))
          ;; Decide whether to exclude the local (TODO: Think about soundness: How to ensure the local is not use after the loop?)

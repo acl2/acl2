@@ -3765,18 +3765,18 @@
          (s (move-past-invoke-instruction th s)))
     s))
 
-(defun acl2::map-make-method-designator (triples)
+(defun map-make-method-designator (triples)
   (if (endp triples)
       nil
     (let ((triple (first triples)))
       (cons (make-method-designator (first triple)
                                     (second triple)
                                     (third triple))
-            (acl2::map-make-method-designator (rest triples))))))
+            (map-make-method-designator (rest triples))))))
 
 ;; todo: do we actually record these?
 (defconst *native-api-methods-to-record-and-skip*
-  (acl2::map-make-method-designator
+  (map-make-method-designator
    '(("java.lang.Object" "registerNatives" "()V")
      ("java.lang.Class" "registerNatives" "()V"))))
 
@@ -3796,12 +3796,12 @@
                     (let ((possible-method-info (acl2::lookup-equal (cons method-name method-descriptor) methods)))
                       possible-method-info))))))))
 
-(defun acl2::unknown-stack-value-defattach ()
+(defun unknown-stack-value-defattach ()
   (declare (xargs :guard t))
   :unknown-stack-value)
 
 ;TODO: would be better to have this take a counter or state, so that we can't prove that different unknown values are equal:
-(defstub acl2::unknown-stack-value () => *)
+(defstub unknown-stack-value () => *)
 ;making the executable:
 ;(defun unknown-stack-value () :unknown-stack-value) ;fixme think about this..
 
@@ -3835,9 +3835,9 @@
                                   (if (or (member-eq return-type *one-slot-types*)
                                           (class-namep return-type)
                                           (eq :array (car return-type)))
-                                      (push-operand (acl2::unknown-stack-value) stack)
+                                      (push-operand (unknown-stack-value) stack)
                                     (if (member-eq return-type *two-slot-types*)
-                                        (push-long (acl2::unknown-stack-value) stack)
+                                        (push-long (unknown-stack-value) stack)
                                       (er hard 'skip-invokestatic-instruction "Unknown return type: ~x0." return-type)))))))
     s))
 
