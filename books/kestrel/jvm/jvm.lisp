@@ -461,7 +461,7 @@
        (heapref-tablep           (nth 3 s))
        (monitor-tablep           (nth 4 s))
        (static-field-mapp        (nth 5 s))
-       ;(all-class-namesp         (nth 6 s)) ;;fixme put back
+       (all-class-namesp         (nth 6 s))
        (intern-tablep (nth 7 s))
        (intern-table-okp (nth 7 s) (nth 1 s))
        ))
@@ -516,7 +516,7 @@
              (heapref-tablep           (heapref-table s))
              (monitor-tablep           (monitor-table s))
              (static-field-mapp        (static-field-map s))
-;(all-class-namesp         (initialized-classes s)) ;;fixme put back
+             (all-class-namesp         (initialized-classes s))
              (intern-tablep            (intern-table s))
              (intern-table-okp (intern-table s) (heap s))
              ))
@@ -577,7 +577,7 @@
               (heapref-tablep hrt)
               (monitor-tablep monitor-table)
               (static-field-mapp sfm)
-              ;(all-class-namesp ic) ;fixme put back
+              (all-class-namesp ic)
               (intern-tablep intern-table)
               (intern-table-okp intern-table heap)))
   :hints (("Goal" :in-theory (enable jvm-statep make-state))))
@@ -635,18 +635,14 @@
                 (lookup-equal class-name (heapref-table s)))
            (addressp (lookup-equal class-name (heapref-table s)))))
 
-;fixme put back
-;; (defthm all-class-namesp-of-initialized-classes
-;;   (implies (jvm-statep s)
-;;            (all-class-namesp (initialized-classes s)))
-;;   :hints (("Goal" :in-theory (enable jvm-statep initialized-classes))))
+(defthm all-class-namesp-of-initialized-classes
+  (implies (jvm-statep s)
+           (all-class-namesp (initialized-classes s)))
+  :hints (("Goal" :in-theory (enable jvm-statep initialized-classes))))
 
 (defthm alistp-when-thread-tablep-special-case
   (implies (thread-tablep (thread-table s))
            (alistp (thread-table s))))
-
-(defund well-formed-initialized-class-names (obj)
-  (string-listp obj))
 
 ;to be left enabled.  fixme drop?
 (defun call-stack (th s)
@@ -689,9 +685,6 @@
  (local (defun error-state (msg s)
           (declare (ignore msg s))
           (empty-state (empty-class-table))))
-
- (defthm well-formed-initialized-class-names-of-error-state
-   (well-formed-initialized-class-names (initialized-classes (error-state msg s))))
 
  (defthm jvm-statep-of-error-state
    (implies (jvm-statep s)
@@ -2651,7 +2644,8 @@
                 ;; (bound-in-class-tablep class-to-initialize (class-table s)) ; all-framep-change
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th)
-;              (not (memberp class-name (initialized-classes s)))
+;              (not (memberp class-name (initialized-clases s)))
+                (all-class-namesp initialized-classes)
                 )
            (jvm-statep (invoke-static-initializer-for-class initialized-classes th s class-to-initialize)))
   :hints (("Goal" :in-theory (enable invoke-static-initializer-for-class))))
