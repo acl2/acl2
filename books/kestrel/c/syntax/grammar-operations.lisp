@@ -112,7 +112,7 @@
                               (rep abnf::repetitionp)
                               (dialect c::dialectp))
   :returns (yes/no booleanp)
-  :short "Check if a list of ASTs matches a grammar repetition."
+  :short "Check if a list of CSTs matches a grammar repetition."
   (and (abnf::tree-list-terminatedp trees)
        (abnf::tree-list-match-repetition-p trees rep (grammar-for dialect))))
 
@@ -120,7 +120,7 @@
 
 (defmacro+ cst-list-rep-matchp (trees rep dialect)
   (declare (xargs :guard (stringp rep)))
-  :short "Check if a list of ASTs matches a textual grammar repetition."
+  :short "Check if a list of CSTs matches a textual grammar repetition."
   (b* (((mv err rep rest) (abnf::parse-repetition (acl2::string=>nats rep)))
        ((when err) (er hard 'cst-list-rep-matchp "~@0" err))
        ((when (consp rest))
