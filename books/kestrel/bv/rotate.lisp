@@ -1,7 +1,7 @@
 ; Bit-vector rotations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,7 +29,12 @@
 
 ;ffixme eventually get rid of the 32 one...
 
+;; Tighten guard?
 (defun leftrotate32alt (amt val)
+  (declare (xargs :guard (and (natp amt)
+                              (integerp val))
+                  :split-types t)
+           (type integer amt val))
   (let* ((amt (bvchop 5 amt) ;(mod amt 32)
               ))
     (bvcat (- 32 amt)
@@ -138,7 +143,12 @@
            :in-theory (enable leftrotate32alt leftrotate32 leftrotate bvif))))
 
 ;this one will be opened up
+;; Tighten guard?
 (defun rightrotate32alt (amt val)
+  (declare (xargs :guard (and (natp amt)
+                              (integerp val))
+                  :split-types t)
+           (type integer amt val))
   (let* ((amt (bvchop 5 amt)))
         (bvcat amt (slice (+ -1 amt) 0 val)
                (- 32 amt)
