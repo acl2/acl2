@@ -1216,6 +1216,9 @@
                           (nbalist ,(acl2::hq (cdr nbalist)))
                           (id ,(acl2::hq witness))))))))))
   :rule-classes :definition)
+  
+
+
 
 (encapsulate nil
   (local (defthm natp-car-nth-of-nbalist
@@ -1458,3 +1461,224 @@
     :hints(("Goal" :in-theory (enable nth nbalist-to-cube)
             :induct (nth-of-nbalist-ind n nbalist)
             :expand ((nbalist-to-cube nbalist))))))
+
+
+(local (defthm bitp-nbalist-lookup
+         (implies (and (nbalistp x)
+                       (< (nfix n) (len x))
+                       (not (equal (nbalist-lookup (car (nth n x)) x) 1)))
+                  (equal (equal (nbalist-lookup (car (nth n x)) x) 0) t))
+         :hints(("Goal" :in-theory (enable nbalist-lookup
+                                           nth)))))
+
+(local (defthm nbalist-lookup-exists
+         (implies (and (nbalistp x)
+                       (< (nfix n) (len x)))
+                  (nbalist-boundp (car (nth n x)) x))
+         :hints(("Goal" :in-theory (enable nbalist-boundp
+                                           nth)))))
+
+(local (defthm nbalist-lookup-exists2
+         (implies (and ;; (nbalistp x)
+                       (< (nfix n) (len (nbalist-fix x))))
+                  (nbalist-boundp (car (nth n (nbalist-fix x))) x))
+         :hints(("Goal" :use ((:instance nbalist-lookup-exists
+                               (x (nbalist-fix x))))
+                 :in-theory (disable nbalist-lookup-exists)))))
+
+(local (defthm nbalist-key-natp
+         (implies (and (nbalistp x)
+                       (< (nfix n) (len x)))
+                  (natp (car (nth n x))))
+         :hints(("Goal" :in-theory (enable nbalistp
+                                           nth)))))
+
+(local (defthm nbalist-lookup-in-bounds
+         (implies (and (nbalistp x)
+                       (< (nfix n) (len x))
+                       (bounded-pathcond-p x m)
+                       (natp m))
+                  (< (car (nth n x)) m))
+         :hints(("Goal" :use ((:instance bounded-pathcond-p-necc
+                               (nbalist x) (num-fanins m) (id (car (nth n x)))))
+                 :in-theory (disable bounded-pathcond-p-necc)))))
+
+
+(define aignet-pathcond-eval-exec-badguy ((n natp)
+                                          aignet-pathcond
+                                          bitarr)
+  :measure (nfix (- (aignet-pathcond-len aignet-pathcond) (nfix n)))
+  :guard (and (<= n (aignet-pathcond-len aignet-pathcond))
+              (aignet-pathcond-boundedp aignet-pathcond (bits-length bitarr)))
+  (if (mbe :logic (zp (- (aignet-pathcond-len aignet-pathcond) (nfix n)))
+           :exec (int= n (aignet-pathcond-len aignet-pathcond)))
+      nil
+    (if (b* ((id (aignet-pathcond-nthkey n aignet-pathcond))
+             (pc-val (aignet-pathcond-lookup id aignet-pathcond))
+             (eval (get-bit id bitarr)))
+          (eql (the bit eval) (the bit pc-val)))
+        (aignet-pathcond-eval-exec-badguy (1+ (lnfix n)) aignet-pathcond bitarr)
+      (lnfix n))))
+
+
+(define aignet-pathcond-eval-exec-aux ((n natp)
+                                       aignet-pathcond
+                                       bitarr)
+  :measure (nfix (- (aignet-pathcond-len aignet-pathcond) (nfix n)))
+  :guard (and (<= n (aignet-pathcond-len aignet-pathcond))
+              (aignet-pathcond-boundedp aignet-pathcond (bits-length bitarr)))
+  :returns (ev)
+  (if (mbe :logic (zp (- (aignet-pathcond-len aignet-pathcond) (nfix n)))
+           :exec (int= n (aignet-pathcond-len aignet-pathcond)))
+      t
+    (and (b* ((id (aignet-pathcond-nthkey n aignet-pathcond))
+              (pc-val (aignet-pathcond-lookup id aignet-pathcond))
+              (eval (get-bit id bitarr)))
+           (eql (the bit eval) (the bit pc-val)))
+         (aignet-pathcond-eval-exec-aux (1+ (lnfix n)) aignet-pathcond bitarr)))
+  ///
+  (local (in-theory (enable aignet-pathcond-eval-exec-badguy)))
+
+  (defretd <fn>-by-badguy
+    (implies (b* ((index (aignet-pathcond-eval-exec-badguy n aignet-pathcond bitarr)))
+               (not (and (integerp index)
+                         (<= (nfix n) index)
+                         (< index (aignet-pathcond-len aignet-pathcond))
+                         (let* ((id (aignet-pathcond-nthkey index aignet-pathcond))
+                                (pc-val (aignet-pathcond-lookup id aignet-pathcond))
+                                (eval (get-bit id bitarr)))
+                           (not (equal pc-val eval))))))
+             ev))
+
+
+  (defretd <fn>-implies
+    (implies (and ev
+                  (integerp index)
+                  (<= (nfix n) index)
+                  (< index (aignet-pathcond-len aignet-pathcond)))
+             (let* ((id (aignet-pathcond-nthkey index aignet-pathcond))
+                    (pc-val (aignet-pathcond-lookup id aignet-pathcond))
+                    (eval (get-bit id bitarr)))
+               (equal pc-val eval)))))
+
+(define nbalist-id-index ((id natp)
+                          (x nbalistp))
+  (if (atom x)
+      0
+    (if (mbt (and (consp (car x))
+                  (not (hons-assoc-equal (nfix (caar x)) (nbalist-fix (cdr x))))
+                  ;; (natp (caar x))
+                  (not (and (zp (caar x))
+                            (equal (bfix (cdar x)) 0)))))
+        (if (equal (lnfix id) (lnfix (caar x)))
+            0
+          (+ 1 (nbalist-id-index id (cdr x))))
+      (nbalist-id-index id (cdr x))))
+  ///
+  (fty::deffixequiv nbalist-id-index
+    :hints(("Goal" :in-theory (enable nbalist-fix))))
+  
+  (defthm car-nth-of-nbalist-id-index
+    (implies (nbalist-boundp id x)
+             (equal (car (nth (nbalist-id-index id x) (nbalist-fix x)))
+                    (nfix id)))
+    :hints(("Goal" :in-theory (enable nbalist-boundp nbalist-fix nth))))
+
+  (defthm nbalist-id-index-in-bounds
+    (implies (nbalist-boundp id x)
+             (< (nbalist-id-index id x) (len (nbalist-fix x))))
+    :hints(("Goal" :in-theory (enable nbalist-boundp nbalist-fix)))
+    :rule-classes :linear))
+    
+        
+(include-book "centaur/aignet/eval" :dir :system)
+
+(define aignet-pathcond-eval-exec (aignet-pathcond
+                                   bitarr)
+  :guard (aignet-pathcond-boundedp aignet-pathcond (bits-length bitarr))
+  :returns (ev)
+  (aignet-pathcond-eval-exec-aux 0 aignet-pathcond bitarr)
+  ///
+  (defret <fn>-by-badguy
+    (implies (b* ((index (aignet-pathcond-eval-exec-badguy 0 aignet-pathcond bitarr)))
+               (not (and (natp index)
+                         (< index (aignet-pathcond-len aignet-pathcond))
+                         (let* ((id (aignet-pathcond-nthkey index aignet-pathcond))
+                                (pc-val (aignet-pathcond-lookup id aignet-pathcond))
+                                (eval (get-bit id bitarr)))
+                           (not (equal pc-val eval))))))
+             ev)
+    :hints (("goal" :use ((:instance aignet-pathcond-eval-exec-aux-by-badguy
+                           (n 0))))))
+
+  (defretd <fn>-implies
+    (implies (and ev
+                  (natp index)
+                  (< index (aignet-pathcond-len aignet-pathcond)))
+             (let* ((id (aignet-pathcond-nthkey index aignet-pathcond))
+                    (pc-val (aignet-pathcond-lookup id aignet-pathcond))
+                    (eval (get-bit id bitarr)))
+               (equal pc-val eval)))
+    :hints (("goal" :use ((:instance aignet-pathcond-eval-exec-aux-implies
+                           (n 0))))))
+
+  (local (in-theory (disable aignet-pathcond-eval-exec)))
+
+  (defretd <fn>-by-badguy-id
+    (implies (b* ((id (aignet-pathcond-nthkey
+                       (aignet-pathcond-eval-exec-badguy 0 aignet-pathcond bitarr)
+                       aignet-pathcond)))
+               (not (and (aignet-pathcond-lookup id aignet-pathcond)
+                         (let* ((pc-val (aignet-pathcond-lookup id aignet-pathcond))
+                                (eval (get-bit id bitarr)))
+                           (not (equal pc-val eval))))))
+             ev)
+    :hints (("goal" :use <fn>-by-badguy)))
+
+  (defretd <fn>-implies-id
+    (implies (and ev
+                  (aignet-pathcond-lookup id aignet-pathcond))
+             (let* ((pc-val (aignet-pathcond-lookup id aignet-pathcond))
+                    (eval (get-bit id bitarr)))
+               (equal pc-val eval)))
+    :hints (("goal" :use ((:instance <fn>-implies
+                           (index (nbalist-id-index id aignet-pathcond)))))))
+
+  ;;
+  (local (defthm aignet-pathcond-eval-in-terms-of-eval-exec-=>
+           (implies (and (aignet-pathcond-eval-exec aignet-pathcond (aignet-record-vals vals invals regvals aignet))
+                         (aignet-pathcond-boundedp aignet-pathcond (num-fanins aignet)))
+                    (aignet-pathcond-eval aignet aignet-pathcond invals regvals))
+           :hints (("goal" :expand ((:with aignet-pathcond-eval
+                                     (aignet-pathcond-eval aignet aignet-pathcond invals regvals)))
+                    :use ((:instance aignet-pathcond-eval-exec-implies-id
+                           (bitarr (aignet-record-vals vals invals regvals aignet))
+                           (id (aignet-pathcond-eval-witness aignet aignet-pathcond invals regvals)))
+                          (:instance bounded-pathcond-p-necc
+                           (id (aignet-pathcond-eval-witness aignet aignet-pathcond invals regvals))
+                           (nbalist aignet-pathcond)
+                           (num-fanins (num-fanins aignet))))))))
+
+  (local (defthm aignet-pathcond-eval-in-terms-of-eval-exec-<=
+           (implies (and (aignet-pathcond-eval aignet aignet-pathcond invals regvals)
+                         (aignet-pathcond-boundedp aignet-pathcond (num-fanins aignet)))
+                    (aignet-pathcond-eval-exec aignet-pathcond (aignet-record-vals vals invals regvals aignet)))
+           :hints (("goal"
+                    :use ((:instance aignet-pathcond-eval-exec-by-badguy-id
+                           (bitarr (aignet-record-vals vals invals regvals aignet)))
+                          (:instance aignet-pathcond-eval-necc
+                           (nbalist aignet-pathcond)
+                           (id (aignet-pathcond-nthkey
+                                (aignet-pathcond-eval-exec-badguy 0 aignet-pathcond (aignet-record-vals vals invals regvals aignet))
+                                aignet-pathcond)))
+                          (:instance bounded-pathcond-p-necc
+                           (id (aignet-pathcond-nthkey
+                                (aignet-pathcond-eval-exec-badguy 0 aignet-pathcond (aignet-record-vals vals invals regvals aignet))
+                                aignet-pathcond))
+                           (nbalist aignet-pathcond)
+                           (num-fanins (num-fanins aignet))))))))
+  (defret aignet-pathcond-eval-in-terms-of-eval-exec
+    (implies (aignet-pathcond-boundedp aignet-pathcond (num-fanins aignet))
+             (iff (aignet-pathcond-eval-exec aignet-pathcond (aignet-record-vals vals invals regvals aignet))
+                  (aignet-pathcond-eval aignet aignet-pathcond invals regvals)))
+    ))

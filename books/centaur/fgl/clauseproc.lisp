@@ -33,7 +33,7 @@
 (include-book "interp")
 (include-book "ctrex-utils")
 (include-book "casesplit")
-
+(local (include-book "std/lists/resize-list" :dir :system))
 (local (in-theory (disable pseudo-termp pseudo-term-listp)))
 ;; (include-book "primitives")
 
@@ -104,13 +104,79 @@
   (mbe :logic (list-fix x)
        :exec (if (true-listp x) x (list-fix x))))
 
+
+
+(define interp-st-initialize-reference-ctrex (reference-ctrex interp-st)
+  ;; Swaps the given reference-ctrex with the one in the interp-st.
+  :returns (mv new-reference-ctrex new-interp-st)
+  (stobj-let ((reference-ctrex2 (interp-st->reference-ctrex interp-st)))
+             (reference-ctrex reference-ctrex2)
+             (swap-stobjs reference-ctrex reference-ctrex2)
+             (mv reference-ctrex interp-st))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :reference-ctrex))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st)))))
+
+(define interp-st-store-reference-ctrex ((config fgl-config-p)
+                                         reference-ctrex
+                                         interp-st)
+  ;; Based on config.reference-ctrex-action, populates the given reference-ctrex with either:
+  ;; - a new reference-ctrex constructed from the interp-st's latest counterexample,
+  ;; - the interp-st's current reference-ctrex, with initialized-ins/initialized-fanins reset, or
+  ;; - nothing.
+  :returns (mv new-reference-ctrex new-interp-st)
+  (b* (((fgl-config config)))
+    (case config.reference-ctrex-action
+      (:set
+       (stobj-let ((env$2 (interp-st->ctrex-env interp-st))
+                   (bvar-db2 (interp-st->bvar-db interp-st))
+                   (logicman (interp-st->logicman interp-st)))
+                  (env$2 bvar-db2 reference-ctrex)
+                  (stobj-let ((env$ (reference-ctrex->env reference-ctrex))
+                              (bitarr (reference-ctrex->invals reference-ctrex))
+                              (bvar-db (reference-ctrex->bvar-db reference-ctrex)))
+                             (env$ env$2 bvar-db bvar-db2 bitarr)
+                             (b* (((mv env$ env$2) (swap-stobjs env$ env$2))
+                                  ((mv bvar-db bvar-db2) (swap-stobjs bvar-db bvar-db2)))
+                               ;; Copy the input values from the env values
+                               ;; into the reference-ctrex->invals bitarr
+                               (stobj-let ((bitarr2 (env$->bitarr env$)))
+                                          (bitarr bitarr2)
+                                          (stobj-let ((aignet (logicman->aignet logicman)))
+                                                     (bitarr bitarr2)
+                                                     (b* ((bitarr (resize-bits (aignet::num-ins aignet) bitarr))
+                                                          (bitarr2 (resize-bits (aignet::num-fanins aignet) bitarr2))
+                                                          (bitarr
+                                                           (aignet::aignet-vals->invals
+                                                            bitarr bitarr2 aignet)))
+                                                       (mv bitarr bitarr2))
+                                                     (mv bitarr bitarr2))
+                                          (mv env$ env$2 bvar-db bvar-db2 bitarr)))
+                             (mv env$2 bvar-db2 reference-ctrex))
+                  (mv reference-ctrex interp-st)))
+      (:preserve
+       (b* (((mv reference-ctrex interp-st) (interp-st-initialize-reference-ctrex reference-ctrex interp-st))
+            (reference-ctrex (update-reference-ctrex->initialized-ins 0 reference-ctrex))
+            (reference-ctrex (update-reference-ctrex->initialized-fanins 0 reference-ctrex)))
+         (mv reference-ctrex interp-st)))
+      (t (mv reference-ctrex interp-st)))))
+             
+
 (define initialize-interp-st ((config fgl-config-p)
                               (interp-st)
                               state)
   :returns (mv new-interp-st new-state)
   :verify-guards nil
-  (b* ((interp-st (interp-st-init interp-st))
-       ((fgl-config config))
+  (b* (((fgl-config config))
+       ((acl2::local-stobjs reference-ctrex)
+        (mv reference-ctrex interp-st state))
+       ((mv reference-ctrex interp-st)
+        (interp-st-store-reference-ctrex config reference-ctrex interp-st))
+       (interp-st (interp-st-init interp-st))
+       ((mv reference-ctrex interp-st)
+        (interp-st-initialize-reference-ctrex reference-ctrex interp-st))
        (interp-st (update-interp-st->reclimit config.reclimit interp-st))
        (interp-st (update-interp-st->stacklimit config.stacklimit interp-st))
        (interp-st (update-interp-st->steplimit config.steplimit interp-st))
@@ -152,7 +218,7 @@
     (stobj-let ((logicman (interp-st->logicman interp-st)))
                (logicman)
                (update-logicman->mode (bfrmode :aignet) logicman)
-               (mv interp-st state)))
+               (mv reference-ctrex interp-st state)))
   ///
   (local (defthm interp-st->stack-of-create-interp-st
            (equal (interp-st->stack (create-interp-st))

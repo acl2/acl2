@@ -319,7 +319,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "AAA" (OP :OP #x37 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-AAA)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x37 :MODE :O64)
@@ -355,7 +356,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "AAS" (OP :OP #x3F :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-AAS)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x3F :MODE :O64)
