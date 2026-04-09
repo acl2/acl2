@@ -142,7 +142,7 @@
   (let* ((amt (bvchop 5 amt)))
         (bvcat amt (slice (+ -1 amt) 0 val)
                (- 32 amt)
-               (slice 32 amt val))))
+               (slice 31 amt val))))
 
 ;yuck!?
 (defthmd rightrotate32-cases

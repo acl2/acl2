@@ -805,8 +805,7 @@
 ;bozo gen!
 (defthm logext-equal-0-rewrite-32
   (equal (equal 0 (logext 32 x))
-         (equal 0 (bvchop 32 x)))
-  :hints (("Goal" :in-theory (enable))))
+         (equal 0 (bvchop 32 x))))
 
 ;gen
 (defthm logext-when-equal-of-getbit

@@ -151,7 +151,7 @@
 ;;            :use (:instance logcount-bound (n (+ -1 (expt 2 (integer-length size)))))
 ;;            :in-theory (e/d (unsigned-byte-p) (logcount-bound)))))
 
-;;Disabled because we have unsigned-byte-p-of-bvcountg-gen.
+;;Disabled because we have unsigned-byte-p-of-bvcount-gen.
 (defthmd unsigned-byte-p-of-bvcount
   (implies (natp size)
            (unsigned-byte-p (integer-length size) (bvcount size x)))
