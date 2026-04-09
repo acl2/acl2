@@ -15,6 +15,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Disambiguator tests for single translation units.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro test-dimb (input &key dialect cond)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
   ;; DIALECT indicates the C dialect.
