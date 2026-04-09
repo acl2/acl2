@@ -181,4 +181,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define cst-%x21-23-nat ((cst abnf::treep) (dialect c::dialectp))
+  :guard (cst-matchp cst "%x21-23" dialect)
+  :returns (nat natp)
+  :short "Return the natural number at the leaf of
+          a CST that matches the indicated range."
+  (declare (ignore dialect))
+  (lnfix (nth 0 (abnf::tree-leafterm->get cst)))
+  :guard-hints (("Goal" :in-theory (enable cst-matchp$
+                                           abnf::tree-match-element-p
+                                           abnf::tree-match-num-val-p)))
+
+  ///
+
+  (defrule cst-%x21-23-nat-bounds
+    (implies (cst-matchp cst "%x21-23" dialect)
+             (and (<= 33 (cst-%x21-23-nat cst dialect))
+                  (<= (cst-%x21-23-nat cst dialect) 35)))
+    :rule-classes :linear
+    :enable (cst-matchp$
+             abnf::tree-match-element-p
+             abnf::tree-match-num-val-p
+             nfix
+             nth)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: add more operations
