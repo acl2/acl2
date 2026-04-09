@@ -10,9 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
-
-(include-book "portcullis")
+(include-book "abstract-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,4 +60,4 @@
    (xdoc::p
     "This ACL2 library is work in progress towards building
      formalizations and tools for Remora."))
-  :order-subtopics ())
+  :order-subtopics (abstract-syntax))
