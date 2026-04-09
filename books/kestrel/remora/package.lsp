@@ -17,5 +17,17 @@
 
 (defpkg "REMORA" (append
                   (set-difference-eq *std-pkg-symbols*
-                                     '())
-                  '(defxdoc+)))
+                                     '(atom
+                                       atom-listp
+                                       function
+                                       functionp
+                                       sort
+                                       termp
+                                       type
+                                       typep))
+                  '(bool
+                    defxdoc+
+                    int
+                    nat
+                    nat-list
+                    str::string-list)))
