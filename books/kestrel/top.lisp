@@ -53,6 +53,7 @@
 (include-book "lists-light/top")
 (include-book "number-theory/top")
 (include-book "prime-fields/top")
+(include-book "remora/top")
 (include-book "risc-v/top")
 (include-book "simpl-imp/top")
 (include-book "soft/top")
