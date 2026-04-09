@@ -1,7 +1,7 @@
 ; Creating ACL2 events to represent a Java classs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -54,7 +54,7 @@
 ;;   (declare (xargs :guard (and ;(stringp class-name)
 ;;                               (raw-parsed-classp raw-parsed-class))))
 ;;   (b* (((mv class-info field-defconsts) (make-class-info-from-raw-parsed-class raw-parsed-class))
-;;        (class-name (acl2::lookup-eq :this_class raw-parsed-class)))
+;;        (class-name (lookup-eq :this_class raw-parsed-class)))
 ;;     (if nil ;(not (jvm::class-infop class-info class-name)) ;todo: drop this check
 ;;         ;; Should not happen:
 ;;         nil ;(er hard? 'parsed-class-events "Error: Invalid class-info created for ~x0: ~X12" class-name class-info nil)

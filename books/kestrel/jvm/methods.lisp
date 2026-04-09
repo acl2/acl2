@@ -287,7 +287,7 @@
   (declare (xargs :guard t))
   (and (alistp method-info)
        (acl2::subsetp-eq (strip-cars method-info) *method-info-keys*)
-       (let ((access-flags (acl2::lookup-eq :access-flags method-info)))
+       (let ((access-flags (lookup-eq :access-flags method-info)))
          (and (acl2::keyword-listp access-flags)
               (acl2::no-duplicatesp access-flags)
               (acl2::subsetp-eq access-flags '(:acc_public
@@ -305,16 +305,16 @@
               ;; The program is a well-formed program iff the method is not native or abstract (in either case, it would have no program).
               (if (and (not (member-eq :acc_native access-flags))
                        (not (member-eq :acc_abstract access-flags)))
-                  (method-programp (acl2::lookup-eq :program method-info))
-                (eq :no-program  (acl2::lookup-eq :program method-info)))
-              (return-typep (acl2::lookup-eq :return-type method-info))
-              (true-listp (acl2::lookup-eq :parameter-types method-info))
-              (all-typep (acl2::lookup-eq :parameter-types method-info))
-              (let ((max-locals (acl2::lookup-eq :max-locals method-info)))
+                  (method-programp (lookup-eq :program method-info))
+                (eq :no-program  (lookup-eq :program method-info)))
+              (return-typep (lookup-eq :return-type method-info))
+              (true-listp (lookup-eq :parameter-types method-info))
+              (all-typep (lookup-eq :parameter-types method-info))
+              (let ((max-locals (lookup-eq :max-locals method-info)))
                 (or (not max-locals) (natp max-locals)))
-              (local-variable-tablep (acl2::lookup-equal :local-variable-table method-info))
+              (local-variable-tablep (lookup-equal :local-variable-table method-info))
               ;; fixme something about the line-number-table
-              (exception-tablep (acl2::lookup-eq :exception-table method-info))))))
+              (exception-tablep (lookup-eq :exception-table method-info))))))
 
 ;nil should not be a method-info, so that we can use it to indicate failure (failure to look up a method's info)
 (defthm not-method-infop-of-nil
@@ -328,7 +328,7 @@
 
 (defthm method-infop-forward-to-true-listp-of-lookup-eq
   (implies (method-infop method-info)
-           (true-listp (acl2::lookup-equal :access-flags method-info)))
+           (true-listp (lookup-equal :access-flags method-info)))
   :rule-classes ((:forward-chaining))
   :hints (("Goal" :in-theory (enable method-infop))))
 
@@ -340,12 +340,12 @@
 
 (defthm exception-tablep-of-lookup-equal-of-exception-table
   (implies (method-infop method-info)
-           (exception-tablep (acl2::lookup-equal :exception-table method-info)))
+           (exception-tablep (lookup-equal :exception-table method-info)))
   :hints (("Goal" :in-theory (enable method-infop))))
 
 (defund method-access-flags (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::lookup-eq :access-flags method-info))
+  (lookup-eq :access-flags method-info))
 
 (defthm true-listp-of-method-access-flags-forward
   (implies (method-infop method-info)
@@ -385,7 +385,7 @@
 
 (defun method-program (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::lookup-eq :program method-info))
+  (lookup-eq :program method-info))
 
 (defthm method-program-of-acons
   (equal (method-program (acons key val alist))
@@ -396,7 +396,7 @@
 
 (defun exception-table (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::lookup-eq :exception-table method-info))
+  (lookup-eq :exception-table method-info))
 
 (defthm method-programp-of-method-program
   (implies (and (method-infop method-info)
@@ -447,15 +447,15 @@
 
 (defthm true-listp-of-lookup-equal-of-parameter-type-when-method-infop
   (implies (method-infop method-info)
-           (true-listp (acl2::lookup-equal :parameter-types method-info)))
+           (true-listp (lookup-equal :parameter-types method-info)))
   :hints (("Goal" :in-theory (enable method-infop))))
 
 (defthm all-typep-of-lookup-equal-of-parameter-type-when-method-infop
   (implies (method-infop method-info)
-           (all-typep (acl2::lookup-equal :parameter-types method-info)))
+           (all-typep (lookup-equal :parameter-types method-info)))
   :hints (("Goal" :in-theory (enable method-infop))))
 
 (defthm local-variable-tablep-of-lookup-equal-of-parameter-type-when-method-infop
   (implies (method-infop method-info)
-           (local-variable-tablep (acl2::lookup-equal :local-variable-table method-info)))
+           (local-variable-tablep (lookup-equal :local-variable-table method-info)))
   :hints (("Goal" :in-theory (enable method-infop))))

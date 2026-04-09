@@ -167,14 +167,14 @@
 (defund get-class-object (class-name heapref-table)
   (declare (xargs :guard (and (class-namep class-name)
                               (heapref-tablep heapref-table))))
-  (acl2::lookup-equal class-name heapref-table))
+  (lookup-equal class-name heapref-table))
 
 ;drop?
 (local
  (defthm addressp-of-lookup-equal-when-heapref-tablep
    (implies (and (heapref-tablep heapref-table)
-                 (acl2::lookup-equal class-name heapref-table))
-            (addressp (acl2::lookup-equal class-name heapref-table)))
+                 (lookup-equal class-name heapref-table))
+            (addressp (lookup-equal class-name heapref-table)))
    :hints (("Goal" :in-theory (enable heapref-tablep)))))
 
 (defthm addressp-of-get-classs-object
@@ -667,8 +667,8 @@
 ;drop?
 (defthm addressp-of-lookup-equal-of-heapref-table
   (implies (and (jvm-statep s)
-                (acl2::lookup-equal class-name (heapref-table s)))
-           (addressp (acl2::lookup-equal class-name (heapref-table s)))))
+                (lookup-equal class-name (heapref-table s)))
+           (addressp (lookup-equal class-name (heapref-table s)))))
 
 ;fixme put back
 ;; (defthm all-class-namesp-of-initialized-classes
@@ -1249,7 +1249,7 @@
   (if (endp class-names)
       (mv nil nil) ;; not found
     (let ((class-name (first class-names)))
-      (if (acl2::lookup-equal method-id (class-decl-methods (get-class-info class-name class-table)))
+      (if (lookup-equal method-id (class-decl-methods (get-class-info class-name class-table)))
           (mv t class-name)
         (resolve-method-step-2-aux method-id (rest class-names) class-table)))))
 
@@ -1617,7 +1617,7 @@
   (modify th s
           :pc (+ 2 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvsx 32 8 (farg1 inst)) ;do this bvsx during parsing?
+          :stack (push-operand (bvsx 32 8 (farg1 inst)) ;do this bvsx during parsing?
                        (stack (thread-top-frame th s)))))
 
 ; (SIPUSH value) - value is a 16-bit signed-byte (currently)
@@ -1625,7 +1625,7 @@
   (modify th s
           :pc (+ 3 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvsx 32 16 (farg1 inst)) ;do this bvsx during parsing?
+          :stack (push-operand (bvsx 32 16 (farg1 inst)) ;do this bvsx during parsing?
                        (stack (thread-top-frame th s)))))
 
 ;; Loading and storing references
@@ -2037,17 +2037,17 @@
 ;; (defund byte-or-bit-fix-val (value type)
 ;;   (declare (type integer value))
 ;;   (if (equal type :boolean)
-;;       (acl2::bvchop 1 value)
-;;     (acl2::bvsx 32 8 value)))
+;;       (bvchop 1 value)
+;;     (bvsx 32 8 value)))
 
 ;; (defthm byte-or-bit-fix-val-when-type-is-boolean
 ;;   (equal (byte-or-bit-fix-val value :boolean)
-;;          (acl2::bvchop 1 value))
+;;          (bvchop 1 value))
 ;;   :hints (("Goal" :in-theory (enable byte-or-bit-fix-val))))
 
 ;; (defthm byte-or-bit-fix-val-when-type-is-byte
 ;;   (equal (byte-or-bit-fix-val value :byte)
-;;          (acl2::bvsx 32 8 value))
+;;          (bvsx 32 8 value))
 ;;   :hints (("Goal" :in-theory (enable byte-or-bit-fix-val))))
 
 ;; (defthm byte-or-bit-fix-val-of-0
@@ -2100,7 +2100,7 @@
                     :pc (+ 1 ;(inst-length inst)
                            (pc frame))
                     ;; The bvsx will do nothing if value is a boolean (0 or 1):
-                    :stack (push-operand (acl2::bvsx 32 8 (acl2::bv-array-read 8 len (decode-signed-non-neg index) contents))
+                    :stack (push-operand (bvsx 32 8 (acl2::bv-array-read 8 len (decode-signed-non-neg index) contents))
                                          (pop-operand (pop-operand stack))))))))))
 
 
@@ -2118,9 +2118,9 @@
 ;;              ;; must be either :byte or :boolean :
 ;;              (type (get-array-component-type (acl2::get-class arrayref (heap s))))
 ;;              (element (if (eq type :byte)
-;;                           (acl2::bvchop 8 value)
+;;                           (bvchop 8 value)
 ;;                         ;; boolean case:
-;;                         (acl2::bvchop 1 value)))
+;;                         (bvchop 1 value)))
 ;;              (index (decode-signed-non-neg index))
 ;;              (len (array-length arrayref (heap s)))
 ;;              (array-contents (acl2::bv-array-write (if (eq type :byte) 8 1)
@@ -2167,7 +2167,7 @@
                                                (acl2::bv-array-write 8
                                                                      len
                                                                      index ;; (decode-signed-non-neg index) currently a no-op
-                                                                     (acl2::bvchop 8 value)
+                                                                     (bvchop 8 value)
                                                                      (acl2::get-field arrayref (acl2::array-contents-pair) (heap s)))
                                                (heap s)))
               ;;index too big:
@@ -2198,7 +2198,7 @@
 (defun execute-CASTORE (th s)
   (let* ((frame (thread-top-frame th s))
          (stack (stack frame))
-         (value (acl2::bvchop 16 (top-operand stack))) ;could drop the bvchop
+         (value (bvchop 16 (top-operand stack))) ;could drop the bvchop
          (index (top-operand (pop-operand stack)))
          (arrayref (top-operand (pop-operand (pop-operand stack))))
          (heap (heap s))
@@ -2403,14 +2403,14 @@
  :hints (("Goal" :in-theory (enable assoc-EQUAL))))
 
 ;; (defthm lookup-EQUAL-of-car-of-car
-;;  (equal (ACL2::LOOKUP-EQUAL (CAR (CAR alist)) alist)
+;;  (equal (LOOKUP-EQUAL (CAR (CAR alist)) alist)
 ;;         (cdr (car alist)))
-;;  :hints (("Goal" :in-theory (enable ACL2::LOOKUP-EQUAL))))
+;;  :hints (("Goal" :in-theory (enable LOOKUP-EQUAL))))
 
 ;; (thm
 ;;  (implies (field-info-alistp field-info-alist)
 ;;           (implies (memberp field-id (get-field-ids field-info-alist))
-;;                    (acl2::lookup-equal field-id field-info-alist)))
+;;                    (lookup-equal field-id field-info-alist)))
 ;;  :hints (("Goal" :in-theory (enable get-field-ids field-info-alistp all-keys-bound-to-field-infosp memberp strip-cars))))
 
 ;the field-id must be in either the static-fields or the non-static-fields of the class
@@ -2420,14 +2420,14 @@
 ;;                  (class-tablep class-table)
 ;;                  (class-namep c)
 ;;                  (NOT (assoc-EQUAL FIELD-ID (class-decl-non-static-fields (get-class-info (lookup-field field-id c class-table ctr) CLASS-TABLE)))))
-;;             (ACL2::LOOKUP-EQUAL FIELD-ID (class-decl-static-fields (get-class-info (lookup-field field-id c class-table ctr) CLASS-TABLE))))
+;;             (LOOKUP-EQUAL FIELD-ID (class-decl-static-fields (get-class-info (lookup-field field-id c class-table ctr) CLASS-TABLE))))
 ;;    :flag lookup-field)
 ;;  (defthm LOOKUP-EQUAL-of-g-of-static-fields-of-lookup-field-lst
 ;;    (implies (and (lookup-field-lst field-id class-or-interface-names class-table ctr)
 ;;                  (class-tablep class-table)
 ;;                  (all-class-namesp class-or-interface-names)
 ;;                  (NOT (assoc-EQUAL FIELD-ID (class-decl-non-static-fields (get-class-info (lookup-field-lst field-id class-or-interface-names class-table ctr) CLASS-TABLE)))))
-;;             (ACL2::LOOKUP-EQUAL FIELD-ID (class-decl-static-fields (get-class-info (lookup-field-lst field-id class-or-interface-names class-table ctr) CLASS-TABLE))))
+;;             (LOOKUP-EQUAL FIELD-ID (class-decl-static-fields (get-class-info (lookup-field-lst field-id class-or-interface-names class-table ctr) CLASS-TABLE))))
 ;;    :flag lookup-field-lst)
 ;;  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
@@ -2441,8 +2441,8 @@
 (defthm field-infop-of-lookup-equal-gen
   (implies (and; (assoc-equal field-id field-info-alist)
                 (field-info-alistp field-info-alist))
-           (field-infop (acl2::lookup-equal field-id field-info-alist)))
-  :hints (("Goal" :in-theory (enable field-info-alistp acl2::lookup-equal assoc-equal))))
+           (field-infop (lookup-equal field-id field-info-alist)))
+  :hints (("Goal" :in-theory (enable field-info-alistp lookup-equal assoc-equal))))
 
 (defthm field-infop-of-cdr-of-assoc-equal-gen
   (implies (and; (assoc-equal field-id field-info-alist)
@@ -2462,7 +2462,7 @@
          )
     (if non-static-res
         (cdr non-static-res)
-      (acl2::lookup-equal field-id static-fields))))
+      (lookup-equal field-id static-fields))))
 
 ;Returns (mv erp class-name-of-resolved-field) where ERP, if non-nil, is a
 ;string (name of an exception to throw) or a cons (indicating an error) and the
@@ -2545,9 +2545,9 @@
                      ;; chars and booleans were truncated by putfield and do
                      ;; not need to be sign extended.
                      (value (if (eq :byte field-type)
-                                (acl2::bvsx 32 8 value)
+                                (bvsx 32 8 value)
                               (if (eq :short field-type)
-                                  (acl2::bvsx 32 16 value)
+                                  (bvsx 32 16 value)
                                 value))))
                 (modify th s
                         :pc (+ 3 ;(inst-length inst)
@@ -2648,7 +2648,7 @@
   (let* ((class-to-initialize-info (get-class-info class-to-initialize (class-table s)))
          (class-to-initialize-methods (class-decl-methods class-to-initialize-info))
          (class-to-initialize-static-fields (class-decl-static-fields class-to-initialize-info)) ;a map from names to descriptors
-         (static-initializer-method (acl2::lookup-equal '("<clinit>" . "()V") class-to-initialize-methods))
+         (static-initializer-method (lookup-equal '("<clinit>" . "()V") class-to-initialize-methods))
          ;; Initialize the static fields to their default values:
          (static-field-map (initialize-static-fields class-to-initialize-static-fields class-to-initialize (static-field-map s)))
          (s (modify th s :static-field-map static-field-map))
@@ -2845,7 +2845,7 @@
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
           :stack (push-operand ;(byte-fix (top-operand (stack (thread-top-frame th s))))
-                  (acl2::bvsx 32 8 (acl2::bvchop 8 (top-operand (stack (thread-top-frame th s)))))
+                  (bvsx 32 8 (bvchop 8 (top-operand (stack (thread-top-frame th s)))))
                   (pop-operand (stack (thread-top-frame th s))))))
 
 ;; (:I2C)
@@ -2853,7 +2853,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvchop 16 (top-operand (stack (thread-top-frame th s)))) ;zero-extending to an int isn't needed
+          :stack (push-operand (bvchop 16 (top-operand (stack (thread-top-frame th s)))) ;zero-extending to an int isn't needed
                        (pop-operand (stack (thread-top-frame th s))))))
 
 ;; (:I2L)
@@ -2861,7 +2861,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-long (acl2::bvsx 64 32 (top-operand (stack (thread-top-frame th s)))) ;wrap the top??
+          :stack (push-long (bvsx 64 32 (top-operand (stack (thread-top-frame th s)))) ;wrap the top??
                             (pop-operand (stack (thread-top-frame th s))))))
 
 ;; (:I2S) Instruction
@@ -2869,7 +2869,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvsx 32 16 (acl2::bvchop 16 (top-operand (stack (thread-top-frame th s)))))
+          :stack (push-operand (bvsx 32 16 (bvchop 16 (top-operand (stack (thread-top-frame th s)))))
                        (pop-operand (stack (thread-top-frame th s))))))
 
 ;;
@@ -2882,7 +2882,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvminus 32
+          :stack (push-operand (bvminus 32
                                       (top-operand (pop-operand (stack (thread-top-frame th s))))
                                       (top-operand (stack (thread-top-frame th s))))
                        (pop-operand (pop-operand (stack (thread-top-frame th s)))))))
@@ -2893,7 +2893,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvmult 32
+          :stack (push-operand (bvmult 32
                                      (top-operand (pop-operand (stack (thread-top-frame th s))))
                                      (top-operand (stack (thread-top-frame th s))))
                        (pop-operand (pop-operand (stack (thread-top-frame th s)))))))
@@ -2903,7 +2903,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvplus 32
+          :stack (push-operand (bvplus 32
                                              (top-operand (pop-operand (stack (thread-top-frame th s))))
                                              (top-operand (stack (thread-top-frame th s))))
                                (pop-operand (pop-operand (stack (thread-top-frame th s)))))))
@@ -2914,7 +2914,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvminus 32 0 (top-operand (stack (thread-top-frame th s)))) ;no need to decode arg?
+          :stack (push-operand (bvminus 32 0 (top-operand (stack (thread-top-frame th s)))) ;no need to decode arg?
                        (pop-operand (stack (thread-top-frame th s))))))
 
 ;; Test for the "special case" for IDIV:
@@ -2943,7 +2943,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvand 32
+          :stack (push-operand (bvand 32
                                     (top-operand (pop-operand (stack (thread-top-frame th s))))
                                     (top-operand (stack (thread-top-frame th s))))
                        (pop-operand (pop-operand (stack (thread-top-frame th s)))))))
@@ -2953,7 +2953,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvor 32
+          :stack (push-operand (bvor 32
                                    (top-operand (pop-operand (stack (thread-top-frame th s))))
                                    (top-operand (stack (thread-top-frame th s))))
                        (pop-operand (pop-operand (stack (thread-top-frame th s)))))))
@@ -2963,7 +2963,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvxor 32
+          :stack (push-operand (bvxor 32
                                     (top-operand (pop-operand (stack (thread-top-frame th s))))
                                     (top-operand (stack (thread-top-frame th s))))
                        (pop-operand (pop-operand (stack (thread-top-frame th s)))))))
@@ -3264,8 +3264,8 @@
             :pc (+ inst-length
                    (pc (thread-top-frame th s)))
             :locals (update-nth-local (farg1 inst)
-                                      (acl2::bvplus 32
-;                                              (acl2::bvsx 32 8 - the bvxs wouldn't work for a 16-bit increment amount
+                                      (bvplus 32
+;                                              (bvsx 32 8 - the bvxs wouldn't work for a 16-bit increment amount
                                                     (farg2 inst) ;the increment amount
 ;)
                                                     (nth-local (farg1 inst)
@@ -3437,8 +3437,8 @@
          (stack (stack top-frame))
          (value1 (top-operand (pop-operand stack)))
          (value2 (top-operand stack))
-         (shift-amount (acl2::bvchop 5 value2))
-         (result (acl2::bvshl 32 value1 shift-amount)))
+         (shift-amount (bvchop 5 value2))
+         (result (bvshl 32 value1 shift-amount)))
     (modify th s
             :pc (+ 1 ;(inst-length inst)
                    (pc top-frame))
@@ -3454,8 +3454,8 @@
          ;;bozo these lets slow down the rewriting?
          (value2 (top-operand stack))
          (value1 (top-long (pop-operand stack)))
-         (shift-amount (acl2::bvchop 6 value2))
-         (result (acl2::bvshl 64 value1 shift-amount)))
+         (shift-amount (bvchop 6 value2))
+         (result (bvshl 64 value1 shift-amount)))
     (modify th s
             :pc (+ 1 ;(inst-length inst)
                    (pc top-frame))
@@ -3467,7 +3467,7 @@
 (defun ishr32 (value1 value2)
   (declare (xargs :guard (and (unsigned-byte-p 32 value1)
                               (unsigned-byte-p 32 value2))))
-  (acl2::bvashr 32 value1 (acl2::bvchop 5 value2)))
+  (bvashr 32 value1 (bvchop 5 value2)))
 
 (defun execute-ISHR (th s)
   (let* ((value2 (top-operand (stack (thread-top-frame th s))))
@@ -3485,7 +3485,7 @@
 (defun ishr64 (value1 value2)
   (declare (xargs :guard (and (unsigned-byte-p 64 value1)
                               (unsigned-byte-p 64 value2))))
-  (acl2::bvashr 64 value1 (acl2::bvchop 6 value2)))
+  (bvashr 64 value1 (bvchop 6 value2)))
 
 (defun execute-LSHR (th s)
   (let* ((value2 (top-operand (stack (thread-top-frame th s))))
@@ -3505,9 +3505,9 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvshr 32
+          :stack (push-operand (bvshr 32
                                   (top-operand (pop-operand (stack (thread-top-frame th s)))) ;; value1
-                                  (acl2::bvchop 5
+                                  (bvchop 5
                                                  (top-operand (stack (thread-top-frame th s))) ;; value2
                                                  ))
                        (pop-operand (pop-operand (stack (thread-top-frame th s)))))))
@@ -3519,9 +3519,9 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-long (acl2::bvshr 64
+          :stack (push-long (bvshr 64
                                        (top-long (pop-operand (stack (thread-top-frame th s)))) ;; value1
-                                       (acl2::bvchop 6
+                                       (bvchop 6
                                                       (top-operand (stack (thread-top-frame th s))) ;; value2
                                                       ))
                             (pop-long (pop-operand (stack (thread-top-frame th s)))))))
@@ -3620,8 +3620,8 @@
             ;; We use BVMINUS here to prevent overflow when adding
             ;; srcPos+length and destPos+length.  The difference is the number
             ;; of elements that can be safely copied.
-            (if (or (acl2::sbvlt 32 (acl2::bvminus 32 src-length srcpos) length)
-                    (acl2::sbvlt 32 (acl2::bvminus 32 dest-length destpos) length))
+            (if (or (acl2::sbvlt 32 (bvminus 32 src-length srcpos) length)
+                    (acl2::sbvlt 32 (bvminus 32 dest-length destpos) length))
                 (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list 'arraycopy src (decode-signed srcpos) dest (decode-signed destpos) (decode-signed length)) th s) ;ffixme this should actually be an IndexOutOfBoundsException?  add that to the list of built-in classes?
               ;;fixme more checks here
               (modify th s
@@ -3637,12 +3637,12 @@
                                                                      ;;use bvplus 32 here?
                                                                      (+ (decode-signed-non-neg destpos) (decode-signed-non-neg length) -1)
                                                                      ;;TODO: Do the math using ACL2 integers and prove equivalent:
-                                                                     ;try:(decode-signed (acl2::bvplus 32 destpos (acl2::bvplus 32 length -1))) ;todo: fix the -1
+                                                                     ;try:(decode-signed (bvplus 32 destpos (bvplus 32 length -1))) ;todo: fix the -1
                                                                      (acl2::subrange (decode-signed-non-neg srcpos)
                                                                                      ;;use bvplus31?
                                                                                      (+ (decode-signed-non-neg srcpos) (decode-signed-non-neg length) -1)
                                                                                      ;;TODO: Do the math using ACL2 integers and prove equivalent:
-                                                                                     ;;try: (acl2::bvplus 32 srcpos (acl2::bvplus 32 length -1)) ;todo: fix the -1
+                                                                                     ;;try: (bvplus 32 srcpos (bvplus 32 length -1)) ;todo: fix the -1
                                                                                      src-contents)
                                                                      dest-contents)
                                              heap)))))))))
@@ -3793,7 +3793,7 @@
         (and class-info ;drop?
              (let* ((methods (class-decl-methods class-info)))
                (and methods
-                    (let ((possible-method-info (acl2::lookup-equal (cons method-name method-descriptor) methods)))
+                    (let ((possible-method-info (lookup-equal (cons method-name method-descriptor) methods)))
                       possible-method-info))))))))
 
 (defun unknown-stack-value-defattach ()
@@ -3819,7 +3819,7 @@
          ;(formal-slot-count (count-slots-in-types (farg4 inst)))
          (class-table (class-table s))
          (method-info (lookup-method-in-class-table (make-method-designator class-name method-name descriptor) class-table)) ;todo inefficient to make and then break up the method designator
-         (return-type (acl2::lookup-eq :return-type method-info))
+         (return-type (lookup-eq :return-type method-info))
          ;;move past the invoke instruction and pop off the operands
          (s (modify th s
                          :pc (+ 3 ;(inst-length inst)
@@ -3859,7 +3859,7 @@
                               (class-namep class-name)
                               (class-infop class-info class-name))))
   (let* ((methods (class-decl-methods class-info))
-         (possible-method-info (acl2::lookup-equal method-id methods)))
+         (possible-method-info (lookup-equal method-id methods)))
     (if possible-method-info
         (cons possible-method-info class-name)
       nil)))
@@ -3928,7 +3928,7 @@
             nil nil)
       (let* ((c-class-info (get-class-info class-name class-table)) ;fixme use something more specific than g, something that requires the class to be bound in the class-table
              (c-methods (class-decl-methods c-class-info))
-             (possible-method-info (acl2::lookup-equal (cons method-name method-descriptor) c-methods)))
+             (possible-method-info (lookup-equal (cons method-name method-descriptor) c-methods)))
         (if possible-method-info
             (mv nil ;no error
                 possible-method-info
@@ -4551,7 +4551,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-operand (acl2::bvchop 32 (top-long (stack (thread-top-frame th s))))
+          :stack (push-operand (bvchop 32 (top-long (stack (thread-top-frame th s))))
                        (pop-long (stack (thread-top-frame th s))))))
 
 ; -----------------------------------------------------------------------------
@@ -4565,7 +4565,7 @@
     (modify th s
             :pc (+ 1 ;(inst-length inst)
                    (pc frame))
-            :stack (push-long (acl2::bvplus 64 value1 value2)
+            :stack (push-long (bvplus 64 value1 value2)
                               (pop-long (pop-long (stack frame)))))))
 
 ; -----------------------------------------------------------------------------
@@ -4596,7 +4596,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-long (acl2::bvand 64
+          :stack (push-long (bvand 64
                                          (top-long (pop-long (stack (thread-top-frame th s))))
                                          (top-long (stack (thread-top-frame th s))))
                             (pop-long (pop-long (stack (thread-top-frame th s)))))))
@@ -4923,7 +4923,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-long (acl2::bvmult 64
+          :stack (push-long (bvmult 64
                                           (top-long (pop-long (stack (thread-top-frame th s))))
                                           (top-long (stack (thread-top-frame th s))))
                             (pop-long (pop-long (stack (thread-top-frame th s)))))))
@@ -4935,7 +4935,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-long (acl2::bvminus 64 0 (top-long (stack (thread-top-frame th s))))
+          :stack (push-long (bvminus 64 0 (top-long (stack (thread-top-frame th s))))
                             (pop-long (stack (thread-top-frame th s))))))
 
 
@@ -4944,7 +4944,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-long (acl2::bvor 64
+          :stack (push-long (bvor 64
                                         (top-long (stack (thread-top-frame th s)))
                                         (top-long (pop-long (stack (thread-top-frame th s)))))
                             (pop-long (pop-long (stack (thread-top-frame th s)))))))
@@ -4969,7 +4969,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-long (acl2::bvminus 64
+          :stack (push-long (bvminus 64
                                            (top-long (pop-long (stack (thread-top-frame th s))))
                                            (top-long (stack (thread-top-frame th s))))
                             (pop-long (pop-long (stack (thread-top-frame th s)))))))
@@ -4979,7 +4979,7 @@
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
-          :stack (push-long (acl2::bvxor 64
+          :stack (push-long (bvxor 64
                                          (top-long (stack (thread-top-frame th s)))
                                          (top-long (pop-long (stack (thread-top-frame th s)))))
                             (pop-long (pop-long (stack (thread-top-frame th s)))))))
@@ -5107,12 +5107,12 @@
                        ;; Oracle to ask.  Values will be sign extended if
                        ;; appropriate when read back out with getfield.
                        (value (if (eq :boolean field-type)
-                                  (acl2::bvchop 1 value)
+                                  (bvchop 1 value)
                                 (if (eq :byte field-type)
-                                    (acl2::bvchop 8 value)
+                                    (bvchop 8 value)
                                   (if (or (eq :short field-type)
                                           (eq :char field-type))
-                                      (acl2::bvchop 16 value)
+                                      (bvchop 16 value)
                                     value)))))
                   (modify th s
                           :pc (+ 3 ;(inst-length inst)
@@ -5176,14 +5176,14 @@
           (modify th s
                   :pc (+ 1 ;(inst-length inst)
                          (pc (thread-top-frame th s)))
-                  :stack (push-operand (acl2::bvsx 32 16 (acl2::bv-array-read 16 len
+                  :stack (push-operand (bvsx 32 16 (acl2::bv-array-read 16 len
                                                                       (decode-signed-non-neg index)
                                                                       contents))
                                (pop-operand (pop-operand (stack (thread-top-frame th s)))))))))))
 
 ; (SASTORE)
 (defun execute-SASTORE (th s)
-  (let* ((value (acl2::bvchop 16 (top-operand (stack (thread-top-frame th s))))) ;truncate int to short
+  (let* ((value (bvchop 16 (top-operand (stack (thread-top-frame th s))))) ;truncate int to short
          (index (top-operand (pop-operand (stack (thread-top-frame th s)))))
          (arrayref (top-operand (pop-operand (pop-operand (stack (thread-top-frame th s)))))))
     (if (null-refp arrayref)

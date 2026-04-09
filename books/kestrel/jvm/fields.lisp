@@ -82,7 +82,7 @@
 
 (defun get-ConstantValue-attribute (attributes)
   (declare (xargs :guard (attributesp attributes)))
-  (acl2::lookup-equal "ConstantValue" attributes))
+  (lookup-equal "ConstantValue" attributes))
 
 ;;These are the only keys allowed in the field-info alist:
 (defconst *field-info-keys*
@@ -93,8 +93,8 @@
   (declare (xargs :guard t))
   (and (alistp field-info)
        (acl2::subsetp-eq (strip-cars field-info) *field-info-keys*)
-       (attributesp (acl2::lookup-eq :attributes field-info))
-       (let ((access-flags (acl2::lookup-eq :access-flags field-info)))
+       (attributesp (lookup-eq :attributes field-info))
+       (let ((access-flags (lookup-eq :access-flags field-info)))
          (and (acl2::keyword-listp access-flags)
               (acl2::no-duplicatesp access-flags)
               (acl2::subsetp-eq access-flags
@@ -122,7 +122,7 @@
 
 (defund field-attributes (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::lookup-eq :attributes field-info))
+  (lookup-eq :attributes field-info))
 
 (defthm attributesp-of-field-attributes
   (implies (field-infop field-info)
@@ -131,7 +131,7 @@
 
 (defund field-access-flags (field-info)
   (declare (xargs :guard (field-infop field-info)))
-  (acl2::lookup-eq :access-flags field-info))
+  (lookup-eq :access-flags field-info))
 
 (defthm true-listp-of-field-access-flags-forward
   (implies (field-infop field-info)

@@ -1,7 +1,7 @@
 ; Material on Java strings.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,7 +34,7 @@
                   ))
   (if (endp characters)
       nil
-    (cons (code-char (acl2::bvchop 8 (first characters))) ;;TTODO: Drop the bvchop (actually, use Alessandro's representation of Java strings)
+    (cons (code-char (bvchop 8 (first characters))) ;;TTODO: Drop the bvchop (actually, use Alessandro's representation of Java strings)
           (code-char-list (rest characters)))))
 
 (defun char-list-to-string (java-chars)

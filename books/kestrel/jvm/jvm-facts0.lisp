@@ -1,7 +1,7 @@
 ; Rules about the JVM model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -724,7 +724,7 @@
 ;;  (implies (and (jvm-statep s)
 ;;                (call-stack-non-emptyp th s)
 ;;                )
-;;           (JVM-INSTRUCTION-OKAYP (ACL2::LOOKUP-EQUAL (PC (TOP-FRAME-of-thread TH S)) (PROGRAM (TOP-FRAME-of-thread TH S))) (PC (TOP-FRAME-of-thread TH S))))
+;;           (JVM-INSTRUCTION-OKAYP (LOOKUP-EQUAL (PC (TOP-FRAME-of-thread TH S)) (PROGRAM (TOP-FRAME-of-thread TH S))) (PC (TOP-FRAME-of-thread TH S))))
 ;;  :hints (("Goal" :in-theory (enable jvm-statep call-stack-non-emptyp))))
 
 (defthm jvm-statep-step

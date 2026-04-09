@@ -1,7 +1,7 @@
 ; The JVM package
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,7 +27,21 @@
                farg1 farg2 farg3 farg4 farg5
                lookup
                memberp
-               )
+               lookup-eq
+               lookup-equal
+               ;; BV operators:
+               bvchop
+               bvsx
+               bvand
+               bvor
+               bvxor
+               bvshr
+               bvashr
+               bvshl
+               bvplus
+               bvminus
+               bvuminus
+               bvmult)
              (union-eq *acl2-exports*
                        (set-difference-eq nil ;*common-lisp-symbols-from-main-lisp-package* ;this is a lot of stuff...
                                           '(floatp typep))))

@@ -144,7 +144,7 @@
   (declare (xargs :guard (and (stringp string)
                               (intern-tablep intern-table))
                   :guard-hints (("Goal" :in-theory (enable INTERN-TABLEP)))))
-  (let* ((looked-up-string (acl2::lookup-equal string intern-table)) ;will be a heap reference (a natural) or nil if the string isn't in the table
+  (let* ((looked-up-string (lookup-equal string intern-table)) ;will be a heap reference (a natural) or nil if the string isn't in the table
          )
     (not (equal looked-up-string nil))))
 
@@ -165,7 +165,7 @@
   (declare (xargs :guard (and (stringp string)
                               (intern-tablep intern-table))
                   :guard-hints (("Goal" :in-theory (enable INTERN-TABLEP)))))
-  (let* ((looked-up-string (acl2::lookup-equal string intern-table)))
+  (let* ((looked-up-string (lookup-equal string intern-table)))
     looked-up-string))
 
 ;; (defthm get-interned-string-of-nil
@@ -232,9 +232,9 @@
 
 ;; (defthm lookup-equal-when-not-consp
 ;;   (implies (not (consp alist))
-;;            (equal (acl2::lookup-equal key alist)
+;;            (equal (lookup-equal key alist)
 ;;                   nil))
-;;   :hints (("Goal" :in-theory (enable acl2::lookup-equal))))
+;;   :hints (("Goal" :in-theory (enable lookup-equal))))
 
 ;drop, if we keep get-class diabled?
 (defthm get-field-of-get-interned-string-and-class-pair
@@ -242,7 +242,7 @@
                 (intern-table-okp intern-table heap))
            (equal (acl2::get-field (get-interned-string string intern-table) '(:special-data . :class) heap)
                   "java.lang.String"))
-  :hints (("Goal" :in-theory (enable acl2::lookup-equal intern-table-okp intern-table-okp acl2::get-class))))
+  :hints (("Goal" :in-theory (enable lookup-equal intern-table-okp intern-table-okp acl2::get-class))))
 
 (defthm intern-table-okp-of-acons
   (implies (and (intern-table-okp intern-table heap)

@@ -37,13 +37,13 @@
 ;TODO: this should have 32 in the name
 (defmacro encode-signed (val)
 ;;  val
-  `(acl2::bvchop 32 ,val)
+  `(bvchop 32 ,val)
   )
 
 ;; ;eventually this will call bvchop, but for now signed values are stored directly - i guess we switched it over...
 ;; (defmacro encode-signed-long (val)
 ;;   ;;val
-;;   `(acl2::bvchop 64 ,val))
+;;   `(bvchop 64 ,val))
 
 ;TODO: this should have 32 in the name
 ;the value stored is unsigned, so we must convert it before using is as a number

@@ -2944,9 +2944,9 @@
        (true-listp (lookup-equal ':interfaces raw-parsed-class))
        (jvm::all-class-namesp (lookup-equal ':interfaces raw-parsed-class))
        ;; check the super class, etc:
-       (let ((class-name (acl2::lookup-eq :this_class raw-parsed-class))
-             (superclass (acl2::lookup-eq :super_class raw-parsed-class))
-             (interfacep (member-eq :acc_interface (acl2::lookup-eq :access_flags raw-parsed-class))))
+       (let ((class-name (lookup-eq :this_class raw-parsed-class))
+             (superclass (lookup-eq :super_class raw-parsed-class))
+             (interfacep (member-eq :acc_interface (lookup-eq :access_flags raw-parsed-class))))
          (and (jvm::class-namep class-name)
               (superclass-and-interfaceness-okp class-name superclass interfacep)))))
 
@@ -3519,7 +3519,7 @@
   (b* (((mv erp raw-parsed-class constant-pool)
         (parse-bytes-into-raw-parsed-class bytes constant-pool))
        ((when erp) (mv erp nil nil nil constant-pool))
-       (class-name (acl2::lookup-eq :this_class raw-parsed-class))
+       (class-name (lookup-eq :this_class raw-parsed-class))
        ((mv class-info
             field-defconsts ; todo: don't even compute these if not used
             )
