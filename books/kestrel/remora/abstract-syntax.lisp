@@ -37,7 +37,7 @@
    (xdoc::p
     "We define fixtypes for abstract syntax trees (ASTs) for typed Remora,
      based on the publications on Remora mentioned in @(see remora).
-     See Figure 2.1 in the journal paper,
+     See Figure 1 in the journal paper,
      Figure 4.1 in the dissertation,
      and Figure 6 in the conference paper.
      The journal paper and the dissertation are quite aligned,
