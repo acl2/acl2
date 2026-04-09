@@ -260,7 +260,7 @@
 
 ;; Step 3 in Sec 6.2.2.
 (defund sha-256-inner-loop (t-var a b c d e f g h w)
-  (declare (xargs :measure (+ 1 (nfix (- 80 t-var)))
+  (declare (xargs :measure (+ 1 (nfix (- 64 t-var)))
                   :guard (and (natp t-var)
                               (<= t-var 64)
                               (unsigned-byte-p 32 a)
