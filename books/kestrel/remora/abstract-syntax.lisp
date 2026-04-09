@@ -293,11 +293,9 @@
      (xdoc::p
       "There are
        named variables,
-       non-empty arrays with at least one atom
-       (the non-emptiness constraint is not captured in this fixtype),
+       non-empty arrays with at least one atom,
        empty arrays with the atom type,
-       non-empty frames with at least one expression
-       (the non-emptiness constraint is not captured in this fixtype),
+       non-empty frames with at least one expression,
        empty frames with the cell type,
        applications of expressions to expressions
        (called `term applications' in the Remora publications)
@@ -306,7 +304,14 @@
        and unboxing of expressions;
        the latter binds zero or more variables to indices,
        a variable to the boxed value,
-       and then returns the body expression."))
+       and then returns the body expression.")
+     (xdoc::p
+      "The non-emptiness of the atom list in @(':array')
+       and of the expression list in @(':frame')
+       is not captured in this fixtype.
+       The FTY @(':require') feature does not seem to work here,
+       perhaps because of the interaction with the mutually recursive fixtypes.
+       We can enforce this non-emptiness in the static semantics."))
     (:var ((name string)))
     (:array ((dims nat-list)
              (atoms atom-list)))
