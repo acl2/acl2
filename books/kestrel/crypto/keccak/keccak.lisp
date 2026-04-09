@@ -81,7 +81,7 @@
 ;;
 ;;      KECCAK-224-BYTES, KECCAK-256-BYTES, KECCAK-384-BYTES, KECCAK-512-BYTES
 ;;
-;;    See these definitions for more details on endianness and the FIP 202
+;;    See these definitions for more details on endianness and the FIPS 202
 ;;    specification.
 ;;
 ;; 3. Internally, the functions take a list of bits and return a bitvector

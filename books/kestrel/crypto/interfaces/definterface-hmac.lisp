@@ -65,7 +65,7 @@
      whose total size must therefore not exceed
      the hash function's maximum input size:
      it follows that the size of the text must not exceed
-     the hash function's maximum input size dimished by
+     the hash function's maximum input size diminished by
      the hash function's block size.
      Note that @(tsee definterface-hash) has no information about
      the hash function's block size,
