@@ -299,14 +299,16 @@
                 )
            (equal (array-length ad heap)
                   (car dims)))
-  :hints (("Goal" :in-theory (enable array-refp))))
+  :hints (("Goal" :in-theory (enable array-refp array-length))))
 
 ;similar to the above
 (defthm len-of-contents-when-array-refp
   (implies (and (array-refp ad dims type heap) ;dims is a free variable
                 (consp dims))
            (equal (len (get-field ad (array-contents-pair) heap))
-                  (car dims))))
+                  (car dims)))
+  :hints (("Goal" :expand (array-refp ad dims type heap)
+                  :in-theory (enable array-length))))
 
 ;similar to the above
 ;breaks the get-field abstraction (but we might do that in the machine model for efficiency)

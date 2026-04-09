@@ -1,6 +1,6 @@
 ; Indicators for methods that can be elaborated into method-designator-strings
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,7 +37,7 @@
     ;; m might be foo.bar.baz.ClassName.methodName
     (let* ((class-name (acl2::substring-before-last-occurrence m #\.))
            (method-name (acl2::substring-after-last-occurrence m #\.))
-           (class-info (acl2::lookup-equal class-name class-alist)))
+           (class-info (lookup-equal class-name class-alist)))
       (if (not class-info)
           (er hard? 'elaborate-method-indicator "Class not found: ~x0." class-name)
         (if (not (class-infop0 class-info)) ; for guard proof

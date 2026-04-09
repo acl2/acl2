@@ -437,7 +437,7 @@
                             (mv (erp-nil) (first param-names))
                           (if local-variable-table
                               (let ((name-and-type
-                                     (lookup-in-local-variable-table slot 0 ;PC 0 means the start of the method
+                                     (jvm::lookup-in-local-variable-table slot 0 ;PC 0 means the start of the method
                                                                      local-variable-table)))
                                 (if (not name-and-type)
                                     (prog2$ (er hard? 'make-param-slot-to-name-alist-aux "No binding found in the local var table for param ~x0." slot)
@@ -714,7 +714,7 @@
                               (jvm::jvm-statep s))
                   :verify-guards nil))
   (let ((jvm::inst (jvm::current-inst jvm::th s)))
-    (jvm::do-inst (jvm::op-code jvm::inst)
+    (jvm::do-inst (jvm::instruction-opcode jvm::inst)
                   jvm::inst jvm::th s)))
 
 (defthmd step-always-open-correct
