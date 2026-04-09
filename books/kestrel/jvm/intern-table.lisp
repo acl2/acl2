@@ -78,8 +78,8 @@
                   (intern-table-okp intern-table heap)))
   :hints (("Goal" :in-theory (enable intern-table-okp strip-cdrs))))
 
-;drop?
-(defthm intern-table-okp-of-set-field-irrel-when-bound
+;; ;drop (not trivial)?
+(defthm intern-table-okp-of-set-field-irrel-when-bound-second-heap
   (implies (and (intern-table-okp intern-table heap2)
                 (not (set::in ad (acl2::rkeys heap2))))
            (equal (intern-table-okp intern-table (acl2::set-field ad pair val heap))
@@ -90,7 +90,9 @@
   (implies (and (intern-table-okp intern-table heap)
                 (not (set::in ad (acl2::rkeys heap))))
            (equal (intern-table-okp intern-table (acl2::set-field ad pair val heap))
-                  (intern-table-okp intern-table heap))))
+                  t ;(intern-table-okp intern-table heap)
+                  ))
+  :hints (("Goal" :in-theory (enable intern-table-okp acl2::get-class))))
 
 ;; Setting some field of some object to "java.lang.String" can only make the intern table more correct
 (defthm intern-table-okp-of-set-field-2
@@ -99,20 +101,22 @@
   :hints (("Goal" :in-theory (enable intern-table-okp))))
 
 ;really this is true for any f, not just cdr
-(defthm not-equal-constant-when-cdr-wrong
-  (implies (and (syntaxp (quotep k))
-                (not (equal (cdr x) free))
-                (syntaxp (quotep free))
-                (equal free (cdr k)))
-           (not (equal x k))))
+(local
+ (defthm not-equal-constant-when-cdr-wrong
+   (implies (and (syntaxp (quotep k))
+                 (not (equal (cdr x) free))
+                 (syntaxp (quotep free))
+                 (equal free (cdr k)))
+            (not (equal x k)))))
 
 ;really this is true for any f, not just car
-(defthm not-equal-constant-when-car-wrong
-  (implies (and (syntaxp (quotep k))
-                (not (equal (car x) free))
-                (syntaxp (quotep free))
-                (equal free (car k)))
-           (not (equal x k))))
+(local
+ (defthm not-equal-constant-when-car-wrong
+   (implies (and (syntaxp (quotep k))
+                 (not (equal (car x) free))
+                 (syntaxp (quotep free))
+                 (equal free (car k)))
+            (not (equal x k)))))
 
 (defthm intern-table-okp-of-set-fields-irrel-bindings
   (implies (not (member-equal '(:special-data . :class) (strip-cars bindings)))
@@ -259,3 +263,11 @@
   (implies (intern-tablep intern-table)
            (not (null-refp (get-interned-string string intern-table))))
   :hints (("Goal" :in-theory (enable intern-tablep strip-cdrs))))
+
+;disable?  helps to prove the reverse direction
+(defthm not-intern-table-okp-of-set-field
+  (implies (and (not (intern-table-okp intern-table heap))
+                (or (not (equal pair (acl2::class-pair)))
+                    (not (equal val "java.lang.String"))))
+           (not (intern-table-okp intern-table (acl2::set-field ad pair val heap))))
+  :hints (("Goal" :in-theory (enable intern-table-okp))))

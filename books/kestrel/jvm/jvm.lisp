@@ -5,7 +5,7 @@
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
-; Note: Portions of this file may be taken from books/models/jvm/m5.  See the
+; Note: Portions of this directory may be taken from books/models/jvm/m5.  See the
 ; LICENSE file and authorship information there as well.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
@@ -35,6 +35,7 @@
 
 ;fixme: for things like IADD, make sure the bit patterns are the same regardless of whether the operands are signed or unsigned
 
+(include-book "bindings")
 (include-book "values")
 (include-book "classes")
 (include-book "call-stacks")
@@ -65,14 +66,6 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
-;disable?  helps to prove the reverse direction
-(defthm not-intern-table-okp-of-set-field
-  (implies (and (not (intern-table-okp intern-table heap))
-                (or (not (equal pair (acl2::class-pair)))
-                    (not (equal val "java.lang.String"))))
-           (not (intern-table-okp intern-table (acl2::set-field ad pair val heap))))
-  :hints (("Goal" :in-theory (enable intern-table-okp))))
-
 (defthm intern-table-okp-of-initialize-one-dim-array
   (implies (not (set::in ad (acl2::rkeys heap)))
            (equal (intern-table-okp intern-table (initialize-one-dim-array ad element-type contents heap))
@@ -85,34 +78,6 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;fixme used typed alists for this?
-;; Used in the thread-table
-;acons might be sufficient if duplicates are okay, but maybe we do want to get rid of old bindings for a thread, to keep the values from getting huge (but will the binds just stack up when we have symbolic terms)?
-(defun bind (x y alist)
-  (declare (xargs :guard (alistp alist)))
-  (cond ((endp alist) (list (cons x y)))
-        ((equal x (car (car alist)))
-         (cons (cons x y) (cdr alist)))
-        (t (cons (car alist) (bind x y (cdr alist))))))
-
-;ffixme this is just lookup-equal
-(defund binding (x alist)
-  (declare (xargs :guard (alistp alist)))
-  (cdr (assoc-equal x alist)))
-
-(defthm binding-bind
-  (equal (binding x (bind x val alist))
-         val)
-  :hints (("goal" :in-theory (enable bind binding))))
-
-(defund bound-in-alistp (x alist)
-  (declare (xargs :guard (alistp alist)))
-  (consp (assoc-equal x alist)))
-
-(defthm bound-in-alistp-of-bind
-  (bound-in-alistp key (bind key val alist))
-  :hints (("Goal" :in-theory (enable bound-in-alistp bind))))
 
 ;;
 ;; The heapref-table:
