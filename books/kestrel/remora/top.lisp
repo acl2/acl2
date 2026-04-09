@@ -25,7 +25,7 @@
      i.e. the ability of code to lift
      from arrays of lower ranks to arrays of higher ranks,
      where an `array' is a regular arrangement of homogeneous values
-     of an arbitray number of dimensions
+     of an arbitrary number of dimensions
      (0 for scalars, 1 for vectors, 2 for matrices, etc.).
      Remora is described in the following publications:")
    (xdoc::ul

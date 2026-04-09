@@ -106,7 +106,7 @@
      but they do provide a partial list.
      Here we define some initial representative primitive operators,
      consisting of the ones listed in the publications,
-     which we may extetend in the future.
+     which we may extend in the future.
      We may also parameterize our abstract syntax
      over the exact choice of these primitive operators."))
   (:add ())
@@ -198,7 +198,7 @@
     (xdoc::topstring
      (xdoc::p
       "There are
-       mamed variables,
+       named variables,
        constants (natural numbers),
        shapes (consisting of zero or more dimensions),
        additions of indices,
@@ -236,7 +236,7 @@
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
        product types (quantified over sorted variables),
-       and sum types (quantifier over sorted variables)."))
+       and sum types (quantified over sorted variables)."))
     (:var ((name string)))
     (:base ((type base-type)))
     (:array ((type type)
