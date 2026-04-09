@@ -446,8 +446,7 @@
                   (if (and (<= low index)
                            (<= index high))
                       (bv-array-clear-range size len low high data)
-                    (bv-array-write size len index val (bv-array-clear-range size len low high data)))))
-  :hints (("Goal" :in-theory (disable))))
+                    (bv-array-write size len index val (bv-array-clear-range size len low high data))))))
 
 (defthm bv-array-clear-of-bv-array-clear-range-contained
   (implies (and (<= lowindex index1)

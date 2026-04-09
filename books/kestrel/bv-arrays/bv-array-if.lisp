@@ -48,8 +48,7 @@
 
 (defund bind-var-to-bv-array-length (var term)
   (declare (xargs :guard (and (symbolp var)
-                              (pseudo-termp term))
-                  :guard-hints (("Goal" :in-theory (enable)))))
+                              (pseudo-termp term))))
   (if (variablep term)
       nil ;fail
     (if (and (quotep term)
@@ -64,8 +63,7 @@
 
 (defund bind-var-to-bv-array-element-size (var term)
   (declare (xargs :guard (and (symbolp var)
-                              (pseudo-termp term))
-                  :guard-hints (("Goal" :in-theory (enable)))))
+                              (pseudo-termp term))))
   (if (variablep term)
       nil ;fail
     (if (and (quotep term)
