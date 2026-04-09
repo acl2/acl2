@@ -291,7 +291,7 @@
      a (mutable) disambiguation table,
      a (mutable) macro table,
      an immutable string containing the path of the file,
-     and an immutable C dialect.")
+     and an immutable implementation environment.")
    (xdoc::p
     "This could be turned into a stobj, if needed for efficiency.
      But note that
@@ -305,7 +305,7 @@
   ((table dimb-table)
    (macros macro-table)
    (file string)
-   (dialect c::dialect))
+   (ienv ienvp))
   :pred dstatep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -313,7 +313,7 @@
 (defirrelevant irr-dstate
   :short "An irrelevant disambiguation state."
   :type dstatep
-  :body (dstate (irr-dimb-table) (irr-macro-table) "" (c::irr-dialect)))
+  :body (dstate (irr-dimb-table) (irr-macro-table) "" (irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -458,7 +458,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-dstate ((file stringp) (dialect c::dialectp))
+(define init-dstate ((file stringp) (ienv ienvp))
   :returns (dstate dstatep)
   :short "Initial disambiguation state."
   :long
@@ -517,11 +517,12 @@
      we should refine our GCC/Clang flag with
      a richer description of the C implementation."))
   (b* ((table (list nil))
+       (dialect (ienv->dialect ienv))
        (macros (macro-init dialect))
        (dstate (make-dstate :table table
                             :macros macros
                             :file file
-                            :dialect dialect)))
+                            :ienv ienv)))
     (dimb-add-idents-objfun (built-ins-for dialect) dstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3854,7 +3855,7 @@
        (dstate (dimb-add-ident-objfun-file-scope ident dstate))
        ((erp new-declons dstate) (dimb-declon-list fundef.declons dstate))
        (dstate (dimb-add-ident-objfun (ident "__func__") dstate))
-       (dstate (if (c::dialect-gcc/clangp (dstate->dialect dstate))
+       (dstate (if (c::dialect-gcc/clangp (ienv->dialect (dstate->ienv dstate)))
                    (dimb-add-idents-objfun
                     (list (ident "__FUNCTION__")
                           (ident "__PRETTY_FUNCTION__"))
@@ -4181,7 +4182,7 @@
                              (filepath-trans-unit-map-fix tumap-dimb)))
                ((when included+tunit)
                 (retok (cdr included+tunit) tumap-dimb))
-               (dstate-fresh (init-dstate included (dstate->dialect dstate)))
+               (dstate-fresh (init-dstate included (dstate->ienv dstate)))
                ((erp new-tunit-stand-alone & tumap-dimb)
                 (dimb-trans-unit tunit
                                  dstate-fresh
@@ -4381,7 +4382,7 @@
 (define dimb-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
                                       (resolved-includes
                                        string-header-name-string-map-mapp)
-                                      (dialect c::dialectp)
+                                      (ienv ienvp)
                                       (keep-going booleanp))
   :returns (mv (erp maybe-msgp)
                (new-tumap filepath-trans-unit-mapp))
@@ -4405,7 +4406,7 @@
    (omap::keys (filepath-trans-unit-map-fix tumap))
    tumap
    resolved-includes
-   dialect
+   ienv
    keep-going
    nil) ; tumap-dimb
 
@@ -4414,7 +4415,7 @@
      ((paths filepath-setp)
       (tumap filepath-trans-unit-mapp)
       (resolved-includes string-header-name-string-map-mapp)
-      (dialect c::dialectp)
+      (ienv ienvp)
       (keep-going booleanp)
       (tumap-dimb filepath-trans-unit-mapp))
      :returns (mv (erp maybe-msgp)
@@ -4434,7 +4435,7 @@
            (reterr "irrelevant"))
           (tunit (cdr path+tunit))
           (file (filepath->string path))
-          (dstate (init-dstate file dialect))
+          (dstate (init-dstate file ienv))
           ((mv erp new-tunit & tumap-dimb)
            (dimb-trans-unit tunit
                             dstate
@@ -4448,7 +4449,7 @@
                        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                                           tumap
                                                           resolved-includes
-                                                          dialect
+                                                          ienv
                                                           keep-going
                                                           tumap-dimb))
              (retmsg$ "Error in translation unit ~x0: ~@1" file erp)))
@@ -4456,7 +4457,7 @@
        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                           tumap
                                           resolved-includes
-                                          dialect
+                                          ienv
                                           keep-going
                                           tumap-dimb))
      :no-function nil
@@ -4478,14 +4479,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-trans-ensemble ((tuens trans-ensemblep)
-                             (dialect c::dialectp)
+                             (ienv ienvp)
                              (keep-going booleanp))
   :returns (mv (erp maybe-msgp) (new-tuens trans-ensemblep))
   :short "Disambiguate a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pass an indication of the C dialect to use.")
+    "We pass an implementation environment.")
    (xdoc::p
     "We disambiguate all the translation units, independently.
      We leave the file path mapping unchanged."))
@@ -4495,7 +4496,7 @@
        ((erp new-tumap)
         (dimb-filepath-trans-unit-map tumap
                                       resolved-includes
-                                      dialect
+                                      ienv
                                       keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
