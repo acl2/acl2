@@ -21,6 +21,8 @@
 (include-book "methods")
 (include-book "classes")
 (include-book "operand-stacks")
+(include-book "bindings")
+(include-book "th")
 (include-book "ads")
 (include-book "ads2")
 (include-book "adslemmas")

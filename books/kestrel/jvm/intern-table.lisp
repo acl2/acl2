@@ -29,6 +29,8 @@
       (and (stringp (first x))
            (all-stringp (rest x)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;todo: optimize this to make a single pass?:
 (defund intern-tablep (intern-table)
   (declare (xargs :guard t))
@@ -37,6 +39,8 @@
        (acl2::all-addressp (strip-cdrs intern-table)) ;;the elements are addresses (intern-table-okp requires them to be addresses of string objects)
        ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund empty-intern-table ()
   (declare (xargs :guard t))
   nil ;an empty alist
@@ -44,6 +48,8 @@
 
 (defthm intern-tablep-of-empty-intern-table
   (intern-tablep (empty-intern-table)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check that all addresses to which strings are bound in the intern table are
 ;; in fact addresses of string objects.
@@ -100,23 +106,25 @@
            (intern-table-okp intern-table (acl2::set-field ad pair "java.lang.String" heap)))
   :hints (("Goal" :in-theory (enable intern-table-okp))))
 
-;really this is true for any f, not just cdr
-(local
- (defthm not-equal-constant-when-cdr-wrong
-   (implies (and (syntaxp (quotep k))
-                 (not (equal (cdr x) free))
-                 (syntaxp (quotep free))
-                 (equal free (cdr k)))
-            (not (equal x k)))))
+;; ;really this is true for any f, not just cdr
+;; (local
+;;  (defthm not-equal-constant-when-cdr-wrong
+;;    (implies (and (syntaxp (quotep k))
+;;                  (not (equal (cdr x) free))
+;;                  (syntaxp (quotep free))
+;;                  (equal free (cdr k)))
+;;             (not (equal x k)))))
 
-;really this is true for any f, not just car
-(local
- (defthm not-equal-constant-when-car-wrong
-   (implies (and (syntaxp (quotep k))
-                 (not (equal (car x) free))
-                 (syntaxp (quotep free))
-                 (equal free (car k)))
-            (not (equal x k)))))
+;; ;really this is true for any f, not just car
+;; (local
+;;  (defthm not-equal-constant-when-car-wrong
+;;    (implies (and (syntaxp (quotep k))
+;;                  (not (equal (car x) free))
+;;                  (syntaxp (quotep free))
+;;                  (equal free (car k)))
+;;             (not (equal x k)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm intern-table-okp-of-set-fields-irrel-bindings
   (implies (not (member-equal '(:special-data . :class) (strip-cars bindings)))
@@ -142,7 +150,9 @@
   (implies (and (intern-table-okp intern-table heap)
                 (not (set::in ad (acl2::rkeys heap))))
            (equal (intern-table-okp intern-table (acl2::set-fields ad bindings heap))
-                  (intern-table-okp intern-table heap))))
+                  t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun string-has-been-internedp (string intern-table)
   (declare (xargs :guard (and (stringp string)
@@ -163,6 +173,8 @@
   (equal (string-has-been-internedp string (empty-intern-table))
          nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;assumes that the string has been interned??
 ;returns a heap address, or nil if the string isn't in the intern table
 (defun get-interned-string (string intern-table)
@@ -179,6 +191,8 @@
 (defthm get-interned-string-of-empty-intern-table
   (equal (get-interned-string string (empty-intern-table))
          nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun set-interned-string (string ad intern-table)
   (declare (xargs :guard (and (stringp string)
@@ -240,7 +254,7 @@
 ;;                   nil))
 ;;   :hints (("Goal" :in-theory (enable lookup-equal))))
 
-;drop, if we keep get-class diabled?
+;drop, if we keep get-class disabled?
 (defthm get-field-of-get-interned-string-and-class-pair
   (implies (and (string-has-been-internedp string intern-table)
                 (intern-table-okp intern-table heap))
