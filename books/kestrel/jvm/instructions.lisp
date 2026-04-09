@@ -259,11 +259,13 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable instructionp))))
 
-(defun instruction-opcode (inst)
+;;extracts the op-code from an instruction
+(defund instruction-opcode (inst)
   (declare (xargs :guard (instructionp inst)))
   (car inst))
 
-(defun instruction-args (inst)
+;;extracts the arguments from an instruction
+(defund instruction-args (inst)
   (declare (xargs :guard (instructionp inst)))
   (cdr inst))
 
@@ -454,7 +456,7 @@
 ;; preceded by :wide have their lengths stored in the instruction.
 (defund inst-len (inst)
   (declare (xargs :guard (instructionp inst)
-                  :guard-hints (("Goal" :in-theory (enable instructionp member-equal)))))
+                  :guard-hints (("Goal" :in-theory (enable instructionp member-equal instruction-opcode)))))
   (let ((opcode (instruction-opcode inst)))
     (if (member-eq opcode *one-byte-ops*)
         1
@@ -508,7 +510,7 @@
   (implies (instructionp inst)
            (natp (inst-len inst)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable inst-len instructionp member-equal))))
+  :hints (("Goal" :in-theory (enable inst-len instructionp member-equal instruction-opcode))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -705,10 +707,3 @@
   (implies (jvm-instruction-okayp inst pc valid-pcs)
            (instructionp inst))
   :hints (("Goal" :in-theory (enable jvm-instruction-okayp))))
-
-;extract the op-code from an instruction
-;make a macro? (why?)
-(defund op-code (inst)
-  (declare (xargs :guard (instructionp inst)
-                  :guard-hints (("Goal" :in-theory (enable instructionp)))))
-  (car inst))

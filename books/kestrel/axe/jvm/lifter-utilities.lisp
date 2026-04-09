@@ -714,7 +714,7 @@
                               (jvm::jvm-statep s))
                   :verify-guards nil))
   (let ((jvm::inst (jvm::current-inst jvm::th s)))
-    (jvm::do-inst (jvm::op-code jvm::inst)
+    (jvm::do-inst (jvm::instruction-opcode jvm::inst)
                   jvm::inst jvm::th s)))
 
 (defthmd step-always-open-correct

@@ -918,7 +918,7 @@
             logext-when-usb-cheap ;new, since logext is still used a little bit (for arraycopy?)
             logext-identity-when-usb-smaller-axe
 
-            jvm::op-code
+            jvm::instruction-opcode
 
             jvm::call-stack
 

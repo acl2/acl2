@@ -669,7 +669,7 @@
                 ;; (not (empty-call-stackp (binding th (thread-table s))))
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))
-           (jvm-statep (do-inst (op-code inst) inst th s)))
+           (jvm-statep (do-inst (instruction-opcode inst) inst th s)))
   :otf-flg t
   :hints (("goal" :do-not '(generalize eliminate-destructors)
 ;           :induct nil

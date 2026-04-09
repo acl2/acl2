@@ -1650,7 +1650,7 @@
                )
           (equal (mv-nth 2 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool)) ; number of extra bytes
                  (+ -1 (jvm::inst-len (mv-nth 1 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool))))))
- :hints (("Goal" :in-theory (enable member-equal jvm::inst-len translate-instruction lookup-equal jvm::instructionp))))
+ :hints (("Goal" :in-theory (enable member-equal jvm::inst-len translate-instruction lookup-equal jvm::instructionp jvm::instruction-opcode))))
 
 ;; don't really know what to put for the valid PCs
 ;; (thm

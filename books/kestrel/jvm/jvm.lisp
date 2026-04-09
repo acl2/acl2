@@ -5968,7 +5968,7 @@
     (:SWAP           (execute-SWAP th s))
     (:tableswitch    (execute-tableswitch inst th s))
     ;; NOTE: WIDE is transformed away by the class file parser
-    (otherwise (error-state (list "error-unknown-opcode" (op-code inst)) s))
+    (otherwise (error-state (list "error-unknown-opcode" (instruction-opcode inst)) s))
     ))
 
 ;TH is a thread designator
@@ -5979,7 +5979,7 @@
                   :verify-guards nil ;todo add and prove guard
                   ))
   (let ((inst (current-inst th s)))
-    (do-inst (op-code inst) inst th s)))
+    (do-inst (instruction-opcode inst) inst th s)))
 
 ;SCHED is a list of thread designators
 (defund run (sched s)
@@ -6094,7 +6094,7 @@
 (defthm step-opener
   (equal (step th s)
          (let ((inst (current-inst th s)))
-           (do-inst (op-code inst)
+           (do-inst (instruction-opcode inst)
                     inst th s)))
   :hints (("Goal" :in-theory (enable step))))
 
