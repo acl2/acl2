@@ -1,7 +1,7 @@
 ; Rules about the JVM model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -396,6 +396,7 @@
                   alist))
   :hints (("goal" :in-theory (enable bind assoc-equal binding assoc-equal))))
 
+;; todo: causes many case splits in Android app proofs
 (defthm bind-to-binding-better
   (implies (and (case-split (alistp alist))
                 (case-split (assoc-equal field alist)))
@@ -669,7 +670,7 @@
                 ;; (not (empty-call-stackp (binding th (thread-table s))))
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))
-           (jvm-statep (do-inst (op-code inst) inst th s)))
+           (jvm-statep (do-inst (instruction-opcode inst) inst th s)))
   :otf-flg t
   :hints (("goal" :do-not '(generalize eliminate-destructors)
 ;           :induct nil
@@ -680,7 +681,7 @@
                             obtain-and-throw-exception
                             ;;thread-top-frame ;why?  don't we have rules about this (maybe later in the development)?
                             SKIP-INVOKESTATIC-INSTRUCTION
-                            JVM-INSTRUCTIONP
+                            INSTRUCTIONP
 ;                            acl2::mv-nth-becomes-nth
                             ;JVM-STATEP
                             ;make-state
@@ -724,7 +725,7 @@
 ;;  (implies (and (jvm-statep s)
 ;;                (call-stack-non-emptyp th s)
 ;;                )
-;;           (JVM-INSTRUCTION-OKAYP (ACL2::LOOKUP-EQUAL (PC (TOP-FRAME-of-thread TH S)) (PROGRAM (TOP-FRAME-of-thread TH S))) (PC (TOP-FRAME-of-thread TH S))))
+;;           (JVM-INSTRUCTION-OKAYP (LOOKUP-EQUAL (PC (TOP-FRAME-of-thread TH S)) (PROGRAM (TOP-FRAME-of-thread TH S))) (PC (TOP-FRAME-of-thread TH S))))
 ;;  :hints (("Goal" :in-theory (enable jvm-statep call-stack-non-emptyp))))
 
 (defthm jvm-statep-step

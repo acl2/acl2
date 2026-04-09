@@ -1322,7 +1322,7 @@
     (b* (((when (not (consp bytes)))
           (mv :not-enough-bytes nil 0))
          (opcode-after-wide (first bytes))
-         (opcode-after-wide-name (lookup opcode-after-wide *opcode-to-name-table*)))
+         (opcode-after-wide-name (lookup opcode-after-wide jvm::*opcode-to-name-table*)))
       (if (member-eq opcode-after-wide-name '(:iload
                                               :fload
                                               :aload
@@ -1370,20 +1370,22 @@
          ((when (< high low))
           (mv :error-in-tableswitch nil 0))
          ((mv erp jump-offsets &) (read-signed-4-byte-quantities (+ 1 high (- low)) bytes))
-         ((when erp) (mv erp nil 0)))
+         ((when erp) (mv erp nil 0))
+         (extra-byte-count (+ bytes-of-padding
+                              4       ;for default
+                              4       ;for low
+                              4       ;for high
+                              (* 4 (+ 1 high (- low))) ;for the jump offsets
+                              )))
       (mv (erp-nil)
           (list opcode-name
                 default-offset ;signed
                 low            ;signed
                 high           ;signed
                 jump-offsets   ;all are signed
+                (+ 1 extra-byte-count) ; we store the length, since it is tricky to compute
                 )
-          (+ bytes-of-padding
-             4                        ;for default
-             4                        ;for low
-             4                        ;for high
-             (* 4 (+ 1 high (- low))) ;for the jump offsets
-             ))))
+          extra-byte-count)))
    ((eq opcode-name ':lookupswitch)
     (let* ((bytes-of-padding (- 3 (mod byte-number-of-opcode 4)))
            (bytes (nthcdr bytes-of-padding bytes)) ;could check that the skipped bytes are in fact 0's
@@ -1406,6 +1408,7 @@
                   default-value
                   ;; no need to store npairs
                   (pairlis$ (evens matches-and-offsets) (odds matches-and-offsets)) ;make the alist
+                  (+ 1 extra-byte-count) ; we store the length, since it is tricky to compute
                   )
             extra-byte-count))))
    ((member-eq opcode-name jvm::*one-byte-ops*)
@@ -1640,12 +1643,19 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable translate-instruction))))
 
+;; Sanity checks inst-len vs translate-instruction:
+(thm
+ (implies (and (not (mv-nth 0 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool))) ;; no translation error:
+               (integerp byte-number-of-opcode) ; why?
+               )
+          (equal (mv-nth 2 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool)) ; number of extra bytes
+                 (+ -1 (jvm::inst-len (mv-nth 1 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool))))))
+ :hints (("Goal" :in-theory (enable member-equal jvm::inst-len translate-instruction lookup-equal jvm::instructionp jvm::instruction-opcode))))
+
+;; don't really know what to put for the valid PCs
 ;; (thm
-;;  (implies (not (MV-NTH 0 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool)))
-;;           (JVM::JVM-INSTRUCTION-OKAYP (MV-NTH 1 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool))
-;;                                       BYTE-NUMBER-OF-OPCODE
-;;                                       (CONS BYTE-NUMBER-OF-OPCODE
-;;                                             (STRIP-CARS ACC))))
+;;  (implies (not (mv-nth 0 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool)))
+;;           (jvm::jvm-instruction-okayp (mv-nth 1 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool)) byte-number-of-opcode valid-pcs)))
 
 ;this is now tail recursive
 ;byte-number-of-opcode is the byte number of the opcode of the instruction (numbering with the first opcode in the method as 0)
@@ -1664,7 +1674,7 @@
           (mv :not-enough-bytes nil))
          (opcode (first bytes))
          (bytes (rest bytes))
-         (opcode-name (lookup opcode *opcode-to-name-table*))
+         (opcode-name (lookup opcode jvm::*opcode-to-name-table*))
          ((when (not opcode-name))
           (er hard? 'translate-code-bytes-aux "Unknown opcode: ~x0." opcode)
           (mv :bad-opcode nil))
@@ -1684,16 +1694,16 @@
                 (alistp acc))
            (alistp (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc))))
   :hints (("Goal" :in-theory (enable translate-code-bytes-aux
-                                     all-pcp))))
+                                     jvm::all-pcp))))
 
 (defthm all-pcp-of-strip-cars-of-mv-nth-1-of-translate-code-bytes-aux
   (implies (and (not (mv-nth 0 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))
-                (all-pcp (strip-cars acc))
+                (jvm::all-pcp (strip-cars acc))
                 (true-listp acc)
                 (natp byte-number-of-opcode))
-           (all-pcp (strip-cars (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))))
+           (jvm::all-pcp (strip-cars (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))))
   :hints (("Goal" :in-theory (enable translate-code-bytes-aux
-                                     all-pcp))))
+                                     jvm::all-pcp))))
 
 (defthm car-of-car-of-mv-nth-1-of-translate-code-bytes-aux
   (implies (and (not (mv-nth 0
@@ -1731,8 +1741,8 @@
     (if (not (consp program))
         (mv :empty-program nil)
       (let ((pcs (strip-cars program)))
-        (if (and (jvm::jvm-instructions-okayp program pcs) ;todo: avoid the strip-cars?
-                 (JVM::INCREASING-PCSP (REST PCS) 0) ;todo: drop!
+        (if (and (jvm::jvm-instructions-okayp program 0 pcs) ;todo: avoid the strip-cars? ; todo: prove this is always true?  well, what about the jump targets?
+                 ; (JVM::INCREASING-PCSP (REST PCS) 0) ;todo: drop!
                  )
             (mv (erp-nil) program)
           (mv `(:instructions-not-all-ok ,program) nil))))))
@@ -2934,9 +2944,9 @@
        (true-listp (lookup-equal ':interfaces raw-parsed-class))
        (jvm::all-class-namesp (lookup-equal ':interfaces raw-parsed-class))
        ;; check the super class, etc:
-       (let ((class-name (acl2::lookup-eq :this_class raw-parsed-class))
-             (superclass (acl2::lookup-eq :super_class raw-parsed-class))
-             (interfacep (member-eq :acc_interface (acl2::lookup-eq :access_flags raw-parsed-class))))
+       (let ((class-name (lookup-eq :this_class raw-parsed-class))
+             (superclass (lookup-eq :super_class raw-parsed-class))
+             (interfacep (member-eq :acc_interface (lookup-eq :access_flags raw-parsed-class))))
          (and (jvm::class-namep class-name)
               (superclass-and-interfaceness-okp class-name superclass interfacep)))))
 
@@ -3509,7 +3519,7 @@
   (b* (((mv erp raw-parsed-class constant-pool)
         (parse-bytes-into-raw-parsed-class bytes constant-pool))
        ((when erp) (mv erp nil nil nil constant-pool))
-       (class-name (acl2::lookup-eq :this_class raw-parsed-class))
+       (class-name (lookup-eq :this_class raw-parsed-class))
        ((mv class-info
             field-defconsts ; todo: don't even compute these if not used
             )

@@ -33,7 +33,7 @@
 (skip-proofs
  (defthm run-until-exit-segment-or-hit-loop-header-lemma-for-invoke
    (implies (and (<= sh (stack-height s)) ;todo: prevent loops
-                 (member-equal (jvm::op-code (jvm::current-inst (th) s)) *invoke-opcodes*)
+                 (member-equal (jvm::instruction-opcode (jvm::current-inst (th) s)) *invoke-opcodes*)
                  (natp sh)
                  )
             (equal (run-until-exit-segment-or-hit-loop-header sh segment-pcs loop-headers (jvm::step (th) s))
