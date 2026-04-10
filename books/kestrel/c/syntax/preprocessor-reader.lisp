@@ -450,7 +450,7 @@
               (reterr-msg :where pos
                           :expected "a Unicode character with code ~
                                      in the range 9-13 or 32-126 ~
-                                     or 128-8233 or 8239-8293 or ~
+                                     or 128-8233 or 8239-8293 ~
                                      or 8298-55295 or 57344-1114111"
                           :found (char-to-msg char))))
           (retok char pos pos+1 bytes)))
