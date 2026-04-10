@@ -34,7 +34,8 @@
       "https://arxiv.org/abs/1907.00509v1"
       "``The Semantics of Rank Polymorphism''")
      " by Justin Slepak, Olin Shivers, and Panagiotis Manolios:
-      a journal paper submitted to the Journal of Functional Programming.")
+      an arXiv paper submitted to the Journal of Functional Programming.
+      We refer to this as `arXiv paper' in the documentation.")
     (xdoc::li
      (xdoc::ahref
       "https://link.springer.com/chapter/10.1007/978-3-642-54833-8_3"
@@ -44,19 +45,21 @@
      (xdoc::ahref
       "https://www.khoury.northeastern.edu/home/pete/research/esop-2014.html"
       "here")
-     ".")
+     ". We refer to this as `ESOP paper' in the documentation.")
     (xdoc::li
      (xdoc::ahref
       "https://arxiv.org/abs/1912.13451"
       "``Introduction to Rank-polymorphic Programming in Remora (Draft)''")
      " by Olin Shivers, Justin Slepak, and Panagiotis Manolios:
-      a tutorial on Remora.")
+      a tutorial on Remora.
+      We refer to this as `tutorial' in the documentation.")
     (xdoc::li
      (xdoc::ahref
       "https://www.khoury.northeastern.edu/~jrslepak/Dissertation.pdf"
       "``A Typed Programming Language - The Semantics of Rank Polymorphism''")
      " by Justin Slepak:
-      PhD dissertation."))
+      PhD dissertation.
+      We refer to this as `dissertation' in the documentation."))
    (xdoc::p
     "This ACL2 library is work in progress towards building
      formalizations and tools for Remora."))
