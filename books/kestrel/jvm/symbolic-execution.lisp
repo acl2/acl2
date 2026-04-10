@@ -1,7 +1,7 @@
 ; Symbolic execution using run-until-return and run-until-return-from-stack-height
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "jvm") ; for step
 (include-book "symbolic-execution-common")
 
 ;BBOZO think about this stuff

@@ -1,7 +1,7 @@
 ; More symbolic execution machinery
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 
 (include-book "symbolic-execution-common")
 (include-book "pc-designators")
+(include-book "jvm") ; for step
 (include-book "misc/defp" :dir :system) ;drop?
 (local (include-book "kestrel/lists-light/len" :dir :system))
 

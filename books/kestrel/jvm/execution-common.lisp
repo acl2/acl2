@@ -11,7 +11,7 @@
 
 (in-package "ACL2") ;todo: use jvm package?
 
-(include-book "jvm") ; todo: reduce
+(include-book "states")
 (include-book "th")
 
 ;; The height of the call stack of thread (TH) in state S.

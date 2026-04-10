@@ -18,7 +18,7 @@
 (include-book "method-descriptors")
 (include-book "instructions") ; for pcp
 (include-book "frames") ; for jvm::cur-class-name
-(include-book "jvm") ; for thread-top-frame ; todo: move that
+(include-book "states") ; for thread-top-frame ; todo: move that
 
 ;;;
 ;;; pc-designatorp

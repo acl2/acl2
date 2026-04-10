@@ -1,7 +1,7 @@
 ; Concrete (non-symbolic) execution of the JVM.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "jvm") ; for step
 (include-book "misc/defpun" :dir :system)
 (include-book "misc/defp" :dir :system)
 (include-book "execution-common")
