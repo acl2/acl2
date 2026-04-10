@@ -548,7 +548,7 @@
                           :found (msg "the value ~x0" char))))
           (retok char pos pos+1 bytes))))
     (reterr-msg :where pos
-                :expected "a byte in the range 9-13 or 32-126 or 192-223"
+                :expected "a byte in the range 9-13 or 32-126 or 192-247"
                 :found (msg "the byte ~x0" byte)))
   :no-function nil
   :measure (len bytes)
