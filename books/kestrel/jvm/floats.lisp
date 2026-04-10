@@ -1,7 +1,7 @@
 ; A partial formalization of Java floating point values
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -326,10 +326,10 @@
 
 
 (defconst *max-signed-int32* (+ -1 (expt 2 31)))
-(defconst *min-signed-int32* (acl2::bvchop 32 (- (expt 2 31))))
+(defconst *min-signed-int32* (bvchop 32 (- (expt 2 31))))
 
 (defconst *max-signed-int64* (+ -1 (expt 2 63)))
-(defconst *min-signed-int64* (acl2::bvchop 64 (- (expt 2 63))))
+(defconst *min-signed-int64* (bvchop 64 (- (expt 2 63))))
 
 
 ;convert double to int
@@ -438,11 +438,11 @@
               (and (<= #xff800001 bits)
                    (<= bits #xffffffff)))
           jvm::*float-NaN*
-        (let* ((s (if (eql (acl2::bvshr 32 bits 31) 0) 1 -1)) ;sign
-               (e (acl2::bvand 32 (acl2::bvshr 32 bits 23) #xff))   ;exponent
+        (let* ((s (if (eql (bvshr 32 bits 31) 0) 1 -1)) ;sign
+               (e (bvand 32 (bvshr 32 bits 23) #xff))   ;exponent
                (m (if (eql e 0)
-                      (acl2::bvshl 32 (acl2::bvand 32 bits #x7fffff) 1)
-                    (acl2::bvor 32 (acl2::bvand 32 bits #x7fffff) #x800000))))
+                      (bvshl 32 (bvand 32 bits #x7fffff) 1)
+                    (bvor 32 (bvand 32 bits #x7fffff) #x800000))))
           (jvm::make-regular-float (if (eql s 1) :pos :neg)
                                    (* m (expt 2 (- e 150)))))))))
 
@@ -465,11 +465,11 @@
               (and (<= #xfff0000000000001 bits)
                    (<= bits #xffffffffffffffff)))
           jvm::*double-NaN*
-        (let* ((s (if (eql (acl2::bvshr 64 bits 63) 0) 1 -1)) ;sign
-               (e (acl2::bvand 64 (acl2::bvshr 64 bits 52) #x7ff))   ;exponent
+        (let* ((s (if (eql (bvshr 64 bits 63) 0) 1 -1)) ;sign
+               (e (bvand 64 (bvshr 64 bits 52) #x7ff))   ;exponent
                (m (if (eql e 0)
-                      (acl2::bvshl 64 (acl2::bvand 64 bits #xfffffffffffff) 1)
-                    (acl2::bvor 64 (acl2::bvand 64 bits #xfffffffffffff) #x10000000000000))))
+                      (bvshl 64 (bvand 64 bits #xfffffffffffff) 1)
+                    (bvor 64 (bvand 64 bits #xfffffffffffff) #x10000000000000))))
           (jvm::make-regular-double (if (eql s 1) :pos :neg)
                                     (* m (expt 2 (- e 1075)))))))))
 

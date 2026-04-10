@@ -98,7 +98,7 @@
 (skip-proofs
  (defthm run-until-return-from-stack-height-lemma-for-invoke
    (implies (and (<= sh (stack-height s)) ;todo: prevent loops
-                 (member-equal (jvm::op-code (jvm::current-inst (th) s)) *invoke-opcodes*)
+                 (member-equal (jvm::instruction-opcode (jvm::current-inst (th) s)) *invoke-opcodes*)
                  (natp sh)
                  )
             (equal (run-until-return-from-stack-height sh (jvm::step (th) s))

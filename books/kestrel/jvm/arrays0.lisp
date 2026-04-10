@@ -1,7 +1,7 @@
 ; Basic definitions about arrays.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -50,8 +50,17 @@
 
 ;Note: The JVM spec says "Once an array object is created, its length never changes."
 ;we are no longer storing the array's length field separately...
-;should this be a function rather than a macro (would need to be disabled, since rules are written in terms of it)
 ;call array-contents?
 ;calling this when we already have the contents would cause the get-field to be redone..
-(defmacro array-length (ref heap)
-  `(len (get-field ,ref (array-contents-pair) ,heap)))
+(defund array-length (ref heap)
+  (declare (xargs :guard (and (addressp ref)
+                              (jvm::heapp heap))))
+  (len (get-field ref (array-contents-pair) heap)))
+
+(defthm array-length-of-set-field-both
+  (equal (array-length ad1 (set-field ad2 pair value heap))
+         (if (and (equal ad1 ad2)
+                  (equal pair  (array-contents-pair)))
+             (len value)
+           (array-length ad1 heap)))
+  :hints (("Goal" :in-theory (enable array-length))))
