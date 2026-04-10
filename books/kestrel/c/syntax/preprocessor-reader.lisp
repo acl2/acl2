@@ -133,7 +133,7 @@
      we return @('nil') as the character,
      and both @('char-pos') and @('next-pos') are equal to @('pos').
      If we read a character, we also return the remaining bytes;
-     if there is no character, we retun @('nil') as the @('new-bytes') output.")
+     if there is no character, we return @('nil') as the @('new-bytes') output.")
    (xdoc::p
     "A character can take one, two, three, or four bytes,
      according to the UTF-8 decoding.
@@ -159,14 +159,14 @@
      this would be consistent with the position information
      provided by Emacs and VS Code, for example.
      Currently a vertical tab or a form feed just increment the column by one,
-     as if they were regular character;
+     as if they were regular characters;
      we could consider changing that
      (presumably based on additional information passed to this function),
      but the current behavior is consistent
      with Emacs and VS Code, for example
      (more precisely, Emacs increments the column by two,
-     displaying vertical tab a @('^K') and form feed as @('^L'),
-     each of which looks like formed by two regular characters.
+     displaying vertical tab as @('^K') and form feed as @('^L'),
+     each of which looks like formed by two regular characters).
      We treat all the non-ASCII Unicode characters
      as incrementing the column by one,
      which we might need to revise in some cases,
@@ -176,7 +176,7 @@
      we skip both and we attempt to read a character after them.
      Since another backslash and new line may follow,
      this function is recursive, because there is no bound.
-     Although the backslah and new line are not preserved,
+     Although the backslash and new line are not preserved,
      we increment the line number, and reset the column number,
      every time we find one,
      because the positions refer to the original file.
@@ -251,7 +251,7 @@
      We return an error if there is no second or third or fourth byte.
      We return an error if the encoded value is below 10000h or above 10FFFFh.
      If all these checks pass,
-     the code covers the character range from @('U+10000') to @('U+1FFFFF').")
+     the code covers the character range from @('U+10000') to @('U+10FFFF').")
    (xdoc::p
     "If the first byte read has any other value,
      either it is an invalid UTF-8 encoding (e.g. @('111...'))
@@ -390,7 +390,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
-                                          (i.e. between 224 to 239) ~
+                                          (i.e. between 224 and 239) ~
                                           of a three-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
@@ -410,7 +410,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
-                                          (i.e. between 224 to 239) ~
+                                          (i.e. between 224 and 239) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -450,18 +450,18 @@
               (reterr-msg :where pos
                           :expected "a Unicode character with code ~
                                      in the range 9-13 or 32-126 ~
-                                     or 128-8233 or 8239-8293 or ~
+                                     or 128-8233 or 8239-8293 ~
                                      or 8298-55295 or 57344-1114111"
                           :found (char-to-msg char))))
           (retok char pos pos+1 bytes)))
        ;; 4-byte UTF-8:
-       ((when (utf8-= (logand #b11111000 byte) #b11110000)) ; 11110xyy
+       ((when (utf8-= (logand byte #b11111000) #b11110000)) ; 11110xyy
         (b* (((unless (consp bytes))
               (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           of a four-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
@@ -476,12 +476,12 @@
                                           of a four-byte UTF-8 encoding"
                                          byte)
                           :found (msg "the byte ~x0" byte2)))
-             ((unless bytes)
+             ((unless (consp bytes))
               (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -507,7 +507,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -548,7 +548,7 @@
                           :found (msg "the value ~x0" char))))
           (retok char pos pos+1 bytes))))
     (reterr-msg :where pos
-                :expected "a byte in the range 9-13 or 32-126 or 192-223"
+                :expected "a byte in the range 9-13 or 32-126 or 192-247"
                 :found (msg "the byte ~x0" byte)))
   :no-function nil
   :measure (len bytes)
@@ -596,7 +596,7 @@
                    (bytep byte2)
                    (bytep byte3)
                    (bytep byte4)
-                   (utf8-= (logand #b11111000 byte) #b11110000)
+                   (utf8-= (logand byte #b11111000) #b11110000)
                    (utf8-= (logand byte2 #b11000000) #b10000000)
                    (utf8-= (logand byte3 #b11000000) #b10000000)
                    (utf8-= (logand byte4 #b11000000) #b10000000))
@@ -836,7 +836,7 @@
        (size (ppstate->size ppstate))
        (ppstate (update-ppstate->size (+ n size) ppstate))
        (index (ppstate->char-index ppstate))
-       ((unless (> index n))
+       ((unless (>= index n))
         (raise "Internal error: ~
                 cannot unread ~x0 characters, ~
                 because only ~x1 have been read so far."
