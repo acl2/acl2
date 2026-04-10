@@ -165,8 +165,8 @@
      but the current behavior is consistent
      with Emacs and VS Code, for example
      (more precisely, Emacs increments the column by two,
-     displaying vertical tab a @('^K') and form feed as @('^L'),
-     each of which looks like formed by two regular characters.
+     displaying vertical tab as @('^K') and form feed as @('^L'),
+     each of which looks like formed by two regular characters).
      We treat all the non-ASCII Unicode characters
      as incrementing the column by one,
      which we might need to revise in some cases,
@@ -176,7 +176,7 @@
      we skip both and we attempt to read a character after them.
      Since another backslash and new line may follow,
      this function is recursive, because there is no bound.
-     Although the backslah and new line are not preserved,
+     Although the backslash and new line are not preserved,
      we increment the line number, and reset the column number,
      every time we find one,
      because the positions refer to the original file.
