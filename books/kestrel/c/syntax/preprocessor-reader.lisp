@@ -251,7 +251,7 @@
      We return an error if there is no second or third or fourth byte.
      We return an error if the encoded value is below 10000h or above 10FFFFh.
      If all these checks pass,
-     the code covers the character range from @('U+10000') to @('U+1FFFFF').")
+     the code covers the character range from @('U+10000') to @('U+10FFFF').")
    (xdoc::p
     "If the first byte read has any other value,
      either it is an invalid UTF-8 encoding (e.g. @('111...'))
