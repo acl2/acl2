@@ -455,7 +455,7 @@
                           :found (char-to-msg char))))
           (retok char pos pos+1 bytes)))
        ;; 4-byte UTF-8:
-       ((when (utf8-= (logand #b11111000 byte) #b11110000)) ; 11110xyy
+       ((when (utf8-= (logand byte #b11111000) #b11110000)) ; 11110xyy
         (b* (((unless (consp bytes))
               (reterr-msg :where pos
                           :expected (msg "another byte after ~
@@ -596,7 +596,7 @@
                    (bytep byte2)
                    (bytep byte3)
                    (bytep byte4)
-                   (utf8-= (logand #b11111000 byte) #b11110000)
+                   (utf8-= (logand byte #b11111000) #b11110000)
                    (utf8-= (logand byte2 #b11000000) #b10000000)
                    (utf8-= (logand byte3 #b11000000) #b10000000)
                    (utf8-= (logand byte4 #b11000000) #b10000000))
