@@ -347,7 +347,7 @@
                              (ienv->dialect (code-ensemble->ienv code))))
        ;; Write the files to the file system.
        ((erp state)
-        (output-files-gen-files-loop (fileset->unwrap files) base-dir state)))
+        (output-files-gen-files-loop (fileset->files files) base-dir state)))
     (retok state))
   :guard-hints (("Goal" :in-theory (enable code-ensemble-aidentp)))
   :prepwork

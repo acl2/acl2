@@ -95,7 +95,7 @@
      which we therefore represent as a map from file paths to file data.
      This is wrapped into a one-component product fixtype
      for separation and extensibility."))
-  ((unwrap filepath-filedata-map))
+  ((files filepath-filedata-map))
   :pred filesetp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -120,7 +120,7 @@
    (xdoc::p
     "Together with @(tsee file-at-path),
      it can be used as an API to inspect a file set."))
-  (omap::keys (fileset->unwrap files)))
+  (omap::keys (fileset->files files)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -139,7 +139,7 @@
    (xdoc::p
     "Together with @(tsee fileset-paths),
      it can be used an as API to inspect a file set."))
-  (filedata-fix (omap::lookup (filepath-fix path) (fileset->unwrap files)))
+  (filedata-fix (omap::lookup (filepath-fix path) (fileset->files files)))
   :guard-hints (("Goal" :in-theory (enable fileset-paths))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,7 +152,7 @@
    (xdoc::p
     "The file paths in the file set are interpreted
      relative to the base directory passed as input."))
-  (write-fileset-loop (fileset->unwrap fileset) base-dir state)
+  (write-fileset-loop (fileset->files fileset) base-dir state)
   :prepwork
   ((define write-fileset-loop ((filemap filepath-filedata-mapp)
                                (base-dir stringp)
