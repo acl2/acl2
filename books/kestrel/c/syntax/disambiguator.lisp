@@ -3905,6 +3905,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define eval-if/ifdef/ifndef-condition ((if/ifdef/ifndef hash-if/ifdef/ifndef-p)
+                                        (dstate dstatep))
+  :returns (mv (erp maybe-msgp) (yes/no booleanp))
+  :short "Evaluate the condition of a
+          @('#if'), @('#ifdef'), or @('#ifndef')
+          during disambiguation."
+  (b* (((reterr) nil)
+       (macros (dstate->macros dstate))
+       (ienv (dstate->ienv dstate)))
+    (hash-if/ifdef/ifndef-case
+     if/ifdef/ifndef
+     :if (b* (((mv erp intval)
+               (eval-hash-if/elif-expr if/ifdef/ifndef.expr macros ienv))
+              ((unless (maybe-msgp erp))
+               (raise "Internal error: malformed message ~x0." erp)
+               (reterr "irrelevant")))
+           (retok (/= intval 0)))
+     :ifdef (b* ((name (ident->unwrap if/ifdef/ifndef.name))
+                 ((unless (stringp name))
+                  (raise "Internal error: identifier ~x0." if/ifdef/ifndef.name)
+                  (reterr "irrelevant")))
+              (retok (and (macro-lookup name macros) t)))
+     :ifndef (b* ((name (ident->unwrap if/ifdef/ifndef.name))
+                  ((unless (stringp name))
+                   (raise "Internal error: identifier ~x0." if/ifdef/ifndef.name)
+                   (reterr "irrelevant")))
+               (retok (not (macro-lookup name macros))))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines dimb-trans-items/units
   :short "Disambiguate translation items and units."
   :long
@@ -3962,11 +3993,18 @@
        and undergo no transformation.")
      (xdoc::p
       "As in our @(see preprocessor),
-     we retain the scaffolding of the conditional translation items,
-     but we only keep, and disambiguate,
-     the code that is selected according to the conditions.
-     This is achieved via separate functions,
-     which are structurally similar to some of the preprocessor functions."))
+       we retain the scaffolding of the conditional translation items,
+       but we only keep, and disambiguate,
+       the code that is selected according to the conditions.
+       First we evaluate the initial condition.
+       If it is satisfied, we disambiguate the initial items,
+       otherwise we drop them.
+       Then we disambiguate all the @('#elif')s if any,
+       and finally the @('#else') if present.
+       We use the variable @('condp') for the satisfaction of each condition,
+       and the variable @('donep') to record
+       when a condition has been satisfied;
+       this is similar to the code in our preprocesor."))
     (b* (((reterr) nil (irr-dstate) nil)
          ((when (zp limit))
           (raise "Internal error: limit exhausted.")
@@ -4015,41 +4053,44 @@
                 (retok (list (trans-item-fix item))
                        dstate
                        (filepath-trans-unit-map-fix tumap-dimb)))
-       :cond (hash-if/ifdef/ifndef-case
-              item.if/ifdef/ifndef
-              :if (b* (((erp item dstate tumap-dimb)
-                        (dimb-if-trans-item item.if/ifdef/ifndef.expr
-                                            item.items
-                                            item.elifs
-                                            item.else
-                                            dstate
-                                            tumap-orig
-                                            resolved-includes
-                                            tumap-dimb
-                                            (1- limit))))
-                    (retok (list item) dstate tumap-dimb))
-              :ifdef (b* (((erp item dstate tumap-dimb)
-                           (dimb-ifdef/ifndef-trans-item t
-                                                         item.items
-                                                         item.elifs
-                                                         item.else
-                                                         dstate
-                                                         tumap-orig
-                                                         resolved-includes
-                                                         tumap-dimb
-                                                         (1- limit))))
-                       (retok (list item) dstate tumap-dimb))
-              :ifndef (b* (((erp item dstate tumap-dimb)
-                            (dimb-ifdef/ifndef-trans-item nil
-                                                          item.items
-                                                          item.elifs
-                                                          item.else
-                                                          dstate
-                                                          tumap-orig
-                                                          resolved-includes
-                                                          tumap-dimb
-                                                          (1- limit))))
-                        (retok (list item) dstate tumap-dimb)))
+       :cond (b* (((erp condp)
+                   (eval-if/ifdef/ifndef-condition item.if/ifdef/ifndef dstate))
+                  ((erp new-items dstate tumap-dimb)
+                   (if condp
+                       (dimb-trans-item-list item.items
+                                             dstate
+                                             tumap-orig
+                                             resolved-includes
+                                             tumap-dimb
+                                             (1- limit))
+                     (mv nil ; erp
+                         nil ; new-items
+                         (dstate-fix dstate)
+                         (filepath-trans-unit-map-fix tumap-dimb))))
+                  (donep condp)
+                  ((erp new-elifs dstate tumap-dimb donep)
+                   (dimb-elif-list item.elifs
+                                   dstate
+                                   tumap-orig
+                                   resolved-includes
+                                   tumap-dimb
+                                   donep
+                                   (1- limit)))
+                  ((erp new-else dstate tumap-dimb)
+                   (dimb-else-option item.else
+                                     dstate
+                                     tumap-orig
+                                     resolved-includes
+                                     tumap-dimb
+                                     donep
+                                     (1- limit))))
+               (retok (list (make-trans-item-cond
+                             :if/ifdef/ifndef item.if/ifdef/ifndef
+                             :items new-items
+                             :elifs new-elifs
+                             :else new-else))
+                      dstate
+                      tumap-dimb))
        :line-comment (retok (list (trans-item-fix item))
                             (dstate-fix dstate)
                             (filepath-trans-unit-map-fix tumap-dimb))))
@@ -4210,64 +4251,170 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-if-trans-item ((expr hash-if/elif-exprp)
-                              (items trans-item-listp)
-                              (elifs hash-elif-listp)
-                              (else hash-else-optionp)
-                              (dstate dstatep)
-                              (tumap-orig filepath-trans-unit-mapp)
-                              (resolved-includes
-                               string-header-name-string-map-mapp)
-                              (tumap-dimb filepath-trans-unit-mapp)
-                              (limit natp))
+  (define dimb-elif ((elif hash-elifp)
+                     (dstate dstatep)
+                     (tumap-orig filepath-trans-unit-mapp)
+                     (resolved-includes string-header-name-string-map-mapp)
+                     (tumap-dimb filepath-trans-unit-mapp)
+                     (donep booleanp)
+                     (limit natp))
     :returns (mv (erp maybe-msgp)
-                 (new-item trans-itemp)
+                 (new-elif hash-elifp)
                  (new-dstate dstatep)
-                 (new-tumap-dimb filepath-trans-unit-mapp))
+                 (new-tumap-dimb filepath-trans-unit-mapp)
+                 (new-donep booleanp))
     :parents (disambiguator dimb-trans-items/units)
-    :short "Disabiguate a @('#if') translation item."
-    (declare
-     (ignore
-      expr items elifs else dstate tumap-orig resolved-includes tumap-dimb))
-    (b* (((reterr) (irr-trans-item) (irr-dstate) nil)
+    :short "Disambiguate a @('#elif')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the input @('donep') flag is @('t'),
+       it means that some previous condition was satisfied,
+       and thus we skip these items.
+       Otherwise, we evaluate the expression,
+       and if it returns non-zero we disambiguate the items,
+       otherwise we skip them.
+       We return @('donep') based on whether
+       the condition was true or false."))
+    (b* (((reterr) (irr-hash-elif) (irr-dstate) nil nil)
          ((when (zp limit))
           (raise "Internal error: limit exhausted.")
-          (reterr "irrelevant")))
-      (reterr (msg "TODO")))
+          (reterr "irrelevant"))
+         ((hash-elif elif) elif)
+         ((when donep)
+          (retok (make-hash-elif :expr elif.expr :items nil)
+                 (dstate-fix dstate)
+                 (filepath-trans-unit-map-fix tumap-dimb)
+                 t))
+         ((mv erp intval)
+          (eval-hash-if/elif-expr elif.expr
+                                  (dstate->macros dstate)
+                                  (dstate->ienv dstate)))
+         ((unless (maybe-msgp erp))
+          (raise "Internal error: malformed message ~x0." erp)
+          (reterr "irrelevant"))
+         (condp (/= intval 0))
+         ((erp new-items dstate tumap-dimb)
+          (if condp
+              (dimb-trans-item-list elif.items
+                                    dstate
+                                    tumap-orig
+                                    resolved-includes
+                                    tumap-dimb
+                                    (1- limit))
+            (mv nil ; erp
+                nil ; new-items
+                (dstate-fix dstate)
+                (filepath-trans-unit-map-fix tumap-dimb))))
+         (donep condp))
+      (retok (make-hash-elif :expr elif.expr :items new-items)
+             dstate
+             tumap-dimb
+             donep))
     :no-function nil
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-ifdef/ifndef-trans-item ((ifdefp booleanp)
-                                        (items trans-item-listp)
-                                        (elifs hash-elif-listp)
-                                        (else hash-else-optionp)
-                                        (dstate dstatep)
-                                        (tumap-orig filepath-trans-unit-mapp)
-                                        (resolved-includes
-                                         string-header-name-string-map-mapp)
-                                        (tumap-dimb filepath-trans-unit-mapp)
-                                        (limit natp))
+  (define dimb-elif-list ((elifs hash-elif-listp)
+                          (dstate dstatep)
+                          (tumap-orig filepath-trans-unit-mapp)
+                          (resolved-includes string-header-name-string-map-mapp)
+                          (tumap-dimb filepath-trans-unit-mapp)
+                          (donep booleanp)
+                          (limit natp))
     :returns (mv (erp maybe-msgp)
-                 (new-item trans-itemp)
+                 (new-elifs hash-elif-listp)
                  (new-dstate dstatep)
-                 (new-tumap-dimb filepath-trans-unit-mapp))
+                 (new-tumap-dimb filepath-trans-unit-mapp)
+                 (new-donep booleanp))
     :parents (disambiguator dimb-trans-items/units)
-    :short "Disabiguate a @('#ifdef') or @('#ifndef') translation item."
+    :short "Disambiguate a list of zero or more @('#elif')s."
     :long
     (xdoc::topstring
      (xdoc::p
-      "The boolean flag @(tsee ifdefp) passed as input says whether
-       it is a @('#ifdef') (when @('t')) or a @('#ifndef') (when @('nil'))."))
-    (declare
-     (ignore
-      ifdefp items elifs else dstate tumap-orig resolved-includes tumap-dimb))
-    (b* (((reterr) (irr-trans-item) (irr-dstate) nil)
+      "We disambiguate each @('#elif') in turn,
+       threading @('donep') through.
+       Once @('donep') is @('t'),
+       all subsequent items are dropped,
+       but the scaffolding is preserved."))
+    (b* (((reterr) nil (irr-dstate) nil nil)
          ((when (zp limit))
           (raise "Internal error: limit exhausted.")
-          (reterr "irrelevant")))
-      (reterr (msg "TODO")))
+          (reterr "irrelevant"))
+         ((when (endp elifs))
+          (retok nil
+                 (dstate-fix dstate)
+                 (filepath-trans-unit-map-fix tumap-dimb)
+                 (bool-fix donep)))
+         ((erp new-elif dstate tumap-dimb donep)
+          (dimb-elif (car elifs)
+                     dstate
+                     tumap-orig
+                     resolved-includes
+                     tumap-dimb
+                     donep
+                     (1- limit)))
+         ((erp new-elifs dstate tumap-dimb donep)
+          (dimb-elif-list (cdr elifs)
+                          dstate
+                          tumap-orig
+                          resolved-includes
+                          tumap-dimb
+                          donep
+                          (1- limit))))
+      (retok (cons new-elif new-elifs) dstate tumap-dimb donep))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dimb-else-option ((else? hash-else-optionp)
+                            (dstate dstatep)
+                            (tumap-orig filepath-trans-unit-mapp)
+                            (resolved-includes
+                             string-header-name-string-map-mapp)
+                            (tumap-dimb filepath-trans-unit-mapp)
+                            (donep booleanp)
+                            (limit natp))
+    :returns (mv (erp maybe-msgp)
+                 (new-else? hash-else-optionp)
+                 (new-dstate dstatep)
+                 (new-tumap-dimb filepath-trans-unit-mapp))
+    :parents (disambiguator dimb-trans-items/units)
+    :short "Disambiguate an optional @('#else')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the @('#else') is absent, we return it unchanged.
+       Otherwise, if the @('donep') flag is @('t'),
+       it means that a previous condition was satisfied,
+       and thus we drop the items of the @('#else').
+       Otherwise, we disambiguate the items."))
+    (b* (((reterr) (hash-else-option-none) (irr-dstate) nil)
+         ((when (zp limit))
+          (raise "Internal error: limit exhausted.")
+          (reterr "irrelevant"))
+         ((unless (hash-else-option-case else? :some))
+          (retok (hash-else-option-none)
+                 (dstate-fix dstate)
+                 (filepath-trans-unit-map-fix tumap-dimb)))
+         ((hash-else else) (hash-else-option-some->val else?))
+         ((erp new-items dstate tumap-dimb)
+          (if donep
+              (mv nil ; erp
+                  nil ; new-items
+                  (dstate-fix dstate)
+                  (filepath-trans-unit-map-fix tumap-dimb))
+            (dimb-trans-item-list else.items
+                                  dstate
+                                  tumap-orig
+                                  resolved-includes
+                                  tumap-dimb
+                                  (1- limit)))))
+      (retok (hash-else-option-some (make-hash-else :items new-items))
+             dstate
+             tumap-dimb))
     :no-function nil
     :measure (nfix limit))
 
@@ -4315,10 +4462,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove eventually
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   ///
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4336,14 +4479,18 @@
       (implies (not erp)
                (trans-item-list-unambp new-items))
       :fn dimb-include)
-    (defret trans-item-unambp-of-dimb-if-trans-item
+    (defret hash-elif-unambp-of-dimb-eliif
       (implies (not erp)
-               (trans-item-unambp new-item))
-      :fn dimb-if-trans-item)
-    (defret trans-item-unambp-of-dimb-ifdef/ifndef-trans-item
+               (hash-elif-unambp new-elif))
+      :fn dimb-elif)
+    (defret hash-elif-list-unambp-of-dimb-eliif
       (implies (not erp)
-               (trans-item-unambp new-item))
-      :fn dimb-ifdef/ifndef-trans-item)
+               (hash-elif-list-unambp new-elifs))
+      :fn dimb-elif-list)
+    (defret hash-else-option-unambp-of-dimb-else-option
+      (implies (not erp)
+               (hash-else-option-unambp new-else?))
+      :fn dimb-else-option)
     (defret trans-unit-unambp-of-dimb-trans-unit
       (implies (not erp)
                (trans-unit-unambp new-tunit))
@@ -4364,14 +4511,18 @@
       (filepath-trans-unit-map-unambp new-tumap-dimb)
       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
       :fn dimb-include)
-    (defret filepath-trans-unit-map-unambp-of-dimb-if-trans-item
+    (defret filepath-trans-unit-map-unambp-of-dimb-elif
       (filepath-trans-unit-map-unambp new-tumap-dimb)
       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
-      :fn dimb-if-trans-item)
-    (defret filepath-trans-unit-map-unambp-of-dimb-ifdef/ifndef-trans-item
+      :fn dimb-elif)
+    (defret filepath-trans-unit-map-unambp-of-dimb-elif-list
       (filepath-trans-unit-map-unambp new-tumap-dimb)
       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
-      :fn dimb-ifdef/ifndef-trans-item)
+      :fn dimb-elif-list)
+    (defret filepath-trans-unit-map-unambp-of-dimb-else-option
+      (filepath-trans-unit-map-unambp new-tumap-dimb)
+      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
+      :fn dimb-else-option)
     (defret filepath-trans-unit-map-unambp-of-dimb-trans-unit
       (filepath-trans-unit-map-unambp new-tumap-dimb)
       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
