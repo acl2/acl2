@@ -390,7 +390,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
-                                          (i.e. between 224 to 239) ~
+                                          (i.e. between 224 and 239) ~
                                           of a three-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
@@ -410,7 +410,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
-                                          (i.e. between 224 to 239) ~
+                                          (i.e. between 224 and 239) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -461,7 +461,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           of a four-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
@@ -481,7 +481,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -507,7 +507,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
