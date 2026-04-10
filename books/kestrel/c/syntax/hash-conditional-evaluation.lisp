@@ -33,10 +33,10 @@
      these are almost identical to @(tsee pexpr),
      except for the use of @(tsee iconst) instead of @(tsee pnumber).
      Expressions of type @(tsee pexpr) are evaluated
-     via the code in @(see preprocessor-evaluation).
+     via the code in @(see preprocessor-evaluator).
      We also need to evaluate expressions of type @(tsee hash-if/elif-expr),
      e.g. in the disambiguator and validator.
-     To reuse the evaluation code in @(tsee preprocessor-evaluation),
+     To reuse the evaluation code in @(tsee preprocessor-evaluator),
      we convers from @(tsee hash-if/elif-expr) to @(tsee pexpr)
      and then we use that evaluation code.
      This is a bit ``backwards'',
