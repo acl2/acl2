@@ -493,7 +493,7 @@
 
     filesetp
     fileset
-    fileset->unwrap
+    fileset->files
 
     code-ensemble
     code-ensemblep

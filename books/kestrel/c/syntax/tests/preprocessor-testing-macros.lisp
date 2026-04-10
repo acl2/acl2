@@ -45,7 +45,7 @@
                   (fileset-map-to-string-map (omap::tail fileset-map)))))
 
 (defun fileset-to-string-map (fileset)
-  (fileset-map-to-string-map (fileset->unwrap fileset)))
+  (fileset-map-to-string-map (fileset->files fileset)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,7 +217,7 @@
     (omap::update new-path data new-filemap-tail)))
 
 (defun fileset-relativize-absolute-paths (fileset)
-  (fileset (filemap-relativize-absolute-paths (fileset->unwrap fileset))))
+  (fileset (filemap-relativize-absolute-paths (fileset->files fileset))))
 
 (defun relativize-include-dirs (dirs dir)
   (cond ((endp dirs) nil)

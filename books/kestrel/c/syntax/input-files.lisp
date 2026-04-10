@@ -573,7 +573,7 @@
         (input-files-read-files (cdr files) base-dir state)))
     (retok (fileset (omap::update (filepath file)
                                   data
-                                  (fileset->unwrap fileset)))
+                                  (fileset->files fileset)))
            state))
   :verify-guards :after-returns)
 
