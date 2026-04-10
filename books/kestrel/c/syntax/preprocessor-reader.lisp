@@ -133,7 +133,7 @@
      we return @('nil') as the character,
      and both @('char-pos') and @('next-pos') are equal to @('pos').
      If we read a character, we also return the remaining bytes;
-     if there is no character, we retun @('nil') as the @('new-bytes') output.")
+     if there is no character, we return @('nil') as the @('new-bytes') output.")
    (xdoc::p
     "A character can take one, two, three, or four bytes,
      according to the UTF-8 decoding.
@@ -159,7 +159,7 @@
      this would be consistent with the position information
      provided by Emacs and VS Code, for example.
      Currently a vertical tab or a form feed just increment the column by one,
-     as if they were regular character;
+     as if they were regular characters;
      we could consider changing that
      (presumably based on additional information passed to this function),
      but the current behavior is consistent
