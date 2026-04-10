@@ -836,7 +836,7 @@
        (size (ppstate->size ppstate))
        (ppstate (update-ppstate->size (+ n size) ppstate))
        (index (ppstate->char-index ppstate))
-       ((unless (> index n))
+       ((unless (>= index n))
         (raise "Internal error: ~
                 cannot unread ~x0 characters, ~
                 because only ~x1 have been read so far."
