@@ -523,7 +523,7 @@
   :body
   `(b* ((patbinder-ok-fresh-variable-for-result ,(car acl2::forms))
         ((when (reserrp patbinder-ok-fresh-variable-for-result))
-         (reserrf-push patbinder-ok-fresh-variable-for-result))
+         patbinder-ok-fresh-variable-for-result)
         (,(car args) patbinder-ok-fresh-variable-for-result))
      ,acl2::rest-expr))
 
