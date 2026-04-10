@@ -1,7 +1,7 @@
 ; Rules about the JVM model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -897,8 +897,8 @@
                        free)
                 (syntaxp (quotep free)))
            (equal (jvm::lookup-method-in-classes method-id class-names class-table)
-                  (if (acl2::lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
-                      (cons (acl2::lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
+                  (if (lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
+                      (cons (lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
                             (car class-names))
                     (jvm::lookup-method-in-classes method-id (cdr class-names) class-table))))
   :hints (("Goal" :in-theory (enable jvm::lookup-method-in-classes))))

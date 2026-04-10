@@ -1,7 +1,7 @@
 ; Call stacks
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -201,6 +201,6 @@
 
 ;move
 (defthm acl2::empty-call-stackp-redef
-  (equal (jvm::empty-call-stackp call-stack)
-         (equal 0 (jvm::call-stack-size call-stack)))
-  :hints (("Goal" :in-theory (enable jvm::empty-call-stackp jvm::call-stack-size))))
+  (equal (empty-call-stackp call-stack)
+         (equal 0 (call-stack-size call-stack)))
+  :hints (("Goal" :in-theory (enable empty-call-stackp call-stack-size))))

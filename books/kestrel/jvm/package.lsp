@@ -1,7 +1,7 @@
 ; The JVM package
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,25 +11,43 @@
 
 (DEFPKG "JVM"
   (set-difference-equal
-   (union-eq '(array-length
+   (union-eq '(array-length ; remove?
                ;;record ops:
-               acl2::s acl2::g
-               ASSOC-EQUAL LEN NTH ZP SYNTAXP
-               QUOTEP FIX NFIX E0-ORDINALP E0-ORD-<
-               acl2::defforall
-               acl2::defforall-simple
-               acl2::addressfix
-               acl2::addressp
-               acl2::null-refp
-               acl2::empty-map
-               acl2::empty-list
+               s g
+               ;; assoc-equal len nth zp syntaxp quotep fix nfix e0-ordinalp e0-ord-<
+               defforall
+               defforall-simple
+               addressfix ; remove?
+               addressp ; remove?
+               null-refp ; remove?
+               empty-map
+               empty-list
                myif
                farg1 farg2 farg3 farg4 farg5
                lookup
                memberp
-               )
+               lookup-eq
+               lookup-equal
+               ;; BV operators:
+               bvchop
+               bvsx
+               bvand
+               bvor
+               bvxor
+               bvshr
+               bvashr
+               bvshl
+               bvplus
+               bvminus
+               bvuminus
+               bvmult)
              (union-eq *acl2-exports*
                        (set-difference-eq nil ;*common-lisp-symbols-from-main-lisp-package* ;this is a lot of stuff...
                                           '(floatp typep))))
-   ;;stuff to subtract out:
-   '(PC PROGRAM PUSH POP RETURN REVERSE STEP ++)))
+   ;; Symbols for which we do not want existing the ACL2 definitions:
+   '(PC ; print a command
+     PROGRAM ; turns on :program mode
+     ;; PUSH POP RETURN
+     REVERSE ; why?
+     ;;STEP ++
+     )))
