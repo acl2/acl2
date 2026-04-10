@@ -476,7 +476,7 @@
                                           of a four-byte UTF-8 encoding"
                                          byte)
                           :found (msg "the byte ~x0" byte2)))
-             ((unless bytes)
+             ((unless (consp bytes))
               (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
