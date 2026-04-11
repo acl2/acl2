@@ -46,6 +46,7 @@
 ; (depends-on "grammar/floating-constants-c23-nogcc.abnf")
 ; (depends-on "grammar/floating-constants-c17-gcc.abnf")
 ; (depends-on "grammar/floating-constants-c23-gcc.abnf")
+; (depends-on "grammar/enumeration-constants.abnf")
 ; (depends-on "grammar/character-constants.abnf")
 ; (depends-on "grammar/character-constants-c17.abnf")
 ; (depends-on "grammar/character-constants-c23.abnf")
@@ -73,7 +74,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Since the conrete syntax varies slightly based on "
+    "Since the concrete syntax varies slightly based on "
     (xdoc::seetopic "c::dialects" "the C dialect")
     ", we actually define a family of grammars,
      parameterized over the C dialect.
@@ -107,7 +108,7 @@
      when needed to fulfill the purpose of our C syntax for tools;
      see @(tsee syntax-for-tools).")
    (xdoc::p
-    "[C23] presents a lexical grammar] [C23:A.2]
+    "[C23] presents a lexical grammar [C23:A.2]
      and a phrase structure grammar [C23:A.3].
      This is a typical two-level grammar structure for programming languages:
      the first grammar describes how a sequence of characters
@@ -125,7 +126,7 @@
      and one for a phrase structure that includes some preprocessing constructs.
      The details are in the documentation that accompanies the grammar rules.")
    (xdoc::p
-    "Our ABNF grammar rules does not consider
+    "Our ABNF grammar rules do not consider
      the translation of trigraph sequences
      handled in the first phase in [C17:5.1.1.2]
      (which, incidentally, has been removed in [C23:5.2.1.2]),

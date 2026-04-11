@@ -1030,7 +1030,7 @@
       (reterr-msg :where (span->start span)
                   :expected "a right parenthesis or ~
                              an ellipsis or ~
-                             an identifer"
+                             an identifier"
                   :found (plexeme?-to-msg token)))))
   :no-function nil
   :guard-hints

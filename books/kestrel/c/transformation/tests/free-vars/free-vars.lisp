@@ -74,11 +74,12 @@
 (defmacro test-free-vars (input &key fun vars)
   `(assert-event
     (b* ((dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+         (ienv (c$::change-ienv (c$::ienv-default) :dialect dialect))
          ((mv erp1 ast) (c$::parse-file (filepath "test")
                                         (acl2::string=>nats ,input)
                                         dialect
                                         t))
-         (dstate (c$::init-dstate "" dialect))
+         (dstate (c$::init-dstate "" ienv))
          ((mv erp2 ast & &) (c$::dimb-trans-unit ast dstate nil nil nil 1000))
          ((mv erp3 fundef) (trans-unit-find-fundef (c$::ident ,fun) ast))
          (free-vars (free-vars-fundef fundef nil))

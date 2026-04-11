@@ -796,7 +796,7 @@
 
    (xdoc::p
     "A new summary of implemented and unimplemented instructions has been added.
-     at @(see x86isa::sdm-instruction-set-summary).
+     at @(see x86isa::implemented-instructions).
      It is organized according to the sections of
      Chapter 5 of Volume 1 of Intel's Software Development Manual (SFM).
      The summary is generated from the opcode maps,
@@ -805,7 +805,7 @@
    (xdoc::p
     "Support for several instructions has been added.
      Currently supported instructions can be seen at
-     @(see x86isa::sdm-instruction-set-summary).")
+     @(see x86isa::implemented-instructions).")
 
    (xdoc::p "Several instruction bugs were fixed:")
    (xdoc::ul

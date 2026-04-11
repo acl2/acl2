@@ -37,7 +37,7 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "This is a very preliminary transformation to propogate constants at the
+      "This is a very preliminary transformation to propagate constants at the
        function level.")
     (xdoc::p
       "The transformation currently only folds integer constants."))
@@ -282,7 +282,7 @@
 (define const-prop-eval-unop-expr
   ((unop c$::unopp)
    (arg c::valuep))
-  :short "Propogate a constant through a @(see c$::unop)."
+  :short "Propagate a constant through a @(see c$::unop)."
   :returns (value? c::value-optionp)
   (c$::unop-case
    unop
@@ -324,7 +324,7 @@
   ((binop c$::binopp)
    (left c::valuep)
    (right c::valuep))
-  :short "Propogate a constant through a pure @(see c$::binop)."
+  :short "Propagate a constant through a pure @(see c$::binop)."
   :guard (pure-binopp binop)
   :returns (value? c::value-optionp)
   (c$::binop-case
@@ -380,7 +380,7 @@
    (left exprp)
    (right c::valuep)
    (env envp))
-  :short "Propogate a constant through an impure @(see c$::binop)."
+  :short "Propagate a constant through an impure @(see c$::binop)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -579,7 +579,7 @@
   (define const-prop-expr
     ((expr exprp)
      (env envp))
-    :short "Propogate a constant through an impure @(see c$::expr)."
+    :short "Propagate a constant through an impure @(see c$::expr)."
     :returns (mv (new-expr exprp)
                  (value? c::value-optionp)
                  (new-env envp))

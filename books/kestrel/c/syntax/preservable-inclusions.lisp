@@ -185,7 +185,7 @@
     "+------------------------------+")
    (xdoc::p
     "Since the two results of preprocessing @('G.h') differ
-     (even assuming the the preprocessed @('G') stuff is the same),
+     (even assuming the preprocessed @('G') stuff is the same),
      we need to expand the @('#include G.h') in place, obtaining:")
    (xdoc::codeblock
     "+-A.c preprocessed-----------+"
