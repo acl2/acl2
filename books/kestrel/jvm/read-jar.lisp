@@ -39,6 +39,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local
+ (defthm all-unsigned-byte-p-8-when-byte-listp
+   (implies (byte-listp bytes)
+            (all-unsigned-byte-p 8 bytes))
+   :hints (("Goal" :in-theory (enable all-unsigned-byte-p byte-listp)))))
+
+
 ;; Returns (mv erp events constant-pool count).
 (defun events-for-classes-from-alist (alist ; maps paths to classes
                                       acc
@@ -78,7 +85,9 @@
                                          (+ 1 count)))))))
 
 (defthm true-listp-of-mv-nth-1-of-events-for-classes-from-alist
-  (implies (true-listp acc)
+  (implies (and (true-listp acc)
+                (byte-list-listp (strip-cdrs alist))
+                (constant-poolp constant-pool))
            (true-listp (mv-nth 1 (events-for-classes-from-alist alist acc constant-pool count)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

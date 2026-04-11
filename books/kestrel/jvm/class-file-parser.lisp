@@ -774,11 +774,24 @@
    :hints (("Goal" :in-theory (enable entries-length update-entriesi)))))
 
 (local
+ (defthm len-of-resize-entries
+   (implies (constant-poolp constant-pool)
+            (equal (len (resize-entries len constant-pool))
+                   (len constant-pool)))
+   :hints (("Goal" :in-theory (enable entries-length resize-entries constant-poolp)))))
+
+(local
  (defthm entries-length-of-resize-entries
    (implies (natp len)
             (equal (entries-length (resize-entries len constant-pool))
                    len))
    :hints (("Goal" :in-theory (enable entries-length resize-entries)))))
+
+(local
+ (defthm true-listp-of-resize-entries
+   (implies (true-listp constant-pool)
+            (true-listp (resize-entries i constant-pool)))
+   :hints (("Goal" :in-theory (enable resize-entries)))))
 
 (local
  (defthm entriesp-of-nth-when-constant-poolp
@@ -803,6 +816,20 @@
                  (constant-poolp constant-pool))
             (constant-poolp (update-entriesi index val constant-pool)))
    :hints (("Goal" :in-theory (enable entries-length update-entriesi constant-poolp entriesp)))))
+
+(local
+ (defthm entriesp-of-resize-list
+   (implies (and (maybe-constant-pool-entryp default-value)
+                 (entriesp lst))
+            (entriesp (resize-list lst n default-value)))
+   :hints (("Goal" :in-theory (enable resize-list entriesp)))))
+
+(local
+ (defthm constant-poolp-of-resize-entries
+   (implies (constant-poolp constant-pool)
+            (constant-poolp (resize-entries i constant-pool)))
+   :hints (("Goal" :in-theory (enable constant-poolp resize-entries)))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2966,15 +2993,15 @@
        ((when erp) (mv erp nil nil))
        ((mv erp name_index bytes) (readu2 bytes))
        ((when erp) (mv erp nil nil))
-       ((mv erp name-entry) (lookup-in-constant-pool name_index constant-pool))
+       ((mv erp name-entry) (lookup-in-constant-pool-safe name_index '(:constant_utf8) constant-pool))
        ((when erp) (mv erp nil nil))
-       (name (lookup-eq-safe 'bytes name-entry))
-       ((when (not (stringp name))) (mv `(:bad-name ,name) nil nil))
+       (name (lookup-eq 'bytes name-entry))
+       ;; ((when (not (stringp name))) (mv `(:bad-name ,name) nil nil))
        ((mv erp descriptor_index bytes) (readu2 bytes))
        ((when erp) (mv erp nil nil))
-       ((mv erp descriptor-entry) (lookup-in-constant-pool descriptor_index constant-pool))
+       ((mv erp descriptor-entry) (lookup-in-constant-pool-safe descriptor_index '(:constant_utf8) constant-pool))
        ((when erp) (mv erp nil nil))
-       (descriptor (lookup-eq-safe 'bytes descriptor-entry))
+       (descriptor (lookup-eq 'bytes descriptor-entry))
        ((when (not (jvm::method-descriptorp descriptor)))
         (mv :bad-descriptor nil nil))
        ((mv erp parameter-types return-type)
@@ -3007,20 +3034,26 @@
                                            (acons :attributes attributes nil))))))
         bytes)))
 
-(defthm all-unsigned-byte-p-8-of-mv-nth-2-of-parse-method-info-entry
-  (implies (all-unsigned-byte-p 8 bytes)
-           (all-unsigned-byte-p 8 (mv-nth 2 (parse-method-info-entry bytes constant-pool))))
-  :hints (("Goal" :in-theory (enable parse-method-info-entry))))
+(local
+ (defthm all-unsigned-byte-p-8-of-mv-nth-2-of-parse-method-info-entry
+   (implies (all-unsigned-byte-p 8 bytes)
+            (all-unsigned-byte-p 8 (mv-nth 2 (parse-method-info-entry bytes constant-pool))))
+   :hints (("Goal" :in-theory (enable parse-method-info-entry)))))
 
-(defthm true-listp-of-mv-nth-2-of-parse-method-info-entry
-  (implies (true-listp bytes)
-           (true-listp (mv-nth 2 (parse-method-info-entry bytes constant-pool))))
-  :hints (("Goal" :in-theory (enable parse-method-info-entry))))
+(local
+ (defthm true-listp-of-mv-nth-2-of-parse-method-info-entry
+   (implies (true-listp bytes)
+            (true-listp (mv-nth 2 (parse-method-info-entry bytes constant-pool))))
+   :hints (("Goal" :in-theory (enable parse-method-info-entry)))))
 
-(defthm raw-method-infop-of-mv-nth-1-of-parse-method-info-entry
-  (implies (not (mv-nth 0 (parse-method-info-entry bytes constant-pool))) ;no error
-           (raw-method-infop (mv-nth 1 (parse-method-info-entry bytes constant-pool))))
-  :hints (("Goal" :in-theory (enable raw-method-infop parse-method-info-entry))))
+(local
+ (defthm raw-method-infop-of-mv-nth-1-of-parse-method-info-entry
+   (implies (and (not (mv-nth 0 (parse-method-info-entry bytes constant-pool))) ;no error
+                 (constant-poolp constant-pool))
+            (raw-method-infop (mv-nth 1 (parse-method-info-entry bytes constant-pool))))
+   :hints (("Goal" :in-theory (enable raw-method-infop parse-method-info-entry)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp raw-method-infos bytes).
 (defund parse-method-info-entries (numentries bytes acc constant-pool)
@@ -3037,20 +3070,24 @@
          ((when erp) (mv erp nil nil)))
       (parse-method-info-entries (+ -1 numentries) bytes (cons method-info-entry acc) constant-pool))))
 
-(defthm raw-method-infosp-of-mv-nth-1-of-parse-method-info-entries
-  (implies (raw-method-infosp acc)
-           (raw-method-infosp (mv-nth 1 (parse-method-info-entries numentries bytes acc constant-pool))))
-  :hints (("Goal" :in-theory (enable raw-method-infosp parse-method-info-entries))))
+(local
+ (defthm raw-method-infosp-of-mv-nth-1-of-parse-method-info-entries
+   (implies (and (raw-method-infosp acc)
+                 (constant-poolp constant-pool))
+            (raw-method-infosp (mv-nth 1 (parse-method-info-entries numentries bytes acc constant-pool))))
+   :hints (("Goal" :in-theory (enable raw-method-infosp parse-method-info-entries)))))
 
-(defthm true-listp-of-mv-nth-2-of-parse-method-info-entries
-  (implies (true-listp bytes)
-           (true-listp (mv-nth 2 (parse-method-info-entries numentries bytes acc constant-pool))))
-  :hints (("Goal" :in-theory (enable parse-method-info-entries))))
+(local
+ (defthm true-listp-of-mv-nth-2-of-parse-method-info-entries
+   (implies (true-listp bytes)
+            (true-listp (mv-nth 2 (parse-method-info-entries numentries bytes acc constant-pool))))
+   :hints (("Goal" :in-theory (enable parse-method-info-entries)))))
 
-(defthm all-unsigned-byte-p-8-of-mv-nth-2-of-parse-method-info-entries
-  (implies (all-unsigned-byte-p 8 bytes)
-           (all-unsigned-byte-p 8 (mv-nth 2 (parse-method-info-entries numentries bytes acc constant-pool))))
-  :hints (("Goal" :in-theory (enable parse-method-info-entries))))
+(local
+ (defthm all-unsigned-byte-p-8-of-mv-nth-2-of-parse-method-info-entries
+   (implies (all-unsigned-byte-p 8 bytes)
+            (all-unsigned-byte-p 8 (mv-nth 2 (parse-method-info-entries numentries bytes acc constant-pool))))
+   :hints (("Goal" :in-theory (enable parse-method-info-entries)))))
 
 ;maybe every function should take the remaining bytes and the current info and return fewer bytes with some info added to info
 
@@ -3259,13 +3296,21 @@
     (mv (erp-nil) info constant-pool)))
 
 (defthm raw-parsed-classp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class
-  (implies (not (mv-nth 0 (parse-bytes-into-raw-parsed-class bytes constant-pool)))
+  (implies (and (not (mv-nth 0 (parse-bytes-into-raw-parsed-class bytes constant-pool)))
+                (all-unsigned-byte-p 8 bytes)
+                (constant-poolp constant-pool))
            (raw-parsed-classp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes constant-pool))))
   :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class raw-parsed-classp))))
 
 (defthm alistp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class
   (alistp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes constant-pool)))
   :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class))))
+
+(defthm constant-poolp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class
+  (implies (and (all-unsigned-byte-p 8 bytes)
+                (constant-poolp constant-pool))
+           (constant-poolp (mv-nth 2 (parse-bytes-into-raw-parsed-class bytes constant-pool))))
+  :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class raw-parsed-classp))))
 
 ;fixme what if there is more than 1 attribute with that name?
 ;todo: do we need this error checking?
@@ -3689,18 +3734,26 @@
     (mv (erp-nil) class-name class-info field-defconsts constant-pool)))
 
 (defthm class-namep-of-mv-nth-1-of-parse-class-file-bytes
-  (implies (not (mv-nth 0 (parse-class-file-bytes bytes constant-pool)))
+  (implies (and (not (mv-nth 0 (parse-class-file-bytes bytes constant-pool)))
+                (constant-poolp constant-pool)
+                (all-unsigned-byte-p 8 bytes))
            (jvm::class-namep (mv-nth 1 (parse-class-file-bytes bytes constant-pool)))))
 
 (defthm class-infop0-of-mv-nth-1-of-parse-class-file-bytes
-  (implies (not (mv-nth 0 (parse-class-file-bytes bytes constant-pool)))
+  (implies (and (not (mv-nth 0 (parse-class-file-bytes bytes constant-pool)))
+                (constant-poolp constant-pool)
+                (all-unsigned-byte-p 8 bytes))
            (jvm::class-infop0 (mv-nth 2 (parse-class-file-bytes bytes constant-pool)))))
 
 (defthm class-infop-of-mv-nth-1-of-parse-class-file-bytes
-  (implies (not (mv-nth 0 (parse-class-file-bytes bytes constant-pool)))
+  (implies (and (not (mv-nth 0 (parse-class-file-bytes bytes constant-pool)))
+                (constant-poolp constant-pool)
+                (all-unsigned-byte-p 8 bytes))
            (jvm::class-infop (mv-nth 2 (parse-class-file-bytes bytes constant-pool))
                              (mv-nth 1 (parse-class-file-bytes bytes constant-pool)))))
 
 (defthm true-listp-mv-nth-3-of-parse-class-file-bytes
-  (true-listp (mv-nth 3 (parse-class-file-bytes bytes constant-pool)))
+  (implies (and (constant-poolp constant-pool)
+                (all-unsigned-byte-p 8 bytes))
+           (true-listp (mv-nth 3 (parse-class-file-bytes bytes constant-pool))))
   :rule-classes :type-prescription)

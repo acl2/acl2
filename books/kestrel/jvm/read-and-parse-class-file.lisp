@@ -48,23 +48,27 @@
     (mv (erp-nil) class-name class-info field-defconsts state constant-pool)))
 
 (defthm class-namep-of-mv-nth-1-of-read-and-parse-class-file
-  (implies (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
+                (constant-poolp constant-pool))
            (jvm::class-namep (mv-nth 1 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
 
 (defthm class-infop0-of-mv-nth-2-of-read-and-parse-class-file
-  (implies (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
+                (constant-poolp constant-pool))
            (jvm::class-infop0 (mv-nth 2 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
 
 (defthm class-infop-of-mv-nth-2-of-read-and-parse-class-file
-  (implies (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
+                (constant-poolp constant-pool))
            (jvm::class-infop (mv-nth 2 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool))
                              (mv-nth 1 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
 
 (defthm true-listp-of-mv-nth-3-of-read-and-parse-class-file
-  (implies (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
+                (constant-poolp constant-pool))
            (true-listp (mv-nth 3 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
 
@@ -91,23 +95,27 @@
     (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
 
 (defthm class-namep-of-mv-nth-1-of-read-and-parse-class-file-with-dir
-  (implies (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
+                (constant-poolp constant-pool))
            (jvm::class-namep (mv-nth 1 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file-with-dir))))
 
 (defthm class-infop0-of-mv-nth-2-of-read-and-parse-class-file-with-dir
-  (implies (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
+                (constant-poolp constant-pool))
            (jvm::class-infop0 (mv-nth 2 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file-with-dir))))
 
 (defthm class-infop-of-mv-nth-2-of-read-and-parse-class-file-with-dir
-  (implies (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
+                (constant-poolp constant-pool))
            (jvm::class-infop (mv-nth 2 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool))
                              (mv-nth 1 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file-with-dir))))
 
 (defthm true-listp-of-mv-nth-3-of-read-and-parse-class-file-with-dir
-  (implies (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
+                (constant-poolp constant-pool))
            (true-listp (mv-nth 3 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file-with-dir))))
 
