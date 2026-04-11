@@ -536,6 +536,6 @@
   documentation is done automatically from these constants.</p>
 
  <p>Also see @(see implemented-instructions) for lists
- organized according to Chapter 5 of the Intel manual Volume 1.")
+ organized according to Chapter 5 of the Intel manual Volume 1.</p>")
 
 ;; ----------------------------------------------------------------------
