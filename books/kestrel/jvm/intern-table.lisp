@@ -51,8 +51,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Check that all addresses to which strings are bound in the intern table are
-;; in fact addresses of string objects.
+;; Checks that all the addresses the intern-table are in fact addresses of
+;; string objects.
+;; TODO: Compare to intern-table-correctp.
 (defund intern-table-okp (intern-table heap)
   (declare (xargs :guard (and (intern-tablep intern-table)
                               (heapp heap))
@@ -92,15 +93,16 @@
                   (intern-table-okp intern-table heap)))
   :hints (("Goal" :in-theory (enable intern-table-okp acl2::get-class))))
 
+;; restrict to things that are clearly new addresses?
 (defthm intern-table-okp-of-set-field-irrel-when-bound-same-heap
-  (implies (and (intern-table-okp intern-table heap)
-                (not (set::in ad (acl2::rkeys heap))))
+  (implies (and (not (set::in ad (acl2::rkeys heap)))
+                (intern-table-okp intern-table heap))
            (equal (intern-table-okp intern-table (acl2::set-field ad pair val heap))
                   t ;(intern-table-okp intern-table heap)
                   ))
   :hints (("Goal" :in-theory (enable intern-table-okp acl2::get-class))))
 
-;; Setting some field of some object to "java.lang.String" can only make the intern table more correct
+;; Setting some field of some object to "java.lang.String" can't make the intern-table less ok
 (defthm intern-table-okp-of-set-field-2
   (implies (intern-table-okp intern-table heap)
            (intern-table-okp intern-table (acl2::set-field ad pair "java.lang.String" heap)))
