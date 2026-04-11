@@ -739,7 +739,6 @@
 
 ;; Introduces constant-poolp
 ;; TODO: Also introduce an invariant over the constant pool, saying that the information in it is well-typed.
-;; TODO: Use with-local-stobj for this below.
 (defstobj constant-pool
   (entries :type (array (satisfies maybe-constant-pool-entryp) (0)) ; initially empty, but we resize before use
            :initially :none
@@ -3192,125 +3191,124 @@
 ;;;
 
 ;; STEP 1:
-;; Parses the BYTES, as a Java class file.  Returns (mv erp raw-parsed-class constant-pool), where the raw-parsed-class is an alist.
-(defund parse-bytes-into-raw-parsed-class (bytes constant-pool)
+;; Parses the BYTES, as a Java class file.
+;; Returns (mv erp raw-parsed-class), where the raw-parsed-class is an alist.
+(defund parse-bytes-into-raw-parsed-class (bytes)
   (declare (xargs :guard (and (all-unsigned-byte-p 8 bytes)
-                              (true-listp bytes))
-                  :stobjs constant-pool))
+                              (true-listp bytes))))
   (b* ((info nil)
        ((mv erp magic bytes) (readu4 bytes))
-       ((when erp) (mv erp nil constant-pool))
+       ((when erp) (mv erp nil))
        (expected-magic #xCAFEBABE)
        ((when (not (= magic expected-magic)))
         (er hard? 'parse-bytes-into-raw-parsed-class  "Incorrect magic number (got ~x0 but expected ~x1).  The file does not appear to be a valid class file." magic expected-magic)
-        (mv t nil constant-pool))
+        (mv t nil))
        ((mv erp & ;minor_version
             bytes)
         (readu2 bytes))
-       ((when erp) (mv erp nil constant-pool))
+       ((when erp) (mv erp nil))
        ;;(info (acons :minor_version minor_version info))
        ((mv erp & ;major_version
             bytes)
         (readu2 bytes))
-       ((when erp) (mv erp nil constant-pool))
+       ((when erp) (mv erp nil))
        ;;(info (acons :major_version major_version info))
        ((mv erp constant_pool_count bytes) (readu2 bytes))
-       ((when erp) (mv erp nil constant-pool))
+       ((when erp) (mv erp nil))
        ;; constant_pool_count is one more than the actual count, so cannot be 0
        ((when (not (posp constant_pool_count)))
-        (mv :bad-constant-pool-count nil constant-pool))
+        (mv :bad-constant-pool-count nil))
        (num-constant-pool-entries (+ -1 constant_pool_count)) ; constant_pool_count is one more than the number of entries
        (array-size-needed (+ 1 num-constant-pool-entries)) ; since entries are numbered from 1 to num-constant-pool-entries
-       (constant-pool (if (< (entries-length constant-pool) array-size-needed)
-                          (resize-entries array-size-needed constant-pool)
-                        constant-pool))
-       ((mv erp constant-pool bytes)
-        (parse-constant-pool-entries
-         1 ; first constant pool index
-         num-constant-pool-entries ; max index
-         bytes
-         constant-pool))
-       ((when erp) (mv erp nil constant-pool))
-       ;;(info (acons :constant_pool constant-pool info))  ;omitted since we look up all references in it
-       ((mv erp access_flags bytes) (readu2 bytes))
-       ((when erp) (mv erp nil constant-pool))
-       (access-flags (parse-class-access-flags access_flags))
-       (info (acons :access_flags
-                    access-flags
-                    info))
-       ((mv erp this_class-cp-index bytes) (readu2 bytes))
-       ((when erp) (mv erp nil constant-pool))
-       ((mv erp this-class-name) (get-class-name-from-src this_class-cp-index constant-pool))
-       ((when erp) (mv erp nil constant-pool))
-       ((when (not (jvm::class-namep this-class-name)))
-        (er hard? 'parse-bytes-into-raw-parsed-class "Unexpected class name: ~x0." this-class-name)
-        (mv `(:expected-class-name ,this-class-name) nil constant-pool))
-       (info (acons :this_class this-class-name info))
-       ((mv erp super_class bytes) (readu2 bytes))
-       ((when erp) (mv erp nil constant-pool))
-       ((mv erp superclass-name) (parse-super_class super_class constant-pool))
-       ((when erp) (mv erp nil constant-pool))
-       (info (acons :super_class superclass-name info))
-       ((mv erp interfaces_count bytes) (readu2 bytes))
-       ((when erp) (mv erp nil constant-pool))
-       ((mv erp interfaces bytes) (readu2s interfaces_count bytes))
-       ((when erp) (mv erp nil constant-pool))
-       ((mv erp interface-names) (get-class-names-from-srcs interfaces constant-pool))
-       ((when erp) (mv erp nil constant-pool))
-       ((when (not (jvm::all-class-namesp interface-names))) ; exclude array classes?
-        (mv :unexpected-interface-name nil constant-pool))
-       (info (acons :interfaces interface-names info))
-       ((mv erp fields_count bytes) (readu2 bytes))
-       ((when erp) (mv erp nil constant-pool))
-       ((mv erp field-info-entries bytes)
-        (parse-field-info-entries fields_count
-                                  bytes
-                                  nil ;initial accumulator
+       )
+    (with-local-stobj
+        constant-pool
+        (mv-let (erp raw-parsed-class constant-pool)
+            (b* ((constant-pool (if (< (entries-length constant-pool) array-size-needed)
+                                    (resize-entries array-size-needed constant-pool)
                                   constant-pool))
-       ((when erp) (mv erp nil constant-pool))
-       (info (acons :fields field-info-entries info))
-       ((mv erp methods_count bytes) (readu2 bytes))
-       ((when erp) (mv erp nil constant-pool))
-       ((mv erp method-info-entries bytes)
-        (parse-method-info-entries methods_count
-                                   bytes
-                                   nil ;initial accumulator
-                                   constant-pool))
-       ((when erp) (mv erp nil constant-pool))
-       (info (acons :methods method-info-entries info))
-       ((mv erp attributes_count bytes) (readu2 bytes))
-       ((when erp) (mv erp nil constant-pool))
-       ((mv erp attributes & ;bytes  ;fixme check that no bytes remain?
-            )
-        (parse-attribute-info-entries attributes_count
-                                      bytes
-                                      nil ;initial accumulator
-                                      constant-pool))
-       ((when erp) (mv erp nil constant-pool))
-       (info (acons :attributes attributes info))
-       (interfacep (member-eq :acc_interface access-flags))
-       ((when (not (superclass-and-interfaceness-okp this-class-name
-                                                      superclass-name
-                                                      interfacep)))
-        (mv `(:bad-class ,this-class-name) nil constant-pool)))
-    (mv (erp-nil) info constant-pool)))
+                 ((mv erp constant-pool bytes)
+                  (parse-constant-pool-entries
+                   1                     ; first constant pool index
+                   num-constant-pool-entries ; max index
+                   bytes
+                   constant-pool))
+                 ((when erp) (mv erp nil constant-pool))
+                 ;;(info (acons :constant_pool constant-pool info))  ;omitted since we look up all references in it
+                 ((mv erp access_flags bytes) (readu2 bytes))
+                 ((when erp) (mv erp nil constant-pool))
+                 (access-flags (parse-class-access-flags access_flags))
+                 (info (acons :access_flags
+                              access-flags
+                              info))
+                 ((mv erp this_class-cp-index bytes) (readu2 bytes))
+                 ((when erp) (mv erp nil constant-pool))
+                 ((mv erp this-class-name) (get-class-name-from-src this_class-cp-index constant-pool))
+                 ((when erp) (mv erp nil constant-pool))
+                 ((when (not (jvm::class-namep this-class-name)))
+                  (er hard? 'parse-bytes-into-raw-parsed-class "Unexpected class name: ~x0." this-class-name)
+                  (mv `(:expected-class-name ,this-class-name) nil constant-pool))
+                 (info (acons :this_class this-class-name info))
+                 ((mv erp super_class bytes) (readu2 bytes))
+                 ((when erp) (mv erp nil constant-pool))
+                 ((mv erp superclass-name) (parse-super_class super_class constant-pool))
+                 ((when erp) (mv erp nil constant-pool))
+                 (info (acons :super_class superclass-name info))
+                 ((mv erp interfaces_count bytes) (readu2 bytes))
+                 ((when erp) (mv erp nil constant-pool))
+                 ((mv erp interfaces bytes) (readu2s interfaces_count bytes))
+                 ((when erp) (mv erp nil constant-pool))
+                 ((mv erp interface-names) (get-class-names-from-srcs interfaces constant-pool))
+                 ((when erp) (mv erp nil constant-pool))
+                 ((when (not (jvm::all-class-namesp interface-names))) ; exclude array classes?
+                  (mv :unexpected-interface-name nil constant-pool))
+                 (info (acons :interfaces interface-names info))
+                 ((mv erp fields_count bytes) (readu2 bytes))
+                 ((when erp) (mv erp nil constant-pool))
+                 ((mv erp field-info-entries bytes)
+                  (parse-field-info-entries fields_count
+                                            bytes
+                                            nil ;initial accumulator
+                                            constant-pool))
+                 ((when erp) (mv erp nil constant-pool))
+                 (info (acons :fields field-info-entries info))
+                 ((mv erp methods_count bytes) (readu2 bytes))
+                 ((when erp) (mv erp nil constant-pool))
+                 ((mv erp method-info-entries bytes)
+                  (parse-method-info-entries methods_count
+                                             bytes
+                                             nil ;initial accumulator
+                                             constant-pool))
+                 ((when erp) (mv erp nil constant-pool))
+                 (info (acons :methods method-info-entries info))
+                 ((mv erp attributes_count bytes) (readu2 bytes))
+                 ((when erp) (mv erp nil constant-pool))
+                 ((mv erp attributes & ;bytes  ;fixme check that no bytes remain?
+                      )
+                  (parse-attribute-info-entries attributes_count
+                                                bytes
+                                                nil ;initial accumulator
+                                                constant-pool))
+                 ((when erp) (mv erp nil constant-pool))
+                 (info (acons :attributes attributes info))
+                 (interfacep (member-eq :acc_interface access-flags))
+                 ((when (not (superclass-and-interfaceness-okp this-class-name
+                                                               superclass-name
+                                                               interfacep)))
+                  (mv `(:bad-class ,this-class-name) nil constant-pool)))
+              (mv (erp-nil) info constant-pool))
+          ;; can't refer to locally-bound constant-pool past this:
+          (mv erp raw-parsed-class)))))
 
 (defthm raw-parsed-classp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class
-  (implies (and (not (mv-nth 0 (parse-bytes-into-raw-parsed-class bytes constant-pool)))
-                (all-unsigned-byte-p 8 bytes)
-                (constant-poolp constant-pool))
-           (raw-parsed-classp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes constant-pool))))
+  (implies (and (not (mv-nth 0 (parse-bytes-into-raw-parsed-class bytes)))
+                (all-unsigned-byte-p 8 bytes))
+           (raw-parsed-classp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes))))
   :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class raw-parsed-classp))))
 
 (defthm alistp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class
-  (alistp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes constant-pool)))
+  (alistp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes)))
   :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class))))
-
-(defthm constant-poolp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class
-  (implies (and (all-unsigned-byte-p 8 bytes)
-                (constant-poolp constant-pool))
-           (constant-poolp (mv-nth 2 (parse-bytes-into-raw-parsed-class bytes constant-pool))))
-  :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class raw-parsed-classp))))
 
 ;fixme what if there is more than 1 attribute with that name?
 ;todo: do we need this error checking?
@@ -3717,43 +3715,38 @@
 ;;;
 
 ;; Combines step 1 and step 2
-;; Returns (mv erp class-name class-info field-defconsts constant-pool).
-(defun parse-class-file-bytes (bytes constant-pool)
+;; Returns (mv erp class-name class-info field-defconsts).
+(defun parse-class-file-bytes (bytes)
   (declare (xargs :guard (and (all-unsigned-byte-p 8 bytes)
                               (true-listp bytes))
-                  :stobjs constant-pool
                   :guard-hints (("Goal" :in-theory (enable stringp-of-lookup-equal-of-this-class-when-raw-parsed-classp)))))
-  (b* (((mv erp raw-parsed-class constant-pool)
-        (parse-bytes-into-raw-parsed-class bytes constant-pool))
-       ((when erp) (mv erp nil nil nil constant-pool))
+  (b* (((mv erp raw-parsed-class)
+        (parse-bytes-into-raw-parsed-class bytes))
+       ((when erp) (mv erp nil nil nil))
        (class-name (lookup-eq :this_class raw-parsed-class))
        ((mv class-info
             field-defconsts ; todo: don't even compute these if not used
             )
         (make-class-info-from-raw-parsed-class raw-parsed-class)))
-    (mv (erp-nil) class-name class-info field-defconsts constant-pool)))
+    (mv (erp-nil) class-name class-info field-defconsts)))
 
 (defthm class-namep-of-mv-nth-1-of-parse-class-file-bytes
-  (implies (and (not (mv-nth 0 (parse-class-file-bytes bytes constant-pool)))
-                (constant-poolp constant-pool)
+  (implies (and (not (mv-nth 0 (parse-class-file-bytes bytes)))
                 (all-unsigned-byte-p 8 bytes))
-           (jvm::class-namep (mv-nth 1 (parse-class-file-bytes bytes constant-pool)))))
+           (jvm::class-namep (mv-nth 1 (parse-class-file-bytes bytes)))))
 
 (defthm class-infop0-of-mv-nth-1-of-parse-class-file-bytes
-  (implies (and (not (mv-nth 0 (parse-class-file-bytes bytes constant-pool)))
-                (constant-poolp constant-pool)
+  (implies (and (not (mv-nth 0 (parse-class-file-bytes bytes)))
                 (all-unsigned-byte-p 8 bytes))
-           (jvm::class-infop0 (mv-nth 2 (parse-class-file-bytes bytes constant-pool)))))
+           (jvm::class-infop0 (mv-nth 2 (parse-class-file-bytes bytes)))))
 
 (defthm class-infop-of-mv-nth-1-of-parse-class-file-bytes
-  (implies (and (not (mv-nth 0 (parse-class-file-bytes bytes constant-pool)))
-                (constant-poolp constant-pool)
+  (implies (and (not (mv-nth 0 (parse-class-file-bytes bytes)))
                 (all-unsigned-byte-p 8 bytes))
-           (jvm::class-infop (mv-nth 2 (parse-class-file-bytes bytes constant-pool))
-                             (mv-nth 1 (parse-class-file-bytes bytes constant-pool)))))
+           (jvm::class-infop (mv-nth 2 (parse-class-file-bytes bytes))
+                             (mv-nth 1 (parse-class-file-bytes bytes)))))
 
 (defthm true-listp-mv-nth-3-of-parse-class-file-bytes
-  (implies (and (constant-poolp constant-pool)
-                (all-unsigned-byte-p 8 bytes))
-           (true-listp (mv-nth 3 (parse-class-file-bytes bytes constant-pool))))
+  (implies (all-unsigned-byte-p 8 bytes)
+           (true-listp (mv-nth 3 (parse-class-file-bytes bytes))))
   :rule-classes :type-prescription)
