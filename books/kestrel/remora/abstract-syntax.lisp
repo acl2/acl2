@@ -204,7 +204,7 @@
        additions of indices,
        and concatenations of indices."))
     (:var ((name string)))
-    (:const ((val nat)))
+    (:const ((value nat)))
     (:shape ((indices index-list)))
     (:add ((indices index-list)))
     (:append ((indices index-list)))
