@@ -226,6 +226,10 @@
   ;kill: (bvcat 24 (bvcat 16 (bvcat 8 highbyte 8 highmidbyte) 8 lowmidbyte) 8 lowbyte)
   )
 
+(defthm unsigned-byte-p-of-4bytes-to-int
+  (unsigned-byte-p 32 (4bytes-to-int highbyte highmidbyte lowmidbyte lowbyte))
+  :hints (("Goal" :in-theory (enable 4bytes-to-int))))
+
 ;; Return (mv erp val remaining-bytes) where val is an unsigned-byte-p 8.
 (defund readu1 (bytes)
   (declare (xargs :guard (all-unsigned-byte-p 8 bytes)))
@@ -294,8 +298,14 @@
           (rest (rest (rest (rest bytes)))))
     (mv :not-enough-bytes 0 nil)))
 
+;drop?
 (defthm natp-of-mv-nth-1-of-readu4
   (natp (mv-nth 1 (readu4 bytes)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable readu4))))
+
+(defthm unsigned-byte-p-32-of-mv-nth-1-of-readu4
+  (unsigned-byte-p 32 (mv-nth 1 (readu4 bytes)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable readu4))))
 
@@ -652,17 +662,29 @@
 ;; TODO: Add more checks
 (defund constant-pool-entryp (entry)
   (declare (xargs :guard t))
-  (or (null entry) ; still a symbol-alist
+  (or (null entry) ; still a symbol-alist ; todo: use :none?
       (and (symbol-alistp entry)
            (let ((tag (lookup-eq 'tag entry)))
-             (and (symbolp tag)
-                  (cond
-                   ((eq tag :constant-class)
-                    (and (natp (lookup-eq 'name_index entry))))
-                   (t t ;todo: switch to nil when we've covered all cases
-                      ))
-                  ))
-           )))
+             (case tag
+               ;; todo: add more checks to these cases:
+               (:constant_class (and (natp (lookup-eq 'name_index entry))))
+               (:constant_fieldref t)
+               (:constant_methodref t)
+               (:constant_interfacemethodref t)
+               (:constant_string t)
+               (:constant_integer (unsigned-byte-p 32 (lookup-eq 'bytes entry)))
+               (:constant_float (unsigned-byte-p 32 (lookup-eq 'bytes entry))) ; for now
+               (:constant_long (unsigned-byte-p 64 (lookup-eq 'bytes entry)))
+               (:constant_double (unsigned-byte-p 64 (lookup-eq 'bytes entry))) ; for now
+               (:constant_nameandtype t)
+               (:constant_utf8 t)
+               (:constant_methodhandle t)
+               (:constant_methodtype t)
+               (:constant_dynamic t)
+               (:constant_invokedynamic t)
+               (:constant_module t)
+               (:constant_package t)
+               (otherwise nil))))))
 
 (defthm constant-pool-entryp-forward-to-alistp
   (implies (constant-pool-entryp entry)
@@ -748,6 +770,15 @@
 ;;   :hints (("Goal" :in-theory (enable constant-poolp))))
 
 ;; (local (in-theory (enable eqlable-alistp-when-constant-poolp)))
+
+(defun any-byte-f0-or-higherp (bytes)
+  (declare (xargs :guard (and (all-unsigned-byte-p 8 bytes)
+                              (true-listp bytes))))
+  (if (endp bytes)
+      nil
+    (if (<= #xf0 (the (unsigned-byte 8) (first bytes)))
+        t
+      (any-byte-f0-or-higherp (rest bytes)))))
 
 ;; TODO: Avoid setting the 'tag entries here that we never check:
 ;returns (mv erp entryinfo numentries bytes)
@@ -856,13 +887,18 @@
           ((= tag *CONSTANT_Utf8*)
            (b* (((mv erp length bytes) (readu2 bytes))
                 ((when erp) (mv erp nil 0 bytes))
-                ((mv erp val bytes) (readnbytes length bytes))
-                ((when erp) (mv erp nil 0 bytes)))
+                ((mv erp these-bytes bytes) (readnbytes length bytes))
+                ((when erp) (mv erp nil 0 bytes))
+                ((when (member 0 these-bytes))
+                 (mv `(:zero-byte-in-CONSTANT_Utf8 ,these-bytes) nil 0 bytes))
+                ((when (any-byte-f0-or-higherp these-bytes))
+                 (mv `(:too-high-byte-in-CONSTANT_Utf8 ,these-bytes) nil 0 bytes))
+                )
              (mv
               (erp-nil)
               (acons 'bytes ;todo: bytes is a bad name for this
                      ;; TODO: In some cases (e.g., for descriptors) we might rather have chars here than a string
-                     (bytelist-to-string val) ;FFFFIXME doesn't handle non-ascii - add unicode support!  ;fixme: just turn this into a char-list?  since often this just gets unstringified anyway ((when erp) (mv erp nil 0 bytes)).
+                     (bytelist-to-string these-bytes) ;FFFFIXME doesn't handle non-ascii - add unicode support!  ;fixme: just turn this into a char-list?  since often this just gets unstringified anyway ((when erp) (mv erp nil 0 bytes)).
                      (acons 'tag :CONSTANT_Utf8 nil))
               1
               bytes)))
