@@ -39,6 +39,7 @@
 (include-book "java-types")
 (include-book "int-subtypes")
 (include-book "strings")
+(include-book "string-encoding")
 (include-book "intern-table")
 (include-book "arrays0")
 (include-book "array-building")
