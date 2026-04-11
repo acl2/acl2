@@ -171,7 +171,7 @@ well.</p>"
    (b* ((table (table-alist 'sdm-instruction-sect (w state))))
      (cons 'progn (sdm-instruction-table-xdoc-events
                    (sdm-instruction-table-organize table)
-                   'sdm-instruction-set-summary)))))
+                   'instruction-set-summary)))))
 
 #|
 (include-book
