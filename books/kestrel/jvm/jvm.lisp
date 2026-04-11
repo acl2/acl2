@@ -21,6 +21,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+;(local (include-book "kestrel/bv/bvchop" :dir :system))
 
 ;Eric made major modifications to the book m5.lisp by J Strother Moore, George Porter, Robert Krug, and Hanbing Liu
 
@@ -2938,7 +2939,7 @@
          (char-array-ref (acl2::get-field string-ref (cons "java.lang.String" (make-field-id "value" '(:array :char))) heap))
          ;; Get the characters
          (java-chars (acl2::array-contents char-array-ref heap))
-         (string (char-list-to-string java-chars)) ;this will be something like "int"
+         (string (char-list-to-string java-chars)) ;this will be something like "int" ; todo: call java-chars-to-string here
          (heapref-table (heapref-table s))
          (class-object (get-class-object string heapref-table))) ;todo: think "int" here vs "java.lang.Integer".  can also be void...
     (if (not class-object) ;test whether the class object needs to be built
