@@ -203,7 +203,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is always well-defined,
-     because all the characters that can appear in identifers
+     because all the characters that can appear in identifiers
      can also appear, in a non-starting position, in preprocessing numbers.
      The result is a preprocessing number.")
    (xdoc::p

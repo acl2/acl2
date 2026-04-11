@@ -25,12 +25,13 @@
   ;; Optional COND may be over variable AST.
   `(assert-event
     (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         (dstate (init-dstate "" dialect))
+         (dstate (init-dstate "" ienv))
          ((mv erp2 ast & &) (dimb-trans-unit ast dstate nil nil nil 1000)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
@@ -42,12 +43,13 @@
   ;; DIALECT indicates the C dialect.
   `(assert-event
     (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         (dstate (init-dstate "" dialect))
+         (dstate (init-dstate "" ienv))
          ((mv erp2 & & &) (dimb-trans-unit ast dstate nil nil nil 1000)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))

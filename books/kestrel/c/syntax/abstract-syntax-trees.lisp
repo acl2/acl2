@@ -49,8 +49,7 @@
     ".")
    (xdoc::p
     "We try and pick short yet clear names for these fixtypes,
-     so that code that manipulates these fixtypes
-     can be a bit more more compact.
+     so that code that manipulates these fixtypes can be a bit more compact.
      While the grammar in [C17]
      uses the `hexadecimal' and `binary' qualifications
      for certain hexadecimal and binary entities
