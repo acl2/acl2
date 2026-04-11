@@ -21,7 +21,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-;(local (include-book "kestrel/bv/bvchop" :dir :system))
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 
 ;Eric made major modifications to the book m5.lisp by J Strother Moore, George Porter, Robert Krug, and Hanbing Liu
 
