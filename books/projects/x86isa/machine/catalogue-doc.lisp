@@ -142,7 +142,7 @@
 
 
 
-(defxdoc  sdm-instruction-set-summary
+(defxdoc  instruction-set-summary
   :parents (x86isa)
   :short "Summary of what instructions are implemented/unimplemented, as organized in the
 Instruction Set Summary of the Intel Software Developer Manual (volume 1
