@@ -1,7 +1,7 @@
 ; A variant of read-class
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,28 +14,28 @@
 (include-book "read-class")
 (include-book "class-and-path-utils")
 
-;Returns (mv erp event state constant-pool)
+;Returns (mv erp event state)
 (defun read-class-from-hierarchy-fn (fully-qualified-class-name
                                      root ;no trailing slash
                                      whole-form
                                      state
-                                     constant-pool)
+                                    )
   (declare (xargs :guard (and (jvm::class-namep fully-qualified-class-name)
                               (stringp root)
                               (consp whole-form)
                               (symbolp (car whole-form)))
-                  :stobjs (state constant-pool)))
+                  :stobjs (state)))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv (erp-nil) '(value-triple :invisible) state constant-pool))
+        (mv (erp-nil) '(value-triple :invisible) state))
        (class-file (concatenate 'string
                                 root
                                 "/"
                                 (path-of-class-file-within-dir fully-qualified-class-name)))
-       ((mv erp class-name class-info field-defconsts state constant-pool)
-        (read-and-parse-class-file class-file t state constant-pool))
+       ((mv erp class-name class-info field-defconsts state)
+        (read-and-parse-class-file class-file t state))
        ((when erp)
         (er hard? 'read-class-from-hierarchy-fn "Error reading or parsing ~x0: ~x1" class-file erp)
-        (mv erp nil state constant-pool))
+        (mv erp nil state))
        (events (events-for-class class-name class-info field-defconsts)))
     (mv (erp-nil)
         `(progn ,@events
@@ -46,7 +46,7 @@
                 ;; Print the name of the class constant:
                 (value-triple ',(class-info-constant-name class-name)))
         state
-        constant-pool)))
+       )))
 
 ;; Submit events to load a Java class, including a defconst containing the
 ;; parsed contents of the class, an event to add it to the global-class-alist,
@@ -60,4 +60,4 @@
                                                    ,root
                                                    ',whole-form
                                                    state
-                                                   constant-pool)))
+                                                  )))

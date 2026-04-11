@@ -14,7 +14,8 @@
 
 ;; This book defines JVM-related functions used in axe-syntaxp and axe-bind-free rules.
 
-(include-book "kestrel/jvm/jvm" :dir :system) ; for jvm::pc
+(include-book "kestrel/jvm/frames" :dir :system) ; for jvm::pc
+;(include-book "kestrel/jvm/jvm" :dir :system)
 ;(include-book "../dags") ;for dargs
 ;(include-book "../dag-arrays") ;for pseudo-dag-arrayp
 (include-book "../dag-array-printing")
@@ -27,9 +28,10 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
+(include-book "kestrel/lists-light/memberp" :dir :system)
 (in-theory (disable member-equal-becomes-memberp)) ;causes problems
 
-(local (in-theory (disable myquotep))) ; for speed
+(local (in-theory (disable myquotep default-car default-+-2 rationalp-implies-acl2-numberp))) ; for speed
 
 (local (in-theory (enable rationalp-when-natp)))
 
@@ -581,7 +583,8 @@
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
                               (or (myquotep base-stack)
                                   (and (natp base-stack)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 base-stack)))))))
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 base-stack)))))
+                  :guard-hints (("Goal" :in-theory (enable rationalp-implies-acl2-numberp)))))
   (if (consp nest)    ;check for quotep
       (er hard? 'no-state-to-step-p "Unexpected (constant) argument.")
     (mv-let (status stack-height pc)

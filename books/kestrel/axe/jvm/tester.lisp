@@ -506,7 +506,7 @@
        ;; Populate the jvm::global-class-alist (so that unroll-java-code can find the code):
        ;; TODO: Pull this out
        ;; TODO: Don't bother to submit this event, just add the class to an alist?
-       (state ;(mv state constant-pool)
+       (state
         (submit-event-quiet `(read-class-from-hierarchy ,class-name :root ,root-of-class-hierarchy)
                             state))
        (output-indicator (if (eq variant :assert)
@@ -695,7 +695,7 @@
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
 
-;; Returns (mv erp event state constant-pool), but the event is always an
+;; Returns (mv erp event state), but the event is always an
 ;; empty progn.  This may need to be called inside a make-event.
 (defun test-file-fn (path-to-java-file ;; we prepend the cbd if this is not an absolute path (TODO: Perhaps instead just take the name of the class and use the classpath to find it?)
                      methods-to-test
@@ -709,10 +709,9 @@
                      prune-precise
                      prune-approx
                      monitor
-                     state
-                     constant-pool)
+                     state)
   (declare (xargs :mode :program
-                  :stobjs (state constant-pool)
+                  :stobjs state
                   :guard (and (or (eq :auto methods-to-test)
                                   (string-listp methods-to-test) ;these are just bare names, for now
                                   )
@@ -727,7 +726,7 @@
   (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
        ((when (not java-bootstrap-classes-root))
         (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")
-        (mv :JAVA_BOOTSTRAP_CLASSES_ROOT-unset nil state constant-pool))
+        (mv :JAVA_BOOTSTRAP_CLASSES_ROOT-unset nil state))
        ;; TODO: Don't bother to submit these events:
        ;; TODO: Build in many more classes?
        ;; TODO: Should we save these when we build the FUT executable?
@@ -757,18 +756,18 @@
        ;; Read the class file:
        ((mv erp class-name-from-class-file class-info
             & ; field-defconsts
-            state constant-pool) (read-and-parse-class-file class-file-name t state constant-pool))
-       ((when erp) (mv erp nil state constant-pool))
+            state) (read-and-parse-class-file class-file-name t state))
+       ((when erp) (mv erp nil state))
        ((when (not (equal class-name-from-class-file
                           class-name)))
         (er hard? 'test-file-fn "Class-name mismatch: ~x0 vs ~x1." class-name class-name-from-class-file)
-        (mv :class-name-mismatch nil state constant-pool))
+        (mv :class-name-mismatch nil state))
        ;; We'll test any method whose name starts with "test" or "fail_test": ;; todo: update all docs to mention "fail_test"
        (method-info-alist (jvm::class-decl-methods class-info))
        (test-method-ids (select-method-ids-to-test method-info-alist methods-to-test))
        ((when (endp test-method-ids))
         (er hard? 'test-file-fn "There are no methods to test.")
-        (mv (erp-t) nil state constant-pool))
+        (mv (erp-t) nil state))
        ;; Print the methods to be tested:
        (- (if (endp (rest test-method-ids))
               (cw "Will test the single method ~s0.~%" (method-id-to-string (first test-method-ids)))
@@ -788,7 +787,7 @@
         (run-formal-tests-on-methods test-method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-user-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
                       nil ;empty accumulator
                       state))
-       ((when erp) (mv erp nil state constant-pool))
+       ((when erp) (mv erp nil state))
        (state (maybe-remove-temp-dir state))
        (- (cw "~%~%~%"))
        (- (cw "==============================================================================~%"))
@@ -797,7 +796,7 @@
        (- (cw "==============================================================================~%"))
        ;;(- (cw "~%"))
        )
-    (mv (erp-nil) '(progn) state constant-pool)))
+    (mv (erp-nil) '(progn) state)))
 
 ;; Test all methods in the given file whose names start with "test" or
 ;; "fail_test".  This variant of the tool should be called from within the ACL2
@@ -827,7 +826,7 @@
                                    ,prune-approx
                                    ,monitor
                                    state
-                                   constant-pool)))
+                                  )))
 
 ;; Test all methods in the given file whose names start with "test" or "fail_test".  This
 ;; variant of the tool should be called from the shell or from an IDE.  This
@@ -845,7 +844,7 @@
                                                 (monitor 'nil)
                                                 (print ':brief) ;(print 'nil)
                                                 )
-  `(mv-let (erp event state constant-pool)
+  `(mv-let (erp event state)
      (test-file-fn ,path-to-java-file
                    ;;',assumptions
                    ,methods
@@ -859,8 +858,7 @@
                    ,prune-approx
                    ,monitor
                    state
-                   constant-pool)
+                  )
      (declare (ignore erp event))
      (prog2$ (exit 0) ;; Prevent printing of stuff (NIL, a prompt, and "Bye.") before exiting
-             (mv state
-                 constant-pool))))
+             state)))

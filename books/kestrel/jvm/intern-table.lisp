@@ -29,6 +29,8 @@
       (and (stringp (first x))
            (all-stringp (rest x)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;todo: optimize this to make a single pass?:
 (defund intern-tablep (intern-table)
   (declare (xargs :guard t))
@@ -36,6 +38,8 @@
        (all-stringp (strip-cars intern-table))
        (acl2::all-addressp (strip-cdrs intern-table)) ;;the elements are addresses (intern-table-okp requires them to be addresses of string objects)
        ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund empty-intern-table ()
   (declare (xargs :guard t))
@@ -45,8 +49,11 @@
 (defthm intern-tablep-of-empty-intern-table
   (intern-tablep (empty-intern-table)))
 
-;; Check that all addresses to which strings are bound in the intern table are
-;; in fact addresses of string objects.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Checks that all the addresses the intern-table are in fact addresses of
+;; string objects.
+;; TODO: Compare to intern-table-correctp.
 (defund intern-table-okp (intern-table heap)
   (declare (xargs :guard (and (intern-tablep intern-table)
                               (heapp heap))
@@ -78,41 +85,48 @@
                   (intern-table-okp intern-table heap)))
   :hints (("Goal" :in-theory (enable intern-table-okp strip-cdrs))))
 
-;drop?
-(defthm intern-table-okp-of-set-field-irrel-when-bound
+;; ;drop (not trivial)?
+(defthm intern-table-okp-of-set-field-irrel-when-bound-second-heap
   (implies (and (intern-table-okp intern-table heap2)
                 (not (set::in ad (acl2::rkeys heap2))))
            (equal (intern-table-okp intern-table (acl2::set-field ad pair val heap))
                   (intern-table-okp intern-table heap)))
   :hints (("Goal" :in-theory (enable intern-table-okp acl2::get-class))))
 
+;; restrict to things that are clearly new addresses?
 (defthm intern-table-okp-of-set-field-irrel-when-bound-same-heap
-  (implies (and (intern-table-okp intern-table heap)
-                (not (set::in ad (acl2::rkeys heap))))
+  (implies (and (not (set::in ad (acl2::rkeys heap)))
+                (intern-table-okp intern-table heap))
            (equal (intern-table-okp intern-table (acl2::set-field ad pair val heap))
-                  (intern-table-okp intern-table heap))))
+                  t ;(intern-table-okp intern-table heap)
+                  ))
+  :hints (("Goal" :in-theory (enable intern-table-okp acl2::get-class))))
 
-;; Setting some field of some object to "java.lang.String" can only make the intern table more correct
+;; Setting some field of some object to "java.lang.String" can't make the intern-table less ok
 (defthm intern-table-okp-of-set-field-2
   (implies (intern-table-okp intern-table heap)
            (intern-table-okp intern-table (acl2::set-field ad pair "java.lang.String" heap)))
   :hints (("Goal" :in-theory (enable intern-table-okp))))
 
-;really this is true for any f, not just cdr
-(defthm not-equal-constant-when-cdr-wrong
-  (implies (and (syntaxp (quotep k))
-                (not (equal (cdr x) free))
-                (syntaxp (quotep free))
-                (equal free (cdr k)))
-           (not (equal x k))))
+;; ;really this is true for any f, not just cdr
+;; (local
+;;  (defthm not-equal-constant-when-cdr-wrong
+;;    (implies (and (syntaxp (quotep k))
+;;                  (not (equal (cdr x) free))
+;;                  (syntaxp (quotep free))
+;;                  (equal free (cdr k)))
+;;             (not (equal x k)))))
 
-;really this is true for any f, not just car
-(defthm not-equal-constant-when-car-wrong
-  (implies (and (syntaxp (quotep k))
-                (not (equal (car x) free))
-                (syntaxp (quotep free))
-                (equal free (car k)))
-           (not (equal x k))))
+;; ;really this is true for any f, not just car
+;; (local
+;;  (defthm not-equal-constant-when-car-wrong
+;;    (implies (and (syntaxp (quotep k))
+;;                  (not (equal (car x) free))
+;;                  (syntaxp (quotep free))
+;;                  (equal free (car k)))
+;;             (not (equal x k)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm intern-table-okp-of-set-fields-irrel-bindings
   (implies (not (member-equal '(:special-data . :class) (strip-cars bindings)))
@@ -138,7 +152,9 @@
   (implies (and (intern-table-okp intern-table heap)
                 (not (set::in ad (acl2::rkeys heap))))
            (equal (intern-table-okp intern-table (acl2::set-fields ad bindings heap))
-                  (intern-table-okp intern-table heap))))
+                  t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun string-has-been-internedp (string intern-table)
   (declare (xargs :guard (and (stringp string)
@@ -159,6 +175,8 @@
   (equal (string-has-been-internedp string (empty-intern-table))
          nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;assumes that the string has been interned??
 ;returns a heap address, or nil if the string isn't in the intern table
 (defun get-interned-string (string intern-table)
@@ -175,6 +193,8 @@
 (defthm get-interned-string-of-empty-intern-table
   (equal (get-interned-string string (empty-intern-table))
          nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun set-interned-string (string ad intern-table)
   (declare (xargs :guard (and (stringp string)
@@ -236,7 +256,7 @@
 ;;                   nil))
 ;;   :hints (("Goal" :in-theory (enable lookup-equal))))
 
-;drop, if we keep get-class diabled?
+;drop, if we keep get-class disabled?
 (defthm get-field-of-get-interned-string-and-class-pair
   (implies (and (string-has-been-internedp string intern-table)
                 (intern-table-okp intern-table heap))
@@ -259,3 +279,11 @@
   (implies (intern-tablep intern-table)
            (not (null-refp (get-interned-string string intern-table))))
   :hints (("Goal" :in-theory (enable intern-tablep strip-cdrs))))
+
+;disable?  helps to prove the reverse direction
+(defthm not-intern-table-okp-of-set-field
+  (implies (and (not (intern-table-okp intern-table heap))
+                (or (not (equal pair (acl2::class-pair)))
+                    (not (equal val "java.lang.String"))))
+           (not (intern-table-okp intern-table (acl2::set-field ad pair val heap))))
+  :hints (("Goal" :in-theory (enable intern-table-okp))))
