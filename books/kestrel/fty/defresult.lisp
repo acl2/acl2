@@ -455,7 +455,7 @@
    "This macro is a bit like the @('reserr') constructor
     of the fixtype @(tsee reserr),
     but the @('f') in the name conveys that
-    it adds the name of the function to the infomation passed as argument."))
+    it adds the name of the function to the information passed as argument."))
  `(make-reserr :info (list (list __function__ ,info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
