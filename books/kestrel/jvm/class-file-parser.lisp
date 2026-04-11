@@ -57,6 +57,18 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
+(local (in-theory (disable natp)))
+
+(local
+ (defthm rationalp-when-natp
+   (implies (natp x)
+            (rationalp x))))
+
+(local
+ (defthm integerp-when-natp
+   (implies (natp x)
+            (integerp x))))
+
 (local
  (defthm memberp-iff
    (iff (memberp a x)
@@ -247,10 +259,15 @@
            (all-unsigned-byte-p 8 (mv-nth 2 (readu1 bytes))))
   :hints (("Goal" :in-theory (enable readu1))))
 
-(defthm natp-of-mv-nth-1-of-readu1
+(defthm natp-of-mv-nth-1-of-readu1-type
   (implies (all-unsigned-byte-p 8 bytes)
            (natp (mv-nth 1 (readu1 bytes))))
   :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable readu1))))
+
+(defthm natp-of-mv-nth-1-of-readu1
+  (implies (all-unsigned-byte-p 8 bytes)
+           (natp (mv-nth 1 (readu1 bytes))))
   :hints (("Goal" :in-theory (enable readu1))))
 
 ;; Returns (mv erp val remaining-bytes) where val is an unsigned-byte-p 16.
@@ -659,117 +676,229 @@
 (defconst *CONSTANT_Module* 19)
 (defconst *CONSTANT_Package* 20)
 
-;; TODO: Add more checks
+;; todo: save consing by making this more compact (but note that the constant
+;; pool doesn't currently appear in the result of parsing a class file).
 (defund constant-pool-entryp (entry)
   (declare (xargs :guard t))
-  (or (null entry) ; still a symbol-alist ; todo: use :none?
-      (and (symbol-alistp entry)
-           (let ((tag (lookup-eq 'tag entry)))
-             (case tag
-               ;; todo: add more checks to these cases:
-               (:constant_class (and (natp (lookup-eq 'name_index entry))))
-               (:constant_fieldref t)
-               (:constant_methodref t)
-               (:constant_interfacemethodref t)
-               (:constant_string t)
-               (:constant_integer (unsigned-byte-p 32 (lookup-eq 'bytes entry)))
-               (:constant_float (unsigned-byte-p 32 (lookup-eq 'bytes entry))) ; for now
-               (:constant_long (unsigned-byte-p 64 (lookup-eq 'bytes entry)))
-               (:constant_double (unsigned-byte-p 64 (lookup-eq 'bytes entry))) ; for now
-               (:constant_nameandtype t)
-               (:constant_utf8 t)
-               (:constant_methodhandle t)
-               (:constant_methodtype t)
-               (:constant_dynamic t)
-               (:constant_invokedynamic t)
-               (:constant_module t)
-               (:constant_package t)
-               (otherwise nil))))))
+  (and (symbol-alistp entry)
+       (let ((tag (lookup-eq 'tag entry)))
+         (case tag
+           ;; some natp checks could be strengthened to unsigned-byte-p 16 checks:
+           (:constant_class (natp (lookup-eq 'name_index entry)))
+           (:constant_fieldref (and (natp (lookup-eq 'class_index entry))
+                                    (natp (lookup-eq 'name_and_type_index entry))))
+           (:constant_methodref (and (natp (lookup-eq 'class_index entry))
+                                     (natp (lookup-eq 'name_and_type_index entry))))
+           (:constant_interfacemethodref (and (natp (lookup-eq 'class_index entry))
+                                              (natp (lookup-eq 'name_and_type_index entry))))
+           (:constant_string (natp (lookup-eq 'string_index entry)))
+           (:constant_integer (unsigned-byte-p 32 (lookup-eq 'bytes entry)))
+           (:constant_float (unsigned-byte-p 32 (lookup-eq 'bytes entry))) ; for now
+           (:constant_long (unsigned-byte-p 64 (lookup-eq 'bytes entry)))
+           (:constant_double (unsigned-byte-p 64 (lookup-eq 'bytes entry))) ; for now
+           (:constant_nameandtype (and (natp (lookup-eq 'name_index entry))
+                                       (natp (lookup-eq 'descriptor_index entry))))
+           (:constant_utf8 (stringp (lookup-eq 'bytes entry))) ; for now
+           (:constant_methodhandle (and (let ((reference_kind (lookup-eq 'reference_kind entry)))
+                                          (and (integerp reference_kind)
+                                               (<= 1 reference_kind)
+                                               (<= reference_kind 9)))
+                                        (natp (lookup-eq 'reference_index entry))))
+           (:constant_methodtype (natp (lookup-eq 'descriptor_index entry)))
+           (:constant_dynamic (and (natp (lookup-eq 'bootstrap_method_attr_index entry))
+                                   (natp (lookup-eq 'name_and_type_index entry))))
+           (:constant_invokedynamic (and (natp (lookup-eq 'bootstrap_method_attr_index entry))
+                                         (natp (lookup-eq 'name_and_type_index entry))))
+           (:constant_module (natp (lookup-eq 'name_index entry)))
+           (:constant_package (natp (lookup-eq 'name_index entry)))
+           (otherwise nil)))))
 
-(defthm constant-pool-entryp-forward-to-alistp
-  (implies (constant-pool-entryp entry)
-           (alistp entry))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable constant-pool-entryp))))
+(defund maybe-constant-pool-entryp (entry)
+  (declare (xargs :guard t))
+  (or (eq :none entry)
+      (constant-pool-entryp entry)))
+
+(local
+ (defthm maybe-constant-pool-entryp-when-constant-pool-entryp
+   (implies (constant-pool-entryp entry)
+            (maybe-constant-pool-entryp entry))
+   :hints (("Goal" :in-theory (enable maybe-constant-pool-entryp)))))
+
+(local
+ (defthm constant-pool-entryp-forward-to-alistp
+   (implies (constant-pool-entryp entry)
+            (alistp entry))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable constant-pool-entryp)))))
+
+(local
+ (defthm alistp-when-constant-pool-entryp
+   (implies (constant-pool-entryp entry)
+            (alistp entry))
+   :hints (("Goal" :in-theory (enable constant-pool-entryp)))))
 
 ;; Introduces constant-poolp
 ;; TODO: Also introduce an invariant over the constant pool, saying that the information in it is well-typed.
+;; TODO: Use with-local-stobj for this below.
 (defstobj constant-pool
-  (entries :type (array (satisfies constant-pool-entryp) (0)) ; initially empty
-           :initially nil
+  (entries :type (array (satisfies maybe-constant-pool-entryp) (0)) ; initially empty, but we resize before use
+           :initially :none
            :resizable t))
 
 (in-theory (disable update-entriesi entriesi entriesp entries-length constant-poolp resize-entries))
 
-(defthm entriesp-of-update-nth
-  (implies (and (entriesp entries)
-                (natp n)
-                (< n (len entries))
-                (constant-pool-entryp val))
-           (entriesp (update-nth n val entries)))
-  :hints (("Goal" :in-theory (enable entriesp update-nth))))
+(local
+ (defthm entriesp-of-update-nth
+   (implies (and (entriesp entries)
+                 (natp n)
+                 (< n (len entries))
+                 (constant-pool-entryp val))
+            (entriesp (update-nth n val entries)))
+   :hints (("Goal" :in-theory (enable entriesp update-nth)))))
 
-(defthm alistp-of-nth-when-entriesp
-  (implies (and (entriesp entries)
-                (natp n)
-                (< n (len entries)))
-           (alistp (nth n entries)))
-  :hints (("Goal" :in-theory (e/d (entriesp nth) (NTH-OF-CDR)))))
+(local
+ (defthm constant-pool-entryp-of-nth-when-entriesp
+   (implies (and (not (equal :none (nth n entries)))
+                 (entriesp entries)
+                 (natp n)
+                 (< n (len entries)))
+            (constant-pool-entryp (nth n entries)))
+   :hints (("Goal" :in-theory (e/d (entriesp nth) (NTH-OF-CDR))))))
 
-(defthm entries-length-of-update-entriesi
-  (implies (and (natp index)
-                (force (< index (entries-length constant-pool))))
-           (equal (entries-length (update-entriesi index val constant-pool))
-                  (entries-length constant-pool)))
-  :hints (("Goal" :in-theory (enable entries-length update-entriesi))))
+(local
+ (defthm entries-length-of-update-entriesi
+   (implies (and (natp index)
+                 (force (< index (entries-length constant-pool))))
+            (equal (entries-length (update-entriesi index val constant-pool))
+                   (entries-length constant-pool)))
+   :hints (("Goal" :in-theory (enable entries-length update-entriesi)))))
 
-(defthm entries-length-of-resize-entries
-  (implies (natp len)
-           (equal (entries-length (resize-entries len constant-pool))
-                  len))
-  :hints (("Goal" :in-theory (enable entries-length resize-entries))))
+(local
+ (defthm entries-length-of-resize-entries
+   (implies (natp len)
+            (equal (entries-length (resize-entries len constant-pool))
+                   len))
+   :hints (("Goal" :in-theory (enable entries-length resize-entries)))))
 
-(defthm entriesp-of-nth-when-constant-poolp
-  (implies (constant-poolp constant-pool)
-           (entriesp (nth *entriesi* constant-pool)))
-  :hints (("Goal" :in-theory (enable constant-poolp))))
+(local
+ (defthm entriesp-of-nth-when-constant-poolp
+   (implies (constant-poolp constant-pool)
+            (entriesp (nth *entriesi* constant-pool)))
+   :hints (("Goal" :in-theory (enable constant-poolp)))))
 
-(defthm alistp-of-entriesi
-  (implies (and (natp index)
-                (force (< index (entries-length constant-pool)))
-                (constant-poolp constant-pool))
-           (alistp (entriesi index constant-pool)))
-  :hints (("Goal" :in-theory (enable entries-length entriesi))))
+(local
+ (defthm constant-pool-entryp-of-entriesi
+   (implies (and (not (equal :none (entriesi index constant-pool)))
+                 (natp index)
+                 (force (< index (entries-length constant-pool)))
+                 (constant-poolp constant-pool))
+            (constant-pool-entryp (entriesi index constant-pool)))
+   :hints (("Goal" :in-theory (enable entries-length entriesi)))))
 
-(defthm constant-poolp-of-update-entriesi
-  (implies (and (natp index)
-                (< index (entries-length constant-pool))
-                (constant-pool-entryp val)
-                (constant-poolp constant-pool))
-           (constant-poolp (update-entriesi index val constant-pool)))
-  :hints (("Goal" :in-theory (enable entries-length update-entriesi constant-poolp entriesp))))
+(local
+ (defthm constant-poolp-of-update-entriesi
+   (implies (and (natp index)
+                 (< index (entries-length constant-pool))
+                 (constant-pool-entryp val)
+                 (constant-poolp constant-pool))
+            (constant-poolp (update-entriesi index val constant-pool)))
+   :hints (("Goal" :in-theory (enable entries-length update-entriesi constant-poolp entriesp)))))
 
-;; (defthmd alistp-of-lookup-equal-when-constant-poolp
-;;   (implies (constant-poolp cp)
-;;            (alistp (lookup-equal key cp)))
-;;   :hints (("Goal" :in-theory (enable constant-poolp lookup-equal))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (local (in-theory (enable alistp-of-lookup-equal-when-constant-poolp)))
+(defund cp-entry-tag (entry)
+  (declare (xargs :guard (constant-pool-entryp entry)))
+  (lookup-eq 'tag entry) ; for now
+  )
 
-;; ;todo: expensive?
-;; (defthmd alistp-when-constant-poolp
-;;   (implies (constant-poolp cp)
-;;            (alistp cp))
-;;   :hints (("Goal" :in-theory (enable constant-poolp))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (local (in-theory (enable alistp-when-constant-poolp)))
+(local
+ (defthm natp-of-lookup-equal-when-constant_fieldref
+   (implies (and (equal :constant_fieldref (cp-entry-tag entry))
+                 (constant-pool-entryp entry))
+            (natp (lookup-equal 'class_index entry)))
+   :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag)))))
 
-;; (defthmd eqlable-alistp-when-constant-poolp
-;;   (implies (constant-poolp cp)
-;;            (eqlable-alistp cp))
-;;   :hints (("Goal" :in-theory (enable constant-poolp))))
+(local
+ (defthm natp-of-lookup-equal-when-constant_fieldref2
+   (implies (and (equal :constant_fieldref (cp-entry-tag entry))
+                 (constant-pool-entryp entry))
+            (natp (lookup-equal 'name_and_type_index entry)))
+   :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag)))))
 
-;; (local (in-theory (enable eqlable-alistp-when-constant-poolp)))
+(local
+ (defthm natp-of-lookup-equal-when-constant_class
+   (implies (and (equal :constant_class (cp-entry-tag entry))
+                 (constant-pool-entryp entry))
+            (natp (lookup-equal 'name_index entry)))
+   :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag)))))
+
+(local
+ (defthm stringp-of-lookup-equal-when-constant_utf8
+   (implies (and (equal :constant_utf8 (cp-entry-tag entry))
+                 (constant-pool-entryp entry))
+            (stringp (lookup-equal 'bytes entry)))
+   :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;; Returns (mv erp entry).
+(defund lookup-in-constant-pool (index constant-pool)
+  (declare (xargs :guard (natp index)
+                  :stobjs constant-pool))
+  (if (not (< index (entries-length constant-pool)))
+      (mv `(:bad-cp-index ,index) nil)
+    (let ((entry (entriesi index constant-pool)))
+      ;; We could avoid the check for :none if we knew there were no gaps in
+      ;; the numbering of constant pool entries, but note that 8-byte constants
+      ;; take 2 bytes and so leave gaps.
+      (if (eq :none entry)
+          (mv `(:empty-cp-entry ,index) nil)
+        (mv (erp-nil) entry)))))
+
+(local
+ (defthm constant-pool-entryp-of-mv-nth-1-of-lookup-in-constant-pool
+   (implies (and (not (mv-nth 0 (lookup-in-constant-pool index constant-pool))) ; no error
+                 (constant-poolp constant-pool)
+                 (natp index))
+            (constant-pool-entryp (mv-nth 1 (lookup-in-constant-pool index constant-pool))))
+   :hints (("Goal" :in-theory (enable lookup-in-constant-pool)))))
+
+
+
+(defthm symbolp-of-cp-entry-tag
+  (implies (constant-pool-entryp entry)
+           (symbolp (cp-entry-tag entry)))
+  :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag))))
+
+;; Checks that the entry returned has one of the ALLOWED-TYPES.
+;; Returns (mv erp entry).
+;; TODO: Use this more
+;; Trying to leave this enabled
+(defun lookup-in-constant-pool-safe (index allowed-types constant-pool)
+  (declare (xargs :guard (and (natp index)
+                              (keyword-listp allowed-types))
+                  :stobjs constant-pool))
+  (mv-let (erp entry)
+      (lookup-in-constant-pool index constant-pool)
+    (if erp
+        (mv erp entry)
+      (let ((type (cp-entry-tag entry)))
+        (if (not (member-eq type allowed-types))
+            (mv `(:unexpected-constant-pool-entry-type ,type ,allowed-types) entry)
+          (mv (erp-nil) entry))))))
+
+(local
+ (defthm constant-pool-entryp-of-mv-nth-1-of-lookup-in-constant-pool-safe
+   (implies (and (not (mv-nth 0 (lookup-in-constant-pool-safe index allowed-types constant-pool))) ; no error
+                 (constant-poolp constant-pool)
+                 (natp index))
+            (constant-pool-entryp (mv-nth 1 (lookup-in-constant-pool-safe index allowed-types constant-pool))))
+   :hints (("Goal" :in-theory (enable lookup-in-constant-pool-safe)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun any-byte-f0-or-higherp (bytes)
   (declare (xargs :guard (and (all-unsigned-byte-p 8 bytes)
@@ -905,6 +1034,9 @@
           ((= tag *CONSTANT_MethodHandle*)
            (b* (((mv erp reference_kind bytes) (readu1 bytes))
                 ((when erp) (mv erp nil 0 bytes))
+                ((when (not (and (<= 1 reference_kind)
+                                 (<= reference_kind 9))))
+                 (mv :bad-reference-kind nil 0 bytes))
                 ((mv erp reference_index bytes) (readu2 bytes))
                 ((when erp) (mv erp nil 0 bytes)))
              (mv (erp-nil)
@@ -966,33 +1098,38 @@
               (er hard? 'parse-constant-pool-entry "Found an unknown tag, ~x0, for a constant pool entry" tag)
               (mv :unknown-tag nil 0 bytes))))))
 
-(defthm posp-of-mv-nth-2-of-parse-constant-pool-entry
-  (implies (not (mv-nth 0 (parse-constant-pool-entry bytes)))
-           (posp (mv-nth 2 (parse-constant-pool-entry bytes))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable parse-constant-pool-entry))))
+(local
+ (defthm posp-of-mv-nth-2-of-parse-constant-pool-entry
+   (implies (not (mv-nth 0 (parse-constant-pool-entry bytes)))
+            (posp (mv-nth 2 (parse-constant-pool-entry bytes))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable parse-constant-pool-entry)))))
 
-(defthm alistp-of-mv-nth-1-of-parse-constant-pool-entry
-  (alistp (mv-nth 1 (parse-constant-pool-entry bytes)))
-  :hints (("Goal" :in-theory (enable parse-constant-pool-entry))))
+(local
+ (defthm alistp-of-mv-nth-1-of-parse-constant-pool-entry
+   (alistp (mv-nth 1 (parse-constant-pool-entry bytes)))
+   :hints (("Goal" :in-theory (enable parse-constant-pool-entry)))))
 
-(defthm true-listp-of-mv-nth-3-of-parse-constant-pool-entry
-  (implies (true-listp bytes)
-           (true-listp (mv-nth 3 (parse-constant-pool-entry bytes))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable parse-constant-pool-entry))))
+(local
+ (defthm true-listp-of-mv-nth-3-of-parse-constant-pool-entry
+   (implies (true-listp bytes)
+            (true-listp (mv-nth 3 (parse-constant-pool-entry bytes))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable parse-constant-pool-entry)))))
 
-(defthm all-unsigned-byte-p-8-of-nth-3-of-parse-constant-pool-entry
-  (implies (all-unsigned-byte-p 8 bytes)
-           (all-unsigned-byte-p 8 (mv-nth 3 (parse-constant-pool-entry bytes))))
-  :hints (("Goal" :in-theory (enable parse-constant-pool-entry))))
+(local
+ (defthm all-unsigned-byte-p-8-of-nth-3-of-parse-constant-pool-entry
+   (implies (all-unsigned-byte-p 8 bytes)
+            (all-unsigned-byte-p 8 (mv-nth 3 (parse-constant-pool-entry bytes))))
+   :hints (("Goal" :in-theory (enable parse-constant-pool-entry)))))
 
-(defthm constant-pool-entryp-of-mv-nth-1-of-parse-constant-pool-entry
-  (implies (not (mv-nth 0 (parse-constant-pool-entry bytes)))
-           (constant-pool-entryp (mv-nth 1 (parse-constant-pool-entry bytes))))
-  :otf-flg t
-  :hints (("Goal" :in-theory (enable parse-constant-pool-entry
-                                     constant-pool-entryp))))
+(local
+ (defthm constant-pool-entryp-of-mv-nth-1-of-parse-constant-pool-entry
+   (implies (and (not (mv-nth 0 (parse-constant-pool-entry bytes)))
+                 (all-unsigned-byte-p 8 bytes))
+            (constant-pool-entryp (mv-nth 1 (parse-constant-pool-entry bytes))))
+   :hints (("Goal" :in-theory (enable parse-constant-pool-entry
+                                      constant-pool-entryp)))))
 
 ;; Returns (mv erp constant-pool bytes-remaining).
 ;; acc accumulates info on the entries.
@@ -1025,37 +1162,43 @@
                                     bytes
                                     constant-pool)))))
 
-(defthm true-listp-of-mv-nth-2-of-parse-constant-pool-entries
-  (implies (true-listp bytes)
-           (true-listp (mv-nth 2 (parse-constant-pool-entries index max-index bytes acc))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable parse-constant-pool-entries))))
+(local
+ (defthm true-listp-of-mv-nth-2-of-parse-constant-pool-entries
+   (implies (true-listp bytes)
+            (true-listp (mv-nth 2 (parse-constant-pool-entries index max-index bytes acc))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable parse-constant-pool-entries)))))
 
-(defthm all-unsigned-byte-p-8-of-nth-2-of-parse-constant-pool-entries
-  (implies (all-unsigned-byte-p 8 bytes)
-           (all-unsigned-byte-p 8 (mv-nth 2 (parse-constant-pool-entries index max-index bytes acc))))
-  :hints (("Goal" :in-theory (enable parse-constant-pool-entries))))
+(local
+ (defthm all-unsigned-byte-p-8-of-nth-2-of-parse-constant-pool-entries
+   (implies (all-unsigned-byte-p 8 bytes)
+            (all-unsigned-byte-p 8 (mv-nth 2 (parse-constant-pool-entries index max-index bytes acc))))
+   :hints (("Goal" :in-theory (enable parse-constant-pool-entries)))))
 
-(defthm entries-length-of-nth-1-of-parse-constant-pool-entries
-  (implies (and (not (mv-nth 0 (parse-constant-pool-entries index max-index bytes constant-pool)))
-                (natp index)
-                (natp max-index)
-                (< max-index (entries-length constant-pool))
+(local
+ (defthm entries-length-of-nth-1-of-parse-constant-pool-entries
+   (implies (and (not (mv-nth 0 (parse-constant-pool-entries index max-index bytes constant-pool)))
+                 (natp index)
+                 (natp max-index)
+                 (< max-index (entries-length constant-pool))
 ;                (<= index max-index)
-                (constant-poolp constant-pool))
-           (equal (entries-length (mv-nth 1 (parse-constant-pool-entries index max-index bytes constant-pool)))
-                  (entries-length constant-pool)))
-  :hints (("Goal" :expand (PARSE-CONSTANT-POOL-ENTRIES INDEX INDEX BYTES CONSTANT-POOL)
-           :in-theory (enable parse-constant-pool-entries))))
+                 (constant-poolp constant-pool)
+                 (all-unsigned-byte-p 8 bytes))
+            (equal (entries-length (mv-nth 1 (parse-constant-pool-entries index max-index bytes constant-pool)))
+                   (entries-length constant-pool)))
+   :hints (("Goal" :expand (PARSE-CONSTANT-POOL-ENTRIES INDEX INDEX BYTES CONSTANT-POOL)
+                   :in-theory (enable parse-constant-pool-entries)))))
 
-(defthm constant-poolp-of-nth-1-of-parse-constant-pool-entries
-  (implies (and (natp index)
-                (natp max-index)
-                (< max-index (entries-length constant-pool))
+(local
+ (defthm constant-poolp-of-nth-1-of-parse-constant-pool-entries
+   (implies (and (natp index)
+                 (natp max-index)
+                 (< max-index (entries-length constant-pool))
 ;                (<= index max-index)
-                (constant-poolp constant-pool))
-           (constant-poolp (mv-nth 1 (parse-constant-pool-entries index max-index bytes constant-pool))))
-  :hints (("Goal" :in-theory (enable parse-constant-pool-entries))))
+                 (constant-poolp constant-pool)
+                 (all-unsigned-byte-p 8 bytes))
+            (constant-poolp (mv-nth 1 (parse-constant-pool-entries index max-index bytes constant-pool))))
+   :hints (("Goal" :in-theory (enable parse-constant-pool-entries)))))
 
 (defund getarraytype (int)
   (declare (xargs :guard (natp int)))
@@ -1094,35 +1237,18 @@
 ;;            (jvm::class-namep (mv-nth 1 (parse-class-name str))))
 ;;   :hints (("Goal" :in-theory (enable parse-class-name))))
 
-;; Returns (mv erp entry).
-(defund lookup-in-constant-pool (index constant-pool)
-  (declare (xargs :guard (natp index)
-                  :stobjs constant-pool))
-  (if (not (< index (entries-length constant-pool)))
-      (mv `(:bad-cp-index ,index) nil)
-    (mv (erp-nil) (entriesi index constant-pool))))
-
-(defthm alistp-of-mv-nth-1-of-lookup-in-constant-pool
-  (implies (and (constant-poolp constant-pool)
-                (natp index))
-           (alistp (mv-nth 1 (lookup-in-constant-pool index constant-pool))))
-  :hints (("Goal" :in-theory (enable lookup-in-constant-pool))))
 
 ;; Returns (mv erp res).
 ;; Returns a reference-typep.  This can sometimes be an array type.
 (defund get-class-name-from-src (symbolic-reference-to-class constant-pool)
-  (declare (xargs :guard (and (natp symbolic-reference-to-class)
-                              )
+  (declare (xargs :guard (natp symbolic-reference-to-class)
                   :stobjs constant-pool))
-  (b* (((mv erp cp-entry) (lookup-in-constant-pool symbolic-reference-to-class constant-pool))
+  (b* (((mv erp cp-entry) (lookup-in-constant-pool-safe symbolic-reference-to-class '(:constant_class) constant-pool))
        ((when erp) (mv erp nil))
-       (name_index (lookup-eq-safe 'name_index cp-entry))
-       ((mv erp class-name-entry) (lookup-in-constant-pool (nfix name_index) constant-pool)) ;todo: drop the nfix
+       (name_index (lookup-eq 'name_index cp-entry))
+       ((mv erp class-name-entry) (lookup-in-constant-pool-safe name_index '(:constant_utf8) constant-pool))
        ((when erp) (mv erp nil))
-       (class-name (lookup-eq-safe 'bytes class-name-entry))
-       ((when (not (stringp class-name)))
-        (er hard? 'get-class-name-from-src "Bad string.")
-        (mv :bad-string nil))
+       (class-name (lookup-eq 'bytes class-name-entry))
        ((mv erp parsed-class-name) (parse-class-name class-name))
        ((when erp) (mv erp nil)))
     (mv (erp-nil) parsed-class-name)))
@@ -1162,18 +1288,15 @@
   (declare (xargs :guard (and (natp index)
                               )
                   :stobjs constant-pool))
-  (b* (((mv erp srf) (lookup-in-constant-pool index constant-pool))
+  (b* (((mv erp srf) (lookup-in-constant-pool-safe index '(:constant_fieldref) constant-pool))
        ((when erp) (mv erp nil nil nil))
-       (class_index (lookup-eq-safe 'class_index srf))
-       ((when (not (natp class_index)))
-        (er hard? 'get-info-from-srf "Bad index for class: ~x0." class_index)
-        (mv :bad-index-for-class nil nil nil))
+       (class_index (lookup-eq 'class_index srf))
        ((mv erp class-type) (get-class-name-from-src class_index constant-pool))
        ((when erp) (mv erp nil nil nil))
        ((when (not (jvm::class-or-interface-namep class-type)))
         (er hard? 'get-info-from-srf "Surprised to see an array class, ~x0, in an SRF." class-type)
         (mv :unexpected-array-class nil nil nil))
-       (name_and_type_index (nfix (lookup-eq-safe 'name_and_type_index srf)))
+       (name_and_type_index (lookup-eq 'name_and_type_index srf)) ; todo: replce lookup-eq-safe with lookup-eq but use lookup-in-constant-pool-safe.  also drop nfixes.
        ((mv erp name_and_type) (lookup-in-constant-pool name_and_type_index constant-pool))
        ((when erp) (mv erp nil nil nil))
        (name_index (nfix (lookup-eq-safe 'name_index name_and_type)))
@@ -1196,7 +1319,7 @@
        ((when erp) (mv erp nil nil nil nil nil))
        (class_index (lookup-eq-safe 'class_index srm))
        (name_and_type_index (nfix (lookup-eq-safe 'name_and_type_index srm)))
-       (tag (lookup-eq-safe 'tag srm))
+       (tag (cp-entry-tag srm))
 
        ((when (not (natp class_index)))
         (er hard? 'get-class-name-from-srm "Bad index for class: ~x0." class_index)
@@ -1243,21 +1366,24 @@
           (cons class-name rest-names)
           bytes))))
 
-(defthm all-unsigned-byte-p-8-of-mv-nth-2-of-get-class-names-for-indices
-  (implies (all-unsigned-byte-p 8 bytes)
-           (all-unsigned-byte-p 8 (mv-nth 2 (get-class-names-for-indices count bytes constant-pool))))
-  :hints (("Goal" :in-theory (enable get-class-names-for-indices))))
+(local
+ (defthm all-unsigned-byte-p-8-of-mv-nth-2-of-get-class-names-for-indices
+   (implies (all-unsigned-byte-p 8 bytes)
+            (all-unsigned-byte-p 8 (mv-nth 2 (get-class-names-for-indices count bytes constant-pool))))
+   :hints (("Goal" :in-theory (enable get-class-names-for-indices)))))
 
-(defthm len-bound-for-get-class-names-for-indices
-  (<= (len (mv-nth 2 (get-class-names-for-indices count bytes constant-pool)))
-      (len bytes))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable get-class-names-for-indices))))
+(local
+ (defthm len-bound-for-get-class-names-for-indices
+   (<= (len (mv-nth 2 (get-class-names-for-indices count bytes constant-pool)))
+       (len bytes))
+   :rule-classes :linear
+   :hints (("Goal" :in-theory (enable get-class-names-for-indices)))))
 
-(defthm true-listp-of-mv-nth-2-of-get-class-names-for-indices
-  (implies (true-listp bytes)
-           (true-listp (mv-nth 2 (get-class-names-for-indices count bytes constant-pool))))
-  :hints (("Goal" :in-theory (enable get-class-names-for-indices))))
+(local
+ (defthm true-listp-of-mv-nth-2-of-get-class-names-for-indices
+   (implies (true-listp bytes)
+            (true-listp (mv-nth 2 (get-class-names-for-indices count bytes constant-pool))))
+   :hints (("Goal" :in-theory (enable get-class-names-for-indices)))))
 
 ;; Should work for a method or a field (but perhaps not if we change this to parse the descriptor)
 ;; Returns (mv erp get-name-and-type-from-cp-entry).
@@ -1282,12 +1408,12 @@
         (acons :name name (acons :descriptor descriptor nil)))))
 
 ;; Returs (mv erp tagged-constant).
-(defund get-ldc-constant32 (index constant-pool)
+(defund get-ldc-constant (index constant-pool)
   (declare (xargs :guard (natp index)
                   :stobjs constant-pool))
   (b* (((mv erp entry) (lookup-in-constant-pool index constant-pool))
        ((when erp) (mv erp nil))
-       (tag (lookup-eq-safe 'tag entry)))
+       (tag (cp-entry-tag entry)))
     (if (eq tag :CONSTANT_Integer)
         (mv (erp-nil) (cons :int (lookup-eq-safe 'bytes entry))) ;a BV32
       (if (eq tag :CONSTANT_Float)
@@ -1297,7 +1423,7 @@
               (mv (erp-nil) (cons :float (parse-float val))))) ;this will be a java-floatp
         (if (eq tag :CONSTANT_string)
             (b* ((string_index (nfix (lookup-eq-safe 'string_index entry)))
-                 ((mv erp string_index-entry) (lookup-in-constant-pool string_index constant-pool))
+                 ((mv erp string_index-entry) (lookup-in-constant-pool-safe string_index '(:constant_utf8) constant-pool))
                  ((when erp) (mv erp nil))
                  (string-bytes (lookup-eq-safe 'bytes string_index-entry)) ;will be an ACL2 string (fixme what about unicode?)
                  )
@@ -1318,13 +1444,13 @@
             (mv :unrecognized-stuff-for-ldc-or-ldc_w nil)))))))
 
 ;; Returns (mv erp tagged-constant).
-;; This version is for longs/doubles only
-(defund get-ldc-constant64 (index constant-pool)
+;; This version is for longs/doubles only.
+(defund get-ldc2-constant (index constant-pool)
   (declare (xargs :guard (natp index)
                   :stobjs constant-pool))
   (b* (((mv erp entry) (lookup-in-constant-pool index constant-pool))
        ((when erp) (mv erp nil))
-       (tag (lookup-eq-safe 'tag entry)))
+       (tag (cp-entry-tag entry)))
     (if (eq tag :CONSTANT_Long)
         (mv (erp-nil) (cons :long (lookup-eq-safe 'bytes entry))) ;a BV64
       (if (eq tag :CONSTANT_Double)
@@ -1466,7 +1592,7 @@
    ((eq opcode-name ':ldc)
     (if (not (consp bytes))
         (mv :not-enough-bytes nil 0)
-      (b* (((mv erp tagged-val) (get-ldc-constant32 (first bytes) constant-pool))
+      (b* (((mv erp tagged-val) (get-ldc-constant (first bytes) constant-pool))
            ((when erp) (mv erp nil 0)))
         (mv (erp-nil)
             (list opcode-name tagged-val)
@@ -1475,7 +1601,7 @@
    ((eq opcode-name ':LDC_W)
     (if (not (consp (rest bytes)))
         (mv :not-enough-bytes nil 0)
-      (b* (((mv erp tagged-val) (get-ldc-constant32 (2bytes-to-int (first bytes) (second bytes)) constant-pool))
+      (b* (((mv erp tagged-val) (get-ldc-constant (2bytes-to-int (first bytes) (second bytes)) constant-pool))
            ((when erp) (mv erp nil 0)))
         (mv (erp-nil)
             (list opcode-name tagged-val)
@@ -1484,7 +1610,7 @@
    ((eq opcode-name ':LDC2_W)
     (if (not (consp (rest bytes)))
         (mv :not-enough-bytes nil 0)
-      (b* (((mv erp tagged-val) (get-ldc-constant64 (2bytes-to-int (first bytes) (second bytes)) constant-pool))
+      (b* (((mv erp tagged-val) (get-ldc2-constant (2bytes-to-int (first bytes) (second bytes)) constant-pool))
            ((when erp) (mv erp nil 0)))
         (mv (erp-nil)
             (list opcode-name tagged-val)
@@ -1677,7 +1803,7 @@
   (implies (integerp byte-number-of-opcode)
            (natp (mv-nth 2 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool))))
   :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable translate-instruction))))
+  :hints (("Goal" :in-theory (enable translate-instruction natp))))
 
 ;; Sanity checks inst-len vs translate-instruction:
 (thm
@@ -1937,8 +2063,8 @@
          ((mv erp name_index bytes) (readu2 bytes))
          ((when erp) (mv erp nil nil))
          ((mv erp name-entry) (lookup-in-constant-pool name_index constant-pool))
-         (name (lookup-eq-safe 'bytes name-entry))
          ((when erp) (mv erp nil nil))
+         (name (lookup-eq-safe 'bytes name-entry))
          ((when (not (stringp name))) ;drop?
           (mv :bad-name nil nil))
          ((mv erp descriptor_index bytes) (readu2 bytes))
@@ -2183,7 +2309,7 @@
        ((when erp) (mv erp nil nil))
        ((mv erp val-entry) (lookup-in-constant-pool constantvalue_index constant-pool))
        ((when erp) (mv erp nil nil))
-       (val-tag (lookup-eq-safe 'tag val-entry)))
+       (val-tag (cp-entry-tag val-entry)))
     (if (equal val-tag :CONSTANT_String)
         (b* ((string_index (nfix (lookup-eq-safe 'string_index val-entry)))
              ((mv erp string_index-entry) (lookup-in-constant-pool string_index constant-pool))
