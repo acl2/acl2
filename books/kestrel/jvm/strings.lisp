@@ -15,15 +15,42 @@
 
 (include-book "types")
 (include-book "java-types")
-(include-book "kestrel/bv/bvchop" :dir :system)
+(include-book "kestrel/bv/bvchop-def" :dir :system)
+(local (include-book "kestrel/bv/bvchop" :dir :system))
+
+(in-theory (disable mv-nth))
 
 ;; Recognizes a true-list of 16-bit Java chars.
-(defun java-char-listp (chars)
+(defund java-char-listp (chars)
   (declare (xargs :guard t))
   (if (atom chars)
       (null chars)
     (and (acl2::java-charp (first chars))
          (java-char-listp (rest chars)))))
+
+(defthm java-char-listp-of-cdr
+  (implies (java-char-listp chars)
+           (java-char-listp (cdr chars)))
+  :hints (("Goal" :in-theory (enable java-char-listp))))
+
+(defthm java-char-listp-of-cons
+  (equal (java-char-listp (cons char chars))
+         (and (acl2::java-charp char)
+              (java-char-listp chars)))
+  :hints (("Goal" :in-theory (enable java-char-listp))))
+
+(defthm java-char-listp-of-append
+  (equal (java-char-listp (append chars1 chars2))
+         (and (java-char-listp (true-list-fix chars1))
+              (java-char-listp chars2)))
+  :hints (("Goal" :in-theory (enable java-char-listp))))
+
+(defthm java-char-listp-of-nthcdr
+  (implies (java-char-listp chars)
+           (java-char-listp (nthcdr n chars)))
+  :hints (("Goal" :in-theory (enable java-char-listp nthcdr))))
+
+
 
 ;; Converts a list of Java chars into a list of ACL2 characters (chops down any char > 255).
 ;todo use defmap
