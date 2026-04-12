@@ -16,6 +16,7 @@
 (include-book "portcullis")
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST thms
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
