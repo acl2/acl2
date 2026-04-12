@@ -129,6 +129,15 @@
   (:dim ())
   :pred sortp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist sort-list
+  :short "Fixtype of lists of sorts."
+  :elt-type sort
+  :true-listp t
+  :elementp-of-nil nil
+  :pred sort-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod sorted-var
@@ -162,6 +171,15 @@
   (:array ())
   (:atom ())
   :pred kindp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist kind-list
+  :short "Fixtype of lists of kinds."
+  :elt-type kind
+  :true-listp t
+  :elementp-of-nil nil
+  :pred kind-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
