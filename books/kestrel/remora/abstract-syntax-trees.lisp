@@ -30,13 +30,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ abstract-syntax
-  :parents (remora)
-  :short "Abstract syntax of Remora."
+(defxdoc+ abstract-syntax-trees
+  :parents (abstract-syntax)
+  :short "Abstract syntax trees of Remora."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define fixtypes for abstract syntax trees (ASTs) for typed Remora,
+    "We define fixtypes for abstract syntax trees (ASTs) for core typed Remora,
      based on the publications on Remora mentioned in @(see remora).
      See Figure 1 in the arXiv paper,
      Figure 4.1 in the dissertation,
@@ -49,9 +49,6 @@
      we use ACL2 strings for variable names
      (for expressions, types, and indices).
      We may change this if needed.")
-   (xdoc::p
-    "We may generalize these ASTs to encompass untyped and type-erased Remora,
-     or we might define alternative ASTs for those, with suitable mappings.")
    (xdoc::p
     "In line with the Remora publications, which define a core language,
      we do not yet define any higher-level constructs such as ``programs'',
@@ -193,7 +190,7 @@
   :short "Fixtypes of indices and lists of indices."
 
   (fty::deftagsum index
-    :parents (abstract-syntax indices)
+    :parents (abstract-syntax-trees indices)
     :short "Fixtype of indices."
     :long
     (xdoc::topstring
@@ -212,7 +209,7 @@
     :pred indexp)
 
   (fty::deflist index-list
-    :parents (abstract-syntax indices)
+    :parents (abstract-syntax-trees indices)
     :short "Fixtype of lists of indices."
     :elt-type index
     :true-listp t
@@ -225,7 +222,7 @@
   :short "Fixtypes of types and lists of types."
 
   (fty::deftagsum type
-    :parents (abstract-syntax types)
+    :parents (abstract-syntax-trees types)
     :short "Fixtype of types."
     :long
     (xdoc::topstring
@@ -253,7 +250,7 @@
     :pred typep)
 
   (fty::deflist type-list
-    :parents (abstract-syntax types)
+    :parents (abstract-syntax-trees types)
     :short "Fixtype of lists of types."
     :elt-type type
     :true-listp t
@@ -287,7 +284,7 @@
   :short "Fixtypes of expressions, atoms, and lists thereof."
 
   (fty::deftagsum expr
-    :parents (abstract-syntax exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms)
     :short "Fixtype of expressions."
     :long
     (xdoc::topstring
@@ -338,7 +335,7 @@
     :pred exprp)
 
   (fty::deflist expr-list
-    :parents (abstract-syntax exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms)
     :short "Fixtype of lists of expressions."
     :elt-type expr
     :true-listp t
@@ -346,7 +343,7 @@
     :pred expr-listp)
 
   (fty::deftagsum atom
-    :parents (abstract-syntax exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms)
     :short "Fixtype of atoms."
     :long
     (xdoc::topstring
@@ -376,7 +373,7 @@
     :pred atomp)
 
   (fty::deflist atom-list
-    :parents (abstract-syntax exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms)
     :short "Fixtype of lists of atoms."
     :elt-type atom
     :true-listp t
