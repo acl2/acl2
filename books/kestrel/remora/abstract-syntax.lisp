@@ -13,6 +13,7 @@
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "abstract-syntax-structural-operations")
+(include-book "abstract-syntax-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,4 +34,5 @@
      with suitable mappings."))
   :order-subtopics (abstract-syntax-trees
                     abstract-syntax-derived-fixtypes
-                    abstract-syntax-structural-operations))
+                    abstract-syntax-structural-operations
+                    abstract-syntax-constructors))
