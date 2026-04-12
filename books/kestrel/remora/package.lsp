@@ -27,6 +27,7 @@
                                        type
                                        typep))
                   '(bool
+                    defmacro+
                     defxdoc+
                     int
                     lnfix
