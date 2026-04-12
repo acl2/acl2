@@ -417,7 +417,14 @@
      a condition that seems reasonably easy to satisfy)."))
   ((info acl2::any))
   :tag :error
-  :pred reserrp)
+  :pred reserrp
+
+  ///
+
+  (defruled true-listp-when-reserrp
+    (implies (reserrp x)
+             (true-listp x))
+    :enable reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
