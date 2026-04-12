@@ -19,6 +19,7 @@
                   (set-difference-eq *std-pkg-symbols*
                                      '(atom
                                        atom-listp
+                                       check-type
                                        function
                                        functionp
                                        sort
@@ -30,4 +31,7 @@
                     int
                     nat
                     nat-list
+                    fty::patbind-ok
+                    fty::reserr
+                    fty::reserrp
                     str::string-list)))
