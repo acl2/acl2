@@ -11,7 +11,7 @@
 
 (in-package "JVM")
 
-(include-book "floats")
+(include-book "floats") ; for java-floatp
 (include-book "fields") ;for field-idp
 (include-book "method-descriptors")
 (include-book "method-names")

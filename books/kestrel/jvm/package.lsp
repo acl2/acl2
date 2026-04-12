@@ -40,7 +40,8 @@
                bvplus
                bvminus
                bvuminus
-               bvmult)
+               bvmult
+               slice)
              (union-eq *acl2-exports*
                        (set-difference-eq nil ;*common-lisp-symbols-from-main-lisp-package* ;this is a lot of stuff...
                                           '(floatp typep))))

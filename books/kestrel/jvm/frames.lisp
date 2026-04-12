@@ -192,3 +192,18 @@
                                        ;;acl2::CDR-OF-CDR-BECOMES-NTHCDR
                                        )
                            (len nth)))))
+
+(defthm class-namep-of-cur-class-name
+  (implies (framep frame)
+           (class-namep (cur-class-name frame)))
+  :hints (("Goal" :in-theory (enable framep cur-class-name method-designatorp method-descriptorp method-designator))))
+
+(defthm method-namep-of-cur-method-name
+  (implies (framep frame)
+           (method-namep (cur-method-name frame)))
+  :hints (("Goal" :in-theory (enable framep cur-method-name method-designatorp method-descriptorp method-designator))))
+
+(defthm method-descriptorp-of-cur-method-name
+  (implies (framep frame)
+           (method-descriptorp (cur-method-descriptor frame)))
+  :hints (("Goal" :in-theory (enable framep cur-method-descriptor method-designatorp method-descriptorp method-designator))))

@@ -841,29 +841,6 @@
 ;move to a sequences library or drop the rule?
 ;(in-theory (disable JVM::NTH-OPENER)) ;BOZO trying...
 
-;allow alists to differ?
-(defthm bind-equal-bind-reduce
-  (equal (equal (jvm::bind x y alist) (jvm::bind x y2 alist))
-         (equal y y2))
-  :hints (("Goal" :in-theory (enable jvm::bind))))
-
-;move
-;newly disabled
-(defthmd bind-what-was-already-there
-  (implies (and (assoc-equal key alist)
-                (alistp alist)
-                (equal v (cdr (assoc-equal key alist))))
-           (equal (jvm::bind key v alist)
-                  alist))
-  :hints (("Goal" :in-theory (enable jvm::bind assoc-equal))))
-
-;move
-(defthm alistp-of-bind
-  (implies (alistp alist)
-           (equal (alistp (JVM::BIND x y alist))
-                  t))
-  :hints (("Goal" :in-theory (enable JVM::BIND alistp))))
-
 (defthm do-inst-of-myif
   (equal (jvm::do-inst (myif test op-code1 op-code2) inst th s)
          (myif test (jvm::do-inst op-code1 inst th s)
