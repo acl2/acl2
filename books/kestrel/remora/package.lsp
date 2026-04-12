@@ -29,8 +29,10 @@
                   '(bool
                     defxdoc+
                     int
+                    lnfix
                     nat
                     nat-list
+                    nat-list-fix
                     fty::patbind-ok
                     fty::reserr
                     fty::reserrp
