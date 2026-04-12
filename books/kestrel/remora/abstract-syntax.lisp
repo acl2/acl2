@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-derived-fixtypes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,9 +22,12 @@
   (xdoc::topstring
    (xdoc::p
     "We define an abstract syntax for core typed Remora,
-     consisting of algebraic data types for abstract syntax trees (ASTs).
-     We may generalize this abstract syntax
+     consisting of algebraic data types for abstract syntax trees (ASTs),
+     accompanied by other fixtypes derived from the AST fixtypes.")
+   (xdoc::p
+    "We may generalize this abstract syntax
      to encompass untyped and type-erased Remora,
      or we might define alternative abstract syntax for those,
      with suitable mappings."))
-  :order-subtopics (abstract-syntax-trees))
+  :order-subtopics (abstract-syntax-trees
+                    abstract-syntax-derived-fixtypes))
