@@ -14,6 +14,7 @@
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "abstract-syntax-structural-operations")
 (include-book "abstract-syntax-constructors")
+(include-book "abstract-syntax-matching-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,4 +36,5 @@
   :order-subtopics (abstract-syntax-trees
                     abstract-syntax-derived-fixtypes
                     abstract-syntax-structural-operations
-                    abstract-syntax-constructors))
+                    abstract-syntax-constructors
+                    abstract-syntax-matching-operations))
