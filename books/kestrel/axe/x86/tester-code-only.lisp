@@ -13,7 +13,6 @@
 ;; TODO: This needs to have all the relevant rules built in to it.
 
 (include-book "centaur/misc/tshell" :dir :system) ; needs to be non-local since it has Raw Lisp code
-;(include-book "kestrel/jvm/portcullis" :dir :system) ; for things like JVM::*FLOAT-NAN*
 (include-book "tools/with-supporters" :dir :system)
 
 (defttag :tester-x86-code-only)

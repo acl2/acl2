@@ -426,6 +426,30 @@
               (method-descriptorp method-descriptor)))
   :hints (("Goal" :in-theory (enable method-designatorp make-method-designator))))
 
+(defthm method-designatorp-forward-to-length-claim
+  (implies (method-designatorp method-designator)
+           (equal 3 (len method-designator)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable method-designatorp))))
+
+(defthm class-namep-of-car-when-method-designatorp
+  (implies (method-designatorp x)
+           (class-namep (car x)))
+  :hints (("Goal" :in-theory (enable method-designatorp))))
+
+(defthm method-namep-of-cadr-when-method-designatorp
+  (implies (method-designatorp x)
+           (method-namep (cadr x)))
+  :hints (("Goal" :in-theory (enable method-designatorp))))
+
+;todo: make named accesors for these
+(defthm method-descriptorp-of-caddr-when-method-designatorp
+  (implies (method-designatorp x)
+           (method-descriptorp (caddr x)))
+  :hints (("Goal" :in-theory (enable method-designatorp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;Make a dummy method with the given program.  Makes it static so we don't have
 ;to provide an instance.
 (defun make-dummy-method-info (program)

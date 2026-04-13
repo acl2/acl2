@@ -142,7 +142,7 @@
 
 
 
-(defxdoc  sdm-instruction-set-summary
+(defxdoc implemented-instructions
   :parents (x86isa)
   :short "Summary of what instructions are implemented/unimplemented, as organized in the
 Instruction Set Summary of the Intel Software Developer Manual (volume 1
@@ -171,7 +171,7 @@ well.</p>"
    (b* ((table (table-alist 'sdm-instruction-sect (w state))))
      (cons 'progn (sdm-instruction-table-xdoc-events
                    (sdm-instruction-table-organize table)
-                   'sdm-instruction-set-summary)))))
+                   'implemented-instructions)))))
 
 #|
 (include-book

@@ -13,7 +13,6 @@
 (in-package "ACL2")
 
 (include-book "find-probable-facts")
-;(include-book "jvm/rule-lists-jvm") ;drop?
 (include-book "rules-in-rule-lists")
 (include-book "make-axe-rules2")
 (include-book "equivalence-checker-helpers") ; not strictly necessary; helpful functions and justifications of correctness
@@ -24,7 +23,7 @@
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
-(include-book "rewriter") ;TODO: brings in JVM stuff and skip-proofs ; use rewriter-basic instead?
+(include-book "rewriter") ;TODO: brings in JVM stuff and skip-proofs ; use rewriter-basic instead? but may need support for nested DAGs
 ;(include-book "rewriter-alt") ;TODO: brings in JVM stuff...
 (include-book "identical-xor-nests")
 (include-book "kestrel/utilities/check-boolean" :dir :system)
