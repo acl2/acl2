@@ -192,10 +192,13 @@
        (var (car bindings))
        (sort (case (cadr bindings)
                (:shape '(sort-shape))
-               (:dim '(sort-dim))))
+               (:dim '(sort-dim))
+               (otherwise (raise "Unknown sort keyword: ~x0."
+                                 (cadr bindings)))))
        (svar `(sorted-var ,var ,sort))
        (svars (bindings-to-sorted-vars (cddr bindings))))
-    (cons svar svars)))
+    (cons svar svars))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -214,10 +217,13 @@
        (var (car bindings))
        (kind (case (cadr bindings)
                (:array '(kind-array))
-               (:atom '(kind-atom))))
+               (:atom '(kind-atom))
+               (otherwise (raise "Unknown kind keyword: ~x0."
+                                 (cadr bindings)))))
        (kvar `(kinded-var ,var ,kind))
        (kvars (bindings-to-kinded-vars (cddr bindings))))
-    (cons kvar kvars)))
+    (cons kvar kvars))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
