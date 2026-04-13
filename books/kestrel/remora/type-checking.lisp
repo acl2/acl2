@@ -44,6 +44,10 @@
      that define the static semantics of Remora
      in the arXiv paper and in the dissertation.")
    (xdoc::p
+    "This type checker is not designed for efficiency
+     or to provide informative error messages.
+     It is designed for simplicity.")
+   (xdoc::p
     "This is work in progress."))
   :order-subtopics t
   :default-parent t)
