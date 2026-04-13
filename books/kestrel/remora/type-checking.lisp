@@ -14,6 +14,7 @@
 (include-book "abstract-syntax-constructors")
 (include-book "abstract-syntax-structural-operations")
 (include-book "abstract-syntax-matching-operations")
+(include-book "type-equivalence")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
@@ -399,44 +400,6 @@
      :append append-type
      :reduce reduce-type
      :iota iota-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-equivp ((type1 typep) (type2 typep))
-  :returns (yes/no booleanp)
-  :short "Check if two types are equivalent."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is an initial placeholder, which makes a strong check:
-     the two types must be identical.
-     This needs to be relaxed with the proper semantic equivalence,
-     which is decidable for the current version of Remora,
-     according to the arXiv paper and dissertation."))
-  (equal (type-fix type1) (type-fix type2)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-list-equivp ((types1 type-listp) (types2 type-listp))
-  :returns (yes/no booleanp)
-  :short "Check if two lists of types are equivalent."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is also an initial placeholder, in line with @(tsee type-equivp):
-     we require the two lists to be identical for now."))
-  (equal (type-list-fix types1) (type-list-fix types2)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-list-all-equivp ((types type-listp))
-  :returns (yes/no booleanp)
-  :short "Check if all the types in a list are equivalent."
-  (or (endp types)
-      (endp (cdr types))
-      (and (type-equivp (car types) (cadr types))
-           (type-list-all-equivp (cdr types))))
-  :prepwork ((local (in-theory (enable type-list-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

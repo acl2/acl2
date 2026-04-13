@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "index-equivalence")
+(include-book "type-equivalence")
 (include-book "type-checking")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,4 +29,5 @@
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
   :order-subtopics (index-equivalence
+                    type-equivalence
                     type-checking))
