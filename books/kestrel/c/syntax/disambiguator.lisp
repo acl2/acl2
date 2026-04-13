@@ -4206,6 +4206,7 @@
          ;; Dismbiguate the included translation unit in context.
          ;; This must not fail; if it does,
          ;; the disambiguation of the including translation unit fails.
+         (dstate (change-dstate dstate :file included))
          ((erp new-tunit-in-context dstate tumap-dimb)
           (dimb-trans-unit tunit
                            dstate
@@ -4213,6 +4214,7 @@
                            resolved-includes
                            tumap-dimb
                            (1- limit)))
+         (dstate (change-dstate dstate :file including))
          ;; Disambiguate the included translation unit stand-alone.
          ;; This may fail, so we do not use the ERP binder,
          ;; which would propagate the error.
