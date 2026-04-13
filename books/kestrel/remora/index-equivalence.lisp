@@ -24,7 +24,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The static semantics of Remora involving
+    "The static semantics of Remora involves
      the equivalence of indices used in types,
      which in turn determines the equivalence of types.
      Currently index equivalence in Remora is decidable,
