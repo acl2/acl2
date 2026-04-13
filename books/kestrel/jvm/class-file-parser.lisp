@@ -31,6 +31,8 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/lists-light/len-at-least" :dir :system)
+(include-book "kestrel/lists-light/memberp" :dir :system)
+(include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "classes") ; this brings in defforall
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
@@ -56,6 +58,10 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+
+(in-theory (disable mv-nth))
+
+(local (in-theory (disable member-equal-becomes-memberp))) ;todo
 
 (local (in-theory (disable natp)))
 
@@ -176,10 +182,6 @@
 ;;  (defthm if-hack-99
 ;;   (equal (< (if (< x y) y x) x)
 ;;          nil)))
-
-;dup:
-;(defforall all-unsigned-byte-p (size lst) (unsigned-byte-p size lst) :fixed size :declares ((type t size lst)))
-
 
 ;(local (in-theory (disable NTHCDR-OF-1)))
 
@@ -1304,9 +1306,9 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable get-class-names-from-srcs))))
 
-;; (defthm all-class-namesp-of-mv-nth-1-of-get-class-names-from-srcs
+;; (defthm class-name-listp-of-mv-nth-1-of-get-class-names-from-srcs
 ;;   (implies (not (mv-nth 0 (get-class-names-from-srcs symbolic-reference-to-class-lst constant-pool)))
-;;            (JVM::ALL-CLASS-NAMESP (mv-nth 1 (get-class-names-from-srcs symbolic-reference-to-class-lst constant-pool))))
+;;            (JVM::CLASS-NAME-LISTP (mv-nth 1 (get-class-names-from-srcs symbolic-reference-to-class-lst constant-pool))))
 ;;   :hints (("Goal" :in-theory (enable get-class-names-from-srcs))))
 
 ;; Returns (mv erp class-name field-name descriptor).
@@ -2685,9 +2687,9 @@
              (and (alistp (mv-nth 1 (parse-attribute-info-entries numentries bytes acc constant-pool)))
                   (alistp (LOOKUP-EQUAL "Code" (mv-nth 1 (parse-attribute-info-entries numentries bytes acc constant-pool))))))
     :flag parse-attribute-info-entries)
-  :hints (("Goal"  :expand ((parse-code-attribute bytes constant-pool)
-                            (parse-attribute-info-entry bytes constant-pool)
-                            (parse-attribute-info-entries numentries bytes acc constant-pool))
+  :hints (("Goal" :expand ((parse-code-attribute bytes constant-pool)
+                           (parse-attribute-info-entry bytes constant-pool)
+                           (parse-attribute-info-entries numentries bytes acc constant-pool))
            :in-theory (enable parse-constantvalue-attribute
                                      parse-enclosingmethod-attribute
                                      parse-nestmembers-attribute
@@ -3170,7 +3172,7 @@
                                     :acc_abstract :acc_synthetic
                                     :acc_annotation :acc_enum))
        (true-listp (lookup-equal ':interfaces raw-parsed-class))
-       (jvm::all-class-namesp (lookup-equal ':interfaces raw-parsed-class))
+       (jvm::class-name-listp (lookup-equal ':interfaces raw-parsed-class))
        ;; check the super class, etc:
        (let ((class-name (lookup-eq :this_class raw-parsed-class))
              (superclass (lookup-eq :super_class raw-parsed-class))
@@ -3290,7 +3292,7 @@
                  ((when erp) (mv erp nil constant-pool))
                  ((mv erp interface-names) (get-class-names-from-srcs interfaces constant-pool))
                  ((when erp) (mv erp nil constant-pool))
-                 ((when (not (jvm::all-class-namesp interface-names))) ; exclude array classes?
+                 ((when (not (jvm::class-name-listp interface-names))) ; exclude array classes?
                   (mv :unexpected-interface-name nil constant-pool))
                  (info (acons :interfaces interface-names info))
                  ((mv erp fields_count bytes) (readu2 bytes))
@@ -3733,11 +3735,6 @@
 (defthm true-listp-of-mv-nth-1-of-make-class-info-from-raw-parsed-class
   (implies (raw-parsed-classp raw-parsed-class)
            (true-listp (mv-nth 1 (make-class-info-from-raw-parsed-class raw-parsed-class))))
-  :hints (("Goal" :in-theory (enable make-class-info-from-raw-parsed-class))))
-
-(defthm true-listp-of-mv-nth-3-of-make-class-info-from-raw-parsed-class
-  (implies (raw-parsed-classp raw-parsed-class)
-           (true-listp (mv-nth 3 (make-class-info-from-raw-parsed-class raw-parsed-class))))
   :hints (("Goal" :in-theory (enable make-class-info-from-raw-parsed-class))))
 
 ;;;

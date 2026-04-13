@@ -20,6 +20,7 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 
@@ -43,6 +44,13 @@
 ;TODO: Add and verify guards.
 
 ;fixme: for things like IADD, make sure the bit patterns are the same regardless of whether the operands are signed or unsigned
+
+(defthm class-name-listp-of-reverse-list
+  (equal (class-name-listp (acl2::reverse-list x))
+         (class-name-listp (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable class-name-listp acl2::reverse-list true-list-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The modify macro
 
@@ -384,10 +392,10 @@
 ;                 (not (class-decl-interfacep (get-class-info class-name (class-table s)))) ;can't be an interface ';fixme abstract out this pattern
                  )
             (jvm-statep (mv-nth 1 (obtain-an-object class-name s))))
-   :hints (("Goal" :in-theory (e/d (jvm-statep
-                                    HEAPREF-TABLE ;why
-                                    intern-table
-                                    heap
+   :hints (("Goal" :in-theory (e/d (;jvm-statep
+                                    ;HEAPREF-TABLE ;why
+                                    ;intern-table
+                                    ;heap
                                     obtain-an-object
                                     IS-AN-INTERFACEP BOUND-TO-A-NON-INTERFACEP ; todo
                                     ) (true-listp))))))
@@ -483,7 +491,7 @@
 ;; TODO: Need to handle signature polymorphic methods.
 (defund resolve-method-step-2-aux (method-id class-names class-table)
   (declare (xargs :guard (and (true-listp class-names)
-                              (all-class-namesp class-names)
+                              (class-name-listp class-names)
                               (class-tablep class-table)
                               (all-bound-to-a-non-interfacep class-names class-table))))
   (if (endp class-names)
@@ -1546,7 +1554,7 @@
    (declare (xargs :measure (+ 1 (nfix ctr))
                    :guard (and (natp ctr)
                                (true-listp class-or-interface-names)
-                               (ALL-CLASS-NAMESP CLASS-OR-INTERFACE-NAMES)
+                               (CLASS-NAME-LISTP CLASS-OR-INTERFACE-NAMES)
                                (class-tablep class-table)
                                (all-bound-in-class-tablep class-or-interface-names class-table))))
    (if (zp ctr)
@@ -1596,7 +1604,7 @@
  (defthm class-namep-of-lookup-field-lst
    (implies (and (lookup-field-lst field-id class-or-interface-names class-table ctr)
                  (class-tablep class-table)
-                 (all-class-namesp class-or-interface-names))
+                 (class-name-listp class-or-interface-names))
             (class-namep (lookup-field-lst field-id class-or-interface-names class-table ctr)))
    :flag lookup-field-lst)
  :hints (("Goal" :in-theory (enable lookup-field lookup-field-lst)
@@ -1613,7 +1621,7 @@
  (defthm class-infop-of-lookup-field-lst
    (implies (and (lookup-field-lst field-id class-or-interface-names class-table ctr)
                  (class-tablep class-table)
-                 (all-class-namesp class-or-interface-names))
+                 (class-name-listp class-or-interface-names))
             (class-infop (get-class-info (lookup-field-lst field-id class-or-interface-names class-table ctr) class-table)
                          (lookup-field-lst field-id class-or-interface-names class-table ctr)))
    :flag lookup-field-lst)
@@ -1630,7 +1638,7 @@
  (defthm bound-in-class-tablep-of-lookup-field-lst
    (implies (and (lookup-field-lst field-id class-or-interface-names class-table ctr)
                  (class-tablep class-table)
-                 (all-class-namesp class-or-interface-names))
+                 (class-name-listp class-or-interface-names))
             (bound-in-class-tablep (lookup-field-lst field-id class-or-interface-names class-table ctr) class-table))
    :flag lookup-field-lst)
  :hints (("Goal" :in-theory (enable lookup-field lookup-field-lst BOUND-IN-CLASS-TABLEP)
@@ -1665,7 +1673,7 @@
 ;;  (defthm LOOKUP-EQUAL-of-g-of-static-fields-of-lookup-field-lst
 ;;    (implies (and (lookup-field-lst field-id class-or-interface-names class-table ctr)
 ;;                  (class-tablep class-table)
-;;                  (all-class-namesp class-or-interface-names)
+;;                  (class-name-listp class-or-interface-names)
 ;;                  (NOT (assoc-EQUAL FIELD-ID (class-decl-non-static-fields (get-class-info (lookup-field-lst field-id class-or-interface-names class-table ctr) CLASS-TABLE)))))
 ;;             (LOOKUP-EQUAL FIELD-ID (class-decl-static-fields (get-class-info (lookup-field-lst field-id class-or-interface-names class-table ctr) CLASS-TABLE))))
 ;;    :flag lookup-field-lst)
@@ -1927,7 +1935,7 @@
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th)
 ;              (not (memberp class-name (initialized-clases s)))
-                (all-class-namesp initialized-classes)
+                (class-name-listp initialized-classes)
                 )
            (jvm-statep (invoke-static-initializer-for-class initialized-classes th s class-to-initialize)))
   :hints (("Goal" :in-theory (enable invoke-static-initializer-for-class))))
@@ -1947,14 +1955,12 @@
 
 ;move
 (defthm class-namep-of-first-non-member
-  (implies (and (all-class-namesp items)
+  (implies (and (class-name-listp items)
                 (not (ACL2::SUBSETP-EQ items items-to-exclude))) ;ensures it finds an item
            (class-namep (acl2::first-non-member items items-to-exclude)))
-  :hints (("Goal" :in-theory (enable ;all-class-namesp
+  :hints (("Goal" :in-theory (enable ;class-name-listp
                               ))))
-(defthm all-class-namesp-of-reverse-list
-  (equal (all-class-namesp (acl2::reverse-list x))
-         (all-class-namesp x)))
+
 
 (defthm all-bound-in-class-tablep-of-reverse-list
   (equal (all-bound-in-class-tablep (acl2::reverse-list x) class-table)
@@ -1968,7 +1974,7 @@
   :hints (("Goal" :in-theory (enable all-bound-in-class-tablep))))
 
 (defthm first-non-member-iff
-  (implies (all-class-namesp items)
+  (implies (class-name-listp items)
            (iff (acl2::first-non-member items items-to-exclude)
                 (not (acl2::subsetp-equal items items-to-exclude))))
   :hints (("Goal" :in-theory (enable acl2::subsetp-equal))))
@@ -1980,7 +1986,7 @@
 
 (defthm jvm-statep-of-invoke-static-initializer-for-next-class-helper
   (implies (and (class-namep class-name)
-                (all-class-namesp superclass-names)
+                (class-name-listp superclass-names)
                 ;; (all-bound-in-class-tablep superclass-names (class-table s)) ; all-framep-change
                 (jvm-statep s)
                 (bound-in-class-tablep class-name (class-table s))
@@ -3109,7 +3115,7 @@
 (defund lookup-method-in-classes (method-id class-names class-table)
   (declare (xargs :guard (and (method-idp method-id)
                               (true-listp class-names)
-                              (all-class-namesp class-names)
+                              (class-name-listp class-names)
                               (class-tablep class-table)
                               (all-bound-in-class-tablep class-names class-table))))
   (if (endp class-names)

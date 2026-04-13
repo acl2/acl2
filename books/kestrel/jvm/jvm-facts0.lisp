@@ -516,7 +516,7 @@
  (defthm not-equal-special-data-of-lookup-field-lst
    (implies (and ;(lookup-field-lst field-id class-or-interface-names class-table ctr)
                  (class-tablep class-table)
-                 (all-class-namesp class-or-interface-names)
+                 (class-name-listp class-or-interface-names)
                  )
             (not (equal :special-data (lookup-field-lst field-id class-or-interface-names class-table ctr))))
    :flag lookup-field-lst)

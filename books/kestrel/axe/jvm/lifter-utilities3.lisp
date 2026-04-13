@@ -185,7 +185,7 @@
   (declare (xargs :mode :program
                   :stobjs state
                   :guard (and (symbol-listp extra-rules)
-                              (jvm::all-class-namesp class-names)
+                              (jvm::class-name-listp class-names)
                               ;; what about th?
                               (weak-dag-or-quotep s-dag)
                               (pseudo-term-listp hyps)
@@ -862,7 +862,7 @@
   (declare (xargs :mode :program
                   :stobjs state
                   :guard (and (true-listp class-names)
-                              (jvm::all-class-namesp class-names))))
+                              (jvm::class-name-listp class-names))))
   (b* ((- (cw "(Generating assumptions established by the static initializers of ~x0:~%" class-names))
        (state-var 's0)
        ((mv erp initialized-state-term state)
