@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "index-equivalence")
 (include-book "type-checking")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -26,4 +27,5 @@
      but we start by providing an executable definition of type checking,
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
-  :order-subtopics (type-checking))
+  :order-subtopics (index-equivalence
+                    type-checking))
