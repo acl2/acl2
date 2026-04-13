@@ -379,6 +379,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-index ((index indexp))
+  :returns (new-index indexp)
   :short "Normalize an index."
   :long
   (xdoc::topstring
