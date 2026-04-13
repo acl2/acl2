@@ -190,7 +190,7 @@
                  ((unless (sort-list-dimp sorts)) (reserr nil)))
               (sort-dim))
        :append (b* (((ok sorts) (check-index-list index.indices indenv))
-                    ((unless (sort-list-dimp sorts)) (reserr nil)))
+                    ((unless (sort-list-shapep sorts)) (reserr nil)))
                  (sort-shape))))
     :measure (index-count index))
 
