@@ -44,7 +44,7 @@
 
 (std::deflist sort-list-shapep (x)
   :guard (sort-listp x)
-  :short "Check if all the sorts in a list are @(':dim')."
+  :short "Check if all the sorts in a list are @(':shape')."
   (sort-case x :shape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
