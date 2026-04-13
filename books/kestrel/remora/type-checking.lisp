@@ -159,7 +159,7 @@
 
   (define check-index ((index indexp) (indenv index-senvp))
     :returns (sort sort-resultp)
-    :parents (static-semantics check-indices)
+    :parents (type-checking check-indices)
     :short "Check an index, returning its sort if successful."
     :long
     (xdoc::topstring
@@ -196,7 +196,7 @@
 
   (define check-index-list ((indices index-listp) (indenv index-senvp))
     :returns (sorts sort-list-resultp)
-    :parents (static-semantics check-indices)
+    :parents (type-checking check-indices)
     :short "Check a list of indices, returning their sorts if successful."
     :long
     (xdoc::topstring
@@ -221,7 +221,7 @@
 
   (define check-type ((type typep) (indenv index-senvp) (typenv type-senvp))
     :returns (kind kind-resultp)
-    :parents (static-semantics check-indices)
+    :parents (type-checking check-indices)
     :short "Check a type, returning its kind if successful."
     :long
     (xdoc::topstring
@@ -299,7 +299,7 @@
                            (indenv index-senvp)
                            (typenv type-senvp))
     :returns (kinds kind-list-resultp)
-    :parents (static-semantics check-types)
+    :parents (type-checking check-types)
     :short "Check a list of types, returning their kinds if successful."
     :long
     (xdoc::topstring
@@ -450,7 +450,7 @@
                       (typenv type-senvp)
                       (termenv term-senvp))
     :returns (type type-resultp)
-    :parents (static-semantics check-exprs/atoms)
+    :parents (type-checking check-exprs/atoms)
     :short "Check an expression, returning its type if successful."
     :long
     (xdoc::topstring
@@ -545,7 +545,7 @@
                            (typenv type-senvp)
                            (termenv term-senvp))
     :returns (types type-list-resultp)
-    :parents (static-semantics check-exprs/atoms)
+    :parents (type-checking check-exprs/atoms)
     :short "Check a list of expressions, returning their types if successful."
     :long
     (xdoc::topstring
@@ -580,7 +580,7 @@
                       (typenv type-senvp)
                       (termenv term-senvp))
     :returns (type type-resultp)
-    :parents (static-semantics check-exprs/atoms)
+    :parents (type-checking check-exprs/atoms)
     :short "Check an atom, returning its type if successful."
     :long
     (xdoc::topstring
@@ -604,7 +604,7 @@
                            (typenv type-senvp)
                            (termenv term-senvp))
     :returns (types type-list-resultp)
-    :parents (static-semantics check-exprs/atoms)
+    :parents (type-checking check-exprs/atoms)
     :short "Check a list of atoms, returning their types if successful."
     :long
     (xdoc::topstring

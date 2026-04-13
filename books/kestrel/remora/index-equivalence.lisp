@@ -79,7 +79,7 @@
 
   (define flatten-add-in-index ((index indexp))
     :returns (new-index indexp)
-    :parents (static-semantics flatten-add-in-indices)
+    :parents (index-equivalence flatten-add-in-indices)
     :short "Flatten all the nested additions in an index."
     :long
     (xdoc::topstring
@@ -107,7 +107,7 @@
 
   (define flatten-add-in-index-list ((indices index-listp) (addp booleanp))
     :returns (new-indices index-listp)
-    :parents (static-semantics flatten-add-in-indices)
+    :parents (index-equivalence flatten-add-in-indices)
     :short "Flatten all the nested additions in a list of indices,
             further flattening the resulting list if part of an addition."
     :long
@@ -199,7 +199,7 @@
 
   (define normalize-add-in-index ((index indexp))
     :returns (new-index indexp)
-    :parents (static-semantics normalize-add-in-indices)
+    :parents (index-equivalence normalize-add-in-indices)
     :short "Normalize additions in an index."
     :long
     (xdoc::topstring
@@ -223,7 +223,7 @@
 
   (define normalize-add-in-index-list ((indices index-listp))
     :returns (new-indices index-listp)
-    :parents (static-semantics normalize-add-in-indices)
+    :parents (index-equivalence normalize-add-in-indices)
     :short "Normalize additions in a list of indices."
     (cond ((endp indices) nil)
           (t (cons (normalize-add-in-index (car indices))
@@ -272,7 +272,7 @@
 
   (define normalize-shape-in-index ((index indexp))
     :returns (new-index indexp)
-    :parents (static-semantics normalize-shape-in-indices)
+    :parents (index-equivalence normalize-shape-in-indices)
     :short "Normalize shapes in an index."
     :long
     (xdoc::topstring
@@ -296,7 +296,7 @@
 
   (define normalize-shape-in-index-list ((indices index-listp))
     :returns (new-indices index-listp)
-    :parents (static-semantics normalize-shape-in-indices)
+    :parents (index-equivalence normalize-shape-in-indices)
     :short "Normalize shapes in a list of indices."
     (cond ((endp indices) nil)
           (t (cons (normalize-shape-in-index (car indices))
@@ -330,7 +330,7 @@
 
   (define flatten-append-in-index ((index indexp))
     :returns (new-index indexp)
-    :parents (static-semantics flatten-append-in-indices)
+    :parents (index-equivalence flatten-append-in-indices)
     :short "Flatten all the nested concatenations in an index."
     :long
     (xdoc::topstring
@@ -351,7 +351,7 @@
   (define flatten-append-in-index-list ((indices index-listp)
                                         (appendp booleanp))
     :returns (new-indices index-listp)
-    :parents (static-semantics flatten-append-in-indices)
+    :parents (index-equivalence flatten-append-in-indices)
     :short "Flatten all the nested concatenations in a list of indices,
             further flattening the resulting list if part of a concatenation."
     :long
