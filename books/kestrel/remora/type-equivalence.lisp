@@ -34,7 +34,7 @@
      in terms of inference rules
      that involve the semantic equivalence of indices;
      the latter is defined in terms of normalization
-     (see @(see index-equivalence).
+     (see @(see index-equivalence)).
      We plan to formalize type equivalence,
      both at a high level and as executable code.
      For now we provide something that is mostly a placeholder."))
