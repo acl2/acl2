@@ -13,7 +13,7 @@
 
 (include-book "built-in")
 (include-book "unambiguity")
-(include-book "hash-conditional-evaluation")
+(include-book "translation-unit-comparison")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -4235,8 +4235,13 @@
          ;; If the included translation unit was disambiguated stand-alone,
          ;; and gave the same result as the disambiguation in context,
          ;; we preserve the #include, and update the disambiguated map.
+         ;; Here by 'same result' we mean that
+         ;; they compare equal w.r.t. macros.
          ((when (and (not erp)
-                     (equal new-tunit-stand-alone new-tunit-in-context)))
+                     (compare-trans-units new-tunit-stand-alone
+                                          new-tunit-in-context
+                                          (dstate->macros dstate)
+                                          (dstate->ienv dstate))))
           (retok (list (trans-item-include header))
                  dstate
                  (omap::update (filepath included)
