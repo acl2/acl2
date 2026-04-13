@@ -391,28 +391,3 @@
     :true-listp t
     :elementp-of-nil nil
     :pred atom-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum function
-  :short "Fixtype of functions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are primitive operators or expressions."))
-  (:primop ((op prim-op)))
-  (:expr ((expr expr)))
-  :pred functionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum term
-  :short "Fixtype of terms."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are atoms and term abstractions."))
-  (:atom ((atom atom)))
-  (:abs ((vars typed-var-list)
-         (body expr)))
-  :pred termp)
