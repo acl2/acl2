@@ -118,7 +118,7 @@
        we splice any obtained sub-addition into the current list,
        which is put into the super-addition by @(tsee flatten-add-in-index).
        The @('addp') flag is @('t') exactly when
-       the indices passed to to this function are addends of an addition."))
+       the indices passed to this function are addends of an addition."))
     (b* (((when (endp indices)) nil)
          (new-index (flatten-add-in-index (car indices)))
          (new-indices (flatten-add-in-index-list (cdr indices) addp)))
@@ -150,7 +150,7 @@
     "We go through the indices,
      removing the constant ones and adding them to the running sum,
      and keeping the non-constant ones as they are.
-     We retun the final sum and the non-constant indices;
+     We return the final sum and the non-constant indices;
      the latter are in the same order as in the original list."))
   (b* (((when (endp indices)) (mv 0 nil))
        (index (car indices))
