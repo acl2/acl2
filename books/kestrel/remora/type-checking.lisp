@@ -573,7 +573,7 @@
 
     (defret check-expr-list-iff-not-zp-len-exprs
       (iff types (not (zp (len exprs))))
-      :hints (("Goal" :induct (len exprs):in-theory (enable len)))))
+      :hints (("Goal" :induct (len exprs) :in-theory (enable len)))))
 
   (define check-atom ((atom atomp)
                       (indenv index-senvp)
@@ -632,7 +632,7 @@
 
     (defret check-atom-list-iff-not-zp-len-atoms
       (iff types (not (zp (len atoms))))
-      :hints (("Goal" :induct (len atoms):in-theory (enable len)))))
+      :hints (("Goal" :induct (len atoms) :in-theory (enable len)))))
 
   :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove
 
