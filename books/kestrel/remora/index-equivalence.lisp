@@ -358,7 +358,7 @@
     (xdoc::topstring
      (xdoc::p
       "The flag @('appendp') is analogous to
-       @('addp') in @(tsee flatten-append-in-index).
+       @('addp') in @(tsee flatten-add-in-index-list).
        It is @('t') exactly when the indices are
        the components of a concatenation."))
     (b* (((when (endp indices)) nil)
