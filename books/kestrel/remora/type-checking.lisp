@@ -387,8 +387,7 @@
                             (tarray "t" (i++ (ishape (i+ 1 "d")) "s")))
                            (tarray "t" "s")))))
        (iota-type
-        (tpi ("d" :dim
-              "s" :shape)
+        (tpi ("d" :dim)
              (t-> ((tarray :int (ishape "d")))
                   (tarray (tsigma ("s" :shape) (tarray :int "s")) (ishape))))))
     (prim-op-case
