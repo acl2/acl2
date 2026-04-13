@@ -2360,6 +2360,8 @@
        ;; code length must be > 0, and method-programp disallows an empty program
        (jvm::method-programp (lookup-equal :code code-attribute))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (mutual-recursion
  ;; We've already read the attribute_name_index and attribute_length fields.
  ;; Returns (mv erp info bytes).
@@ -2615,6 +2617,22 @@
                                      parse-signature-attribute
                                      parse-nesthost-attribute))))
 
+(defthm bound-on-parse-attribute-info-entry
+  (implies (not (mv-nth 0 (parse-attribute-info-entry bytes constant-pool)))
+           (< (len (mv-nth 3 (parse-attribute-info-entry bytes constant-pool)))
+              (len bytes)))
+  :hints (("Goal" :expand (PARSE-ATTRIBUTE-INFO-ENTRY BYTES CONSTANT-POOL)
+           :in-theory (enable parse-attribute-info-entry
+                              parse-constantvalue-attribute
+                              parse-enclosingmethod-attribute
+                              parse-nestmembers-attribute
+                              parse-exceptions-attribute
+                              parse-sourcefile-attribute
+                              parse-signature-attribute
+                              parse-nesthost-attribute))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund attribute-info-entries-okp (entries)
   (declare (xargs :guard (alistp entries)))
   (and (or (null (lookup-equal "LocalVariableTable" entries))
@@ -2654,23 +2672,6 @@
                                           CONSTANT-POOL)
                     (parse-attribute-info-entry bytes constant-pool)
                     (PARSE-ATTRIBUTE-INFO-ENTRIES NUMENTRIES BYTES ACC CONSTANT-POOL)))))
-
-
-
-(defthm bound-on-parse-attribute-info-entry
-  (implies (not (mv-nth 0 (parse-attribute-info-entry bytes constant-pool)))
-           (< (len (mv-nth 3 (parse-attribute-info-entry bytes constant-pool)))
-              (len bytes)))
-  :hints (("Goal" :expand (PARSE-ATTRIBUTE-INFO-ENTRY BYTES CONSTANT-POOL)
-           :in-theory (enable parse-attribute-info-entry
-                              parse-constantvalue-attribute
-                              parse-enclosingmethod-attribute
-                              parse-nestmembers-attribute
-                              parse-exceptions-attribute
-                              parse-sourcefile-attribute
-                              parse-signature-attribute
-                              parse-nesthost-attribute))))
-
 
 (defthm-flag-parse-code-attribute
   (defthm alistp-of-mv-nth-1-of-parse-code-attribute
@@ -3363,6 +3364,8 @@
   (alistp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes)))
   :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;fixme what if there is more than 1 attribute with that name?
 ;todo: do we need this error checking?
 (defund get-attribute (name attribs signal-errorp)
@@ -3380,13 +3383,13 @@
          (lookup-equal name attribs))
   :hints (("Goal" :in-theory (enable get-attribute))))
 
-;where should this go?
-(defun full-method-name (class-name method-name method-signature-string)
-  (declare (xargs :guard (and (jvm::class-namep class-name)
-                              (jvm::method-namep method-name)
-                              (stringp method-signature-string) ;fixme call something better
-                              )))
-  (concatenate 'string class-name "." method-name "-" method-signature-string))
+;; ;where should this go?
+;; (defun full-method-name (class-name method-name method-signature-string)
+;;   (declare (xargs :guard (and (jvm::class-namep class-name)
+;;                               (jvm::method-namep method-name)
+;;                               (stringp method-signature-string) ;fixme call something better
+;;                               )))
+;;   (concatenate 'string class-name "." method-name "-" method-signature-string))
 
 (defund full-field-name (class-name field-name)
   (declare (xargs :guard (and (jvm::class-namep class-name)
@@ -3396,31 +3399,6 @@
 ;; TODO: distinguish between fully-qualified and non-fully-qualified field names
 ;; (defthm jvm::field-namep-of-full-field-name
 ;;   (jvm::field-namep (full-field-name class-name field-name)))
-
-;; ;throws a hard-error if there is not exactly one object in the file
-;; (defun read-single-object (filename ctx state)
-;;   (declare (xargs :stobjs state
-;;                   :mode :program))
-;;   (mv-let (erp lst state)
-;;           (read-list filename ctx state)
-;;           (if (equal 1 (len lst))
-;;               (mv erp (car lst) state)
-;;             (mv t
-;;                 (er hard? 'read-single-object
-;;                             "We expected exactly one object in the file ~x0 but we found ~x1."
-;;                             filename (len lst))
-;;                 state))))
-
-;; ;returns (mv parsed-class state)
-;; ;read in the class file for class-name
-;; (defun read-in-class (class-name state)
-;;   (declare (xargs :stobjs state :mode :program))
-;;   (mv-let (erp parsed-class state)
-;;           (read-single-object (string-append class-name ".acl2parsedclassfile")
-;;                               'read-in-class
-;;                               state)
-;;           (declare (ignore erp)) ;fixme check the erp flag?
-;;           (mv parsed-class state)))
 
 ;; ;; static-flg is t or nil depending on whether we are getting static fields or non-static-fields
 ;; (defun get-field-names-and-descriptors (fields static-flg)
@@ -3497,42 +3475,49 @@
        static-field-info-alist ;this field is not static, so update the other alist
        ))))
 
-(defthm true-listp-of-mv-nth-0-of-add-field-info
-  (implies (true-listp defconsts)
-           (true-listp (mv-nth 0 (add-field-info raw-field-info class-name defconsts non-static-field-info-alist static-field-info-alist))))
-  :hints (("Goal" :in-theory (enable add-field-info))))
+(local
+ (defthm true-listp-of-mv-nth-0-of-add-field-info
+   (implies (true-listp defconsts)
+            (true-listp (mv-nth 0 (add-field-info raw-field-info class-name defconsts non-static-field-info-alist static-field-info-alist))))
+   :hints (("Goal" :in-theory (enable add-field-info)))))
 
-(defthm alistp-of-mv-nth-1-of-add-field-info
-  (implies (alistp non-static-field-info-alist)
-           (alistp (mv-nth 1 (add-field-info raw-field-info class-name defconsts non-static-field-info-alist static-field-info-alist))))
-  :hints (("Goal" :in-theory (enable add-field-info))))
+(local
+ (defthm alistp-of-mv-nth-1-of-add-field-info
+   (implies (alistp non-static-field-info-alist)
+            (alistp (mv-nth 1 (add-field-info raw-field-info class-name defconsts non-static-field-info-alist static-field-info-alist))))
+   :hints (("Goal" :in-theory (enable add-field-info)))))
 
-(defthm field-info-alistp-of-mv-nth-1-of-add-field-info
-  (implies (and (jvm::field-info-alistp non-static-field-info-alist)
-                (raw-field-infop raw-field-info))
-           (jvm::field-info-alistp (mv-nth 1 (add-field-info raw-field-info class-name defconsts non-static-field-info-alist static-field-info-alist))))
-  :hints (("Goal" :in-theory (enable add-field-info JVM::FIELD-INFO-ALISTP
-                                     maybe-acons
-                                     JVM::FIELD-INFOP ;todo
-                                     JVM::FIELD-IDP ;todo
-                                     raw-field-infop
-                                     ))))
+(local
+ (defthm field-info-alistp-of-mv-nth-1-of-add-field-info
+   (implies (and (jvm::field-info-alistp non-static-field-info-alist)
+                 (raw-field-infop raw-field-info))
+            (jvm::field-info-alistp (mv-nth 1 (add-field-info raw-field-info class-name defconsts non-static-field-info-alist static-field-info-alist))))
+   :hints (("Goal" :in-theory (enable add-field-info JVM::FIELD-INFO-ALISTP
+                                      maybe-acons
+                                      JVM::FIELD-INFOP ;todo
+                                      JVM::FIELD-IDP   ;todo
+                                      raw-field-infop
+                                      )))))
 
-(defthm alistp-of-mv-nth-2-of-add-field-info
-  (implies (alistp static-field-info-alist)
-           (alistp (mv-nth 2 (add-field-info raw-field-info class-name defconsts non-static-field-info-alist static-field-info-alist))))
-  :hints (("Goal" :in-theory (enable add-field-info))))
+(local
+ (defthm alistp-of-mv-nth-2-of-add-field-info
+   (implies (alistp static-field-info-alist)
+            (alistp (mv-nth 2 (add-field-info raw-field-info class-name defconsts non-static-field-info-alist static-field-info-alist))))
+   :hints (("Goal" :in-theory (enable add-field-info)))))
 
-(defthm field-info-alistp-of-mv-nth-2-of-add-field-info
-  (implies (and (jvm::field-info-alistp static-field-info-alist)
-                (raw-field-infop raw-field-info))
-           (jvm::field-info-alistp (mv-nth 2 (add-field-info raw-field-info class-name defconsts non-static-field-info-alist static-field-info-alist))))
-  :hints (("Goal" :in-theory (enable add-field-info JVM::FIELD-INFO-ALISTP
-                                     maybe-acons
-                                     JVM::FIELD-INFOP ;todo
-                                     JVM::FIELD-IDP ;todo
-                                     raw-field-infop
-                                     ))))
+(local
+ (defthm field-info-alistp-of-mv-nth-2-of-add-field-info
+   (implies (and (jvm::field-info-alistp static-field-info-alist)
+                 (raw-field-infop raw-field-info))
+            (jvm::field-info-alistp (mv-nth 2 (add-field-info raw-field-info class-name defconsts non-static-field-info-alist static-field-info-alist))))
+   :hints (("Goal" :in-theory (enable add-field-info JVM::FIELD-INFO-ALISTP
+                                      maybe-acons
+                                      JVM::FIELD-INFOP ;todo
+                                      JVM::FIELD-IDP   ;todo
+                                      raw-field-infop
+                                      )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv field-defconsts non-static-field-info-list static-field-info-list)
 (defun field-defconsts-and-infos (raw-field-infos
@@ -3553,22 +3538,25 @@
       (add-field-info (first raw-field-infos) class-name defconsts non-static-field-info-alist static-field-info-alist)
       (field-defconsts-and-infos (rest raw-field-infos) class-name defconsts non-static-field-info-alist static-field-info-alist))))
 
-(defthm true-listp-of-mv-nth-0-of-field-defconsts-and-infos
-  (implies (true-listp defconsts)
-           (true-listp (mv-nth 0 (field-defconsts-and-infos raw-field-infos class-name defconsts non-static-field-info-alist static-field-info-alist))))
-  :hints (("Goal" :in-theory (enable field-defconsts-and-infos))))
+(local
+ (defthm true-listp-of-mv-nth-0-of-field-defconsts-and-infos
+   (implies (true-listp defconsts)
+            (true-listp (mv-nth 0 (field-defconsts-and-infos raw-field-infos class-name defconsts non-static-field-info-alist static-field-info-alist))))
+   :hints (("Goal" :in-theory (enable field-defconsts-and-infos)))))
 
-(defthm field-info-alistp-of-mv-nth-1-of-field-defconsts-and-infos
-  (implies (and (jvm::field-info-alistp non-static-field-info-alist)
-                (raw-field-infosp raw-field-infos))
-           (jvm::field-info-alistp (mv-nth 1 (field-defconsts-and-infos raw-field-infos class-name defconsts non-static-field-info-alist static-field-info-alist))))
-  :hints (("Goal" :in-theory (enable field-defconsts-and-infos raw-field-infosp))))
+(local
+ (defthm field-info-alistp-of-mv-nth-1-of-field-defconsts-and-infos
+   (implies (and (jvm::field-info-alistp non-static-field-info-alist)
+                 (raw-field-infosp raw-field-infos))
+            (jvm::field-info-alistp (mv-nth 1 (field-defconsts-and-infos raw-field-infos class-name defconsts non-static-field-info-alist static-field-info-alist))))
+   :hints (("Goal" :in-theory (enable field-defconsts-and-infos raw-field-infosp)))))
 
-(defthm field-info-alistp-of-mv-nth-2-of-field-defconsts-and-infos
-  (implies (and (jvm::field-info-alistp static-field-info-alist)
-                (raw-field-infosp raw-field-infos))
-           (jvm::field-info-alistp (mv-nth 2 (field-defconsts-and-infos raw-field-infos class-name defconsts non-static-field-info-alist static-field-info-alist))))
-  :hints (("Goal" :in-theory (enable field-defconsts-and-infos raw-field-infosp))))
+(local
+ (defthm field-info-alistp-of-mv-nth-2-of-field-defconsts-and-infos
+   (implies (and (jvm::field-info-alistp static-field-info-alist)
+                 (raw-field-infosp raw-field-infos))
+            (jvm::field-info-alistp (mv-nth 2 (field-defconsts-and-infos raw-field-infos class-name defconsts non-static-field-info-alist static-field-info-alist))))
+   :hints (("Goal" :in-theory (enable field-defconsts-and-infos raw-field-infosp)))))
 
 ;; (defun method-constant-name (full-method-name)
 ;;   (declare (xargs :mode :program))
@@ -3690,9 +3678,7 @@
            (jvm::method-info-alistp (make-method-info-alist raw-method-infos acc)))
   :hints (("Goal" :in-theory (enable make-method-info-alist RAW-METHOD-INFOSP))))
 
-;;;
-;;; make-class-info-from-raw-parsed-class
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; STEP 2:
 ;; Makes a class-info structure from a raw-parsed-class.
@@ -3758,9 +3744,7 @@
            (true-listp (mv-nth 1 (make-class-info-from-raw-parsed-class raw-parsed-class))))
   :hints (("Goal" :in-theory (enable make-class-info-from-raw-parsed-class))))
 
-;;;
-;;; parse-class-file-bytes
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Combines step 1 and step 2
 ;; Returns (mv erp class-name class-info field-defconsts).
