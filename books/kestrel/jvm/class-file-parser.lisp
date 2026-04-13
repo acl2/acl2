@@ -2700,46 +2700,55 @@
 
 (verify-guards parse-code-attribute)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund maybe-add-flag (flag yesno flags)
   (declare (xargs :guard t))
   (if yesno
       (cons flag flags)
     flags))
 
-(defthm member-equal-of-maybe-add-flag
-  (equal (member-equal a (maybe-add-flag b yesno flags))
-         (if (and yesno
-                  (equal a b))
-             (cons b flags)
-           (member-equal a flags)))
-  :hints (("Goal" :in-theory (enable maybe-add-flag))))
+(local
+ (defthm member-equal-of-maybe-add-flag
+   (equal (member-equal a (maybe-add-flag b yesno flags))
+          (if (and yesno
+                   (equal a b))
+              (cons b flags)
+            (member-equal a flags)))
+   :hints (("Goal" :in-theory (enable maybe-add-flag)))))
 
-(defthm true-listp-of-maybe-add-flag
-  (implies (true-listp flags)
-           (true-listp (maybe-add-flag b yesno flags)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable maybe-add-flag))))
+(local
+ (defthm true-listp-of-maybe-add-flag
+   (implies (true-listp flags)
+            (true-listp (maybe-add-flag b yesno flags)))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable maybe-add-flag)))))
 
-(defthm keyword-listp-of-maybe-add-flag
-  (implies (and (keyword-listp flags)
-                (keywordp flag))
-           (keyword-listp (maybe-add-flag flag yesno flags)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable maybe-add-flag))))
+(local
+ (defthm keyword-listp-of-maybe-add-flag
+   (implies (and (keyword-listp flags)
+                 (keywordp flag))
+            (keyword-listp (maybe-add-flag flag yesno flags)))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable maybe-add-flag)))))
 
-(defthm subsetp-equal-of-maybe-add-flag-iff
-  (iff (subsetp-equal (maybe-add-flag flag yesno flags) lst)
-       (if yesno
-           (and (member-equal flag lst)
-                (subsetp-equal flags lst))
-         (subsetp-equal flags lst)))
-  :hints (("Goal" :in-theory (enable maybe-add-flag))))
+(local
+ (defthm subsetp-equal-of-maybe-add-flag-iff
+   (iff (subsetp-equal (maybe-add-flag flag yesno flags) lst)
+        (if yesno
+            (and (member-equal flag lst)
+                 (subsetp-equal flags lst))
+          (subsetp-equal flags lst)))
+   :hints (("Goal" :in-theory (enable maybe-add-flag)))))
 
-(defthm no-duplicatesp-equal-of-maybe-add-flag
-  (implies (and (not (member-equal flag flags))
-                (no-duplicatesp-equal flags))
-           (no-duplicatesp-equal (maybe-add-flag flag yesno flags)))
-  :hints (("Goal" :in-theory (enable maybe-add-flag))))
+(local
+ (defthm no-duplicatesp-equal-of-maybe-add-flag
+   (implies (and (not (member-equal flag flags))
+                 (no-duplicatesp-equal flags))
+            (no-duplicatesp-equal (maybe-add-flag flag yesno flags)))
+   :hints (("Goal" :in-theory (enable maybe-add-flag)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund raw-field-infop (raw-field-info)
   (declare (xargs :guard t))
@@ -2762,11 +2771,14 @@
     (and (raw-field-infop (first raw-field-infos))
          (raw-field-infosp (rest raw-field-infos)))))
 
-(defthm raw-field-infosp-of-revappend
-  (implies (and (raw-field-infosp x)
-                (raw-field-infosp y))
-           (raw-field-infosp (revappend x y)))
-  :hints (("Goal" :in-theory (enable revappend raw-field-infosp))))
+(local
+ (defthm raw-field-infosp-of-revappend
+   (implies (and (raw-field-infosp x)
+                 (raw-field-infosp y))
+            (raw-field-infosp (revappend x y)))
+   :hints (("Goal" :in-theory (enable revappend raw-field-infosp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a list of keywords representing the flags.
 (defund parse-class-access-flags (uint16)
@@ -2782,21 +2794,26 @@
          (flags (maybe-add-flag :ACC_ENUM (logbitp 14 uint16) flags)))
     flags))
 
-(defthm keyword-listp-of-parse-class-access-flags
-  (keyword-listp (parse-class-access-flags uint16))
-  :hints (("Goal" :in-theory (enable parse-class-access-flags))))
+(local
+ (defthm keyword-listp-of-parse-class-access-flags
+   (keyword-listp (parse-class-access-flags uint16))
+   :hints (("Goal" :in-theory (enable parse-class-access-flags)))))
 
-(defthm no-duplicatesp-equal-of-parse-class-access-flags
-  (no-duplicatesp-equal (parse-class-access-flags uint16))
-  :hints (("Goal" :in-theory (enable parse-class-access-flags))))
+(local
+ (defthm no-duplicatesp-equal-of-parse-class-access-flags
+   (no-duplicatesp-equal (parse-class-access-flags uint16))
+   :hints (("Goal" :in-theory (enable parse-class-access-flags)))))
 
-(defthm subsetp-equal-of-parse-class-access-flags
-  (subsetp-equal (parse-class-access-flags uint16)
-                 '(:acc_public :acc_final
-                               :acc_super :acc_interface
-                               :acc_abstract :acc_synthetic
-                               :acc_annotation :acc_enum))
-  :hints (("Goal" :in-theory (enable parse-class-access-flags))))
+(local
+ (defthm subsetp-equal-of-parse-class-access-flags
+   (subsetp-equal (parse-class-access-flags uint16)
+                  '(:acc_public :acc_final
+                    :acc_super :acc_interface
+                    :acc_abstract :acc_synthetic
+                    :acc_annotation :acc_enum))
+   :hints (("Goal" :in-theory (enable parse-class-access-flags)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a list of keywords representing the flags.
 ;It might be more clear to use the masks here that are used in Table 4.6-A,
@@ -2818,24 +2835,28 @@
          (flags (maybe-add-flag :ACC_SYNTHETIC (logbitp 12 uint16) flags)))
     flags))
 
-(defthm keyword-listp-of-parse-method-access-flags
-  (keyword-listp (parse-method-access-flags uint16))
-  :hints (("Goal" :in-theory (enable parse-method-access-flags))))
+(local
+ (defthm keyword-listp-of-parse-method-access-flags
+   (keyword-listp (parse-method-access-flags uint16))
+   :hints (("Goal" :in-theory (enable parse-method-access-flags)))))
 
-(defthm no-duplicatesp-equal-of-parse-method-access-flags
-  (no-duplicatesp-equal (parse-method-access-flags uint16))
-  :hints (("Goal" :in-theory (enable parse-method-access-flags))))
+(local
+ (defthm no-duplicatesp-equal-of-parse-method-access-flags
+   (no-duplicatesp-equal (parse-method-access-flags uint16))
+   :hints (("Goal" :in-theory (enable parse-method-access-flags)))))
 
-(defthm subsetp-equal-of-parse-method-access-flags
-  (subsetp-equal (parse-method-access-flags uint16)
-                 '(:ACC_PUBLIC :ACC_PRIVATE
-                               :ACC_PROTECTED :ACC_STATIC
-                               :ACC_FINAL :ACC_SYNCHRONIZED
-                               :ACC_BRIDGE :ACC_VARARGS
-                               :ACC_NATIVE :ACC_ABSTRACT
-                               :ACC_STRICT :ACC_SYNTHETIC))
-  :hints (("Goal" :in-theory (enable parse-method-access-flags))))
+(local
+ (defthm subsetp-equal-of-parse-method-access-flags
+   (subsetp-equal (parse-method-access-flags uint16)
+                  '(:ACC_PUBLIC :ACC_PRIVATE
+                    :ACC_PROTECTED :ACC_STATIC
+                    :ACC_FINAL :ACC_SYNCHRONIZED
+                    :ACC_BRIDGE :ACC_VARARGS
+                    :ACC_NATIVE :ACC_ABSTRACT
+                    :ACC_STRICT :ACC_SYNTHETIC))
+   :hints (("Goal" :in-theory (enable parse-method-access-flags)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a list of keywords representing the flags.
 (defund parse-field-access-flags (uint16)
