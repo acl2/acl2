@@ -221,7 +221,7 @@
 
   (define check-type ((type typep) (indenv index-senvp) (typenv type-senvp))
     :returns (kind kind-resultp)
-    :parents (type-checking check-indices)
+    :parents (type-checking check-types)
     :short "Check a type, returning its kind if successful."
     :long
     (xdoc::topstring
