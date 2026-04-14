@@ -326,7 +326,15 @@
    (xdoc::p
     "The flattening of concatenations also has the effect of
      eliminating empty sub-concatenations used in super-concatenations,
-     e.g. @('(++ i (++ j k) (++) l)') results in @('(++ i j k l)')."))
+     e.g. @('(++ i (++ j k) (++) l)') results in @('(++ i j k l)').")
+   (xdoc::p
+    "We replace singleton concatenations with their only index,
+     similarly to how we replace, in @(tsee normalize-add-in-index),
+     singleton additions with their only index.
+     But we leave empty concatenations as they are,
+     because we do not have other ways to denote them,
+     unlike the use of 0 for empty additions
+     in @(tsee normalize-add-in-index)."))
 
   (define flatten-append-in-index ((index indexp))
     :returns (new-index indexp)
@@ -345,7 +353,10 @@
      :const (index-const index.value)
      :add (index-add (flatten-append-in-index-list index.indices nil))
      :shape (index-shape (flatten-append-in-index-list index.indices nil))
-     :append (index-append (flatten-append-in-index-list index.indices t)))
+     :append (b* ((indices (flatten-append-in-index-list index.indices t))
+                  ((when (and (consp indices) (endp (cdr indices)))) ; one index
+                   (car indices))) ; just keep the index
+               (index-append indices)))
     :measure (index-count index))
 
   (define flatten-append-in-index-list ((indices index-listp)
