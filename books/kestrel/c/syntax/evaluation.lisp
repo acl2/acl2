@@ -69,8 +69,10 @@
       "The character types are constrained to one byte.
        The integer types of greater rank are unconstrained here.
        We introduce a separate predicate, @(see well-formed-value-p),
-       which recognizes values which are valid with respect to an
-       @(see implementation-environment)."))
+       which recognizes values which are valid with respect to an "
+      (xdoc::seetopic "implementation-environments"
+                      "implementation environment")
+      "."))
     (:unknown ())
     (:bool   ((get bit)))
     (:uchar  ((get nat
@@ -208,13 +210,16 @@
   (define well-formed-value-p ((val valuep) (ienv ienvp))
     :returns (yes/no booleanp)
     :parents (value)
-    :short "Recognize valid values under a particular
-            @(see implementation-environment)."
+    :short "Recognize valid values under a particular implementation
+            environment."
     :long
     (xdoc::topstring-p
      "This predicate checks that the integer values
       fit into the number of bytes available for their type
-      according to the @(see implementation-environment).")
+      according to the "
+     (xdoc::seetopic "implementation-environments"
+                     "implementation environment")
+     ".")
     (b* (((ienv ienv) ienv))
       (value-case
         val
@@ -472,7 +477,10 @@
     the behavior is undefined [C17:6.5/5].
     Therefore, this ``smart constructor'' returns the unknown value
     when the intended integer is not representable
-    according to the @(see implementation-environment).")
+    according to the "
+   (xdoc::seetopic "implementation-environments"
+                   "implementation environment")
+   ".")
   (if (signed-byte-p (* 8 (ienv->int-bytes ienv)) (lifix get))
       (value-sint get)
     (value-unknown))
@@ -499,7 +507,10 @@
     the behavior is undefined [C17:6.5/5].
     Therefore, this ``smart constructor'' returns the unknown value
     when the intended integer is not representable
-    according to the @(see implementation-environment).")
+    according to the "
+   (xdoc::seetopic "implementation-environments"
+                   "implementation environment")
+   ".")
   (if (signed-byte-p (* 8 (ienv->long-bytes ienv)) (lifix get))
       (value-slong get)
     (value-unknown))
@@ -526,7 +537,10 @@
     the behavior is undefined [C17:6.5/5].
     Therefore, this ``smart constructor'' returns the unknown value
     when the intended integer is not representable
-    according to the @(see implementation-environment).")
+    according to the "
+   (xdoc::seetopic "implementation-environments"
+                   "implementation environment")
+   ".")
   (if (signed-byte-p (* 8 (ienv->llong-bytes ienv)) (lifix get))
       (value-sllong get)
     (value-unknown))
