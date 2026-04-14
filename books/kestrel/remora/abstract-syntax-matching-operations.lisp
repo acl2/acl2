@@ -72,4 +72,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: add more matching operations
+(define type-match-fun ((type typep))
+  :returns (in+out typelist+type-resultp)
+  :short "Check if a type if a function type,
+          returning its input and output types if successful."
+  (if (type-case type :fun)
+      (make-typelist+type :types (type-fun->in type)
+                          :type (type-fun->out type))
+    (reserr nil)))
