@@ -88,20 +88,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult type+index-result
+  :short "Fixtype of (i) pairs consisting of a type and an index
+          and (ii) errors."
+  :ok type+index
+  :pred type+index-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist type+index-list
   :short "Fixtype lists of pairs consisting of a type and an index."
   :elt-type type+index
   :true-listp t
   :elementp-of-nil nil
   :pred type+index-listp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult type+index-result
-  :short "Fixtype of (i) pairs consisting of a type and an index
-          and (ii) errors."
-  :ok type+index
-  :pred type+index-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
