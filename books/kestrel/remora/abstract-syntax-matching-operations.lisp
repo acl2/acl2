@@ -12,7 +12,16 @@
 
 (include-book "abstract-syntax-derived-fixtypes")
 
+(local (include-book "std/lists/len" :dir :system))
+
 (acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (in-theory
+  (enable type+index-p-when-type+index-resultp-and-not-reserrp
+          type+index-listp-when-type+index-list-resultp-and-not-reserrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,6 +50,25 @@
       (make-type+index :type (type-array->type type)
                        :index (type-array->index type))
     (reserr nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-list-match-array ((types type-listp))
+  :returns (types+indices type+index-list-resultp)
+  :short "Check if all the types in a list are array types,
+          returning the list of their inner types and indices if successful."
+  (b* (((when (endp types)) nil)
+       ((ok type+index) (type-match-array (car types)))
+       ((ok types+indices) (type-list-match-array (cdr types))))
+    (cons type+index types+indices))
+
+  ///
+
+  (defret len-of-type-list-match-array
+    (implies (not (reserrp types+indices))
+             (equal (len types+indices)
+                    (len types)))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
