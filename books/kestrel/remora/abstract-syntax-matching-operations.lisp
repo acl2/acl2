@@ -74,7 +74,7 @@
 
 (define type-match-fun ((type typep))
   :returns (in+out typelist+type-resultp)
-  :short "Check if a type if a function type,
+  :short "Check if a type is a function type,
           returning its input and output types if successful."
   (if (type-case type :fun)
       (make-typelist+type :types (type-fun->in type)
