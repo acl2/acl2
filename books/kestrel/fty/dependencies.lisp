@@ -151,7 +151,7 @@
               (val-recog (flexalist->val-type flextype))
               ((unless (symbolp val-recog))
                (raise "Internal error: malformed type recognizer ~x0."
-                      key-recog))
+                      val-recog))
               (val-clique-name?
                 (name-of-flextypes-containing-recognizer val-recog fty-table)))
            (if key-clique-name?
@@ -172,7 +172,7 @@
               (val-recog (flexomap->val-type flextype))
               ((unless (symbolp val-recog))
                (raise "Internal error: malformed type recognizer ~x0."
-                      key-recog))
+                      val-recog))
               (val-clique-name?
                 (name-of-flextypes-containing-recognizer val-recog fty-table)))
            (if key-clique-name?

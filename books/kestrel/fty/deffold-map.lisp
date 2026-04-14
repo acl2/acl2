@@ -549,7 +549,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: prove this preserves the kind function (when none of the cases
-;; overriden).
+;; overridden).
 (define deffold-map-gen-sum-map
   ((sum flexsum-p)
    (mutrecp booleanp)

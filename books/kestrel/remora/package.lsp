@@ -19,6 +19,7 @@
                   (set-difference-eq *std-pkg-symbols*
                                      '(atom
                                        atom-listp
+                                       check-type
                                        function
                                        functionp
                                        sort
@@ -26,8 +27,14 @@
                                        type
                                        typep))
                   '(bool
+                    defmacro+
                     defxdoc+
                     int
+                    lnfix
                     nat
                     nat-list
+                    nat-list-fix
+                    fty::patbind-ok
+                    fty::reserr
+                    fty::reserrp
                     str::string-list)))
