@@ -323,7 +323,7 @@
        perhaps because of the interaction with the mutually recursive fixtypes.
        We can enforce this non-emptiness in the static semantics.
        The dissertation enforces non-emptiness with the patterns
-       @($\\mathfrak{a}\\ \\mathfrak{a}\ldots$) and @($e\\ e\ldots$),
+       @($\\mathfrak{a}\\ \\mathfrak{a}\\ldots$) and @($e\\ e\\ldots$),
        while the arXiv paper does not."))
     (:var ((name string)))
     (:array ((dims nat-list)
