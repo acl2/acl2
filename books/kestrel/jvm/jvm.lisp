@@ -2147,12 +2147,17 @@
 
 ; (IADD)
 (defun execute-IADD (th s)
+  ;; (declare (xargs :guard (and (jvm-statep s)
+  ;;                             (thread-designatorp th)
+  ;;                             (bound-in-alistp th (thread-table s))
+  ;;                             (not (equal 0 (call-stack-size (binding th (thread-table s)))))
+  ;;                             )))
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
           :stack (push-operand (bvplus 32
-                                             (top-operand (pop-operand (stack (thread-top-frame th s))))
-                                             (top-operand (stack (thread-top-frame th s))))
+                                       (top-operand (pop-operand (stack (thread-top-frame th s))))
+                                       (top-operand (stack (thread-top-frame th s))))
                                (pop-operand (pop-operand (stack (thread-top-frame th s)))))))
 
 ; (INEG)

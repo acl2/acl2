@@ -247,6 +247,8 @@
   (unsigned-byte-p 32 (4bytes-to-int highbyte highmidbyte lowmidbyte lowbyte))
   :hints (("Goal" :in-theory (enable 4bytes-to-int))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Return (mv erp val remaining-bytes) where val is an unsigned-byte-p 8.
 (defund readu1 (bytes)
   (declare (xargs :guard (all-unsigned-byte-p 8 bytes)))
@@ -274,6 +276,8 @@
   (implies (all-unsigned-byte-p 8 bytes)
            (natp (mv-nth 1 (readu1 bytes))))
   :hints (("Goal" :in-theory (enable readu1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp val remaining-bytes) where val is an unsigned-byte-p 16.
 (defund readu2 (bytes)
@@ -309,6 +313,8 @@
            (equal (len (mv-nth 2 (readu2 bytes)))
                   (+ -2 (len bytes))))
   :hints (("Goal" :in-theory (enable readu2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp val remaining-bytes) where val is an unsigned-byte-p 32.
 (defund readu4 (bytes)
@@ -347,6 +353,8 @@
                   (+ -4 (len bytes))))
   :hints (("Goal" :in-theory (enable readu4))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp val remaining-bytes) where val is an signed-byte-p 32.
 (defund read-signed-4-byte-quantity (bytes)
   (declare (xargs :guard (and (all-unsigned-byte-p 8 bytes)
@@ -371,6 +379,8 @@
   (implies (all-unsigned-byte-p 8 bytes)
            (all-unsigned-byte-p 8 (mv-nth 2 (read-signed-4-byte-quantity bytes))))
   :hints (("Goal" :in-theory (enable read-signed-4-byte-quantity))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp n-bytes remaining-bytes).
 (defund readnbytes (n bytes)
@@ -405,6 +415,8 @@
       (len bytes))
   :hints (("Goal" :in-theory (enable readnbytes)))
   :rule-classes :linear)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp u2s remaining-bytes).
 (defund readu2s (number-of-u2s bytes)
@@ -444,22 +456,24 @@
            (all-unsigned-byte-p 8 (mv-nth 2 (readu2s number-of-u2s bytes))))
   :hints (("Goal" :in-theory (enable readu2s))))
 
-;; Returns (mv erp u4s remaining-bytes).
-(defund readu4s (number-of-u4s bytes)
-  (declare (xargs :guard (and (all-unsigned-byte-p 8 bytes)
-                              (true-listp bytes)
-                              (natp number-of-u4s))
-                  :guard-hints (("Goal" :in-theory (enable readu4)))))
-  (if (zp number-of-u4s)
-      (mv (erp-nil) nil bytes)
-    (b* (((mv erp val bytes) (readu4 bytes))
-         ((when erp) (mv erp nil nil))
-         ((mv erp rest bytes) (readu4s (+ -1 number-of-u4s) bytes))
-         ((when erp) (mv erp nil nil))
-         )
-      (mv (erp-nil)
-          (cons val rest)
-          bytes))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;; Returns (mv erp u4s remaining-bytes).
+;; (defund readu4s (number-of-u4s bytes)
+;;   (declare (xargs :guard (and (all-unsigned-byte-p 8 bytes)
+;;                               (true-listp bytes)
+;;                               (natp number-of-u4s))
+;;                   :guard-hints (("Goal" :in-theory (enable readu4)))))
+;;   (if (zp number-of-u4s)
+;;       (mv (erp-nil) nil bytes)
+;;     (b* (((mv erp val bytes) (readu4 bytes))
+;;          ((when erp) (mv erp nil nil))
+;;          ((mv erp rest bytes) (readu4s (+ -1 number-of-u4s) bytes))
+;;          ((when erp) (mv erp nil nil))
+;;          )
+;;       (mv (erp-nil)
+;;           (cons val rest)
+;;           bytes))))
 
 ;; Returns (mv erp vals remaining-bytes).
 (defund read-signed-4-byte-quantities (number-of-quantities bytes)
@@ -487,11 +501,15 @@
            (true-listp (mv-nth 2 (read-signed-4-byte-quantities number-of-quantities bytes))))
   :hints (("Goal" :in-theory (enable read-signed-4-byte-quantities))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;FFIXME this doesn't handle utf8's that aren't ascii compliant!
 (defund bytelist-to-string (bytes)
   (declare (xargs :guard (and (all-unsigned-byte-p 8 bytes)
                               (true-listp bytes))))
   (coerce (map-code-char2 bytes) 'string))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund turn-slashes-into-dots-chars (chars)
   (declare (xargs :guard (character-listp chars)))
@@ -502,6 +520,8 @@
            (character-listp (turn-slashes-into-dots-chars chars)))
   :hints (("Goal" :in-theory (enable turn-slashes-into-dots-chars))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund turn-slashes-into-dots (str)
   (declare (xargs :guard (stringp str)))
   (substitute #\. #\/ str))
@@ -510,6 +530,8 @@
   (implies (stringp str)
            (stringp (turn-slashes-into-dots str)))
   :hints (("Goal" :in-theory (enable turn-slashes-into-dots))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;(in-theory (disable STR::COERCE-TO-LIST-REMOVAL STR::COERCE-TO-STRING-REMOVAL)) ;todo new
 
@@ -842,6 +864,11 @@
   (lookup-eq 'tag entry) ; for now
   )
 
+(defthm symbolp-of-cp-entry-tag
+  (implies (constant-pool-entryp entry)
+           (symbolp (cp-entry-tag entry)))
+  :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
@@ -874,7 +901,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;; Returns (mv erp entry).
 (defund lookup-in-constant-pool (index constant-pool)
   (declare (xargs :guard (natp index)
@@ -897,17 +923,12 @@
             (constant-pool-entryp (mv-nth 1 (lookup-in-constant-pool index constant-pool))))
    :hints (("Goal" :in-theory (enable lookup-in-constant-pool)))))
 
-
-
-(defthm symbolp-of-cp-entry-tag
-  (implies (constant-pool-entryp entry)
-           (symbolp (cp-entry-tag entry)))
-  :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks that the entry returned has one of the ALLOWED-TYPES.
 ;; Returns (mv erp entry).
 ;; TODO: Use this more
-;; Trying to leave this enabled
+;; Leaving this enabled (for now)
 (defun lookup-in-constant-pool-safe (index allowed-types constant-pool)
   (declare (xargs :guard (and (natp index)
                               (keyword-listp allowed-types))
@@ -1162,6 +1183,8 @@
    :hints (("Goal" :in-theory (enable parse-constant-pool-entry
                                       constant-pool-entryp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp constant-pool bytes-remaining).
 ;; acc accumulates info on the entries.
 ;; The result is in reverse order by entry number, but that shouldn't matter
@@ -1231,6 +1254,8 @@
             (constant-poolp (mv-nth 1 (parse-constant-pool-entries index max-index bytes constant-pool))))
    :hints (("Goal" :in-theory (enable parse-constant-pool-entries)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund getarraytype (int)
   (declare (xargs :guard (natp int)))
   (cond ((= int 4)  :boolean)
@@ -1242,6 +1267,8 @@
         ((= int 10) :int)
         ((= int 11) :long)
         (t (er hard? 'getarraytype "Found a call to newarray with an unrecognized array type."))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Parse a class name as it appears in a symbolic reference to a class.  Array
 ;; classes have a different representation than normal classes/interfaces.  See
@@ -1268,6 +1295,7 @@
 ;;            (jvm::class-namep (mv-nth 1 (parse-class-name str))))
 ;;   :hints (("Goal" :in-theory (enable parse-class-name))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp res).
 ;; Returns a reference-typep.  This can sometimes be an array type.
@@ -1316,8 +1344,7 @@
 
 ;; Returns (mv erp class-name field-name descriptor).
 (defund get-info-from-srf (index constant-pool)
-  (declare (xargs :guard (and (natp index)
-                              )
+  (declare (xargs :guard (natp index)
                   :stobjs constant-pool))
   (b* (((mv erp srf) (lookup-in-constant-pool-safe index '(:constant_fieldref) constant-pool))
        ((when erp) (mv erp nil nil nil))
@@ -1340,11 +1367,12 @@
        (field-descriptor (lookup-eq-safe 'bytes field-descriptor-entry)))
     (mv (erp-nil) class-type field-name field-descriptor)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp class-name method-name method-descriptor param-types interfacep)
 ;; The class-name returned is a reference-typep (sometimes be an array type).
 (defund get-info-from-srm (index constant-pool)
-  (declare (xargs :guard (and (natp index)
-                              )
+  (declare (xargs :guard (natp index)
                   :stobjs constant-pool))
   (b* (((mv erp srm) (lookup-in-constant-pool index constant-pool))
        ((when erp) (mv erp nil nil nil nil nil))
@@ -1375,12 +1403,13 @@
        (interfacep (eq tag :CONSTANT_InterfaceMethodref)))
     (mv (erp-nil) class-name method-name method-descriptor param-types interfacep)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp parsed-names bytes).
 (defund get-class-names-for-indices (count bytes constant-pool)
   (declare (xargs :guard (and (natp count)
                               (true-listp bytes)
-                              (all-unsigned-byte-p 8 bytes)
-                              )
+                              (all-unsigned-byte-p 8 bytes))
                   :stobjs constant-pool))
   (if (zp count)
       (mv (erp-nil) nil bytes)
@@ -1416,11 +1445,12 @@
             (true-listp (mv-nth 2 (get-class-names-for-indices count bytes constant-pool))))
    :hints (("Goal" :in-theory (enable get-class-names-for-indices)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Should work for a method or a field (but perhaps not if we change this to parse the descriptor)
 ;; Returns (mv erp get-name-and-type-from-cp-entry).
 (defund get-name-and-type-from-cp-entry (name_and_type_index constant-pool)
-  (declare (xargs :guard (and (natp name_and_type_index)
-                              )
+  (declare (xargs :guard (natp name_and_type_index)
                   :stobjs constant-pool))
   (b* (((mv erp name_and_type) (lookup-in-constant-pool name_and_type_index constant-pool))
        ((when erp) (mv erp nil))
@@ -2081,7 +2111,6 @@
   (declare (xargs :guard (and (natp local_variable_table_length)
                               (true-listp bytes)
                               (all-unsigned-byte-p 8 bytes)
-
                               (true-listp acc)
                               (jvm::local-variable-tablep acc))
                   :stobjs constant-pool
@@ -2525,8 +2554,7 @@
                    :guard (and (natp numentries)
                                (true-listp bytes)
                                (all-unsigned-byte-p 8 bytes)
-                               (alistp acc)
-                               )
+                               (alistp acc))
                    :stobjs constant-pool))
    (if (zp numentries)
        (mv (erp-nil) acc bytes)
@@ -2973,8 +3001,7 @@
   (declare (xargs :guard (and (natp numentries)
                               (all-unsigned-byte-p 8 bytes)
                               (true-listp bytes)
-                              (true-listp acc)
-                              )
+                              (true-listp acc))
                   :stobjs constant-pool))
   (if (zp numentries)
       (mv (erp-nil) (reverse acc) bytes)
@@ -3127,8 +3154,7 @@
   (declare (xargs :guard (and (natp numentries)
                               (all-unsigned-byte-p 8 bytes)
                               (true-listp bytes)
-                              (true-listp acc)
-                              )
+                              (true-listp acc))
                   :stobjs constant-pool))
   (if (zp numentries)
       (mv (erp-nil) acc bytes)
@@ -3160,8 +3186,7 @@
 
 ;; Returns (mv erp name-or-none).
 (defund parse-super_class (super_class constant-pool)
-  (declare (xargs :guard (and (natp super_class)
-                              )
+  (declare (xargs :guard (natp super_class)
                   :stobjs constant-pool))
   (if (equal 0 super_class) ;; only can happen for class Object
       (mv (erp-nil) :none)  ;"dummy-superclass-for-Object"
