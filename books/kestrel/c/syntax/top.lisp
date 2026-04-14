@@ -14,6 +14,7 @@
 (include-book "unicode-characters")
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
+(include-book "evaluation")
 (include-book "preprocessing")
 (include-book "parsing")
 (include-book "disambiguation")
