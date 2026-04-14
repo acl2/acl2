@@ -538,18 +538,8 @@
      types to integer constants.
      This function returns a natural number,
      which can be arbitrarily large;
-     whether an integer constant is too large is checked elsewhere.")
-   (xdoc::p
-    "For a decimal or octal constant, the value is a component of the fixtype.
-     For a hexadecimal constant, we use a library function
-     to convert the digits into a value;
-     the digits are as they appear in the concrete syntax,
-     i.e. in big-endian order."))
-  (dec/oct/hex-const-case
-   const
-   :dec const.value
-   :oct const.value
-   :hex (str::hex-digit-chars-value const.digits)))
+     whether an integer constant is too large is checked elsewhere."))
+  (dec/oct/hex-const->value const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

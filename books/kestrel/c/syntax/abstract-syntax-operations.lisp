@@ -29,6 +29,15 @@
 
 (define dec/oct/hex-const->value ((const dec/oct/hex-constp))
   :returns (value natp)
+  :short "Evaluate a decimal, octal, or hexadecimal constant to a natural number."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a decimal or octal constant, the value is a component of the fixtype.
+     For a hexadecimal constant, we use a library function
+     to convert the digits into a value;
+     the digits are as they appear in the concrete syntax,
+     i.e. in big-endian order."))
   (dec/oct/hex-const-case
     const
     :dec const.value
