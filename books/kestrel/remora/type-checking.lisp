@@ -496,7 +496,7 @@
        @('in-atom-types'), @('out-atom-type'),
        @('in-index'), and @('out-index').
        The index of the array type of the function expression
-       is denoted @('$\\iota_f$) in the paper and dissertation;
+       is denoted @($\\iota_f$) in the paper and dissertation;
        our code uses @('fun-index').
        The argument expressions must all have array types,
        whose atom types must be equal to
