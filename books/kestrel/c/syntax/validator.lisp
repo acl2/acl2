@@ -89,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-empty-scope ()
+(define empty-valid-scope ()
   :returns (scope valid-scopep)
   :short "Empty validator scope."
   :long
@@ -113,7 +113,7 @@
    (xdoc::p
     "This contains one empty scope (the initial file scope)."))
   (make-valid-table :filepath filepath
-                    :scopes (list (valid-empty-scope))
+                    :scopes (list (empty-valid-scope))
                     :externals externals
                     :completions completions
                     :next-uid next-uid))
@@ -135,7 +135,7 @@
    (xdoc::p
     "The newly pushed scope is always empty."))
   (b* ((scopes (valid-table->scopes table))
-       (new-scopes (cons (valid-empty-scope) scopes)))
+       (new-scopes (cons (empty-valid-scope) scopes)))
     (change-valid-table table :scopes new-scopes))
   ///
 
