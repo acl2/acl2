@@ -62,7 +62,8 @@
     (:induct 1) ; can only remove the whole thing
     (:nonlinearp 1) ; can only remove the whole thing
     (:do-not (if (and (quotep val)
-                      (consp (cdr val)))
+                      (consp (cdr val))
+                      (true-listp (unquote val)))
                  ;; can remove each thing in the list:
                  (len (unquote val))
                1 ; can only remove the whole thing
