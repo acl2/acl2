@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-derived-fixtypes")
 
 (include-book "defsort/duplicated-members" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
@@ -88,3 +88,17 @@
   :returns (strings string-listp)
   :short "Lift @(tsee typed-var->var) to lists."
   (typed-var->var x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type+index-list->type ((x type+index-listp))
+  :returns (types type-listp)
+  :short "Lift @(tsee type+index->type) to lists."
+  (type+index->type x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type+index-list->index ((x type+index-listp))
+  :returns (indices index-listp)
+  :short "Lift @(tsee type+index->index) to lists."
+  (type+index->index x))

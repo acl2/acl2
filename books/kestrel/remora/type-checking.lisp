@@ -24,13 +24,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
- (in-theory (enable kindp-when-kind-resultp-and-not-reserrp
-                    kind-listp-when-kind-list-resultp-and-not-reserrp
-                    sortp-when-sort-resultp-and-not-reserrp
-                    sort-listp-when-sort-list-resultp-and-not-reserrp
-                    typep-when-type-resultp-and-not-reserrp
-                    type-listp-when-type-list-resultp-and-not-reserrp
-                    type+index-p-when-type+index-resultp-and-not-reserrp)))
+ (in-theory
+  (enable kindp-when-kind-resultp-and-not-reserrp
+          kind-listp-when-kind-list-resultp-and-not-reserrp
+          sortp-when-sort-resultp-and-not-reserrp
+          sort-listp-when-sort-list-resultp-and-not-reserrp
+          typep-when-type-resultp-and-not-reserrp
+          type-listp-when-type-list-resultp-and-not-reserrp
+          type+index-p-when-type+index-resultp-and-not-reserrp
+          type+index-listp-when-type+index-list-resultp-and-not-reserrp
+          typelist+type-p-when-typelist+type-resultp-and-not-reserrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -480,60 +483,111 @@
       "An empty frame is similar to an empty array,
        but the type must be an array type
        with an atom type and with a shape index.
-       The latter is concatenated after the frame's dimensions."))
+       The latter is concatenated after the frame's dimensions.")
+     (xdoc::p
+      "For a term application,
+       first we check the function expression,
+       which must have an array type of a function type,
+       whose input and output types are all array types.
+       The atom input types are denoted @($\\tau\\ldots$) and @($\\tau'$),
+       and their indices are denoted @($\\iota\\ldots$) and @($\\iota'$),
+       in the arXiv paper and dissertation;
+       our code uses
+       @('in-atom-types'), @('out-atom-type'),
+       @('in-index'), and @('out-index').
+       The index of the array type of the function expression
+       is denoted @($\\iota_f$) in the paper and dissertation;
+       our code uses @('fun-index').
+       The argument expressions must all have array types,
+       whose atom types must be equal to
+       the input atom types of the function expression.
+       The indices of the argument expressions,
+       for which our code uses @('arg-indices'),
+       are denoted @($(\\mathtt{++}\\ \\iota_a\\ \\iota)\\ldots$),
+       which means that the indices @($\\iota\\ldots$)
+       of the corresponding inputs types must be suffixes,
+       and that we need to extract the prefixes @($\\iota_a\\ldots$);
+       we do that via a separate function (see its documentation)."))
     (expr-case
      expr
-     :var (b* ((name+type (omap::assoc expr.name (term-senv-fix termenv)))
-               ((unless name+type) (reserr nil)))
-            (cdr name+type))
-     :array (b* (((when (member-equal 0 expr.dims)) (reserr nil))
-                 ((unless (= (len expr.atoms)
-                             (nat-list-product expr.dims)))
-                  (reserr nil))
-                 ((ok types) (check-atom-list expr.atoms indenv typenv termenv))
-                 ((unless (type-list-all-equivp types)) (reserr nil))
-                 (type (car types))
-                 ((ok kind) (check-type type indenv typenv))
-                 ((unless (kind-case kind :atom)) (reserr nil)))
-              (make-type-array :type type
-                               :index (index-shape
-                                       (index-const-list expr.dims))))
-     :array-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-                       ((ok kind) (check-type expr.type indenv typenv))
-                       ((unless (kind-case kind :atom)) (reserr nil)))
-                    (make-type-array :type expr.type
-                                     :index (index-shape
-                                             (index-const-list expr.dims))))
-     :frame (b* (((when (member-equal 0 expr.dims)) (reserr nil))
-                 ((unless (= (len expr.exprs)
-                             (nat-list-product expr.dims)))
-                  (reserr nil))
-                 ((ok types) (check-expr-list expr.exprs indenv typenv termenv))
-                 ((unless (type-list-all-equivp types)) (reserr nil))
-                 (type (car types))
-                 ((ok kind) (check-type type indenv typenv))
-                 ((unless (kind-case kind :array)) (reserr nil))
-                 ((ok (type+index array)) (type-match-array type)))
-              (make-type-array :type array.type
-                               :index (index-append
-                                       (list (index-shape
-                                              (index-const-list expr.dims))
-                                             array.index))))
-     :frame-empty (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-                       ((ok (type+index array)) (type-match-array expr.type))
-                       ((ok kind) (check-type array.type
-                                              indenv
-                                              typenv))
-                       ((unless (kind-case kind :atom)) (reserr nil))
-                       ((ok sort) (check-index array.index
-                                               indenv))
-                       ((unless (sort-case sort :shape)) (reserr nil)))
-                    (make-type-array :type array.type
-                                     :index (index-append
-                                             (list (index-shape
-                                                    (index-const-list expr.dims))
-                                                   array.index))))
-     :term-app (reserr :todo)
+     :var
+     (b* ((name+type (omap::assoc expr.name (term-senv-fix termenv)))
+          ((unless name+type) (reserr nil)))
+       (cdr name+type))
+     :array
+     (b* (((when (member-equal 0 expr.dims)) (reserr nil))
+          ((unless (= (len expr.atoms)
+                      (nat-list-product expr.dims)))
+           (reserr nil))
+          ((ok types) (check-atom-list expr.atoms indenv typenv termenv))
+          ((unless (type-list-all-equivp types)) (reserr nil))
+          (type (car types))
+          ((ok kind) (check-type type indenv typenv))
+          ((unless (kind-case kind :atom)) (reserr nil)))
+       (make-type-array :type type
+                        :index (index-shape (index-const-list expr.dims))))
+     :array-empty
+     (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+          ((ok kind) (check-type expr.type indenv typenv))
+          ((unless (kind-case kind :atom)) (reserr nil)))
+       (make-type-array :type expr.type
+                        :index (index-shape (index-const-list expr.dims))))
+     :frame
+     (b* (((when (member-equal 0 expr.dims)) (reserr nil))
+          ((unless (= (len expr.exprs)
+                      (nat-list-product expr.dims)))
+           (reserr nil))
+          ((ok types) (check-expr-list expr.exprs indenv typenv termenv))
+          ((unless (type-list-all-equivp types)) (reserr nil))
+          (type (car types))
+          ((ok kind) (check-type type indenv typenv))
+          ((unless (kind-case kind :array)) (reserr nil))
+          ((ok (type+index array)) (type-match-array type)))
+       (make-type-array :type array.type
+                        :index (index-append
+                                (list (index-shape (index-const-list expr.dims))
+                                      array.index))))
+     :frame-empty
+     (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+          ((ok (type+index array)) (type-match-array expr.type))
+          ((ok kind) (check-type array.type
+                                 indenv
+                                 typenv))
+          ((unless (kind-case kind :atom)) (reserr nil))
+          ((ok sort) (check-index array.index
+                                  indenv))
+          ((unless (sort-case sort :shape)) (reserr nil)))
+       (make-type-array :type array.type
+                        :index (index-append
+                                (list (index-shape
+                                       (index-const-list expr.dims))
+                                      array.index))))
+     :term-app
+     (b* (((ok fun-arr-type) (check-expr expr.fun indenv typenv termenv))
+          ((ok fun-arr-type+index) (type-match-array fun-arr-type))
+          (fun-type (type+index->type fun-arr-type+index))
+          (fun-index (type+index->index fun-arr-type+index))
+          ((ok fun-types+type) (type-match-fun fun-type))
+          (in-types (typelist+type->types fun-types+type))
+          (out-type (typelist+type->type fun-types+type))
+          ((ok in-types+indices) (type-list-match-array in-types))
+          (in-atom-types (type+index-list->type in-types+indices))
+          (in-indices (type+index-list->index in-types+indices))
+          ((ok out-type+index) (type-match-array out-type))
+          (out-atom-type (type+index->type out-type+index))
+          (out-index (type+index->index out-type+index))
+          ((ok arg-types) (check-expr-list expr.args indenv typenv termenv))
+          ((ok arg-types+indices) (type-list-match-array arg-types))
+          (arg-atom-types (type+index-list->type arg-types+indices))
+          (arg-indices (type+index-list->index arg-types+indices))
+          ((unless (equal arg-atom-types in-atom-types)) (reserr nil)))
+       (prog2$ (list fun-index
+                     arg-indices
+                     in-atom-types
+                     out-atom-type
+                     in-indices
+                     out-index)
+               (reserr :todo)))
      :type-app (reserr :todo)
      :index-app (reserr :todo)
      :unbox (reserr :todo))
