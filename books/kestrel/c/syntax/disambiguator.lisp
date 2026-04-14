@@ -13,7 +13,7 @@
 
 (include-book "built-in")
 (include-book "unambiguity")
-(include-book "hash-conditional-evaluation")
+(include-book "translation-unit-comparison")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -4206,6 +4206,7 @@
          ;; Dismbiguate the included translation unit in context.
          ;; This must not fail; if it does,
          ;; the disambiguation of the including translation unit fails.
+         (dstate (change-dstate dstate :file included))
          ((erp new-tunit-in-context dstate tumap-dimb)
           (dimb-trans-unit tunit
                            dstate
@@ -4213,6 +4214,7 @@
                            resolved-includes
                            tumap-dimb
                            (1- limit)))
+         (dstate (change-dstate dstate :file including))
          ;; Disambiguate the included translation unit stand-alone.
          ;; This may fail, so we do not use the ERP binder,
          ;; which would propagate the error.
@@ -4235,8 +4237,13 @@
          ;; If the included translation unit was disambiguated stand-alone,
          ;; and gave the same result as the disambiguation in context,
          ;; we preserve the #include, and update the disambiguated map.
+         ;; Here by 'same result' we mean that
+         ;; they compare equal w.r.t. macros.
          ((when (and (not erp)
-                     (equal new-tunit-stand-alone new-tunit-in-context)))
+                     (compare-trans-units new-tunit-stand-alone
+                                          new-tunit-in-context
+                                          (dstate->macros dstate)
+                                          (dstate->ienv dstate))))
           (retok (list (trans-item-include header))
                  dstate
                  (omap::update (filepath included)
