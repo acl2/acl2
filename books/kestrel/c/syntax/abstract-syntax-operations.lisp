@@ -27,6 +27,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define dec/oct/hex-const->value ((const dec/oct/hex-constp))
+  :returns (value natp)
+  (dec/oct/hex-const-case
+    const
+    :dec const.value
+    :oct const.value
+    :hex (str::hex-digit-chars-value const.digits))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-postfix/primary-p ((expr exprp))
   :returns (yes/no booleanp)
   :short "Check if an expression is postfix or primary."

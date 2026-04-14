@@ -277,7 +277,7 @@
   (b* (((mv er? event state)
         (infer-ienv-process-inputs-and-gen-event name cc args state))
        ((when er?) (er-soft+ ctx t '(_) "~@0" er?)))
-    (value event)))
+    (acl2::value event)))
 
 (defmacro infer-ienv
   (name
