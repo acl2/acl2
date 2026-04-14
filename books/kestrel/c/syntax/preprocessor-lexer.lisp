@@ -262,6 +262,7 @@
               (utf8-<= char (char-code #\9))) ; pp-number digit
          (plex-pp-number-loop (make-pnumber-number-digit
                                :number current-pnumber
+                               :squotep nil
                                :digit (code-char char))
                               pos
                               ppstate))
@@ -285,6 +286,7 @@
                    (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
+                                     :squotep nil
                                      :nondigit #\e)
                                     pos
                                     ppstate))))))
@@ -308,6 +310,7 @@
                    (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
+                                     :squotep nil
                                      :nondigit #\E)
                                     pos
                                     ppstate))))))
@@ -331,6 +334,7 @@
                    (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
+                                     :squotep nil
                                      :nondigit #\p)
                                     pos
                                     ppstate))))))
@@ -354,6 +358,7 @@
                    (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
+                                     :squotep nil
                                      :nondigit #\P)
                                     pos
                                     ppstate))))))
@@ -364,6 +369,7 @@
              (utf8-= char (char-code #\_))) ; pp-number identifier-nondigit
          (plex-pp-number-loop (make-pnumber-number-nondigit
                                :number current-pnumber
+                               :squotep nil
                                :nondigit (code-char char))
                               pos
                               ppstate))
