@@ -144,7 +144,7 @@
    "This predicate is overapproximate in the sense that
     it also recognizes unknown values &mdash;
     i.e. values which <emph>might</emph> have signed integer type.")
-  (and (value-case val '(:schar :sshort :sint :slong :sllong))
+  (and (value-case val '(:unknown :schar :sshort :sint :slong :sllong))
        t)
   :inline t)
 
@@ -246,7 +246,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (value-ushort->get val)
                (+ -1 (expt 2 (* 8 (ienv->short-bytes ienv))))))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-ushort->get val))))
   :enable (value-ushort->get
            well-formed-value-p
            unsigned-byte-p
@@ -256,7 +256,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (- (expt 2 (+ -1 (* 8 (ienv->short-bytes ienv)))))
                (value-sshort->get val)))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-sshort->get val))))
   :enable (value-sshort->get
            well-formed-value-p
            signed-byte-p
@@ -266,7 +266,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (value-sshort->get val)
                (+ -1 (expt 2 (+ -1 (* 8 (ienv->short-bytes ienv)))))))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-sshort->get val))))
   :enable (value-sshort->get
            well-formed-value-p
            signed-byte-p
@@ -276,7 +276,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (value-uint->get val)
                (+ -1 (expt 2 (* 8 (ienv->int-bytes ienv))))))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-uint->get val))))
   :enable (value-uint->get
            well-formed-value-p
            unsigned-byte-p
@@ -286,7 +286,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (- (expt 2 (+ -1 (* 8 (ienv->int-bytes ienv)))))
                (value-sint->get val)))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-sint->get val))))
   :enable (value-sint->get
            well-formed-value-p
            signed-byte-p
@@ -296,7 +296,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (value-sint->get val)
                (+ -1 (expt 2 (+ -1 (* 8 (ienv->int-bytes ienv)))))))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-sint->get val))))
   :enable (value-sint->get
            well-formed-value-p
            signed-byte-p
@@ -306,7 +306,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (value-ulong->get val)
                (+ -1 (expt 2 (* 8 (ienv->long-bytes ienv))))))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-ulong->get val))))
   :enable (value-ulong->get
            well-formed-value-p
            unsigned-byte-p
@@ -316,7 +316,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (- (expt 2 (+ -1 (* 8 (ienv->long-bytes ienv)))))
                (value-slong->get val)))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-slong->get val))))
   :enable (value-slong->get
            well-formed-value-p
            signed-byte-p
@@ -326,7 +326,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (value-slong->get val)
                (+ -1 (expt 2 (+ -1 (* 8 (ienv->long-bytes ienv)))))))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-slong->get val))))
   :enable (value-slong->get
            well-formed-value-p
            signed-byte-p
@@ -336,7 +336,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (value-ullong->get val)
                (+ -1 (expt 2 (* 8 (ienv->llong-bytes ienv))))))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-ullong->get val))))
   :enable (value-ullong->get
            well-formed-value-p
            unsigned-byte-p
@@ -346,7 +346,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (- (expt 2 (+ -1 (* 8 (ienv->llong-bytes ienv)))))
                (value-sllong->get val)))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-sllong->get val))))
   :enable (value-sllong->get
            well-formed-value-p
            signed-byte-p
@@ -356,7 +356,7 @@
   (implies (well-formed-value-p val ienv)
            (<= (value-sllong->get val)
                (+ -1 (expt 2 (+ -1 (* 8 (ienv->llong-bytes ienv)))))))
-  :rule-classes :linear
+  :rule-classes ((:linear :trigger-terms ((value-sllong->get val))))
   :enable (value-sllong->get
            well-formed-value-p
            signed-byte-p
@@ -384,7 +384,7 @@
          :uint)
   :enable value-uint-mod)
 
-(defrule value-uint->get-of-value-uint-mod
+(defruled value-uint->get-of-value-uint-mod
   (equal (value-uint->get (value-uint-mod get ienv))
          (mod (ifix get) (expt 2 (* 8 (ienv->int-bytes ienv)))))
   :enable value-uint-mod)
@@ -416,7 +416,7 @@
          :ulong)
   :enable value-ulong-mod)
 
-(defrule value-ulong->get-of-value-ulong-mod
+(defruled value-ulong->get-of-value-ulong-mod
   (equal (value-ulong->get (value-ulong-mod get ienv))
          (mod (ifix get) (expt 2 (* 8 (ienv->long-bytes ienv)))))
   :enable value-ulong-mod)
@@ -448,7 +448,7 @@
          :ullong)
   :enable value-ullong-mod)
 
-(defrule value-ullong->get-of-value-ullong-mod
+(defruled value-ullong->get-of-value-ullong-mod
   (equal (value-ullong->get (value-ullong-mod get ienv))
          (mod (ifix get) (expt 2 (* 8 (ienv->llong-bytes ienv)))))
   :enable value-ullong-mod)
