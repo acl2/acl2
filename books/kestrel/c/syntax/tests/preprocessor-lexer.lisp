@@ -178,7 +178,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-digit (pnumber-digit #\3) #\4))))
+               (pnumber-number-digit (pnumber-digit #\3) nil #\4))))
 
 (test-lex
  plex-pp-number
@@ -187,7 +187,7 @@
  :index 2
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-digit (pnumber-dot-digit #\3) #\4))))
+               (pnumber-number-digit (pnumber-dot-digit #\3) nil #\4))))
 
 (test-lex
  plex-pp-number
@@ -216,7 +216,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\e))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\e))))
 
 (test-lex
  plex-pp-number
@@ -245,7 +245,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\E))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\E))))
 
 (test-lex
  plex-pp-number
@@ -274,7 +274,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\p))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\p))))
 
 (test-lex
  plex-pp-number
@@ -303,7 +303,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\P))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\P))))
 
 (test-lex
  plex-pp-number
@@ -312,7 +312,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\a))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\a))))
 
 (test-lex
  plex-pp-number
@@ -321,7 +321,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\a))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\a))))
 
 (test-lex
  plex-pp-number
@@ -346,11 +346,11 @@
                    (pnumber-number-nondigit
                     (pnumber-number-digit
                      (pnumber-dot-digit #\3)
-                     #\7)
-                    #\a)
-                   #\b)
+                     nil #\7)
+                    nil #\a)
+                   nil #\b)
                   (sign-minus)))
-                #\x))))
+                nil #\x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1126,7 +1126,7 @@
  :cond (equal ast (plexeme-number
                    (pnumber-number-digit
                     (pnumber-number-digit
-                     (pnumber-digit #\1) #\2) #\4))))
+                     (pnumber-digit #\1) nil #\2) nil #\4))))
 
 (test-lex-lexeme
  "124e+"
@@ -1134,7 +1134,7 @@
                    (pnumber-number-locase-e-sign
                     (pnumber-number-digit
                      (pnumber-number-digit
-                      (pnumber-digit #\1) #\2) #\4)
+                      (pnumber-digit #\1) nil #\2) nil #\4)
                     (sign-plus)))))
 
 (test-lex-lexeme
@@ -1143,8 +1143,7 @@
                    (pnumber-number-nondigit
                     (pnumber-number-digit
                      (pnumber-number-digit
-                      (pnumber-digit #\1) #\2) #\4)
-                    #\x))))
+                      (pnumber-digit #\1) nil #\2) nil #\4) nil #\x))))
 
 (test-lex-lexeme
  ".5"

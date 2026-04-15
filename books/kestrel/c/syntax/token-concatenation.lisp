@@ -67,14 +67,19 @@
      decomposing it and re-adding its components to the first number."))
   (pnumber-case
    number2
-   :digit (make-pnumber-number-digit :number number1 :digit number2.digit)
+   :digit (make-pnumber-number-digit :number number1
+                                     :squotep nil
+                                     :digit number2.digit)
    :dot-digit (make-pnumber-number-digit :number (pnumber-number-dot number1)
+                                         :squotep nil
                                          :digit number2.digit)
    :number-digit (make-pnumber-number-digit
                   :number (concatenate-pnumbers number1 number2.number)
+                  :squotep nil
                   :digit number2.digit)
    :number-nondigit (make-pnumber-number-nondigit
                      :number (concatenate-pnumbers number1 number2.number)
+                     :squotep nil
                      :nondigit number2.nondigit)
    :number-locase-e-sign (make-pnumber-number-locase-e-sign
                           :number (concatenate-pnumbers number1 number2.number)
@@ -228,9 +233,15 @@
           (char (char-fix (car rev-chars)))
           (number (concatenate-pnumber-ident-aux number (cdr rev-chars))))
        (cond ((str::letter/uscore-char-p char)
-              (make-pnumber-number-nondigit :number number :nondigit char))
+              (make-pnumber-number-nondigit
+               :number number
+               :squotep nil
+               :nondigit char))
              ((str::dec-digit-char-p char)
-              (make-pnumber-number-digit :number number :digit char))
+              (make-pnumber-number-digit
+               :number number
+               :squotep nil
+               :digit char))
              (t (prog2$
                  (raise "Internal error: character ~x0 in identifier." char)
                  (irr-pnumber)))))

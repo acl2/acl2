@@ -62,6 +62,7 @@
        ((when (< value 10)) (pnumber-digit (digit-to-char value))))
     (make-pnumber-number-digit
      :number (dec-const-to-pnumber (floor value 10))
+     :squotep nil
      :digit (digit-to-char (mod value 10))))
   :measure (pos-fix value)
   :hints (("Goal" :in-theory (enable pos-fix)))
@@ -93,6 +94,7 @@
           ((when (= leading-zeros 1)) (pnumber-digit #\0)))
        (make-pnumber-number-digit
         :number (oct-const-to-pnumber-loop-leading-zeros (1- leading-zeros))
+        :squotep nil
         :digit #\0))
      :measure (pos-fix leading-zeros)
      :hints (("Goal" :in-theory (enable pos-fix)))
@@ -105,6 +107,7 @@
      (b* (((when (zp value)) (pnumber-fix number)))
        (make-pnumber-number-digit
         :number (oct-const-to-pnumber-loop-value (floor value 8) number)
+        :squotep nil
         :digit (digit-to-char (mod value 8))))
      :measure (nfix value)
      :verify-guards :after-returns
@@ -128,8 +131,14 @@
        (zero+x
         (hprefix-case
          prefix
-         :locase-0x (make-pnumber-number-nondigit :number zero :nondigit #\x)
-         :upcase-0x (make-pnumber-number-nondigit :number zero :nondigit #\X))))
+         :locase-0x (make-pnumber-number-nondigit
+                     :number zero
+                     :squotep nil
+                     :nondigit #\x)
+         :upcase-0x (make-pnumber-number-nondigit
+                     :number zero
+                     :squotep nil
+                     :nondigit #\X))))
     (hex-const-to-pnumber-loop digits zero+x))
   :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p)))
 
@@ -143,9 +152,11 @@
           (number (if (dec-digit-char-p digit)
                       (make-pnumber-number-digit
                        :number number
+                       :squotep nil
                        :digit digit)
                     (make-pnumber-number-nondigit
                      :number number
+                     :squotep nil
                      :nondigit digit))))
        (hex-const-to-pnumber-loop (cdr digits) number))
      :guard-hints (("Goal" :in-theory (enable hex-digit-char-p
@@ -171,8 +182,14 @@
   :short "Add an unsigned suffix to a preprocessing number."
   (usuffix-case
    suffix
-   :locase-u (make-pnumber-number-nondigit :number number :nondigit #\u)
-   :upcase-u (make-pnumber-number-nondigit :number number :nondigit #\U))
+   :locase-u (make-pnumber-number-nondigit
+              :number number
+              :squotep nil
+              :nondigit #\u)
+   :upcase-u (make-pnumber-number-nondigit
+              :number number
+              :squotep nil
+              :nondigit #\U))
   :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -182,15 +199,27 @@
   :short "Add a length suffix to a preprocessing number."
   (lsuffix-case
    suffix
-   :locase-l (make-pnumber-number-nondigit :number number :nondigit #\l)
-   :upcase-l (make-pnumber-number-nondigit :number number :nondigit #\L)
+   :locase-l (make-pnumber-number-nondigit
+              :number number
+              :squotep nil
+              :nondigit #\l)
+   :upcase-l (make-pnumber-number-nondigit
+              :number number
+              :squotep nil
+              :nondigit #\L)
    :locase-ll (make-pnumber-number-nondigit
-               :number (make-pnumber-number-nondigit :number number
-                                                     :nondigit #\l)
+               :number (make-pnumber-number-nondigit
+                        :number number
+                        :squotep nil
+                        :nondigit #\l)
+               :squotep nil
                :nondigit #\l)
    :upcase-ll (make-pnumber-number-nondigit
-               :number (make-pnumber-number-nondigit :number number
-                                                     :nondigit #\L)
+               :number (make-pnumber-number-nondigit
+                        :number number
+                        :squotep nil
+                        :nondigit #\L)
+               :squotep nil
                :nondigit #\L))
   :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p))))
 
