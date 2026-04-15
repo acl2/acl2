@@ -110,7 +110,7 @@
 ; i.e. one more than the ones copied from the source array.
 ; Note that this is a precondition on the size of the destination array,
 ; not on the particular values.
-; While this precondition constains the destination array,
+; While this precondition constrains the destination array,
 ; it depends on the source array, whose values are passed as second parameter.
 (define dst-precond ((dst-array-vals c::value-listp)
                      (src-array-vals c::value-listp))
