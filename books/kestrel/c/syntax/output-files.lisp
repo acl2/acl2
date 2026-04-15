@@ -404,7 +404,7 @@
   (b* (((mv erp state)
         (output-files-process-inputs-and-gen-files nil args nil state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
-    (value '(value-triple :invisible))))
+    (acl2::value '(value-triple :invisible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

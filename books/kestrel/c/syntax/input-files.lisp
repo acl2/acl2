@@ -800,7 +800,7 @@
                                                    nil
                                                    state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
-    (value event)))
+    (acl2::value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -19,7 +19,7 @@
 
 ; for ASSERT!-STOBJ
 (make-event (er-progn (add-global-stobj 'ppstate state)
-                      (value '(value-triple nil)))
+                      (acl2::value '(value-triple nil)))
             :check-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -888,7 +888,7 @@
             nil))
        ((when erp)
         (mv erp nil state)))
-    (value
+    (acl2::value
       `(defconst ,const-name
          ',map))))
 
