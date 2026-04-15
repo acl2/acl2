@@ -32,7 +32,8 @@
                                    standardp
                                    type
                                    typep
-                                   unread-char))
+                                   unread-char
+                                   value))
               '(any
                 assert!-stobj
                 bool
