@@ -89,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-empty-scope ()
+(define empty-valid-scope ()
   :returns (scope valid-scopep)
   :short "Empty validator scope."
   :long
@@ -101,7 +101,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-init-table ((filepath filepathp)
+(define init-valid-table ((filepath filepathp)
                           &optional
                           (externals valid-externalsp)
                           ((completions type-completions-p) 'nil)
@@ -113,7 +113,7 @@
    (xdoc::p
     "This contains one empty scope (the initial file scope)."))
   (make-valid-table :filepath filepath
-                    :scopes (list (valid-empty-scope))
+                    :scopes (list (empty-valid-scope))
                     :externals externals
                     :completions completions
                     :next-uid next-uid))
@@ -135,7 +135,7 @@
    (xdoc::p
     "The newly pushed scope is always empty."))
   (b* ((scopes (valid-table->scopes table))
-       (new-scopes (cons (valid-empty-scope) scopes)))
+       (new-scopes (cons (empty-valid-scope) scopes)))
     (change-valid-table table :scopes new-scopes))
   ///
 
@@ -7404,7 +7404,7 @@
    (xdoc::p
     "If the C dialect does not have any extensions,
      the initial validation table is the one
-     returned by @(tsee valid-init-table).
+     returned by @(tsee init-valid-table).
      Otherwise, we add a number of objects and functions
      that we have encountered in practical code;
      we should eventually have a comprehensive list here.")
@@ -7430,7 +7430,7 @@
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-trans-unit) (irr-valid-table))
        (dialect (ienv->dialect ienv))
-       (table (valid-init-table filepath externals completions next-uid))
+       (table (init-valid-table filepath externals completions next-uid))
        (table (valid-add-ord-objfuns-file-scope
                (built-in-functions-for dialect)
                (make-type-function :ret (type-unknown)

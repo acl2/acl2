@@ -44,13 +44,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum pnumber
-  :short "Fixtype of preprocessing numbers [C17:6.4.8] [C17:A.1.9]."
+  :short "Fixtype of preprocessing numbers [C17:6.4.8] [C23:6.4.9]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is like an abstract syntax for preprocessing numbers,
      corresponding to the rule for @('pp-number') in the ABNF grammar.
-     We need to capture their structure, in order to do preprocessing."))
+     We need to capture their structure, in order to do preprocessing.")
+   (xdoc::p
+    "The only difference between the C17 and C23 grammar rules is that
+     the latter allows an optional single quote
+     between a preprocessing number and a digit or non-digit.
+     So C17 is a special case in which there is never such a quote.
+     Note that, in the ABNF grammar rules,
+     @('identifier-continue') in C23 is equivalent to
+     either a @('digit') or @('nondigit'),
+     and that @('identifier-nondigit') in C17 is equivalen to @('nodigit')."))
   (:digit ((digit character
                   :reqfix (if (dec-digit-char-p digit)
                               digit
@@ -62,12 +71,14 @@
                                 #\0)))
    :require (dec-digit-char-p digit))
   (:number-digit ((number pnumber)
+                  (squotep bool)
                   (digit character
                          :reqfix (if (dec-digit-char-p digit)
                                      digit
                                    #\0)))
    :require (dec-digit-char-p digit))
   (:number-nondigit ((number pnumber)
+                     (squotep bool)
                      (nondigit character
                                :reqfix (if (str::letter/uscore-char-p nondigit)
                                            nondigit

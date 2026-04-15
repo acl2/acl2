@@ -227,7 +227,13 @@
      We keep reading characters
      so long as we can ``extend'' the preprocessing number,
      according to the grammar rule.
-     Eventually we return the full preprocessing number and the full span."))
+     Eventually we return the full preprocessing number and the full span.")
+   (xdoc::p
+    "If we are in a C23 dialect,
+     we accept single quotes, according to the ABNF grammar.
+     We handle that via the @('squotep') flag the is carried through the loop:
+     it is @('t') iff a single quote was just read before the next character;
+     it is @('nil') otherwise."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-plexeme) (irr-span) ppstate)
        (digit (str::dec-digit-char-fix digit))
@@ -235,7 +241,7 @@
                             (pnumber-dot-digit digit)
                           (pnumber-digit digit)))
        ((erp final-pnumber last-pos ppstate)
-        (plex-pp-number-loop initial-pnumber first-pos ppstate)))
+        (plex-pp-number-loop initial-pnumber first-pos nil ppstate)))
     (retok (plexeme-number final-pnumber)
            (make-span :start first-pos :end last-pos)
            ppstate))
@@ -244,6 +250,7 @@
 
   ((define plex-pp-number-loop ((current-pnumber pnumberp)
                                 (current-pos positionp)
+                                (squotep booleanp)
                                 ppstate)
      :returns (mv erp
                   (final-pnumber pnumberp)
@@ -254,129 +261,241 @@
           ((reterr) (irr-pnumber) (irr-position) ppstate)
           ((erp char pos ppstate) (read-pchar ppstate)))
        (cond
-        ((not char) ; pp-number EOF
-         (retok (pnumber-fix current-pnumber)
-                (position-fix current-pos)
-                ppstate))
+        ((not char) ; pp-number ['] EOF
+         (cond
+          (squotep ; pp-number ' EOF
+           (reterr-msg :where pos
+                       :expected "a letter or digit or underscore"
+                       :found "end of file"))
+          (t ; pp-number EOF
+           (retok (pnumber-fix current-pnumber)
+                  (position-fix current-pos)
+                  ppstate))))
+        ((utf8-= char (char-code #\')) ; pp-number ['] '
+         (if (c::standard-case
+              (c::dialect->std (ienv->dialect (ppstate->ienv ppstate)))
+              :c23)
+             (cond (squotep ; pp-number ' '
+                    (reterr-msg :where pos
+                                :expected "a letter or digit or underscore"
+                                :found "a single quote ~
+                                        immediately following ~
+                                        a single quote"))
+                   (t ; pp-number '
+                    (plex-pp-number-loop current-pnumber pos t ppstate)))
+           (reterr-msg :where pos
+                       :expected "a letter or digit or underscore"
+                       :found "a single quote")))
         ((and (utf8-<= (char-code #\0) char)
-              (utf8-<= char (char-code #\9))) ; pp-number digit
+              (utf8-<= char (char-code #\9))) ; pp-number ['] digit
          (plex-pp-number-loop (make-pnumber-number-digit
                                :number current-pnumber
+                               :squotep squotep
                                :digit (code-char char))
                               pos
+                              nil
                               ppstate))
-        ((utf8-= char (char-code #\e)) ; pp-number e
+        ((utf8-= char (char-code #\e)) ; pp-number ['] e
          (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
            (cond
-            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number e +
-             (plex-pp-number-loop (make-pnumber-number-locase-e-sign
-                                   :number current-pnumber
-                                   :sign (sign-plus))
-                                  pos2
-                                  ppstate))
-            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number e -
-             (plex-pp-number-loop (make-pnumber-number-locase-e-sign
-                                   :number current-pnumber
-                                   :sign (sign-minus))
-                                  pos2
-                                  ppstate))
-            (t ; pp-number e other
-             (b* ((ppstate ; pp-number e
+            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number ['] e +
+             (cond
+              (squotep ; pp-number ' e +
+               (reterr-msg :where pos
+                           :expected "a letter or digit or underscore ~
+                                      or single quote"
+                           :found "a plus after an 'e' after a single quote"))
+              (t ; pp-number e +
+               (plex-pp-number-loop (make-pnumber-number-locase-e-sign
+                                     :number current-pnumber
+                                     :sign (sign-plus))
+                                    pos2
+                                    nil
+                                    ppstate))))
+            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number ['] e -
+             (cond
+              (squotep ; pp-number ' e -
+               (reterr-msg :where pos
+                           :expected "a letter or digit or underscore ~
+                                      or single quote"
+                           :found "a minus after an 'e' after a single quote"))
+              (t ; pp-number e -
+               (plex-pp-number-loop (make-pnumber-number-locase-e-sign
+                                     :number current-pnumber
+                                     :sign (sign-minus))
+                                    pos2
+                                    nil
+                                    ppstate))))
+            (t ; pp-number ['] e other
+             (b* ((ppstate ; pp-number ['] e
                    (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
+                                     :squotep squotep
                                      :nondigit #\e)
                                     pos
+                                    nil
                                     ppstate))))))
-        ((utf8-= char (char-code #\E)) ; pp-number E
+        ((utf8-= char (char-code #\E)) ; pp-number ['] E
          (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
            (cond
-            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number E +
-             (plex-pp-number-loop (make-pnumber-number-upcase-e-sign
-                                   :number current-pnumber
-                                   :sign (sign-plus))
-                                  pos2
-                                  ppstate))
-            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number E -
-             (plex-pp-number-loop (make-pnumber-number-upcase-e-sign
-                                   :number current-pnumber
-                                   :sign (sign-minus))
-                                  pos2
-                                  ppstate))
-            (t ; pp-number E other
-             (b* ((ppstate ; pp-number E
+            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number ['] E +
+             (cond
+              (squotep ; pp-number ' E +
+               (reterr-msg :where pos
+                           :expected "a letter or digit or underscore ~
+                                      or single quote"
+                           :found "a plus after an 'E' after a single quote"))
+              (t ; pp-number E +
+               (plex-pp-number-loop (make-pnumber-number-upcase-e-sign
+                                     :number current-pnumber
+                                     :sign (sign-plus))
+                                    pos2
+                                    nil
+                                    ppstate))))
+            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number ['] E -
+             (cond
+              (squotep ; pp-number ' E -
+               (reterr-msg :where pos
+                           :expected "a letter or digit or underscore ~
+                                      or single quote"
+                           :found "a minus after an 'E' after a single quote"))
+              (t ; pp-number E -
+               (plex-pp-number-loop (make-pnumber-number-upcase-e-sign
+                                     :number current-pnumber
+                                     :sign (sign-minus))
+                                    pos2
+                                    nil
+                                    ppstate))))
+            (t ; pp-number ['] E other
+             (b* ((ppstate ; pp-number ['] E
                    (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
+                                     :squotep squotep
                                      :nondigit #\E)
                                     pos
+                                    nil
                                     ppstate))))))
-        ((utf8-= char (char-code #\p)) ; pp-number p
+        ((utf8-= char (char-code #\p)) ; pp-number ['] p
          (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
            (cond
-            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number p +
-             (plex-pp-number-loop (make-pnumber-number-locase-p-sign
-                                   :number current-pnumber
-                                   :sign (sign-plus))
-                                  pos2
-                                  ppstate))
-            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number p -
-             (plex-pp-number-loop (make-pnumber-number-locase-p-sign
-                                   :number current-pnumber
-                                   :sign (sign-minus))
-                                  pos2
-                                  ppstate))
-            (t ; pp-number p other
-             (b* ((ppstate ; pp-number p
+            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number ['] p +
+             (cond
+              (squotep ; pp-number ' p +
+               (reterr-msg :where pos
+                           :expected "a letter or digit or underscore ~
+                                      or single quote"
+                           :found "a plus after a 'p' after a single quote"))
+              (t ; pp-number p +
+               (plex-pp-number-loop (make-pnumber-number-locase-p-sign
+                                     :number current-pnumber
+                                     :sign (sign-plus))
+                                    pos2
+                                    nil
+                                    ppstate))))
+            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number ['] p -
+             (cond
+              (squotep ; pp-number ' p -
+               (reterr-msg :where pos
+                           :expected "a letter or digit or underscore ~
+                                      or single quote"
+                           :found "a minus after a 'p' after a single quote"))
+              (t ; pp-number p -
+               (plex-pp-number-loop (make-pnumber-number-locase-p-sign
+                                     :number current-pnumber
+                                     :sign (sign-minus))
+                                    pos2
+                                    nil
+                                    ppstate))))
+            (t ; pp-number ['] p other
+             (b* ((ppstate ; pp-number ['] p
                    (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
+                                     :squotep squotep
                                      :nondigit #\p)
                                     pos
+                                    nil
                                     ppstate))))))
-        ((utf8-= char (char-code #\P)) ; pp-number P
+        ((utf8-= char (char-code #\P)) ; pp-number ['] P
          (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
            (cond
-            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number P +
-             (plex-pp-number-loop (make-pnumber-number-upcase-p-sign
-                                   :number current-pnumber
-                                   :sign (sign-plus))
-                                  pos2
-                                  ppstate))
-            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number P -
-             (plex-pp-number-loop (make-pnumber-number-upcase-p-sign
-                                   :number current-pnumber
-                                   :sign (sign-minus))
-                                  pos2
-                                  ppstate))
-            (t ; pp-number P other
-             (b* ((ppstate ; pp-number P
+            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number ['] P +
+             (cond
+              (squotep ; pp-number ' P +
+               (reterr-msg :where pos
+                           :expected "a letter or digit or underscore ~
+                                      or single quote"
+                           :found "a plus after a 'P' after a single quote"))
+              (t ; pp-number P +
+               (plex-pp-number-loop (make-pnumber-number-upcase-p-sign
+                                     :number current-pnumber
+                                     :sign (sign-plus))
+                                    pos2
+                                    nil
+                                    ppstate))))
+            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number ['] P -
+             (cond
+              (squotep ; pp-number ' P -
+               (reterr-msg :where pos
+                           :expected "a letter or digit or underscore ~
+                                      or single quote"
+                           :found "a minus after a 'P' after a single quote"))
+              (t ; pp-number P -
+               (plex-pp-number-loop (make-pnumber-number-upcase-p-sign
+                                     :number current-pnumber
+                                     :sign (sign-minus))
+                                    pos2
+                                    nil
+                                    ppstate))))
+            (t ; pp-number ['] P other
+             (b* ((ppstate ; pp-number ['] P
                    (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
+                                     :squotep squotep
                                      :nondigit #\P)
                                     pos
+                                    nil
                                     ppstate))))))
         ((or (and (utf8-<= (char-code #\A) char)
                   (utf8-<= char (char-code #\Z)))
              (and (utf8-<= (char-code #\a) char)
                   (utf8-<= char (char-code #\z)))
-             (utf8-= char (char-code #\_))) ; pp-number identifier-nondigit
+             (utf8-= char (char-code #\_))) ; pp-number ['] nondigit
          (plex-pp-number-loop (make-pnumber-number-nondigit
                                :number current-pnumber
+                               :squotep squotep
                                :nondigit (code-char char))
                               pos
+                              nil
                               ppstate))
-        ((utf8-= char (char-code #\.)) ; pp-number .
-         (plex-pp-number-loop (make-pnumber-number-dot
-                               :number current-pnumber)
-                              pos ppstate))
-        (t ; pp-number other
-         (b* ((ppstate ; pp-number
+        ((utf8-= char (char-code #\.)) ; pp-number ['] .
+         (cond
+          (squotep ; pp-number ' .
+           (reterr-msg :where pos
+                       :expected "a letter or digit or underscore"
+                       :found "a dot after a single quote"))
+          (t ; pp-number .
+           (plex-pp-number-loop (make-pnumber-number-dot
+                                 :number current-pnumber)
+                                pos
+                                nil
+                                ppstate))))
+        (t ; pp-number ['] other
+         (b* ((ppstate ; pp-number [']
                (if char (unread-pchar ppstate) ppstate)))
-           (retok (pnumber-fix current-pnumber)
-                  (position-fix current-pos)
-                  ppstate)))))
+           (cond
+            (squotep ; pp-number '
+             (reterr-msg :where pos
+                         :expected "a letter or digit or underscore"
+                         :found (char-to-msg char)))
+            (t ; pp-number
+             (retok (pnumber-fix current-pnumber)
+                    (position-fix current-pos)
+                    ppstate)))))))
+     :no-function nil
      :measure (ppstate->size ppstate)
      :guard-hints (("Goal" :in-theory (enable dec-digit-char-p
                                               str::letter/uscore-char-p)))
