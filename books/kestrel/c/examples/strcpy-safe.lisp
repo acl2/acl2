@@ -89,7 +89,7 @@
     (<= (len new-vals) (len vals))
     :rule-classes :linear))
 
-; These are the values in the source arrays copied to the destination array.
+; These are the values in the source array copied to the destination array.
 ; First, we truncate the source array values to buffersize - 1,
 ; and then we take all the values until we reach a 0 or the end.
 (define src-values-to-copy ((src-array-vals c::value-listp))
