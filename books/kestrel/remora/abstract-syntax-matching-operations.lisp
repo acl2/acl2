@@ -80,3 +80,14 @@
       (make-typelist+type :types (type-fun->in type)
                           :type (type-fun->out type))
     (reserr nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-match-forall ((type typep))
+  :returns (vars+type kindedvarlist+type-resultp)
+  :short "Check if a type is a universal type,
+          returning its kinded variable list and body type if successful."
+  (if (type-case type :forall)
+      (make-kindedvarlist+type :vars (type-forall->vars type)
+                               :type (type-forall->type type))
+    (reserr nil)))
