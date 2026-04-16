@@ -141,3 +141,21 @@
   :ok typelist+type
   :pred typelist+type-resultp
   :prepwork ((local (in-theory (enable strip-cars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod kindedvarlist+type
+  :short "Fixtype of pairs consisting of a list of kinded variables and a type."
+  ((vars kinded-var-list)
+   (type type))
+  :pred kindedvarlist+type-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult kindedvarlist+type-result
+  :short "Fixtype of
+          (i) pairs consisting of a list of kinded variables and a type
+          and (ii) errors."
+  :ok kindedvarlist+type
+  :pred kindedvarlist+type-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
