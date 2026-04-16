@@ -247,7 +247,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "DAA" (OP :OP #x27 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-DAA)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x27 :MODE :O64)
