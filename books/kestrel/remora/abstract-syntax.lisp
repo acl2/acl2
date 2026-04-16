@@ -15,6 +15,7 @@
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "abstract-syntax-structural-operations")
 (include-book "abstract-syntax-matching-operations")
+(include-book "abstract-syntax-substitution-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,7 +30,8 @@
      accompanied by some readable constructors for ASTs,
      some fixtypes derived from the AST fixtypes,
      some structural operations on ASTs,
-     and some operations to match ASTs to patterns.")
+     some operations to match ASTs to patterns,
+     and some operations to perform substitutions in ASTs.")
    (xdoc::p
     "We may generalize this abstract syntax
      to encompass untyped and type-erased Remora,
@@ -39,4 +41,5 @@
                     abstract-syntax-constructors
                     abstract-syntax-derived-fixtypes
                     abstract-syntax-structural-operations
-                    abstract-syntax-matching-operations))
+                    abstract-syntax-matching-operations
+                    abstract-syntax-substitution-operationss))
