@@ -247,7 +247,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "DAA" (OP :OP #x27 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-DAA)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x27 :MODE :O64)
@@ -283,7 +284,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "DAS" (OP :OP #x2F :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-DAS)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x2F :MODE :O64)
@@ -1719,7 +1721,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "AAM" (OP :OP #xD4 :MODE :I64)
           (ARG :OP1 '(I B))
-          'NIL
+          '(X86-AAM)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #xD4 :MODE :O64)
@@ -1728,7 +1730,7 @@
      '((:UD T)))
     (INST "AAD" (OP :OP #xD5 :MODE :I64)
           (ARG :OP1 '(I B))
-          'NIL
+          '(X86-AAD)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #xD5 :MODE :O64)

@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "grammar")
 (include-book "abstract-syntax")
 (include-book "static-semantics")
 
@@ -64,5 +65,6 @@
    (xdoc::p
     "This ACL2 library is work in progress towards building
      formalizations and tools for Remora."))
-  :order-subtopics (abstract-syntax
+  :order-subtopics (grammar
+                    abstract-syntax
                     static-semantics))
