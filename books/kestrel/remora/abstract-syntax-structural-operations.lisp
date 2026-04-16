@@ -84,6 +84,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection kinded-var-list->kind ((x kinded-var-listp))
+  :returns (kinds kind-listp)
+  :short "Lift @(tsee kinded-var->kind) to lists."
+  (kinded-var->kind x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection typed-var-list->var ((x typed-var-listp))
   :returns (strings string-listp)
   :short "Lift @(tsee typed-var->var) to lists."
