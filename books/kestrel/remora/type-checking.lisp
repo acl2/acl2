@@ -72,30 +72,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap string-sort-map
-  :short "Fixtype of maps from strings to sorts."
-  :key-type string
-  :val-type sort
-  :pred string-sort-mapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defomap string-kind-map
-  :short "Fixtype of maps from strings to kinds."
-  :key-type string
-  :val-type kind
-  :pred string-kind-mapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defomap string-type-map
-  :short "Fixtype of maps from strings to types."
-  :key-type string
-  :val-type type
-  :pred string-type-mapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define sorted-var-list-to-map ((svars sorted-var-listp))
   :returns (sortenv string-sort-mapp)
   :short "Turn a list of sorted variables into a map."

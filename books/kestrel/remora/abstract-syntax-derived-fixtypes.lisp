@@ -159,3 +159,27 @@
   :ok kindedvarlist+type
   :pred kindedvarlist+type-resultp
   :prepwork ((local (in-theory (enable strip-cars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-sort-map
+  :short "Fixtype of maps from strings to sorts."
+  :key-type string
+  :val-type sort
+  :pred string-sort-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-kind-map
+  :short "Fixtype of maps from strings to kinds."
+  :key-type string
+  :val-type kind
+  :pred string-kind-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-type-map
+  :short "Fixtype of maps from strings to types."
+  :key-type string
+  :val-type type
+  :pred string-type-mapp)
