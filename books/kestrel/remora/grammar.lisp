@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "projects/abnf/grammar-definer/defgrammar" :dir :system)
+(include-book "projects/abnf/grammar-definer/deftreeops" :dir :system)
 (include-book "projects/abnf/operations/in-terminal-set" :dir :system)
 (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)
 
@@ -81,3 +82,7 @@
              set::list-in-of-union-2-right)
     :disable ((:e acl2::integers-from-to)
               (:e set::union))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *grammar* :prefix cst)
