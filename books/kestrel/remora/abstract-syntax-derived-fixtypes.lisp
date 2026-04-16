@@ -178,6 +178,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defomap string-index-map
+  :short "Fixtype of maps from strings to indices."
+  :key-type string
+  :val-type index
+  :pred string-index-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap string-type-map
   :short "Fixtype of maps from strings to types."
   :key-type string
