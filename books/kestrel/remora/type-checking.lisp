@@ -58,107 +58,101 @@
      or to provide informative error messages.
      It is designed for simplicity.")
    (xdoc::p
+    "The papers and dissertation denote
+     index environments with @($\\Theta$),
+     type environments with @($\\Delta$), and
+     term environments with @($\\Gamma$).
+     Our code uses @('indenv'), @('typenv'), and @('termenv'),
+     which are maps from strings (for variable names)
+     to the associated sorts, kinds, and types.
+     We should rename these to @('sortenv'), @('kindenv'), and @('typenv').")
+   (xdoc::p
     "This is work in progress."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap index-senv
-  :short "Fixtype of static environments for indices."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These associate sorts to (index) variables.")
-   (xdoc::p
-    "They are denoted as @($\\Theta$) in the papers and dissertation."))
+(fty::defomap string-sort-map
+  :short "Fixtype of maps from strings to sorts."
   :key-type string
   :val-type sort
-  :pred index-senvp)
+  :pred string-sort-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap type-senv
-  :short "Fixtype of static environments for types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These associate kinds to (type) variables.")
-   (xdoc::p
-    "They are denoted as @($\\Delta$) in the papers and dissertation."))
+(fty::defomap string-kind-map
+  :short "Fixtype of maps from strings to kinds."
   :key-type string
   :val-type kind
-  :pred type-senvp)
+  :pred string-kind-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap term-senv
-  :short "Fixtype of static environments for terms."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These associate types to (term) variables.")
-   (xdoc::p
-    "They are denoted as @($\\Gamma$) in the papers and dissertation."))
+(fty::defomap string-type-map
+  :short "Fixtype of maps from strings to types."
   :key-type string
   :val-type type
-  :pred term-senvp)
+  :pred string-type-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sorted-var-list-to-index-senv ((svars sorted-var-listp))
-  :returns (indenv index-senvp)
-  :short "Turn a list of sorted variables into a static index environment."
+(define sorted-var-list-to-map ((svars sorted-var-listp))
+  :returns (indenv string-sort-mapp)
+  :short "Turn a list of sorted variables into a map."
   :long
   (xdoc::topstring
    (xdoc::p
     "We go through the variables,
-     and put them into the environment, with the associated sorts.
+     and put them into the map, with the associated sorts.
      If there are duplicate variables, the leftmost ones prevail.
-     When we call this function on the formals of a lambda abstraction,
-     we check that there are no duplicates."))
+     We should always call this function on
+     lists of sorte varaibles without duplilcate names;
+     perhaps we could have and verify a guard for that."))
   (b* (((when (endp svars)) nil)
        ((sorted-var svar) (car svars))
-       (indenv (sorted-var-list-to-index-senv (cdr svars))))
-    (omap::update svar.var svar.sort indenv))
+       (map (sorted-var-list-to-map (cdr svars))))
+    (omap::update svar.var svar.sort map))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define kinded-var-list-to-type-senv ((kvars kinded-var-listp))
-  :returns (typenv type-senvp)
-  :short "Turn a list of kinded variables into a static type environment."
+(define kinded-var-list-to-map ((kvars kinded-var-listp))
+  :returns (map string-kind-mapp)
+  :short "Turn a list of kinded variables into a map."
   :long
   (xdoc::topstring
    (xdoc::p
     "We go through the variables,
-     and put them into the environment, with the associated kinds.
+     and put them into the map, with the associated kinds.
      If there are duplicate variables, the leftmost ones prevail.
-     When we call this function on the formals of a lambda abstraction,
-     we check that there are no duplicates."))
+     We should always call this function on
+     lists of sorte varaibles without duplilcate names;
+     perhaps we could have and verify a guard for that."))
   (b* (((when (endp kvars)) nil)
        ((kinded-var kvar) (car kvars))
-       (typenv (kinded-var-list-to-type-senv (cdr kvars))))
-    (omap::update kvar.var kvar.kind typenv))
+       (map (kinded-var-list-to-map (cdr kvars))))
+    (omap::update kvar.var kvar.kind map))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define typed-var-list-to-term-senv ((tvars typed-var-listp))
-  :returns (termenv term-senvp)
-  :short "Turn a list of typed variables into a static term environment."
+(define typed-var-list-to-map ((tvars typed-var-listp))
+  :returns (map string-type-mapp)
+  :short "Turn a list of typed variables into a map."
   :long
   (xdoc::topstring
    (xdoc::p
     "We go through the variables,
-     and put them into the environment, with the associated types.
+     and put them into the map, with the associated types.
      If there are duplicate variables, the leftmost ones prevail.
-     When we call this function on the formals of a lambda abstraction,
-     we check that there are no duplicates."))
+     We should always call this function on
+     lists of sorte varaibles without duplilcate names;
+     perhaps we could have and verify a guard for that."))
   (b* (((when (endp tvars)) nil)
        ((typed-var tvar) (car tvars))
-       (termenv (typed-var-list-to-term-senv (cdr tvars))))
-    (omap::update tvar.var tvar.type termenv))
+       (map (typed-var-list-to-map (cdr tvars))))
+    (omap::update tvar.var tvar.type map))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -166,7 +160,7 @@
 (defines check-indices
   :short "Check indices and lists of indices."
 
-  (define check-index ((index indexp) (indenv index-senvp))
+  (define check-index ((index indexp) (indenv string-sort-mapp))
     :returns (sort sort-resultp)
     :parents (type-checking check-indices)
     :short "Check an index, returning its sort if successful."
@@ -185,7 +179,7 @@
      (xdoc::p
       "A concatenation is a shape,
        provided that its indices are all shapes."))
-    (b* ((indenv (index-senv-fix indenv)))
+    (b* ((indenv (string-sort-map-fix indenv)))
       (index-case
        index
        :var (b* ((name+sort (omap::assoc index.name indenv))
@@ -203,7 +197,7 @@
                  (sort-shape))))
     :measure (index-count index))
 
-  (define check-index-list ((indices index-listp) (indenv index-senvp))
+  (define check-index-list ((indices index-listp) (indenv string-sort-mapp))
     :returns (sorts sort-list-resultp)
     :parents (type-checking check-indices)
     :short "Check a list of indices, returning their sorts if successful."
@@ -228,7 +222,9 @@
 (defines check-types
   :short "Check types and lists of types."
 
-  (define check-type ((type typep) (indenv index-senvp) (typenv type-senvp))
+  (define check-type ((type typep)
+                      (indenv string-sort-mapp)
+                      (typenv string-kind-mapp))
     :returns (kind kind-resultp)
     :parents (type-checking check-types)
     :short "Check a type, returning its kind if successful."
@@ -263,8 +259,8 @@
        Then we check the body of the product or sum type,
        ensuring that it has the array kind.
        The product or sum type has the atom kind."))
-    (b* ((indenv (index-senv-fix indenv))
-         (typenv (type-senv-fix typenv)))
+    (b* ((indenv (string-sort-map-fix indenv))
+         (typenv (string-kind-map-fix typenv)))
       (type-case
        type
        :var (b* ((name+kind (omap::assoc type.name typenv))
@@ -283,21 +279,21 @@
               (kind-atom))
        :forall (b* ((vars (kinded-var-list->var type.vars))
                     ((unless (no-duplicatesp-equal vars)) (reserr nil))
-                    (typenv-addition (kinded-var-list-to-type-senv type.vars))
+                    (typenv-addition (kinded-var-list-to-map type.vars))
                     (typenv (omap::update* typenv-addition typenv))
                     ((ok kind) (check-type type.type indenv typenv))
                     ((unless (kind-case kind :array)) (reserr nil)))
                  (kind-atom))
        :pi (b* ((vars (sorted-var-list->var type.vars))
                 ((unless (no-duplicatesp-equal vars)) (reserr nil))
-                (indenv-addition (sorted-var-list-to-index-senv type.vars))
+                (indenv-addition (sorted-var-list-to-map type.vars))
                 (indenv (omap::update* indenv-addition indenv))
                 ((ok kind) (check-type type.type indenv typenv))
                 ((unless (kind-case kind :array)) (reserr nil)))
              (kind-atom))
        :sigma (b* ((vars (sorted-var-list->var type.vars))
                    ((unless (no-duplicatesp-equal vars)) (reserr nil))
-                   (indenv-addition (sorted-var-list-to-index-senv type.vars))
+                   (indenv-addition (sorted-var-list-to-map type.vars))
                    (indenv (omap::update* indenv-addition indenv))
                    ((ok kind) (check-type type.type indenv typenv))
                    ((unless (kind-case kind :array)) (reserr nil)))
@@ -305,8 +301,8 @@
     :measure (type-count type))
 
   (define check-type-list ((types type-listp)
-                           (indenv index-senvp)
-                           (typenv type-senvp))
+                           (indenv string-sort-mapp)
+                           (typenv string-kind-mapp))
     :returns (kinds kind-list-resultp)
     :parents (type-checking check-types)
     :short "Check a list of types, returning their kinds if successful."
@@ -606,9 +602,9 @@
      but we should formally prove all of this."))
 
   (define check-expr ((expr exprp)
-                      (indenv index-senvp)
-                      (typenv type-senvp)
-                      (termenv term-senvp))
+                      (indenv string-sort-mapp)
+                      (typenv string-kind-mapp)
+                      (termenv string-type-mapp))
     :returns (type type-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check an expression, returning its type if successful."
@@ -693,7 +689,7 @@
     (expr-case
      expr
      :var
-     (b* ((name+type (omap::assoc expr.name (term-senv-fix termenv)))
+     (b* ((name+type (omap::assoc expr.name (string-type-map-fix termenv)))
           ((unless name+type) (reserr nil)))
        (cdr name+type))
      :array
@@ -789,9 +785,9 @@
     :measure (expr-count expr))
 
   (define check-expr-list ((exprs expr-listp)
-                           (indenv index-senvp)
-                           (typenv type-senvp)
-                           (termenv term-senvp))
+                           (indenv string-sort-mapp)
+                           (typenv string-kind-mapp)
+                           (termenv string-type-mapp))
     :returns (types type-list-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check a list of expressions, returning their types if successful."
@@ -824,9 +820,9 @@
       :hints (("Goal" :induct (len exprs) :in-theory (enable len)))))
 
   (define check-atom ((atom atomp)
-                      (indenv index-senvp)
-                      (typenv type-senvp)
-                      (termenv term-senvp))
+                      (indenv string-sort-mapp)
+                      (typenv string-kind-mapp)
+                      (termenv string-type-mapp))
     :returns (type type-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check an atom, returning its type if successful."
@@ -848,9 +844,9 @@
     :measure (atom-count atom))
 
   (define check-atom-list ((atoms atom-listp)
-                           (indenv index-senvp)
-                           (typenv type-senvp)
-                           (termenv term-senvp))
+                           (indenv string-sort-mapp)
+                           (typenv string-kind-mapp)
+                           (termenv string-type-mapp))
     :returns (types type-list-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check a list of atoms, returning their types if successful."
