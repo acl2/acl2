@@ -138,7 +138,7 @@
           and that must be distinct from all the ones
           introduced by other instances of the @(':let') command in the proof.")
         (xdoc::li
-         "@('<term>') is an ACL2 term, to which @('<var') is bound.
+         "@('<term>') is an ACL2 term, to which @('<var>') is bound.
           This binding is local to the proof,
           and can make the proof steps more concise and readable.
           See below for more details on the generated events.")))
@@ -153,7 +153,7 @@
         "where:")
        (xdoc::ul
         (xdoc::li
-         "@('<name') is a keyword that names the fact proved by this command.")
+         "@('<id>') is a keyword that names the fact proved by this command.")
         (xdoc::li
          "@('<fact>') is a formula that is the fact proved by this command.
           It must be provable by ACL2
@@ -166,7 +166,7 @@
           If there are no names, the whole  @(':from (...)') may be omitted.")
         (xdoc::li
          "@('<hints>') are regular ACL2 hints,
-          used to prove @('<fact>') from the names facts.
+          used to prove @('<fact>') from the named facts.
           This may be omitted, just like in @(tsee defthm).
           In addition, any of the @(tsee defrule) options may be used.")))
       (xdoc::li
