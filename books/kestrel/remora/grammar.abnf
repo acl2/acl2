@@ -1,0 +1,403 @@
+; =========================================================================
+; ABNF Grammar for the Remora Programming Language
+; (remora-lang/remora -- Haskell implementation)
+;
+; Derived from src/Parser.hs, src/Syntax.hs, src/Shape.hs,
+; and docs/language.rst
+;
+; The input is assumed to be a sequence of valid Unicode characters
+; not including surrogates, as represented by the natural numbers
+; in ( %x00-D7FF / %xE000-10FFFF ).
+; The process of decoding into these code point integers is outside the
+; scope of this grammar.
+;
+; =========================================================================
+
+; -------------------------------------------------------------------------
+; Top-level: a program is a single expression
+; -------------------------------------------------------------------------
+
+program         = ws exp ws
+
+; -------------------------------------------------------------------------
+; Expressions
+; -------------------------------------------------------------------------
+
+exp             = atom               ; atom in expression position
+                                     ; (desugars to Array [] [atom])
+                / bracket-frame      ; [e1 e2 ... en] frame sugar
+                / identifier         ; variable reference
+                / string-lit         ; "..." string literal
+                / paren-exp
+
+bracket-frame   = "[" ws exp *( ws exp ) ws "]"
+                  ; desugars to (frame [n] e1 ... en)
+                  ; nested frames are flattened
+
+string-lit      = DQUOTE *char-literal DQUOTE
+                  ; desugars to (array [n] c1 ... cn) with char codes
+
+paren-exp       = "(" ws paren-exp-body ws ")"
+
+paren-exp-body  = array-exp
+                / frame-exp
+                / tapp-exp
+                / iapp-exp
+                / unbox-exp
+                / let-exp
+                / at-app-exp         ; @f sugar
+                / app-exp            ; must be last (generic application)
+
+array-exp       = "array" ws shape-lit ws 1*( ws atom )
+
+frame-exp       = "frame" ws shape-lit ws 1*( ws exp )
+
+app-exp         = exp *( ws exp )
+                  ; (f e1 ... en): first exp is the function
+
+tapp-exp        = "t-app" ws exp *( ws type-exp )
+
+iapp-exp        = "i-app" ws exp *( ws extent )
+
+unbox-exp       = "unbox" ws "(" ws *( extent-param ws ) identifier ws exp ws ")" ws exp
+
+let-exp         = "let" ws "(" ws *( ws bind ) ws ")" ws exp
+
+at-app-exp      = "@" ws exp ws type-args ws idx-args *( ws exp )
+
+type-args       = "(" ws *( ws type-exp ) ws ")"
+                / "_"
+
+idx-args        = "(" ws *( ws extent ) ws ")"
+                / "_"
+
+; -------------------------------------------------------------------------
+; Atoms (scalar-level values)
+; -------------------------------------------------------------------------
+
+atom            = base-val
+                / "(" ws atom-body ws ")"
+
+atom-body       = lambda
+                / type-lambda
+                / index-lambda
+                / box-expr
+
+lambda          = ( "fn" / %x03BB ) ws            ; fn or <lambda>
+                  "(" ws *( ws pat ) ws ")" ws
+                  exp
+
+type-lambda     = ( "t-fn" / ( "t" %x03BB ) ) ws  ; t-fn or t<lambda>
+                  "(" ws *( ws type-param ) ws ")" ws
+                  exp
+
+index-lambda    = ( "i-fn" / ( "i" %x03BB ) ) ws  ; i-fn or i<lambda>
+                  "(" ws *( ws extent-param ) ws ")" ws
+                  exp
+
+box-expr        = "box" ws "(" ws *( ws extent ) ws ")" ws exp ws type-exp
+
+; -------------------------------------------------------------------------
+; Patterns (used in lambda parameters)
+; -------------------------------------------------------------------------
+
+pat             = "(" ws identifier ws type-exp ws ")"
+
+; -------------------------------------------------------------------------
+; Bindings (in let expressions)
+; -------------------------------------------------------------------------
+
+bind            = "(" ws bind-body ws ")"
+
+bind-body       = val-bind
+                / fun-bind
+                / tfun-bind
+                / ifun-bind
+                / type-bind
+                / extent-bind
+                / at-fun-bind
+
+val-bind        = "val" ws identifier ws exp
+                / "val" ws "(" ws identifier ws ":" ws type-exp ws ")" ws exp
+
+fun-bind        = "fun" ws "(" ws identifier *( ws pat ) [ ws ":" ws type-exp ] ws ")" ws exp
+
+tfun-bind       = "t-fun" ws "(" ws identifier ws
+                  "(" ws *( ws type-param ) ws ")"
+                  [ ws ":" ws type-exp ] ws ")" ws exp
+
+ifun-bind       = "i-fun" ws "(" ws identifier ws
+                  "(" ws *( ws extent-param ) ws ")"
+                  [ ws ":" ws type-exp ] ws ")" ws exp
+
+type-bind       = "type" ws type-param ws type-exp
+
+extent-bind     = "extent" ws extent-param ws extent
+
+at-fun-bind     = "fun" ws "(" ws "@" ws identifier ws
+                  type-params ws idx-params *( ws pat )
+                  ws ":" ws type-exp ws ")" ws exp
+
+type-params     = "(" ws *( ws type-param ) ws ")"
+                / "_"
+
+idx-params      = "(" ws *( ws extent-param ) ws ")"
+                / "_"
+
+; -------------------------------------------------------------------------
+; Types (source-level type expressions)
+; -------------------------------------------------------------------------
+
+type-exp        = atom-type-var      ; &name
+                / array-type-var     ; *name
+                / base-type          ; Int, Bool, Float
+                / bracket-type       ; [T d1 d2 ...] sugar
+                / "(" ws type-exp-paren ws ")"
+
+atom-type-var   = "&" identifier
+array-type-var  = "*" identifier
+
+base-type       = "Bool" / "Int" / "Float"
+
+bracket-type    = "[" ws type-exp *( ws extent ) ws "]"
+                  ; sugar for (A type shape)
+
+type-exp-paren  = array-type
+                / arrow-type
+                / forall-type
+                / pi-type
+                / sigma-type
+
+array-type      = "A" ws type-exp ws shape
+
+arrow-type      = ( "->" / %x2192 ) ws       ; -> or <arrow>
+                  "(" ws *( ws type-exp ) ws ")" ws type-exp
+
+forall-type     = ( "Forall" / %x2200 ) ws   ; Forall or <forall>
+                  "(" ws *( ws type-param ) ws ")" ws type-exp
+
+pi-type         = ( "Pi" / %x041F ) ws        ; Pi or <Cyrillic Pe>
+                  "(" ws *( ws extent-param ) ws ")" ws type-exp
+
+sigma-type      = ( "Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
+                  "(" ws *( ws extent-param ) ws ")" ws type-exp
+
+; -------------------------------------------------------------------------
+; Type parameters
+; -------------------------------------------------------------------------
+
+type-param      = "&" identifier     ; atom type parameter
+                / "*" identifier     ; array type parameter
+
+; -------------------------------------------------------------------------
+; Dimensions, Shapes, Extents
+; -------------------------------------------------------------------------
+
+dim             = "$" identifier     ; dimension variable
+                / decimal            ; numeric dimension
+                / "(" ws dim-arith ws ")"
+
+dim-arith       = "+" *( ws dim )    ; addition
+                / "*" *( ws dim )    ; multiplication
+                / "-" *( ws dim )    ; subtraction
+
+shape           = "@" identifier     ; shape variable
+                / dim                ; a single dimension as a shape
+                / "(" ws shape-paren ws ")"
+                / "[" ws *( ws extent ) ws "]"   ; shape splice sugar
+
+shape-paren     = "dims" *( ws dim )             ; (dims d1 d2 ...)
+                / "++" *( ws shape )             ; (++ s1 s2 ...)
+
+shape-lit       = "[" ws *( ws decimal ) ws "]"
+                  ; concrete shape literal e.g. [2 3]
+
+extent          = dim                ; a dimension
+                / shape              ; a shape
+
+extent-param    = "$" identifier     ; dimension parameter
+                / "@" identifier     ; shape parameter
+
+; -------------------------------------------------------------------------
+; Base values (literals)
+; -------------------------------------------------------------------------
+
+base-val        = bool-val / num-val
+
+bool-val        = "#t" / "#f"
+
+num-val         = [ "+" / "-" ] ( float-lit / decimal )
+                  ; float-lit must be tried before decimal
+
+; -------------------------------------------------------------------------
+; Identifiers
+; -------------------------------------------------------------------------
+;
+; An identifier is a sequence of non-disallowed characters whose first
+; character is also not a digit. The result must not be a keyword.
+;
+; Disallowed characters are: whitespace and ( ) [ ] { } " , ' ` ; # | \ @
+;
+; The allowed ASCII ranges below are the complement of those disallowed
+; characters within the printable ASCII range (%x21-%x7E).
+;
+; Keywords (reserved, cannot be used as identifiers):
+;   array, frame, t-app, i-app, unbox, box, dims,
+;   fn, <lambda> (code point #x3bb (GREEK SMALL LETTER LAMDA)),
+;   t-fn, t<lambda>,
+;   i-fn, i<lambda>,
+;   A, ->, <arrow> (code point #x2192 (RIGHTWARDS ARROW)),
+;   Forall, <forall> (code point #x2200 (FOR ALL)),
+;   Pi, <Cyrillic P> (code point #x41f (CYRILLIC CAPITAL LETTER PE)),
+;   Sigma, <sigma> (code point #x3a3 (GREEK CAPITAL LETTER SIGMA)),
+;   let, type, extent, fun, t-fun, i-fun, val
+
+identifier      = id-start *id-continue
+                  ; must not match a keyword
+
+id-start        = %x00-08      ; NUL and C0 controls (non-whitespace)
+                / %x0E-1F      ; C0 controls (non-whitespace)
+                / %x21         ; !
+                / %x24-26      ; $ % &
+                / %x2A-2B      ; * +
+                / %x2D-2F      ; - . /
+                / %x3A         ; :
+                / %x3C-3F      ; < = > ?
+                / %x41-5A      ; A-Z
+                / %x5E-5F      ; ^ _
+                / %x61-7A      ; a-z
+                / %x7E-7F      ; ~ DEL
+                / non-ascii
+
+id-continue     = %x00-08      ; NUL and C0 controls (non-whitespace)
+                / %x0E-1F      ; C0 controls (non-whitespace)
+                / %x21         ; !
+                / %x24-26      ; $ % &
+                / %x2A-2B      ; * +
+                / %x2D-3A      ; - . / 0-9 :
+                / %x3C-3F      ; < = > ?
+                / %x41-5A      ; A-Z
+                / %x5E-5F      ; ^ _
+                / %x61-7A      ; a-z
+                / %x7E-7F      ; ~ DEL
+                / non-ascii
+
+; Non-ASCII characters that are not Unicode whitespace and not
+; surrogates.  Covers BMP (%x80-FFFF) and supplementary planes
+; (%x10000-10FFFF) with holes punched for every code point
+; where Haskell's Data.Char.isSpace returns True:
+;   %xA0           NO-BREAK SPACE
+;   %x1680         OGHAM SPACE MARK
+;   %x2000-200A    EN QUAD through HAIR SPACE
+;   %x2028         LINE SEPARATOR
+;   %x2029         PARAGRAPH SEPARATOR
+;   %x202F         NARROW NO-BREAK SPACE
+;   %x205F         MEDIUM MATHEMATICAL SPACE
+;   %x3000         IDEOGRAPHIC SPACE
+; Note, the Private Use Area (%xE000-F8FF) and unassigned ranges are
+; accepted by the parser.
+
+non-ascii       = %x80-9F
+                / %xA1-167F
+                / %x1681-1FFF
+                / %x200B-2027
+                / %x202A-202E
+                / %x2030-205E
+                / %x2060-2FFF
+                / %x3001-D7FF
+                / %xE000-10FFFF
+
+; -------------------------------------------------------------------------
+; Lexical primitives
+; -------------------------------------------------------------------------
+
+decimal         = 1*DIGIT
+
+float-lit       = 1*DIGIT "." 1*DIGIT [ exponent ]
+                / 1*DIGIT exponent
+
+exponent        = ( "e" / "E" ) [ "+" / "-" ] 1*DIGIT
+
+; String character: any character except " and \, or an escape sequence.
+; Megaparsec's L.charLiteral delegates to Haskell's Char.readLitChar,
+; whose documentation says it follows the Haskell Report grammar.
+; However, readLitChar does not handle \& (the empty escape used as
+; a string gap separator in Haskell).  Our escape-char rule reflects
+; what readLitChar (and L.charLiteral) actually accepts.
+
+char-literal    = %x00-21             ; any char below "
+                / %x23-5B             ; between " and \
+                / %x5D-D7FF           ; between \ and surrogate range
+                / %xE000-10FFFF       ; above surrogates
+                  ; The Haskell Report restricts literal characters in strings
+                  ; to graphic characters and space, but readLitChar accepts
+                  ; any non-backslash character.  The ranges above reflect the
+                  ; actual behavior.
+                / "\" escape-char
+
+escape-char     = char-escape
+                / ascii-escape
+                / caret-escape
+                / num-escape
+
+; Single-character mnemonics
+char-escape     = "a" / "b" / "f" / "n" / "r" / "t" / "v"
+                / "\" / DQUOTE / "'"
+
+; ASCII control character names (33 names for %x00-%x20 and %x7F).
+; SOH must be matched before SO (longest-match); all other
+; alternatives are prefix-free.
+ascii-escape    = "NUL" / "SOH" / "STX" / "ETX" / "EOT" / "ENQ"
+                / "ACK" / "BEL" / "BS"  / "HT"  / "LF"  / "VT"
+                / "FF"  / "CR"  / "SO"  / "SI"  / "DLE" / "DC1"
+                / "DC2" / "DC3" / "DC4" / "NAK" / "SYN" / "ETB"
+                / "CAN" / "EM"  / "SUB" / "ESC" / "FS"  / "GS"
+                / "RS"  / "US"  / "SP"  / "DEL"
+
+; Caret notation: \^@ through \^_ (to get %x00-%x1F)
+caret-escape    = "^" %x40-5F         ; @ A-Z [ \ ] ^ _
+
+; Numeric character codes
+num-escape      = 1*DIGIT             ; decimal (0-1114111)
+                / "o" 1*(%x30-37)     ; octal
+                / "x" 1*HEXDIG        ; hexadecimal
+
+; -------------------------------------------------------------------------
+; Whitespace and comments
+; -------------------------------------------------------------------------
+
+; Whitespace is defined by Haskell's Data.Char.isSpace
+
+ws              = *( unicode-space / comment )
+
+unicode-space   = %x09         ; HORIZONTAL TAB
+                / %x0A         ; LINE FEED
+                / %x0B         ; VERTICAL TAB
+                / %x0C         ; FORM FEED
+                / %x0D         ; CARRIAGE RETURN
+                / %x20         ; SPACE
+                / %xA0         ; NO-BREAK SPACE
+                / %x1680       ; OGHAM SPACE MARK
+                / %x2000-200A  ; EN QUAD through HAIR SPACE
+                / %x2028       ; LINE SEPARATOR
+                / %x2029       ; PARAGRAPH SEPARATOR
+                / %x202F       ; NARROW NO-BREAK SPACE
+                / %x205F       ; MEDIUM MATHEMATICAL SPACE
+                / %x3000       ; IDEOGRAPHIC SPACE
+
+comment         = ";" *( %x00-09 / %x0B-D7FF / %xE000-10FFFF )
+                  ; Consumes ";" then everything except LF (%x0A).
+                  ; The LF itself is not part of the comment; it is
+                  ; consumed separately by unicode-space in ws.
+                  ; A comment at end-of-input (no trailing LF) is valid.
+
+; -------------------------------------------------------------------------
+; Standard ABNF core rules used above
+; We duplicate these since currently defgrammar does not have a feature
+; for importing them.
+; -------------------------------------------------------------------------
+
+DIGIT  = %x30-39
+DQUOTE = %x22
+HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+               / "a" / "b" / "c" / "d" / "e" / "f"
