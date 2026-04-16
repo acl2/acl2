@@ -42,7 +42,7 @@
 - name: typedef-redeclaration
   should_report_error: true
 
-- name: enum 
+- name: enum
 
 - name: enum-default-values
 
@@ -181,3 +181,7 @@
 
 - name: fast-arrays-mixed
   should_report_error: true
+
+- name: return-mv-type-cast
+- name: mv-with-tmp
+- name: mv-with-tmp-partial
