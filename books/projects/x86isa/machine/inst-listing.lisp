@@ -1728,7 +1728,7 @@
      '((:UD T)))
     (INST "AAD" (OP :OP #xD5 :MODE :I64)
           (ARG :OP1 '(I B))
-          'NIL
+          '(X86-AAD)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #xD5 :MODE :O64)
