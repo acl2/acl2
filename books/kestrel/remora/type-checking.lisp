@@ -17,6 +17,8 @@
 (include-book "type-equivalence")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/basic/fix" :dir :system))
+(local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 
 (acl2::controlled-configuration)
@@ -25,10 +27,12 @@
 
 (local
  (in-theory
-  (enable kindp-when-kind-resultp-and-not-reserrp
-          kind-listp-when-kind-list-resultp-and-not-reserrp
-          sortp-when-sort-resultp-and-not-reserrp
+  (enable sortp-when-sort-resultp-and-not-reserrp
           sort-listp-when-sort-list-resultp-and-not-reserrp
+          kindp-when-kind-resultp-and-not-reserrp
+          kind-listp-when-kind-list-resultp-and-not-reserrp
+          indexp-when-index-resultp-and-not-reserrp
+          index-listp-when-index-list-resultp-and-not-reserrp
           typep-when-type-resultp-and-not-reserrp
           type-listp-when-type-list-resultp-and-not-reserrp
           type+index-p-when-type+index-resultp-and-not-reserrp
@@ -431,6 +435,108 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-index-suffix ((index indexp) (suffix indexp))
+  :returns (prefix index-resultp)
+  :short "Check if an index has another index as suffix,
+          returning the prefix index if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for a term application: see @(tsee check-expr).
+     Each of the indices of the input types of the function expression
+     must be a suffix of the index of the type of
+     the argument expression corresponding to the function input.
+     In the arXiv paper and dissertation,
+     the index of the argument is denoted
+     @($(\\mathtt{++}\\ \\iota_a\\ \\iota)\\ldots$),
+     and the index of the input is denoted @($\\iota$).
+     This function takes the argument index as the formal @('index'),
+     and the input type index as the formal @('suffix'),
+     and returns @($\\iota_a$) if successful,
+     which is the prefix.")
+   (xdoc::p
+    "To perform this check, we need to normalize both indices.
+     Since these are indices of array types,
+     they can only be variables,
+     or shapes (of dimensions),
+     or concatenations of the above;
+     the concatenation is either empty or has two or more elements,
+     because singleton concatenations are normalized to their element.")
+   (xdoc::p
+    "To facilitate comparison,
+     we turn non-concatenations (i.e. variables and shapes)
+     into singleton concatenations.
+     In other words, we end up with two lists of indices,
+     all of which are variables and (singleton) shapes,
+     to compare for the second one being a suffix of the first one.
+     If the prefix is a singleton list,
+     we return the element, so that we keep the resulting prefix normalized.")
+   (xdoc::p
+    "This function works on all categories of indices,
+     including those of the dimension sort,
+     even though it is always called with indices of the shape sort.
+     We may be able to explicate invariants
+     that will rule out these dimension sorts;
+     we will investigate that later."))
+  (b* ((index (normalize-index index))
+       (suffix (normalize-index suffix))
+       (index-elements (index-case index
+                                   :append index.indices
+                                   :otherwise (list index)))
+       (suffix-elements (index-case suffix
+                                    :append suffix.indices
+                                    :otherwise (list suffix)))
+       ((unless (<= (len suffix-elements) (len index-elements))) (reserr nil))
+       ((unless (equal suffix-elements
+                       (nthcdr (- (len index-elements)
+                                  (len suffix-elements))
+                               index-elements)))
+        (reserr nil))
+       (prefix-elements (take (- (len index-elements)
+                                 (len suffix-elements))
+                              index-elements)))
+    (if (and (consp prefix-elements)
+             (endp (cdr prefix-elements)))
+        (car prefix-elements)
+      (index-append prefix-elements)))
+  :guard-hints (("Goal" :in-theory (enable nfix)))
+  :prepwork
+  ((defrule returns-lemma1
+     (implies (< 0 (- (len x) (len y)))
+              (consp x)))
+   (defrule returns-lemma2
+     (implies (<= 1 (len x))
+              (consp x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-index-suffixes ((indices index-listp) (suffixes index-listp))
+  :guard (equal (len suffixes) (len indices))
+  :returns (prefixes index-list-resultp)
+  :short "Check if each index in a list has
+          the corresponding index in a list as suffix,
+          returning each prefix if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee check-index-suffix) to lists,
+     which all have the same lengths (if successful)."))
+  (b* (((when (endp indices)) nil)
+       ((unless (mbt (consp suffixes))) (reserr nil))
+       ((ok prefix) (check-index-suffix (car indices) (car suffixes)))
+       ((ok prefixes) (check-index-suffixes (cdr indices) (cdr suffixes))))
+    (cons prefix prefixes))
+
+  ///
+
+  (defret len-of-check-index-suffixes
+    (implies (not (reserrp prefixes))
+             (equal (len prefixes)
+                    (len indices)))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-exprs/atoms
   :short "Check expressions, atoms, and lists thereof."
   :long
@@ -580,12 +686,12 @@
           ((ok arg-types+indices) (type-list-match-array arg-types))
           (arg-atom-types (type+index-list->type arg-types+indices))
           (arg-indices (type+index-list->index arg-types+indices))
-          ((unless (equal arg-atom-types in-atom-types)) (reserr nil)))
+          ((unless (equal arg-atom-types in-atom-types)) (reserr nil))
+          ((ok prefix-indices) (check-index-suffixes arg-indices in-indices)))
        (prog2$ (list fun-index
-                     arg-indices
+                     prefix-indices
                      in-atom-types
                      out-atom-type
-                     in-indices
                      out-index)
                (reserr :todo)))
      :type-app (reserr :todo)
@@ -693,7 +799,27 @@
 
   ///
 
-  (verify-guards check-expr)
+  (defruled guards-lemma
+    (implies (equal x y)
+             (equal (len x) (len y))))
+
+  (verify-guards check-expr
+    :hints (("Goal"
+             :use (:instance guards-lemma
+                             (x (type+index-list->type
+                                 (type-list-match-array
+                                  (check-expr-list
+                                   (expr-term-app->args expr)
+                                   indenv typenv termenv))))
+                             (y (type+index-list->type
+                                 (type-list-match-array
+                                  (typelist+type->types
+                                   (type-match-fun
+                                    (type+index->type
+                                     (type-match-array
+                                      (check-expr
+                                       (expr-term-app->fun expr)
+                                       indenv typenv termenv))))))))))))
 
   (fty::deffixequiv-mutual check-exprs/atoms))
 
