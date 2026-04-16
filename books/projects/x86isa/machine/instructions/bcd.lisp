@@ -41,6 +41,9 @@
 
 (include-book "../decoding-and-spec-utils")
 
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Binary Code Decimal (BCD) adjustment instructions.
@@ -130,3 +133,65 @@
        (x86 (!flgi-undefined :zf x86))
        (x86 (!flgi-undefined :pf x86)))
     x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-aam
+
+  :parents (one-byte-opcodes)
+
+  :short "AAM: ASCII Adjust After Multiplication"
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "D4 0A AAM"
+    "D4 ib AAM imm8"))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* (;; The D4 opcode is always followed by a one-byte immediate.
+       ;; The manual shows two formats, with 0A and ib,
+       ;; because, as noted in the text, AAM is assembled to D4 0A,
+       ;; while other immediates must be hand-coded in machine-code.
+       ;; But at the binary level, we always have an immediate byte,
+       ;; which may be 0A or some other value.
+       ((mv flg (the (unsigned-byte 8) imm) x86)
+        (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
+       ((when flg) (!!ms-fresh :imm-rme-size-error flg))
+
+       ;; Increment the instruction pointer.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip 1 x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; There is no need to check the instruction length,
+       ;; because it is always 2 bytes.
+
+       ;; The immediate must not be 0.
+       ((when (= imm 0))
+        (!!fault-fresh :de nil :null-immediate-in-aam)) ; #DE
+
+       ;; See pseudocode in Intel manual for AAM.
+       ((the (unsigned-byte 16) ax) (rr16 #.*eax* x86))
+       ((the (unsigned-byte 8) temp-al) (part-select ax :low 0 :width 8))
+       ((the (unsigned-byte 8) ah) (floor temp-al imm))
+       ((the (unsigned-byte 8) al) (mod temp-al imm))
+       ((the (unsigned-byte 16) ax) (logapp 8 al ah))
+       (x86 (wr16 #.*eax* ax x86))
+
+       ;; Flags are affected based on AL (see Intel manual).
+       (x86 (!flgi :sf (sf-spec8 al) x86))
+       (x86 (!flgi :zf (zf-spec al) x86))
+       (x86 (!flgi :pf (pf-spec8 al) x86))
+       (x86 (!flgi-undefined :of x86))
+       (x86 (!flgi-undefined :af x86))
+       (x86 (!flgi-undefined :cf x86))
+
+       ;; Update instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86)
+
+  :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08))))

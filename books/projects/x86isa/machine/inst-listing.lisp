@@ -1719,7 +1719,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "AAM" (OP :OP #xD4 :MODE :I64)
           (ARG :OP1 '(I B))
-          'NIL
+          '(X86-AAM)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #xD4 :MODE :O64)
