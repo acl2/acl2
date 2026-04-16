@@ -59,13 +59,12 @@
      It is designed for simplicity.")
    (xdoc::p
     "The papers and dissertation denote
-     index environments with @($\\Theta$),
-     type environments with @($\\Delta$), and
-     term environments with @($\\Gamma$).
-     Our code uses @('indenv'), @('typenv'), and @('termenv'),
+     sort environments with @($\\Theta$),
+     kind environments with @($\\Delta$), and
+     type environments with @($\\Gamma$).
+     Our code uses @('sortenv'), @('kindenv'), and @('typeenv'),
      which are maps from strings (for variable names)
-     to the associated sorts, kinds, and types.
-     We should rename these to @('sortenv'), @('kindenv'), and @('typenv').")
+     to the associated sorts, kinds, and types.")
    (xdoc::p
     "This is work in progress."))
   :order-subtopics t
@@ -98,7 +97,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sorted-var-list-to-map ((svars sorted-var-listp))
-  :returns (indenv string-sort-mapp)
+  :returns (sortenv string-sort-mapp)
   :short "Turn a list of sorted variables into a map."
   :long
   (xdoc::topstring
@@ -160,7 +159,7 @@
 (defines check-indices
   :short "Check indices and lists of indices."
 
-  (define check-index ((index indexp) (indenv string-sort-mapp))
+  (define check-index ((index indexp) (sortenv string-sort-mapp))
     :returns (sort sort-resultp)
     :parents (type-checking check-indices)
     :short "Check an index, returning its sort if successful."
@@ -179,25 +178,25 @@
      (xdoc::p
       "A concatenation is a shape,
        provided that its indices are all shapes."))
-    (b* ((indenv (string-sort-map-fix indenv)))
+    (b* ((sortenv (string-sort-map-fix sortenv)))
       (index-case
        index
-       :var (b* ((name+sort (omap::assoc index.name indenv))
+       :var (b* ((name+sort (omap::assoc index.name sortenv))
                  ((unless name+sort) (reserr nil)))
               (cdr name+sort))
        :const (sort-dim)
-       :shape (b* (((ok sorts) (check-index-list index.indices indenv))
+       :shape (b* (((ok sorts) (check-index-list index.indices sortenv))
                    ((unless (sort-list-dimp sorts)) (reserr nil)))
                 (sort-shape))
-       :add (b* (((ok sorts) (check-index-list index.indices indenv))
+       :add (b* (((ok sorts) (check-index-list index.indices sortenv))
                  ((unless (sort-list-dimp sorts)) (reserr nil)))
               (sort-dim))
-       :append (b* (((ok sorts) (check-index-list index.indices indenv))
+       :append (b* (((ok sorts) (check-index-list index.indices sortenv))
                     ((unless (sort-list-shapep sorts)) (reserr nil)))
                  (sort-shape))))
     :measure (index-count index))
 
-  (define check-index-list ((indices index-listp) (indenv string-sort-mapp))
+  (define check-index-list ((indices index-listp) (sortenv string-sort-mapp))
     :returns (sorts sort-list-resultp)
     :parents (type-checking check-indices)
     :short "Check a list of indices, returning their sorts if successful."
@@ -206,8 +205,8 @@
      (xdoc::p
       "The sorts are in the same order as the indices."))
     (b* (((when (endp indices)) nil)
-         ((ok sort) (check-index (car indices) indenv))
-         ((ok sorts) (check-index-list (cdr indices) indenv)))
+         ((ok sort) (check-index (car indices) sortenv))
+         ((ok sorts) (check-index-list (cdr indices) sortenv)))
       (cons sort sorts))
     :measure (index-list-count indices))
 
@@ -223,8 +222,8 @@
   :short "Check types and lists of types."
 
   (define check-type ((type typep)
-                      (indenv string-sort-mapp)
-                      (typenv string-kind-mapp))
+                      (sortenv string-sort-mapp)
+                      (kindenv string-kind-mapp))
     :returns (kind kind-resultp)
     :parents (type-checking check-types)
     :short "Check a type, returning its kind if successful."
@@ -259,50 +258,50 @@
        Then we check the body of the product or sum type,
        ensuring that it has the array kind.
        The product or sum type has the atom kind."))
-    (b* ((indenv (string-sort-map-fix indenv))
-         (typenv (string-kind-map-fix typenv)))
+    (b* ((sortenv (string-sort-map-fix sortenv))
+         (kindenv (string-kind-map-fix kindenv)))
       (type-case
        type
-       :var (b* ((name+kind (omap::assoc type.name typenv))
+       :var (b* ((name+kind (omap::assoc type.name kindenv))
                  ((unless name+kind) (reserr nil)))
               (cdr name+kind))
        :base (kind-atom)
-       :array (b* (((ok kind) (check-type type.type indenv typenv))
+       :array (b* (((ok kind) (check-type type.type sortenv kindenv))
                    ((unless (kind-case kind :atom)) (reserr nil))
-                   ((ok sort) (check-index type.index indenv))
+                   ((ok sort) (check-index type.index sortenv))
                    ((unless (sort-case sort :shape)) (reserr nil)))
                 (kind-array))
-       :fun (b* (((ok kinds) (check-type-list type.in indenv typenv))
+       :fun (b* (((ok kinds) (check-type-list type.in sortenv kindenv))
                  ((unless (kind-list-arrayp kinds)) (reserr nil))
-                 ((ok kind) (check-type type.out indenv typenv))
+                 ((ok kind) (check-type type.out sortenv kindenv))
                  ((unless (kind-case kind :array)) (reserr nil)))
               (kind-atom))
        :forall (b* ((vars (kinded-var-list->var type.vars))
                     ((unless (no-duplicatesp-equal vars)) (reserr nil))
-                    (typenv-addition (kinded-var-list-to-map type.vars))
-                    (typenv (omap::update* typenv-addition typenv))
-                    ((ok kind) (check-type type.type indenv typenv))
+                    (kindenv-addition (kinded-var-list-to-map type.vars))
+                    (kindenv (omap::update* kindenv-addition kindenv))
+                    ((ok kind) (check-type type.type sortenv kindenv))
                     ((unless (kind-case kind :array)) (reserr nil)))
                  (kind-atom))
        :pi (b* ((vars (sorted-var-list->var type.vars))
                 ((unless (no-duplicatesp-equal vars)) (reserr nil))
-                (indenv-addition (sorted-var-list-to-map type.vars))
-                (indenv (omap::update* indenv-addition indenv))
-                ((ok kind) (check-type type.type indenv typenv))
+                (sortenv-addition (sorted-var-list-to-map type.vars))
+                (sortenv (omap::update* sortenv-addition sortenv))
+                ((ok kind) (check-type type.type sortenv kindenv))
                 ((unless (kind-case kind :array)) (reserr nil)))
              (kind-atom))
        :sigma (b* ((vars (sorted-var-list->var type.vars))
                    ((unless (no-duplicatesp-equal vars)) (reserr nil))
-                   (indenv-addition (sorted-var-list-to-map type.vars))
-                   (indenv (omap::update* indenv-addition indenv))
-                   ((ok kind) (check-type type.type indenv typenv))
+                   (sortenv-addition (sorted-var-list-to-map type.vars))
+                   (sortenv (omap::update* sortenv-addition sortenv))
+                   ((ok kind) (check-type type.type sortenv kindenv))
                    ((unless (kind-case kind :array)) (reserr nil)))
                 (kind-atom))))
     :measure (type-count type))
 
   (define check-type-list ((types type-listp)
-                           (indenv string-sort-mapp)
-                           (typenv string-kind-mapp))
+                           (sortenv string-sort-mapp)
+                           (kindenv string-kind-mapp))
     :returns (kinds kind-list-resultp)
     :parents (type-checking check-types)
     :short "Check a list of types, returning their kinds if successful."
@@ -311,8 +310,8 @@
      (xdoc::p
       "The kinds are in the same order as the types."))
     (b* (((when (endp types)) nil)
-         ((ok kind) (check-type (car types) indenv typenv))
-         ((ok kinds) (check-type-list (cdr types) indenv typenv)))
+         ((ok kind) (check-type (car types) sortenv kindenv))
+         ((ok kinds) (check-type-list (cdr types) sortenv kindenv)))
       (cons kind kinds))
     :measure (type-list-count types))
 
@@ -602,9 +601,9 @@
      but we should formally prove all of this."))
 
   (define check-expr ((expr exprp)
-                      (indenv string-sort-mapp)
-                      (typenv string-kind-mapp)
-                      (termenv string-type-mapp))
+                      (sortenv string-sort-mapp)
+                      (kindenv string-kind-mapp)
+                      (typeenv string-type-mapp))
     :returns (type type-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check an expression, returning its type if successful."
@@ -689,7 +688,7 @@
     (expr-case
      expr
      :var
-     (b* ((name+type (omap::assoc expr.name (string-type-map-fix termenv)))
+     (b* ((name+type (omap::assoc expr.name (string-type-map-fix typeenv)))
           ((unless name+type) (reserr nil)))
        (cdr name+type))
      :array
@@ -697,16 +696,16 @@
           ((unless (= (len expr.atoms)
                       (nat-list-product expr.dims)))
            (reserr nil))
-          ((ok types) (check-atom-list expr.atoms indenv typenv termenv))
+          ((ok types) (check-atom-list expr.atoms sortenv kindenv typeenv))
           ((unless (type-list-all-equivp types)) (reserr nil))
           (type (car types))
-          ((ok kind) (check-type type indenv typenv))
+          ((ok kind) (check-type type sortenv kindenv))
           ((unless (kind-case kind :atom)) (reserr nil)))
        (make-type-array :type type
                         :index (index-shape (index-const-list expr.dims))))
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-          ((ok kind) (check-type expr.type indenv typenv))
+          ((ok kind) (check-type expr.type sortenv kindenv))
           ((unless (kind-case kind :atom)) (reserr nil)))
        (make-type-array :type expr.type
                         :index (index-shape (index-const-list expr.dims))))
@@ -715,10 +714,10 @@
           ((unless (= (len expr.exprs)
                       (nat-list-product expr.dims)))
            (reserr nil))
-          ((ok types) (check-expr-list expr.exprs indenv typenv termenv))
+          ((ok types) (check-expr-list expr.exprs sortenv kindenv typeenv))
           ((unless (type-list-all-equivp types)) (reserr nil))
           (type (car types))
-          ((ok kind) (check-type type indenv typenv))
+          ((ok kind) (check-type type sortenv kindenv))
           ((unless (kind-case kind :array)) (reserr nil))
           ((ok (type+index array)) (type-match-array type)))
        (make-type-array :type array.type
@@ -729,11 +728,11 @@
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((ok (type+index array)) (type-match-array expr.type))
           ((ok kind) (check-type array.type
-                                 indenv
-                                 typenv))
+                                 sortenv
+                                 kindenv))
           ((unless (kind-case kind :atom)) (reserr nil))
           ((ok sort) (check-index array.index
-                                  indenv))
+                                  sortenv))
           ((unless (sort-case sort :shape)) (reserr nil)))
        (make-type-array :type array.type
                         :index (index-append
@@ -741,7 +740,7 @@
                                        (index-const-list expr.dims))
                                       array.index))))
      :term-app
-     (b* (((ok fun-arr-type) (check-expr expr.fun indenv typenv termenv))
+     (b* (((ok fun-arr-type) (check-expr expr.fun sortenv kindenv typeenv))
           ((ok fun-arr-type+index) (type-match-array fun-arr-type))
           (fun-type (type+index->type fun-arr-type+index))
           (fun-index (type+index->index fun-arr-type+index))
@@ -754,7 +753,7 @@
           ((ok out-type+index) (type-match-array out-type))
           (out-atom-type (type+index->type out-type+index))
           (out-index (type+index->index out-type+index))
-          ((ok arg-types) (check-expr-list expr.args indenv typenv termenv))
+          ((ok arg-types) (check-expr-list expr.args sortenv kindenv typeenv))
           ((ok arg-types+indices) (type-list-match-array arg-types))
           (arg-atom-types (type+index-list->type arg-types+indices))
           (arg-indices (type+index-list->index arg-types+indices))
@@ -764,7 +763,7 @@
        (make-type-array :type out-atom-type
                         :index (index-append (list principal-index out-index))))
      :type-app
-     (b* (((ok fun-arr-type) (check-expr expr.fun indenv typenv termenv))
+     (b* (((ok fun-arr-type) (check-expr expr.fun sortenv kindenv typeenv))
           ((ok fun-arr-type+index) (type-match-array fun-arr-type))
           (fun-type (type+index->type fun-arr-type+index))
           (fun-index (type+index->index fun-arr-type+index))
@@ -774,7 +773,7 @@
           ((ok body-type+index) (type-match-array body-arr-type))
           (body-atom-type (type+index->type body-type+index))
           (body-index (type+index->index body-type+index))
-          ((ok kinds) (check-type-list expr.args indenv typenv))
+          ((ok kinds) (check-type-list expr.args sortenv kindenv))
           ((unless (equal kinds (kinded-var-list->kind kvars))) (reserr nil)))
        (prog2$ (list body-index
                      body-atom-type
@@ -785,9 +784,9 @@
     :measure (expr-count expr))
 
   (define check-expr-list ((exprs expr-listp)
-                           (indenv string-sort-mapp)
-                           (typenv string-kind-mapp)
-                           (termenv string-type-mapp))
+                           (sortenv string-sort-mapp)
+                           (kindenv string-kind-mapp)
+                           (typeenv string-type-mapp))
     :returns (types type-list-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check a list of expressions, returning their types if successful."
@@ -796,8 +795,8 @@
      (xdoc::p
       "The types are in the same order as the expressions."))
     (b* (((when (endp exprs)) nil)
-         ((ok type) (check-expr (car exprs) indenv typenv termenv))
-         ((ok types) (check-expr-list (cdr exprs) indenv typenv termenv)))
+         ((ok type) (check-expr (car exprs) sortenv kindenv typeenv))
+         ((ok types) (check-expr-list (cdr exprs) sortenv kindenv typeenv)))
       (cons type types))
     :measure (expr-list-count exprs)
 
@@ -820,9 +819,9 @@
       :hints (("Goal" :induct (len exprs) :in-theory (enable len)))))
 
   (define check-atom ((atom atomp)
-                      (indenv string-sort-mapp)
-                      (typenv string-kind-mapp)
-                      (termenv string-type-mapp))
+                      (sortenv string-sort-mapp)
+                      (kindenv string-kind-mapp)
+                      (typeenv string-type-mapp))
     :returns (type type-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check an atom, returning its type if successful."
@@ -832,7 +831,7 @@
       "The type of a base value or a primitive operator
        is independent from the environment(s),
        and determined via separate functions."))
-    (declare (ignore indenv typenv termenv))
+    (declare (ignore sortenv kindenv typeenv))
     (atom-case
      atom
      :base (type-base (base-type-of-base-value atom.value))
@@ -844,9 +843,9 @@
     :measure (atom-count atom))
 
   (define check-atom-list ((atoms atom-listp)
-                           (indenv string-sort-mapp)
-                           (typenv string-kind-mapp)
-                           (termenv string-type-mapp))
+                           (sortenv string-sort-mapp)
+                           (kindenv string-kind-mapp)
+                           (typeenv string-type-mapp))
     :returns (types type-list-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check a list of atoms, returning their types if successful."
@@ -855,8 +854,8 @@
      (xdoc::p
       "The types are in the same order as the atoms."))
     (b* (((when (endp atoms)) nil)
-         ((ok type) (check-atom (car atoms) indenv typenv termenv))
-         ((ok types) (check-atom-list (cdr atoms) indenv typenv termenv)))
+         ((ok type) (check-atom (car atoms) sortenv kindenv typeenv))
+         ((ok types) (check-atom-list (cdr atoms) sortenv kindenv typeenv)))
       (cons type types))
     :measure (atom-list-count atoms)
 
@@ -895,7 +894,7 @@
                                  (type-list-match-array
                                   (check-expr-list
                                    (expr-term-app->args expr)
-                                   indenv typenv termenv))))
+                                   sortenv kindenv typeenv))))
                              (y (type+index-list->type
                                  (type-list-match-array
                                   (typelist+type->types
@@ -904,7 +903,7 @@
                                      (type-match-array
                                       (check-expr
                                        (expr-term-app->fun expr)
-                                       indenv typenv termenv))))))))))))
+                                       sortenv kindenv typeenv))))))))))))
 
   (fty::deffixequiv-mutual check-exprs/atoms))
 
