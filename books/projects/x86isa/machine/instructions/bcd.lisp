@@ -303,3 +303,53 @@
        (x86 (!flgi :pf (pf-spec8 al) x86))
        (x86 (!flgi-undefined :of x86)))
     x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-das
+
+  :parents (one-byte-opcodes)
+
+  :short "DAS: Decimal Adjust After Subtraction.."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "2F DAS"))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* (;; See pseudocode in Intel manual for DAS.
+       ((the (unsigned-byte 16) ax) (rr16 #.*eax* x86))
+       ((the (unsigned-byte 8) al) (part-select ax :low 0 :width 8))
+       ((the (unsigned-byte 1) cf) (flgi :cf x86))
+       ((the (unsigned-byte 1) af) (flgi :af x86))
+       ((the (unsigned-byte 8) old-al) al)
+       ((the (unsigned-byte 1) old-cf) cf)
+       ((the (unsigned-byte 1) cf) 0)
+       ((mv (the (unsigned-byte 8) al)
+            (the (unsigned-byte 1) af)
+            (the (unsigned-byte 1) cf))
+        (if (or (> (logand al #x0f) 9)
+                (= af 1))
+            (b* ((al (- al 6))
+                 (borrow (if (< al 0) 1 0)))
+              (mv (n08 al) 1 (logior old-cf borrow)))
+          (mv al 0 cf)))
+       ((mv (the (unsigned-byte 8) al)
+            (the (unsigned-byte 1) cf))
+        (if (or (> old-al #x99)
+                (= old-cf 1))
+            (mv (n08 (- al #x60)) 1)
+          (mv al 0)))
+       ((the (unsigned-byte 16) ax) (part-install al ax :low 0 :width 8))
+       (x86 (wr16 #.*eax* ax x86))
+       (x86 (!flgi :cf cf x86))
+       (x86 (!flgi :af af x86))
+       (x86 (!flgi :sf (sf-spec8 al) x86))
+       (x86 (!flgi :zf (zf-spec al) x86))
+       (x86 (!flgi :pf (pf-spec8 al) x86))
+       (x86 (!flgi-undefined :of x86)))
+    x86))

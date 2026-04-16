@@ -284,7 +284,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "DAS" (OP :OP #x2F :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-DAS)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x2F :MODE :O64)
