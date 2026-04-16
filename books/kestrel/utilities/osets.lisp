@@ -35,7 +35,17 @@
 
   (std::defrule list-in-of-sfix-2
     (equal (list-in list (sfix set))
-           (list-in list set))))
+           (list-in list set)))
+
+  (std::defruled list-in-of-union-2-left
+    (implies (list-in x a)
+             (list-in x (union a b)))
+    :in-theory (enable list-in union-in))
+
+  (std::defruled list-in-of-union-2-right
+    (implies (list-in x b)
+             (list-in x (union a b)))
+    :in-theory (enable list-in union-in)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,7 +61,13 @@
 
   (std::defrule list-notin-of-sfix-2
     (equal (list-notin list (sfix set))
-           (list-notin list set))))
+           (list-notin list set)))
+
+  (std::defrule list-notin-of-union-2
+    (equal (list-notin x (union a b))
+           (and (list-notin x a)
+                (list-notin x b)))
+    :in-theory (enable list-notin union-in)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
