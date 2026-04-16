@@ -27,17 +27,19 @@
 
 (local
  (in-theory
-  (enable sortp-when-sort-resultp-and-not-reserrp
-          sort-listp-when-sort-list-resultp-and-not-reserrp
-          kindp-when-kind-resultp-and-not-reserrp
-          kind-listp-when-kind-list-resultp-and-not-reserrp
-          indexp-when-index-resultp-and-not-reserrp
-          index-listp-when-index-list-resultp-and-not-reserrp
-          typep-when-type-resultp-and-not-reserrp
-          type-listp-when-type-list-resultp-and-not-reserrp
-          type+index-p-when-type+index-resultp-and-not-reserrp
-          type+index-listp-when-type+index-list-resultp-and-not-reserrp
-          typelist+type-p-when-typelist+type-resultp-and-not-reserrp)))
+  (enable
+   sortp-when-sort-resultp-and-not-reserrp
+   sort-listp-when-sort-list-resultp-and-not-reserrp
+   kindp-when-kind-resultp-and-not-reserrp
+   kind-listp-when-kind-list-resultp-and-not-reserrp
+   indexp-when-index-resultp-and-not-reserrp
+   index-listp-when-index-list-resultp-and-not-reserrp
+   typep-when-type-resultp-and-not-reserrp
+   type-listp-when-type-list-resultp-and-not-reserrp
+   type+index-p-when-type+index-resultp-and-not-reserrp
+   type+index-listp-when-type+index-list-resultp-and-not-reserrp
+   typelist+type-p-when-typelist+type-resultp-and-not-reserrp
+   kindedvarlist+type-p-when-kindedvarlist+type-resultp-and-not-reserrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -673,7 +675,21 @@
        which is the array type consisting of
        the function output atom type
        and the concatenation of the principal index
-       with the function output index."))
+       with the function output index.")
+     (xdoc::p
+      "For a type application,
+       first we check the function expression,
+       which must have an array type of a universal type,
+       whose body type is an array type.
+       In the arXiv paper and dissertation,
+       @($(x\\ k)\\ldots$) corresponds to @'kvars') in our code,
+       @($\\tau_u$) corresponds to @('body-atom-type'),
+       @($\\iota_u$) corresponds to @('body-index'),
+       and @($\\iota_f$) corresponds to @('fun-index').
+       We check all the type arguments
+       (@($\\tau\\ldots$) in the paper and dissertation),
+       ensuring that their kinds match the ones of
+       the variables in the universal type."))
     (expr-case
      expr
      :var
@@ -751,7 +767,23 @@
           ((ok principal-index) (join-indices (cons fun-index prefix-indices))))
        (make-type-array :type out-atom-type
                         :index (index-append (list principal-index out-index))))
-     :type-app (reserr :todo)
+     :type-app
+     (b* (((ok fun-arr-type) (check-expr expr.fun indenv typenv termenv))
+          ((ok fun-arr-type+index) (type-match-array fun-arr-type))
+          (fun-type (type+index->type fun-arr-type+index))
+          (fun-index (type+index->index fun-arr-type+index))
+          ((ok fun-vars+type) (type-match-forall fun-type))
+          (kvars (kindedvarlist+type->vars fun-vars+type))
+          (body-arr-type (kindedvarlist+type->type fun-vars+type))
+          ((ok body-type+index) (type-match-array body-arr-type))
+          (body-atom-type (type+index->type body-type+index))
+          (body-index (type+index->index body-type+index))
+          ((ok kinds) (check-type-list expr.args indenv typenv))
+          ((unless (equal kinds (kinded-var-list->kind kvars))) (reserr nil)))
+       (prog2$ (list body-index
+                     body-atom-type
+                     fun-index)
+               (reserr nil)))
      :index-app (reserr :todo)
      :unbox (reserr :todo))
     :measure (expr-count expr))
