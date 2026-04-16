@@ -66,6 +66,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult index-result
+  :short "Fixtype of indices and errors."
+  :ok index
+  :pred index-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult index-list-result
+  :short "Fixtype of (i) lists of kindices and (ii) errors."
+  :ok index-list
+  :pred index-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-result
   :short "Fixtype of types and errors."
   :ok type
