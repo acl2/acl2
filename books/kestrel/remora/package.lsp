@@ -34,6 +34,7 @@
                     nat
                     nat-list
                     nat-list-fix
+                    prefixp
                     fty::patbind-ok
                     fty::reserr
                     fty::reserrp

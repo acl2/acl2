@@ -537,6 +537,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define join-indices ((indices index-listp))
+  :returns (index index-resultp)
+  :short "Calculate the least upper bound of a list of indices,
+          with respect to prefix as partial order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for a term application; see @(tsee check-expr).
+     After having calculated all the prefixes @($\\iota_a\\ldots$),
+     we need to calculate the join (i.e. least upper bound)
+     of those indices and of the index @($\\iota_f$) of the function expression.
+     The partial order in question is the prefix relation:
+     @($\\iota\\sqsubseteq\\iota'$) iff @($\\iota$) is a prefix of @($\\iota'$)
+     (including the case @($\\iota=\\iota'$)).")
+   (xdoc::p
+    "We go through the list in order,
+     but the order of the list is irrelevant.
+     If the list is empty, the result is the empty concatenation,
+     which is the bottom of the partial order.
+     If the list is a singleton, the result is its only element.
+     If the list has two or more elements,
+     we recursively calculate the join of the @(tsee cdr) of the list,
+     then we normalize that and the @(tsee car) and compare them.
+     To facilitate comparisons,
+     we turn non-concatenations into singleton concatenations,
+     so we just need to compare the elements of the concatenations.
+     If neither the @(tsee car) is a prefix of the join nor vice versa,
+     it is an error, i.e. there is no join;
+     otherwise the result is the longer concatenation."))
+  (b* (((when (endp indices)) (index-append nil))
+       ((when (endp (cdr indices))) (index-fix (car indices)))
+       ((ok cdr-index) (join-indices (cdr indices)))
+       (cdr-index (normalize-index cdr-index))
+       (car-index (normalize-index (car indices)))
+       (car-elements (index-case car-index
+                                 :append car-index.indices
+                                 :otherwise (list car-index)))
+       (cdr-elements (index-case cdr-index
+                                 :append cdr-index.indices
+                                 :otherwise (list cdr-index))))
+    (cond ((prefixp car-elements cdr-elements) (index-append cdr-elements))
+          ((prefixp cdr-elements car-elements) (index-append car-elements))
+          (t (reserr nil))))
+  :verify-guards :after-returns
+  ///
+  (fty::deffixequiv join-indices
+    :hints (("Goal" :induct t :in-theory (enable index-list-fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-exprs/atoms
   :short "Check expressions, atoms, and lists thereof."
   :long
@@ -595,7 +645,8 @@
        first we check the function expression,
        which must have an array type of a function type,
        whose input and output types are all array types.
-       The atom input types are denoted @($\\tau\\ldots$) and @($\\tau'$),
+       The atom input and output types
+       are denoted @($\\tau\\ldots$) and @($\\tau'$),
        and their indices are denoted @($\\iota\\ldots$) and @($\\iota'$),
        in the arXiv paper and dissertation;
        our code uses
@@ -613,7 +664,16 @@
        which means that the indices @($\\iota\\ldots$)
        of the corresponding inputs types must be suffixes,
        and that we need to extract the prefixes @($\\iota_a\\ldots$);
-       we do that via a separate function (see its documentation)."))
+       we do that via a separate function (see its documentation).
+       Then we take the join of all those prefixes and the function index
+       (see documentation of @(tsee join-indices):
+       that is the principal index, in Remora's terminology,
+       denoted @($\\iota_p$) in the paper and dissertation.
+       Finally we return the type of the term application expression,
+       which is the array type consisting of
+       the function output atom type
+       and the concatenation of the principal index
+       with the function output index."))
     (expr-case
      expr
      :var
@@ -687,13 +747,10 @@
           (arg-atom-types (type+index-list->type arg-types+indices))
           (arg-indices (type+index-list->index arg-types+indices))
           ((unless (equal arg-atom-types in-atom-types)) (reserr nil))
-          ((ok prefix-indices) (check-index-suffixes arg-indices in-indices)))
-       (prog2$ (list fun-index
-                     prefix-indices
-                     in-atom-types
-                     out-atom-type
-                     out-index)
-               (reserr :todo)))
+          ((ok prefix-indices) (check-index-suffixes arg-indices in-indices))
+          ((ok principal-index) (join-indices (cons fun-index prefix-indices))))
+       (make-type-array :type out-atom-type
+                        :index (index-append (list principal-index out-index))))
      :type-app (reserr :todo)
      :index-app (reserr :todo)
      :unbox (reserr :todo))
