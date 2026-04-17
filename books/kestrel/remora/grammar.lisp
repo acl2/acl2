@@ -30,7 +30,13 @@
     "We use our "
     (xdoc::seetopic "abnf::grammar-parser" "verified ABNF grammar parser")
     " to parse the ABNF grammar of Remora
-     into a representation in ACL2."))
+     into a representation in ACL2.")
+   (xdoc::p
+    "ABNF source is restricted to US-ASCII (RFC 5234),
+     so the non-ASCII operators that Remora accepts
+     (&lambda;, &rarr;, &forall;, &Pi;, &Sigma;)
+     are referenced in the grammar via numeric value notation
+     (e.g. @('%x03BB') for &lambda;)."))
   :order-subtopics t
   :default-parent t)
 

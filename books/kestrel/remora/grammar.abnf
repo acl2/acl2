@@ -11,6 +11,11 @@
 ; The process of decoding into these code point integers is outside the
 ; scope of this grammar.
 ;
+; Note: whenever there is a side condition (extra-grammatical constraint)
+; that a parser must follow, we add a comment containing a side
+; condition note number such as [SC1], and we describe the side conditions
+; in more detail at the end of this file.
+
 ; =========================================================================
 
 ; -------------------------------------------------------------------------
@@ -46,20 +51,21 @@ paren-exp-body  = array-exp
                 / unbox-exp
                 / let-exp
                 / at-app-exp         ; @f sugar
-                / app-exp            ; must be last (generic application)
+                / app-exp            ; [SC3] must be last
 
 array-exp       = "array" ws shape-lit ws 1*( ws atom )
 
 frame-exp       = "frame" ws shape-lit ws 1*( ws exp )
 
-app-exp         = exp *( ws exp )
+app-exp         = exp *( ws exp )      ; [SC1]
                   ; (f e1 ... en): first exp is the function
 
 tapp-exp        = "t-app" ws exp *( ws type-exp )
 
 iapp-exp        = "i-app" ws exp *( ws extent )
 
-unbox-exp       = "unbox" ws "(" ws *( extent-param ws ) identifier ws exp ws ")" ws exp
+unbox-exp       = "unbox" ws "(" ws *( extent-param ws )  ; [SC4]
+                  identifier ws exp ws ")" ws exp
 
 let-exp         = "let" ws "(" ws *( ws bind ) ws ")" ws exp
 
@@ -176,7 +182,7 @@ arrow-type      = ( "->" / %x2192 ) ws       ; -> or <arrow>
 forall-type     = ( "Forall" / %x2200 ) ws   ; Forall or <forall>
                   "(" ws *( ws type-param ) ws ")" ws type-exp
 
-pi-type         = ( "Pi" / %x041F ) ws        ; Pi or <Cyrillic Pe>
+pi-type         = ( "Pi" / %x03A0 ) ws        ; Pi or <Pi>
                   "(" ws *( ws extent-param ) ws ")" ws type-exp
 
 sigma-type      = ( "Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
@@ -248,11 +254,11 @@ num-val         = [ "+" / "-" ] ( float-lit / decimal )
 ;   i-fn, i<lambda>,
 ;   A, ->, <arrow> (code point #x2192 (RIGHTWARDS ARROW)),
 ;   Forall, <forall> (code point #x2200 (FOR ALL)),
-;   Pi, <Cyrillic P> (code point #x41f (CYRILLIC CAPITAL LETTER PE)),
+;   Pi, <Pi> (code point #x3a0 (GREEK CAPITAL LETTER PI)),
 ;   Sigma, <sigma> (code point #x3a3 (GREEK CAPITAL LETTER SIGMA)),
 ;   let, type, extent, fun, t-fun, i-fun, val
 
-identifier      = id-start *id-continue
+identifier      = id-start *id-continue        ; [SC2]
                   ; must not match a keyword
 
 id-start        = %x00-08      ; NUL and C0 controls (non-whitespace)
@@ -401,3 +407,74 @@ DIGIT  = %x30-39
 DQUOTE = %x22
 HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
                / "a" / "b" / "c" / "d" / "e" / "f"
+
+; =========================================================================
+; Side conditions (extra-grammatical constraints)
+; =========================================================================
+;
+; The following constraints are not expressible in ABNF and must be
+; enforced by any parser implementation.  They are referenced from the
+; grammar rules above using [SC1], [SC2], etc.
+;
+; [SC1] Max-munch tokenization  (tagged on: app-exp)
+;
+;   This side condition occurs in more than 30 situations, so we are
+;   not tagging them in general.  We have tagged one example --
+;   that of app-exp, which we consider in the next paragraph.
+;
+;   Tokens -- identifiers, decimals, and float-lits -- must be matched
+;   greedily, consuming as many legal characters as possible.  Without
+;   this convention the grammar is formally ambiguous: wherever ws may
+;   be empty between elements (e.g. app-exp = exp *( ws exp )), an
+;   input such as "xy" admits two parse trees (one identifier vs. two
+;   adjacent identifiers).  Max-munch at the token level resolves the
+;   ambiguity by having the first token consume all available characters.
+;
+;   As a corollary, keyword literals in the grammar (e.g. "fn", "array",
+;   "let") must not match when followed immediately by an id-continue
+;   character: "fn2" is one identifier, not the keyword "fn" followed
+;   by "2".  The Haskell reference implementation enforces this with
+;   notFollowedBy (satisfy isAlphaNum) in lKeyword; a parser using
+;   max-munch gets the same effect automatically.
+;
+;   The Haskell reference implementation achieves max-munch via
+;   Megaparsec's greedy "many" combinator in lId (src/Parser.hs).
+;
+; [SC2] Keyword exclusion from identifiers (tagged on: identifier)
+;
+;   The text matched by the "identifier" production must not equal any
+;   reserved keyword.  Every keyword happens to match the identifier
+;   production (all are sequences of id-start and id-continue chars),
+;   but the language forbids their use as variable names.  This is a
+;   context-sensitive constraint that ABNF cannot express.
+;
+;   The full keyword list is given in the comment above the identifier
+;   rule.  The Haskell reference implementation checks this at the end
+;   of lId, failing if the accepted text is in the keyword list.
+;
+; [SC3] app-exp must be last in paren-exp-body (tagged on: paren-exp-body)
+;
+;   Because the grammar does not exclude keywords from identifiers
+;   (see [SC2]), a parser that tries app-exp early would greedily parse
+;   forms such as (array ...) or (let ...) as applications of keyword-
+;   named variables.  The grammar therefore places app-exp last among
+;   the paren-exp-body alternatives, ensuring that keyword-headed forms
+;   match their specific rules first.
+;
+;   The Haskell reference implementation uses a different ordering
+;   (App appears early), but this works because lId rejects keywords,
+;   causing App to fail on keyword-headed forms.
+;
+; [SC4] unbox-exp extent-param lookahead (tagged on: unbox-exp)
+;
+;   In the Haskell parser for unbox-exp, each extent-param is guarded
+;   by notFollowedBy (symbol ")"), so that the last extent-param-like
+;   token preceding the closing paren is left for the mandatory
+;   "identifier" to match instead.  ABNF cannot express this one-token
+;   lookahead; the grammar uses a plain *( extent-param ws ) repetition.
+;
+;   For well-formed input the two approaches produce identical parse
+;   trees.  The difference is visible only in error messages for
+;   malformed input.
+;
+; =========================================================================
