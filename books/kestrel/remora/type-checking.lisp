@@ -803,7 +803,8 @@
           ((ok arg-types+indices) (type-list-match-array arg-types))
           (arg-atom-types (type+index-list->type arg-types+indices))
           (arg-indices (type+index-list->index arg-types+indices))
-          ((unless (equal arg-atom-types in-atom-types)) (reserr nil))
+          ((unless (type-list-equivp arg-atom-types in-atom-types))
+           (reserr nil))
           ((ok prefix-indices) (check-index-suffixes arg-indices in-indices))
           ((ok principal-index) (join-indices (cons fun-index prefix-indices))))
        (make-type-array :type out-atom-type
@@ -1072,19 +1073,21 @@
                         (type-list-match-array
                          (check-expr-list exprs sortenv kindenv typeenv))))
                   (not (reserrp (type-list-match-array x)))
-                  (equal (type+index-list->type
-                          (type-list-match-array
-                           (check-expr-list exprs sortenv kindenv typeenv)))
-                         (type+index-list->type
-                          (type-list-match-array x))))
+                  (type-list-equivp
+                   (type+index-list->type
+                    (type-list-match-array
+                     (check-expr-list exprs sortenv kindenv typeenv)))
+                   (type+index-list->type
+                    (type-list-match-array x))))
              (equal (len x)
                     (len exprs)))
-    :use ((:instance len-lemma
-                     (x (type+index-list->type
-                         (type-list-match-array
-                          (check-expr-list exprs sortenv kindenv typeenv))))
-                     (y (type+index-list->type
-                         (type-list-match-array x))))))
+    :use ((:instance same-len-when-type-list-equivp
+                     (types1 (type+index-list->type
+                              (type-list-match-array
+                               (check-expr-list
+                                exprs sortenv kindenv typeenv))))
+                     (types2 (type+index-list->type
+                              (type-list-match-array x))))))
 
   (verify-guards check-expr)
 
