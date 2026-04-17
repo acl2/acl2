@@ -930,7 +930,14 @@
        We extend the type environment with the bound variables,
        and we check the body of the abstraction in the extended environment.
        Its type is the output type of the function type of the abstraction,
-       and its input types are the ones of the bound variables."))
+       and its input types are the ones of the bound variables.")
+     (xdoc::p
+      "For a type abstraction,
+       we extend the kind environment with the bound variables,
+       and we check the body of the abstraction in the extended enviroment.
+       The resulting type is the body of the universal type
+       that is the type of the abstraction,
+       whose bound variables are the same as the abstraction."))
     (atom-case
      atom
      :base
@@ -946,7 +953,12 @@
                                   (string-type-map-fix typeenv)))
           ((ok type) (check-expr atom.body sortenv kindenv typeenv)))
        (make-type-fun :in types :out type))
-     :type-abs (reserr :todo)
+     :type-abs
+     (b* ((kindenv-addition (kinded-var-list-to-map atom.vars))
+          (kindenv (omap::update* kindenv-addition
+                                  (string-kind-map-fix kindenv)))
+          ((ok type) (check-expr atom.body sortenv kindenv typeenv)))
+       (make-type-forall :vars atom.vars :type type))
      :index-abs (reserr :todo)
      :box (reserr :todo))
     :measure (atom-count atom))
