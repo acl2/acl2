@@ -144,6 +144,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod sortedvarlist+type
+  :short "Fixtype of pairs consisting of a list of sorted variables and a type."
+  ((vars sorted-var-list)
+   (type type))
+  :pred sortedvarlist+type-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult sortedvarlist+type-result
+  :short "Fixtype of
+          (i) pairs consisting of a list of sorted variables and a type
+          and (ii) errors."
+  :ok sortedvarlist+type
+  :pred sortedvarlist+type-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod kindedvarlist+type
   :short "Fixtype of pairs consisting of a list of kinded variables and a type."
   ((vars kinded-var-list)
@@ -182,7 +200,17 @@
   :short "Fixtype of maps from strings to indices."
   :key-type string
   :val-type index
-  :pred string-index-mapp)
+  :pred string-index-mapp
+
+  ///
+
+  (defrule string-index-mapp-of-from-lists
+    (implies (and (string-listp strings)
+                  (index-listp indices)
+                  (equal (len indices) (len strings)))
+             (string-index-mapp (omap::from-lists strings indices)))
+    :induct t
+    :enable (omap::from-lists string-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
