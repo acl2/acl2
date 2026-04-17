@@ -24,7 +24,7 @@
 
 ;; TODO: Add support for speeding up defuns and defines.
 ;; TODO: Try removing cases hints
-;; TODO: TODO: Handle theorems not at the top level
+;; TODO: Handle theorems not at the top level
 ;; TODO: Handle defthm-flags
 ;; TODO: Try different ruler-extenders
 ;; todo: disallow print nil?

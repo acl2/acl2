@@ -152,7 +152,7 @@
   :hints (("Goal" ;:cases ((equal amount width))
            :in-theory (enable leftrotate))))
 
-;; is there a nicer way to comvine the cases?
+;; is there a nicer way to combine the cases?
 (defthm bvchop-of-leftrotate-both
   (implies (and (<= size width)
                 (<= amount width)

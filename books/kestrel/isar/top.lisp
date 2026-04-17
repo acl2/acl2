@@ -47,7 +47,7 @@
      As a third example, when certain ACL2 proofs need user guidance
      (beyond enabling and/or disabling rules)
      to direct the prover through the right steps,
-     Isar proofs may be preferable, in terms of readability and maintenability,
+     Isar proofs may be preferable, in terms of readability and maintainability,
      to certain kinds of @(':use') hints that provide that guidance.")
    (xdoc::p
     "Different proof styles make different tradeoffs in terms of
@@ -75,7 +75,7 @@
      and that cannot generate unsoundness or logical inconsistencies.")
    (xdoc::p
     "The differences between the ACL2 and Isabelle logics
-     may motivate certain differnces between Isabelle's Isar language
+     may motivate certain differences between Isabelle's Isar language
      and the language provided by this ACL2 library.
      However, the more similar the two languages can be made,
      the easier it is to leverage concepts
@@ -88,7 +88,7 @@
      are more similar to tactics that operate on the proof goals,
      where the intermediate proof states are not visible in the proof script,
      with the consequence that a human reader cannot, in general,
-     readily undestand the proof just by looking at the proof script,
+     readily understand the proof just by looking at the proof script,
      without running it.
      In contrast, Isar is designed to make those proof states visible,
      and to let a human reader understand the proof
