@@ -937,6 +937,13 @@
        and we check the body of the abstraction in the extended enviroment.
        The resulting type is the body of the universal type
        that is the type of the abstraction,
+       whose bound variables are the same as the abstraction.")
+     (xdoc::p
+      "For an index abstraction,
+       we extend the sort environment with the bound variables,
+       and we check the body of the abstraction in the extended environment.
+       The resulting type is the body of the product type
+       that is the type of the abstraction,
        whose bound variables are the same as the abstraction."))
     (atom-case
      atom
@@ -959,7 +966,12 @@
                                   (string-kind-map-fix kindenv)))
           ((ok type) (check-expr atom.body sortenv kindenv typeenv)))
        (make-type-forall :vars atom.vars :type type))
-     :index-abs (reserr :todo)
+     :index-abs
+     (b* ((sortenv-addition (sorted-var-list-to-map atom.vars))
+          (sortenv (omap::update* sortenv-addition
+                                  (string-sort-map-fix sortenv)))
+          ((ok type) (check-expr atom.body sortenv kindenv typeenv)))
+       (make-type-pi :vars atom.vars :type type))
      :box (reserr :todo))
     :measure (atom-count atom))
 
