@@ -492,10 +492,10 @@
       (index-append prefix-elements)))
   :guard-hints (("Goal" :in-theory (enable nfix)))
   :prepwork
-  ((defrule returns-lemma1
+  ((defrulel returns-lemma1
      (implies (< 0 (- (len x) (len y)))
               (consp x)))
-   (defrule returns-lemma2
+   (defrulel returns-lemma2
      (implies (<= 1 (len x))
               (consp x)))))
 
@@ -944,7 +944,18 @@
        and we check the body of the abstraction in the extended environment.
        The resulting type is the body of the product type
        that is the type of the abstraction,
-       whose bound variables are the same as the abstraction."))
+       whose bound variables are the same as the abstraction.")
+     (xdoc::p
+      "For a boxing atom,
+       the type that is part of its syntax must be a sum type
+       and must be successfully checked to have the atom kind.
+       The indices in the boxing atom must have the same sorts
+       as the bound variables of the sum type.
+       In the body type of the sum type,
+       we substitute the bound variables with the indices of the boxing atom;
+       the resulting type must be equivalent to
+       the type of the body expression of the box.
+       The type of the boxing atom is the sum type."))
     (atom-case
      atom
      :base
@@ -972,7 +983,19 @@
                                   (string-sort-map-fix sortenv)))
           ((ok type) (check-expr atom.body sortenv kindenv typeenv)))
        (make-type-pi :vars atom.vars :type type))
-     :box (reserr :todo))
+     :box
+     (b* (((ok vars+type) (type-match-sum atom.type))
+          (svars (sortedvarlist+type->vars vars+type))
+          (body-type (sortedvarlist+type->type vars+type))
+          ((ok kind) (check-type atom.type sortenv kindenv))
+          ((unless (kind-case kind :atom)) (reserr nil))
+          ((ok sorts) (check-index-list atom.indices sortenv))
+          ((unless (equal sorts (sorted-var-list->sort svars))) (reserr nil))
+          (subst (omap::from-lists (sorted-var-list->var svars) atom.indices))
+          (body-type-subst (subst-free-index-vars-in-type body-type subst))
+          ((ok type) (check-expr atom.array sortenv kindenv typeenv))
+          ((unless (type-equivp type body-type-subst)) (reserr nil)))
+       atom.type))
     :measure (atom-count atom))
 
   (define check-atom-list ((atoms atom-listp)
@@ -1014,54 +1037,55 @@
 
   ///
 
-  (defruled guards-lemma
+  (defruledl len-lemma
     (implies (equal x y)
              (equal (len x) (len y))))
 
-  (verify-guards check-expr
-    :hints (("Goal"
-             :use ((:instance guards-lemma
-                              (x (type+index-list->type
-                                  (type-list-match-array
-                                   (check-expr-list
-                                    (expr-term-app->args expr)
-                                    sortenv kindenv typeenv))))
-                              (y (type+index-list->type
-                                  (type-list-match-array
-                                   (typelist+type->types
-                                    (type-match-fun
-                                     (type+index->type
-                                      (type-match-array
-                                       (check-expr
-                                        (expr-term-app->fun expr)
-                                        sortenv kindenv typeenv)))))))))
-                   (:instance guards-lemma
-                              (x (check-type-list
-                                  (expr-type-app->args expr)
-                                  sortenv kindenv))
-                              (y (kinded-var-list->kind
-                                  (kindedvarlist+type->vars
-                                   (type-match-forall
-                                    (type+index->type
-                                     (type-match-array
-                                      (check-expr
-                                       (expr-type-app->fun expr)
-                                       sortenv kindenv typeenv))))))))
-                   (:instance guards-lemma
-                              (x (check-index-list
-                                  (expr-index-app->args expr)
-                                  sortenv))
-                              (y (sorted-var-list->sort
-                                  (sortedvarlist+type->vars
-                                   (type-match-product
-                                    (type+index->type
-                                     (type-match-array
-                                      (check-expr
-                                       (expr-index-app->fun expr)
-                                       sortenv kindenv typeenv))))))))))))
+  (defrulel lemma1
+    (implies (and (not (reserrp (check-index-list indices sortenv)))
+                  (equal (check-index-list indices sortenv)
+                         (sorted-var-list->sort x)))
+             (equal (len x)
+                    (len indices)))
+    :use ((:instance len-lemma
+                     (x (check-index-list indices sortenv))
+                     (y (sorted-var-list->sort x)))
+          len-of-check-index-list)
+    :disable len-of-check-index-list)
+
+  (defrulel lemma2
+    (implies (and (not (reserrp (check-type-list types sortenv kindenv)))
+                  (equal (check-type-list types sortenv kindenv)
+                         (kinded-var-list->kind x)))
+             (equal (len x)
+                    (len types)))
+    :use ((:instance len-lemma
+                     (x (check-type-list types sortenv kindenv))
+                     (y (kinded-var-list->kind x)))
+          len-of-check-type-list)
+    :disable len-of-check-type-list)
+
+  (defrulel lemma3
+    (implies (and (not (reserrp
+                        (check-expr-list exprs sortenv kindenv typeenv)))
+                  (not (reserrp
+                        (type-list-match-array
+                         (check-expr-list exprs sortenv kindenv typeenv))))
+                  (not (reserrp (type-list-match-array x)))
+                  (equal (type+index-list->type
+                          (type-list-match-array
+                           (check-expr-list exprs sortenv kindenv typeenv)))
+                         (type+index-list->type
+                          (type-list-match-array x))))
+             (equal (len x)
+                    (len exprs)))
+    :use ((:instance len-lemma
+                     (x (type+index-list->type
+                         (type-list-match-array
+                          (check-expr-list exprs sortenv kindenv typeenv))))
+                     (y (type+index-list->type
+                         (type-list-match-array x))))))
+
+  (verify-guards check-expr)
 
   (fty::deffixequiv-mutual check-exprs/atoms))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; TODO: handle the 'todo's above
