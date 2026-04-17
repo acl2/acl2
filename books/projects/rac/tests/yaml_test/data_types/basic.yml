@@ -38,9 +38,9 @@
 - name: typedef-c-array-neg
   should_report_error: true
 
-
 - name: typedef-redeclaration
   should_report_error: true
+- name: typedef-redeclaration-2
 
 - name: enum
 
