@@ -14,6 +14,7 @@
 (include-book "abstract-syntax-constructors")
 (include-book "abstract-syntax-structural-operations")
 (include-book "abstract-syntax-matching-operations")
+(include-book "abstract-syntax-substitution-operations")
 (include-book "type-equivalence")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -289,7 +290,15 @@
          ((ok kind) (check-type (car types) sortenv kindenv))
          ((ok kinds) (check-type-list (cdr types) sortenv kindenv)))
       (cons kind kinds))
-    :measure (type-list-count types))
+    :measure (type-list-count types)
+
+    ///
+
+    (defret len-of-check-type-list
+      (implies (not (reserrp kinds))
+               (equal (len kinds)
+                      (len types)))
+      :hints (("Goal" :induct (len types) :in-theory (enable len)))))
 
   :verify-guards :after-returns
 
@@ -660,7 +669,12 @@
        We check all the type arguments
        (@($\\tau\\ldots$) in the paper and dissertation),
        ensuring that their kinds match the ones of
-       the variables in the universal type."))
+       the variables in the universal type.
+       We form a substitution from the bound variables to the argument types,
+       and we apply it to the body atom type
+       to obtain the atom type of the resulting array type,
+       whose index is obtained by concatenating
+       the function index to the body index."))
     (expr-case
      expr
      :var
@@ -750,11 +764,12 @@
           (body-atom-type (type+index->type body-type+index))
           (body-index (type+index->index body-type+index))
           ((ok kinds) (check-type-list expr.args sortenv kindenv))
-          ((unless (equal kinds (kinded-var-list->kind kvars))) (reserr nil)))
-       (prog2$ (list body-index
-                     body-atom-type
-                     fun-index)
-               (reserr nil)))
+          ((unless (equal kinds (kinded-var-list->kind kvars))) (reserr nil))
+          (bound-vars (kinded-var-list->var kvars))
+          (subst (omap::from-lists bound-vars expr.args)))
+       (make-type-array
+        :type (subst-free-type-vars-in-type body-atom-type subst)
+        :index (index-append (list fun-index body-index))))
      :index-app (reserr :todo)
      :unbox (reserr :todo))
     :measure (expr-count expr))
@@ -865,20 +880,32 @@
 
   (verify-guards check-expr
     :hints (("Goal"
-             :use (:instance guards-lemma
-                             (x (type+index-list->type
-                                 (type-list-match-array
-                                  (check-expr-list
-                                   (expr-term-app->args expr)
-                                   sortenv kindenv typeenv))))
-                             (y (type+index-list->type
-                                 (type-list-match-array
-                                  (typelist+type->types
-                                   (type-match-fun
+             :use ((:instance guards-lemma
+                              (x (type+index-list->type
+                                  (type-list-match-array
+                                   (check-expr-list
+                                    (expr-term-app->args expr)
+                                    sortenv kindenv typeenv))))
+                              (y (type+index-list->type
+                                  (type-list-match-array
+                                   (typelist+type->types
+                                    (type-match-fun
+                                     (type+index->type
+                                      (type-match-array
+                                       (check-expr
+                                        (expr-term-app->fun expr)
+                                        sortenv kindenv typeenv)))))))))
+                   (:instance guards-lemma
+                              (x (check-type-list
+                                  (expr-type-app->args expr)
+                                  sortenv kindenv))
+                              (y (kinded-var-list->kind
+                                  (kindedvarlist+type->vars
+                                   (type-match-forall
                                     (type+index->type
                                      (type-match-array
                                       (check-expr
-                                       (expr-term-app->fun expr)
+                                       (expr-type-app->fun expr)
                                        sortenv kindenv typeenv))))))))))))
 
   (fty::deffixequiv-mutual check-exprs/atoms))
