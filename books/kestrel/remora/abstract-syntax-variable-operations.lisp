@@ -20,16 +20,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ abstract-syntax-substitution-operations
+(defxdoc+ abstract-syntax-variable-operations
   :parents (abstract-syntax)
-  :short "Substitution operations in ASTs."
+  :short "Operations on ASTs related to variables."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We defines various categories of substitution operations on ASTs.
-     The substitution themselves are specified as maps.")
-   (xdoc::p
-    "These substitution operations include renaming operations for variables."))
+    "These include substitutions of variables with other ASTs,
+     as well as variable renamings."))
   :order-subtopics t
   :default-parent t)
 
@@ -47,7 +45,7 @@
 
   (define subst-vars-in-index ((index indexp) (subst string-index-mapp))
     :returns (new-index indexp)
-    :parents (abstract-syntax-substitution-operations subst-vars-in-indices)
+    :parents (abstract-syntax-variable-operations subst-vars-in-indices)
     :short "Substitute variables in an index."
     (index-case
      index
@@ -65,7 +63,7 @@
   (define subst-vars-in-index-list ((indices index-listp)
                                     (subst string-index-mapp))
     :returns (new-indices index-listp)
-    :parents (abstract-syntax-substitution-operations subst-vars-in-indices)
+    :parents (abstract-syntax-variable-operations subst-vars-in-indices)
     :short "Substitute variables in a list of indices."
     (cond ((endp indices) nil)
           (t (cons (subst-vars-in-index (car indices) subst)
@@ -99,7 +97,7 @@
 
   (define subst-free-index-vars-in-type ((type typep) (subst string-index-mapp))
     :returns (new-type typep)
-    :parents (abstract-syntax-substitution-operations
+    :parents (abstract-syntax-variable-operations
               subst-free-index-vars-in-types)
     :short "Substitute free index variables in a type."
     (type-case
@@ -132,7 +130,7 @@
   (define subst-free-index-vars-in-type-list ((types type-listp)
                                               (subst string-index-mapp))
     :returns (new-types type-listp)
-    :parents (abstract-syntax-substitution-operations
+    :parents (abstract-syntax-variable-operations
               subst-free-index-vars-in-types)
     :short "Substitute free index variables in a list of types."
     (cond ((endp types) nil)
@@ -167,7 +165,7 @@
 
   (define subst-free-type-vars-in-type ((type typep) (subst string-type-mapp))
     :returns (new-type typep)
-    :parents (abstract-syntax-substitution-operations
+    :parents (abstract-syntax-variable-operations
               subst-free-type-vars-in-types)
     :short "Substitute free index variables in a type."
     (type-case
@@ -201,7 +199,7 @@
   (define subst-free-type-vars-in-type-list ((types type-listp)
                                              (subst string-type-mapp))
     :returns (new-types type-listp)
-    :parents (abstract-syntax-substitution-operations
+    :parents (abstract-syntax-variable-operations
               subst-free-type-vars-in-types)
     :short "Substitute free index variables in a list of types."
     (cond ((endp types) nil)
@@ -236,7 +234,7 @@
 
   (define rename-vars-in-index ((index indexp) (subst string-string-mapp))
     :returns (new-index indexp)
-    :parents (abstract-syntax-substitution-operations rename-vars-in-indices)
+    :parents (abstract-syntax-variable-operations rename-vars-in-indices)
     :short "Rename variables in an index."
     (index-case
      index
@@ -254,7 +252,7 @@
   (define rename-vars-in-index-list ((indices index-listp)
                                      (subst string-string-mapp))
     :returns (new-indices index-listp)
-    :parents (abstract-syntax-substitution-operations rename-vars-in-indices)
+    :parents (abstract-syntax-variable-operations rename-vars-in-indices)
     :short "Rename variables in a list of indices."
     (cond ((endp indices) nil)
           (t (cons (rename-vars-in-index (car indices) subst)
@@ -289,7 +287,7 @@
   (define rename-free-index-vars-in-type ((type typep)
                                           (subst string-string-mapp))
     :returns (new-type typep)
-    :parents (abstract-syntax-substitution-operations
+    :parents (abstract-syntax-variable-operations
               rename-free-index-vars-in-types)
     :short "Substitute free index variables in a type."
     (type-case
@@ -322,7 +320,7 @@
   (define rename-free-index-vars-in-type-list ((types type-listp)
                                                (subst string-string-mapp))
     :returns (new-types type-listp)
-    :parents (abstract-syntax-substitution-operations
+    :parents (abstract-syntax-variable-operations
               rename-free-index-vars-in-types)
     :short "Substitute free index variables in a list of types."
     (cond ((endp types) nil)
@@ -358,7 +356,7 @@
   (define rename-free-type-vars-in-type ((type typep)
                                          (subst string-string-mapp))
     :returns (new-type typep)
-    :parents (abstract-syntax-substitution-operations
+    :parents (abstract-syntax-variable-operations
               rename-free-type-vars-in-types)
     :short "Substitute free index variables in a type."
     (type-case
@@ -392,7 +390,7 @@
   (define rename-free-type-vars-in-type-list ((types type-listp)
                                               (subst string-string-mapp))
     :returns (new-types type-listp)
-    :parents (abstract-syntax-substitution-operations
+    :parents (abstract-syntax-variable-operations
               rename-free-type-vars-in-types)
     :short "Substitute free index variables in a list of types."
     (cond ((endp types) nil)

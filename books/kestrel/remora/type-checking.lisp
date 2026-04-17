@@ -14,7 +14,7 @@
 (include-book "abstract-syntax-constructors")
 (include-book "abstract-syntax-structural-operations")
 (include-book "abstract-syntax-matching-operations")
-(include-book "abstract-syntax-substitution-operations")
+(include-book "abstract-syntax-variable-operations")
 (include-book "type-equivalence")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
