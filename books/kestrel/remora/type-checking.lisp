@@ -40,6 +40,7 @@
    type+index-p-when-type+index-resultp-and-not-reserrp
    type+index-listp-when-type+index-list-resultp-and-not-reserrp
    typelist+type-p-when-typelist+type-resultp-and-not-reserrp
+   sortedvarlist+type-p-when-sortedvarlist+type-resultp-and-not-reserrp
    kindedvarlist+type-p-when-kindedvarlist+type-resultp-and-not-reserrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -185,7 +186,15 @@
          ((ok sort) (check-index (car indices) sortenv))
          ((ok sorts) (check-index-list (cdr indices) sortenv)))
       (cons sort sorts))
-    :measure (index-list-count indices))
+    :measure (index-list-count indices)
+
+    ///
+
+    (defret len-of-check-index-list
+      (implies (not (reserrp sorts))
+               (equal (len sorts)
+                      (len indices)))
+      :hints (("Goal" :induct (len indices) :in-theory (enable len)))))
 
   :verify-guards :after-returns
 
@@ -674,7 +683,27 @@
        and we apply it to the body atom type
        to obtain the atom type of the resulting array type,
        whose index is obtained by concatenating
-       the function index to the body index."))
+       the function index to the body index.")
+     (xdoc::p
+      "For an index application,
+       first we check the function expression,
+       which must have an array type of a product type,
+       whose body type is an array type.
+       In the arXiv paper and dissertation,
+       @($(x\\ \\gamma)\\ldots$) corresponds to @'svars') in our code,
+       @($\\tau_p$) corresponds to @('body-atom-type'),
+       @($\\iota_p$) corresponds to @('body-index'),
+       and @($\\iota_f$) corresponds to @('fun-index').
+       We check all the index arguments
+       (@($\\iota\\ldots$) in the paper and dissertation),
+       ensuring that their sorts match the ones of
+       the variables in the product type.
+       We form a substitution from the bound variables to the argument indices,
+       and we apply it to the body atom type
+       to obtain the atom type of the resulting array type,
+       whose index is obtained by concatenating
+       the function index to
+       the result of applying the same substitution to the body index."))
     (expr-case
      expr
      :var
@@ -770,7 +799,25 @@
        (make-type-array
         :type (subst-free-type-vars-in-type body-atom-type subst)
         :index (index-append (list fun-index body-index))))
-     :index-app (reserr :todo)
+     :index-app
+     (b* (((ok fun-arr-type) (check-expr expr.fun sortenv kindenv typeenv))
+          ((ok fun-arr-type+index) (type-match-array fun-arr-type))
+          (fun-type (type+index->type fun-arr-type+index))
+          (fun-index (type+index->index fun-arr-type+index))
+          ((ok fun-vars+type) (type-match-product fun-type))
+          (svars (sortedvarlist+type->vars fun-vars+type))
+          (body-arr-type (sortedvarlist+type->type fun-vars+type))
+          ((ok body-type+index) (type-match-array body-arr-type))
+          (body-atom-type (type+index->type body-type+index))
+          (body-index (type+index->index body-type+index))
+          ((ok sorts) (check-index-list expr.args sortenv))
+          ((unless (equal sorts (sorted-var-list->sort svars))) (reserr nil))
+          (bound-vars (sorted-var-list->var svars))
+          (subst (omap::from-lists bound-vars expr.args))
+          (body-index-subst (subst-vars-in-index body-index subst)))
+       (make-type-array
+        :type (subst-free-index-vars-in-type body-atom-type subst)
+        :index (index-append (list fun-index body-index-subst))))
      :unbox (reserr :todo))
     :measure (expr-count expr))
 
@@ -906,6 +953,18 @@
                                      (type-match-array
                                       (check-expr
                                        (expr-type-app->fun expr)
+                                       sortenv kindenv typeenv))))))))
+                   (:instance guards-lemma
+                              (x (check-index-list
+                                  (expr-index-app->args expr)
+                                  sortenv))
+                              (y (sorted-var-list->sort
+                                  (sortedvarlist+type->vars
+                                   (type-match-product
+                                    (type+index->type
+                                     (type-match-array
+                                      (check-expr
+                                       (expr-index-app->fun expr)
                                        sortenv kindenv typeenv))))))))))))
 
   (fty::deffixequiv-mutual check-exprs/atoms))
