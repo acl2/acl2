@@ -922,13 +922,30 @@
      (xdoc::p
       "The type of a base value or a primitive operator
        is independent from the environment(s),
-       and determined via separate functions."))
-    (declare (ignore sortenv kindenv typeenv))
+       and determined via separate functions.")
+     (xdoc::p
+      "For a term abstraction,
+       we check all the types of the bound variables,
+       which must all have the array kind.
+       We extend the type environment with the bound variables,
+       and we check the body of the abstraction in the extended environment.
+       Its type is the output type of the function type of the abstraction,
+       and its input types are the ones of the bound variables."))
     (atom-case
      atom
-     :base (type-base (base-type-of-base-value atom.value))
-     :op (type-of-prim-op atom.op)
-     :term-abs (reserr :todo)
+     :base
+     (type-base (base-type-of-base-value atom.value))
+     :op
+     (type-of-prim-op atom.op)
+     :term-abs
+     (b* ((types (typed-var-list->type atom.vars))
+          ((ok kinds) (check-type-list types sortenv kindenv))
+          ((unless (kind-list-arrayp kinds)) (reserr nil))
+          (typeenv-addition (typed-var-list-to-map atom.vars))
+          (typeenv (omap::update* typeenv-addition
+                                  (string-type-map-fix typeenv)))
+          ((ok type) (check-expr atom.body sortenv kindenv typeenv)))
+       (make-type-fun :in types :out type))
      :type-abs (reserr :todo)
      :index-abs (reserr :todo)
      :box (reserr :todo))
@@ -968,8 +985,6 @@
     (defret check-atom-list-iff-not-zp-len-atoms
       (iff types (not (zp (len atoms))))
       :hints (("Goal" :induct (len atoms) :in-theory (enable len)))))
-
-  :prepwork ((set-bogus-mutual-recursion-ok t)) ; TODO: remove
 
   :verify-guards nil ; done below
 
