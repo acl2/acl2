@@ -19,4 +19,14 @@
   :short "Fixtype of omaps from strings to strings."
   :key-type string
   :val-type string
-  :pred string-string-mapp)
+  :pred string-string-mapp
+
+  ///
+
+  (defrule string-string-mapp-of-from-lists
+    (implies (and (equal (len keys) (len vals))
+                  (string-listp keys)
+                  (string-listp vals))
+             (string-string-mapp (omap::from-lists keys vals)))
+    :induct t
+    :enable (omap::from-lists string-listp)))
