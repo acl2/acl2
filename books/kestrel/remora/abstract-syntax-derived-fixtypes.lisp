@@ -184,7 +184,17 @@
   :short "Fixtype of maps from strings to sorts."
   :key-type string
   :val-type sort
-  :pred string-sort-mapp)
+  :pred string-sort-mapp
+
+  ///
+
+  (defrule string-sort-mapp-of-from-lists
+    (implies (and (string-listp strings)
+                  (sort-listp sorts)
+                  (equal (len sorts) (len strings)))
+             (string-sort-mapp (omap::from-lists strings sorts)))
+    :induct t
+    :enable (omap::from-lists string-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
