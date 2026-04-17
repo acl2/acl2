@@ -703,7 +703,34 @@
        to obtain the atom type of the resulting array type,
        whose index is obtained by concatenating
        the function index to
-       the result of applying the same substitution to the body index."))
+       the result of applying the same substitution to the body index.")
+     (xdoc::p
+      "For an unboxing expression,
+       first we check the target expression,
+       which must be an array type of a sum type.
+       In the arXiv paper and dissertation,
+       @($\\iota_s$) corresponds to @('sum-index') in our code,
+       @($(x'\\ \\gamma)\\ldots$) corresponds to @('svars'),
+       and @($\\tau_s$) corresponds to @('body-type').
+       The number of bound variables must be the same as
+       the number of the index variables in the unboxing expression.
+       We extend the sort environment with the index variables
+       associated to the sorts of the corresponding bound variables.
+       In the sum type body,
+       we rename the bound variables to the index variables:
+       we associate the resulting type
+       to the term variable of the unboxing expression,
+       and we extend the type environment with that association.
+       We check the body expression of the unboxing expression
+       in the extended environment;
+       we must get an array type,
+       which must have the array kind.
+       In the arXiv paper and dissertation,
+       the latter array has atom type @($\\tau_b$) and index @($\\iota_b$),
+       which correspond to @('body-atom-type') and @('body-index') in our code.
+       The type of the unboxing expression is the array type consisting of
+       the @($\\tau_b$) type as atom
+       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as index."))
     (expr-case
      expr
      :var
@@ -818,7 +845,34 @@
        (make-type-array
         :type (subst-free-index-vars-in-type body-atom-type subst)
         :index (index-append (list fun-index body-index-subst))))
-     :unbox (reserr :todo))
+     :unbox
+     (b* (((ok target-arr-type)
+           (check-expr expr.target sortenv kindenv typeenv))
+          ((ok target-arr-type+index) (type-match-array target-arr-type))
+          (sum-type (type+index->type target-arr-type+index))
+          (sum-index (type+index->index target-arr-type+index))
+          ((ok sum-vars+type) (type-match-sum sum-type))
+          (svars (sortedvarlist+type->vars sum-vars+type))
+          (body-type (sortedvarlist+type->type sum-vars+type))
+          ((unless (= (len expr.index-vars) (len svars))) (reserr nil))
+          (bound-vars (sorted-var-list->var svars))
+          (sorts (sorted-var-list->sort svars))
+          (sortenv-addition (omap::from-lists expr.index-vars sorts))
+          (sortenv (omap::update* sortenv-addition
+                                  (string-sort-map-fix sortenv)))
+          (renaming (omap::from-lists bound-vars expr.index-vars))
+          (body-type-renam (rename-free-index-vars-in-type body-type renaming))
+          (typeenv (omap::update expr.term-var
+                                 body-type-renam
+                                 (string-type-map-fix typeenv)))
+          ((ok arr-type) (check-expr expr.body sortenv kindenv typeenv))
+          ((ok arr-type+index) (type-match-array arr-type))
+          (body-atom-type (type+index->type arr-type+index))
+          (body-index (type+index->index arr-type+index))
+          ((ok kind) (check-type arr-type sortenv kindenv))
+          ((unless (kind-case kind :array)) (reserr nil)))
+       (make-type-array :type body-atom-type
+                        :index (index-append (list sum-index body-index)))))
     :measure (expr-count expr))
 
   (define check-expr-list ((exprs expr-listp)
