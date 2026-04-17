@@ -25,7 +25,7 @@
   (xdoc::topstring
    (xdoc::p
     "We defines various categories of substitution operations on ASTs.
-     The substitution themselves are reified as maps."))
+     The substitution themselves are specified as maps."))
   :order-subtopics t
   :default-parent t)
 
