@@ -91,3 +91,25 @@
       (make-kindedvarlist+type :vars (type-forall->vars type)
                                :type (type-forall->type type))
     (reserr nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-match-product ((type typep))
+  :returns (vars+type sortedvarlist+type-resultp)
+  :short "Check if a type is a product type,
+          returning its sorted variable list and body type if successful."
+  (if (type-case type :pi)
+      (make-sortedvarlist+type :vars (type-pi->vars type)
+                               :type (type-pi->type type))
+    (reserr nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-match-sum ((type typep))
+  :returns (vars+type sortedvarlist+type-resultp)
+  :short "Check if a type is a sum type,
+          returning its sorted variable list and body type if successful."
+  (if (type-case type :sigma)
+      (make-sortedvarlist+type :vars (type-sigma->vars type)
+                               :type (type-sigma->type type))
+    (reserr nil)))
