@@ -31,7 +31,7 @@
      but the language may evolve towards undecidability.")
    (xdoc::p
     "The current (decidable) equivalence of indices
-     is described in the arXiv paper and dissertation,
+     is described in [arxiv] and [thesis],
      in terms of normalization of indices:
      two indices are equivalent iff they normalize to the same index.
      We plan to formalize this notion at a higher level,

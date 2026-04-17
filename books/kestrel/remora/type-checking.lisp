@@ -54,13 +54,13 @@
     "We define a high-level executable type checker
      that is meant to enforce exactly the inference rules
      that define the static semantics of Remora
-     in the arXiv paper and in the dissertation.")
+     in [arxiv] and [thesis].")
    (xdoc::p
     "This type checker is not designed for efficiency
      or to provide informative error messages.
      It is designed for simplicity.")
    (xdoc::p
-    "The papers and dissertation denote
+    "[arxiv], [thesis], and [esop] denote
      sort environments with @($\\Theta$),
      kind environments with @($\\Delta$), and
      type environments with @($\\Gamma$).
@@ -340,14 +340,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to the signature described
-     in the arXiv paper and in the dissertation.
+    "This corresponds to the signature described in [arxiv] and [thesis].
      This can be extended and tweaked
      as we extend and tweak the primitive operations
      and the base values and types,
      which the Remora publications do not pin down.")
    (xdoc::p
-    "The arXiv paper and the dissertation exemplify the signature
+    "[arxiv] and [thesis] exemplify the signature
      by giving the input and output types of @('+'),
      which we represent as @(':add').
      Those publications mention a @('Num') (i.e. numeric type).
@@ -356,8 +355,7 @@
      they all have scalar ranks for inputs and outputs.")
    (xdoc::p
     "The types of @('append'), @('reduce'), and @('iota') are shown
-     in Figure 2 of the arXiv paper
-     and in Figure 4.3 of the dissertation.
+     in Figure 2 of [arxiv] and in Figure 4.3 of [thesis].
      The figures elide the universal and product quantifiers,
      but we need to include them in our definition.")
    (xdoc::p
@@ -437,7 +435,7 @@
      Each of the indices of the input types of the function expression
      must be a suffix of the index of the type of
      the argument expression corresponding to the function input.
-     In the arXiv paper and dissertation,
+     In [arxiv] and [thesis],
      the index of the argument is denoted
      @($(\\mathtt{++}\\ \\iota_a\\ \\iota)\\ldots$),
      and the index of the input is denoted @($\\iota$).
@@ -639,12 +637,12 @@
        The atom input and output types
        are denoted @($\\tau\\ldots$) and @($\\tau'$),
        and their indices are denoted @($\\iota\\ldots$) and @($\\iota'$),
-       in the arXiv paper and dissertation;
+       in [arxiv] and [thesis];
        our code uses
        @('in-atom-types'), @('out-atom-type'),
        @('in-index'), and @('out-index').
        The index of the array type of the function expression
-       is denoted @($\\iota_f$) in the paper and dissertation;
+       is denoted @($\\iota_f$) in [arxiv] and [thesis];
        our code uses @('fun-index').
        The argument expressions must all have array types,
        whose atom types must be equal to
@@ -659,7 +657,7 @@
        Then we take the join of all those prefixes and the function index
        (see documentation of @(tsee join-indices):
        that is the principal index, in Remora's terminology,
-       denoted @($\\iota_p$) in the paper and dissertation.
+       denoted @($\\iota_p$) in [arxiv] and [thesis].
        Finally we return the type of the term application expression,
        which is the array type consisting of
        the function output atom type
@@ -670,13 +668,13 @@
        first we check the function expression,
        which must have an array type of a universal type,
        whose body type is an array type.
-       In the arXiv paper and dissertation,
+       In [arxiv] and [thesis],
        @($(x\\ k)\\ldots$) corresponds to @'kvars') in our code,
        @($\\tau_u$) corresponds to @('body-atom-type'),
        @($\\iota_u$) corresponds to @('body-index'),
        and @($\\iota_f$) corresponds to @('fun-index').
        We check all the type arguments
-       (@($\\tau\\ldots$) in the paper and dissertation),
+       (@($\\tau\\ldots$) in [arxiv] and [thesis]),
        ensuring that their kinds match the ones of
        the variables in the universal type.
        We form a substitution from the bound variables to the argument types,
@@ -689,13 +687,13 @@
        first we check the function expression,
        which must have an array type of a product type,
        whose body type is an array type.
-       In the arXiv paper and dissertation,
+       In [arxiv] and [thesis],
        @($(x\\ \\gamma)\\ldots$) corresponds to @'svars') in our code,
        @($\\tau_p$) corresponds to @('body-atom-type'),
        @($\\iota_p$) corresponds to @('body-index'),
        and @($\\iota_f$) corresponds to @('fun-index').
        We check all the index arguments
-       (@($\\iota\\ldots$) in the paper and dissertation),
+       (@($\\iota\\ldots$) in [arxiv] and [thesis]),
        ensuring that their sorts match the ones of
        the variables in the product type.
        We form a substitution from the bound variables to the argument indices,
@@ -708,7 +706,7 @@
       "For an unboxing expression,
        first we check the target expression,
        which must be an array type of a sum type.
-       In the arXiv paper and dissertation,
+       In [arxiv] and [thesis],
        @($\\iota_s$) corresponds to @('sum-index') in our code,
        @($(x'\\ \\gamma)\\ldots$) corresponds to @('svars'),
        and @($\\tau_s$) corresponds to @('body-type').
@@ -725,7 +723,7 @@
        in the extended environment;
        we must get an array type,
        which must have the array kind.
-       In the arXiv paper and dissertation,
+       In [arxiv] and [thesis],
        the latter array has atom type @($\\tau_b$) and index @($\\iota_b$),
        which correspond to @('body-atom-type') and @('body-index') in our code.
        The type of the unboxing expression is the array type consisting of

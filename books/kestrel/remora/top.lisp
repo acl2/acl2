@@ -28,8 +28,9 @@
      from arrays of lower ranks to arrays of higher ranks,
      where an `array' is a regular arrangement of homogeneous values
      of an arbitrary number of dimensions
-     (0 for scalars, 1 for vectors, 2 for matrices, etc.).
-     Remora is described in the following publications:")
+     (0 for scalars, 1 for vectors, 2 for matrices, etc.).")
+   (xdoc::p
+    "This library is based on the following sources:")
    (xdoc::ul
     (xdoc::li
      (xdoc::ahref
@@ -37,7 +38,7 @@
       "``The Semantics of Rank Polymorphism''")
      " by Justin Slepak, Olin Shivers, and Panagiotis Manolios:
       an arXiv paper submitted to the Journal of Functional Programming.
-      We refer to this as `arXiv paper' in the documentation.")
+      We reference this as `[arxiv]' in the documentation.")
     (xdoc::li
      (xdoc::ahref
       "https://link.springer.com/chapter/10.1007/978-3-642-54833-8_3"
@@ -47,21 +48,29 @@
      (xdoc::ahref
       "https://www.khoury.northeastern.edu/home/pete/research/esop-2014.html"
       "here")
-     ". We refer to this as `ESOP paper' in the documentation.")
+     ". We reference this as `[esop]' in the documentation.")
     (xdoc::li
      (xdoc::ahref
       "https://arxiv.org/abs/1912.13451"
       "``Introduction to Rank-polymorphic Programming in Remora (Draft)''")
      " by Olin Shivers, Justin Slepak, and Panagiotis Manolios:
       a tutorial on Remora.
-      We refer to this as `tutorial' in the documentation.")
+      We reference this as `[tutor]' in the documentation.")
     (xdoc::li
      (xdoc::ahref
       "https://www.khoury.northeastern.edu/~jrslepak/Dissertation.pdf"
       "``A Typed Programming Language - The Semantics of Rank Polymorphism''")
      " by Justin Slepak:
       PhD dissertation.
-      We refer to this as `dissertation' in the documentation."))
+      We reference this as `[thesis]' in the documentation.")
+    (xdoc::li
+     "The "
+     (xdoc::ahref
+      "https://github.com/remora-lang/remora"
+      "implementation of Remora on GitHub")
+     ", which includes an interpreter and compiler.
+      This implementation is work in progress.
+      We reference this as `[impl]' in the documentation."))
    (xdoc::p
     "This ACL2 library is work in progress towards building
      formalizations and tools for Remora."))

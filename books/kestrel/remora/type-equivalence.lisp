@@ -32,7 +32,7 @@
      but the language may evolve towards undecidability.")
    (xdoc::p
     "The current (decidable) equivalence of types
-     is described in the arXiv paper and dissertation,
+     is described in [arxiv] and [thesis],
      in terms of inference rules
      that involve the semantic equivalence of indices;
      the latter is defined in terms of normalization
