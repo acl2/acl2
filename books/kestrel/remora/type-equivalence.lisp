@@ -13,6 +13,8 @@
 (include-book "index-equivalence")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/basic/inductions" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -98,7 +100,17 @@
              (consp types2)
              (type-equivp (car types1) (car types2))
              (type-list-equivp (cdr types1) (cdr types2))))
-    :measure (+ (type-list-count types1) (type-list-count types2)))
+    :measure (+ (type-list-count types1) (type-list-count types2))
+
+    ///
+
+    (defrule same-len-when-type-list-equivp
+      (implies (type-list-equivp types1 types2)
+               (equal (len types1) (len types2)))
+      :rule-classes :forward-chaining
+      :hints (("Goal"
+               :induct (acl2::cdr-cdr-induct types1 types2)
+               :in-theory (enable acl2::atom)))))
 
   ///
 
