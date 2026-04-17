@@ -182,7 +182,7 @@ arrow-type      = ( "->" / %x2192 ) ws       ; -> or <arrow>
 forall-type     = ( "Forall" / %x2200 ) ws   ; Forall or <forall>
                   "(" ws *( ws type-param ) ws ")" ws type-exp
 
-pi-type         = ( "Pi" / %x041F ) ws        ; Pi or <Cyrillic Pe>
+pi-type         = ( "Pi" / %x03A0 ) ws        ; Pi or <Pi>
                   "(" ws *( ws extent-param ) ws ")" ws type-exp
 
 sigma-type      = ( "Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
@@ -254,7 +254,7 @@ num-val         = [ "+" / "-" ] ( float-lit / decimal )
 ;   i-fn, i<lambda>,
 ;   A, ->, <arrow> (code point #x2192 (RIGHTWARDS ARROW)),
 ;   Forall, <forall> (code point #x2200 (FOR ALL)),
-;   Pi, <Cyrillic P> (code point #x41f (CYRILLIC CAPITAL LETTER PE)),
+;   Pi, <Pi> (code point #x3a0 (GREEK CAPITAL LETTER PI)),
 ;   Sigma, <sigma> (code point #x3a3 (GREEK CAPITAL LETTER SIGMA)),
 ;   let, type, extent, fun, t-fun, i-fun, val
 
