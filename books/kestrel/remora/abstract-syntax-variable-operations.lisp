@@ -227,36 +227,36 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The renaming substitution is specified by a map from strings to strings.
+    "The renaming is specified by a map from strings to strings.
      The only variables in an index are index variables.
      All the variables in an index are free,
      because indices have no binders."))
 
-  (define rename-vars-in-index ((index indexp) (subst string-string-mapp))
+  (define rename-vars-in-index ((index indexp) (renaming string-string-mapp))
     :returns (new-index indexp)
     :parents (abstract-syntax-variable-operations rename-vars-in-indices)
     :short "Rename variables in an index."
     (index-case
      index
-     :var (b* ((subst (string-string-map-fix subst))
-               (var+name (omap::assoc index.name subst)))
+     :var (b* ((renaming (string-string-map-fix renaming))
+               (var+name (omap::assoc index.name renaming)))
             (if var+name
                 (index-var (cdr var+name))
               (index-var index.name)))
      :const (index-const index.value)
-     :shape (index-shape (rename-vars-in-index-list index.indices subst))
-     :add (index-add (rename-vars-in-index-list index.indices subst))
-     :append (index-append (rename-vars-in-index-list index.indices subst)))
+     :shape (index-shape (rename-vars-in-index-list index.indices renaming))
+     :add (index-add (rename-vars-in-index-list index.indices renaming))
+     :append (index-append (rename-vars-in-index-list index.indices renaming)))
     :measure (index-count index))
 
   (define rename-vars-in-index-list ((indices index-listp)
-                                     (subst string-string-mapp))
+                                     (renaming string-string-mapp))
     :returns (new-indices index-listp)
     :parents (abstract-syntax-variable-operations rename-vars-in-indices)
     :short "Rename variables in a list of indices."
     (cond ((endp indices) nil)
-          (t (cons (rename-vars-in-index (car indices) subst)
-                   (rename-vars-in-index-list (cdr indices) subst))))
+          (t (cons (rename-vars-in-index (car indices) renaming)
+                   (rename-vars-in-index-list (cdr indices) renaming))))
     :measure (index-list-count indices)
 
     ///
@@ -279,53 +279,53 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The reanming substitution is specified by a map from strings to strings,
+    "The reanming is specified by a map from strings to strings,
      and is performed on the free variables in the indices in the types.
      When encountering a binder of index variables,
      the bound variables are removed from the map."))
 
   (define rename-free-index-vars-in-type ((type typep)
-                                          (subst string-string-mapp))
+                                          (renaming string-string-mapp))
     :returns (new-type typep)
     :parents (abstract-syntax-variable-operations
               rename-free-index-vars-in-types)
-    :short "Substitute free index variables in a type."
+    :short "Rename free index variables in a type."
     (type-case
      type
      :var (type-var type.name)
      :base (type-base type.type)
      :array (make-type-array
-             :type (rename-free-index-vars-in-type type.type subst)
-             :index (rename-vars-in-index type.index subst))
+             :type (rename-free-index-vars-in-type type.type renaming)
+             :index (rename-vars-in-index type.index renaming))
      :fun (make-type-fun
-           :in (rename-free-index-vars-in-type-list type.in subst)
-           :out (rename-free-index-vars-in-type type.out subst))
+           :in (rename-free-index-vars-in-type-list type.in renaming)
+           :out (rename-free-index-vars-in-type type.out renaming))
      :forall (make-type-forall
               :vars type.vars
-              :type (rename-free-index-vars-in-type type.type subst))
+              :type (rename-free-index-vars-in-type type.type renaming))
      :pi (b* ((bound-vars (set::mergesort (sorted-var-list->var type.vars)))
-              (subst (omap::delete* bound-vars
-                                    (string-string-map-fix subst))))
+              (renaming (omap::delete* bound-vars
+                                    (string-string-map-fix renaming))))
            (make-type-pi
             :vars type.vars
-            :type (rename-free-index-vars-in-type type.type subst)))
+            :type (rename-free-index-vars-in-type type.type renaming)))
      :sigma (b* ((bound-vars (set::mergesort (sorted-var-list->var type.vars)))
-                 (subst (omap::delete* bound-vars
-                                       (string-string-map-fix subst))))
+                 (renaming (omap::delete* bound-vars
+                                       (string-string-map-fix renaming))))
               (make-type-sigma
                :vars type.vars
-               :type (rename-free-index-vars-in-type type.type subst))))
+               :type (rename-free-index-vars-in-type type.type renaming))))
     :measure (type-count type))
 
   (define rename-free-index-vars-in-type-list ((types type-listp)
-                                               (subst string-string-mapp))
+                                               (renaming string-string-mapp))
     :returns (new-types type-listp)
     :parents (abstract-syntax-variable-operations
               rename-free-index-vars-in-types)
-    :short "Substitute free index variables in a list of types."
+    :short "Rename free index variables in a list of types."
     (cond ((endp types) nil)
-          (t (cons (rename-free-index-vars-in-type (car types) subst)
-                   (rename-free-index-vars-in-type-list (cdr types) subst))))
+          (t (cons (rename-free-index-vars-in-type (car types) renaming)
+                   (rename-free-index-vars-in-type-list (cdr types) renaming))))
     :measure (type-list-count types)
 
     ///
@@ -348,54 +348,54 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The renaming substitution is specified by a map from strings to strings,
+    "The renaming is specified by a map from strings to strings,
      and is performed on the free variables in the types.
      When encountering a binder of type variables,
      the bound variables are removed from the map."))
 
   (define rename-free-type-vars-in-type ((type typep)
-                                         (subst string-string-mapp))
+                                         (renaming string-string-mapp))
     :returns (new-type typep)
     :parents (abstract-syntax-variable-operations
               rename-free-type-vars-in-types)
-    :short "Substitute free index variables in a type."
+    :short "Reanem free index variables in a type."
     (type-case
      type
-     :var (b* ((subst (string-string-map-fix subst))
-               (var+type (omap::assoc type.name subst)))
+     :var (b* ((renaming (string-string-map-fix renaming))
+               (var+type (omap::assoc type.name renaming)))
             (if var+type
                 (type-var (cdr var+type))
               (type-var type.name)))
      :base (type-base type.type)
      :array (make-type-array
-             :type (rename-free-type-vars-in-type type.type subst)
+             :type (rename-free-type-vars-in-type type.type renaming)
              :index type.index)
      :fun (make-type-fun
-           :in (rename-free-type-vars-in-type-list type.in subst)
-           :out (rename-free-type-vars-in-type type.out subst))
+           :in (rename-free-type-vars-in-type-list type.in renaming)
+           :out (rename-free-type-vars-in-type type.out renaming))
      :forall (b* ((bound-vars (set::mergesort (kinded-var-list->var type.vars)))
-                  (subst (omap::delete* bound-vars
-                                        (string-string-map-fix subst))))
+                  (renaming (omap::delete* bound-vars
+                                        (string-string-map-fix renaming))))
                (make-type-forall
                 :vars type.vars
-                :type (rename-free-type-vars-in-type type.type subst)))
+                :type (rename-free-type-vars-in-type type.type renaming)))
      :pi (make-type-pi
           :vars type.vars
-          :type (rename-free-type-vars-in-type type.type subst))
+          :type (rename-free-type-vars-in-type type.type renaming))
      :sigma (make-type-sigma
              :vars type.vars
-             :type (rename-free-type-vars-in-type type.type subst)))
+             :type (rename-free-type-vars-in-type type.type renaming)))
     :measure (type-count type))
 
   (define rename-free-type-vars-in-type-list ((types type-listp)
-                                              (subst string-string-mapp))
+                                              (renaming string-string-mapp))
     :returns (new-types type-listp)
     :parents (abstract-syntax-variable-operations
               rename-free-type-vars-in-types)
-    :short "Substitute free index variables in a list of types."
+    :short "Rename free index variables in a list of types."
     (cond ((endp types) nil)
-          (t (cons (rename-free-type-vars-in-type (car types) subst)
-                   (rename-free-type-vars-in-type-list (cdr types) subst))))
+          (t (cons (rename-free-type-vars-in-type (car types) renaming)
+                   (rename-free-type-vars-in-type-list (cdr types) renaming))))
     :measure (type-list-count types)
 
     ///
