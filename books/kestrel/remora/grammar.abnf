@@ -67,14 +67,14 @@ iapp-exp        = "i-app" ws exp *( ws extent )
 unbox-exp       = "unbox" ws "(" ws *( extent-param ws )  ; [SC4]
                   identifier ws exp ws ")" ws exp
 
-let-exp         = "let" ws "(" ws *( ws bind ) ws ")" ws exp
+let-exp         = "let" ws "(" *( ws bind ) ws ")" ws exp
 
 at-app-exp      = "@" ws exp ws type-args ws idx-args *( ws exp )
 
-type-args       = "(" ws *( ws type-exp ) ws ")"
+type-args       = "(" *( ws type-exp ) ws ")"
                 / "_"
 
-idx-args        = "(" ws *( ws extent ) ws ")"
+idx-args        = "(" *( ws extent ) ws ")"
                 / "_"
 
 ; -------------------------------------------------------------------------
@@ -90,18 +90,18 @@ atom-body       = lambda
                 / box-expr
 
 lambda          = ( "fn" / %x03BB ) ws            ; fn or <lambda>
-                  "(" ws *( ws pat ) ws ")" ws
+                  "(" *( ws pat ) ws ")" ws
                   exp
 
 type-lambda     = ( "t-fn" / ( "t" %x03BB ) ) ws  ; t-fn or t<lambda>
-                  "(" ws *( ws type-param ) ws ")" ws
+                  "(" *( ws type-param ) ws ")" ws
                   exp
 
 index-lambda    = ( "i-fn" / ( "i" %x03BB ) ) ws  ; i-fn or i<lambda>
-                  "(" ws *( ws extent-param ) ws ")" ws
+                  "(" *( ws extent-param ) ws ")" ws
                   exp
 
-box-expr        = "box" ws "(" ws *( ws extent ) ws ")" ws exp ws type-exp
+box-expr        = "box" ws "(" *( ws extent ) ws ")" ws exp ws type-exp
 
 ; -------------------------------------------------------------------------
 ; Patterns (used in lambda parameters)
@@ -129,11 +129,11 @@ val-bind        = "val" ws identifier ws exp
 fun-bind        = "fun" ws "(" ws identifier *( ws pat ) [ ws ":" ws type-exp ] ws ")" ws exp
 
 tfun-bind       = "t-fun" ws "(" ws identifier ws
-                  "(" ws *( ws type-param ) ws ")"
+                  "(" *( ws type-param ) ws ")"
                   [ ws ":" ws type-exp ] ws ")" ws exp
 
 ifun-bind       = "i-fun" ws "(" ws identifier ws
-                  "(" ws *( ws extent-param ) ws ")"
+                  "(" *( ws extent-param ) ws ")"
                   [ ws ":" ws type-exp ] ws ")" ws exp
 
 type-bind       = "type" ws type-param ws type-exp
@@ -144,10 +144,10 @@ at-fun-bind     = "fun" ws "(" ws "@" ws identifier ws
                   type-params ws idx-params *( ws pat )
                   ws ":" ws type-exp ws ")" ws exp
 
-type-params     = "(" ws *( ws type-param ) ws ")"
+type-params     = "(" *( ws type-param ) ws ")"
                 / "_"
 
-idx-params      = "(" ws *( ws extent-param ) ws ")"
+idx-params      = "(" *( ws extent-param ) ws ")"
                 / "_"
 
 ; -------------------------------------------------------------------------
@@ -177,16 +177,16 @@ type-exp-paren  = array-type
 array-type      = "A" ws type-exp ws shape
 
 arrow-type      = ( "->" / %x2192 ) ws       ; -> or <arrow>
-                  "(" ws *( ws type-exp ) ws ")" ws type-exp
+                  "(" *( ws type-exp ) ws ")" ws type-exp
 
 forall-type     = ( "Forall" / %x2200 ) ws   ; Forall or <forall>
-                  "(" ws *( ws type-param ) ws ")" ws type-exp
+                  "(" *( ws type-param ) ws ")" ws type-exp
 
 pi-type         = ( "Pi" / %x03A0 ) ws        ; Pi or <Pi>
-                  "(" ws *( ws extent-param ) ws ")" ws type-exp
+                  "(" *( ws extent-param ) ws ")" ws type-exp
 
 sigma-type      = ( "Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
-                  "(" ws *( ws extent-param ) ws ")" ws type-exp
+                  "(" *( ws extent-param ) ws ")" ws type-exp
 
 ; -------------------------------------------------------------------------
 ; Type parameters
@@ -210,12 +210,12 @@ dim-arith       = "+" *( ws dim )    ; addition
 shape           = "@" identifier     ; shape variable
                 / dim                ; a single dimension as a shape
                 / "(" ws shape-paren ws ")"
-                / "[" ws *( ws extent ) ws "]"   ; shape splice sugar
+                / "[" *( ws extent ) ws "]"   ; shape splice sugar
 
 shape-paren     = "dims" *( ws dim )             ; (dims d1 d2 ...)
                 / "++" *( ws shape )             ; (++ s1 s2 ...)
 
-shape-lit       = "[" ws *( ws decimal ) ws "]"
+shape-lit       = "[" *( ws decimal ) ws "]"
                   ; concrete shape literal e.g. [2 3]
 
 extent          = dim                ; a dimension
