@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -85,6 +85,26 @@
     (implies (not (errorp new-array))
              (equal (value-kind new-array)
                     :array)))
+
+  (defruled type-of-value-of-value-array-write
+    (b* ((new-array (value-array-write index elem array)))
+      (implies (and (value-case array :array)
+                    (not (errorp new-array)))
+               (equal (type-of-value new-array)
+                      (type-of-value array))))
+    :enable (type-of-value
+             value-array->length
+             max))
+
+  (defruled valuep-of-value-array-write
+    (b* ((old (value-array-read index array))
+         (array1 (value-array-write index new array)))
+      (implies (and (valuep old)
+                    (equal (type-of-value new)
+                           (value-array->elemtype array)))
+               (valuep array1)))
+    :enable (value-array-read
+             (:e tau-system)))
 
   (defruled not-errorp-of-value-array-read-when-not-write-error
     (implies (not (errorp (value-array-write index elem array)))
