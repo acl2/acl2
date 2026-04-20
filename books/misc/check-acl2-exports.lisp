@@ -211,6 +211,7 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    ALIST-KEYS
   ))
 
 (defconst *special-ops*
