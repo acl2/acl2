@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -243,14 +243,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-rem
-  :short "Remainder @('&') on @('int')s [JLS14:4.2.2] [JLS14:15.17.3]."
+  :short "Remainder @('%') on @('int')s [JLS14:4.2.2] [JLS14:15.17.3]."
   :nonzero t
   :operation (logext 32 (rem x y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-rem
-  :short "Remainder @('&') on @('long')s [JLS14:4.2.2] [JLS14:15.17.3]."
+  :short "Remainder @('%') on @('long')s [JLS14:4.2.2] [JLS14:15.17.3]."
   :nonzero t
   :operation (logext 64 (rem x y)))
 
