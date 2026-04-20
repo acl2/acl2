@@ -816,7 +816,7 @@
 ;; dim-arith = "+" *( ws dim ) / "*" *( ws dim ) / "-" *( ws dim )
 
 (defines parse-dim+dim-arith
-  :ruler-extenders :all
+
   ;; Lexicographic measure: (len input, flag).
   ;; Flag 2 for parse-*-ws-dim, 1 for parse-dim, 0 for parse-dim-arith.
   ;; When parse-*-ws-dim calls parse-dim on post-ws input (same len),
@@ -824,7 +824,6 @@
   (define parse-dim ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp)
                  (rest-input nat-listp))
-    :measure (two-nats-measure (len input) 1)
     :short "Parse a @('dim')."
     (b* (;; Try "$" identifier
          ((mv tree-dollar rest) (abnf::parse-ichars "$" input))
@@ -850,12 +849,12 @@
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "dim")
            :branches (list (list tree-open tree-ws1 tree-da tree-ws2 tree-close)))
-          input)))
+          input))
+    :measure (two-nats-measure (len input) 1))
 
   (define parse-dim-arith ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp)
                  (rest-input nat-listp))
-    :measure (two-nats-measure (len input) 0)
     :short "Parse a @('dim-arith')."
     (b* (;; Try each operator: +, *, -
          ((pok< tree-op)
@@ -872,12 +871,12 @@
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "dim-arith")
            :branches (list (list tree-op) trees-dims))
-          input)))
+          input))
+    :measure (two-nats-measure (len input) 0))
 
   (define parse-*-ws-dim ((input nat-listp))
     :returns (mv (trees abnf::tree-listp)
                  (rest-input nat-listp))
-    :measure (two-nats-measure (len input) 2)
     :short "Parse @('*( ws dim )')."
     (b* (((mv tree-ws input1) (parse-ws input))
          ((when (reserrp tree-ws)) (mv nil (nat-list-fix input)))
@@ -890,10 +889,15 @@
                  :rulename? nil
                  :branches (list (list tree-ws tree-dim)))
                 more-trees)
-          input3)))
+          input3))
+    :measure (two-nats-measure (len input) 2))
+
   :hints (("Goal" :in-theory (enable nfix o< o-finp two-nats-measure)))
-  :verify-guards nil
+
+  :verify-guards nil   ; done later
+
   ///
+
   (defret-mutual len-of-parse-dim+dim-arith
     (defret len-of-parse-dim-<=
       (<= (len rest-input) (len input))
@@ -913,6 +917,7 @@
       (<= (len rest-input) (len input))
       :rule-classes :linear :fn parse-*-ws-dim)
     :hints (("Goal" :in-theory (enable parse-dim parse-dim-arith parse-*-ws-dim))))
+
   (verify-guards parse-dim
     :hints (("Goal" :in-theory (disable parse-dim parse-dim-arith parse-*-ws-dim)))))
 
@@ -922,11 +927,10 @@
 ;; extent = dim / shape
 
 (defines parse-shape+extent
-  :ruler-extenders :all
+
   (define parse-shape ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp)
                  (rest-input nat-listp))
-    :measure (two-nats-measure (len input) 1)
     :short "Parse a @('shape')."
     (b* (;; Try "@" identifier
          ((mv tree-at input1) (abnf::parse-ichars "@" input))
@@ -983,12 +987,12 @@
            :branches (list (list tree-open tree-ws1)
                            trees-exts
                            (list tree-ws2 tree-close)))
-          input5)))
+          input5))
+    :measure (two-nats-measure (len input) 1))
 
   (define parse-shape-paren ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp)
                  (rest-input nat-listp))
-    :measure (two-nats-measure (len input) 0)
     :short "Parse a @('shape-paren')."
     (b* (;; Try "dims" *( ws dim )
          ((mv tree-kw input1) (abnf::parse-ichars "dims" input))
@@ -1007,12 +1011,12 @@
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "shape-paren")
            :branches (list (list tree-kw) trees-shapes))
-          input2)))
+          input2))
+    :measure (two-nats-measure (len input) 0))
 
   (define parse-extent ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp)
                  (rest-input nat-listp))
-    :measure (two-nats-measure (len input) 2)
     :short "Parse an @('extent')."
     (b* (;; Try dim first (per grammar ordering)
          ((mv tree-dim input1) (parse-dim input))
@@ -1028,12 +1032,12 @@
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "extent")
            :branches (list (list tree-shape)))
-          input1)))
+          input1))
+    :measure (two-nats-measure (len input) 2))
 
   (define parse-*-ws-shape ((input nat-listp))
     :returns (mv (trees abnf::tree-listp)
                  (rest-input nat-listp))
-    :measure (two-nats-measure (len input) 4)
     (b* (((mv tree-ws input1) (parse-ws input))
          ((when (reserrp tree-ws)) (mv nil (nat-list-fix input)))
          ((mv tree-shape input2) (parse-shape input1))
@@ -1045,12 +1049,12 @@
                  :rulename? nil
                  :branches (list (list tree-ws tree-shape)))
                 more)
-          input3)))
+          input3))
+    :measure (two-nats-measure (len input) 4))
 
   (define parse-*-ws-extent ((input nat-listp))
     :returns (mv (trees abnf::tree-listp)
                  (rest-input nat-listp))
-    :measure (two-nats-measure (len input) 3)
     (b* (((mv tree-ws input1) (parse-ws input))
          ((when (reserrp tree-ws)) (mv nil (nat-list-fix input)))
          ((mv tree-ext input2) (parse-extent input1))
@@ -1062,11 +1066,16 @@
                  :rulename? nil
                  :branches (list (list tree-ws tree-ext)))
                 more)
-          input3)))
+          input3))
+    :measure (two-nats-measure (len input) 3))
 
   :hints (("Goal" :in-theory (enable nfix o< o-finp two-nats-measure)))
-  :verify-guards nil
+  :ruler-extenders :all
+
+  :verify-guards nil   ; done later
+
   ///
+
   (defret-mutual len-of-parse-shape+extent
     (defret len-of-parse-shape-<=
       (<= (len rest-input) (len input))
@@ -1108,6 +1117,7 @@
                  '(:expand (parse-*-ws-shape input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-*-ws-extent) clause)
                  '(:expand (parse-*-ws-extent input)))))
+
   (verify-guards parse-shape
     :hints (("Goal" :in-theory (disable parse-shape parse-shape-paren
                                         parse-extent parse-*-ws-shape
@@ -1304,7 +1314,7 @@
 
   :ruler-extenders :all
 
-  :verify-guards nil
+  :verify-guards nil   ; done later
 
   :returns-hints
   (("Goal"
@@ -1420,6 +1430,7 @@
                  '(:expand (parse-sigma-type input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-*-ws-type-exp) clause)
                  '(:expand (parse-*-ws-type-exp input)))))
+
   (verify-guards parse-type-exp
     :hints (("Goal" :in-theory
              (disable parse-type-exp parse-bracket-type parse-type-exp-paren
@@ -2094,9 +2105,10 @@
 
   :ruler-extenders :all
 
-  :verify-guards nil
+  :verify-guards nil   ; done later
 
   ///
+
   (defret-mutual len-of-parse-expressions
     (defret len-of-parse-exp-<=
       (<= (len rest-input) (len input)) :rule-classes :linear :fn parse-exp)
@@ -2308,6 +2320,7 @@
                  '(:expand (parse-*-ws-bind input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-*-extent-param-ws) clause)
                  '(:expand (parse-*-extent-param-ws input)))))
+
   (verify-guards parse-exp
     :hints (("Goal"
              :in-theory
@@ -2352,4 +2365,3 @@
   (defret len-of-parse-program-<=
     (<= (len rest-input) (len input))
     :rule-classes :linear))
-
