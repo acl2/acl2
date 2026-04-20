@@ -10051,7 +10051,7 @@
           (ARG :OP1 '(:FS))
           '(X86-PUSH-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
-    (INST "POP"
+    (INST "POP FS"
           (OP :OP #xFA1 :SUPERSCRIPTS '(:D64))
           (ARG :OP1 '(:FS))
           'NIL
@@ -10080,7 +10080,7 @@
           (ARG :OP1 '(:GS))
           '(X86-PUSH-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
-    (INST "POP"
+    (INST "POP GS"
           (OP :OP #xFA9 :SUPERSCRIPTS '(:D64))
           (ARG :OP1 '(:GS))
           'NIL
