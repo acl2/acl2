@@ -86,6 +86,7 @@
 (defconst *acl2-exports-exclusions*
   '(*UNTROUBLESOME-CHARACTERS*
     ADD-DIVE-INTO-MACRO
+    ALIST-KEYS ; documented in books/std/alists/alist-keys.lisp
     BDD
     BOOK-HASH
     CHECK-SUM
@@ -211,7 +212,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    ALIST-KEYS
   ))
 
 (defconst *special-ops*
