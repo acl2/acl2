@@ -108,7 +108,7 @@
      we only return the low 32 bits of the base address
      read from the hidden portion of the segment register.")
    (xdoc::p
-    "@(tsee hidden-segment-registerbits') uses 32 bits for the segment limit,
+    "@(tsee hidden-segment-registerbits) uses 32 bits for the segment limit,
      which is consistent with the 20 bits in segment descriptors
      when the G (granularity) bit is 1:
      see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
