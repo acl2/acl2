@@ -140,12 +140,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod ident
-  :short "Fixtype of identifiers [C17:6.4.2] [C17:A.1.3]."
+  :short "Fixtype of identifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>identifier</i> in the grammar in [C17].
-     In this abstract syntax, we allow any ACL2 values as C identifiers.
+    "This corresponds to @('identifier') in the ABNF grammar,
+     but in this abstract syntax we allow any ACL2 values as C identifiers.
      We wrap these arbitrary values into a one-component product fixtype
      so that we can more easily distinguish identifiers from other things.")
    (xdoc::p
@@ -155,13 +155,13 @@
      in which case we could use pairs consisting of
      the original identifiers and the indices.")
    (xdoc::p
-    "We plan to define, separately,
-     predicates that restrict identifiers to certain forms,
-     used for parsing, printing, transformations, etc.
+    "We ha separate predicates that restrict identifiers to certain forms,
+     used for parsing, printing, transformations, etc.:
+     see @(see ascii-identifiers).
      Restrictions are needed to print this abstract syntax
-     into a form where identifiers respect the restrictions in [C17];
-     in addition, parsing code compliant to [C17]
-     will result in specific forms of identifiers."))
+     into a form where identifiers respect the restrictions in the grammar;
+     in addition, parsing code compliant to the grammar
+     results in specific forms of identifiers."))
   ((unwrap any))
   :pred identp
   :layout :list)
