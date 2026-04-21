@@ -259,11 +259,11 @@
   :short "Translate an effective address to a <i>canonical</i> linear address."
   :long
   "<p>
-  This translation is illustrated in Intel manual, Mar'17, Vol. 3A, Fig. 3-5,
+  This translation is illustrated in Intel manual, Feb'26, Vol. 3A, Fig. 3-5,
   as well in AMD mamual, Oct'2013, Vol. 1, Fig. 2-3 and 2-4.
   In addition to the effective address,
   this function takes as input (the index of) a segment register,
-  whose corresponding segment selector, with the effective address,
+  whose contained segment selector, with the effective address,
   forms the logical address that is turned into the linear address.
   </p>
   <p>
@@ -295,7 +295,7 @@
   </p>
   <p>
   This function also takes as input the number of bytes
-  that have to be read or written starting from the effective address;
+  to read or write starting from the effective address;
   that is, the chunk of bytes to be accessed
   goes from @('eff-addr') to @('eff-addr + nbytes - 1'), both inclusive.
   In 32-bit mode, the @('eff-addr') (the start of the chunk)
@@ -345,7 +345,7 @@
   only if the segments are in registers FS and GS;
   the result is truncated to 64 bits,
   because the addition should be modulo 2^64,
-  given that the result must be 32 bits
+  given that the result must be 64 bits
   (cf. aforementioned figures in Intel and AMD manuals);
   since in our model addresses are signed,
   we use @('i64') instead of @('n64') to perform this truncation.
@@ -368,13 +368,13 @@
   which provides some information about the failure.
   </p>
   <p>
-  As explained in Intel manual, May'18, Volume 3, Sections 3.4.2 and 5.4.1,
+  As explained in Intel manual, Feb'26, Volume 3, Sections 3.4.2 and 6.4.1,
   a null segment selector can be loaded into DS, ES, FS, and GS,
   but then a memory access through these segment registers causes a #GP.
   According to AMD manual, Dec'17, Volume 2, Section 4.5.1,
   a null segment selector has SI = TI = 0,
   but no explicit constraint is stated on RPL;
-  Intel manual, May'18, Volume 2, POP specification says that
+  Intel manual, Feb'26, Volume 2, POP specification says that
   a null segment selector has a value from 0 to 3,
   from which we infer that a null segment selector may have a non-zero RPL.
   In this function,
@@ -384,7 +384,7 @@
   so it is a state invariant that
   CS and SS do not contain null segment selectors.
   The null segment selector check is skipped in 64-bit mode
-  (see Intel manual, May'18, Volume 3, Section 5.4.1.1).
+  (see Intel manual, Feb'26, Volume 3, Section 6.4.1.1).
   </p>"
 
   :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds) ())))
