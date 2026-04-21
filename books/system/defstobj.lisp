@@ -17,3 +17,4 @@
 (verify-termination defstobj-fnname-key2) ; and guards
 
 ; (verify-termination fix-stobj-array-type) ; problem due to raw Lisp code
+

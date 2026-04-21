@@ -159,7 +159,7 @@
                   :mode :program))
   (builtin-event-names-rec wrld nil nil nil nil nil nil nil nil nil nil nil))
 
-; We introduce a named constants for each list of collected names.
+; We introduce a named constant for each list of collected names.
 ; We reverse the lists, so they are in chronological order.
 ; Since the two functions above that collect the names are themselves collected,
 ; we remove them just before defining the named constant for function names.

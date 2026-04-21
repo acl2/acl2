@@ -32,11 +32,10 @@
    (xdoc::p
     "We define fixtypes for abstract syntax trees (ASTs) for core typed Remora,
      based on the publications on Remora mentioned in @(see remora).
-     See Figure 1 in the arXiv paper,
-     Figure 4.1 in the dissertation,
-     and Figure 6 in the ESOP paper.
-     The arXiv paper and the dissertation are quite aligned,
-     while the ESOP paper has some differences;
+     See Figure 1 in [arxiv],
+     Figure 4.1 in [thesis],
+     and Figure 6 in [esop].
+     [arxiv] and [thesis] are quite aligned, while [esop] has some differences;
      we adhere to the former because they are newer than the latter.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
@@ -322,9 +321,9 @@
        The FTY @(':require') feature does not seem to work here,
        perhaps because of the interaction with the mutually recursive fixtypes.
        We can enforce this non-emptiness in the static semantics.
-       The dissertation enforces non-emptiness with the patterns
+       [thesis] enforces non-emptiness with the patterns
        @($\\mathfrak{a}\\ \\mathfrak{a}\\ldots$) and @($e\\ e\\ldots$),
-       while the arXiv paper does not."))
+       while [arxiv] paper does not."))
     (:var ((name string)))
     (:array ((dims nat-list)
              (atoms atom-list)))
@@ -368,8 +367,8 @@
        lambda abstractions of expressions over sorted variables,
        and boxed arrays with given indices and type.")
      (xdoc::p
-      "The arXiv paper uses @($v$) as the body of type and index abstraction,
-       while the dissertation uses @($e$), same as term abstraction.
+      "[arxiv] uses @($v$) as the body of type and index abstraction,
+       while [thesis] uses @($e$), same as term abstraction.
        We use the latter, as that seems the intent."))
     (:base ((value base-value)))
     (:op ((op prim-op)))

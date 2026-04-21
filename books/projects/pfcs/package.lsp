@@ -26,6 +26,7 @@
                        '(boolean-resultp
                          character-list-resultp
                          character-resultp
+                         current-package+
                          define-sk
                          defmacro+
                          defund-sk

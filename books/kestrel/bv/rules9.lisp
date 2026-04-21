@@ -75,7 +75,7 @@
   (implies (and (< 32 n)
                 (integerp n))
            (equal (bvplus 32 z (bvplus n x y))
-                  (bvplus 32 (bvplus 32 x y) z)))
+                  (bvplus 32 z (bvplus 32 x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvcat-of-bitnot-low
@@ -137,8 +137,7 @@
            (equal (bvcat 1 (bitxor k highval) lowsize lowval)
                   (bvxor (+ 1 lowsize)
                                (bvcat 1 k lowsize 0) ;should get computed
-                               (bvcat 1 highval lowsize lowval))))
-  :hints (("Goal" :cases ((equal 0 highsize)))))
+                               (bvcat 1 highval lowsize lowval)))))
 
 (defthm bvcat-of-bvnot-high
   (implies (and (natp lowsize)

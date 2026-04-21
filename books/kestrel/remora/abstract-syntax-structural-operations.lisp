@@ -77,6 +77,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection sorted-var-list->sort ((x sorted-var-listp))
+  :returns (sorts sort-listp)
+  :short "Lift @(tsee sorted-var->sort) to lists."
+  (sorted-var->sort x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection kinded-var-list->var ((x kinded-var-listp))
   :returns (strings string-listp)
   :short "Lift @(tsee kinded-var->var) to lists."
@@ -84,10 +91,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection kinded-var-list->kind ((x kinded-var-listp))
+  :returns (kinds kind-listp)
+  :short "Lift @(tsee kinded-var->kind) to lists."
+  (kinded-var->kind x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection typed-var-list->var ((x typed-var-listp))
   :returns (strings string-listp)
   :short "Lift @(tsee typed-var->var) to lists."
   (typed-var->var x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection typed-var-list->type ((x typed-var-listp))
+  :returns (types type-listp)
+  :short "Lift @(tsee typed-var->type) to lists."
+  (typed-var->type x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

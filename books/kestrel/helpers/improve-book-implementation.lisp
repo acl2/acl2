@@ -21,11 +21,11 @@
 ;; TODO: Add the ability to suppress slow stuff (like dropping a local event or an include-book and trying the entire file).
 ;; TODO: Improve hints for defuns
 ;; TODO: Detect :guard-debug
-;; TOOD: Suppress suggestions to drop set-default-parents and things to disable built-in rules.
+;; TODO: Suppress suggestions to drop set-default-parents and things to disable built-in rules.
 ;; TODO: Handle verify-guards
 ;; TODO: Handle progn
 ;; TODO: Handle encapsulate
-;; TOOD: Handle defsection
+;; TODO: Handle defsection
 ;; TODO: Handle define (prepwork, ///, etc.)
 ;; TODO: Handle defrule
 ;; TODO: Handle with-output

@@ -358,7 +358,7 @@
      >Section `Creating a Base58Check string' of Page `Base58Check encoding'
      of [Wiki]</a>.")
    (xdoc::p
-    "The bytes are treated as big bendian digits in base 256
+    "The bytes are treated as big endian digits in base 256
      and converted into the natural number that they denote.
      This natural number is converted into
      a minimal-length list of big endian digits in base 58,

@@ -1,7 +1,7 @@
 ; More rules about slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -60,4 +60,4 @@
            (equal (unsigned-byte-p n x)
                   (equal (slice (+ -1 x-size) n  x)
                          0)))
-  :hints (("Goal" :in-theory (enable SLICE-TOO-HIGH-IS-0 usb-slice-helper usb-slice-helper unsigned-byte-p-forced))))
+  :hints (("Goal" :in-theory (enable SLICE-TOO-HIGH-IS-0 usb-slice-helper unsigned-byte-p-forced))))

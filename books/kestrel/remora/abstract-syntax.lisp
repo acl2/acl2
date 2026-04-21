@@ -15,6 +15,7 @@
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "abstract-syntax-structural-operations")
 (include-book "abstract-syntax-matching-operations")
+(include-book "abstract-syntax-variable-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,10 +27,8 @@
    (xdoc::p
     "We define an abstract syntax for core typed Remora,
      consisting of algebraic data types for abstract syntax trees (ASTs),
-     accompanied by some readable constructors for ASTs,
-     some fixtypes derived from the AST fixtypes,
-     some structural operations on ASTs,
-     and some operations to match ASTs to patterns.")
+     accompanied by some fixtypes derived from the AST fixtypes,
+     and by operations organized into various categories.")
    (xdoc::p
     "We may generalize this abstract syntax
      to encompass untyped and type-erased Remora,
@@ -39,4 +38,5 @@
                     abstract-syntax-constructors
                     abstract-syntax-derived-fixtypes
                     abstract-syntax-structural-operations
-                    abstract-syntax-matching-operations))
+                    abstract-syntax-matching-operations
+                    abstract-syntax-variable-operationss))

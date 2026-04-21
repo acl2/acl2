@@ -1,6 +1,6 @@
 ; A linter for ACL2
 ;
-; Copyright (C) 2018-2025 Kestrel Institute
+; Copyright (C) 2018-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,9 +63,9 @@
 
 ;; TODO: Detect a B* that could simply be a LET or LET* (maybe)
 
-;; TODO: Add option to diable checking for the acl2 system itself.
+;; TODO: Add option to disable checking for the acl2 system itself.
 
-;; TODO: Add support for supressing more kinds of reports.
+;; TODO: Add support for suppressing more kinds of reports.
 
 ;; TODO: Suppress reasoning-based checks (like those involving types) on :program mode functions.
 
@@ -349,7 +349,7 @@
     (progn$
       (and (not (member-eq :equal-self suppress))
            (equal arg1 arg2)
-           ;; substitution may have occurred, so the args of term may not actually be idential forms
+           ;; substitution may have occurred, so the args of term may not actually be identical forms
            (cw "~%   EQUAL test ~x0 compares a value with an identical value." orig-term))
       (and (quotep arg1) ; todo: add a suppress option for this
            (quotep arg2)
@@ -830,7 +830,7 @@
     (cons `(,(first fns) ,arg)
           (make-unary-calls (rest fns) arg))))
 
-;; todo: allow weakening to be read from a a table, so we can do things like pfield::fep -> natp
+;; todo: allow weakening to be read from a table, so we can do things like pfield::fep -> natp
 (defund get-weakenings (hyp)
   (and (consp hyp)
        (let ((fn (ffn-symb hyp)))
@@ -1041,7 +1041,7 @@
   (b* (((mv &  conclusion)
         (get-hyps-and-conc body))
        ;; we don't to generalize things like the 'nil in the conclusion (if x y 'nil) == (and x y)
-       ;; todo: try each conjunct of the concluson separately?
+       ;; todo: try each conjunct of the conclusion separately?
        (conclusions (get-conjuncts conclusion))
        (subterms (non-variable-subterms-list conclusions))
        (vars-to-avoid (append (free-vars-in-term body)
@@ -1118,7 +1118,7 @@
                   (er hard? 'vars-bound-after-hyps "Bad synp hyp: ~x0." hyp))))
           ;; todo: handle axe-bind-free and axe-syntaxp
           (let ((hyp-vars (free-vars-in-term hyp)))
-            ;; either all vars are bound, or free variable matching wil bind them:
+            ;; either all vars are bound, or free variable matching will bind them:
             (vars-bound-after-hyps (rest hyps) (union-eq hyp-vars acc))))))))
 
 (defun lint-conclusion (conclusion name hyps suppress)

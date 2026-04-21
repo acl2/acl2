@@ -66,6 +66,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult index-result
+  :short "Fixtype of indices and errors."
+  :ok index
+  :pred index-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult index-list-result
+  :short "Fixtype of (i) lists of kindices and (ii) errors."
+  :ok index-list
+  :pred index-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-result
   :short "Fixtype of types and errors."
   :ok type
@@ -127,3 +141,101 @@
   :ok typelist+type
   :pred typelist+type-resultp
   :prepwork ((local (in-theory (enable strip-cars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod sortedvarlist+type
+  :short "Fixtype of pairs consisting of a list of sorted variables and a type."
+  ((vars sorted-var-list)
+   (type type))
+  :pred sortedvarlist+type-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult sortedvarlist+type-result
+  :short "Fixtype of
+          (i) pairs consisting of a list of sorted variables and a type
+          and (ii) errors."
+  :ok sortedvarlist+type
+  :pred sortedvarlist+type-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod kindedvarlist+type
+  :short "Fixtype of pairs consisting of a list of kinded variables and a type."
+  ((vars kinded-var-list)
+   (type type))
+  :pred kindedvarlist+type-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult kindedvarlist+type-result
+  :short "Fixtype of
+          (i) pairs consisting of a list of kinded variables and a type
+          and (ii) errors."
+  :ok kindedvarlist+type
+  :pred kindedvarlist+type-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-sort-map
+  :short "Fixtype of maps from strings to sorts."
+  :key-type string
+  :val-type sort
+  :pred string-sort-mapp
+
+  ///
+
+  (defrule string-sort-mapp-of-from-lists
+    (implies (and (string-listp strings)
+                  (sort-listp sorts)
+                  (equal (len sorts) (len strings)))
+             (string-sort-mapp (omap::from-lists strings sorts)))
+    :induct t
+    :enable (omap::from-lists string-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-kind-map
+  :short "Fixtype of maps from strings to kinds."
+  :key-type string
+  :val-type kind
+  :pred string-kind-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-index-map
+  :short "Fixtype of maps from strings to indices."
+  :key-type string
+  :val-type index
+  :pred string-index-mapp
+
+  ///
+
+  (defrule string-index-mapp-of-from-lists
+    (implies (and (string-listp strings)
+                  (index-listp indices)
+                  (equal (len indices) (len strings)))
+             (string-index-mapp (omap::from-lists strings indices)))
+    :induct t
+    :enable (omap::from-lists string-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-type-map
+  :short "Fixtype of maps from strings to types."
+  :key-type string
+  :val-type type
+  :pred string-type-mapp
+
+  ///
+
+  (defrule string-type-mapp-of-from-lists
+    (implies (and (string-listp strings)
+                  (type-listp types)
+                  (equal (len types) (len strings)))
+             (string-type-mapp (omap::from-lists strings types)))
+    :induct t
+    :enable (omap::from-lists string-listp)))

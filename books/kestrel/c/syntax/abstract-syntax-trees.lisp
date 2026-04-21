@@ -33,11 +33,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define fixtypes for constructs that closely correspond to
-     the grammar in [C17], which is summarized in [C17:A].")
-   (xdoc::p
-    "We also include certain GCC and Clang extensions,
-     as mentioned in @(see syntax-for-tools).")
+    "We define fixtypes for constructs
+     that closely correspond to our ABNF grammar,
+     which is parameterized over the C dialect.")
    (xdoc::p
     "According to the rationale explained in @(see syntax-for-tools),
      here we capture much of the information from the concrete syntax,
@@ -50,8 +48,7 @@
    (xdoc::p
     "We try and pick short yet clear names for these fixtypes,
      so that code that manipulates these fixtypes can be a bit more compact.
-     While the grammar in [C17]
-     uses the `hexadecimal' and `binary' qualifications
+     While the grammar uses the `hexadecimal' and `binary' qualifications
      for certain hexadecimal and binary entities
      but uses no qualifications for certain decimal entities,
      our fixtype names are more symmetric,
@@ -59,13 +56,12 @@
      for certain ``parallel'' entities in different numerical bases.")
    (xdoc::p
     "Some library fixtypes already correspond to
-     certain nonterminals in the grammar in [C17]
+     certain nonterminals in the grammar
      and are thus not defined here, but just used.
      Examples are fixtypes for digits (in different bases), and lists thereof.")
    (xdoc::p
     "The @('...-list') fixtypes are slightly more general than
-     the <i>...-sequence</i> and <i>...-list</i> nonterminals
-     in the grammar in [C17],
+     the @('...-sequence') and @('...-list') nonterminals in the grammar,
      because the former include the empty list,
      while the latter only include non-empty sequences/lists.
      Including empty lists in our fixtypes makes things a bit simpler,
@@ -77,18 +73,19 @@
      to be more general than the concrete syntax.
      Restrictions on well-formed code can be formulated
      via separate predicates on the abstract syntax.
-     The grammar in [C17] does not capture many static constraints anyhow.")
+     The grammar does not capture many static constraints anyhow.")
    (xdoc::p
-    "The use of natural numbers to represent <i>c-char</i> and <i>s-char</i>
+    "The use of natural numbers to represent @('c-char') and @('s-char')
      in character constants and string literals is motivated by
      the fact that we commit to Unicode characters,
-     even though [C17] prescribes no specific source character set [C17:5.2.1].
+     even though [C17] and [C23] prescribe
+     no specific source character set [C17:5.2.1] [C23:5.3.1].
      These days, Unicode should be sufficiently general;
      note that ASCII is a subset of Unicode.
      Thus, the natural numbers represent Unicode code points,
      which include ASCII codes as a subset.
      Although natural numbers are more general that Unicode code points,
-     and also more general than <i>c-char</i> and <i>s-char</i>,
+     and also more general than @('c-char') and @('s-char'),
      it is fine for abstract syntax to be more general than concrete syntax.
      However, we should probably switch to using @(tsee uchar).")
    (xdoc::p

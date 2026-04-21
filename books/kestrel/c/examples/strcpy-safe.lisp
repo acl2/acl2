@@ -89,7 +89,7 @@
     (<= (len new-vals) (len vals))
     :rule-classes :linear))
 
-; These are the values in the source arrays copied to the destination array.
+; These are the values in the source array copied to the destination array.
 ; First, we truncate the source array values to buffersize - 1,
 ; and then we take all the values until we reach a 0 or the end.
 (define src-values-to-copy ((src-array-vals c::value-listp))
@@ -110,7 +110,7 @@
 ; i.e. one more than the ones copied from the source array.
 ; Note that this is a precondition on the size of the destination array,
 ; not on the particular values.
-; While this precondition constains the destination array,
+; While this precondition constrains the destination array,
 ; it depends on the source array, whose values are passed as second parameter.
 (define dst-precond ((dst-array-vals c::value-listp)
                      (src-array-vals c::value-listp))

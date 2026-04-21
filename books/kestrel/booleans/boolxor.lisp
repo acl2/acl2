@@ -13,10 +13,11 @@
 
 ;; STATUS: In-progress
 
-(include-book "bool-fix")
+(include-book "bool-fix-def")
+(local (include-book "bool-fix"))
 
-;TODO: compare to the built-in function xor!
-
+;; Logically the same as the built-in function XOR, but this one
+;; has a name consistent with other boolean ops.
 (defund boolxor (x y)
   (declare (xargs :guard t))
   (if x

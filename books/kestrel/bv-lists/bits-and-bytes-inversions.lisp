@@ -39,8 +39,7 @@
                 (all-unsigned-byte-p 1 bits)
                 (true-listp bits))
            (equal (bytes-to-bits (bits-to-bytes bits))
-                  bits))
-  :hints (("Goal" :in-theory (enable))))
+                  bits)))
 
 (defthm bits-to-bytes-of-bytes-to-bits
   (implies (and (all-unsigned-byte-p 8 bytes)

@@ -34,7 +34,13 @@
                     nat
                     nat-list
                     nat-list-fix
+                    prefixp
+                    string-string-mapp
+                    string-string-map-fix
                     fty::patbind-ok
                     fty::reserr
+                    fty::reserrf
+                    fty::reserrf-push
                     fty::reserrp
+                    std::defret-mutual
                     str::string-list)))

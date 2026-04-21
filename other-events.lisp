@@ -19865,6 +19865,7 @@
                       ((or (eq key2 :hash-table)
                            (eq key2 :stobj-table))
                        (list* (defstobj-fnname field :boundp key2 nil)
+                              (defstobj-fnname field :keys key2 nil)
                               (defstobj-fnname field :accessor? key2 nil)
                               (defstobj-fnname field :remove key2 nil)
                               (defstobj-fnname field :count key2 nil)
@@ -19999,6 +20000,7 @@
                     t))
             (key2 (defstobj-fnname-key2 type))
             (boundp-name (defstobj-fnname field :boundp key2 renaming))
+            (keys-name (defstobj-fnname field :keys key2 renaming))
             (accessor?-name (defstobj-fnname field :accessor? key2
                               renaming))
             (remove-name (defstobj-fnname field :remove key2
@@ -20025,6 +20027,8 @@
               (eq key2 :stobj-table))
           (er-progn (chk-all-but-new-name boundp-name ctx
                                           'function wrld state)
+                    (chk-all-but-new-name keys-name ctx
+                                          'function wrld state)
                     (if (eq key2 :hash-table)
                         (chk-all-but-new-name accessor?-name ctx
                                               'function wrld state)
@@ -20050,6 +20054,7 @@
                                                   names))
                                           ((eq key2 :hash-table)
                                            (list* boundp-name
+                                                  keys-name
                                                   accessor?-name
                                                   remove-name
                                                   count-name
@@ -20058,6 +20063,7 @@
                                                   names))
                                           ((eq key2 :stobj-table)
                                            (list* boundp-name
+                                                  keys-name
                                                   remove-name
                                                   count-name
                                                   clear-name
@@ -20380,11 +20386,12 @@
                             field-template
                             :other))
              (boundp-name (nth 0 other))
-             (accessor?-name (nth 1 other))
-             (remove-name (nth 2 other))
-             (count-name (nth 3 other))
-             (clear-name (nth 4 other))
-             (init-name (nth 5 other)))
+             (keys-name (nth 1 other))
+             (accessor?-name (nth 2 other))
+             (remove-name (nth 3 other))
+             (count-name (nth 4 other))
+             (clear-name (nth 5 other))
+             (init-name (nth 6 other)))
         (cond
          (arrayp
           (append
@@ -20509,6 +20516,13 @@
                                                       nil)
                                 :verify-guards t))
                 (consp (hons-assoc-equal k (nth ,n ,var))))
+               (,keys-name
+                (,var)
+                (declare (xargs :guard ,(common-guard 'equal ; avoid k arg
+                                                      var top-recog
+                                                      nil)
+                                :verify-guards t))
+                (merge-sort-lexorder (alist-keys (nth ,n ,var))))
                ,@(and hashp ; skip this for a stobj-table
                       `((,accessor?-name
                          (k ,var)
@@ -20684,11 +20698,12 @@
                             field-template
                             :other))
              (boundp-fn (nth 0 other))
-             (accessor?-fn (nth 1 other))
-             (remove-fn (nth 2 other))
-             (count-fn (nth 3 other))
-             (clear-fn (nth 4 other))
-             (init-fn (nth 5 other)))
+             (keys-fn (nth 1 other))
+             (accessor?-fn (nth 2 other))
+             (remove-fn (nth 3 other))
+             (count-fn (nth 4 other))
+             (clear-fn (nth 5 other))
+             (init-fn (nth 6 other)))
         (put-stobjs-in-and-outs1
          name
          (cdr field-templates)
@@ -20738,36 +20753,38 @@
                     (putprop
                      boundp-fn 'stobjs-in (list nil name)
                      (putprop
+                      keys-fn 'stobjs-in (list name)
+                      (putprop
 ; Note that 'stobjs-out for acc-fn in the stobj-table case is placed further
 ; below.
-                      acc-fn 'stobjs-in (if (eq (car type) 'hash-table)
-                                            (list nil name)
+                       acc-fn 'stobjs-in (if (eq (car type) 'hash-table)
+                                             (list nil name)
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
-                                          (list nil name *stobj-table-stobj*))
-                      (putprop-unless
-                       acc-fn 'stobjs-out (list stobj-flg) '(nil)
-                       (putprop
-                        upd-fn 'stobjs-in
-                        (if (eq (car type) 'stobj-table)
-
-; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
-
-                            (list nil *stobj-table-stobj* name)
-                          (list nil stobj-flg name))
+                                           (list nil name *stobj-table-stobj*))
+                       (putprop-unless
+                        acc-fn 'stobjs-out (list stobj-flg) '(nil)
                         (putprop
-                         upd-fn 'stobjs-out (list name)
-                         (if (eq (car type) 'hash-table)
-                             (putprop
-                              accessor?-fn 'stobjs-in (list nil name)
-                              wrld)
+                         upd-fn 'stobjs-in
+                         (if (eq (car type) 'stobj-table)
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
-                           (putprop acc-fn 'stobjs-out
-                                    (list *stobj-table-stobj*)
-                                    wrld))))))))))))))))
+                             (list nil *stobj-table-stobj* name)
+                           (list nil stobj-flg name))
+                         (putprop
+                          upd-fn 'stobjs-out (list name)
+                          (if (eq (car type) 'hash-table)
+                              (putprop
+                               accessor?-fn 'stobjs-in (list nil name)
+                               wrld)
+
+; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
+
+                            (putprop acc-fn 'stobjs-out
+                                     (list *stobj-table-stobj*)
+                                     wrld)))))))))))))))))
           (t
            (let ((stobj-flg (if (eq type 'double-float)
                                 :df
@@ -20817,6 +20834,7 @@
 ; stobj-table updater      (nil ? name)       (name)
 ; array updater            (nil nil name)     (name)
 ; table boundp             (nil name)         (nil)
+; table keys               (name)             (nil)
 ; hash-table accessor?     (nil name)         (nil nil)
 ; table remove             (nil name)         (name)
 ; table count              (name)             (nil)

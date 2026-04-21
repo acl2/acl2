@@ -73,6 +73,7 @@
       (case (car form1)
         (disable `(set-difference-theories ,form2 '(,@(cdr form1))))
         (enable `(union-theories '(,@(cdr form1)) ,form2))
+        ;; TODO: Support enable*, disable*, e/d, and e/d* ?
         (t (er hard? 'merge-in-theory-hints "Can't merge :in-theory ~x0." form1))))))
 
 ;; Note that the forms get evaluated.
