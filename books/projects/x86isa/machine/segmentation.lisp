@@ -63,13 +63,11 @@
 
 (defsection ia32e-segmentation
   :parents (segmentation)
-  :short "Specification of Segmentation in 64-bit Mode"
-  )
+  :short "Specification of segmentation in 64-bit mode.")
 
 (defsection ia32-segmentation
   :parents (segmentation)
-  :short "Specification of Segmentation in 32-bit Mode"
-  )
+  :short "Specification of segmentation in 32-bit mode.")
 
 ;; ======================================================================
 
