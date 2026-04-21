@@ -4365,7 +4365,7 @@
     (if (or native-flag abstract-flag)
         nil ;native and abstract methods don't have any code
       (b* (;;(- (cw " (Getting loops for method ~x0~x1: " name descriptor))
-           (program (lookup-eq-safe :program method-info))
+           (program (jvm::method-program method-info))
            (loops (decompose-into-loops program))
            (loop-infos (make-loop-infos loops class-name name descriptor))
            ;;(- (cw " Found ~x0 loops.)~%" (len loop-infos)))
@@ -5092,7 +5092,7 @@
               (- (and print (cw " (ifns: ~x0)~%" (strip-cars interpreted-function-alist))))
               (code-hyps (code-hyps loop-pc method-info class-name method-name method-descriptor state-var))
               (loop-pcs-no-header (remove loop-pc loop-pcs))
-              (locals-stored-into (locals-stored-into loop-pcs (lookup-eq :program method-info) nil))
+              (locals-stored-into (locals-stored-into loop-pcs (jvm::method-program method-info) nil))
               (- (cw " (Locals stored into: ~x0.)~%" locals-stored-into)) ;TODO: Print the names if available, TODO: print the locals *not* stored into.
 
 
@@ -6441,7 +6441,7 @@
         (prog2$ (cw "ERROR: Couldn't find info for method ~x0 with descriptor ~x1 in class ~x2.  Existing methods are ~x3."
                     method-name method-descriptor method-class (strip-cars (jvm::class-decl-methods class-info)))
                 (mv t nil state)))
-       (code (lookup-eq :program method-info))
+       (code (jvm::method-program method-info))
        ((when (not code))
         (prog2$ (cw "ERROR: Couldn't find code for method ~x0 with descriptor ~x1 in class ~x2" method-name method-descriptor method-class)
                 (mv t nil state)))
@@ -6528,6 +6528,11 @@
             interpreted-function-alist state)
         (decompile-program
          (append (code-hyps 0 method-info method-class method-name method-descriptor 's0)
+                 ;; the instruction in the frame below where we are working is in fact an invoke (needed for the return):
+                 '((memberp (car (lookup-equal (jvm::pc (jvm::top-frame (jvm::pop-frame (jvm::binding (th) (jvm::thread-table s0)))))
+                                                (jvm::method-program (jvm::method-info (jvm::top-frame (jvm::pop-frame (jvm::binding (th)
+                                                                                                                                     (jvm::thread-table s0))))))))
+                             '(:invokevirtual :invokestatic :invokespecial :invokeinterface :ldc_w :ldc)))
                  assumptions)
          (jvm::get-pcs-from-program code)
          program-name
@@ -6774,7 +6779,7 @@
         (prog2$ (cw "ERROR: Error getting the class info for ~x0" method-class)
                 (mv t nil state)))
        (method-info (lookup-equal (cons method-name method-descriptor) (jvm::class-decl-methods class-info)))
-       (code (lookup-eq :program method-info))
+       (code (jvm::method-program method-info))
        (return-type (lookup-eq :return-type method-info))
        ((when (not code))
         (prog2$ (cw "ERROR: Couldn't find code for method ~x0 with descriptor ~x1 in class ~x2" method-name method-descriptor method-class)
@@ -6818,6 +6823,11 @@
             interpreted-function-alist state)
         (decompile-program
          (append (code-hyps start-pc method-info method-class method-name method-descriptor 's0)
+                 ;; the instruction in the frame below where we are working is in fact an invoke (needed for the return):
+                 '((memberp (car (lookup-equal (jvm::pc (jvm::top-frame (jvm::pop-frame (jvm::binding (th) (jvm::thread-table s0)))))
+                                               (jvm::method-program (jvm::method-info (jvm::top-frame (jvm::pop-frame (jvm::binding (th)
+                                                                                                                             (jvm::thread-table s0))))))))
+                    '(:invokevirtual :invokestatic :invokespecial :invokeinterface :ldc_w :ldc)))
                  assumptions
                  input-assumptions)
          segment-pcs

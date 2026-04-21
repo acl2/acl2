@@ -103,7 +103,7 @@
 
 (defun method-ids-to-strings (method-ids)
   (declare (xargs :guard (and (true-listp method-ids)
-                              (jvm::all-method-idp method-ids))))
+                              (jvm::method-id-listp method-ids))))
   (if (endp method-ids)
       nil
     (cons (method-id-to-string (first method-ids))

@@ -1033,6 +1033,7 @@
             jvm::stack-of-make-frame
             jvm::method-designator-of-make-frame
             jvm::method-info-of-make-frame
+            ;jvm::method-program ; new
             ;; todo: rename to frame-method-descriptor, etc.:
             jvm::cur-method-descriptor
             jvm::cur-method-name

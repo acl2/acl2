@@ -29,8 +29,7 @@
 (defund call-stackp (stack)
   (declare (xargs :guard t))
   (and (true-listp stack)
-       ;; (all-framep stack) ;;todo: put back (search for all-framep-change for other changes, but this will require real work to show that all created frames are ok; first clean up invokespecial and prove RV rules for lookup-method-for-invokespecial)
-       ))
+       (all-framep stack)))
 
 (defthm call-stackp-of-empty-call-stack
   (call-stackp (empty-call-stack)))
@@ -58,6 +57,13 @@
 (defund pop-frame (stack)
   (declare (xargs :guard (call-stackp stack) :guard-hints (("Goal" :in-theory (enable call-stackp)))))
   (cdr stack))
+
+;strengthen?
+(defthm framep-of-top-frame
+  (implies (and (not (empty-call-stackp call-stack))
+                (call-stackp call-stack))
+           (framep (top-frame call-stack)))
+  :hints (("Goal" :in-theory (enable top-frame empty-call-stackp call-stackp))))
 
 (defthm all-framep-of-pop-frame
   (implies (all-framep frames)
@@ -104,9 +110,8 @@
 (defthm call-stackp-of-push-frame
   (equal (call-stackp (push-frame frame stack))
          (and (call-stackp stack)
-              ;; (framep frame) ;all-framep-change
-              ))
-  :hints (("Goal" :in-theory (enable call-stackp push-frame))))
+              (framep frame)))
+  :hints (("Goal" :in-theory (e/d (call-stackp push-frame) ((:e tau-system))))))
 
 (defthm call-stackp-of-pop-frame
   (implies (call-stackp stack)

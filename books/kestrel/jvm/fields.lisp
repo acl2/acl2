@@ -27,6 +27,7 @@
    :hints (("Goal" :in-theory (enable acl2::keyword-listp)))))
 
 ;; The name of a field is a string.
+;; todo: add the checks for "unqualified names"
 (defund field-namep (name)
   (declare (xargs :guard t))
   (stringp name))

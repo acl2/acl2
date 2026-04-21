@@ -31,15 +31,23 @@
 (local (include-book "ieee-floats-helpers"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
+;move
+(local
+ (defthm <-of-expt2-and-1
+   (implies (integerp i)
+            (equal (< (expt 2 i) 1)
+                   (< i 0)))
+   :hints (("Goal" :in-theory (enable expt)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund int-part (x)
   (declare (xargs :guard (rationalp x)))
   (floor x 1))
 
-(defthm rationalp-of-int-part-type
+(defthm integerp-of-int-part-type
   (implies (rationalp x)
-           (rationalp (int-part x)))
+           (integerp (int-part x)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable int-part))))
 
@@ -56,6 +64,8 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable int-part))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund frac-part (x)
   (declare (xargs :guard (rationalp x)))
   (- x (int-part x)))
@@ -65,6 +75,8 @@
            (rationalp (frac-part x)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable frac-part))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund round-to-nearest-integer-ties-to-even (x)
   (declare (xargs :guard (rationalp x)))
@@ -132,7 +144,7 @@
                   )
              (<= (+ 1 (floor x 1)) i))))
 
-;; there is no closer integer
+;; there is no closer integer than what round-to-nearest-integer-ties-to-even returns
 (defthm no-closer-integer
   (implies (and (rationalp x)
                 (integerp i))
@@ -158,7 +170,7 @@
        (equal (round-to-nearest-integer-ties-to-even (/ 74 10)) 7) ; 7.4
        (equal (round-to-nearest-integer-ties-to-even (/ 76 10)) 8) ; 7.6
        (equal (round-to-nearest-integer-ties-to-even (/ 75 10)) 8) ; since 8 is even
-       (equal (round-to-nearest-integer-ties-to-even (/ 65 10)) 6) ; since 8 is even
+       (equal (round-to-nearest-integer-ties-to-even (/ 65 10)) 6) ; since 6 is even
        ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -205,25 +217,6 @@
                                      largest-normal-redef
                                      infinity-threshold))))
 
-;; todo: make local
-(defthm <-of-expt2-and-1
-  (implies (integerp i)
-           (equal (< (expt 2 i) 1)
-                  (< i 0)))
-  :hints (("Goal" :in-theory (enable expt))))
-
-(defthm <=-of-1-and-emax-linear
-  (implies (formatp k p)
-           (<= 1 (emax k p)))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable formatp emax))))
-
-(defthm log2-of-smallest-positive-normal
-  (implies (formatp k p)
-           (equal (log2 (smallest-positive-normal k p))
-                  (emin k p)))
-  :hints (("Goal" :in-theory (enable smallest-positive-normal-redef))))
-
 (defthm log2-of-decode-normal-number-positive
   (implies (and (formatp k p)
                 ;(bitp sign) ; todo bitp vs unsigned-byte-p
@@ -242,16 +235,6 @@
            (equal (log2 (largest-normal k p))
                   (emax k p)))
   :hints (("Goal" :in-theory (enable largest-normal wfn emax bias))))
-
-(defthm <-of-emin-and-emax
-  (implies (formatp k p)
-           (< (emin k p) (emax k p)))
-  :hints (("Goal" :in-theory (enable emin emax))))
-
-(defthm <=-of-emin-and-emax
-  (implies (formatp k p)
-           (<= (emin k p) (emax k p)))
-  :hints (("Goal" :in-theory (enable emin emax))))
 
 (defthmd <-when-<-of-log2-and-log2
   (implies (and (< (log2 x) (log2 y))
@@ -651,7 +634,7 @@
         ((equal datum *float-negative-infinity*) *float-positive-infinity*)
         (t (- datum))))
 
-;; If the rounded result is a zero, then the sign-if-0 bit determines the sign.
+;; If the rounded result is a zero, then the sign-if-0 bit determines the sign (1 for negative, 0 for positive).
 (defund round-rational-ties-to-even (k p rat sign-if-0)
   (declare (xargs :guard (and (formatp k p)
                               (rationalp rat)
@@ -702,28 +685,31 @@
 ;;                     (* (expt 2 i))))
 ;;     :hints (("Goal" :in-theory (enable expt-of-+)))))
 
-(defthm h1
-  (implies (and (integerp i)
-                (integerp x)
-                (< x i))
-           (<= x (+ -1 i))))
+(local
+ (defthm h1
+   (implies (and (integerp i)
+                 (integerp x)
+                 (< x i))
+            (<= x (+ -1 i)))))
 
-(defthm *-cancel
-  (implies (and (rationalp x)
-                (rationalp y)
-                (rationalp z)
-                (rationalp w)
-                (< 0 W))
-           (equal (equal (* z w) (* x y w))
-                  (equal z (* x y)))))
+(local
+ (defthm *-cancel
+   (implies (and (rationalp x)
+                 (rationalp y)
+                 (rationalp z)
+                 (rationalp w)
+                 (< 0 W))
+            (equal (equal (* z w) (* x y w))
+                   (equal z (* x y))))))
 
-(defthm expt-cancel
-  (implies (and (integerp i)
-                (rationalp x)
-                (rationalp y))
-           (equal (equal (* x y (expt 2 (+ -1 i))) (expt 2 i))
-                  (equal (* x y) 2)))
-  :hints (("Goal" :in-theory (enable expt-of-+))))
+(local
+ (defthm expt-cancel
+   (implies (and (integerp i)
+                 (rationalp x)
+                 (rationalp y))
+            (equal (equal (* x y (expt 2 (+ -1 i))) (expt 2 i))
+                   (equal (* x y) 2)))
+   :hints (("Goal" :in-theory (enable expt-of-+)))))
 
 (defthm mantissa-bound-linear
   (implies (and (< 0 rat)
@@ -783,9 +769,9 @@
 
 ;; Rounding does not change a representable number.
 (defthm round-positive-rational-ties-to-even-when-representable-positive-rationalp
-  (implies (and (formatp k p)
+  (implies (and (representable-positive-rationalp k p rat)
                 (rationalp rat)
-                (representable-positive-rationalp k p rat))
+                (formatp k p))
            (equal (round-positive-rational-ties-to-even k p rat)
                   rat))
   :hints (("Goal" :in-theory (enable round-positive-rational-ties-to-even representable-positive-rationalp))))
