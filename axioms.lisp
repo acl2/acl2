@@ -2839,6 +2839,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (cons (cdr (car x))
                  (strip-cdrs (cdr x))))))
 
+(defun alist-keys (x)
+
+; This variant of strip-cars does not require an alist as input.  This
+; definition appeared in the book, books/std/alists/alist-keys.lisp, where it
+; remains and is (non-locally) disabled.  We include it here with permission
+; from Sol Swords, an author of that book, because it is useful in supporting
+; the keys function of a stobj hash table or a stobj table.
+
+  (declare (xargs :guard t))
+  (cond ((atom x) nil)
+        ((atom (car x)) (alist-keys (cdr x)))
+        (t (cons (caar x) (alist-keys (cdr x))))))
+
 #-acl2-loop-only
 (progn
 

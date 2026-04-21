@@ -41,6 +41,11 @@
 properly respects the non-alist convention; see @(see std/alists) for
 discussion of this convention.</p>
 
+<p>@('Alist-keys') is built into ACL2, so that it can support
+&ldquo;keys&rdquo; functions for hash-table @(see stobj) fields.  See @(see
+defstobj).  However, including the @('\"alist-keys\"') books will disable the
+definition of @('alist-keys').</p>
+
 <p>Note that the list of keys returned by @('alist-keys') may contain
 duplicates.  This happens whenever the input alist contains \"shadowed\"
 bindings, as in @('((a . 1) (a . 2))').</p>
@@ -64,6 +69,8 @@ you choose one or the other.  For greater compatibility between books, please
 do not non-@(see local)ly switch the normal form.</p>"
 
   (defund alist-keys (x)
+; This defun is redundant with a built-in definition.  Hence it only has the
+; effect of (globally) disabling that function.
     (declare (xargs :guard t))
     (cond ((atom x)
            nil)

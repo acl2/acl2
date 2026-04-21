@@ -12,6 +12,7 @@
 
 (include-book "grammar")
 (include-book "parser")
+(include-book "post-parsing")
 (include-book "abstract-syntax")
 (include-book "static-semantics")
 
@@ -77,5 +78,6 @@
      formalizations and tools for Remora."))
   :order-subtopics (grammar
                     parser
+                    post-parsing
                     abstract-syntax
                     static-semantics))
