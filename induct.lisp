@@ -6537,7 +6537,6 @@
                                        checks
                                        wrld))))
 
-#+:non-standard-analysis
 (defun remove-adjacent-duplicates (x)
 
 ; We have slightly modified the original definition so as to match the

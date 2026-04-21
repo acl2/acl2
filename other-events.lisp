@@ -20522,7 +20522,8 @@
                                                       var top-recog
                                                       nil)
                                 :verify-guards t))
-                (merge-sort-lexorder (alist-keys (nth ,n ,var))))
+                (remove-adjacent-duplicates
+                 (merge-sort-lexorder (alist-keys (nth ,n ,var)))))
                ,@(and hashp ; skip this for a stobj-table
                       `((,accessor?-name
                          (k ,var)
