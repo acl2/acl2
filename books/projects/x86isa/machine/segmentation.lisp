@@ -404,7 +404,8 @@
            (mv (list :non-canonical-address lin-addr) 0)))
        (mv nil lin-addr)))
 
-    (#.*compatibility-mode* ;; Maybe also *protected-mode*?
+    ((#.*compatibility-mode*
+      #.*protected-mode*)
      (b* (((when (and (not (= seg-reg *cs*))
                       (not (= seg-reg *ss*))
                       (< (seg-visiblei seg-reg x86) 4)))
