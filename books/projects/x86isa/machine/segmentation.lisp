@@ -217,24 +217,27 @@
   :no-function t
   ///
 
-  (defthm-unsigned-byte-p segment-base-is-n64p
-                          :hyp (x86p x86)
-                          :bound 64
-                          :concl (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86))
-                          :gen-type t
-                          :gen-linear t)
+  (defthm-unsigned-byte-p
+    segment-base-is-n64p
+    :hyp (x86p x86)
+    :bound 64
+    :concl (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86))
+    :gen-type t
+    :gen-linear t)
 
-  (defthm-unsigned-byte-p segment-lower-bound-is-n33p
-                          :bound 33
-                          :concl (mv-nth 1 (segment-base-and-bounds proc-mode seg-reg x86))
-                          :gen-type t
-                          :gen-linear t)
+  (defthm-unsigned-byte-p
+    segment-lower-bound-is-n33p
+    :bound 33
+    :concl (mv-nth 1 (segment-base-and-bounds proc-mode seg-reg x86))
+    :gen-type t
+    :gen-linear t)
 
-  (defthm-unsigned-byte-p segment-upper-bound-is-n32p
-                          :bound 32
-                          :concl (mv-nth 2 (segment-base-and-bounds proc-mode seg-reg x86))
-                          :gen-type t
-                          :gen-linear t)
+  (defthm-unsigned-byte-p
+    segment-upper-bound-is-n32p
+    :bound 32
+    :concl (mv-nth 2 (segment-base-and-bounds proc-mode seg-reg x86))
+    :gen-type t
+    :gen-linear t)
 
   (defrule segment-base-and-bound-of-xw
     (implies
@@ -430,19 +433,21 @@
   :no-function t
   ///
 
-  (defthm-signed-byte-p ea-to-la-is-i64p
-                        :hyp (i64p eff-addr)
-                        :bound 64
-                        :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
-                        :gen-type t
-                        :gen-linear t)
+  (defthm-signed-byte-p
+    ea-to-la-is-i64p
+    :hyp (i64p eff-addr)
+    :bound 64
+    :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+    :gen-type t
+    :gen-linear t)
 
-  (defthm-signed-byte-p ea-to-la-is-i48p-when-no-error
-                        :hyp (not (mv-nth 0 (ea-to-la proc-mode eff-addr seg-reg nbytes x86)))
-                        :bound 48
-                        :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
-                        :gen-type t
-                        :gen-linear t)
+  (defthm-signed-byte-p
+    ea-to-la-is-i48p-when-no-error
+    :hyp (not (mv-nth 0 (ea-to-la proc-mode eff-addr seg-reg nbytes x86)))
+    :bound 48
+    :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+    :gen-type t
+    :gen-linear t)
 
   (defrule ea-to-la-of-xw
     (implies
