@@ -89,7 +89,8 @@
                      "PUSH ES is illegal in the 64-bit mode!"))
           '((:UD T)))
     (INST "POP ES" (OP :OP #x7 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "#UD" (OP :OP #x7 :MODE :O64)
           NIL
@@ -168,7 +169,8 @@
                      "PUSH SS is illegal in the 64-bit mode!"))
           '((:UD T)))
     (INST "POP SS" (OP :OP #x17 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "#UD" (OP :OP #x17 :MODE :O64)
           NIL
@@ -210,7 +212,8 @@
                      "PUSH DS is illegal in the 64-bit mode!"))
           '((:UD T)))
     (INST "POP DS" (OP :OP #x1F :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "#UD" (OP :OP #x1F :MODE :O64)
           NIL
@@ -10054,7 +10057,7 @@
     (INST "POP FS"
           (OP :OP #xFA1 :SUPERSCRIPTS '(:D64))
           (ARG :OP1 '(:FS))
-          'NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "CPUID" (OP :OP #xFA2)
           NIL '(X86-CPUID)
@@ -10083,7 +10086,7 @@
     (INST "POP GS"
           (OP :OP #xFA9 :SUPERSCRIPTS '(:D64))
           (ARG :OP1 '(:GS))
-          'NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "RSM" (OP :OP #xFAA)
           NIL 'NIL
