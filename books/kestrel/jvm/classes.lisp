@@ -17,7 +17,7 @@
 ;; See also class-tables.lisp.
 
 (include-book "methods")
-(local (include-book "kestrel/sequences/defforall" :dir :system)) ; reduce?
+;(local (include-book "kestrel/sequences/defforall" :dir :system)) ; reduce?
 (local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 ;move
@@ -41,11 +41,60 @@
 
 ;; (verify-guards string-descriptor-pairsp)
 
-(acl2::defforall all-class-namesp (item) (class-namep item))
-(verify-guards all-class-namesp)
+(defund class-name-listp (names)
+  (declare (xargs :guard t))
+  (if (not (consp names))
+      (null names)
+    (and (class-namep (first names))
+         (class-name-listp (rest names)))))
 
-(acl2::defforall all-field-idp (item) (field-idp item))
-(verify-guards all-field-idp)
+(defthm class-name-listp-forward-to-true-listp
+  (implies (class-name-listp names)
+           (true-listp names))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable class-name-listp))))
+
+(defthm class-name-listp-of-cdr
+  (implies (class-name-listp names)
+           (class-name-listp (cdr names)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable class-name-listp))))
+
+(defthm class-namep-of-car
+  (implies (class-name-listp names)
+           (equal (class-namep (car names))
+                  (consp names)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable class-name-listp))))
+
+(defthm class-name-listp-of-cons
+  (equal (class-name-listp (cons name names))
+         (and (class-namep name)
+              (class-name-listp names)))
+  :hints (("Goal" :in-theory (enable class-name-listp))))
+
+(defthm class-name-listp-of-append
+  (equal (class-name-listp (append names1 names2))
+         (and (class-name-listp (true-list-fix names1))
+              (class-name-listp names2)))
+  :hints (("Goal" :in-theory (enable class-name-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund field-id-listp (ids)
+  (declare (xargs :guard t))
+  (if (not (consp ids))
+      (null ids)
+    (and (field-idp (first ids))
+         (field-id-listp (rest ids)))))
+
+(defthm field-id-listp-of-cons
+  (equal (field-id-listp (cons name names))
+         (and (field-idp name)
+              (field-id-listp names)))
+  :hints (("Goal" :in-theory (enable field-id-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A method-id is a pair of two strings: a name and a descriptor.
 (defun method-idp (item)
@@ -54,6 +103,19 @@
        (method-namep (car item))
        (method-descriptorp (cdr item))))
 
+;; Makes a method-id
+(defund make-method-id (name desc)
+  (declare (xargs :guard (and (method-namep name)
+                              (method-descriptorp desc))))
+  (cons name desc))
+
+(defthm method-idp-of-make-method-id
+  (equal (method-idp (make-method-id name desc))
+         (and (method-namep name)
+              (method-descriptorp desc)))
+  :hints (("Goal" :in-theory (enable method-idp make-method-id))))
+
+;; Extracts the name of a method-id
 (defund method-id-name (method-id)
   (declare (xargs :guard (method-idp method-id)))
   (car method-id))
@@ -68,6 +130,7 @@
            (stringp (method-id-name method-id)))
   :hints (("Goal" :in-theory (enable method-id-name method-idp method-namep))))
 
+;; Extracts the descriptor of a method-id
 (defund method-id-descriptor (method-id)
   (declare (xargs :guard (method-idp method-id)))
   (cdr method-id))
@@ -82,19 +145,22 @@
            (stringp (method-id-descriptor method-id)))
   :hints (("Goal" :in-theory (enable method-id-descriptor method-idp method-descriptorp))))
 
-(defund make-method-id (name desc)
-  (declare (xargs :guard (and (method-namep name)
-                              (method-descriptorp desc))))
-  (cons name desc))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm method-idp-of-make-method-id
-  (equal (method-idp (make-method-id name desc))
-         (and (method-namep name)
-              (method-descriptorp desc)))
-  :hints (("Goal" :in-theory (enable method-idp make-method-id))))
+(defund method-id-listp (ids)
+  (declare (xargs :guard t))
+  (if (not (consp ids))
+      (null ids)
+    (and (method-idp (first ids))
+         (method-id-listp (rest ids)))))
 
-(acl2::defforall all-method-idp (item) (method-idp item))
-(verify-guards all-method-idp)
+(defthm method-id-listp-of-cons
+  (equal (method-id-listp (cons name names))
+         (and (method-idp name)
+              (method-id-listp names)))
+  :hints (("Goal" :in-theory (enable method-id-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun all-keys-bound-to-field-infosp (field-info-alist)
   (declare (xargs :guard (acl2::alistp field-info-alist)))
@@ -105,11 +171,13 @@
       (and (field-infop field-info)
            (all-keys-bound-to-field-infosp (rest field-info-alist))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;an alist from field-ids to their field-infos
 (defund field-info-alistp (field-info-alist)
   (declare (xargs :guard t))
   (and (acl2::alistp field-info-alist)
-       (all-field-idp (acl2::strip-cars field-info-alist)) ;combine these steps?
+       (field-id-listp (acl2::strip-cars field-info-alist)) ;combine these steps?
        (all-keys-bound-to-field-infosp field-info-alist)))
 
 (defthm field-info-alistp-forward-to-true-listp
@@ -146,6 +214,13 @@
                   (consp field-info-alist)))
   :hints (("Goal" :in-theory (enable field-info-alistp))))
 
+(defthm field-id-listp-of-strip-cars-when-field-info-alistp
+  (implies (field-info-alistp field-info-alist)
+           (field-id-listp (strip-cars field-info-alist)))
+  :hints (("Goal" :in-theory (enable field-info-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun all-keys-bound-to-method-infosp (method-info-alist)
   (declare (xargs :guard (acl2::alistp method-info-alist)))
   (if (endp method-info-alist)
@@ -158,7 +233,7 @@
 (defund method-info-alistp (method-info-alist)
   (declare (xargs :guard t))
   (and (acl2::alistp method-info-alist)
-       (all-method-idp (acl2::strip-cars method-info-alist)) ;combine these steps?
+       (method-id-listp (acl2::strip-cars method-info-alist)) ;combine these steps?
        (all-keys-bound-to-method-infosp method-info-alist)))
 
 (defthm method-info-alistp-forward-to-alistp
@@ -214,7 +289,7 @@
          (and (or (eq :none superclass)
                   (class-namep superclass))
               (true-listp interfaces)
-              (all-class-namesp interfaces)
+              (class-name-listp interfaces)
               (acl2::keyword-listp access-flags)
               (acl2::no-duplicatesp access-flags)
               (acl2::subsetp-eq access-flags '(:ACC_PUBLIC
@@ -358,9 +433,9 @@
            (true-listp (class-decl-interfaces class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 class-decl-interfaces))))
 
-(defthm all-class-namesp-of-class-decl-interfaces
+(defthm class-name-listp-of-class-decl-interfaces
   (implies (class-infop class-info class-name) ;darn class-name is a free var
-           (all-class-namesp (class-decl-interfaces class-info)))
+           (class-name-listp (class-decl-interfaces class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 class-decl-interfaces))))
 
 (defthm class-namep-of-class-decl-superclass
@@ -398,7 +473,7 @@
                                                  :ACC_ANNOTATION
                                                  :ACC_ENUM))
                 (true-listp interfaces)
-                (all-class-namesp interfaces)
+                (class-name-listp interfaces)
                 (field-info-alistp static-field-info-alist)
                 (field-info-alistp non-static-field-info-alist)
                 (method-info-alistp method-info-alist)

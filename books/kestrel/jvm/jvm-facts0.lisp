@@ -33,7 +33,9 @@
 (local (in-theory (disable default-cdr
                            default-car
                            intersection-equal
-                           )))
+                           signed-byte-p
+                           mod
+                           acl2::logext)))
 
 ;(local (in-theory (disable acl2::NTH-OF-CDR))) ;looped!
 
@@ -52,10 +54,11 @@
 
 (defthm run-of-cons
   (equal (run (cons th sched) s)
-         (if (bound-in-alistp th (thread-table s))
+         (if (and (bound-in-alistp th (thread-table s))
+                  (call-stack-non-emptyp th s))
              (run sched (step th s))
            (run sched s)))
-  :hints (("Goal" :in-theory (e/d (run)( step)))))
+  :hints (("Goal" :in-theory (e/d (run) (step step-opener)))))
 
 (defthm run-append
   (equal (run (append sched1 sched2) s)
@@ -452,7 +455,6 @@
 ;;                (JVM-STATEP S))
 ;;           (ADDRESSP (LOCKED-OBJECT (TOP-FRAME-of-thread TH S)))))
 
-;; ; all-framep-change
 ;; (defthm framep-of-thead-top-frame-better
 ;;   (implies (and (thread-designatorp th)
 ;;                 (jvm-statep s)
@@ -516,7 +518,7 @@
  (defthm not-equal-special-data-of-lookup-field-lst
    (implies (and ;(lookup-field-lst field-id class-or-interface-names class-table ctr)
                  (class-tablep class-table)
-                 (all-class-namesp class-or-interface-names)
+                 (class-name-listp class-or-interface-names)
                  )
             (not (equal :special-data (lookup-field-lst field-id class-or-interface-names class-table ctr))))
    :flag lookup-field-lst)
@@ -527,13 +529,13 @@
 ;fffixme: is this theorem really helpful for anything?  it's kind of nonsense without hyps saying that the stack looks right according to the instruction about to be executed...
 (defthm jvm-statep-of-do-inst
   (implies (and (jvm-statep s)
-                ;; (call-stack-non-emptyp th s) ; all-framep-change
-                ;; (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; all-framep-change
-                ;; (not (empty-call-stackp (binding th (thread-table s))))
+                (call-stack-non-emptyp th s)
+                (instructionp inst)
+                (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s)))))
+                (equal inst (current-inst th s)) ; todo think about this
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))
            (jvm-statep (do-inst (instruction-opcode inst) inst th s)))
-  :otf-flg t
   :hints (("goal" :do-not '(generalize eliminate-destructors)
 ;           :induct nil
            :in-theory (e/d (JVM-INSTRUCTION-OKAYP
@@ -559,13 +561,15 @@
                             ;; execute-invokevirtual
                             ;; execute-invokevirtual-helper
                             resolve-field ; so we can see what exceptions/errors it throws
-
                             ;is-A-CLASSP ;todo
                             ;bound-to-a-non-interfacep ;todo
                             ;;is-an-interfacep ;todo
                             execute-java.lang.float.intbitstofloat
                             execute-java.lang.float.floattorawintbits
-                            )
+                            instruction-opcode
+                            method-programp-key-property-2-alt
+                            inst-len
+                            pc-if)
                            (acons
                             mv-nth
                             TRUE-LISTP
@@ -580,7 +584,9 @@
 ;                                   OBJECTLOCKABLE?
 
 ;                                  LOCK-OBJECT
-                            initialize-locals)))))
+                            initialize-locals
+                            execute-invokestatic
+                            method-program)))))
 
 ;ffffixme prove this after strenghthening framep to require that the pc is in the program and having jvm-instruction-okayp ensure that relative jumps are okay...
 ;; (thm
@@ -592,13 +598,13 @@
 
 (defthm jvm-statep-step
   (implies (and (jvm-statep s)
-;                (call-stack-non-emptyp th s)
+                (call-stack-non-emptyp th s)
+;                (jvm-instruction-okayp (current-inst th s) (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; name this pattern?
                 (bound-in-alistp th (thread-table s)) ;now step ignores thread IDs that are not bound
                 (thread-designatorp th) ;or step could ignore bad thread ids
                 )
            (jvm-statep (step th s)))
-  :hints (("goal" :in-theory (e/d (step) ( ;do-inst
-                                          )))))
+  :hints (("goal" :in-theory (e/d (step) (method-program)))))
 
 (acl2::defforall-simple thread-designatorp)
 
@@ -606,7 +612,7 @@
   (implies (and (jvm-statep s)
                 (all-thread-designatorp sched))
            (jvm-statep (run sched s)))
-  :hints (("goal" :in-theory (enable run))))
+  :hints (("goal" :in-theory (e/d (run) (method-program)))))
 
 ;move
 (defthm addressp-of-myif (equal (jvm::addressp (myif test tp ep)) (myif test (addressp tp) (addressp ep))) :hints (("Goal" :in-theory (enable myif))))

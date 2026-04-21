@@ -477,7 +477,7 @@
 (defund classes-to-assume-initialized-optionp (classes-to-assume-initialized)
   (declare (xargs :guard t))
   (or (eq :all classes-to-assume-initialized)
-      (jvm::all-class-namesp classes-to-assume-initialized)))
+      (jvm::class-name-listp classes-to-assume-initialized)))
 
 ;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-core.
 (defund choose-classes-to-assume-initialized (classes-to-assume-initialized class-alist)
@@ -857,7 +857,7 @@
   (declare (xargs :guard (and (nice-output-indicatorp nice-output-indicator)
                               (jvm::method-indicatorp method-indicator)
                               (or (eq :all classes-to-assume-initialized)
-                                  (jvm::all-class-namesp classes-to-assume-initialized))
+                                  (jvm::class-name-listp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)

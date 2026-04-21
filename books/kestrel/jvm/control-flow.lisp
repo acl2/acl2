@@ -23,6 +23,7 @@
 ;;                     LIST::MEMBER-IS-MEMBERP-PROPOSITIONALLY
 ;;                     LIST::MEMBER-EQUAL-IS-MEMBERP-PROPOSITIONALLY))
 (include-book "kestrel/maps/maps" :dir :system)
+(include-book "kestrel/lists-light/memberp" :dir :system)
 (local (include-book "kestrel/alists-light/remove-assoc-equal" :dir :system))
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 

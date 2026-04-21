@@ -437,7 +437,7 @@
        (heapref-tablep           (nth 3 s))
        (monitor-tablep           (nth 4 s))
        (static-field-mapp        (nth 5 s))
-       (all-class-namesp         (nth 6 s))
+       (class-name-listp         (nth 6 s))
        (intern-tablep (nth 7 s))
        (intern-table-okp (nth 7 s) (nth 1 s))
        ))
@@ -492,7 +492,7 @@
              (heapref-tablep           (heapref-table s))
              (monitor-tablep           (monitor-table s))
              (static-field-mapp        (static-field-map s))
-             (all-class-namesp         (initialized-classes s))
+             (class-name-listp         (initialized-classes s))
              (intern-tablep            (intern-table s))
              (intern-table-okp (intern-table s) (heap s))
              ))
@@ -553,7 +553,7 @@
               (heapref-tablep hrt)
               (monitor-tablep monitor-table)
               (static-field-mapp sfm)
-              (all-class-namesp ic)
+              (class-name-listp ic)
               (intern-tablep intern-table)
               (intern-table-okp intern-table heap)))
   :hints (("Goal" :in-theory (enable jvm-statep make-state))))
@@ -611,9 +611,9 @@
                 (lookup-equal class-name (heapref-table s)))
            (addressp (lookup-equal class-name (heapref-table s)))))
 
-(defthm all-class-namesp-of-initialized-classes
+(defthm class-name-listp-of-initialized-classes
   (implies (jvm-statep s)
-           (all-class-namesp (initialized-classes s)))
+           (class-name-listp (initialized-classes s)))
   :hints (("Goal" :in-theory (enable jvm-statep initialized-classes))))
 
 (defthm alistp-when-thread-tablep-special-case
@@ -715,17 +715,8 @@
 ;;                (THREAD-DESIGNATORP TH))
 ;;           (FRAMEP (CAR (GET-CALL-STACK (BINDING TH thread-table))))))
 
-
-(defthm framep-of-top-frame
-  (implies (and (not (empty-call-stackp call-stack))
-                (all-framep call-stack) ;drop when doing the all-framep-change
-                (call-stackp call-stack))
-           (framep (top-frame call-stack)))
-  :hints (("Goal" :in-theory (enable top-frame empty-call-stackp call-stackp))))
-
 (defthm framep-of-top-frame-of-binding-of-thread-table
   (IMPLIES (AND (call-stack-non-emptyp th s)
-                (all-framep (BINDING TH (THREAD-TABLE S))) ;drop but strengthen CALL-STACKP
                 (BOUND-IN-ALISTP TH (THREAD-TABLE S))
                 (JVM-STATEP S)
                 (THREAD-DESIGNATORP TH))
@@ -737,7 +728,6 @@
 
 (defthm framep-of-thread-top-frame
   (implies (and (not (empty-call-stackp (binding th (thread-table s))))
-                (all-framep (binding th (thread-table s))) ;drop
                 (jvm-statep s)
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))

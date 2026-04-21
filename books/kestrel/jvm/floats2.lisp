@@ -91,6 +91,7 @@
       (eq acl2::*float-negative-zero* f)))
 
 ;; Floating point "less than"
+;; todo: compare to floating-point-datum-<
 (defund float< (x y)
   (declare (xargs :guard (and (java-floatp x)
                               (java-floatp y))
@@ -123,6 +124,7 @@
   (float< y x))
 
 ;; Floating point equality
+;; todo: compare to floating-point-datum-=
 (defund float= (x y)
   (declare (xargs :guard (and (java-floatp x)
                               (java-floatp y))

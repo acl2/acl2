@@ -28,7 +28,7 @@
 (defun elaborate-method-indicator (m class-alist)
   (declare (xargs :guard (and (method-indicatorp m)
                               (alistp class-alist)
-                              (all-class-namesp (strip-cars class-alist))
+                              (class-name-listp (strip-cars class-alist))
                               (class-info0-listp (strip-cdrs class-alist)))))
   (if (position #\( m)
       ;; A paren is present, so m is unambiguous

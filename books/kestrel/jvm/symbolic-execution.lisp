@@ -40,7 +40,8 @@
                               (natp pc)
                               (pseudo-termp intern-table))))
   (let* ((staticp (jvm::method-staticp method-info))
-         (inst (if staticp :invokestatic :invokevirtual)))
+         (inst (if staticp :invokestatic :invokevirtual)) ; todo: consider other cases
+         )
     `(jvm::make-state
        (jvm::bind (th)
                   (jvm::push-frame (jvm::make-frame ',pc
@@ -50,7 +51,7 @@
                                                     ',method-info ;we quote the method info
                                                     ',(jvm::make-method-designator class-name method-name method-descriptor))
                                    (jvm::push-frame ;this is used only for catching the result and knowing how much to increment the PC upon return (but the invoke instruction is kind of fake here - we just use invokevirtual)
-                                     (jvm::make-frame '0
+                                     (jvm::make-frame '0 ; having a constant here may help the axe-bind-free functions?
                                                       frame2-locals
                                                       frame2-operand-stack
                                                       frame2-locked-object ;ffixme
