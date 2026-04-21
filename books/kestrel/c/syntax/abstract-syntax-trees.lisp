@@ -289,7 +289,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum usuffix
-  :short "Fixtype of unsigned suffixes [C17:6.4.41] [C17:A.1.5]."
+  :short "Fixtype of unsigned suffixes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -303,7 +303,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum isuffix
-  :short "Fixtype of integer suffixes [C17:6.4.4.1] [C17:A.1.5]."
+  :short "Fixtype of integer suffixes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -336,7 +336,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum hprefix
-  :short "Fixtype of hexadecimal prefixes [C17:6.4.4.1] [C17:A.1.5]."
+  :short "Fixtype of hexadecimal prefixes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -404,7 +404,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod iconst
-  :short "Fixtype of integer constants [C17:6.4.4.1] [C17:A.1.5]."
+  :short "Fixtype of integer constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -436,7 +436,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fsuffix
-  :short "Fixtype of floating suffixes [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of floating suffixes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -478,7 +478,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum sign
-  :short "Fixtype of signs [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of signs."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -504,7 +504,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum dexprefix
-  :short "Fixtype of decimal exponent prefixes [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of decimal exponent prefixes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -518,7 +518,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum bexprefix
-  :short "Fixtype of binary exponent prefixes [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of binary exponent prefixes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -532,7 +532,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod dexpo
-  :short "Fixtype of decimal exponents [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of decimal exponents."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -560,7 +560,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod bexpo
-  :short "Fixtype of binary exponents [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of binary exponents."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -579,7 +579,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod dec-frac-const
-  :short "Fixtype of decimal fractional constants [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of decimal fractional constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -602,7 +602,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod hex-frac-const
-  :short "Fixtype of hexadecimal fractional constants [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of hexadecimal fractional constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -625,7 +625,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum dec-core-fconst
-  :short "Fixtype of decimal core floating constants [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of decimal core floating constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -650,7 +650,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum hex-core-fconst
-  :short "Fixtype of hexadecimal core floating constants [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of hexadecimal core floating constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -672,7 +672,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fconst
-  :short "Fixtype of floating constants [C17:6.4.4.2] [C17:A.1.5]."
+  :short "Fixtype of floating constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -691,7 +691,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum simple-escape
-  :short "Fixtype of simple escape sequences [C17:6.4.4.4] [C17:A.1.5]."
+  :short "Fixtype of simple escape sequences."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -729,7 +729,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum oct-escape
-  :short "Fixtype of octal escape sequences [C17:6.4.4.4] [C17:A.1.5]."
+  :short "Fixtype of octal escape sequences."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -749,7 +749,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod hex-quad
-  :short "Fixtype of quadruples of hexadecimal digits [C17:6.4.3] [C17:A.1.4]."
+  :short "Fixtype of quadruples of hexadecimal digits."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -764,7 +764,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum univ-char-name
-  :short "Fixtype of universal character names [C17:6.4.3] [C17:A.1.4]."
+  :short "Fixtype of universal character names."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -781,7 +781,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum escape
-  :short "Fixtype of escape sequences [C17:6.4.4.4] [C17:A.1.5]."
+  :short "Fixtype of escape sequences."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -834,7 +834,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum cprefix
-  :short "Fixtype of prefixes of character constants [C17:6.4.4.4] [C17:A.1.5]."
+  :short "Fixtype of prefixes of character constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -860,7 +860,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod cconst
-  :short "Fixtype of character constants [C17:6.4.4.4] [C17:A.1.5]."
+  :short "Fixtype of character constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -873,7 +873,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum const
-  :short "Fixtype of constants [C17:6.4.4] [C17:A.1.5]."
+  :short "Fixtype of constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -941,7 +941,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum eprefix
-  :short "Fixtype of encoding prefixes [C17:6.4.5] [C17:A.1.6]."
+  :short "Fixtype of encoding prefixes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -981,7 +981,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod stringlit
-  :short "Fixtype of string literals [C17:6.4.5] [C17:A.1.6]."
+  :short "Fixtype of string literals."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1098,7 +1098,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum header-name
-  :short "Fixtype of header names [C17:6.4.7] [C17:A.1.8]."
+  :short "Fixtype of header names."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1307,7 +1307,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum stor-spec
-  :short "Fixtype of storage class specifiers [C17:6.7.1] [C17:A.2.2]."
+  :short "Fixtype of storage class specifiers."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1350,7 +1350,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum type-qual
-  :short "Fixtype of type qualifiers [C17:6.7.3] [C17:A.2.2]."
+  :short "Fixtype of type qualifiers."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1394,7 +1394,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fun-spec
-  :short "Fixtype of function specifiers [C17:6.7.4] [C17:A.2.2]."
+  :short "Fixtype of function specifiers."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1595,7 +1595,7 @@
 
   (fty::deftagsum expr
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of expressions [C17:6.5] [C17:A.2.1]."
+    :short "Fixtype of expressions."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1985,7 +1985,7 @@
 
   (fty::defprod const-expr
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of constant expressions [C17:6.6] [C17:A.2.1]."
+    :short "Fixtype of constant expressions."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2016,7 +2016,7 @@
 
   (fty::deftagsum genassoc
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of generic associations [C17:6.5.1.1] [C17:A.2.1]."
+    :short "Fixtype of generic associations."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2071,7 +2071,7 @@
 
   (fty::deftagsum type-spec
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of type specifiers [C17:6.7.3] [C17:A.2.2]."
+    :short "Fixtype of type specifiers."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2222,7 +2222,7 @@
 
   (fty::deftagsum align-spec
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of alignment specifiers [C17:6.7.5] [C17:A.2.2]."
+    :short "Fixtype of alignment specifiers."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2249,7 +2249,7 @@
 
   (fty::deftagsum decl-spec
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of declaration specifiers [C17:6.7] [C17:A.2.2]."
+    :short "Fixtype of declaration specifiers."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2341,7 +2341,7 @@
 
   (fty::deftagsum initer
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of initializers [C17:6.7.9] [C17:A.2.2]."
+    :short "Fixtype of initializers."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2416,7 +2416,7 @@
 
   (fty::deftagsum designor
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of designators [C17:6.7.9] [C17:A.2.2]."
+    :short "Fixtype of designators."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2449,7 +2449,7 @@
 
   (fty::defprod declor
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of declarators [C17:6.7.6] [C17:A.2.2]."
+    :short "Fixtype of declarators."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2486,7 +2486,7 @@
 
   (fty::deftagsum dirdeclor
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of direct declarators [C17:6.7.6] [C17:A.2.2]."
+    :short "Fixtype of direct declarators."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2545,7 +2545,7 @@
 
   (fty::defprod absdeclor
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of abstract declarators [C17:6.7.7] [C17:A.2.2]."
+    :short "Fixtype of abstract declarators."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2570,7 +2570,7 @@
   (fty::defoption absdeclor-option
     absdeclor
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of optional abstract declarators [C17:6.7.7] [C17:A.2.2]."
+    :short "Fixtype of optional abstract declarators."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2582,7 +2582,7 @@
 
   (fty::deftagsum dirabsdeclor
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of direct abstract declarators [C17:6.7.7] [C17:A.2.2]."
+    :short "Fixtype of direct abstract declarators."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2631,7 +2631,7 @@
 
   (fty::defprod param-declon
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of parameter declarations [C17:6.7.6] [C17:A.2.2]."
+    :short "Fixtype of parameter declarations."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2670,7 +2670,7 @@
 
   (fty::deftagsum param-declor
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of parameter declarators [C17:6.7.6] [C17:A.2.2]."
+    :short "Fixtype of parameter declarators."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2699,7 +2699,7 @@
 
   (fty::defprod tyname
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of type names [C17:6.7.7] [C17:A.2.2]."
+    :short "Fixtype of type names."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2718,7 +2718,7 @@
 
   (fty::defprod struni-spec
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of structure or union specifiers [C17:6.7.2.1] [C17:A.2.2]."
+    :short "Fixtype of structure or union specifiers."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2751,7 +2751,7 @@
 
   (fty::deftagsum struct-declon
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of structure declarations [C17:6.7.2.1] [C17:A.2.2]."
+    :short "Fixtype of structure declarations."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2808,7 +2808,7 @@
 
   (fty::defprod struct-declor
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of structure declarators [C17:6.7.2.1] [C17:A.2.2]."
+    :short "Fixtype of structure declarators."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2847,7 +2847,7 @@
 
   (fty::defprod enum-spec
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of enumeration specifiers [C17:6.7.2.2] [C17:A.2.2]."
+    :short "Fixtype of enumeration specifiers."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2867,7 +2867,7 @@
 
   (fty::defprod enumer
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of enumerators [C17:6.7.2.2] [C17:A.2.2]."
+    :short "Fixtype of enumerators."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2899,7 +2899,7 @@
 
   (fty::defprod statassert
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of static assertion declarations [C17:6.7.10] [C17:A.2.2]."
+    :short "Fixtype of static assertion declarations."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -3021,7 +3021,7 @@
 
   (fty::defprod init-declor
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of initializer declarators [C17:6.7] [C17:A.2.2]."
+    :short "Fixtype of initializer declarators."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -3065,7 +3065,7 @@
 
   (fty::deftagsum declon
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of declarations [C17:6.7] [C17:A.2.2]."
+    :short "Fixtype of declarations."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -3104,7 +3104,7 @@
 
   (fty::deftagsum label
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of labels [C17:6.8.1] [C17:A.2.3]."
+    :short "Fixtype of labels."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -3237,7 +3237,7 @@
 
   (fty::deftagsum stmt
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of statements [C17:6.8] [C17:A.2.3]."
+    :short "Fixtype of statements."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -3343,7 +3343,7 @@
 
   (fty::deftagsum block-item
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of block items [C17:6.8.2] [C17:A.2.3]."
+    :short "Fixtype of block items."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -3674,7 +3674,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod fundef
-  :short "Fixtype of function definitions [C17:6.9.1] [C17:A.2.4]."
+  :short "Fixtype of function definitions."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3716,7 +3716,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum ext-declon
-  :short "Fixtype of external declarations [C17:6.9] [C17:A.2.4]."
+  :short "Fixtype of external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3993,7 +3993,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod trans-unit
-  :short "Fixtype of translation units [C17:6.9] [C17:A.2.4]."
+  :short "Fixtype of translation units."
   :long
   (xdoc::topstring
    (xdoc::p
