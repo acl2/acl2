@@ -534,8 +534,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-hexadecimal-digit),
-     but it operates on preprocessor states instead of parser states."))
+    "This is called when we expect a hexadecimal digit:
+     if the character is not a hexadecimal digit, it is an error.
+     If the next character is present and is a hexadecimal digit,
+     we return the corresponding ACL2 character,
+     along with its position in the file."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) #\0 (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
@@ -581,8 +584,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-hex-quad),
-     but it operates on preprocessor states instead of parser states."))
+    "This is called when we expect four hexadecimal digits,
+     so we call @(tsee plex-hexadecimal-digit) four times.
+     We return the position of the last one."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-hex-quad) (irr-position) ppstate)
        ((erp hexdig1 & ppstate) (plex-hexadecimal-digit ppstate))
@@ -631,8 +635,26 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-*-hexadecimal-digit),
-     but it operates on preprocessor states instead of parser states."))
+    "That is, we read @('*hexadecimal-digit'), in ABNF notation,
+     i.e. a repetition of zero of more instances of @('hexadecimal-digit').")
+   (xdoc::p
+    "The @('pos-so-far') input is the position that has been read so far,
+     just before attempting to read the digits.
+     The @('last-pos') output is the position of the last digit read,
+     or @('pos-so-far') if there are no digits.
+     The @('next-pos') output is the position just after the last digit read,
+     or just after @('pos-so-far') if there are no digits.")
+   (xdoc::p
+    "We read the next character.
+     If it does not exist, we return.
+     If it exists but is not a hexadecimal digit,
+     we put the character back and return.
+     Otherwise, we recursively read zero or more,
+     and we put the one just read in front.
+     We always return the position of the last hexadecimal character,
+     or the input @('pos-so-far') if there is no hexadecimal character:
+     this input is the position read so far,
+     just before the zero or more hexadecimal digits to be read."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil (irr-position) (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
