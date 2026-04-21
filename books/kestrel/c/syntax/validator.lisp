@@ -3042,8 +3042,10 @@
        namely the value of the constant expression."))
     (b* (((reterr) (irr-const-expr) (irr-type) nil (irr-valid-table))
          ((erp new-expr type types table)
-          (valid-expr (const-expr->expr cexpr) table ienv)))
-      (retok (const-expr new-expr) type types table))
+          (valid-expr (const-expr->expr cexpr) table ienv))
+         (val (const-eval-expr new-expr ienv))
+         (info (make-const-expr-info :value val)))
+      (retok (make-const-expr :expr new-expr :info info) type types table))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

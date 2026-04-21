@@ -1988,7 +1988,8 @@
        it does not actually constrain the expression to be constant,
        but it may be useful to mark expressions to be constant,
        with separate predicates that enforce that."))
-    ((expr expr))
+    ((expr expr)
+     (info any))
     :pred const-exprp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))

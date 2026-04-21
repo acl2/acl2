@@ -13,6 +13,7 @@
 (include-book "types")
 (include-book "uid")
 (include-book "unambiguity")
+(include-book "evaluation")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
@@ -637,6 +638,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod const-expr-info
+  :short "Fixtype of validation information for constant expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to constant expressions,
+     i.e. the @(tsee const-expr) fixtype.
+     The information for a constant expression consists of
+     its value after evaluation."))
+  ((value valuep))
+  :pred const-expr-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod param-declor-nonabstract-info
   :short "Fixtype of validation information for
           non-abstract parameter declarators."
@@ -833,6 +849,8 @@
                                   (expr-fix expr)))
      (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
                                      (expr-fix expr)))
+     (const-expr (and (expr-annop (const-expr->expr const-expr))
+                      (const-expr-infop (const-expr->info const-expr))))
      (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
                                      (type-spec-fix type-spec)))
      (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
@@ -950,6 +968,13 @@
                 (expr-annop arg2)
                 (expr-binary-infop info)))
     :expand (expr-annop (expr-binary op arg1 arg2 info))
+    :enable identity)
+
+  (defruled const-expr-annop-of-const-expr
+    (equal (const-expr-annop (const-expr expr info))
+           (and (expr-annop expr)
+                (const-expr-infop info)))
+    :expand (const-expr-annop (const-expr expr info))
     :enable identity)
 
   (defruled tyname-annop-of-tyname
@@ -1100,6 +1125,16 @@
              (expr-binary-infop (expr-binary->info expr)))
     :enable expr-annop)
 
+  (defruled expr-annop-of-const-expr->expr
+    (implies (const-expr-annop const-expr)
+             (expr-annop (const-expr->expr const-expr)))
+    :enable const-expr-annop)
+
+  (defruled const-expr-infop-of-const-expr->info
+    (implies (const-expr-annop const-expr)
+             (const-expr-infop (const-expr->info const-expr)))
+    :enable const-expr-annop)
+
   (defruled declor-annop-of-init-declor->declor
     (implies (init-declor-annop init-declor)
              (declor-annop (init-declor->declor init-declor)))
@@ -1209,6 +1244,7 @@
      expr-annop-of-expr-funcall
      expr-annop-of-expr-unary
      expr-annop-of-expr-binary
+     const-expr-annop-of-const-expr
      tyname-annop-of-tyname
      param-declor-annop-of-param-declor-nonabstract
      param-declor-nonabstract-infop-of-param-declor-nonabstract->info
@@ -1232,6 +1268,8 @@
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
      expr-binary-infop-of-expr-binary->info
+     expr-annop-of-const-expr->expr
+     const-expr-infop-of-const-expr->info
      declor-annop-of-init-declor->declor
      initer-option-annop-of-init-declor->initer?
      init-declor-infop-of-init-declor->info
