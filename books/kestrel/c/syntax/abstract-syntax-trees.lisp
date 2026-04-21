@@ -350,8 +350,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum dec/oct/hex-const
-  :short "Fixtype of decimal, octal, and hexadecimal constants
-          [C17:6.4.4.1] [C17:A.1.5]."
+  :short "Fixtype of decimal, octal, and hexadecimal constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -569,7 +568,8 @@
      an optional sign,
      and a list of (decimal) digits (which should be non-empty).
      The digits are decimal, not binary or hexadecimal;
-     but the implicit base of the exponent is binary [C17:6.4.4.2/3]."))
+     but the implicit base of the exponent is binary
+     [C17:6.4.4.2/3] [C23:6.4.5.3]."))
   ((prefix bexprefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
@@ -801,7 +801,7 @@
 
 (fty::deftagsum c-char
   :short "Fixtype of characters and escape sequences
-          usable in character constants [C17:6.4.4.4] [C17:A.1.5]."
+          usable in character constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -820,7 +820,7 @@
 
 (fty::deflist c-char-list
   :short "Fixtype of lists of characters and escape sequences
-          usable in character constants [C17:6.4.4.4] [C17:A.1.5]."
+          usable in character constants."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -900,7 +900,7 @@
 
 (fty::deftagsum s-char
   :short "Fixtype of characters and escape sequences
-          usable in string literals [C17:6.4.5] [C17:A.1.6]."
+          usable in string literals."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -919,7 +919,7 @@
 
 (fty::deflist s-char-list
   :short "Fixtype of lists of characters and escape sequences
-          usable in string literals [C17:6.4.5] [C17:A.1.6]."
+          usable in string literals."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1014,8 +1014,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod h-char
-  :short "Fixtype of characters usable in
-          header names between angle brackets [C17:6.4.7] [C17:A.1.8]."
+  :short "Fixtype of characters usable in header names between angle brackets."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1035,7 +1034,7 @@
 
 (fty::deflist h-char-list
   :short "Fixtype of lists of characters usable in
-          header names between angle brackets [C17:6.4.7] [C17:A.1.8]."
+          header names between angle brackets."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1056,8 +1055,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod q-char
-  :short "Fixtype of characters usable in
-          header names between double quotes [C17:6.4.7] [C17:A.1.8]."
+  :short "Fixtype of characters usable in header names between double quotes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1077,7 +1075,7 @@
 
 (fty::deflist q-char-list
   :short "Fixtype of lists of characters usable in
-          header names between double quotes [C17:6.4.7] [C17:A.1.8]."
+          header names between double quotes."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1141,8 +1139,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum unop
-  :short "Fixtype of unary operators
-          [C17:6.5.3] [C17:6.5.2] [C17:A.2.1]."
+  :short "Fixtype of unary operators."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1198,8 +1195,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum binop
-  :short "Fixtype of binary operators
-          [C17:6.5.5-14] [C17:6.5.16] [C17:A.2.1]."
+  :short "Fixtype of binary operators."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1274,8 +1270,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum inc/dec-op
-  :short "Fixtype of increment and decrement operators
-          [C17:6.5.3] [C17:6.5.2] [C17:A.2.1]."
+  :short "Fixtype of increment and decrement operators."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1423,7 +1418,8 @@
                  "construct to specify assembler names")
     ". It consists of the keyword @('asm') or @('__asm') or @('__asm__')
      and a parenthesized string literal.
-     Since adjacent string literals may be concatenated [C17:5.1.1.2/6],
+     Since adjacent string literals may be concatenated
+     [C17:5.1.1.2] [C23:5.2.1.2],
      we allow a list of string literals here;
      this way, we preserve the fact that there were adjacent string literals.
      Indeed, we have observed multiple (two, to be precise)
@@ -1530,9 +1526,7 @@
 
 (fty::deftypes exprs/decls/stmts
   :short "Fixtypes of expressions, declarations, statements,
-          and related entities
-          [C17:6.5] [C17:6.6] [C17:6.7] [C17:6.8]
-          [C17:A.2.1] [C17:A.2.2] [C17:A.2.3]."
+          and related entities."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1682,8 +1676,8 @@
       "For compound literals, we also capture
        the presence or absence of the final comma
        just after the @('initializer-list').
-       We formalize @('initializer-list') [C17:6.7.9] [C17:A.2.2]
-       as a list (which should be non-empty, unless GCC extensions are enabled)
+       We formalize @('initializer-list') as a list
+       (which should be non-empty, unless GCC extensions are enabled)
        of pairs each consisting of
        some designators and an initializer (see @(tsee desiniter).")
      (xdoc::p
@@ -2180,8 +2174,7 @@
 
   (fty::deftagsum spec/qual
     :parents (abstract-syntax-trees exprs/decls/stmts)
-    :short "Fixtype of specifiers and qualifiers
-            [C17:6.7.2.1] [C17:A.2.2]."
+    :short "Fixtype of specifiers and qualifiers."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2374,8 +2367,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod desiniter
-    :short "Fixtype of initializers with optional designations
-            [C17:6.7.9] [C17:A.2.2]."
+    :short "Fixtype of initializers with optional designations."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2674,11 +2666,11 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "There is actually no notion of `parameter declarator' in [C17],
+      "There is actually no notion of `parameter declarator' in [C17] and [C23],
        but it is convenient to introduce in our abstract syntax,
        to factor it better.
        Our notion of parameter declarator is analogous to
-       the notions of various kinds of declarators in [C17],
+       the notions of various kinds of declarators in [C17] and [C23],
        which, when preceded by declaration specifiers,
        form declarations.")
      (xdoc::p
@@ -3844,7 +3836,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This notion has no explicit counterpart in [C17],
+      "This notion has no explicit counterpart in [C17] and [C23],
        but it has a meaning in our abstract syntax for tools:
        it consists of the entities that may appear
        at the top level of a translation unit.
@@ -4067,7 +4059,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This notion has no explicit counterpart in [C17],
+    "This notion has no explicit counterpart in [C17] and [C23],
      but it is useful to represent, in the abstract syntax,
      a collection of translation units that form
      a C program or library or other component.
