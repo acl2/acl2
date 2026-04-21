@@ -82,77 +82,85 @@
   :parents (segmentation)
   :short "Return a segment's base linear address, lower bound, and upper bound."
   :long
-  "<p>
-  The segment is the one in the given segment register.
-  </p>
-  <p>
-  Base addresses coming from segment descriptors are always 32 bits:
-  see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
-  and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4.8.
-  However, in 64-bit mode, segment bases for FS and GS are 64 bits:
-  see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.4
-  and AMD manual, Apr'16, Vol. 2, Sec 4.5.3.
-  As an optimization, in 64-bit mode,
-  since segment bases for CS, DS, SS, and ES are ignored,
-  this function just returns 0 as the base result under these conditions.
-  In 64-bit mode, when the segment register is FS or GS,
-  we read the base address from the MSRs
-  mentioned in Intel manual, Feb'26, Vol. 3A, Sec. 3.4.4
-  and AMD manual, Apr'16, Vol. 2, Sec 4.5.3;
-  these are physically mapped to the relevant hidden portions of FS and GS,
-  so it should be a state invariant that they are equal to
-  the relevant hidden portions of FS and GS.
-  In 32-bit mode, since the high 32 bits are ignored
-  (see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.4
-  and AMD manual, Apr'16, Vol. 2, Sec 4.5.3),
-  we only return the low 32 bits of the base address
-  read from the hidden portion of the segment register.
-  </p>
-  <p>
-  @(tsee hidden-segment-registerbits') uses 32 bits for the segment limit,
-  which is consistent with the 20 bits in segment descriptors
-  when the G (granularity) bit is 1:
-  see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
-  and AMD manual, Apr'16, Vol. 2, Sec. 4-7 and 4-8.
-  Thus, the limit is an unsigned 32-bit integer.
-  </p>
-  <p>
-  The lower bound is 0 for code segments, i.e. for the CS register.
-  For data (including stack) segments,
-  i.e. for the SS, DS, ES, FS, and GS registers,
-  the lower bound depends on the E bit:
-  if E is 0, the lower bound is 0;
-  if E is 1, the segment is an expand-down data segment
-  and the lower bound is one plus the segment limit.
-  See Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
-  and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4-8.
-  Since the limit is an unsigned 32-bit (see above),
-  adding 1 may produce an unsigned 33-bit result.
-  Even though this should not actually happen with well-formed segments,
-  this function returns an unsigned 33-bit integer as the lower bound result.
-  As an optimization, in 64-bit mode,
-  since segment limits and bounds are ignored,
-  this function returns 0 as the lower bound;
-  the caller must ignore this result in 64-bit mode.
-  </p>
-  <p>
-  The upper bound is the segment limit for code segments,
-  i.e. for the CS register.
-  For data (including stack) segments,
-  i.e. for the SS, DS, ES, FS, and GS registers,
-  the upper bound depends on the E and D/B bits:
-  if E is 0, the upper bound is the segment limit;
-  if E is 1, the segment is an expand-down data segment
-  and the upper bound is 2^32-1 if D/B is 1, 2^16-1 if D/B is 0.
-  See Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
-  and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4-8.
-  Since  the limit is an unsigned 32-bit (see above),
-  this function returns an unsigned 32-bit integer as the upper bound result.
-  As an optimization, in 64-bit mode,
-  since segment limits and bounds are ignored,
-  this function returns 0 as the upper bound;
-  the caller must ignore this result in 64-bit mode.
-  </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The segment is the one in the given segment register.")
+   (xdoc::p
+    "Base addresses coming from segment descriptors are always 32 bits:
+     see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
+     and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4.8.
+     However, in 64-bit mode, segment bases for FS and GS are 64 bits:
+     see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.4
+     and AMD manual, Apr'16, Vol. 2, Sec 4.5.3.
+     As an optimization, in 64-bit mode,
+     since segment bases for CS, DS, SS, and ES are ignored,
+     this function just returns 0 as the base result under these conditions.
+     In 64-bit mode, when the segment register is FS or GS,
+     we read the base address from the MSRs
+     mentioned in Intel manual, Feb'26, Vol. 3A, Sec. 3.4.4
+     and AMD manual, Apr'16, Vol. 2, Sec 4.5.3;
+     these are physically mapped to the relevant hidden portions of FS and GS,
+     so it should be a state invariant that they are equal to
+     the relevant hidden portions of FS and GS.
+     In 32-bit mode, since the high 32 bits are ignored
+     (see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.4
+     and AMD manual, Apr'16, Vol. 2, Sec 4.5.3),
+     we only return the low 32 bits of the base address
+     read from the hidden portion of the segment register.")
+   (xdoc::p
+    "@(tsee hidden-segment-registerbits') uses 32 bits for the segment limit,
+     which is consistent with the 20 bits in segment descriptors
+     when the G (granularity) bit is 1:
+     see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
+     and AMD manual, Apr'16, Vol. 2, Sec. 4-7 and 4-8.
+     Thus, the limit is an unsigned 32-bit integer.")
+   (xdoc::p
+    "The lower bound is 0 for code segments, i.e. for the CS register.
+     For data (including stack) segments,
+     i.e. for the SS, DS, ES, FS, and GS registers,
+     the lower bound depends on the E bit:
+     if E is 0, the lower bound is 0;
+     if E is 1, the segment is an expand-down data segment
+     and the lower bound is one plus the segment limit.
+     See Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
+     and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4-8.
+     Since the limit is an unsigned 32-bit (see above),
+     adding 1 may produce an unsigned 33-bit result.
+     Even though this should not actually happen with well-formed segments,
+     this function returns an unsigned 33-bit integer as the lower bound result.
+     As an optimization, in 64-bit mode,
+     since segment limits and bounds are ignored,
+     this function returns 0 as the lower bound;
+     the caller must ignore this result in 64-bit mode.")
+   (xdoc::p
+    "The upper bound is the segment limit for code segments,
+     i.e. for the CS register.
+     For data (including stack) segments,
+     i.e. for the SS, DS, ES, FS, and GS registers,
+     the upper bound depends on the E and D/B bits:
+     if E is 0, the upper bound is the segment limit;
+     if E is 1, the segment is an expand-down data segment
+     and the upper bound is 2^32-1 if D/B is 1, 2^16-1 if D/B is 0.
+     See Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
+     and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4-8.
+     Since  the limit is an unsigned 32-bit (see above),
+     this function returns an unsigned 32-bit integer as the upper bound result.
+     As an optimization, in 64-bit mode,
+     since segment limits and bounds are ignored,
+     this function returns 0 as the upper bound;
+     the caller must ignore this result in 64-bit mode.")
+   (xdoc::p
+    "Since, in an expand-down segment,
+     the lower bound is one plus the limit,
+     it is not possible to include address 0 in the segment.
+     It may seem strange that the lower bound is not defined as just the limit,
+     which would have allowed including address 0.
+     Some web searches suggest that the reason is
+     to use the same circuitry to check the limit
+     for expand-up and expand-down segments,
+     namely @('addr <= limit') for expand-up
+     and @('addr > limit') for expand-down:
+     it is the same calculation, with just the resulting bit flipped."))
 
   :guard-hints (("Goal" :in-theory (e/d (bitsets::bignum-extract) ())))
 
