@@ -1964,7 +1964,7 @@
     (if (not (consp program))
         (mv :empty-program nil)
       (let ((pcs (strip-cars program)))
-        (if (and (jvm::jvm-instructions-okayp program 0 pcs) ;todo: avoid the strip-cars? ; todo: prove this is always true?  well, what about the jump targets?
+        (if (and (jvm::method-programp-aux program 0 pcs) ;todo: avoid the strip-cars? ; todo: prove this is always true?  well, what about the jump targets?
                  ; (JVM::INCREASING-PCSP (REST PCS) 0) ;todo: drop!
                  )
             (mv (erp-nil) program)

@@ -713,7 +713,8 @@
                                     ;; generate an assumption about all the
                                     ;; addresses being bound:
                                     `((all-bound-in-heap (get-field ,term-for-assumptions ,quoted-class-field-pair ,base-heap-term)
-                                                         ,base-heap-term))
+                                                         ,base-heap-term)
+                                      (all-addressp (get-field ,term-for-assumptions ,quoted-class-field-pair ,base-heap-term)))
                                   nil)
                                 (initialized-field-assumptions-for-heap-addresses (+ -1 count)
                                                                                   symbolic-new-addresses
@@ -821,7 +822,9 @@
                                all-bound-in-heap-of-nil
                                get-field-of-addresses-of-nil
                                get-field-of-addresses-of-cons
-                               in-of-nth-new-ad-and-2set-of-n-new-ads)
+                               in-of-nth-new-ad-and-2set-of-n-new-ads
+                               all-addressp-of-cons
+                               all-addressp-when-not-consp)
                              (base-rules)
                              ;; (jvm-semantics-rules)
                              (jvm-simplification-rules)

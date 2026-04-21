@@ -53,6 +53,12 @@
 
 (verify-guards acl2::all-addressp)
 
+(defthm addressp-of-nth-when-all-addressp
+  (implies (and (all-addressp ads)
+                (natp n)
+                (< n (len ads)))
+           (addressp (nth n ads))))
+
 ;; Most keys in the heap object are pairs of class names and field-ids.
 (defund jvm::class-name-field-id-pairp (x)
   (declare (xargs :guard t))

@@ -33,7 +33,45 @@
 
 (local (in-theory (disable myquotep default-car default-+-2 rationalp-implies-acl2-numberp))) ; for speed
 
+(local (in-theory (disable natp)))
+
 (local (in-theory (enable rationalp-when-natp)))
+
+(defthm maxelem-of-keep-nodenum-dargs-bound
+  (implies (and (bounded-darg-listp items n)
+                (natp n)
+                (consp (keep-nodenum-dargs items)) ;there must be at least one atom
+                )
+           (< (maxelem (keep-nodenum-dargs items)) n))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
+
+;;move
+;;not a great linear rule due to the free var
+(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp
+  (implies (and (bounded-dag-exprp n expr)
+                (consp expr)
+                (natp n)
+                (consp (dargs expr))
+                (not (eq 'quote (car expr)))
+                (consp (keep-nodenum-dargs (dargs expr))))
+           (< (maxelem (keep-nodenum-dargs (dargs expr)))
+              n))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
+
+;move
+(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-pseudo-dag-arrayp-aux
+  (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array n)
+                (consp (aref1 dag-array-name dag-array n))
+                (not (equal 'quote (car (aref1 dag-array-name dag-array n))))
+                (consp (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
+                (natp n))
+           (< (maxelem (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
+              n))
+  :rule-classes (:rewrite :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;call-stack is now either a nodenum or a quotep
 ;now pops count as -1 (because terms are often represented as a push of a new frame onto a pop of the old stack)
@@ -87,6 +125,8 @@
 (verify-guards count-pushes-above-base
   :hints (("Goal" :in-theory (enable car-becomes-nth-of-0))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;tag these with -dag or -axe?
 ;returns (mv stack-height pc) where both are integers- need to turn the stack height into some expression? - or an mv with at least one nil for failure
 ;bozo this only works if the make-state looks just so - add error checking?
@@ -94,39 +134,7 @@
 
 ;move
 ;not a great linear rule due to the free var
-(defthm maxelem-of-keep-nodenum-dargs-bound
-  (implies (and (bounded-darg-listp items n)
-                (natp n)
-                (consp (keep-nodenum-dargs items)) ;there must be at least one atom
-                )
-           (< (maxelem (keep-nodenum-dargs items)) n))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
-;;move
-;;not a great linear rule due to the free var
-(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp
-  (implies (and (bounded-dag-exprp n expr)
-                (consp expr)
-                (natp n)
-                (consp (dargs expr))
-                (not (eq 'quote (car expr)))
-                (consp (keep-nodenum-dargs (dargs expr))))
-           (< (maxelem (keep-nodenum-dargs (dargs expr)))
-              n))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
-
-;move
-(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-pseudo-dag-arrayp-aux
-  (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array n)
-                (consp (aref1 dag-array-name dag-array n))
-                (not (equal 'quote (car (aref1 dag-array-name dag-array n))))
-                (consp (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
-                (natp n))
-           (< (maxelem (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
-              n))
-  :rule-classes (:rewrite :linear))
 
 ;; Returns (mv erp pc) where PC is the PC (if it is a call to make-frame).
 (defund get-pc-from-frame (frame dag-array)
@@ -155,12 +163,15 @@
                 (er hard? 'get-pc-from-frame "Unexpected frame: ~x0.  See DAG just above." expr)
                 (mv (erp-t) nil))))))
 
-(defthm get-stack-height-and-pc-from-frame-type
+(defthm get-pc-from-frame-type
   (implies (not (mv-nth 0 (get-pc-from-frame call-stack dag-array)))
            (natp (mv-nth 1 (get-pc-from-frame call-stack dag-array))))
   :hints (("Goal" :in-theory (enable get-pc-from-frame))))
 
-;; Returns (mv erp stack-height-difference pc) where stack-height-difference is the number of frames about base-stack.  If it is 0, the PC is irrelevant.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp stack-height-difference pc) where stack-height-difference is the number of frames above base-stack.  If it is 0, the PC is irrelevant.
+;; The PC returned has to be a constant.
 (defund get-stack-height-and-pc-from-call-stack (call-stack base-stack dag-array)
   (declare (xargs :guard (and (or (myquotep call-stack)
                                   (and (natp call-stack)
@@ -192,8 +203,6 @@
                 (if erp
                     (mv erp nil nil)
                   (mv (erp-nil) pushes pc))))))))))
-
-(local (in-theory (disable natp)))
 
 (defthm get-stack-height-and-pc-from-call-stack-type
   (implies (not (mv-nth 0 (get-stack-height-and-pc-from-call-stack call-stack base-stack dag-array)))
@@ -254,6 +263,8 @@
            (natp (mv-nth 2 (get-stack-height-and-pc-from-thread-table thread-table base-stack dag-array))))
   :hints (("Goal" :in-theory (enable get-stack-height-and-pc-from-thread-table))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp stack-height-difference pc)
 (defund get-stack-height-and-pc-from-make-state (make-state base-stack dag-array)
   (declare (xargs :guard (and (and (natp make-state)
@@ -279,6 +290,8 @@
   (implies (not (mv-nth 0 (get-stack-height-and-pc-from-make-state nest base-stack dag-array)))
            (natp (mv-nth 2 (get-stack-height-and-pc-from-make-state nest base-stack dag-array))))
   :hints (("Goal" :in-theory (enable get-stack-height-and-pc-from-make-state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund strip-steps (nest dag-array)
   (declare (xargs :guard (or (myquotep nest)

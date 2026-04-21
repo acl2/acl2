@@ -715,17 +715,8 @@
 ;;                (THREAD-DESIGNATORP TH))
 ;;           (FRAMEP (CAR (GET-CALL-STACK (BINDING TH thread-table))))))
 
-
-(defthm framep-of-top-frame
-  (implies (and (not (empty-call-stackp call-stack))
-                (all-framep call-stack) ;drop when doing the all-framep-change
-                (call-stackp call-stack))
-           (framep (top-frame call-stack)))
-  :hints (("Goal" :in-theory (enable top-frame empty-call-stackp call-stackp))))
-
 (defthm framep-of-top-frame-of-binding-of-thread-table
   (IMPLIES (AND (call-stack-non-emptyp th s)
-                (all-framep (BINDING TH (THREAD-TABLE S))) ;drop but strengthen CALL-STACKP
                 (BOUND-IN-ALISTP TH (THREAD-TABLE S))
                 (JVM-STATEP S)
                 (THREAD-DESIGNATORP TH))
@@ -737,7 +728,6 @@
 
 (defthm framep-of-thread-top-frame
   (implies (and (not (empty-call-stackp (binding th (thread-table s))))
-                (all-framep (binding th (thread-table s))) ;drop
                 (jvm-statep s)
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))
