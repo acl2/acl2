@@ -15,6 +15,7 @@
 (local (in-theory (disable inst-list-p-of-maps)))
 
 (def-sdm-instruction-section "5.1 General-Purpose Instructions")
+
 (def-sdm-instruction-section "5.1.1 Data Transfer Instructions"
   :mnemonics
   '(MOV
@@ -23,16 +24,16 @@
     CMOVP/PE
     CMOVNP/PO
     CMOVO CMOVNO CMOVS CMOVNS  XCHG
-    BSWAP XADD CMPXCHG CMPXCHG8B PUSH |PUSH CS| |PUSH DS| |PUSH ES| |PUSH FS| |PUSH GS| |PUSH SS|
-    POP |POP DS| |POP ES| |POP FS| |POP GS| |POP SS| PUSHA/PUSHAD POPA/POPAD CWD/CDQ/CQO
-    CBW/CWDE/CDQE MOVSX MOVZX
+    BSWAP XADD CMPXCHG CMPXCHG8B
+    PUSH |PUSH CS| |PUSH DS| |PUSH ES| |PUSH FS| |PUSH GS| |PUSH SS|
+    POP |POP DS| |POP ES| |POP FS| |POP GS| |POP SS|
+    PUSHA/PUSHAD POPA/POPAD
+    CWD/CDQ/CQO
+    CBW/CWDE/CDQE
+    MOVSX
+    MOVZX
     ;; not listed but seems to belong here?
-    MOVSXD)
-  :doc "<p>Unimplemented instructions are:</p>
-<ul>
-<li>POP variants that write to segment registers: these have side effects,
-perhaps similar to those of MOV to a segment register</li>
-</ul>")
+    MOVSXD))
 
 (def-sdm-instruction-section "5.1.2 Binary Arithmetic Instructions"
   :mnemonics
@@ -40,8 +41,7 @@ perhaps similar to those of MOV to a segment register</li>
 
 (def-sdm-instruction-section "5.1.3 Decimal Arithmetic Instructions"
   :mnemonics
-  '(DAA DAS AAA AAS AAM AAD)
-  :doc "<p>These are all unimplemented.</p>")
+  '(DAA DAS AAA AAS AAM AAD))
 
 (def-sdm-instruction-section "5.1.4 Logical Instructions"
   :mnemonics '(AND OR XOR NOT))
