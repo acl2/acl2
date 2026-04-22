@@ -534,34 +534,35 @@
 ;; and 7 from Intel Vol. 3 to figure out how segmentation is done on
 ;; Intel machines.
 
-;; Predicates to determine valid user descriptors (in IA32e mode):
+;; References below are to Intel manual, Feb'26, Volume 3A.
+
+;; Predicates to determine valid user descriptors:
 
 ;; Code Segment Descriptor:
 
 (define ia32e-valid-code-segment-descriptor-p
   ((descriptor :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid code segment descriptor in 64-bit mode"
+  :short "Recognizer for a valid code segment descriptor in 64-bit mode."
 
-  (b* (((when (not (equal (code-segment-descriptorBits->msb-of-type
-                                                                descriptor)
+  (b* (;; Must be code segment, i.e. MSB of Type = 1 (Table 3-1).
+       ((when (not (equal (code-segment-descriptorBits->msb-of-type descriptor)
                           1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
-       ;; User segment?
+       ;; Must be user segment, i.e. S = 1.
        ((when (not (equal (code-segment-descriptorBits->s descriptor) 1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
-       ;; Segment Present?
+       ;; Segment must be present, i.e. P = 1.
        ((when (not (equal (code-segment-descriptorBits->p descriptor) 1)))
         (mv nil (cons :Segment-Not-Present descriptor)))
 
-       ;; IA32e Mode is on?
+       ;; IA32e mode must be on, i.e. L = 1.
        ((when (not (equal (code-segment-descriptorBits->l descriptor) 1)))
         (mv nil (cons :IA32e-Mode-Off descriptor)))
 
-       ;; Default operand size of 32 bit and default address size of
-       ;; 64 bits when no error below.
+       ;; Must be D = 0 because L = 1 (see L bit in Section 3.4.5).
        ((when (not (equal (code-segment-descriptorBits->d descriptor) 0)))
         (mv nil (cons :IA32e-Default-Operand-Size-Incorrect descriptor))))
     (mv t 0)))
@@ -569,22 +570,22 @@
 (define ia32-valid-code-segment-descriptor-p
   ((descriptor :type (unsigned-byte 64)))
   :parents (ia32-segmentation)
-  :short "Recognizer for a valid code segment descriptor in 32-bit mode"
+  :short "Recognizer for a valid code segment descriptor in 32-bit mode."
 
-  (b* (((when (not (equal (code-segment-descriptorBits->msb-of-type
-                                                                descriptor)
+  (b* (;; Must be code segment, i.e. MSB of Type = 1 (Table 3-1).
+       ((when (not (equal (code-segment-descriptorBits->msb-of-type descriptor)
                           1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
-       ;; User segment?
+       ;; Must be user segment, i.e. S = 1.
        ((when (not (equal (code-segment-descriptorBits->s descriptor) 1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
-       ;; Segment Present?
+       ;; Segment must be present, i.e. P = 1.
        ((when (not (equal (code-segment-descriptorBits->p descriptor) 1)))
         (mv nil (cons :Segment-Not-Present descriptor)))
 
-       ;; IA32e Mode is off?
+       ;; IA32e mode must be off, i.e. L = 0.
        ((when (not (equal (code-segment-descriptorBits->l descriptor) 0)))
         (mv nil (cons :IA32e-Mode-Off descriptor))))
     (mv t 0)))
@@ -594,22 +595,22 @@
 (define ia32e-valid-data-segment-descriptor-p
   ((descriptor :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid data segment descriptor"
+  :short "Recognizer for a valid data segment descriptor in 64-bit mode."
 
-  (b* (((when (not (equal (data-segment-descriptorBits->msb-of-type
-                                                                descriptor)
+  (b* (;; Must be code segment, i.e. MSB of Type = 0 (Table 3-1).
+       ((when (not (equal (data-segment-descriptorBits->msb-of-type descriptor)
                           0)))
         (mv nil (cons :Invalid-Type descriptor)))
 
-       ;; User segment?
+       ;; Must be user segment, i.e. S = 1.
        ((when (not (equal (data-segment-descriptorBits->s descriptor) 1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
-       ;; Segment is present.
+       ;; Segment must be present, i.e. P = 1.
        ((when (not (equal (data-segment-descriptorBits->p descriptor) 1)))
         (mv nil (cons :Segment-Not-Present descriptor)))
 
-       ;; IA32e Mode is on?
+       ;; IA32e mode must be on, i.e. L = 1.
        ((when (not (equal (data-segment-descriptorBits->l descriptor) 1)))
         (mv nil (cons :IA32e-Mode-Off descriptor))))
       (mv t 0)))
@@ -621,7 +622,7 @@
 (define ia32e-valid-ldt-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid LDT segment descriptor"
+  :short "Recognizer for a valid LDT segment descriptor."
 
 
   (b* ((type (system-segment-descriptorBits->type descriptor))
@@ -648,7 +649,7 @@
 (define ia32e-valid-available-tss-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Available TSS segment descriptor"
+  :short "Recognizer for a valid Available TSS segment descriptor."
 
   (b* ((type (system-segment-descriptorBits->type descriptor))
        ((when (not (equal type #x9)))
@@ -668,7 +669,7 @@
 (define ia32e-valid-busy-tss-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Busy TSS segment descriptor"
+  :short "Recognizer for a valid Busy TSS segment descriptor."
 
   (b* ((type (system-segment-descriptorBits->type descriptor))
        ((when (not (equal type #xB)))
@@ -690,7 +691,7 @@
 (define ia32e-valid-call-gate-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Call Gate segment descriptor"
+  :short "Recognizer for a valid Call Gate segment descriptor."
 
   (b* ((type (call-gate-descriptorBits->type descriptor))
        ((when (not (equal type #xC)))
@@ -708,7 +709,7 @@
 (define ia32e-valid-interrupt-gates-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Interrupt Gate segment descriptor"
+  :short "Recognizer for a valid Interrupt Gate segment descriptor."
 
   (b* ((type (interrupt/trap-gate-descriptorBits->type descriptor))
        ((when (not (equal type #xE)))
@@ -722,7 +723,7 @@
 (define ia32e-valid-trap-gates-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Trap Gate segment descriptor"
+  :short "Recognizer for a valid Trap Gate segment descriptor."
 
   (b* ((type (interrupt/trap-gate-descriptorBits->type descriptor))
        ((when (not (equal type #xF)))
@@ -743,7 +744,7 @@
 (define make-code-segment-attr-field
   ((descriptor  :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Constructor for the Code Segment attribute field"
+  :short "Constructor for the Code Segment attribute field."
 
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
@@ -796,7 +797,7 @@
 (define make-data-segment-attr-field
   ((descriptor  :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Constructor for the Data Segment attribute field"
+  :short "Constructor for the Data Segment attribute field."
 
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
@@ -851,7 +852,7 @@
   ((descriptor  :type (unsigned-byte 128)))
 
   :parents (ia32e-segmentation)
-  :short "Constructor for the System Segment attribute field"
+  :short "Constructor for the System Segment attribute field."
   :guard-hints (("Goal" :in-theory (e/d ()
                                         (unsigned-byte-p))))
 
