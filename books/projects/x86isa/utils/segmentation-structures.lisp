@@ -49,8 +49,7 @@
 
 (defsection segmentation-bitstructs
   :parents (structures)
-  :short "<b>Bitstructs related to segmentation, protection, etc.</b>"
-  )
+  :short "Bitstructs related to segmentation, protection, etc.")
 
 (local (xdoc::set-default-parents segmentation-bitstructs))
 
