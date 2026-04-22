@@ -944,7 +944,8 @@
 
          (b* (((segment-selectorBits selector))
               (offset (ash selector.index 3))
-              (table-descriptor (stri (if selector.ti #.*ldtr* #.*gdtr*) x86))
+              (table-descriptor
+               (stri (if (= selector.ti 1) #.*ldtr* #.*gdtr*) x86))
               ((gdtr/idtrBits table-descriptor))
 
               ((mv gp-selector? descriptor-addr x86)
