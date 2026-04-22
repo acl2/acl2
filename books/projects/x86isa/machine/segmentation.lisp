@@ -612,7 +612,11 @@
 
        ;; IA32e mode must be on, i.e. L = 1.
        ((when (not (equal (data-segment-descriptorBits->l descriptor) 1)))
-        (mv nil (cons :IA32e-Mode-Off descriptor))))
+        (mv nil (cons :IA32e-Mode-Off descriptor)))
+
+       ;; Must be D = 0 because L = 1 (see L bit in Section 3.4.5).
+       ((when (not (equal (code-segment-descriptorBits->d descriptor) 0)))
+        (mv nil (cons :IA32e-Default-Operand-Size-Incorrect descriptor))))
       (mv t 0)))
 
 ;; Predicates to determine valid system descriptors (in IA32e mode):
@@ -623,7 +627,6 @@
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
   :short "Recognizer for a valid LDT segment descriptor."
-
 
   (b* ((type (system-segment-descriptorBits->type descriptor))
        ;; Valid type: 64-bit LDT?
