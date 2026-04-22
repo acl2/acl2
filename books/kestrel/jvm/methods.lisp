@@ -82,11 +82,14 @@
            (pcp (+ pc2 pc1)))
   :hints (("Goal" :in-theory (enable pcp))))
 
+(defconst *program-enders*
+  '(:ret :return :areturn :ireturn :freturn :dreturn :lreturn :athrow :goto))
+
 ;fixme check that relative jumps are in bounds (or at least don't go negative, which may be enough for now to show the PC is a natp)
 ;; PROGRAM is a list of (<pc> . <inst>) pairs
 ;; VALID-PCS is all the valid PCs in the current method (allowable jump targets)
 ;; todo: check that the last inst is a return?
-(defund jvm-instructions-okayp (program next-pc valid-pcs)
+(defund method-programp-aux (program next-pc valid-pcs)
   (declare (xargs :guard (and (pcp next-pc)
                               (true-listp valid-pcs)
                               (all-pcp valid-pcs))
@@ -98,19 +101,80 @@
            (let* ((pc (car entry))
                   (inst (cdr entry)))
              (and (equal pc next-pc)
+                  (instructionp inst)
                   (jvm-instruction-okayp inst pc valid-pcs)
-                  (jvm-instructions-okayp (rest program) (+ (inst-len inst) next-pc) valid-pcs)))))))
+                  (if (not (member-eq (instruction-opcode inst) *program-enders*))
+                      (consp (rest program)) ; there are more instrs unless this one is a return
+                    t)
+                  (method-programp-aux (rest program) (+ (inst-len inst) next-pc) valid-pcs)))))))
 
-(defthm alistp-when-jvm-instructions-okayp
-  (implies (jvm-instructions-okayp program next-pc valid-pcs)
+(defthm alistp-when-method-programp-aux
+  (implies (method-programp-aux program next-pc valid-pcs)
            (alistp program))
-  :hints (("Goal" :in-theory (enable jvm-instructions-okayp alistp))))
+  :hints (("Goal" :in-theory (enable method-programp-aux alistp))))
 
-(defthm integer-listp-of-strip-cars-when-jvm-instructions-okayp
-  (implies (and (jvm-instructions-okayp program next-pc valid-pcs)
+(defthm integer-listp-of-strip-cars-when-method-programp-aux
+  (implies (and (method-programp-aux program next-pc valid-pcs)
                 (pcp next-pc))
            (all-pcp (strip-cars program)))
-  :hints (("Goal" :in-theory (enable jvm-instructions-okayp strip-cars all-pcp))))
+  :hints (("Goal" :in-theory (enable method-programp-aux strip-cars all-pcp))))
+
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+
+(local
+ (defthm method-programp-aux-key-property
+   (implies (and (method-programp-aux program first-pc valid-pcs)
+                 (member-equal pc (strip-cars program))
+                 (not (member-equal (instruction-opcode (lookup-eq pc program)) *program-enders*)))
+            (member-equal (+ pc (inst-len (lookup-equal pc program)))
+                          (strip-cars program)))
+   :hints (("Goal" :induct (method-programp-aux program first-pc valid-pcs)
+                   :expand ((strip-cars (cdr program))
+                            (method-programp-aux program (car (car program))
+                                                    valid-pcs)
+                            (member-equal pc (strip-cars program))
+                            (strip-cars program))
+                   :in-theory (enable method-programp-aux ;lookup-equal assoc-equal ;jvm-instruction-okayp
+                                      strip-cars
+                                      )))))
+
+;; (thm
+;;  (implies (and (method-programp-aux program start-pc valid-pcs)
+;;                (member-equal pc (strip-cars program)))
+;;           (<= (caar program) pc))
+;;  :hints (("Goal" :in-theory (enable method-programp-aux strip-cars))))
+
+(defund ascendingp (vals)
+  (declare (xargs :guard (integer-listp vals)))
+  (if (endp vals)
+      t
+    (if (endp (rest vals))
+        t
+      (and (< (first vals) (first (rest vals)))
+           (ascendingp (rest vals))))))
+
+(defthm ascendingp-of-strip-cars-when-method-programp-aux
+  (implies (method-programp-aux program start-pc valid-pcs)
+           (ascendingp (strip-cars program)))
+  :hints (("Goal" :expand (method-programp-aux (cdr program)
+                                               (+ (car (car program))
+                                                  (inst-len (cdr (car program))))
+                                               valid-pcs)
+                  :in-theory (enable method-programp-aux ascendingp strip-cars))))
+
+(defthm jvm-instruction-okayp-of-lookup-equal-when-method-programp-aux
+  (implies (and (method-programp-aux program start-pc valid-pcs)
+                (<= start-pc pc)
+                (member-equal pc (strip-cars program)))
+           (jvm-instruction-okayp (lookup-equal pc program) pc valid-pcs))
+  :hints (("Goal" :in-theory (enable method-programp-aux lookup-equal strip-cars))))
+
+(defthm instructionp-of-lookup-equal-when-method-programp-aux
+  (implies (and (method-programp-aux program start-pc valid-pcs)
+                (<= start-pc pc)
+                (member-equal pc (strip-cars program)))
+           (instructionp (lookup-equal pc program)))
+  :hints (("Goal" :in-theory (enable method-programp-aux lookup-equal strip-cars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,15 +185,43 @@
   (and (consp program) ; the program cannot be empty
        (alistp program) ; needed for strip-cars ; todo: separate out the valid-pcs check from the rest?
        (let ((valid-pcs (strip-cars program)))
-         (and (all-pcp valid-pcs) ; for the guard of jvm-instructions-okayp
+         (and (all-pcp valid-pcs) ; for the guard of method-programp-aux
               ;; the first instruction should be at PC 0:
-              (jvm-instructions-okayp program 0 valid-pcs)))))
+              (method-programp-aux program 0 valid-pcs)))))
+
+;; lets us show the next instruction is in the program
+(defthm method-programp-key-property
+  (implies (and (method-programp program)
+                (member-equal pc (strip-cars program))
+                (not (member-equal (instruction-opcode (lookup-eq pc program)) *program-enders*)))
+           (member-equal (+ pc (inst-len (lookup-eq pc program)))
+                         (strip-cars program)))
+  :hints (("Goal" :in-theory (enable method-programp))))
+
+(defthm instructionp-of-lookup-equal-when-method-programp
+  (implies (and (method-programp program)
+                (natp pc) ;drop?
+                (member-equal pc (strip-cars program)))
+           (instructionp (lookup-equal pc program)))
+  :hints (("Goal" :in-theory (enable method-programp))))
 
 ;todo: slow?
 (defthm alistp-when-method-programp
   (implies (method-programp program)
            (alistp program))
   :hints (("Goal" :in-theory (enable method-programp alistp))))
+
+(defthmd eqlable-listp-when-all-pcp
+  (implies (all-pcp pcs)
+           (equal (eqlable-listp pcs)
+                  (true-listp pcs)))
+  :hints (("Goal" :in-theory (enable eqlable-listp all-pcp))))
+
+(defthm eqlable-listp-of-strip-cars-when-method-programp
+  (implies (method-programp program)
+           (eqlable-listp (strip-cars program)))
+  :hints (("Goal" :in-theory (e/d (method-programp eqlable-listp-when-all-pcp)
+                                  (integer-listp-of-strip-cars-when-method-programp-aux)))))
 
 (local
  (defthm eqlable-alistp-when-alistp-and-all-pcp-of-strip-cars
@@ -338,6 +430,11 @@
   :rule-classes ((:forward-chaining))
   :hints (("Goal" :in-theory (enable method-infop))))
 
+(defthmd alistp-when-method-infop
+  (implies (method-infop method-info)
+           (alistp method-info))
+  :hints (("Goal" :in-theory (enable method-infop))))
+
 (defthm exception-tablep-of-lookup-equal-of-exception-table
   (implies (method-infop method-info)
            (exception-tablep (lookup-equal :exception-table method-info)))
@@ -383,7 +480,7 @@
   (declare (xargs :guard (method-infop method-info)))
   (member-eq :acc_abstract (method-access-flags method-info)))
 
-(defun method-program (method-info)
+(defund method-program (method-info)
   (declare (xargs :guard (method-infop method-info)))
   (lookup-eq :program method-info))
 

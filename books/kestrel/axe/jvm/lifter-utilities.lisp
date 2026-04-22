@@ -659,6 +659,7 @@
                                                      param-slot-to-name-alist array-length-alist th state-var)))))
 
 
+;only used by compositional lifters
 (defun make-poised-assumptions (staticp method-class method-name method-descriptor parameter-types state-var)
   (let* ((specialp (equal "<init>" method-name) ;;todo: what about super calls that use invokespecial? always make 2 theorems, one for invokespecial and one for invokevirtual
                    )
@@ -675,7 +676,12 @@
                            ;; what's the normal form here?
                            (jvm::method-program (jvm::method-info (jvm::thread-top-frame (th) ,state-var))))
              '(,invoke-opcode
-               ,method-class ,method-name ,method-descriptor ,parameter-types ,@interface-args)))))
+               ,method-class ,method-name ,method-descriptor ,parameter-types ,@interface-args))
+      ,@(if (not staticp)
+            `((addressp (jvm::top-operand ,(jvm::pop-items-off-stack  ; todo: test this with a non-empty list of params!  may need to unroll this (now or when assumptions are simplified)
+                                            parameter-types
+                                            '(jvm::stack (jvm::thread-top-frame (th) s0))))))
+          nil))))
 
 (defforall-simple method-designator-stringp)
 (verify-guards all-method-designator-stringp)

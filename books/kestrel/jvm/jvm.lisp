@@ -20,6 +20,7 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 
@@ -44,6 +45,70 @@
 
 ;fixme: for things like IADD, make sure the bit patterns are the same regardless of whether the operands are signed or unsigned
 
+(defthm class-name-listp-of-reverse-list
+  (equal (class-name-listp (acl2::reverse-list x))
+         (class-name-listp (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable class-name-listp acl2::reverse-list true-list-fix))))
+
+
+(in-theory (disable true-listp)) ; prevent inductions
+
+(defthm jvm-instruction-okayp-when-framep-helper
+  (implies (framep frame)
+           (jvm-instruction-okayp (lookup-equal (pc frame) (method-program (method-info frame)))
+                                  (pc frame)
+                                  (strip-cars (method-program (method-info frame)))))
+  :hints (("Goal" :in-theory (enable framep method-infop method-info method-programp method-program pc pcp))))
+
+;Get the instruction at the current PC.
+(defun current-inst (th s)
+   (declare (xargs :guard (and (thread-designatorp th)
+                               (jvm-statep s)
+                               (bound-in-alistp th (thread-table s))
+                               (call-stack-non-emptyp th s))))
+  (let ((top-frame (thread-top-frame th s)))
+    (lookup (pc top-frame) (method-program (method-info top-frame)))))
+
+(defthm jvm-instruction-okayp-helper
+  (implies (and (jvm-statep s)
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th)
+                (call-stack-non-emptyp th s))
+           (jvm-instruction-okayp (current-inst th s)
+                                  (pc (top-frame (binding th (thread-table s))))
+                                  (strip-cars (method-program (method-info (top-frame (binding th (thread-table s)))))))))
+
+(defthm memberp-of-pc-and-strip-cars-of-method-program-of-method-info
+  (implies (framep frame)
+           (memberp (pc frame) (strip-cars (method-program (method-info frame)))))
+  :hints (("Goal" :in-theory (enable framep pc method-info))))
+
+;memberp version ; todo
+(defthmd method-programp-key-property-2
+  (implies (and (method-programp program)
+                (memberp pc (strip-cars program))
+                (not (member-equal (instruction-opcode (lookup-eq pc program)) *program-enders*)))
+           (memberp (+ pc (inst-len (lookup-eq pc program)))
+                    (strip-cars program)))
+  :hints (("Goal" :use (:instance method-programp-key-property)
+                  :in-theory (disable method-programp-key-property))))
+
+;; allows k to be a constant
+(defthmd method-programp-key-property-2-alt
+  (implies (and (equal k (inst-len (lookup-eq pc program)))
+                (method-programp program)
+                (memberp pc (strip-cars program))
+                (not (member-equal (instruction-opcode (lookup-eq pc program)) *program-enders*)))
+           (memberp (+ k pc) (strip-cars program)))
+  :hints (("Goal" :use (method-programp-key-property-2)
+                  :in-theory (disable method-programp-key-property-2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (disable true-listp))) ; prevent induction
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; The modify macro
 
 (defun suppliedp (key args)
@@ -55,7 +120,8 @@
 
 ;call assoc-keyword in this? they're not quite the same.
 (defun actual (key args)
-  (declare (xargs :guard (keyword-value-listp args)))
+  (declare (xargs :guard (keyword-value-listp args)
+                  :guard-hints (("Goal" :in-theory (enable keyword-value-listp)))))
   (cond ((endp args) nil)
         ((eq key (car args)) (cadr args))
         (t (actual key (cddr args)))))
@@ -175,16 +241,6 @@
          (actual :intern-table args)
        `(intern-table ,s))))
 
-;Get the instruction at the current PC.
-(defun current-inst (th s)
-   (declare (xargs :guard (and (thread-designatorp th)
-                               (jvm-statep s)
-                               (bound-in-alistp th (thread-table s))
-                               (call-stack-non-emptyp th s))
-                   :verify-guards nil ;TODO: remove
-                   ))
-  (let ((top-frame (thread-top-frame th s)))
-    (lookup (pc top-frame) (method-program (method-info top-frame)))))
 
 ;; ;This will be used to make the simulation stop in its tracks if it can't rule
 ;; ;out the exception (rather than splitting into exception and non-exception cases). - not true any more?
@@ -272,15 +328,41 @@
                 (find-exception-handler exception-table pc objectref-class class-table)))
   :hints (("Goal" :in-theory (enable exception-tablep find-exception-handler))))
 
+;move
+(defund current-program (th s)
+  (declare (xargs :guard (and (thread-designatorp th)
+                              (jvm-statep s)
+                              (bound-in-alistp th (thread-table s))
+                              (call-stack-non-emptyp th s)
+                              )
+                  :guard-hints (("Goal" :in-theory (enable alistp-when-method-infop)))))
+  (method-program (method-info (top-frame (binding th (thread-table s))))))
+
+(defthm method-programp-of-current-program
+  (implies (and (thread-designatorp th)
+                (jvm-statep s)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                ;(not (method-nativep (method-info (top-frame (binding th (thread-table s))))))
+                ;(not (method-abstractp (method-info (top-frame (binding th (thread-table s))))))
+                )
+           (method-programp (current-program th s)))
+  :hints (("Goal" :in-theory (e/d (current-program) ()))))
+
+;move
+(defthm memberp-of-0-and-strip-cars-when-method-programp
+  (implies (method-programp program)
+           (memberp 0 (strip-cars program)))
+  :hints (("Goal" :in-theory (enable method-programp strip-cars method-programp-aux))))
+
 ;; Returns a state (possibly an error-state)
 (defund throw-exception (objectref objectref-class th s)
-  (declare (xargs  :guard (and (jvm-statep s)
-                               (thread-designatorp th)
-                               (bound-in-alistp th (thread-table s))
-                               (class-namep objectref-class)
-                               (ALL-FRAMEP (BINDING TH (THREAD-TABLE S))) ;drop for all-framep-change
-                               )
-            :measure (call-stack-size (call-stack th s))))
+  (declare (xargs :guard (and (jvm-statep s)
+                              (thread-designatorp th)
+                              (bound-in-alistp th (thread-table s))
+                              (class-namep objectref-class))
+                  :measure (call-stack-size (call-stack th s))
+                  :guard-hints (("Goal" :in-theory (enable current-program)))))
   (if (empty-call-stackp (call-stack th s))
       (error-state (list "Uncaught exception." objectref objectref-class) s) ;ffixme the thread should exit.  other threads may continue?
     (let* ((frame (thread-top-frame th s))
@@ -290,9 +372,11 @@
            (class-table (class-table s))
            (exception-handler-pc (find-exception-handler exception-table pc objectref-class class-table)))
       (if exception-handler-pc
-          (modify th s
-                  :pc exception-handler-pc
-                  :stack (push-operand objectref (empty-operand-stack)))
+          (if (member exception-handler-pc (strip-cars (current-program th s)))
+              (modify th s
+                      :pc exception-handler-pc
+                      :stack (push-operand objectref (empty-operand-stack)))
+            (error-state (list "Bad exception handler PC" exception-handler-pc) s))
         ;; No exception handler found in this method, so pop the frame and rethrow:
         (if (locked-object frame)
             ;; There is an object to be unlocked (fixme, does all this apply to frames below the first one?)
@@ -315,8 +399,9 @@
                 (thread-designatorp th))
            (jvm-statep (throw-exception objectref objectref-class th s)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :cases ((call-stack-non-emptyp th s))
-           :in-theory (enable THROW-EXCEPTION))))
+                  :cases ((call-stack-non-emptyp th s))
+                  :in-theory (e/d (current-program throw-exception)
+                                  ()))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -384,10 +469,10 @@
 ;                 (not (class-decl-interfacep (get-class-info class-name (class-table s)))) ;can't be an interface ';fixme abstract out this pattern
                  )
             (jvm-statep (mv-nth 1 (obtain-an-object class-name s))))
-   :hints (("Goal" :in-theory (e/d (jvm-statep
-                                    HEAPREF-TABLE ;why
-                                    intern-table
-                                    heap
+   :hints (("Goal" :in-theory (e/d (;jvm-statep
+                                    ;HEAPREF-TABLE ;why
+                                    ;intern-table
+                                    ;heap
                                     obtain-an-object
                                     IS-AN-INTERFACEP BOUND-TO-A-NON-INTERFACEP ; todo
                                     ) (true-listp))))))
@@ -418,12 +503,18 @@
                               (class-namep exception-class-name)
                               (thread-designatorp th)
                               (bound-to-a-non-interfacep exception-class-name (class-table s))
-                              (bound-in-alistp th (thread-table s))
-                              (ALL-FRAMEP (BINDING TH (THREAD-TABLE S))) ;drop for all-framep-change
-                              )))
+                              (bound-in-alistp th (thread-table s)))))
   (mv-let (exception-object s)
     (obtain-an-object exception-class-name s)
     (throw-exception exception-object exception-class-name th s)))
+
+(defthm jvm-statep-of-obtain-and-throw-exception
+  (implies (and (jvm-statep s)
+                (thread-designatorp th)
+                (bound-to-a-non-interfacep exception-class-name (class-table s))
+                (bound-in-alistp th (thread-table s)))
+           (jvm-statep (obtain-and-throw-exception exception-class-name debug-info th s)))
+  :hints (("Goal" :in-theory (enable obtain-and-throw-exception))))
 
 ;;;
 ;;; resolve-class
@@ -483,7 +574,7 @@
 ;; TODO: Need to handle signature polymorphic methods.
 (defund resolve-method-step-2-aux (method-id class-names class-table)
   (declare (xargs :guard (and (true-listp class-names)
-                              (all-class-namesp class-names)
+                              (class-name-listp class-names)
                               (class-tablep class-table)
                               (all-bound-to-a-non-interfacep class-names class-table))))
   (if (endp class-names)
@@ -653,8 +744,8 @@
 ; JVM INSTRUCTIONS BEGIN HERE
 ; =============================================================================
 
-;; (:tableswitch default-offset low high jump-offsets)
-(defun execute-TABLESWITCH (inst th s)
+;; (:tableswitch default-offset low high jump-offsets inst-len)
+(defund execute-TABLESWITCH (inst th s)
   (let* ((default (farg1 inst))
          (low (farg2 inst))
          (high (farg3 inst))
@@ -665,9 +756,33 @@
                      default
                    (nth (- index low) jump-offsets)))
          (new-pc (+ offset (pc (thread-top-frame th s)))))
-    (modify th s
-            :pc new-pc
-            :stack (pop-operand (stack (thread-top-frame th s))))))
+    (if (not (natp new-pc))
+        (error-state (list "Bad PC after tableswitch." new-pc) s)
+      (if (not (memberp new-pc (strip-cars (method-program (method-info (thread-top-frame th s))))))
+          (error-state (list "Bad PC after tableswitch." new-pc) s)
+        (modify th s
+                :pc new-pc
+                :stack (pop-operand (stack (thread-top-frame th s))))))))
+
+(defthm jvm-statep-of-execute-tableswitch
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :tableswitch)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-TABLESWITCH inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-TABLESWITCH
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 
 (defun execute-ATHROW (th s)
   (let* ((frame (thread-top-frame th s))
@@ -870,8 +985,10 @@
 
 ;; Loading and storing references
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (ALOAD localslotnum inst-len) Instruction - load a reference from the locals
-(defun execute-ALOAD (inst th s)
+(defund execute-ALOAD (inst th s)
   (let ((inst-len (farg2 inst)))
     (modify th s
             :pc (+ inst-len
@@ -879,6 +996,53 @@
             :stack (push-operand (nth-local (farg1 inst)
                                             (locals (thread-top-frame th s)))
                                  (stack (thread-top-frame th s))))))
+
+;; checks the inst-len
+(local
+ (defthmd load-helper-1
+   (implies (and (member-equal (instruction-opcode (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s)))))))
+                               '(:aload :astore :dload :dstore :fload :fstore :iload :istore :lload :lstore :ret))
+                 ;(instructionp (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s)))))))
+                 (jvm-instruction-okayp (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))
+                                        (pc (top-frame (binding th (thread-table s))))
+                                        ;; valid-pcs
+                                        (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+            (pcp (+ (pc (top-frame (binding th (thread-table s))))
+                    (caddr (lookup-equal (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))))))
+   :hints (("Goal" :in-theory (enable jvm-instruction-okayp valid-pcp)))))
+
+(local
+ (defthmd load-helper-3
+   (implies (and (member-equal (instruction-opcode (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s)))))))
+                               '(:aload :astore :dload :dstore :fload :fstore :iload :istore :lload :lstore :ret))
+                 (jvm-instruction-okayp (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))
+                                        (pc (top-frame (binding th (thread-table s))))
+                                        ;; valid-pcs
+                                        (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+            (memberp (+ (pc (top-frame (binding th (thread-table s))))
+                        (caddr (lookup-equal (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))))
+                     (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+   :hints (("Goal" :in-theory (enable jvm-instruction-okayp valid-pcp)))))
+
+(defthm jvm-statep-of-execute-aload
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :aload)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ALOAD inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-ALOAD
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            load-helper-1
+                            load-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ; (ALOAD_X) Instruction - load a reference from the locals
@@ -891,9 +1055,11 @@
           :stack (push-operand (nth-local n (locals (thread-top-frame th s)))
                        (stack (thread-top-frame th s)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (ASTORE index inst-len)
 ;TODO - combine with ASTORE_X ?
-(defun execute-ASTORE (inst th s)
+(defund execute-ASTORE (inst th s)
   (let ((index (farg1 inst))
         (inst-len (farg2 inst))
         (objectref (top-operand (stack (thread-top-frame th s)))))
@@ -901,6 +1067,26 @@
             :pc (+ inst-len (pc (thread-top-frame th s)))
             :locals (update-nth-local index objectref (locals (thread-top-frame th s)))
             :stack (pop-operand (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-astore
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :astore)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ASTORE inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-ASTORE
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            load-helper-1
+                            load-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; -----------------------------------------------------------------------------
 ; (ASTORE_X) Instruction - store a reference into the locals
@@ -1091,11 +1277,83 @@
 ;;(and may help us formulate invariants about every frame but the top
 ;;one on the call stack having the PC at an invoke instruction).
 
-(defun move-past-invoke-instruction (th s)
+;; Unless we enable this for reasoning we'll need various rules about how it affects other state components
+(defund move-past-invoke-instruction (th s)
   (declare (xargs :guard (jvm-statep s) ;todo: add to this and verify it
                   :verify-guards nil))
-  (modify th s :pc (+ (len-of-invoke-instruction (car (current-inst th s)))
+  (modify th s :pc (+ (len-of-invoke-instruction (instruction-opcode (current-inst th s)))
                       (pc (thread-top-frame th s)))))
+
+(defthm jvm-statep-of-move-past-invoke-instruction
+  (implies (and (jvm-statep s)
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th)
+                (member-equal (instruction-opcode (current-inst th s))
+                              '(:invokevirtual :invokestatic :invokespecial :invokeinterface :ldc_w :ldc))
+                (call-stack-non-emptyp th s))
+           (jvm-statep (move-past-invoke-instruction th s)))
+  :hints (("Goal" :in-theory (e/d (move-past-invoke-instruction len-of-invoke-instruction
+                                                                method-programp-key-property-2-alt
+                                                                inst-len
+                                                                ;;acl2::memberp-of-cons
+                                                                memberp)
+                                  (natp
+                                   method-program ; todo
+                                   )))))
+
+(local (include-book "kestrel/arithmetic-light/types" :dir :system)) ; move up
+
+;; ;; Unless we enable this for reasoning we'll need various rules about how it affects other state components
+;; (defund move-past-instruction (th s)
+;;   (declare (xargs :guard (and (jvm-statep s) ;todo: add to this and verify it
+;;                               (bound-in-alistp th (thread-table s))
+;;                               (thread-designatorp th)
+;;                               (call-stack-non-emptyp th s))
+;;                   :verify-guards nil ; todo
+;;                   :guard-hints (("Goal" :in-theory (enable acl2::acl2-numberp-when-natp ; or use a specialized function to advance the PC
+;;                                                            )))))
+;;   (modify th s :pc (+ (inst-len (current-inst th s)) (pc (thread-top-frame th s)))))
+
+;; (defthm jvm-statep-of-move-past-instruction
+;;   (implies (and (jvm-statep s)
+;;                 (bound-in-alistp th (thread-table s))
+;;                 (thread-designatorp th)
+;;                 (call-stack-non-emptyp th s))
+;;            (jvm-statep (move-past-instruction th s)))
+;;   :hints (("Goal" :in-theory (e/d (move-past-instruction
+;;                                    method-programp-key-property-2-alt
+;;                                    method-programp-key-property-2
+;;                                    ;inst-len
+;;                                    ;;acl2::memberp-of-cons
+;;                                    memberp)
+;;                                   (natp
+;;                                    method-program ; todo
+;;                                    )))))
+
+;; ;; special case for program = current program
+;; (defthmd method-programp-key-property-2-alt-special
+;;   (implies (and (equal k (inst-len (lookup-eq pc (method-program (method-info (top-frame (binding th (thread-table s))))))))
+;;                 (method-programp (method-program (method-info (top-frame (binding th (thread-table s)))))) ; drop?
+;;                 (memberp pc (strip-cars (method-program (method-info (top-frame (binding th (thread-table s)))))))
+;;                 (not (member-equal (instruction-opcode (lookup-eq pc (method-program (method-info (top-frame (binding th (thread-table s))))))) '(:ret :return))))
+;;            (memberp (+ k pc) (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+;;   :hints (("Goal" :use (:instance method-programp-key-property-2-alt
+;;                                   (program (method-program (method-info (top-frame (binding th (thread-table s))))))))))
+
+(defthm len-of-invoke-instruction-helper
+  (implies (and (framep frame)
+                (member-eq (instruction-opcode (lookup-equal (pc frame) (method-program (method-info frame))))
+                           '(:invokevirtual :invokestatic :invokespecial :invokeinterface
+                             ;; :ldc :ldc_w ; why?
+                             )))
+           (memberp (+ (pc frame)
+                       (len-of-invoke-instruction (instruction-opcode (lookup-equal (pc frame) (method-program (method-info frame))))))
+                    (strip-cars (method-program (method-info frame)))))
+  :hints (("Goal" :in-theory (enable framep len-of-invoke-instruction memberp method-infop method-info method-program pc inst-len)
+                  :do-not-induct t
+                  :use (:instance method-programp-key-property-2
+                                  (program (method-program (method-info frame)))
+                                  (pc (pc frame))))))
 
 ;fixme do we call this too much?  only need to call this when returning from a void method?
 (defun no-explicit-invokep (th s)
@@ -1106,7 +1364,7 @@
   (or (equal "<clinit>" (cur-method-name (thread-top-frame th s)))
       (equal "DUMMY-METHOD-TO-BUILD-CLASS-OBJECT" (cur-method-name (thread-top-frame th s)))))
 
-(defun void-return-core (th s)
+(defund void-return-core (th s)
   ;; (declare (xargs :guard (and (jvm-statep s)
   ;;                             )))
   (let ((no-explicit-invokep (no-explicit-invokep th s))
@@ -1120,12 +1378,23 @@
       ;; exception: if we are returning from a <clinit>, there is no explicit invoke instruction that called this method, so don't advance the pc.
       (if no-explicit-invokep
           s
-        (move-past-invoke-instruction th s)))))
+        ;; (move-past-instruction th s) ; can't use this because the inst may be a program-ender
+        (if (memberp (instruction-opcode (current-inst th s)) '(:invokevirtual :invokestatic :invokespecial :invokeinterface :ldc_w :ldc))
+            (move-past-invoke-instruction th s)
+          s ;(error-state :bad-void-return s) ; todo: put this back, but need more hyps for the loop-lifter
+          )))))
+
+(defthm jvm-statep-of-void-return-core
+  (implies (and (jvm-statep s)
+                (thread-designatorp th)
+                (bound-in-alistp th (thread-table s)))
+           (jvm-statep (void-return-core th s)))
+  :hints (("Goal" :in-theory (enable void-return-core))))
 
 ; (RETURN) Instruction - Void Return
 ;fixme pass in the inst to each execute-returnXXX function?
 ;fixme all the synchronization and locking stuff may be out-of-date
-(defun execute-RETURN (th s)
+(defund execute-RETURN (th s)
   (let* ((frame (thread-top-frame th s))
          (syncp (method-synchronizedp (method-info frame))))
     (if syncp
@@ -1134,14 +1403,31 @@
           (if (null-refp object-to-unlock)
               (obtain-and-throw-exception *nullpointerexception* (list :return object-to-unlock) th s)
             (if (not (thread-owns-monitorp th object-to-unlock monitor-table))
-                (obtain-and-throw-exception *illegalmonitorstateexception* (list :return object-to-unlock) th s)
+                (if (bound-to-a-non-interfacep *illegalmonitorstateexception* (class-table s))
+                    (obtain-and-throw-exception *illegalmonitorstateexception* (list :return object-to-unlock) th s)
+                  (error-state :bad-binding-for-illegalmonitorstateexception s))
               ;;fixme think about structured locking.
               (let* ((s (modify th s :monitor-table (decrement-mcount object-to-unlock monitor-table))))
                 (void-return-core th s)))))
       (void-return-core th s))))
 
+(defthm jvm-statep-of-execute-return
+  (implies (and (jvm-statep s)
+;                (equal inst (current-inst th s))
+ ;               (equal (instruction-opcode inst) :return)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-return th s)))
+  :hints (("Goal" :in-theory (e/d (execute-return
+                                   ;;jvm-statep-def ; todo
+                                   current-program ; todo
+                                   move-past-invoke-instruction)
+                                  (method-program ; todo
+                                   )))))
+
 ;used for IRETURN, ARETURN, etc.
-(defun return-core (val th s)
+(defund return-core (val th s)
   (let ((no-explicit-invokep (no-explicit-invokep th s))
         (s (modify th s :call-stack (pop-frame (call-stack th s)))))
     (if (empty-call-stackp (call-stack th s))
@@ -1152,10 +1438,28 @@
       (let ((s (modify th s :stack (push-operand val (stack (thread-top-frame th s))))))
         (if no-explicit-invokep
             s
-          (move-past-invoke-instruction th s))))))
+          ;; (move-past-instruction th s)
+          (if (memberp (instruction-opcode (current-inst th s)) '(:invokevirtual :invokestatic :invokespecial :invokeinterface :ldc_w :ldc))
+              (move-past-invoke-instruction th s)
+            s ;(error-state :bad-return s) ; todo: put this back, but need more hyps for the loop-lifter
+            )
+          )))))
+
+(defthm jvm-statep-of-return-core
+  (implies (and (jvm-statep s)
+                (thread-designatorp th)
+                (bound-in-alistp th (thread-table s))
+                ;; (memberp (instruction-opcode (lookup-equal (pc (top-frame (pop-frame (binding th (thread-table s)))))
+                ;;                                            (method-program (method-info (top-frame (pop-frame (binding th (thread-table s))))))))
+                ;;          '(:invokevirtual :invokestatic
+                ;;            :invokespecial :invokeinterface
+                ;;            :ldc_w :ldc))
+                )
+           (jvm-statep (return-core val th s)))
+  :hints (("Goal" :in-theory (e/d (return-core)))))
 
 ;; (ARETURN) instruction: Return reference from method
-(defun execute-ARETURN (th s)
+(defund execute-ARETURN (th s)
   (let* ((frame (thread-top-frame th s))
          (objectref (top-operand (stack frame))) ;; the reference to return
          (syncp (method-synchronizedp (method-info frame))))
@@ -1166,15 +1470,32 @@
           (if (null-refp object-to-unlock)
               (obtain-and-throw-exception *NullPointerException* (list :areturn object-to-unlock) th s)
             (if (not (thread-owns-monitorp th object-to-unlock monitor-table))
-                (obtain-and-throw-exception *IllegalMonitorStateException* (list :areturn object-to-unlock) th s)
+                (if (bound-to-a-non-interfacep *illegalmonitorstateexception* (class-table s))
+                    (obtain-and-throw-exception *IllegalMonitorStateException* (list :areturn object-to-unlock) th s)
+                  (error-state :bad-binding-for-illegalmonitorstateexception s))
               ;;FIXME Think about structured locking.
               (let ((s (modify th s :monitor-table (decrement-mcount object-to-unlock monitor-table))))
                 (return-core objectref th s)))))
       (return-core objectref th s))))
 
+(defthm jvm-statep-of-execute-areturn
+  (implies (and (jvm-statep s)
+;                (equal inst (current-inst th s))
+ ;               (equal (instruction-opcode inst) :areturn)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-areturn th s)))
+  :hints (("Goal" :in-theory (e/d (execute-areturn
+                                   ;;jvm-statep-def ; todo
+                                   current-program ; todo
+                                   move-past-invoke-instruction)
+                                  (method-program ; todo
+                                   )))))
+
 ; (IRETURN) Instruction - return an int
 ;fixme do all of the non-void return functions have essentially the same definition?
-(defun execute-IRETURN (th s)
+(defund execute-IRETURN (th s)
   (let* ((frame (thread-top-frame th s))
          (val (top-operand (stack frame))) ;the value to return
          (syncp (method-synchronizedp (method-info frame))))
@@ -1184,14 +1505,31 @@
           (if (null-refp object-to-unlock)
               (obtain-and-throw-exception *nullpointerexception* (list :ireturn object-to-unlock) th s)
             (if (not (thread-owns-monitorp th object-to-unlock monitor-table))
-                (obtain-and-throw-exception *illegalmonitorstateexception* (list :ireturn object-to-unlock) th s)
+                (if (bound-to-a-non-interfacep *illegalmonitorstateexception* (class-table s))
+                    (obtain-and-throw-exception *illegalmonitorstateexception* (list :ireturn object-to-unlock) th s)
+                  (error-state :bad-binding-for-illegalmonitorstateexception s))
               ;;fixme think about structured locking.
               (let* ((s (modify th s :monitor-table (decrement-mcount object-to-unlock monitor-table))))
                 (return-core val th s)))))
       (return-core val th s))))
 
+(defthm jvm-statep-of-execute-ireturn
+  (implies (and (jvm-statep s)
+;                (equal inst (current-inst th s))
+ ;               (equal (instruction-opcode inst) :ireturn)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ireturn th s)))
+  :hints (("Goal" :in-theory (e/d (execute-ireturn
+                                   ;;jvm-statep-def ; todo
+                                   current-program ; todo
+                                   move-past-invoke-instruction)
+                                  (method-program ; todo
+                                   )))))
+
 ; (FRETURN) Instruction - return a float
-(defun execute-FRETURN (th s)
+(defund execute-FRETURN (th s)
   (let* ((frame (thread-top-frame th s))
          (val (top-operand (stack frame))) ;the value to return
          (syncp (method-synchronizedp (method-info frame))))
@@ -1201,14 +1539,32 @@
           (if (null-refp object-to-unlock)
               (obtain-and-throw-exception *nullpointerexception* (list :freturn object-to-unlock) th s)
             (if (not (thread-owns-monitorp th object-to-unlock monitor-table))
-                (obtain-and-throw-exception *illegalmonitorstateexception* (list :freturn object-to-unlock) th s)
+                (if (bound-to-a-non-interfacep *illegalmonitorstateexception* (class-table s))
+                    (obtain-and-throw-exception *illegalmonitorstateexception* (list :freturn object-to-unlock) th s)
+                  (error-state :bad-binding-for-illegalmonitorstateexception s))
               ;;fixme think about structured locking.
               (let* ((s (modify th s :monitor-table (decrement-mcount object-to-unlock monitor-table))))
                 (return-core val th s)))))
       (return-core val th s))))
 
+(defthm jvm-statep-of-execute-freturn
+  (implies (and (jvm-statep s)
+;                (equal inst (current-inst th s))
+ ;               (equal (instruction-opcode inst) :freturn)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-freturn th s)))
+  :hints (("Goal" :in-theory (e/d (execute-fRETurn
+                                   ;;jvm-statep-def ; todo
+                                   current-program ; todo
+                                   move-past-invoke-instruction)
+                                  (method-program ; todo
+                                   )))))
+
 ;; used for LRETURN and DRETURN.
-(defun return-core-long (val th s)
+;move up
+(defund return-core-long (val th s)
   (let ((no-explicit-invokep (no-explicit-invokep th s))
         (s (modify th s :call-stack (pop-frame (call-stack th s)))))
     (if (empty-call-stackp (call-stack th s))
@@ -1220,10 +1576,28 @@
             )
         (if no-explicit-invokep
             s
-          (move-past-invoke-instruction th s))))))
+          ;; (move-past-instruction th s)
+          (if (memberp (instruction-opcode (current-inst th s)) '(:invokevirtual :invokestatic :invokespecial :invokeinterface :ldc_w :ldc))
+              (move-past-invoke-instruction th s)
+            s ;(error-state :bad-return-long s) ; todo: put this back, but need more hyps for the loop-lifter
+            )
+          )))))
+
+(defthm jvm-statep-of-return-core-long
+  (implies (and (jvm-statep s)
+                (thread-designatorp th)
+                (bound-in-alistp th (thread-table s))
+                ;; (memberp (instruction-opcode (lookup-equal (pc (top-frame (pop-frame (binding th (thread-table s)))))
+                ;;                                            (method-program (method-info (top-frame (pop-frame (binding th (thread-table s))))))))
+                ;;          '(:invokevirtual :invokestatic
+                ;;            :invokespecial :invokeinterface
+                ;;            :ldc_w :ldc))
+                )
+           (jvm-statep (return-core-long val th s)))
+  :hints (("Goal" :in-theory (e/d (return-core-long)))))
 
 ; (LRETURN) - return a long
-(defun execute-LRETURN (th s)
+(defund execute-LRETURN (th s)
   (let* ((frame (thread-top-frame th s))
          (val (top-long (stack frame))) ; the value to return
          (syncp (method-synchronizedp (method-info frame))))
@@ -1233,14 +1607,31 @@
           (if (null-refp object-to-unlock)
               (obtain-and-throw-exception *NullPointerException* (list :lreturn object-to-unlock) th s)
             (if (not (thread-owns-monitorp th object-to-unlock monitor-table))
-                (obtain-and-throw-exception *IllegalMonitorStateException* (list :lreturn object-to-unlock) th s)
+                (if (bound-to-a-non-interfacep *illegalmonitorstateexception* (class-table s))
+                    (obtain-and-throw-exception *IllegalMonitorStateException* (list :lreturn object-to-unlock) th s)
+                  (error-state :bad-binding-for-illegalmonitorstateexception s))
               ;;FIXME Think about structured locking.
               (let* ((s (modify th s :monitor-table (decrement-mcount object-to-unlock monitor-table))))
                 (return-core-long val th s)))))
       (return-core-long val th s))))
 
+(defthm jvm-statep-of-execute-lreturn
+  (implies (and (jvm-statep s)
+;                (equal inst (current-inst th s))
+ ;               (equal (instruction-opcode inst) :lreturn)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-lreturn th s)))
+  :hints (("Goal" :in-theory (e/d (execute-lreturn
+                                   ;;jvm-statep-def ; todo
+                                   current-program ; todo
+                                   move-past-invoke-instruction)
+                                  (method-program ; todo
+                                   )))))
+
 ; (DRETURN) - return a double
-(defun execute-DRETURN (th s)
+(defund execute-DRETURN (th s)
   (let* ((frame (thread-top-frame th s))
          (val (top-long (stack frame))) ; the value to return
          (syncp (method-synchronizedp (method-info frame))))
@@ -1250,11 +1641,28 @@
           (if (null-refp object-to-unlock)
               (obtain-and-throw-exception *NullPointerException* (list :lreturn object-to-unlock) th s)
             (if (not (thread-owns-monitorp th object-to-unlock monitor-table))
-                (obtain-and-throw-exception *IllegalMonitorStateException* (list :lreturn object-to-unlock) th s)
+                (if (bound-to-a-non-interfacep *illegalmonitorstateexception* (class-table s))
+                    (obtain-and-throw-exception *IllegalMonitorStateException* (list :lreturn object-to-unlock) th s)
+                  (error-state :bad-binding-for-illegalmonitorstateexception s))
               ;;FIXME Think about structured locking.
               (let* ((s (modify th s :monitor-table (decrement-mcount object-to-unlock monitor-table))))
                 (return-core-long val th s)))))
       (return-core-long val th s))))
+
+(defthm jvm-statep-of-execute-dreturn
+  (implies (and (jvm-statep s)
+;                (equal inst (current-inst th s))
+ ;               (equal (instruction-opcode inst) :dreturn)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-dreturn th s)))
+  :hints (("Goal" :in-theory (e/d (execute-dreturn
+                                   ;;jvm-statep-def ; todo
+                                   current-program ; todo
+                                   move-past-invoke-instruction)
+                                  (method-program ; todo
+                                   )))))
 
 ; -----------------------------------------------------------------------------
 ; (ARRAYLENGTH)
@@ -1546,7 +1954,7 @@
    (declare (xargs :measure (+ 1 (nfix ctr))
                    :guard (and (natp ctr)
                                (true-listp class-or-interface-names)
-                               (ALL-CLASS-NAMESP CLASS-OR-INTERFACE-NAMES)
+                               (CLASS-NAME-LISTP CLASS-OR-INTERFACE-NAMES)
                                (class-tablep class-table)
                                (all-bound-in-class-tablep class-or-interface-names class-table))))
    (if (zp ctr)
@@ -1596,7 +2004,7 @@
  (defthm class-namep-of-lookup-field-lst
    (implies (and (lookup-field-lst field-id class-or-interface-names class-table ctr)
                  (class-tablep class-table)
-                 (all-class-namesp class-or-interface-names))
+                 (class-name-listp class-or-interface-names))
             (class-namep (lookup-field-lst field-id class-or-interface-names class-table ctr)))
    :flag lookup-field-lst)
  :hints (("Goal" :in-theory (enable lookup-field lookup-field-lst)
@@ -1613,7 +2021,7 @@
  (defthm class-infop-of-lookup-field-lst
    (implies (and (lookup-field-lst field-id class-or-interface-names class-table ctr)
                  (class-tablep class-table)
-                 (all-class-namesp class-or-interface-names))
+                 (class-name-listp class-or-interface-names))
             (class-infop (get-class-info (lookup-field-lst field-id class-or-interface-names class-table ctr) class-table)
                          (lookup-field-lst field-id class-or-interface-names class-table ctr)))
    :flag lookup-field-lst)
@@ -1630,7 +2038,7 @@
  (defthm bound-in-class-tablep-of-lookup-field-lst
    (implies (and (lookup-field-lst field-id class-or-interface-names class-table ctr)
                  (class-tablep class-table)
-                 (all-class-namesp class-or-interface-names))
+                 (class-name-listp class-or-interface-names))
             (bound-in-class-tablep (lookup-field-lst field-id class-or-interface-names class-table ctr) class-table))
    :flag lookup-field-lst)
  :hints (("Goal" :in-theory (enable lookup-field lookup-field-lst BOUND-IN-CLASS-TABLEP)
@@ -1665,7 +2073,7 @@
 ;;  (defthm LOOKUP-EQUAL-of-g-of-static-fields-of-lookup-field-lst
 ;;    (implies (and (lookup-field-lst field-id class-or-interface-names class-table ctr)
 ;;                  (class-tablep class-table)
-;;                  (all-class-namesp class-or-interface-names)
+;;                  (class-name-listp class-or-interface-names)
 ;;                  (NOT (assoc-EQUAL FIELD-ID (class-decl-non-static-fields (get-class-info (lookup-field-lst field-id class-or-interface-names class-table ctr) CLASS-TABLE)))))
 ;;             (LOOKUP-EQUAL FIELD-ID (class-decl-static-fields (get-class-info (lookup-field-lst field-id class-or-interface-names class-table ctr) CLASS-TABLE))))
 ;;    :flag lookup-field-lst)
@@ -1882,6 +2290,9 @@
                                     (make-method-designator "DUMMY-CLASS" "DUMMY-METHOD-TO-BUILD-CLASS-OBJECT" "()V"))
                         (call-stack th s)))))
 
+
+(in-theory (disable method-abstractp method-nativep)) ; todo move!
+
 ;; We leave this disabled and prove an opener for the case when the class-to-initialize is a constant.
 (defund invoke-static-initializer-for-class (initialized-classes th s class-to-initialize)
   ;; check whether the class to be initialized has a <clinit> method
@@ -1895,7 +2306,11 @@
          ;; Build an object of class Class for this class, if needed (ugh, this would make run mutually recursive with all this stuff):
          )
       ;; Now, if there is a <clinit> method, run it:
-      (if static-initializer-method ;fixme can we avoid this if?  when can a class not have a clinit method?
+    (if static-initializer-method ;fixme can we avoid this if?  when can a class not have a clinit method?
+        (if (or (method-abstractp static-initializer-method)
+                (method-nativep static-initializer-method))
+            (error-state (list "Bad static initializer" static-initializer-method) s)
+
           ;; we make a state poised to run the <clinit>
           ;; we do not change the PC of the underlying frame, so control will return to this same instruction when the frame is popped
           (modify th s
@@ -1914,7 +2329,7 @@
                                                                   "()V"))
                               (call-stack th s))
                   ;;we mark the class as initialized (at least, as having its initialization started so we don't try to do it again)
-                  :initialized-classes (cons class-to-initialize initialized-classes))
+                  :initialized-classes (cons class-to-initialize initialized-classes)))
         ;; If the class has no static initializer method, we just mark it as initialized:
         ;;no changes to the PC, but on the next step, this instruction will find that the class is initialized and will execute normally
         (modify th s
@@ -1923,14 +2338,16 @@
 (defthm jvm-statep-of-invoke-static-initializer-for-class
   (implies (and (class-namep class-to-initialize)
                 (jvm-statep s)
-                ;; (bound-in-class-tablep class-to-initialize (class-table s)) ; all-framep-change
+                (bound-in-class-tablep class-to-initialize (class-table s))
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th)
 ;              (not (memberp class-name (initialized-clases s)))
-                (all-class-namesp initialized-classes)
+                (class-name-listp initialized-classes)
                 )
            (jvm-statep (invoke-static-initializer-for-class initialized-classes th s class-to-initialize)))
-  :hints (("Goal" :in-theory (enable invoke-static-initializer-for-class))))
+  :hints (("Goal" :in-theory (e/d (invoke-static-initializer-for-class)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; We leave this disabled and prove an opener for the case when the class-name and superclasses are constants.
 (defund invoke-static-initializer-for-next-class-helper (class-name superclass-names th s)
@@ -1947,14 +2364,12 @@
 
 ;move
 (defthm class-namep-of-first-non-member
-  (implies (and (all-class-namesp items)
+  (implies (and (class-name-listp items)
                 (not (ACL2::SUBSETP-EQ items items-to-exclude))) ;ensures it finds an item
            (class-namep (acl2::first-non-member items items-to-exclude)))
-  :hints (("Goal" :in-theory (enable ;all-class-namesp
+  :hints (("Goal" :in-theory (enable ;class-name-listp
                               ))))
-(defthm all-class-namesp-of-reverse-list
-  (equal (all-class-namesp (acl2::reverse-list x))
-         (all-class-namesp x)))
+
 
 (defthm all-bound-in-class-tablep-of-reverse-list
   (equal (all-bound-in-class-tablep (acl2::reverse-list x) class-table)
@@ -1968,7 +2383,7 @@
   :hints (("Goal" :in-theory (enable all-bound-in-class-tablep))))
 
 (defthm first-non-member-iff
-  (implies (all-class-namesp items)
+  (implies (class-name-listp items)
            (iff (acl2::first-non-member items items-to-exclude)
                 (not (acl2::subsetp-equal items items-to-exclude))))
   :hints (("Goal" :in-theory (enable acl2::subsetp-equal))))
@@ -1980,8 +2395,8 @@
 
 (defthm jvm-statep-of-invoke-static-initializer-for-next-class-helper
   (implies (and (class-namep class-name)
-                (all-class-namesp superclass-names)
-                ;; (all-bound-in-class-tablep superclass-names (class-table s)) ; all-framep-change
+                (class-name-listp superclass-names)
+                (all-bound-in-class-tablep superclass-names (class-table s))
                 (jvm-statep s)
                 (bound-in-class-tablep class-name (class-table s))
                 (bound-in-alistp th (thread-table s))
@@ -2054,7 +2469,7 @@
 ;;          (field-name (farg2 inst))
 ;;          (long-flag (farg3 inst))
 ;; ;(class-decl-heapref (get-class-info class-name (class-table s)))
-;; ;         (class-ref (g class-name (heapref-table s)) )
+;; ;         (class-ref (g class-name (heapref-table s)))
 ;; ;        (field-value (acl2::get-field class-ref (cons "java.lang.Class" field-name) (heap s)))
 ;;          (field-value (get-static-field class-name field-name (static-field-map s)))
 ;;          )
@@ -2068,17 +2483,87 @@
 
 ;; (:GOTO branch-offset)
 ;; branch-offset is a signed 16-bit offset
-(defun execute-GOTO (inst th s)
+(defund execute-GOTO (inst th s)
   (let ((branch-offset (farg1 inst)))
     (modify th s
             :pc (+ branch-offset (pc (thread-top-frame th s))))))
 
+;; add polarity?
+;(acl2::defopeners jvm-instruction-okayp :hyps ((equal (instruction-opcode inst) keyword) (syntaxp (quotep keyword))))
+
+
+;; (local
+;;  (defthm goto-helper-1
+;;    (implies (and (equal (instruction-opcode inst) :goto)
+;;                  (pcp pc)
+;;                  (instructionp inst))
+;;             (pcp (+ (cadr ; farg1
+;;                      inst)
+;;                     pc)))
+;;    :hints (("Goal" :in-theory (enable instructionp valid-pcp instruction-opcode instruction-argsp pcp)))))
+
+;; this one is more complex because the property depends on the PC
+(local
+ (defthm goto-helper-1
+   (implies (and (member-equal (instruction-opcode (current-inst th s)) '(:goto :jsr :goto_w :jsr_w))
+                 (jvm-instruction-okayp (current-inst th s)
+                                        (pc (top-frame (binding th (thread-table s))))
+                                        ;; valid-pcs
+                                        (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+            (pcp (+ (cadr (current-inst th s))
+                    (pc (top-frame (binding th (thread-table s)))))))
+   :hints (("Goal" :in-theory (enable jvm-instruction-okayp valid-pcp)))))
+
+;move!
+(defthmd memberp-constant-opener
+  (implies (syntaxp (quotep x))
+           (equal (memberp a x)
+                  (if (not (consp x))
+                      nil
+                    (or (equal a (car x))
+                        (memberp a (cdr x)))))))
+
+(local
+ (defthm goto-helper-2
+   (implies (and (member-equal (instruction-opcode inst) '(:goto :jsr :goto_w :jsr_w))
+                 (jvm-instruction-okayp inst pc valid-pcs))
+            (memberp (+ (cadr inst) pc) valid-pcs))
+   :hints (("Goal" :in-theory (enable jvm-instruction-okayp valid-pcp memberp-constant-opener)))))
+
+(defthm jvm-statep-of-execute-goto
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :goto)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-GOTO inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-GOTO method-programp-key-property-2-alt valid-pcp)
+                           (method-program current-inst)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; (:GOTO_W branch-offset)
 ;; branch-offset is a signed 32-bit offset
-(defun execute-GOTO_W (inst th s)
+(defund execute-GOTO_W (inst th s)
   (let ((branch-offset (farg1 inst)))
     (modify th s
             :pc (+ branch-offset (pc (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-goto_w
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :goto_w)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-GOTO_W inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-GOTO_W method-programp-key-property-2-alt valid-pcp)
+                           (method-program current-inst)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (:I2B)
 (defun execute-I2B (th s)
@@ -2141,12 +2626,17 @@
 
 ; (IADD)
 (defun execute-IADD (th s)
+  ;; (declare (xargs :guard (and (jvm-statep s)
+  ;;                             (thread-designatorp th)
+  ;;                             (bound-in-alistp th (thread-table s))
+  ;;                             (not (equal 0 (call-stack-size (binding th (thread-table s)))))
+  ;;                             )))
   (modify th s
           :pc (+ 1 ;(inst-length inst)
                  (pc (thread-top-frame th s)))
           :stack (push-operand (bvplus 32
-                                             (top-operand (pop-operand (stack (thread-top-frame th s))))
-                                             (top-operand (stack (thread-top-frame th s))))
+                                       (top-operand (pop-operand (stack (thread-top-frame th s))))
+                                       (top-operand (stack (thread-top-frame th s))))
                                (pop-operand (pop-operand (stack (thread-top-frame th s)))))))
 
 ; (INEG)
@@ -2337,9 +2827,51 @@
 ;; but we could resolve the target ahead of time and just store the pc to jump
 ;; to.  Actually, perhaps we could always resolve the new PC values statically.
 
+(local
+ (defthmd if-helper-1
+   (implies (and (member-equal (instruction-opcode (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s)))))))
+                               '(:if_acmpeq :if_acmpne
+                                 :if_icmpeq :if_icmpne :if_icmplt :if_icmpge :if_icmpgt :if_icmple
+                                 :ifeq :ifne :iflt :ifge :ifgt :ifle
+                                 :ifnull :ifnonnull))
+                 (jvm-instruction-okayp (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))
+                                        (pc (top-frame (binding th (thread-table s))))
+                                        ;; valid-pcs
+                                        (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+            (pcp (+ (pc (top-frame (binding th (thread-table s))))
+                    (cadr (lookup-equal (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))))))
+   :hints (("Goal" :in-theory (enable jvm-instruction-okayp valid-pcp)))))
+
+(local
+ (defthmd if-helper-3
+   (implies (and (member-equal (instruction-opcode (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s)))))))
+                               '(:if_acmpeq :if_acmpne
+                                 :if_icmpeq :if_icmpne :if_icmplt :if_icmpge :if_icmpgt :if_icmple
+                                 :ifeq :ifne :iflt :ifge :ifgt :ifle
+                                 :ifnull :ifnonnull))
+                 (jvm-instruction-okayp (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))
+                                        (pc (top-frame (binding th (thread-table s))))
+                                        ;; valid-pcs
+                                        (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+            (memberp (+ (pc (top-frame (binding th (thread-table s))))
+                        (cadr (lookup-equal (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))))
+                     (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+   :hints (("Goal" :in-theory (enable jvm-instruction-okayp valid-pcp)))))
+
+(local
+ (defthmd if-helper-2
+   (implies (and (member-equal (instruction-opcode inst)
+                               '(:if_acmpeq :if_acmpne
+                                 :if_icmpeq :if_icmpne :if_icmplt :if_icmpge :if_icmpgt :if_icmple
+                                 :ifeq :ifne :iflt :ifge :ifgt :ifle
+                                 :ifnull :ifnonnull))
+                 (jvm-instruction-okayp inst pc valid-pcs))
+            (memberp (+ (farg1 inst) pc) valid-pcs))
+   :hints (("Goal" :in-theory (enable jvm-instruction-okayp valid-pcp)))))
+
 ; (IF_ACMPEQ signed-offset)
 ;fixme should these have the if lifted above the make-state?
-(defun execute-IF_ACMPEQ (inst th s)
+(defund execute-IF_ACMPEQ (inst th s)
   (modify th s
           :pc (pc-if (equal (top-operand (pop-operand (stack (thread-top-frame th s))))
                            (top-operand (stack (thread-top-frame th s))))
@@ -2347,9 +2879,29 @@
                     (+ 3 ;(inst-length inst)
                        (pc (thread-top-frame th s))))
           :stack (pop-operand (pop-operand (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-IF_ACMPEQ
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :IF_ACMPEQ)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-IF_ACMPEQ inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-IF_ACMPEQ
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (IF_ACMPNE signed-offset)
-(defun execute-IF_ACMPNE (inst th s)
+(defund execute-IF_ACMPNE (inst th s)
   (modify th s
           :pc (pc-if (equal (top-operand (pop-operand (stack (thread-top-frame th s))))
                            (top-operand (stack (thread-top-frame th s))))
@@ -2357,9 +2909,30 @@
                        (pc (thread-top-frame th s)))
                     (+ (farg1 inst) (pc (thread-top-frame th s))))
           :stack (pop-operand (pop-operand (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-IF_ACMPNE
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :IF_ACMPNE)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-IF_ACMPNE inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-IF_ACMPNE
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (IF_ICMPEQ signed-offset)
-(defun execute-IF_ICMPEQ (inst th s)
+(defund execute-IF_ICMPEQ (inst th s)
   (modify th s
           :pc (pc-if (equal (top-operand (pop-operand (stack (thread-top-frame th s))))
                            (top-operand (stack (thread-top-frame th s))))
@@ -2367,9 +2940,30 @@
                     (+ 3 ;(inst-length inst)
                        (pc (thread-top-frame th s))))
           :stack (pop-operand (pop-operand (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-IF_ICMPEQ
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :IF_ICMPEQ)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-IF_ICMPEQ inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-IF_ICMPEQ
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (IF_ICMPGE signed-offset)
-(defun execute-IF_ICMPGE (inst th s)
+(defund execute-IF_ICMPGE (inst th s)
   (modify th s
           :pc (pc-if (acl2::sbvlt 32
                                  (top-operand (pop-operand (stack (thread-top-frame th s))))
@@ -2378,9 +2972,30 @@
                        (pc (thread-top-frame th s)))
                     (+ (farg1 inst) (pc (thread-top-frame th s))))
           :stack (pop-operand (pop-operand (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-IF_ICMPGE
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :IF_ICMPGE)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-IF_ICMPGE inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-IF_ICMPGE
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (IF_ICMPGT signed-offset)
-(defun execute-IF_ICMPGT (inst th s)
+(defund execute-IF_ICMPGT (inst th s)
   (modify th s
           :pc (pc-if (acl2::sbvlt 32
                                  (top-operand (stack (thread-top-frame th s)))
@@ -2390,8 +3005,29 @@
                        (pc (thread-top-frame th s))))
           :stack (pop-operand (pop-operand (stack (thread-top-frame th s))))))
 
+(defthm jvm-statep-of-execute-IF_ICMPGT
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :IF_ICMPGT)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-IF_ICMPGT inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-IF_ICMPGT
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IF_ICMPLT signed-offset)
-(defun execute-IF_ICMPLT (inst th s)
+(defund execute-IF_ICMPLT (inst th s)
   (modify th s
           :pc (pc-if (acl2::sbvlt 32
                                  (top-operand (pop-operand (stack (thread-top-frame th s))))
@@ -2401,8 +3037,29 @@
                        (pc (thread-top-frame th s))))
           :stack (pop-operand (pop-operand (stack (thread-top-frame th s))))))
 
+(defthm jvm-statep-of-execute-IF_ICMPLT
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :IF_ICMPLT)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-IF_ICMPLT inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-IF_ICMPLT
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IF_ICMPLE signed-offset)
-(defun execute-IF_ICMPLE (inst th s)
+(defund execute-IF_ICMPLE (inst th s)
   (modify th s
           :pc (pc-if (acl2::sbvlt 32
                                  (top-operand (stack (thread-top-frame th s)))
@@ -2412,8 +3069,29 @@
                     (+ (farg1 inst) (pc (thread-top-frame th s))))
           :stack (pop-operand (pop-operand (stack (thread-top-frame th s))))))
 
+(defthm jvm-statep-of-execute-IF_ICMPLE
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :IF_ICMPLE)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-IF_ICMPLE inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-IF_ICMPLE
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IF_ICMPNE signed-offset)
-(defun execute-IF_ICMPNE (inst th s)
+(defund execute-IF_ICMPNE (inst th s)
   (modify th s
           :pc (pc-if (equal (top-operand (pop-operand (stack (thread-top-frame th s))))
                            (top-operand (stack (thread-top-frame th s))))
@@ -2422,8 +3100,29 @@
                     (+ (farg1 inst) (pc (thread-top-frame th s))))
           :stack (pop-operand (pop-operand (stack (thread-top-frame th s))))))
 
+(defthm jvm-statep-of-execute-IF_ICMPNE
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :IF_ICMPNE)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-IF_ICMPNE inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-IF_ICMPNE
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IFEQ signed-offset)
-(defun execute-IFEQ (inst th s)
+(defund execute-IFEQ (inst th s)
   (modify th s
           :pc (pc-if (equal (top-operand (stack (thread-top-frame th s)))
                            0)
@@ -2432,9 +3131,30 @@
                        (pc (thread-top-frame th s))))
           :stack (pop-operand (stack (thread-top-frame th s)))))
 
+(defthm jvm-statep-of-execute-ifeq
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :ifeq)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ifeq inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-ifeq
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IFGE signed-offset)
 ;(using sbvle or sbvge here would expand to a term with a not, which expands to an if, so i just used sbvlt)
-(defun execute-IFGE (inst th s)
+(defund execute-IFGE (inst th s)
   (modify th s
           :pc (pc-if (acl2::sbvlt 32 (top-operand (stack (thread-top-frame th s))) 0)
                     (+ 3 ;(inst-length inst)
@@ -2442,8 +3162,29 @@
                     (+ (farg1 inst) (pc (thread-top-frame th s))))
           :stack (pop-operand (stack (thread-top-frame th s)))))
 
+(defthm jvm-statep-of-execute-ifge
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :ifge)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ifge inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-ifge
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IFGT signed-offset)
-(defun execute-IFGT (inst th s)
+(defund execute-IFGT (inst th s)
   (modify th s
           :pc (pc-if (acl2::sbvlt 32 0 (top-operand (stack (thread-top-frame th s))))
                     (+ (farg1 inst) (pc (thread-top-frame th s)))
@@ -2451,8 +3192,29 @@
                        (pc (thread-top-frame th s))))
           :stack (pop-operand (stack (thread-top-frame th s)))))
 
+(defthm jvm-statep-of-execute-ifgt
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :ifgt)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ifgt inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-ifgt
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IFLE signed-offset)
-(defun execute-IFLE (inst th s)
+(defund execute-IFLE (inst th s)
   (modify th s
           :pc (pc-if (acl2::sbvlt 32 0 (top-operand (stack (thread-top-frame th s))))
                     (+ 3 ;(inst-length inst)
@@ -2460,8 +3222,29 @@
                     (+ (farg1 inst) (pc (thread-top-frame th s))))
           :stack (pop-operand (stack (thread-top-frame th s)))))
 
+(defthm jvm-statep-of-execute-ifle
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :ifle)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ifle inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-ifle
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IFLT signed-offset)
-(defun execute-IFLT (inst th s)
+(defund execute-IFLT (inst th s)
   (modify th s
           :pc (pc-if (acl2::sbvlt 32 (top-operand (stack (thread-top-frame th s))) 0)
                     (+ (farg1 inst) (pc (thread-top-frame th s)))
@@ -2469,8 +3252,29 @@
                        (pc (thread-top-frame th s))))
           :stack (pop-operand (stack (thread-top-frame th s)))))
 
+(defthm jvm-statep-of-execute-iflt
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :iflt)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-iflt inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-iflt
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IFNE signed-offset)
-(defun execute-IFNE (inst th s)
+(defund execute-IFNE (inst th s)
   (modify th s
           :pc (pc-if (equal 0 (top-operand (stack (thread-top-frame th s))))
                     (+ 3 ;(inst-length inst)
@@ -2478,8 +3282,29 @@
                     (+ (farg1 inst) (pc (thread-top-frame th s))))
           :stack (pop-operand (stack (thread-top-frame th s)))))
 
+(defthm jvm-statep-of-execute-ifne
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :ifne)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ifne inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-ifne
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IFNONNULL signed-offset)
-(defun execute-IFNONNULL (inst th s)
+(defund execute-IFNONNULL (inst th s)
   (modify th s
           :pc (pc-if (acl2::null-refp (top-operand (stack (thread-top-frame th s))))
                     (+ 3;(inst-length inst)
@@ -2487,8 +3312,29 @@
                     (+ (farg1 inst) (pc (thread-top-frame th s))))
           :stack (pop-operand (stack (thread-top-frame th s)))))
 
+(defthm jvm-statep-of-execute-ifnonnull
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :ifnonnull)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ifnonnull inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-ifnonnull
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            If-helper-1
+                            IF-helper-2
+                            IF-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (IFNULL signed-offset)
-(defun execute-IFNULL (inst th s)
+(defund execute-IFNULL (inst th s)
   (modify th s
           :pc (pc-if (acl2::null-refp (top-operand (stack (thread-top-frame th s))))
                     (+ (farg1 inst) (pc (thread-top-frame th s)))
@@ -2496,10 +3342,58 @@
                        (pc (thread-top-frame th s))))
           :stack (pop-operand (stack (thread-top-frame th s)))))
 
+(defthm jvm-statep-of-execute-ifnull
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :ifnull)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-IFNULL inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-IFNULL
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp pc-if
+                            if-helper-1
+                            if-helper-2
+                            if-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (defthmd iinc-helper-1
+   (implies (and (member-equal (instruction-opcode (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s)))))))
+                               '(:iinc))
+                 ;(instructionp (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s)))))))
+                 (jvm-instruction-okayp (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))
+                                        (pc (top-frame (binding th (thread-table s))))
+                                        ;; valid-pcs
+                                        (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+            (pcp (+ (pc (top-frame (binding th (thread-table s))))
+                    (cadddr (lookup-equal (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))))))
+   :hints (("Goal" :in-theory (enable jvm-instruction-okayp valid-pcp)))))
+
+(local
+ (defthmd iinc-helper-3
+   (implies (and (member-equal (instruction-opcode (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s)))))))
+                               '(:iinc))
+                 (jvm-instruction-okayp (lookup (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))
+                                        (pc (top-frame (binding th (thread-table s))))
+                                        ;; valid-pcs
+                                        (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+            (memberp (+ (pc (top-frame (binding th (thread-table s))))
+                        (cadddr (lookup-equal (pc (top-frame (binding th (thread-table s)))) (method-program (method-info (top-frame (binding th (thread-table s))))))))
+                     (strip-cars (method-program (method-info (top-frame (binding th (thread-table s))))))))
+   :hints (("Goal" :in-theory (enable jvm-instruction-okayp valid-pcp)))))
+
+
 ; (IINC localslotnum signed-const) - where const is a signed 8-bit or 16-bit quantity (depending on whether WIDE preceded the iinc)
 ;simplify the body?  we didn't have the bvsx before
 ;fixme think about the bvsx
-(defun execute-IINC (inst th s)
+(defund execute-IINC (inst th s)
   (let ((inst-length (farg3 inst))) ;depends on whether the instruction was preceded by WIDE
     (modify th s
             :pc (+ inst-length
@@ -2513,8 +3407,28 @@
                                                                (locals (thread-top-frame th s))))
                                       (locals (thread-top-frame th s))))))
 
+(defthm jvm-statep-of-execute-iinc
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :iinc)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-IINC inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-IINC
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            iinc-helper-1
+                            iinc-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (:ILOAD local-slot-num inst-len) Instruction - Push a local onto the stack
-(defun execute-ILOAD (inst th s)
+(defund execute-ILOAD (inst th s)
   (let ((inst-len (farg2 inst))) ;length can vary because of WIDE
     (modify th s
             :pc (+ inst-len
@@ -2522,6 +3436,26 @@
             :stack (push-operand (nth-local (farg1 inst)
                                             (locals (thread-top-frame th s)))
                                  (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-iload
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :iload)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ILOAD inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-ILOAD
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            load-helper-1
+                            load-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; -----------------------------------------------------------------------------
 ; (ILOAD_X) Instruction - Push a local onto the stack
@@ -2768,8 +3702,10 @@
                             (pop-long (pop-operand (stack (thread-top-frame th s)))))))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (ISTORE localslotnum inst-len)  - store an int into the locals
-(defun execute-ISTORE (inst th s)
+(defund execute-ISTORE (inst th s)
   (let ((inst-len (farg2 inst)))
     (modify th s
             :pc (+ inst-len
@@ -2778,6 +3714,26 @@
                                       (top-operand (stack (thread-top-frame th s)))
                                       (locals (thread-top-frame th s)))
             :stack (pop-operand (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-istore
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :istore)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-ISTORE inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-ISTORE
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            load-helper-1
+                            load-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; -----------------------------------------------------------------------------
 ; (ISTORE_X) Instruction - store an int into the locals
@@ -2796,8 +3752,10 @@
 ;; Subroutines and the ReturnAddress type:
 ;; Previously, the ReturnAddress was represented by a value of the form (list 'RETURNADDRESS <pc>).  Now it is just the integer <pc>.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (JSR signed-offset16)
-(defun execute-JSR (inst th s)
+(defund execute-JSR (inst th s)
   (let* ((offset (farg1 inst))
          (pc (pc (thread-top-frame th s)))
          ;; address of the next instruction:
@@ -2808,8 +3766,22 @@
             :stack (push-operand return-address
                                  (stack (thread-top-frame th s))))))
 
+(defthm jvm-statep-of-execute-jsr
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :jsr)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-JSR inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-JSR method-programp-key-property-2-alt valid-pcp)
+                           (method-program current-inst)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (JSR_W signed-offset32)
-(defun execute-JSR_W (inst th s)
+(defund execute-JSR_W (inst th s)
   (let* ((offset (farg1 inst))
          (pc (pc (thread-top-frame th s)))
          ;; address of the next instruction:
@@ -2820,12 +3792,46 @@
             :stack (push-operand return-address
                                  (stack (thread-top-frame th s))))))
 
+(defthm jvm-statep-of-execute-jsr_w
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :jsr_w)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-JSR_W inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-JSR_W method-programp-key-property-2-alt valid-pcp)
+                           (method-program current-inst)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (RET localslotnum)
-(defun execute-RET (inst th s)
-  ;doesn't use the inst-len stored in the instruction...
+(defund execute-RET (inst th s)
+;doesn't use the inst-len stored in the instruction...
   (let* ((localnum (farg1 inst))
          (return-address (nth-local localnum (locals (thread-top-frame th s)))))
-    (modify th s :pc return-address)))
+    (if (not (pcp return-address))
+        (error-state (list "Bad return address" return-address) s)
+      (if (not (member return-address (strip-cars (current-program th s))))
+          (error-state (list "Bad return address" return-address) s)
+        (modify th s :pc return-address)))))
+
+(defthm jvm-statep-of-execute-ret
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :ret)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-RET inst th s)))
+  :hints (("Goal"
+                  :in-theory (e/d (execute-RET
+                                   ;;jvm-statep-def ; todo
+                                   current-program ; todo
+                                   )
+                                  (method-program ; todo
+                                   )))))
 
 ;FFFIXME add lots of checks for exceptions
 ;see http://java.sun.com/j2se/1.4.2/docs/api/java/lang/System.html#arraycopy(java.lang.Object,%20int,%20java.lang.Object,%20int,%20int)
@@ -2952,12 +3958,13 @@
   (implies (and (jvm-statep s)
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th)
-                ;; (not (empty-call-stackp (binding th (thread-table s)))) ; all-framep-change
-                )
+                (not (empty-call-stackp (binding th (thread-table s))))
+                (member-equal (instruction-opcode (current-inst th s)) '(:invokevirtual :invokestatic :invokespecial :invokeinterface)))
            (jvm-statep (execute-java.lang.class.getPrimitiveClass th s)))
   :hints (("Goal" :in-theory (e/d (execute-java.lang.class.getPrimitiveClass
                                    class-namep ;fixme breaks the abstraction
-                                   ) (acons)))))
+                                   move-past-invoke-instruction)
+                                  (acons)))))
 
 ;; Our model of the native method java.lang.Object.getClass
 ;; The current instruction in S is the invoke
@@ -2976,17 +3983,17 @@
         (if (not class-object) ;test whether the class object needs to be built
             (push-frame-to-build-class-object class-name th s)
           ;; The class object already exists...
-          (let* ((s (move-past-invoke-instruction th s))) ;; Move past the invokevirtual instruction:
+          (let* ((s (move-past-invoke-instruction th s))) ;; Move past the invokevirtual instruction
             (modify th s :stack (push-operand class-object (pop-operand op-stack)))))))))
 
 (defthm jvm-statep-of-execute-java.lang.object.getclass
   (implies (and (jvm-statep s)
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th)
-                ;; (not (empty-call-stackp (binding th (thread-table s)))) ; all-framep-change
-                )
+                (not (empty-call-stackp (binding th (thread-table s))))
+                (member-equal (instruction-opcode (current-inst th s)) '(:invokevirtual :invokestatic :invokespecial :invokeinterface)))
            (jvm-statep (execute-java.lang.object.getclass th s)))
-  :hints (("Goal" :in-theory (e/d (execute-java.lang.object.getclass) (acons)))))
+  :hints (("Goal" :in-theory (e/d (execute-java.lang.object.getclass move-past-invoke-instruction) (acons)))))
 
 (defund is-java.lang.Object.getClass (obj-class-name method-name descriptor)
   (declare (xargs :guard t))
@@ -3105,11 +4112,27 @@
         (cons possible-method-info class-name)
       nil)))
 
+(defthm method-infop-of-car-of-lookup-method-in-class-info
+  (implies (and (lookup-method-in-class-info method-id class-name class-info)
+                ;; (method-idp method-id)
+                (class-namep class-name)
+                (class-infop class-info class-name))
+           (method-infop (car (lookup-method-in-class-info method-id class-name class-info))))
+  :hints (("Goal" :in-theory (enable lookup-method-in-class-info))))
+
+(defthm class-namep-of-cdr-of-lookup-method-in-class-info
+  (implies (and (lookup-method-in-class-info method-id class-name class-info)
+                ;; (method-idp method-id)
+                (class-namep class-name)
+                (class-infop class-info class-name))
+           (class-namep (cdr (lookup-method-in-class-info method-id class-name class-info))))
+  :hints (("Goal" :in-theory (enable lookup-method-in-class-info))))
+
 ;returns a method-info/class-name pair, or nil
 (defund lookup-method-in-classes (method-id class-names class-table)
   (declare (xargs :guard (and (method-idp method-id)
                               (true-listp class-names)
-                              (all-class-namesp class-names)
+                              (class-name-listp class-names)
                               (class-tablep class-table)
                               (all-bound-in-class-tablep class-names class-table))))
   (if (endp class-names)
@@ -3118,6 +4141,24 @@
                                      (first class-names)
                                      (get-class-info (first class-names) class-table))
         (lookup-method-in-classes method-id (rest class-names) class-table))))
+
+(defthm method-infop-of-car-of-lookup-method-in-classes
+  (implies (and (lookup-method-in-classes method-id class-names class-table)
+                ;; (method-idp method-id)
+                ;; (class-name-listp class-names)
+                (class-tablep class-table)
+                (all-bound-in-class-tablep class-names class-table))
+           (method-infop (car (lookup-method-in-classes method-id class-names class-table))))
+  :hints (("Goal" :in-theory (enable lookup-method-in-classes))))
+
+(defthm class-namep-of-cdr-of-lookup-method-in-classes
+  (implies (and (lookup-method-in-classes method-id class-names class-table)
+                ;; (method-idp method-id)
+                ;; (class-name-listp class-names)
+                (class-tablep class-table)
+                (all-bound-in-class-tablep class-names class-table))
+           (class-namep (cdr (lookup-method-in-classes method-id class-names class-table))))
+  :hints (("Goal" :in-theory (enable lookup-method-in-classes))))
 
 ;; This is (or should be, once we fix it) the "Method Resolution" described in the JVM spec:
 ;returns a method-info/class-name pair, or nil
@@ -3142,6 +4183,30 @@
         method-or-nil
       (prog2$ (cw "ERROR: Failed to look up method ~s0.~s1~%" class-name method-name)
               nil))))
+
+(defthm method-infop-of-car-of-lookup-method
+  (implies (and (lookup-method class-name method-name descriptor class-table)
+                (class-namep class-name)
+                (class-tablep class-table)
+                ;; (method-namep method-name)
+                (method-descriptorp descriptor)
+                (bound-in-class-tablep class-name class-table)
+                ;; (not (is-an-interfacep class-name class-table))
+                )
+           (method-infop (car (lookup-method class-name method-name descriptor class-table))))
+  :hints (("Goal" :in-theory (enable lookup-method))))
+
+(defthm class-namep-of-cdr-of-lookup-method
+  (implies (and (lookup-method class-name method-name descriptor class-table)
+                (class-namep class-name)
+                (class-tablep class-table)
+                ;; (method-namep method-name)
+                (method-descriptorp descriptor)
+                (bound-in-class-tablep class-name class-table)
+                ;; (not (is-an-interfacep class-name class-table))
+                )
+           (class-namep (cdr (lookup-method class-name method-name descriptor class-table))))
+  :hints (("Goal" :in-theory (enable lookup-method))))
 
 ;; TODO: Update this.
 ;; Returns (mv erp closest-method-info class-name) where ERP is either nil (no
@@ -3331,6 +4396,8 @@
 ;(tThread (rrefToThread objectref (thread-table s)))
          )
     (cond
+      ((not (acl2::addressp objectref))
+       (error-state (list "INVOKESPECIAL with non-reference" objectref) s))
      ((method-nativep closest-method-info)
       (cond ;((equal method-name "start") (modify tThread s1 :status :SCHEDULED)) ;fixme put these back?
 ;((equal method-name "stop") (modify tThread s1 :status :UNSCHEDULED))
@@ -3373,27 +4440,41 @@
 ;FFFIXME does this set the current class in the make-frame right?
 (defund execute-INVOKESPECIAL (inst th s)
   (mv-let
-    (erp closest-method-info actual-class-name)
-    (lookup-method-for-invokespecial inst th s)
+      (erp closest-method-info actual-class-name)
+      (lookup-method-for-invokespecial inst th s)
     (if erp
         (if (and (class-namep erp)
                  (bound-to-a-non-interfacep erp (class-table s)) ; todo: what if not?
                  )
             (obtain-and-throw-exception erp (list "ERROR IN INVOKESPECIAL: Failed to resolve method." :debug-info inst) th s)
           (error-state erp s))
-      (execute-invokespecial-helper closest-method-info actual-class-name s th inst))))
+      (if (method-abstractp closest-method-info) ; todo: prove this can't happen
+          (error-state `(:invokespecial-abstract-method ,closest-method-info) s)
+        (execute-invokespecial-helper closest-method-info actual-class-name s th inst)))))
+
+(defthm memberp-of-pc-and-strip-cars-of-method-program-of-method-info
+  (implies (framep frame) ; move
+           (memberp (pc frame)
+                    (strip-cars (method-program (method-info frame)))))
+  :hints (("Goal" :in-theory (enable framep pc method-info))))
 
 (defthm jvm-statep-of-execute-invokespecial
   (implies (and (jvm-statep s)
-                ;; (call-stack-non-emptyp th s) ; all-framep-change
-                ;; (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; all-framep-change
+                (call-stack-non-emptyp th s)
+                (equal (instruction-opcode inst) :invokespecial)
+                (instructionp inst)
+                (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s)))))
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))
            (jvm-statep (execute-invokespecial inst th s)))
   :hints (("Goal" :in-theory (enable execute-invokespecial
                                      execute-invokespecial-helper ; todo: disable less stuff here
                                      obtain-and-throw-exception
-                                     failed-to-enter-monitor-wrapper))))
+                                     failed-to-enter-monitor-wrapper
+                                     jvm-instruction-okayp
+                                     instructionp-redef
+                                     instruction-args
+                                     instruction-argsp))))
 
 
 ; (:INVOKESTATIC class-name method-name method-descriptor formal-slot-count)
@@ -3494,13 +4575,13 @@
         (interfacep (farg5 inst))
         (class-table (class-table s)))
     (mv-let (erp class-name-of-resolved-method)
-      (resolve-method method-name descriptor class-name interfacep class-table)
+        (resolve-method method-name descriptor class-name interfacep class-table)
       (declare (ignore class-name-of-resolved-method)) ;todo
       (if erp
           (if (stringp erp)
               (obtain-and-throw-exception erp (list "ERROR IN INVOKESTATIC: Failed to resolve method." :debug-info class-name) th s)
             (error-state erp s))
-        (let ( ;;FIXME check this procedure.  this is different from the "resolution", for which we do nothing, in invokevirtual
+        (let (;;FIXME check this procedure.  this is different from the "resolution", for which we do nothing, in invokevirtual
               ;;i guess this could be done at link time
               (closest-method-and-class-name (lookup-method class-name method-name descriptor (class-table s)))
               )
@@ -3511,20 +4592,25 @@
                              s)
               (let ((method-info (car closest-method-and-class-name))
                     (actual-class-name (cdr closest-method-and-class-name)))
-                (if (not (method-staticp method-info))
-                    (obtain-and-throw-exception *IncompatibleClassChangeError* (list "ERROR: invokestatic called on non-static method ~x0.~x1~x2" actual-class-name method-name descriptor) th s)
-                  (if (memberp class-name (initialized-classes s))
-                      ;; If the class has been initialized, do the normal thing:
-                      (execute-invokestatic-helper parameter-types
-                                                   (count-slots-in-types parameter-types) ; (longs and doubles take two slots)
-                                                   s th descriptor method-name actual-class-name method-info)
-                    ;; otherwise, we first need to initialize at least one class:
-                    (invoke-static-initializer-for-next-class class-name th s)))))))))))
+                (if (method-abstractp method-info) ; todo: prove this can't happen
+                    (error-state `(:invokestatic-abstract-method ,method-info) s)
+                  (if (not (method-staticp method-info))
+                      (obtain-and-throw-exception *IncompatibleClassChangeError* (list "ERROR: invokestatic called on non-static method ~x0.~x1~x2" actual-class-name method-name descriptor) th s)
+                    (if (memberp class-name (initialized-classes s))
+                        ;; If the class has been initialized, do the normal thing:
+                        (execute-invokestatic-helper parameter-types
+                                                     (count-slots-in-types parameter-types) ; (longs and doubles take two slots)
+                                                     s th descriptor method-name actual-class-name method-info)
+                      ;; otherwise, we first need to initialize at least one class:
+                      (invoke-static-initializer-for-next-class class-name th s))))))))))))
 
 (defthm jvm-statep-of-execute-invokestatic
   (implies (and (jvm-statep s)
-                ;; (call-stack-non-emptyp th s) ; all-framep-change
-                ;; (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; all-framep-change
+                (call-stack-non-emptyp th s)
+                (equal (instruction-opcode inst) :invokestatic)
+                (equal inst (current-inst th s)) ; for the theorem about getclass ; todo think about this
+                (instructionp inst)
+                (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s)))))
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))
            (jvm-statep (execute-invokestatic inst th s)))
@@ -3538,7 +4624,14 @@
                                      execute-java.lang.float.intbitstofloat
                                      skip-invokestatic-instruction
                                      ;;obtain-an-object
-                                     ))))
+                                     jvm-instruction-okayp
+                                     maybe-addressp
+                                     move-past-invoke-instruction
+                                     method-programp-key-property-2-alt
+                                     inst-len ;careful
+                                     instructionp-redef
+                                     instruction-args
+                                     instruction-argsp))))
 
 ;inst is an invokevirtual instruction.
 ;inst has the form (invokeXXX class-name method-name descriptor formal-slot-count)
@@ -3670,37 +4763,50 @@
     (if (< stack-size min-stack-size)
         (error-state (list :invokevirtual-called-with-stack-too-small :actual stack-size :min min-stack-size) s)
       (let* ((obj-ref (top-operand (pop-items-off-stack parameter-types stack))))
-        (if (null-refp obj-ref)
-            (prog2$ (cw "ERROR: Trying to execute invokevirtual on a null object.")
-                    (obtain-and-throw-exception *NullPointerException* inst th s))
-          (let* ((obj-type (acl2::get-class obj-ref (heap s))))
-            (if (is-array-typep obj-type)
-                (if (and (equal method-name "clone")
-                         (equal descriptor "()Ljava/lang/Object;")) ;;fixme pass through calls to other methods of class Object (clone is the only overridden method)
-                    (execute-array-clone (get-array-component-type obj-type) obj-ref th s)
-                  (error-state (list "ERROR: Calling :invokevirtual on an array object with an unknown method" method-name obj-ref obj-type) s))
-              (let* (
-                     ;;this is the method lookup precedure described in the spec for invokevirtual
-                     ;;(do we do anything that corresponds to "resolution" as described in the spec?)
-                     (closest-method-and-class-name (lookup-method obj-type
-                                                                   method-name
-                                                                   descriptor
-                                                                   (class-table s)))
-                     (closest-method-info (car closest-method-and-class-name))
-                     (class-name (cdr closest-method-and-class-name)))
-                (execute-invokevirtual-helper parameter-types
-                                              method-name
-                                              descriptor
-                                             ; formal-slot-count
-                                              obj-ref
-                                              closest-method-info
-                                              class-name
-                                              th s)))))))))
+        (if (not (acl2::addressp obj-ref))
+            (error-state (list "INVOKEVIRTUAL with non-reference" obj-ref) s)
+          (if (null-refp obj-ref)
+              (prog2$ (cw "ERROR: Trying to execute invokevirtual on a null object.")
+                      (obtain-and-throw-exception *NullPointerException* inst th s))
+            (let* ((obj-type (acl2::get-class obj-ref (heap s))))
+              (if (is-array-typep obj-type)
+                  (if (and (equal method-name "clone")
+                           (equal descriptor "()Ljava/lang/Object;")) ;;fixme pass through calls to other methods of class Object (clone is the only overridden method)
+                      (execute-array-clone (get-array-component-type obj-type) obj-ref th s)
+                    (error-state (list "ERROR: Calling :invokevirtual on an array object with an unknown method" method-name obj-ref obj-type) s))
+                (if (not (class-namep obj-type))
+                    (error-state (list "ERROR: Calling :invokevirtual: unexpected class name:" obj-ref) s)
+                  (if (not (bound-in-class-tablep obj-type (class-table s)))
+                      (error-state (list "ERROR: Class not bound in class-table:" obj-ref (class-table s)) s)
+                    (let* (;;this is the method lookup precedure described in the spec for invokevirtual
+                           ;;(do we do anything that corresponds to "resolution" as described in the spec?)
+                           (closest-method-and-class-name (lookup-method obj-type
+                                                                         method-name
+                                                                         descriptor
+                                                                         (class-table s))))
+                      (if (not closest-method-and-class-name)
+                          (error-state (list "ERROR IN INVOKEVIRTUAL: No closest method found." obj-type method-name descriptor)
+                                       s)
+                        (let* ((closest-method-info (car closest-method-and-class-name))
+                               (class-name (cdr closest-method-and-class-name)))
+                          (if (method-abstractp closest-method-info) ; todo: prove this can't happen
+                              (error-state `(:invokevirtual-abstract-method ,closest-method-info) s)
+                            (execute-invokevirtual-helper parameter-types
+                                                          method-name
+                                                          descriptor
+                                                          ;; formal-slot-count
+                                                          obj-ref
+                                                          closest-method-info
+                                                          class-name
+                                                          th s)))))))))))))))
 
 (defthm jvm-statep-of-execute-invokevirtual
   (implies (and (jvm-statep s)
-                ;; (call-stack-non-emptyp th s) ; all-framep-change
-                ;; (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; all-framep-change
+                (call-stack-non-emptyp th s)
+                (equal (instruction-opcode inst) :invokevirtual)
+                (equal inst (current-inst th s)) ; todo think about this
+                (instructionp inst)
+                (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s)))))
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))
            (jvm-statep (execute-invokevirtual inst th s)))
@@ -3708,13 +4814,20 @@
                                      execute-invokevirtual-helper
                                      obtain-and-throw-exception
                                      throw-exception
-                                     failed-to-enter-monitor-wrapper))))
+                                     failed-to-enter-monitor-wrapper
+                                     jvm-instruction-okayp
+                                     maybe-addressp
+                                     method-programp-key-property-2-alt
+                                     inst-len
+                                     instructionp-redef
+                                     instruction-args
+                                     instruction-argsp))))
 
 ; (:INVOKEINTERFACE <class-name> <method-name> <method-descriptor> <formal-slot-count>)
 ;FFIXME recently added. check this over
 ;FFFIXME does this set the current class in the make-frame right?
 ;; TODO: Call resolve-method.
-(defun execute-INVOKEINTERFACE (inst th s)
+(defund execute-INVOKEINTERFACE (inst th s)
   (let* ( ;(class-name (farg1 inst))
          (method-name (farg2 inst))
          (descriptor (farg3 inst))
@@ -3723,67 +4836,97 @@
          (obj-ref (top-operand (pop-items-off-stack parameter-types (stack (thread-top-frame th s))))))
     (if (null-refp obj-ref)
         (obtain-and-throw-exception *NullPointerException* inst th s)
-      (let* ((obj-class-name (acl2::get-class obj-ref (heap s)))
+      (if (not (acl2::addressp obj-ref))
+          (error-state (list "INVOKEINTERFACE with non-reference" obj-ref) s)
+        (let* ((obj-class-name (acl2::get-class obj-ref (heap s))))
+          (if (not (class-namep obj-class-name))
+              (error-state (list "INVOKEINTERFACE with non-class" obj-class-name) s)
+            (if (not (bound-in-class-tablep obj-class-name (class-table s)))
+                (error-state (list "ERROR: Class not bound in class-table:" obj-class-name (class-table s)) s)
+              (let* (
 ;(obj-class-name (class-name-of-ref obj-ref (heap s)))
-             (closest-method-and-class-name
-              (lookup-method obj-class-name
-                             method-name
-                             descriptor ;signature
-                             (class-table s)))
-             (closest-method (car closest-method-and-class-name))
-             (actual-class-name (cdr closest-method-and-class-name))
-
+                     (closest-method-and-class-name
+                      (lookup-method obj-class-name
+                                     method-name
+                                     descriptor ;signature
+                                     (class-table s))))
+                (if (not closest-method-and-class-name)
+                    (error-state (list "ERROR IN INVOKEINTERFACE: No closest method found." obj-class-name method-name descriptor)
+                                 s)
+                  (let* ((closest-method (car closest-method-and-class-name))
+                         (actual-class-name (cdr closest-method-and-class-name)))
+                    (if (method-abstractp closest-method) ; todo: prove this can't happen
+                        (error-state `(:invokeinterface-abstract-method ,closest-method) s)
+                      (let (
 ;         (prog (method-program closest-method))
-             (s1 (modify th s
-                         ;; we now do this in the return:
-                         ;; :pc (+ 5 ;(inst-length inst)
-                         ;;        (pc (thread-top-frame th s)))
-                         :stack (pop-operand
-                                 (pop-items-off-stack parameter-types (stack (thread-top-frame th s))))))
+                         (s1 (modify th s
+                                     ;; we now do this in the return:
+                                     ;; :pc (+ 5 ;(inst-length inst)
+                                     ;;        (pc (thread-top-frame th s)))
+                                     :stack (pop-operand
+                                             (pop-items-off-stack parameter-types (stack (thread-top-frame th s))))))
 ;(tThread (rrefToThread obj-ref (thread-table s)))
-             )
-        (cond
-         ((method-nativep closest-method)
-          (cond ;; ((equal method-name "start")  ;fixme put these back?
-           ;;  (modify tThread s1 :status :SCHEDULED))
-           ;; ((equal method-name "stop")
-           ;;  (modify tThread s1
-           ;;          :status :UNSCHEDULED))
-           (t ;s
+                         )
+                    (cond
+                      ((method-nativep closest-method)
+                       (cond ;; ((equal method-name "start")  ;fixme put these back?
+                         ;;  (modify tThread s1 :status :SCHEDULED))
+                         ;; ((equal method-name "stop")
+                         ;;  (modify tThread s1
+                         ;;          :status :UNSCHEDULED))
+                         (t ;s
 ;I hope this is okay. -Eric
-            (error-state (list 'error-unknown-native-method-found-when-executing-invokeinterface-in-state method-name closest-method s) s)
-            )))
-         ((method-synchronizedp closest-method)
-          (mv-let (successp new-monitor-table)
-                  (attempt-to-enter-monitor th (addressfix obj-ref) (monitor-table s))
-                  (if successp
-                      (modify th s1
-                              :call-stack
-                              (push-frame (make-frame 0
-                                                      (initialize-locals (cons actual-class-name parameter-types)
-                                                                     (stack (thread-top-frame th s)))
-                                                      (empty-operand-stack)
-                                                      obj-ref
-                                                      closest-method
-                                                      (make-method-designator
-                                                       actual-class-name method-name descriptor))
-                                          (call-stack th s1))
-                              :monitor-table new-monitor-table)
-                    ;; failed to enter monitor, so the thread blocks: ;fixme: print a message
-                    (failed-to-enter-monitor-wrapper s closest-method) ;(error-state (list 'tried-to-call-invokeinterface-on-a-sync-method-with-non-lockable-object-i-think-thats-an-error s) s)
-                    )))
-         (t
-          (modify th s1
-                  :call-stack
-                  (push-frame (make-frame 0
-                                          (initialize-locals (cons actual-class-name parameter-types)
-                                                         (stack (thread-top-frame th s)))
-                                          (empty-operand-stack)
-                                          (no-locked-object)
-                                          closest-method
-                                          (make-method-designator
-                                                       actual-class-name method-name descriptor))
-                              (call-stack th s1)))))))))
+                          (error-state (list 'error-unknown-native-method-found-when-executing-invokeinterface-in-state method-name closest-method s) s)
+                          )))
+                      ((method-synchronizedp closest-method)
+                       (mv-let (successp new-monitor-table)
+                           (attempt-to-enter-monitor th (addressfix obj-ref) (monitor-table s))
+                         (if successp
+                             (modify th s1
+                                     :call-stack
+                                     (push-frame (make-frame 0
+                                                             (initialize-locals (cons actual-class-name parameter-types)
+                                                                                (stack (thread-top-frame th s)))
+                                                             (empty-operand-stack)
+                                                             obj-ref
+                                                             closest-method
+                                                             (make-method-designator
+                                                              actual-class-name method-name descriptor))
+                                                 (call-stack th s1))
+                                     :monitor-table new-monitor-table)
+                           ;; failed to enter monitor, so the thread blocks: ;fixme: print a message
+                           (failed-to-enter-monitor-wrapper s closest-method) ;(error-state (list 'tried-to-call-invokeinterface-on-a-sync-method-with-non-lockable-object-i-think-thats-an-error s) s)
+                           )))
+                      (t
+                       (modify th s1
+                               :call-stack
+                               (push-frame (make-frame 0
+                                                       (initialize-locals (cons actual-class-name parameter-types)
+                                                                          (stack (thread-top-frame th s)))
+                                                       (empty-operand-stack)
+                                                       (no-locked-object)
+                                                       closest-method
+                                                       (make-method-designator
+                                                        actual-class-name method-name descriptor))
+                                           (call-stack th s1)))))))))))))))))
+
+
+(defthm jvm-statep-of-execute-invokeinterface
+  (implies (and (jvm-statep s)
+                (call-stack-non-emptyp th s)
+                (equal (instruction-opcode inst) :invokeinterface)
+                (instructionp inst)
+                (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s)))))
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th))
+           (jvm-statep (execute-invokeinterface inst th s)))
+  :hints (("Goal" :in-theory (enable execute-invokeinterface
+                                     obtain-and-throw-exception
+                                     failed-to-enter-monitor-wrapper
+                                     jvm-instruction-okayp
+                                     instructionp-redef
+                                     instruction-args
+                                     instruction-argsp))))
 
 ; -----------------------------------------------------------------------------
 ; (L2I) Instruction - long to int narrowing conversion
@@ -4090,9 +5233,11 @@
                :stack (push-long (encode-unsigned-long value) ;new
                                  (stack (thread-top-frame th s))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; (LSTORE index inst-len). Store long into local variable.  We store the entire
 ;; long at the lower of the two indices (index and index+1).
-(defun execute-LSTORE (inst th s)
+(defund execute-LSTORE (inst th s)
   (let ((index (farg1 inst))
         (inst-len (farg2 inst)))
     (modify th s
@@ -4102,6 +5247,26 @@
                                       (top-long (stack (thread-top-frame th s)))
                                       (locals (thread-top-frame th s)))
             :stack (pop-long (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-lstore
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :lstore)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-LSTORE inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-LSTORE
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            load-helper-1
+                            load-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;This covers the following four instructions:
 ; (LSTORE_0)
@@ -4117,9 +5282,11 @@
                                     (locals (thread-top-frame th s)))
           :stack (pop-long (stack (thread-top-frame th s)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (LLOAD localslotnum inst-len) Push a long local onto the stack
 ;longs take up 2 slots, but the value is stored entirely in the lower-numbered slot - fixme - are we consistent about this?
-(defun execute-LLOAD (inst th s)
+(defund execute-LLOAD (inst th s)
   (let ((inst-len (farg2 inst)))
     (modify th s
             :pc (+ inst-len
@@ -4127,6 +5294,25 @@
             :stack (push-long (nth-local (farg1 inst)
                                          (locals (thread-top-frame th s)))
                               (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-lload
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :lload)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-LLOAD inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-LLOAD
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            load-helper-1
+                            load-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;This covers the following four instructions:
 ; (LLOAD_0)
@@ -4615,9 +5801,11 @@
             :stack (push-long result
                                  (pop-long (pop-long (stack (thread-top-frame th s))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;(FLOAD localslotnum inst-len)
 ;identical to ILOAD
-(defun execute-FLOAD (inst th s)
+(defund execute-FLOAD (inst th s)
   (let ((inst-len (farg2 inst))) ;length can vary because of WIDE
     (modify th s
             :pc (+ inst-len
@@ -4625,6 +5813,26 @@
             :stack (push-operand (nth-local (farg1 inst)
                                             (locals (thread-top-frame th s)))
                                  (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-fload
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :fload)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-FLOAD inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-FLOAD
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            load-helper-1
+                            load-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;same as ILOAD_X
 (defun execute-FLOAD_X (th s n)
@@ -4637,7 +5845,7 @@
 ; (DLOAD index inst-len). Load double from local variable.
 ;longs take up 2 slots, but the value is stored entirely in the lower-numbered slot - fixme - are we consistent about this?
 ;identical to LLOAD?
-(defun execute-DLOAD (inst th s)
+(defund execute-DLOAD (inst th s)
   (let ((inst-len (farg2 inst)))
     (modify th s
             :pc (+ inst-len
@@ -4646,6 +5854,24 @@
                                          (locals (thread-top-frame th s)))
                               (stack (thread-top-frame th s))))))
 
+(defthm jvm-statep-of-execute-dload
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :dload)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-DLOAD inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-DLOAD
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            load-helper-1
+                            load-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
 ;same as LLOAD_X
 (defun execute-DLOAD_X (th s n)
   (modify th s
@@ -4653,10 +5879,11 @@
           :stack (push-long (nth-local n (locals (thread-top-frame th s)))
                             (stack (thread-top-frame th s)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (FSTORE localslotnum inst-len)  - store an int into the locals
 ;same as ISTORE
-(defun execute-FSTORE (inst th s)
+(defund execute-FSTORE (inst th s)
   (let ((inst-len (farg2 inst)))
     (modify th s
             :pc (+ inst-len
@@ -4665,6 +5892,26 @@
                                       (top-operand (stack (thread-top-frame th s)))
                                       (locals (thread-top-frame th s)))
             :stack (pop-operand (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-fstore
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :fstore)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-FSTORE inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-FSTORE
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            load-helper-1
+                            load-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;same as ISTORE_X
 (defun execute-FSTORE_X (th s n)
@@ -4676,11 +5923,12 @@
                                      (locals (thread-top-frame th s)))
           :stack (pop-operand (stack (thread-top-frame th s)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (DSTORE local-slot-num inst-len)
 ; store a double into the locals
 ;same as LSTORE
-(defun execute-DSTORE (inst th s)
+(defund execute-DSTORE (inst th s)
   (let ((index (farg1 inst))
         (inst-len (farg2 inst)))
     (modify th s
@@ -4690,6 +5938,26 @@
                                       (top-long (stack (thread-top-frame th s)))
                                       (locals (thread-top-frame th s)))
             :stack (pop-long (stack (thread-top-frame th s))))))
+
+(defthm jvm-statep-of-execute-dstore
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :dstore)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-DSTORE inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-DSTORE
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            load-helper-1
+                            load-helper-3
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;This covers the following four instructions:
 ; (DSTORE_0)
@@ -4990,17 +6258,43 @@
                               (match-offset-pairsp pairs))))
   (lookup key pairs))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; (LOOKUPSWITCH <default-value> <match-offset-pairs>)
 ;todo: test this
-(defun execute-LOOKUPSWITCH (inst th s)
+(defund execute-LOOKUPSWITCH (inst th s)
   (let* ((default-value (farg1 inst))
          (match-offset-pairs (farg2 inst))
          (key (decode-signed (top-operand (stack (thread-top-frame th s))))) ;todo: think about the decode-signed
          (match (lookup-offset-for-match key match-offset-pairs))
-         (offset (if match match default-value)))
-    (modify th s
-            :pc (+ offset (pc (thread-top-frame th s)))
-            :stack (pop-operand (stack (thread-top-frame th s))))))
+         (offset (if match match default-value))
+         (new-pc (+ offset (pc (thread-top-frame th s))))
+         )
+    (if (not (natp new-pc)) ; todo: strengthen to check that is's a valid PC in this method
+        (error-state (list "Bad PC after lookupswitch." new-pc) s)
+      (if (not (memberp new-pc (strip-cars (method-program (method-info (thread-top-frame th s))))))
+          (error-state (list "Bad PC after lookupswitch." new-pc) s)
+        (modify th s
+                :pc new-pc
+                :stack (pop-operand (stack (thread-top-frame th s))))))))
+
+(defthm jvm-statep-of-execute-lookupswitch
+  (implies (and (jvm-statep s)
+                (equal inst (current-inst th s))
+                (equal (instruction-opcode inst) :lookupswitch)
+                (bound-in-alistp th (thread-table s))
+                (call-stack-non-emptyp th s)
+                (thread-designatorp th))
+           (jvm-statep (execute-LOOKUPSWITCH inst th s)))
+  :hints (("Goal"
+           :in-theory (e/d (execute-LOOKUPSWITCH
+                            method-programp-key-property-2-alt ;method-programp-key-property-2-alt-special
+                            valid-pcp
+                            inst-len)
+                           (method-program ;current-inst
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;order the cases, or will we use one rule per opcode instead of opening this up? better to use rules, so this doesn't split into cases when the code is not known
 (defund do-inst (op-code inst th s)
@@ -5228,7 +6522,10 @@
       s
     (let ((thread-designator (first sched)))
       (if (bound-in-alistp thread-designator (thread-table s)) ;if the given thread ID is not bound in the thread-table, skip it.
-          (run (rest sched) (step thread-designator s))
+          (if (call-stack-non-emptyp thread-designator s)
+              (run (rest sched) (step thread-designator s))
+            ;; if the call-stack is empty, we can't step this thread: ; todo: should this be an error?
+            (run (rest sched) s))
         (run (rest sched) s)))))
 
 ;fixme this should give an error if called on a non-recursive function:

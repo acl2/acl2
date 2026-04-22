@@ -15,7 +15,8 @@
 (include-book "kestrel/bv/bvshl-def" :dir :system)
 (include-book "kestrel/bv/bvshr-def" :dir :system)
 (include-book "kestrel/bv/defs-bitwise" :dir :system)
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
+(include-book "kestrel/bv/logext-def" :dir :system)
+;(include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "kestrel/bv/bvshr" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

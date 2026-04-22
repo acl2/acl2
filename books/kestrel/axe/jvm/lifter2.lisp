@@ -139,7 +139,7 @@
        ((when (not method-info))
         (prog2$ (cw "ERROR: Couldn't find info for method ~x0 with descriptor ~x1 in class ~x2" method-name method-descriptor method-class)
                 (mv t nil state)))
-       (code (lookup-eq :program method-info))
+       (code (jvm::method-program method-info))
        ((when (not code))
         (prog2$ (cw "ERROR: Couldn't find code for method ~x0 with descriptor ~x1 in class ~x2" method-name method-descriptor method-class)
                 (mv t nil state)))

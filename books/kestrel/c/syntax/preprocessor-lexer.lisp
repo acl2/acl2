@@ -534,8 +534,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-hexadecimal-digit),
-     but it operates on preprocessor states instead of parser states."))
+    "This is called when we expect a hexadecimal digit:
+     if the character is not a hexadecimal digit, it is an error.
+     If the next character is present and is a hexadecimal digit,
+     we return the corresponding ACL2 character,
+     along with its position in the file."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) #\0 (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
@@ -581,8 +584,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-hex-quad),
-     but it operates on preprocessor states instead of parser states."))
+    "This is called when we expect four hexadecimal digits,
+     so we call @(tsee plex-hexadecimal-digit) four times.
+     We return the position of the last one."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-hex-quad) (irr-position) ppstate)
        ((erp hexdig1 & ppstate) (plex-hexadecimal-digit ppstate))
@@ -631,8 +635,26 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-*-hexadecimal-digit),
-     but it operates on preprocessor states instead of parser states."))
+    "That is, we read @('*hexadecimal-digit'), in ABNF notation,
+     i.e. a repetition of zero of more instances of @('hexadecimal-digit').")
+   (xdoc::p
+    "The @('pos-so-far') input is the position that has been read so far,
+     just before attempting to read the digits.
+     The @('last-pos') output is the position of the last digit read,
+     or @('pos-so-far') if there are no digits.
+     The @('next-pos') output is the position just after the last digit read,
+     or just after @('pos-so-far') if there are no digits.")
+   (xdoc::p
+    "We read the next character.
+     If it does not exist, we return.
+     If it exists but is not a hexadecimal digit,
+     we put the character back and return.
+     Otherwise, we recursively read zero or more,
+     and we put the one just read in front.
+     We always return the position of the last hexadecimal character,
+     or the input @('pos-so-far') if there is no hexadecimal character:
+     this input is the position read so far,
+     just before the zero or more hexadecimal digits to be read."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil (irr-position) (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
@@ -679,8 +701,35 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-escape-sequence),
-     but it operates on preprocessor states instead of parser states."))
+    "This is called when we expect an escape sequence,
+     after reading the initial backslash.")
+   (xdoc::p
+    "We read the next character,
+     and based on that we handle the different escape sequences.
+     We return the position of the last character of the escape sequence.")
+   (xdoc::p
+    "If the next character is one for a simple escape,
+     we return the simple escape.
+     If GCC or Clang extensions are enabled,
+     we also allow the @('\\%') escape;
+     see the ABNF grammar for an explanation of it.")
+   (xdoc::p
+    "If instead the next character is an octal digit,
+     we read possibly another one and possibly yet another one,
+     to see whether the octal escape sequence consists of
+     one, two, or three octal digits.")
+   (xdoc::p
+    "If instead the next character starts a hexadecimal escape sequence,
+     we proceed to read zero or more hexadecimal digits, as many as possible,
+     and we check that there is at least one.")
+   (xdoc::p
+    "If instead the next character starts a universal character name,
+     we read one or two quadruples of hexadecimal digits,
+     based on the kind of escape sequence.")
+   (xdoc::p
+    "In all other cases, it is an error:
+     although this starts like an escape sequence,
+     it is not one."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-escape) (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate)))
@@ -809,9 +858,27 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-*-c-char),
-     but it operates on preprocessor states instead of parser states,
-     and we exclude CR besides LF."))
+    "That is, lex a @('*c-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('c-char').")
+   (xdoc::p
+    "This is called when we expect a character constant,
+     after reading the opening single quote of a character constant.
+     If successful, this reads up to and including the closing single quote,
+     and returns the position of the latter,
+     along with the sequence of characters and escape sequences.")
+   (xdoc::p
+    "We read the next character;
+     it is an error if there is none.
+     It is also an error if the character is a LF or CR (new line).
+     If the character is a single quote, we end the recursion and return.
+     If the character is a backslah,
+     we attempt to read an escape sequence,
+     then we read zero or more additional characters and escape sequences,
+     and we combine them with the escape sequence.
+     In all other cases,
+     we take the character as is,
+     we read zero or more additional characters and escape sequences,
+     and we combine them with the character."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
@@ -823,7 +890,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\'))) ; '
         (retok nil pos ppstate))
-       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new line
         (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
@@ -873,9 +940,27 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-*-s-char),
-     but it operates on preprocessor states instead of parser states,
-     and we exclude CR besides LF."))
+    "That is, lex a @('*s-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('s-char').")
+   (xdoc::p
+    "This is called when we expect a string literal,
+     after reading the opening double quote of a string literal.
+     If successful, this reads up to and including the closing double quote,
+     and returns the position of the latter,
+     along with the sequence of characters and escape sequences.")
+   (xdoc::p
+    "We read the next character;
+     it is an error if there is none.
+     It is also an error if the character is a LF or CR (new line).
+     If the character is a double quote, we end the recursion and return.
+     If the character is a backslah,
+     we attempt to read an escape sequence,
+     then we read zero or more additional characters and escape sequences,
+     and we combine them with the escape sequence.
+     In all other cases,
+     we take the character as is,
+     we read zero or more additional characters and escape sequences,
+     and we combine them with the character."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
@@ -887,7 +972,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
-       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new line
         (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
@@ -937,8 +1022,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-*-h-char),
-     but it operates on preprocessor states instead of parser states."))
+    "That is, lex a @('*h-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('h-char').")
+   (xdoc::p
+    "This is called when we expect a header name,
+     after reading the opening angle bracker of a header name.
+     If successful, this reads up to and including the closing angle bracket,
+     and returns the position of the latter,
+     along with the sequence of characters.")
+   (xdoc::p
+    "We read the next character;
+     it is an error if there is none.
+     It is also an error if the character is a LF or CR (new line).
+     If the character is a closing angle bracket,
+     we end the recursion and return.
+     In all other cases,
+     we take the character as is,
+     we read zero or more additional characters and escape sequences,
+     and we combine them with the character."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
@@ -949,7 +1050,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\>))) ; >
         (retok nil pos ppstate))
-       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new line
         (reterr-msg :where pos
                     :expected "any character other than ~
                                greater-than or new-line"
@@ -992,8 +1093,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-*-q-char),
-     but it operates on preprocessor states instead of parser states."))
+    "That is, lex a @('*q-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('q-char').")
+   (xdoc::p
+    "This is called when we expect a header name,
+     after reading the opening double quote of a header name.
+     If successful, this reads up to and including the closing double quote,
+     and returns the position of the latter,
+     along with the sequence of characters.")
+   (xdoc::p
+    "We read the next character;
+     it is an error if there is none.
+     It is also an error if the character is a LF or CR (new line).
+     If the character is a closing double quote,
+     we end the recursion and return.
+     In all other cases,
+     we take the character as is,
+     we read zero or more additional characters and escape sequences,
+     and we combine them with the character."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
@@ -1004,7 +1121,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
-       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new line
         (reterr-msg :where pos
                     :expected "any character other than ~
                                greater-than or new-line"

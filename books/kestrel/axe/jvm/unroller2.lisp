@@ -393,9 +393,9 @@
                               (jvm::method-indicatorp method-indicator)
                               ;;todo: check array-length-alist
                               (or (eq classes-to-assume-initialized :all)
-                                  (jvm::all-class-namesp classes-to-assume-initialized))
+                                  (jvm::class-name-listp classes-to-assume-initialized))
                               (or (eq classes-to-assume-uninitialized :all)
-                                  (jvm::all-class-namesp classes-to-assume-uninitialized))
+                                  (jvm::class-name-listp classes-to-assume-uninitialized))
                               (booleanp ignore-exceptions)
                               (booleanp ignore-errors)
                               (symbol-listp extra-rules)
