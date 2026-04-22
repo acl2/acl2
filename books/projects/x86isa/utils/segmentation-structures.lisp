@@ -56,11 +56,10 @@
 ;; ----------------------------------------------------------------------
 
 (defbitstruct hidden-segment-registerBits
-  :short "Intel manual, Dec'23, Vol. 3A, Figure 3-7."
-  ((base-addr 64bits) ;; Segment Base Address
-   (limit 32bits)     ;; Segment Limit
-   (attr  16bits)     ;; Attributes
-   )
+  :short "Intel manual, Feb'26, Vol. 3A, Figure 3-7."
+  ((base-addr 64bits)  ;; Segment Base Address
+   (limit     32bits)  ;; Segment Limit
+   (attr      16bits)) ;; Attributes
   :inline t
   :msb-first nil)
 ; These fields are "cached" from the segment descriptor (Figure 3-8):
@@ -81,11 +80,10 @@
    :rule-classes nil))
 
 (defbitstruct segment-selectorBits
-  :short "Intel manual, Mar'23, Vol. 3A, Figure 3-6."
-  ((rpl 2bits)     ;; Requestor Privilege Level (RPL)
-   (ti bitp)       ;; Table Indicator (0 = GDT, 1 = LDT)
-   (index 13bits)  ;; Index of descriptor in GDT or LDT
-   )
+  :short "Intel manual, Feb'26, Vol. 3A, Figure 3-6."
+  ((rpl    2bits)  ;; Requestor Privilege Level (RPL)
+   (ti      bitp)  ;; Table Indicator (0 = GDT, 1 = LDT)
+   (index 13bits)) ;; Index of descriptor in GDT or LDT
   :inline t
   :msb-first nil)
 
@@ -113,9 +111,10 @@
    :rule-classes nil))
 
 (defbitstruct gdtr/idtrBits
-  :short "AMD manual, Jun'23, Vol. 2, Figure 4-8."
-  ((base-addr 64bits) ;; Segment Base Address
-   (limit 16bits))    ;; Segment Limit
+  :short "Intel manual, Mar'26, Vol. 2, Figure 2-6;
+          AMD manual, Mar'26, Vol. 2, Figures 4-7 and 4-8."
+  ((base-addr 64bits)  ;; Segment Base Address
+   (limit     16bits)) ;; Segment Limit
   :msb-first nil
   :inline t)
 
