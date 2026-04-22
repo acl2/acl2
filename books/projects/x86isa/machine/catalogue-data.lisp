@@ -109,8 +109,7 @@
   :mnemonics '(STC CLC CMC CLD STD LAHF SAHF PUSHF/D/Q POPF/D/Q STI CLI))
 
 (def-sdm-instruction-section "5.1.12 Segment Register Instructions"
-  :mnemonics '(LDS LES LFS LGS LSS)
-  :doc "<p>None of these are implemented</p>")
+  :mnemonics '(LDS LES LFS LGS LSS))
 
 (def-sdm-instruction-section "5.1.13 Miscellaneous Instructions"
   :mnemonics '(

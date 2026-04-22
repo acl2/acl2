@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2018, Kestrel Technology, LLC
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,7 @@
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 ; Contributing Author(s):
-; Alessandro Coglio   <coglio@kestrel.edu>
+; Alessandro Coglio   <www.alessandrocoglio.info>
 
 (in-package "X86ISA")
 
@@ -683,4 +683,124 @@ a non-canonical form, raise the SS exception.</p>"
 
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
+
 ;; ======================================================================
+;; INSTRUCTION: LDS/LES/LFS/LGS/LSS
+;; ======================================================================
+
+; These are not supervisor-level instructions, unlike the ones above.
+
+(def-inst x86-load-far-pointer
+
+  :parents (one-byte-opcodes two-byte-opcodes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :short "LDS/LES/LFS/LGS/LSS: load far pointer."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "           C5 /r   LDS r16, m16:16"
+    "           C5 /r   LDS r32, m16:32"
+    ""
+    "           C4 /r   LES r16, m16:16"
+    "           C4 /r   LES r32, m16:32"
+    ""
+    "        0F B4 /r   LFS r16, m16:16"
+    "        0F B4 /r   LFS r32, m16:32"
+    "REX.W + 0F B4 /r   LFS r64, m16:64"
+    ""
+    "        0F B5 /r   LGS r16, m16:16"
+    "        0F B5 /r   LGS r32, m16:32"
+    "REX.W + 0F B5 /r   LGS r64, m16:64"
+    ""
+    "        0F B2 /r   LSS r16, m16:16"
+    "        0F B2 /r   LSS r32, m16:32"
+    "REX.W + 0F B2 /r   LSS r64, m16:64"))
+
+  :modr/m t
+
+  :guard (and (member-equal opcode '(#xc5 #xc4 #xb4 #xb5 #xb2))
+              (not (equal (modr/m->mod modr/m) #b11)))
+
+  :body
+
+  (b* (;; The N in m16:N is the operand size.
+       ((the (integer 2 8) offset-size)
+        (select-operand-size proc-mode
+                             nil ; byte-operand?
+                             rex-byte
+                             nil ; imm?
+                             prefixes
+                             nil ; default64?
+                             nil ; ignore-rex?
+                             nil ; ignore-p3-64?
+                             x86))
+
+       ;; We read 16 bits (2 bytes) + N bytes.
+       (bytes-to-read (the (integer 4 10) (+ 2 offset-size)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       (inst-ac? t)
+       ((mv flg
+            (the (unsigned-byte 80) selector-and-offset)
+            (the (unsigned-byte 3) increment-RIP-by)
+            &
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*gpr-access*
+                                               bytes-to-read
+                                               inst-ac?
+                                               t ; a memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes-error flg))
+
+       ;; Increment instruction pointer and check instruction length.
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+       (x86 (write-*ip proc-mode temp-rip x86))
+
+       ;; Split selector and offset.
+       ((the (unsigned-byte 16) selector) (n16 selector-and-offset))
+       ((the (unsigned-byte 64) offset) (part-select
+                                         selector-and-offset
+                                         :low 16
+                                         :width (ash offset-size 3)))
+
+       ;; Load selector into segment register.
+       (dest-seg-reg (case opcode
+                       (#xc5 #.*ds*)
+                       (#xc4 #.*es*)
+                       (#xb4 #.*fs*)
+                       (#xb5 #.*gs*)
+                       (#xb2 #.*ss*)))
+       ((mv flg descriptor x86)
+        (get-segment-descriptor dest-seg-reg selector x86))
+       ((when flg)
+        (b* (((when (equal flg t))
+              (!!ms-fresh :get-segment-descriptor)))
+          (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
+       (x86 (load-segment-reg seg-reg selector descriptor x86))
+
+       ;; Load offset into general-purpose register.
+       (x86 (!rgfi-size offset-size
+                        (reg-index reg rex-byte #.*r*)
+                        offset
+                        rex-byte
+                        x86)))
+
+    x86))
