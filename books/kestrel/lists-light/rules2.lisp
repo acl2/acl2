@@ -984,11 +984,6 @@
            (equal (len (update-nth n v lst))
                   (len lst))))
 
-(defun indhh4 (lst n)
-  (if (endp lst)
-      (list lst n)
-    (indhh4 (cdr lst) (+ -1 n))))
-
 ;(theory-invariant (incompatible (:rewrite LIST::FIX-OF-NTHCDR) (:rewrite NTHCDR-OF-TRUE-LIST-FIX)))
 
 ;TODO: Change the test to (consp (cdr x))?
