@@ -117,6 +117,7 @@ touch bundle/cert_pl_exclude
 
 git status
 
+echo ""
 echo "Done updating.  Suggested next steps:"
 echo " -- Review the changes to bundle/"
 echo " -- Git add any new libraries, etc."
@@ -142,3 +143,6 @@ echo "   of bordeaux-threads didn't load (not investigated further)."
 echo "   Those were changed to use the previous bt: interface"
 echo "   as in this commit:"
 echo "   https://github.com/acl2/acl2/commit/68a1a4efe2e9e15a7fc3e94aa0f4bbf1dafc1bcd"
+echo "3. Remove problematic defmethod in cffi/grovel/asdf.lisp that caused"
+echo "   https://github.com/acl2/acl2/issues/1938"
+echo "   The simple workaround can be seen in https://github.com/acl2/acl2/issues/1937"
