@@ -30,23 +30,27 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define fixtypes for abstract syntax trees (ASTs) for core typed Remora,
-     based on the publications on Remora mentioned in @(see remora).
-     See Figure 1 in [arxiv],
-     Figure 4.1 in [thesis],
-     and Figure 6 in [esop].
-     [arxiv] and [thesis] are quite aligned, while [esop] has some differences;
-     we adhere to the former because they are newer than the latter.")
+    "We define fixtypes for abstract syntax trees (ASTs) for typed Remora,
+     based on
+     [arxiv] (Figure 1),
+     [thesis] (Figure 4.1),
+     [esop] (Figure 6),
+     and [impl].
+     [arxiv] and [thesis] are quite aligned, while [esop] has some differences,
+     but the former because are newer than the latter;
+     [impl] makes some extensions.
+     We have started defining the syntax as in [arxiv] and [thesis],
+     but we are in the process of extending it according to [impl].
+     We have started defining just the core syntax, as in [arxiv] and [thesis],
+     but we are in the process of adding non-core constructs as [impl];
+     we plan to characterize the core subset
+     and to define a desugaring transformation
+     from the full syntax to the core syntax.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names
      (for expressions, types, and indices).
-     We may change this if needed.")
-   (xdoc::p
-    "In line with the Remora publications, which define a core language,
-     we do not yet define any higher-level constructs such as ``programs'',
-     intended as collections of named definitions.
-     But we plan to add such constructs at some point."))
+     We may change this if needed."))
   :order-subtopics t
   :default-parent t)
 
