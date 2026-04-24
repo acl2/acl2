@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -86,7 +86,7 @@
   :returns (tokens-after-symbol-or-reserr abnf::tree-list-resultp
                                           :hints
                                           (("Goal" :in-theory
-                                            (enable abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+                                            (enable abnf::tree-listp-when-result-not-error))))
                                         ;  :verbosep t ; for debugging
   :short "Attempts to eat the named @('symbol'), returning either the list of remaining tokens or a reserr."
   :long

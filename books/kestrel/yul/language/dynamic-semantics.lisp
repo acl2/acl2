@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -279,10 +279,7 @@
        ((okf &) (ensure-funscope-disjoint funscope funenv)))
     (cons funscope (funenv-fix funenv)))
   :hooks (:fix)
-  :prepwork
-  ((local
-    (in-theory
-     (enable funscopep-when-funscope-resultp-and-not-reserrp))))
+  :prepwork ((local (in-theory (enable funscopep-when-result-not-error))))
   ///
 
   (defrule add-funs-of-no-fundefs
@@ -292,13 +289,9 @@
   (defret error-info-wfp-of-add-funs
     (implies (reserrp new-funenv)
              (error-info-wfp new-funenv))
-    :hints
-    (("Goal"
-      :in-theory
-      (enable
-       not-reserrp-when-funenvp
-       funscopep-when-funscope-resultp-and-not-reserrp
-       funenvp-when-funenv-resultp-and-not-reserrp)))))
+    :hints (("Goal" :in-theory (enable not-reserrp-when-funenvp
+                                       funscopep-when-result-not-error
+                                       funenvp-when-result-not-error)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -377,11 +370,8 @@
   :returns (vals
             value-list-resultp
             :hints
-            (("Goal"
-              :in-theory
-              (enable
-               valuep-when-value-resultp-and-not-reserrp
-               value-listp-when-value-list-resultp-and-not-reserrp))))
+            (("Goal" :in-theory (enable valuep-when-result-not-error
+                                        value-listp-when-result-not-error))))
   :short "Lift @(tsee read-var-value) to lists."
   (b* (((when (endp vars)) nil)
        ((okf val) (read-var-value (car vars) cstate))
@@ -398,11 +388,9 @@
   (defret error-info-wfp-of-read-vars-values
     (implies (reserrp vals)
              (error-info-wfp vals))
-    :hints (("Goal"
-             :in-theory
-             (enable not-reserrp-when-value-listp
-                     valuep-when-value-resultp-and-not-reserrp
-                     value-listp-when-value-list-resultp-and-not-reserrp)))))
+    :hints (("Goal" :in-theory (enable not-reserrp-when-value-listp
+                                       valuep-when-result-not-error
+                                       value-listp-when-result-not-error)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -665,8 +653,8 @@
    (("Goal"
      :in-theory
      (enable
-      identifierp-when-identifier-resultp-and-not-reserrp
-      identifier-listp-when-identifier-list-resultp-and-not-reserrp))))
+      identifierp-when-result-not-error
+      identifier-listp-when-result-not-error))))
   :short "Extract variables from paths."
   :long
   (xdoc::topstring
@@ -692,8 +680,8 @@
       :in-theory
       (enable
        not-reserrp-when-identifier-listp
-       identifierp-when-identifier-resultp-and-not-reserrp
-       identifier-listp-when-identifier-list-resultp-and-not-reserrp)))))
+       identifierp-when-result-not-error
+       identifier-listp-when-result-not-error)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

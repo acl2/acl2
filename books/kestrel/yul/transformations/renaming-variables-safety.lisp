@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -655,7 +655,7 @@
         same-len-when-add-vars-to-var-renaming
         same-swcase-list->value-list-when-swcase-list-renamevar
         not-reserrp-when-identifier-setp
-        identifier-setp-when-identifier-set-resultp-and-not-reserrp)))))
+        identifier-setp-when-result-not-error)))))
 
   (defrule check-safe-statement-when-renamevar
     (b* ((ren1 (statement-renamevar old new ren))
