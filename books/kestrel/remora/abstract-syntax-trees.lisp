@@ -175,10 +175,10 @@
      and use sorting environments and rules to ensure index well-formedness,
      we provide separate syntactic definitions of dimensions and shapes,
      and avoid sorting environments and rules;
-     this is consistent with [impl].
-     The key difference is that [arxiv] and [thesis] have
-     one category of index variables, which may denote dimensions or shapes,
-     while our ASTs have two separate categories (one per sort),
+     this is also consistent with [impl].
+     The key point is that [arxiv] and [thesis] have
+     one form of index variables, which may denote dimensions or shapes,
+     while our ASTs have two separate formsm, one per sort,
      consistently with the concrete syntax (see ABNF grammar),
      which uses prefix symbols to explicate the sort of the variable."))
 
