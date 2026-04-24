@@ -172,14 +172,14 @@
     ;; ---- Groups for ws-separated repetitions ----
     "( ws exp )" group-ws-exp
     "( ws type-exp )" group-ws-type-exp
-    "( ws extent )" group-ws-extent
+    "( ws index )" group-ws-index
     "( ws atom )" group-ws-atom
     "( ws pat )" group-ws-pat
     "( ws bind )" group-ws-bind
     "( ws dim )" group-ws-dim
     "( ws shape )" group-ws-shape
     "( ws type-param )" group-ws-type-param
-    "( ws extent-param )" group-ws-extent-param
+    "( ws index-var )" group-ws-index-var
     "( ws decimal )" group-ws-decimal
 
     ;; ---- Groups for keyword/operator alternatives ----
@@ -239,7 +239,7 @@
     "*( ws exp )" repetition-*-ws-exp
     "1*( ws exp )" repetition-1*-ws-exp
     "*( ws type-exp )" repetition-*-ws-type-exp
-    "*( ws extent )" repetition-*-ws-extent
+    "*( ws index )" repetition-*-ws-index
     "*( ws atom )" repetition-*-ws-atom
     "1*( ws atom )" repetition-1*-ws-atom
     "*( ws pat )" repetition-*-ws-pat
@@ -247,11 +247,11 @@
     "*( ws dim )" repetition-*-ws-dim
     "*( ws shape )" repetition-*-ws-shape
     "*( ws type-param )" repetition-*-ws-type-param
-    "*( ws extent-param )" repetition-*-ws-extent-param
+    "*( ws index-var )" repetition-*-ws-index-var
     "*( ws decimal )" repetition-*-ws-decimal
 
-    ;; unbox-exp: *( extent-param ws )
-    "*( extent-param ws )" repetition-*-extent-param-ws))
+    ;; unbox-exp: *( index-var ws )
+    "*( index-var ws )" repetition-*-index-var-ws))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -795,16 +795,16 @@
 (defparse-remora-*-rulename "char-literal")
 (defparse-remora-rulename "string-lit")
 
-;; ---- Type and extent parameters ----
+;; ---- Type and index parameters ----
 
 (defparse-remora-rulename "type-param")
-(defparse-remora-rulename "extent-param")
+(defparse-remora-rulename "index-var")
 
-;; ---- Dimensions, shapes, extents ----
+;; ---- Dimensions, shapes, indices ----
 ;; These rules are mutually recursive, so they must be hand-written
 ;; using defines. Two clusters:
 ;;   1. dim / dim-arith (dim-arith calls *dim)
-;;   2. shape / shape-paren / extent (shape ↔ extent, shape ↔ shape-paren)
+;;   2. shape / shape-paren / index (shape ↔ index, shape ↔ shape-paren)
 
 ;; shape-lit is independent; auto-generate it first.
 (defparse-remora-group "( ws decimal )")
@@ -921,12 +921,12 @@
   (verify-guards parse-dim
     :hints (("Goal" :in-theory (disable parse-dim parse-dim-arith parse-*-ws-dim)))))
 
-;; Cluster 2: shape / shape-paren / extent
-;; shape = "@" identifier / dim / "(" ws shape-paren ws ")" / "[" ws *( ws extent ) ws "]"
+;; Cluster 2: shape / shape-paren / index
+;; shape = "@" identifier / dim / "(" ws shape-paren ws ")" / "[" ws *( ws index ) ws "]"
 ;; shape-paren = "dims" *( ws dim ) / "++" *( ws shape )
-;; extent = dim / shape
+;; index = dim / shape
 
-(defines parse-shape+extent
+(defines parse-shape+index
 
   (define parse-shape ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp)
@@ -968,14 +968,14 @@
                  :rulename? (abnf::rulename "shape")
                  :branches (list (list tree-open tree-ws1 tree-sp tree-ws2 tree-close)))
                 input5)))
-         ;; Try "[" ws *( ws extent ) ws "]"
+         ;; Try "[" ws *( ws index ) ws "]"
          ((mv tree-open input1) (abnf::parse-ichars "[" input))
          ((when (reserrp tree-open))
           (mv (reserrf "shape: no match") (nat-list-fix input)))
          ((mv tree-ws1 input2) (parse-ws input1))
          ((when (reserrp tree-ws1))
           (mv (reserrf-push tree-ws1) (nat-list-fix input)))
-         ((mv trees-exts input3) (parse-*-ws-extent input2))
+         ((mv trees-exts input3) (parse-*-ws-index input2))
          ((mv tree-ws2 input4) (parse-ws input3))
          ((when (reserrp tree-ws2))
           (mv (reserrf-push tree-ws2) (nat-list-fix input)))
@@ -1014,23 +1014,29 @@
           input2))
     :measure (two-nats-measure (len input) 0))
 
-  (define parse-extent ((input nat-listp))
+  (define parse-index ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp)
                  (rest-input nat-listp))
-    :short "Parse an @('extent')."
-    (b* (;; Try dim first (per grammar ordering)
+    :short "Parse an @('index')."
+    ;; [SC5]: a shape under an index must not be a shape->dim.  We
+    ;; satisfy this by trying dim first: if parse-dim succeeds we take
+    ;; the dim branch directly, and if it fails then parse-shape's own
+    ;; dim alternative (which just calls parse-dim) will also fail on
+    ;; the same input, so parse-shape can only succeed via one of its
+    ;; non-dim alternatives.
+    (b* (;; Try dim first (per grammar ordering; also enforces [SC5])
          ((mv tree-dim input1) (parse-dim input))
          ((when (not (reserrp tree-dim)))
           (mv (abnf::make-tree-nonleaf
-               :rulename? (abnf::rulename "extent")
+               :rulename? (abnf::rulename "index")
                :branches (list (list tree-dim)))
               input1))
          ;; Try shape
          ((mv tree-shape input1) (parse-shape input))
          ((when (reserrp tree-shape))
-          (mv (reserrf "extent: no match") (nat-list-fix input))))
+          (mv (reserrf "index: no match") (nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf
-           :rulename? (abnf::rulename "extent")
+           :rulename? (abnf::rulename "index")
            :branches (list (list tree-shape)))
           input1))
     :measure (two-nats-measure (len input) 2))
@@ -1052,16 +1058,16 @@
           input3))
     :measure (two-nats-measure (len input) 4))
 
-  (define parse-*-ws-extent ((input nat-listp))
+  (define parse-*-ws-index ((input nat-listp))
     :returns (mv (trees abnf::tree-listp)
                  (rest-input nat-listp))
     (b* (((mv tree-ws input1) (parse-ws input))
          ((when (reserrp tree-ws)) (mv nil (nat-list-fix input)))
-         ((mv tree-ext input2) (parse-extent input1))
+         ((mv tree-ext input2) (parse-index input1))
          ((when (reserrp tree-ext)) (mv nil (nat-list-fix input)))
          ((unless (mbt (< (len input2) (len input))))
           (mv nil (nat-list-fix input)))
-         ((mv more input3) (parse-*-ws-extent input2)))
+         ((mv more input3) (parse-*-ws-index input2)))
       (mv (cons (abnf::make-tree-nonleaf
                  :rulename? nil
                  :branches (list (list tree-ws tree-ext)))
@@ -1076,7 +1082,7 @@
 
   ///
 
-  (defret-mutual len-of-parse-shape+extent
+  (defret-mutual len-of-parse-shape+index
     (defret len-of-parse-shape-<=
       (<= (len rest-input) (len input))
       :rule-classes :linear :fn parse-shape)
@@ -1091,37 +1097,37 @@
       (implies (not (reserrp tree))
                (< (len rest-input) (len input)))
       :rule-classes :linear :fn parse-shape-paren)
-    (defret len-of-parse-extent-<=
+    (defret len-of-parse-index-<=
       (<= (len rest-input) (len input))
-      :rule-classes :linear :fn parse-extent)
-    (defret len-of-parse-extent-<
+      :rule-classes :linear :fn parse-index)
+    (defret len-of-parse-index-<
       (implies (not (reserrp tree))
                (< (len rest-input) (len input)))
-      :rule-classes :linear :fn parse-extent)
+      :rule-classes :linear :fn parse-index)
     (defret len-of-parse-*-ws-shape-<=
       (<= (len rest-input) (len input))
       :rule-classes :linear :fn parse-*-ws-shape)
-    (defret len-of-parse-*-ws-extent-<=
+    (defret len-of-parse-*-ws-index-<=
       (<= (len rest-input) (len input))
-      :rule-classes :linear :fn parse-*-ws-extent)
+      :rule-classes :linear :fn parse-*-ws-index)
     :hints (("Goal" :in-theory
-             (disable parse-shape parse-shape-paren parse-extent
-                      parse-*-ws-shape parse-*-ws-extent))
+             (disable parse-shape parse-shape-paren parse-index
+                      parse-*-ws-shape parse-*-ws-index))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-shape) clause)
                  '(:expand (parse-shape input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-shape-paren) clause)
                  '(:expand (parse-shape-paren input)))
-            (and (acl2::occur-lst '(acl2::flag-is 'parse-extent) clause)
-                 '(:expand (parse-extent input)))
+            (and (acl2::occur-lst '(acl2::flag-is 'parse-index) clause)
+                 '(:expand (parse-index input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-*-ws-shape) clause)
                  '(:expand (parse-*-ws-shape input)))
-            (and (acl2::occur-lst '(acl2::flag-is 'parse-*-ws-extent) clause)
-                 '(:expand (parse-*-ws-extent input)))))
+            (and (acl2::occur-lst '(acl2::flag-is 'parse-*-ws-index) clause)
+                 '(:expand (parse-*-ws-index input)))))
 
   (verify-guards parse-shape
     :hints (("Goal" :in-theory (disable parse-shape parse-shape-paren
-                                        parse-extent parse-*-ws-shape
-                                        parse-*-ws-extent)))))
+                                        parse-index parse-*-ws-shape
+                                        parse-*-ws-index)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1138,11 +1144,11 @@
 (defparse-remora-group "( \"Pi\" / %x03A0 )")
 (defparse-remora-group "( \"Sigma\" / %x03A3 )")
 
-;; Repetitions for non-recursive params (type-param, extent-param already defined).
+;; Repetitions for non-recursive params (type-param, index-var already defined).
 (defparse-remora-group "( ws type-param )")
 (defparse-remora-*-group "( ws type-param )")
-(defparse-remora-group "( ws extent-param )")
-(defparse-remora-*-group "( ws extent-param )")
+(defparse-remora-group "( ws index-var )")
+(defparse-remora-*-group "( ws index-var )")
 
 ;; Type rules are self-recursive: type-exp → bracket-type/array-type/etc → type-exp.
 ;; Hand-written using defines.
@@ -1178,7 +1184,7 @@
     (b* (((pok< tree-open) (abnf::parse-ichars "[" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-te) (parse-type-exp input))
-         ((mv trees-exts input) (parse-*-ws-extent input))
+         ((mv trees-exts input) (parse-*-ws-index input))
          ((pok tree-ws2) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars "]" input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "bracket-type")
@@ -1262,7 +1268,7 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ((mv trees-eps input) (parse-repetition-*-ws-extent-param input))
+         ((mv trees-eps input) (parse-repetition-*-ws-index-var input))
          ((pok tree-ws3) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws4) (parse-ws input))
@@ -1281,7 +1287,7 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ((mv trees-eps input) (parse-repetition-*-ws-extent-param input))
+         ((mv trees-eps input) (parse-repetition-*-ws-index-var input))
          ((pok tree-ws3) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws4) (parse-ws input))
@@ -1445,13 +1451,13 @@
 
 ;; ---- Non-recursive rules (bindings/params that don't reference exp) ----
 
-;; Generate groups/reps now that type-exp and extent are defined.
+;; Generate groups/reps now that type-exp and index are defined.
 (defparse-remora-group "( ws type-exp )")
 (defparse-remora-*-group "( ws type-exp )")
-(defparse-remora-group "( ws extent )")
-(defparse-remora-*-group "( ws extent )")
+(defparse-remora-group "( ws index )")
+(defparse-remora-*-group "( ws index )")
 (defparse-remora-option "[ ws \":\" ws type-exp ]")
-;; *( extent-param ws ) for unbox-exp will be handled inside the
+;; *( index-var ws ) for unbox-exp will be handled inside the
 ;; big defines block (unusual reversed pattern).
 
 (defparse-remora-rulename "type-args")
@@ -1459,7 +1465,7 @@
 (defparse-remora-rulename "type-params")
 (defparse-remora-rulename "idx-params")
 (defparse-remora-rulename "type-bind")
-(defparse-remora-rulename "extent-bind")
+(defparse-remora-rulename "index-bind")
 
 ;; Lambda keyword groups (just literals, no recursion).
 (defparse-remora-group "( \"fn\" / %x03BB )")
@@ -1609,15 +1615,16 @@
     (b* (((pok< tree-kw) (abnf::parse-ichars "i-app" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-e) (parse-exp input))
-         ((mv trees-exts input) (parse-repetition-*-ws-extent input)))
+         ((mv trees-exts input) (parse-repetition-*-ws-index input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "iapp-exp")
            :branches (list (list tree-kw tree-ws1 tree-e) trees-exts))
           input))
     :measure (two-nats-measure (len input) 21))
 
-  ;; [SC4] The Haskell parser guards each extent-param with
-  ;; notFollowedBy ")".  Our parser uses greedy *( extent-param ws )
-  ;; without lookahead, which produces the same result for well-formed input.
+  ;; [SC4] The Haskell parser guards each index-var (which it calls
+  ;; extent-param) with notFollowedBy ")".  Our parser uses
+  ;; greedy *( index-var ws ) without lookahead, which produces the
+  ;; same result for well-formed input.
   (define parse-unbox-exp ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse an @('unbox-exp')."
@@ -1626,8 +1633,8 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ;; *( extent-param ws )
-         ((pok trees-eps) (parse-*-extent-param-ws input))
+         ;; *( index-var ws )
+         ((pok trees-eps) (parse-*-index-var-ws input))
          ((pok< tree-id) (parse-identifier input))
          ((pok tree-ws3) (parse-ws input))
          ((unless (mbt (< (len input) (len orig-input))))
@@ -1764,7 +1771,7 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ((mv trees-eps input) (parse-repetition-*-ws-extent-param input))
+         ((mv trees-eps input) (parse-repetition-*-ws-index-var input))
          ((pok tree-ws3) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws4) (parse-ws input))
@@ -1783,7 +1790,7 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ((mv trees-exts input) (parse-repetition-*-ws-extent input))
+         ((mv trees-exts input) (parse-repetition-*-ws-index input))
          ((pok tree-ws3) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws4) (parse-ws input))
@@ -1820,7 +1827,7 @@
                ((try tree rest) (parse-tfun-bind input))
                ((try tree rest) (parse-ifun-bind input))
                ((try tree rest) (parse-type-bind input))
-               ((try tree rest) (parse-extent-bind input)))
+               ((try tree rest) (parse-index-bind input)))
             (parse-at-fun-bind input))))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "bind-body")
            :branches (list (list tree))) input))
@@ -1899,7 +1906,7 @@
          ((pok tree-ws3) (parse-ws input))
          ((pok< tree-open2) (abnf::parse-ichars "(" input))
          ((pok tree-ws4) (parse-ws input))
-         ((mv trees-eps input) (parse-repetition-*-ws-extent-param input))
+         ((mv trees-eps input) (parse-repetition-*-ws-index-var input))
          ((pok tree-ws5) (parse-ws input))
          ((pok< tree-close2) (abnf::parse-ichars ")" input))
          ((pok tree-opt) (parse-optional-type-annotation input))
@@ -2005,16 +2012,16 @@
       (mv trees input))
     :measure (two-nats-measure (len input) 28))
 
-  (define parse-*-extent-param-ws ((input nat-listp))
+  (define parse-*-index-var-ws ((input nat-listp))
     :returns (mv (trees abnf::tree-list-resultp) (rest-input nat-listp))
-    :short "Parse @('*( extent-param ws )')."
+    :short "Parse @('*( index-var ws )')."
     (b* ((start-input input)
          ((mv trees input)
-          (b* (((pok< tree-ep) (parse-extent-param input))
+          (b* (((pok< tree-ep) (parse-index-var input))
                ((unless (mbt (< (len input) (len start-input))))
                 (mv (reserrf :impossible) (nat-list-fix start-input)))
                ((pok tree-ws) (parse-ws input))
-               ((pok trees) (parse-*-extent-param-ws input)))
+               ((pok trees) (parse-*-index-var-ws input)))
             (mv (cons (abnf::make-tree-nonleaf :rulename? nil
                        :branches (list (list tree-ep tree-ws)))
                       trees)
@@ -2083,8 +2090,8 @@
                  '(:expand (parse-*-ws-atom input)))
                 ((acl2::occur-lst '(acl2::flag-is 'parse-*-ws-bind) clause)
                  '(:expand (parse-*-ws-bind input)))
-                ((acl2::occur-lst '(acl2::flag-is 'parse-*-extent-param-ws) clause)
-                 '(:expand (parse-*-extent-param-ws input))))))
+                ((acl2::occur-lst '(acl2::flag-is 'parse-*-index-var-ws) clause)
+                 '(:expand (parse-*-index-var-ws input))))))
 
   :returns-hints
   (("Goal"
@@ -2100,7 +2107,7 @@
           parse-bind parse-bind-body parse-val-bind
           parse-fun-bind parse-tfun-bind parse-ifun-bind
           parse-at-fun-bind parse-*-ws-exp parse-*-ws-atom
-          parse-*-ws-bind parse-*-extent-param-ws)))
+          parse-*-ws-bind parse-*-index-var-ws)))
    parse-expressions-expand-hints)
 
   :ruler-extenders :all
@@ -2247,10 +2254,10 @@
       (<= (len rest-input) (len input)) :rule-classes :linear :fn parse-*-ws-bind)
     (defret len-of-parse-*-ws-bind-<
       t :rule-classes nil :fn parse-*-ws-bind)
-    (defret len-of-parse-*-extent-param-ws-<=
-      (<= (len rest-input) (len input)) :rule-classes :linear :fn parse-*-extent-param-ws)
-    (defret len-of-parse-*-extent-param-ws-<
-      t :rule-classes nil :fn parse-*-extent-param-ws)
+    (defret len-of-parse-*-index-var-ws-<=
+      (<= (len rest-input) (len input)) :rule-classes :linear :fn parse-*-index-var-ws)
+    (defret len-of-parse-*-index-var-ws-<
+      t :rule-classes nil :fn parse-*-index-var-ws)
     :hints (("Goal" :in-theory
              (disable parse-exp parse-bracket-frame parse-paren-exp
                       parse-paren-exp-body parse-app-exp parse-array-exp
@@ -2261,7 +2268,7 @@
                       parse-bind parse-bind-body parse-val-bind
                       parse-fun-bind parse-tfun-bind parse-ifun-bind
                       parse-at-fun-bind parse-*-ws-exp parse-*-ws-atom
-                      parse-*-ws-bind parse-*-extent-param-ws))
+                      parse-*-ws-bind parse-*-index-var-ws))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-exp) clause)
                  '(:expand (parse-exp input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-bracket-frame) clause)
@@ -2318,8 +2325,8 @@
                  '(:expand (parse-*-ws-atom input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-*-ws-bind) clause)
                  '(:expand (parse-*-ws-bind input)))
-            (and (acl2::occur-lst '(acl2::flag-is 'parse-*-extent-param-ws) clause)
-                 '(:expand (parse-*-extent-param-ws input)))))
+            (and (acl2::occur-lst '(acl2::flag-is 'parse-*-index-var-ws) clause)
+                 '(:expand (parse-*-index-var-ws input)))))
 
   (verify-guards parse-exp
     :hints (("Goal"
@@ -2335,7 +2342,7 @@
                    parse-bind parse-bind-body parse-val-bind
                    parse-fun-bind parse-tfun-bind parse-ifun-bind
                    parse-at-fun-bind parse-*-ws-exp parse-*-ws-atom
-                   parse-*-ws-bind parse-*-extent-param-ws))))))
+                   parse-*-ws-bind parse-*-index-var-ws))))))
 
 ;; ---- Top-level ----
 
