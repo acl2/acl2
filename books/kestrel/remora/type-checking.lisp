@@ -31,17 +31,17 @@
   (enable
    kindp-when-kind-resultp-and-not-reserrp
    kind-listp-when-kind-list-resultp-and-not-reserrp
+   shapep-when-shape-resultp-and-not-reserrp
+   shape-listp-when-shape-list-resultp-and-not-reserrp
    typep-when-type-resultp-and-not-reserrp
    type-listp-when-type-list-resultp-and-not-reserrp
+   stringstringmap-pairp-when-stringstringmap-pair-resultp-and-not-reserrp
    type+shape-p-when-type+shape-resultp-and-not-reserrp
    type+shape-listp-when-type+shape-list-resultp-and-not-reserrp
    typelist+type-p-when-typelist+type-resultp-and-not-reserrp
-   kindedvarlist+type-p-when-kindedvarlist+type-resultp-and-not-reserrp
-   shapep-when-shape-resultp-and-not-reserrp
-   shape-listp-when-shape-list-resultp-and-not-reserrp
-   stringdimmap+stringshapemap-p-when-stringdimmap+stringshapemap-resultp-and-not-reserrp
    indexparamlist+type-p-when-indexparamlist+type-resultp-and-not-reserrp
-   stringstringmap-pairp-when-stringstringmap-pair-resultp-and-not-reserrp)))
+   kindedvarlist+type-p-when-kindedvarlist+type-resultp-and-not-reserrp
+   stringdimmap+stringshapemap-p-when-stringdimmap+stringshapemap-resultp-and-not-reserrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
