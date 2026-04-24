@@ -150,6 +150,10 @@
 
    (xdoc::h3 "Testing")
 
+   (xdoc::p
+     "More tests have been added to the book
+      @('system/check-system-guards.lisp').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
