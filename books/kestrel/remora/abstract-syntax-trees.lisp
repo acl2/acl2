@@ -310,7 +310,7 @@
    (xdoc::p
     "These are index variables used as parameters,
      e.g. in a product or sum type;
-     they correspond to @('extent-param') in the ABNF grammar.
+     they correspond to @('index-var') in the ABNF grammar.
      As in dimension and shape variables in @(tsee dim) and @(tsee shape),
      index parameters carry their own sort (dimension or shape),
      i.e. they are syntactically distinct.
