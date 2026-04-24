@@ -95,7 +95,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-product ((type typep))
-  :returns (vars+type indexparamlist+type-resultp)
+  :returns (params+type indexparamlist+type-resultp)
   :short "Check if a type is a product type,
           returning its index parameters and body type if successful."
   (if (type-case type :pi)
@@ -106,7 +106,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-sum ((type typep))
-  :returns (vars+type indexparamlist+type-resultp)
+  :returns (params+type indexparamlist+type-resultp)
   :short "Check if a type is a sum type,
           returning its index parameters and body type if successful."
   (if (type-case type :sigma)
