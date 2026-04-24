@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-structural-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -46,47 +46,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sort-indices ((indices index-listp))
-  :short "Sort a list of indices, using ACL2's total order of values."
+(define sort-dims ((dims dim-listp))
+  :returns (sorted-dims dim-listp)
+  :short "Sort a list of dimensions, using ACL2's total order of values."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a simple insertion sort.
      We do not expect long lists."))
-  :returns (sorted-indices index-listp)
-  (cond ((endp indices) nil)
-        (t (sort-indices-aux (car indices) (sort-indices (cdr indices)))))
+  (cond ((endp dims) nil)
+        (t (sort-dims-aux (car dims) (sort-dims (cdr dims)))))
   :verify-guards :after-returns
   :prepwork
-  ((define sort-indices-aux ((index indexp) (indices index-listp))
-     :returns (indices-with-index index-listp)
+  ((define sort-dims-aux ((dim dimp) (dims dim-listp))
+     :returns (dims-with-dim dim-listp)
      :parents nil
-     (cond ((endp indices) (list (index-fix index)))
-           ((<< (index-fix index) (index-fix (car indices)))
-            (cons (index-fix index) (index-list-fix indices)))
-           (t (cons (index-fix (car indices))
-                    (sort-indices-aux index (cdr indices))))))))
+     (cond ((endp dims) (list (dim-fix dim)))
+           ((<< (dim-fix dim) (dim-fix (car dims)))
+            (cons (dim-fix dim) (dim-list-fix dims)))
+           (t (cons (dim-fix (car dims))
+                    (sort-dims-aux dim (cdr dims))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines flatten-add-in-indices
-  :short "Flatten all the nested additions in an index or list of indices."
+(define sort-shapes ((shapes shape-listp))
+  :returns (sorted-shapes shape-listp)
+  :short "Sort a list of shapes, using ACL2's total order of values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a simple insertion sort.
+     We do not expect long lists."))
+  (cond ((endp shapes) nil)
+        (t (sort-shapes-aux (car shapes) (sort-shapes (cdr shapes)))))
+  :verify-guards :after-returns
+  :prepwork
+  ((define sort-shapes-aux ((shape shapep) (shapes shape-listp))
+     :returns (shapes-with-shape shape-listp)
+     :parents nil
+     (cond ((endp shapes) (list (shape-fix shape)))
+           ((<< (shape-fix shape) (shape-fix (car shapes)))
+            (cons (shape-fix shape) (shape-list-fix shapes)))
+           (t (cons (shape-fix (car shapes))
+                    (sort-shapes-aux shape (cdr shapes))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines flatten-add-in-dims
+  :short "Flatten all the nested additions
+          in a dimension or list of dimensions."
   :long
   (xdoc::topstring
    (xdoc::p
     "For instance, @('(+ i (+ j k) (+ l) m (+ n (+ o p) q))')
      is turned into @('(+ i j k l m n o p q)')."))
 
-  (define flatten-add-in-index ((index indexp))
-    :returns (new-index indexp)
-    :parents (index-equivalence flatten-add-in-indices)
-    :short "Flatten all the nested additions in an index."
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define flatten-add-in-dim ((dim dimp))
+    :returns (new-dim dimp)
+    :parents (index-equivalence flatten-add-in-dims)
+    :short "Flatten all the nested additions in a dimension."
     :long
     (xdoc::topstring
      (xdoc::p
       "Variables and constants are left alone.
-       For a shape or concatenation,
-       we recursively flatten the additions in its components.
        For an addition, we recursively flatten the additions in the addends,
        and we also splice any resulting flattened sub-additions
        into the super-addition.
@@ -94,332 +118,342 @@
        if we just flatten its components we get @('(+ i (+ j k l) 3)'),
        but then we also need to splice the sub-addition,
        obtaining @('(+ i j k l 3)').
-       The splicing is done by @(tsee flatten-add-in-index-list),
+       The splicing is done by @(tsee flatten-add-in-dim-list),
        based on whether the @('addp') flag is @('t') or @('nil')."))
-    (index-case
-     index
-     :var (index-var index.name)
-     :const (index-const index.value)
-     :shape (index-shape (flatten-add-in-index-list index.indices nil))
-     :add (index-add (flatten-add-in-index-list index.indices t))
-     :append (index-append (flatten-add-in-index-list index.indices nil)))
-    :measure (index-count index))
+    (dim-case
+     dim
+     :var (dim-var dim.name)
+     :const (dim-const dim.value)
+     :add (dim-add (flatten-add-in-dim-list dim.dims t)))
+    :measure (dim-count dim))
 
-  (define flatten-add-in-index-list ((indices index-listp) (addp booleanp))
-    :returns (new-indices index-listp)
-    :parents (index-equivalence flatten-add-in-indices)
-    :short "Flatten all the nested additions in a list of indices,
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define flatten-add-in-dim-list ((dims dim-listp) (addp booleanp))
+    :returns (new-dims dim-listp)
+    :parents (index-equivalence flatten-add-in-dims)
+    :short "Flatten all the nested additions in a list of dimensions,
             further flattening the resulting list if part of an addition."
     :long
     (xdoc::topstring
      (xdoc::p
-      "We go through each index and flatten it.
-       However, as explained in @(tsee flatten-add-in-index),
+      "We go through each dimension and flatten it.
+       However, as explained in @(tsee flatten-add-in-dim),
        we splice any obtained sub-addition into the current list,
-       which is put into the super-addition by @(tsee flatten-add-in-index).
+       which is put into the super-addition by @(tsee flatten-add-in-dim).
        The @('addp') flag is @('t') exactly when
        the indices passed to this function are addends of an addition."))
-    (b* (((when (endp indices)) nil)
-         (new-index (flatten-add-in-index (car indices)))
-         (new-indices (flatten-add-in-index-list (cdr indices) addp)))
+    (b* (((when (endp dims)) nil)
+         (new-dim (flatten-add-in-dim (car dims)))
+         (new-dims (flatten-add-in-dim-list (cdr dims) addp)))
       (if (and addp
-               (index-case new-index :add))
-          (append (index-add->indices new-index) new-indices)
-        (cons new-index new-indices)))
-    :measure (index-list-count indices))
+               (dim-case new-dim :add))
+          (append (dim-add->dims new-dim) new-dims)
+        (cons new-dim new-dims)))
+    :measure (dim-list-count dims))
+
+  ;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv-mutual flatten-add-in-indices))
+  (fty::deffixequiv-mutual flatten-add-in-dims))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define factor-consts-in-add-indices ((indices index-listp))
+(define factor-consts-in-add-dims ((dims dim-listp))
   :returns (mv (sum natp :rule-classes (:rewrite :type-prescription))
-               (new-indices index-listp))
-  :short "Collect and add all the constants in a list of indices."
+               (new-dims dim-listp))
+  :short "Collect and add all the constants in a list of dimensions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used on the indices of an addition index.
+    "This is used on the dimensions of an addition dimension.
      It is intended for use after flattening additions
-     via @(tsee flatten-add-in-indices).")
+     via @(tsee flatten-add-in-dims).")
    (xdoc::p
-    "We go through the indices,
+    "We go through the dimensions,
      removing the constant ones and adding them to the running sum,
      and keeping the non-constant ones as they are.
-     We return the final sum and the non-constant indices;
+     We return the final sum and the non-constant dimensions;
      the latter are in the same order as in the original list."))
-  (b* (((when (endp indices)) (mv 0 nil))
-       (index (car indices))
-       ((mv sum new-indices) (factor-consts-in-add-indices (cdr indices))))
-    (if (index-case index :const)
-        (mv (+ (index-const->value index) sum) new-indices)
-      (mv sum (cons (index-fix index) new-indices))))
+  (b* (((when (endp dims)) (mv 0 nil))
+       (dim (car dims))
+       ((mv sum new-dims) (factor-consts-in-add-dims (cdr dims))))
+    (if (dim-case dim :const)
+        (mv (+ (dim-const->value dim) sum) new-dims)
+      (mv sum (cons (dim-fix dim) new-dims))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define normalize-add-indices ((indices index-listp))
-  :returns (new-indices index-listp)
-  :short "Normalize the indices of an addition index."
+(define normalize-add-dims ((dims dim-listp))
+  :returns (new-dims dim-listp)
+  :short "Normalize the dimensions of an addition dimension."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is defined on arbitrary lists of indices,
-     but it is intended for use on
-     the indices of well-formed additions according to the typing rules,
-     after all additions have been flattened via @(tsee flatten-add-in-indices).
+    "This is defined on arbitrary lists of dimensions,
+     but it is intended for use
+     after all additions have been flattened via @(tsee flatten-add-in-dims).
      Under these conditions,
-     the indices passed to this function
+     the dimensions passed to this function
      consist of only constants and variables,
-     without nested additions because of the flattening,
-     and without shapes and concatenations because of the well-formedness.
+     without nested additions because of the flattening.
      We factor the constants, we sort the variables,
      and we add a constant for the sum if it is not 0."))
-  (b* (((mv sum indices) (factor-consts-in-add-indices indices))
-       (indices (sort-indices indices)))
+  (b* (((mv sum dims) (factor-consts-in-add-dims dims))
+       (dims (sort-dims dims)))
     (if (> sum 0)
-        (cons (index-const sum) indices)
-      indices)))
+        (cons (dim-const sum) dims)
+      dims)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines normalize-add-in-indices
-  :short "Normalize additions in an index or list of indices."
+(define normalize-add-in-dim ((dim dimp))
+  :returns (new-dim dimp)
+  :short "Normalize additions in a dimension."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We normalize the indices of all the additions;
-     see @(tsee normalize-add-indices).
+    "This is intended for use
+     after all additions have been flattened via @(tsee flatten-add-in-dims).
+     We use @(tsee normalize-add-dims)
+     to normalize the dimensions of all the additions.
      We also replace empty additions with 0,
      and singleton additions with their only element."))
+  (dim-case
+   dim
+   :var (dim-var dim.name)
+   :const (dim-const dim.value)
+   :add (b* ((dims (normalize-add-dims dim.dims))
+             ((when (endp dims)) (dim-const 0)) ; no dimensions
+             ((when (endp (cdr dims))) (car dims))) ; one dimension
+          (dim-add dims)))) ; two or more dimensions
 
-  (define normalize-add-in-index ((index indexp))
-    :returns (new-index indexp)
-    :parents (index-equivalence normalize-add-in-indices)
-    :short "Normalize additions in an index."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "For an addition index,
-       we can avoid the recursive call of @(tsee normalize-add-in-index-list)
-       because we always operate on well-formed indices after flattening,
-       and thus the only components of an addition index
-       are variable and constant indices."))
-    (index-case
-     index
-     :var (index-var index.name)
-     :const (index-const index.value)
-     :shape (index-shape (normalize-add-in-index-list index.indices))
-     :add (b* ((indices (normalize-add-indices index.indices))
-               ((when (endp indices)) (index-const 0)) ; no indices
-               ((when (endp (cdr indices))) (car indices))) ; one index
-            (index-add indices)) ; two or more
-     :append (index-append (normalize-add-in-index-list index.indices)))
-    :measure (index-count index))
+;;;;;;;;;;;;;;;;;;;;
 
-  (define normalize-add-in-index-list ((indices index-listp))
-    :returns (new-indices index-listp)
-    :parents (index-equivalence normalize-add-in-indices)
-    :short "Normalize additions in a list of indices."
-    (cond ((endp indices) nil)
-          (t (cons (normalize-add-in-index (car indices))
-                   (normalize-add-in-index-list (cdr indices)))))
-    :measure (index-list-count indices))
+(define normalize-add-in-dim-list ((dims dim-listp))
+  :returns (new-dims dim-listp)
+  :short "Normalize additions in a list of dimensions."
+  (cond ((endp dims) nil)
+        (t (cons (normalize-add-in-dim (car dims))
+                 (normalize-add-in-dim-list (cdr dims))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define normalize-dim ((dim dimp))
+  :returns (new-dim dimp)
+  :short "Normalize a dimension."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We flatten and normalize all the additions."))
+  (normalize-add-in-dim (flatten-add-in-dim dim)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define normalize-dim-list ((dims dim-listp))
+  :returns (new-dims dim-listp)
+  :short "Normalize a list of dimensions."
+  (cond ((endp dims) nil)
+        (t (cons (normalize-dim (car dims))
+                 (normalize-dim-list (cdr dims))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines normalize-dims-in-shapes
+  :short "Normalize dimensions in shapes and lists of shapes."
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define normalize-dims-in-shape ((shape shapep))
+    :returns (new-shape shapep)
+    :parents (index-equivalence normalize-dims-in-shapes)
+    :short "Normalize dimensions in a shape."
+    (shape-case
+     shape
+     :var (shape-var shape.name)
+     :dim (shape-dim (normalize-dim shape.dim))
+     :dims (shape-dims (normalize-dim-list shape.dims))
+     :append (shape-append (normalize-dims-in-shape-list shape.shapes))
+     :splice (shape-splice (normalize-dims-in-shape-list shape.shapes)))
+    :measure (shape-count shape))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define normalize-dims-in-shape-list ((shapes shape-listp))
+    :returns (new-shapes shape-listp)
+    :parents (index-equivalence normalize-dims-in-shapes)
+    :short "Normalize dimensions in a list of shapes."
+    (cond ((endp shapes) nil)
+          (t (cons (normalize-dims-in-shape (car shapes))
+                   (normalize-dims-in-shape-list (cdr shapes)))))
+    :measure (shape-list-count shapes))
+
+  ;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv-mutual normalize-add-in-indices))
+  (fty::deffixequiv-mutual normalize-dims-in-shapes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define singleton-shapes ((indices index-listp))
-  :returns (new-indices index-listp)
-  :short "Wrap all the indices in a list into singleton shape indices."
+(defines normalize-shapes-single-in-shapes
+  :short "Normalize shapes to single dimensions in a shape or list of shapes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Each shape index with multiple indices
-     must be turned into a concatenation of singleton shapes,
-     e.g. @('(shape 2 d)') must be turned into @('(++ (shape 2) (shape d))').
-     This function is called on the indices of the original shape index,
-     and returns a list of wrapped singleton shapes."))
-  (cond ((endp indices) nil)
-        (t (cons (index-shape (list (car indices)))
-                 (singleton-shapes (cdr indices))))))
+    "We decompose shapes into concatenations of single-dimension shapes;
+     that is, we eliminate @(':dims') shapes
+     in favor of concatenations of @(':dim') shapes.
+     If a @(':dims') shape has no dimensions,
+     we turn it into the empty concatenation.
+     If a @(':dims') shape has one dimension,
+     we convert it to a @(':dim') shape with that dimension.
+     If a @(':dims') shape has two or more dimensions,
+     we turn it into a concatenation of @(':dim') shapes,
+     each of which contains one of the dimensions."))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;
 
-(defines normalize-shape-in-indices
-  :short "Normalize shapes in an index or list of indices."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We decompose shapes into concatenations of singleton shapes;
-     see @(tsee singleton-shapes).
-     If a shape has no dimensions,
-     we turn it into the empty concatenation,
-     to make it amenable to eventual elimination
-     when part of a larger concatenation.
-     If a shape is already a singleton, it is left unchanged.
-     If a shape has two or more dimensions,
-     it is turned into a concatenation of singletons."))
+  (define normalize-shapes-single-in-shape ((shape shapep))
+    :returns (new-shape shapep)
+    :parents (index-equivalence normalize-shapes-single-in-shapes)
+    :short "Normalize shapes to single dimensions in a shape."
+    (shape-case
+     shape
+     :var (shape-var shape.name)
+     :dim (shape-dim shape.dim)
+     :dims (cond ((endp shape.dims) ; no dimensions
+                  (shape-append nil))
+                 ((endp (cdr shape.dims)) ; one dimension
+                  (shape-dim (car shape.dims)))
+                 (t ; two or more dimensions
+                  (shape-append (shape-dim-list shape.dims))))
+     :append (shape-append
+              (normalize-shapes-single-in-shape-list shape.shapes))
+     :splice (shape-splice
+              (normalize-shapes-single-in-shape-list shape.shapes)))
+    :measure (shape-count shape))
 
-  (define normalize-shape-in-index ((index indexp))
-    :returns (new-index indexp)
-    :parents (index-equivalence normalize-shape-in-indices)
-    :short "Normalize shapes in an index."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Since well-formed shape and addition indices
-       can only contain dimension indices,
-       and not shape indices,
-       we can avoid the recursive call of @(tsee normalize-shape-in-index-list)
-       on the indices of a shape or addition index."))
-    (index-case
-     index
-     :var (index-var index.name)
-     :const (index-const index.value)
-     :shape (if (and (consp index.indices)
-                     (endp (cdr index.indices)))
-                (index-shape index.indices)
-              (index-append (singleton-shapes index.indices)))
-     :add (index-add index.indices)
-     :append (index-append (normalize-shape-in-index-list index.indices)))
-    :measure (index-count index))
+  ;;;;;;;;;;;;;;;;;;;;
 
-  (define normalize-shape-in-index-list ((indices index-listp))
-    :returns (new-indices index-listp)
-    :parents (index-equivalence normalize-shape-in-indices)
-    :short "Normalize shapes in a list of indices."
-    (cond ((endp indices) nil)
-          (t (cons (normalize-shape-in-index (car indices))
-                   (normalize-shape-in-index-list (cdr indices)))))
-    :measure (index-list-count indices))
+  (define normalize-shapes-single-in-shape-list ((shapes shape-listp))
+    :returns (new-shapes shape-listp)
+    :parents (index-equivalence normalize-shapes-single-in-shapes)
+    :short "Normalize shapes to single dimensions in a list of shapes."
+    (cond ((endp shapes) nil)
+          (t (cons (normalize-shapes-single-in-shape (car shapes))
+                   (normalize-shapes-single-in-shape-list (cdr shapes)))))
+    :measure (shape-list-count shapes))
+
+  ;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv-mutual normalize-shape-in-indices))
+  (fty::deffixequiv-mutual normalize-shapes-single-in-shapes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines flatten-append-in-indices
-  :short "Flatten all the nested concatenations in an index or list of indices."
+(defines flatten-append-in-shapes
+  :short "Flatten all the nested concatenations in a shape or list of shapes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee flatten-add-in-indices),
-     but for concatenations instead of additions.
-     See the documentation of those functions.")
+    "This is partly analogous to @(tsee flatten-add-in-dims),
+     but for shape concatenations instead of dimension additions;
+     see the documentation of those functions.
+     But while we flatten the concatenations,
+     we also turn variables and shapes with dimensions
+     into singleton concatenations,
+     and we also turn splices into concatenations
+     (as noted in @(tsee shape), splices and concatenations are equivalent).")
    (xdoc::p
-    "This is defined on all possible indices,
-     but it is intended for use after normalizing shapes,
+    "This is defined on all possible shapes,
+     but it is intended for use after normalizing shapes to single dimensions
+     via @(tsee normalize-shapes-single-in-shapes),
      which may produce concatenations.")
    (xdoc::p
     "The flattening of concatenations also has the effect of
      eliminating empty sub-concatenations used in super-concatenations,
-     e.g. @('(++ i (++ j k) (++) l)') results in @('(++ i j k l)').")
-   (xdoc::p
-    "We replace singleton concatenations with their only index,
-     similarly to how we replace, in @(tsee normalize-add-in-index),
-     singleton additions with their only index.
-     But we leave empty concatenations as they are,
-     because we do not have other ways to denote them,
-     unlike the use of 0 for empty additions
-     in @(tsee normalize-add-in-index)."))
+     e.g. @('(++ i (++ j k) (++) l)') results in @('(++ i j k l)')."))
 
-  (define flatten-append-in-index ((index indexp))
-    :returns (new-index indexp)
-    :parents (index-equivalence flatten-append-in-indices)
-    :short "Flatten all the nested concatenations in an index."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "In well-formed indices according to the typing rules,
-       an addition or shape index cannot contain any concatenations.
-       However, this function works on every index, not just well-formed ones.
-       We just uniformly flatten all the nested concatenations."))
-    (index-case
-     index
-     :var (index-var index.name)
-     :const (index-const index.value)
-     :add (index-add (flatten-append-in-index-list index.indices nil))
-     :shape (index-shape (flatten-append-in-index-list index.indices nil))
-     :append (b* ((indices (flatten-append-in-index-list index.indices t))
-                  ((when (and (consp indices) (endp (cdr indices)))) ; one index
-                   (car indices))) ; just keep the index
-               (index-append indices)))
-    :measure (index-count index))
+  ;;;;;;;;;;;;;;;;;;;;
 
-  (define flatten-append-in-index-list ((indices index-listp)
-                                        (appendp booleanp))
-    :returns (new-indices index-listp)
-    :parents (index-equivalence flatten-append-in-indices)
-    :short "Flatten all the nested concatenations in a list of indices,
+  (define flatten-append-in-shape ((shape shapep))
+    :returns (new-shape shapep)
+    :parents (shape-equivalence flatten-append-in-shapes)
+    :short "Flatten all the nested concatenations in a shape."
+    (shape-case
+     shape
+     :var (shape-append (list (shape-var shape.name)))
+     :dim (shape-append (list (shape-dim shape.dim)))
+     :dims (shape-append (list (shape-dims shape.dims)))
+     :append (shape-append (flatten-append-in-shape-list shape.shapes t))
+     :splice (shape-append (flatten-append-in-shape-list shape.shapes t)))
+    :measure (shape-count shape))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define flatten-append-in-shape-list ((shapes shape-listp) (appendp booleanp))
+    :returns (new-shapes shape-listp)
+    :parents (shape-equivalence flatten-append-in-shapes)
+    :short "Flatten all the nested concatenations in a list of shapes,
             further flattening the resulting list if part of a concatenation."
     :long
     (xdoc::topstring
      (xdoc::p
       "The flag @('appendp') is analogous to
-       @('addp') in @(tsee flatten-add-in-index-list).
-       It is @('t') exactly when the indices are
-       the components of a concatenation."))
-    (b* (((when (endp indices)) nil)
-         (new-index (flatten-append-in-index (car indices)))
-         (new-indices (flatten-append-in-index-list (cdr indices) appendp)))
+       @('addp') in @(tsee flatten-add-in-dim-list).
+       It is @('t') exactly when the shapes are
+       the components of a concatenation (or splice)."))
+    (b* (((when (endp shapes)) nil)
+         (new-shape (flatten-append-in-shape (car shapes)))
+         (new-shapes (flatten-append-in-shape-list (cdr shapes) appendp)))
       (if (and appendp
-               (index-case new-index :append))
-          (append (index-append->indices new-index) new-indices)
-        (cons new-index new-indices)))
-    :measure (index-list-count indices))
+               (shape-case new-shape :append))
+          (append (shape-append->shapes new-shape) new-shapes)
+        (cons new-shape new-shapes)))
+    :measure (shape-list-count shapes))
+
+  ;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv-mutual flatten-append-in-indices))
+  (fty::deffixequiv-mutual flatten-append-in-shapes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define normalize-index ((index indexp))
-  :returns (new-index indexp)
-  :short "Normalize an index."
+(define normalize-shape ((shape shapep))
+  :returns (new-shape shapep)
+  :short "Normalize a shape."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This defines the normalization of indices
-     that we make to check their semantic equivalence,
-     which in turn is used to check type equivalence.")
-   (xdoc::p
-    "We flatten and normalize all the additions.
-     We normalize all the shapes.
-     We flatten all the concatenations.")
-   (xdoc::p
-    "We need to prove that this does in fact normalize,
-     in the sense that all and only the semantically equivalent indices
-     normalize to the same form."))
-  (b* ((index (flatten-add-in-index index))
-       (index (normalize-add-in-index index))
-       (index (normalize-shape-in-index index))
-       (index (flatten-append-in-index index)))
-    index))
+    "We normalize its dimensions,
+     then we normalize shapes to have single dimensions,
+     and finally we flatten all concatenations."))
+  (b* ((shape (normalize-dims-in-shape shape))
+       (shape (normalize-shapes-single-in-shape shape))
+       (shape (flatten-append-in-shape shape)))
+    shape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define index-equivp ((index1 indexp) (index2 indexp))
+(define shape-equivp ((shape1 shapep) (shape2 shapep))
   :returns (yes/no booleanp)
-  :short "Check if two indices are equivalent."
+  :short "Check if two shapes are equivalent."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the case iff they normalize to the same index."))
-  (equal (normalize-index index1)
-         (normalize-index index2)))
+    "This is the case iff they normalize to the same shape."))
+  (equal (normalize-shape shape1)
+         (normalize-shape shape2)))

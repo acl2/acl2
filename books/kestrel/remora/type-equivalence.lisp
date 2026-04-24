@@ -10,14 +10,21 @@
 
 (in-package "REMORA")
 
-(include-book "index-equivalence")
 (include-book "abstract-syntax-variable-operations")
+(include-book "index-equivalence")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (in-theory
+  (enable
+   stringstringmap-pairp-when-stringstringmap-pair-resultp-and-not-reserrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,25 +53,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-index-param-renaming ((params1 index-param-listp)
+                                    (params2 index-param-listp))
+  :returns (dim-and-shape-maps stringstringmap-pair-resultp)
+  :short "Check if two lists of index parameters match in number and sorts,
+          and if so return maps between the dimension and shape variables."
+  (b* (((when (endp params1))
+        (if (endp params2)
+            (make-stringstringmap-pair :1st nil :2nd nil)
+          (reserr nil)))
+       ((when (endp params2)) (reserr nil))
+       ((ok (stringstringmap-pair maps))
+        (check-index-param-renaming (cdr params1) (cdr params2)))
+       (param1 (car params1))
+       (param2 (car params2)))
+    (index-param-case
+     param1
+     :dim (index-param-case
+           param2
+           :dim (make-stringstringmap-pair
+                 :1st (omap::update param1.name param2.name maps.1st)
+                 :2nd maps.2nd)
+           :shape (reserr nil))
+     :shape (index-param-case
+             param2
+             :dim (reserr nil)
+             :shape (make-stringstringmap-pair
+                     :1st maps.1st
+                     :2nd (omap::update param1.name param2.name maps.2nd)))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines types-renamep
   :short "Check if two types or lists or types are the same modulo renaming."
   :long
   (xdoc::topstring
    (xdoc::p
-    "There are two independent renamings:
-     one for index variables, and one for type variables.
+    "There are three independent renamings:
+     one for dimension variables,
+     one for shape variables,
+     and one for type variables.
      These are modeled as maps from strings to strings,
      which should be injective
      in well-formed types according to inference rules;
      we may explicate injectivity as guards and invariants at some point.
-     The two renaming maps contain all the variables in scope;
+     The three renaming maps contain all the variables in scope;
      we should explicate this invariant at some point;
      some variables may be associated to themselves (i.e. not renamed)
      in the renaming maps."))
 
   (define type-renamep ((type1 typep)
                         (type2 typep)
-                        (index-renaming string-string-mapp)
+                        (dim-renaming string-string-mapp)
+                        (shape-renaming string-string-mapp)
                         (type-renaming string-string-mapp))
     :returns (yes/no booleanp)
     :parents (type-equivalence types-renamep)
@@ -72,7 +114,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The two types must be in the same category:
+      "The two types must be in the same fixtype summand:
        two variables, or two base types, etc.")
      (xdoc::p
       "In the case of two variables,
@@ -85,11 +127,12 @@
      (xdoc::p
       "In the case of two array types,
        we recursively check the equality modulo renaming of the atom types.
-       For the indices,
-       first we apply the index variable renaming to the first index,
-       and then we check equivalence with the second index.
-       Index equivalence is defined not modulo renaming,
-       so we must apply the renaming prior to checking equivalence.")
+       For the shapes,
+       first we apply the dimension and shape variable renaming
+       to the first shape,
+       and then we check equivalence with the second shape.
+       Shape equivalence is defined not modulo renaming,
+       so we must apply the renaming prior to checking shape equivalence.")
      (xdoc::p
       "In the case of two function types,
        we recursively check the equality modulo renaming
@@ -106,9 +149,11 @@
        modulo the updated renamings.")
      (xdoc::p
       "In the case of two product types or two sum types,
-       we check that they have the same number of bound variables,
-       and we form a map between their bound variables,
-       with which we update the existing index variable renaming map;
+       we use a separate function to check that
+       they have the same number and sorte of bound variables,
+       forming two maps between their bound variables,
+       one for dimension variables and one for shape variables,
+       with which we update the existing variable renaming maps;
        this update may overwrite some previous associations,
        in line with the fact that the bound variables
        may hide outer variables.
@@ -130,22 +175,26 @@
              type2
              :array (and (type-renamep type1.type
                                        type2.type
-                                       index-renaming
+                                       dim-renaming
+                                       shape-renaming
                                        type-renaming)
-                         (b* ((renamed-index1
-                               (rename-vars-in-index type1.index
-                                                     index-renaming)))
-                           (index-equivp renamed-index1 type2.index)))
+                         (b* ((renamed-shape1
+                               (rename-vars-in-shape type1.shape
+                                                     dim-renaming
+                                                     shape-renaming)))
+                           (shape-equivp renamed-shape1 type2.shape)))
              :otherwise nil)
      :fun (type-case
            type2
            :fun (and (type-list-renamep type1.in
                                         type2.in
-                                        index-renaming
+                                        dim-renaming
+                                        shape-renaming
                                         type-renaming)
                      (type-renamep type1.out
                                    type2.out
-                                   index-renaming
+                                   dim-renaming
+                                   shape-renaming
                                    type-renaming))
            :otherwise nil)
      :forall (type-case
@@ -160,44 +209,53 @@
                                   (string-string-map-fix type-renaming))))
                              (type-renamep type1.type
                                            type2.type
-                                           index-renaming
+                                           dim-renaming
+                                           shape-renaming
                                            type-renaming)))
               :otherwise nil)
      :pi (type-case
           type2
-          :pi (and (equal (len type1.vars) (len type2.vars))
-                   (b* ((bound-map (omap::from-lists
-                                    (sorted-var-list->var type1.vars)
-                                    (sorted-var-list->var type2.vars)))
-                        (index-renaming
-                         (omap::update*
-                          bound-map
-                          (string-string-map-fix index-renaming))))
-                     (type-renamep type1.type
-                                   type2.type
-                                   index-renaming
-                                   type-renaming)))
+          :pi (b* ((maps (check-index-param-renaming type1.params
+                                                     type2.params))
+                   ((when (reserrp maps)) nil)
+                   ((stringstringmap-pair maps) maps)
+                   (dim-renaming (omap::update*
+                                  maps.1st
+                                  (string-string-map-fix dim-renaming)))
+                   (shape-renaming (omap::update*
+                                    maps.2nd
+                                    (string-string-map-fix shape-renaming))))
+                (type-renamep type1.type
+                              type2.type
+                              dim-renaming
+                              shape-renaming
+                              type-renaming))
           :otherwise nil)
      :sigma (type-case
              type2
-             :sigma (and (equal (len type1.vars) (len type2.vars))
-                         (b* ((bound-map (omap::from-lists
-                                          (sorted-var-list->var type1.vars)
-                                          (sorted-var-list->var type2.vars)))
-                              (index-renaming
-                               (omap::update*
-                                bound-map
-                                (string-string-map-fix index-renaming))))
-                           (type-renamep type1.type
-                                         type2.type
-                                         index-renaming
-                                         type-renaming)))
+             :sigma (b* ((maps (check-index-param-renaming type1.params
+                                                           type2.params))
+                         ((when (reserrp maps)) nil)
+                         ((stringstringmap-pair maps) maps)
+                         (dim-renaming (omap::update*
+                                        maps.1st
+                                        (string-string-map-fix dim-renaming)))
+                         (shape-renaming (omap::update*
+                                          maps.2nd
+                                          (string-string-map-fix
+                                           shape-renaming))))
+                      (type-renamep type1.type
+                                    type2.type
+                                    dim-renaming
+                                    shape-renaming
+                                    type-renaming))
              :otherwise nil))
     :measure (+ (type-count type1) (type-count type2)))
 
   (define type-list-renamep ((types1 type-listp)
                              (types2 type-listp)
-                             (index-renaming string-string-mapp)
+                             (dim-renaming string-string-mapp)
+                             (shape-renaming string-string-mapp)
                              (type-renaming string-string-mapp))
     :returns (yes/no booleanp)
     :parents (type-equivalence types-renamep)
@@ -208,18 +266,21 @@
              (consp types2)
              (type-renamep (car types1)
                            (car types2)
-                           index-renaming
+                           dim-renaming
+                           shape-renaming
                            type-renaming)
              (type-list-renamep (cdr types1)
                                 (cdr types2)
-                                index-renaming
+                                dim-renaming
+                                shape-renaming
                                 type-renaming)))
     :measure (+ (type-list-count types1) (type-list-count types2))
 
     ///
 
     (defrule same-len-when-type-list-renamep
-      (implies (type-list-renamep types1 types2 index-renaming type-renaming)
+      (implies (type-list-renamep
+                types1 types2 dim-renaming shape-renaming type-renaming)
                (equal (len types1) (len types2)))
       :rule-classes :forward-chaining
       :hints (("Goal"
@@ -239,7 +300,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the case when they are equal modulo no renamings."))
-  (type-renamep type1 type2 nil nil))
+  (type-renamep type1 type2 nil nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -250,7 +311,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the case when they are equal modulo no renamings."))
-  (type-list-renamep types1 types2 nil nil)
+  (type-list-renamep types1 types2 nil nil nil)
 
   ///
 

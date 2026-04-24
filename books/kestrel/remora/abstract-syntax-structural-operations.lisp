@@ -29,25 +29,25 @@
    (xdoc::p
     "These are purely structural operations,
      e.g. lifting from elements to lists.
-     They could be probably generated from the fixtype definitions."))
+     At least some of these could be generated from the fixtype definitions."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist sort-list-dimp (x)
-  :guard (sort-listp x)
-  :short "Check if all the sorts in a list are @(':dim')."
-  (sort-case x :dim))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist sort-list-shapep (x)
-  :guard (sort-listp x)
-  :short "Check if all the sorts in a list are @(':shape')."
-  (sort-case x :shape))
+(std::defprojection dim-const-list ((x nat-listp))
+  :returns (dims dim-listp)
+  :short "Lift @(tsee dim-const) to lists."
+  (dim-const x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection shape-dim-list ((x dim-listp))
+  :returns (shapes shape-listp)
+  :short "Lift @(tsee shape-dim) to lists."
+  (shape-dim x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist kind-list-arrayp (x)
   :guard (kind-listp x)
@@ -62,27 +62,6 @@
   (kind-case x :atom))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection index-const-list ((x nat-listp))
-  :returns (indices index-listp)
-  :short "Lift @(tsee index-const) to lists."
-  (index-const x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection sorted-var-list->var ((x sorted-var-listp))
-  :returns (strings string-listp)
-  :short "Lift @(tsee sorted-var->var) to lists."
-  (sorted-var->var x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection sorted-var-list->sort ((x sorted-var-listp))
-  :returns (sorts sort-listp)
-  :short "Lift @(tsee sorted-var->sort) to lists."
-  (sorted-var->sort x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection kinded-var-list->var ((x kinded-var-listp))
   :returns (strings string-listp)
@@ -112,6 +91,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection type+shape-list->type ((x type+shape-listp))
+  :returns (types type-listp)
+  :short "Lift @(tsee type+shape->type) to lists."
+  (type+shape->type x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type+shape-list->shape ((x type+shape-listp))
+  :returns (indices shape-listp)
+  :short "Lift @(tsee type+shape->shape) to lists."
+  (type+shape->shape x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection type+index-list->type ((x type+index-listp))
   :returns (types type-listp)
   :short "Lift @(tsee type+index->type) to lists."
@@ -123,3 +116,24 @@
   :returns (indices index-listp)
   :short "Lift @(tsee type+index->index) to lists."
   (type+index->index x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define index-param->name ((param index-paramp))
+  :returns (name stringp)
+  :short "Name of an index parameter."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Both summands have a string field,
+     which is the name of the variable."))
+  (index-param-case param
+                    :dim param.name
+                    :shape param.name))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection index-param-list->name ((x index-param-listp))
+  :returns (names string-listp)
+  :short "Lift @(tsee index-param->name) to lists."
+  (index-param->name x))
