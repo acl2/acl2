@@ -286,7 +286,3 @@
      is auto-coerced to a type."))
   `(type-sigma (list ,@(index-param-terms-from-strings params))
                ,(type-var/base/other type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; TODO: constructors for expressions and atoms
