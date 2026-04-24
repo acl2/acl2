@@ -1133,6 +1133,10 @@ void foo () {
 ")
 
 (test-valid
+  "unsigned char hello_world[] = \"Hello World!\";
+")
+
+(test-valid
   "struct s { int x; };
    struct s arr[10] = {[0] = {.x = 1}, [1] = {.x = 2}};
 ")
@@ -1593,4 +1597,58 @@ void main(void) {
 };
 
 struct foo bar;
+")
+
+(test-valid
+  "char str[32] = { \"hello\" };
+")
+
+(test-valid
+  "struct foo_s {
+  float x;
+  int : 5;
+  float y;
+} foo = { 0.0, 1.0 };
+")
+
+(test-valid
+  "struct foo_s { int x; };
+
+void f(void) {
+  struct foo_s foo;
+  struct bar_s {
+    float x;
+    int : 5;
+    struct foo_s y;
+  } bar = { 0.0, foo };
+}
+")
+
+(test-valid
+  "char f(void) {
+  return (char []){\"bar\"}[0];
+}
+")
+
+(test-valid
+  "int x;
+
+void f(void) {
+  x = (int){42};
+}
+")
+
+(test-valid
+  "struct foo_s { int x; };
+
+struct bar_s {
+  float x;
+  int : 5;
+  struct foo_s y;
+};
+
+int f(void) {
+  struct foo_s foo;
+  return (struct bar_s){ 0.0, foo }.y.x;
+}
 ")
