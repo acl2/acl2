@@ -1652,3 +1652,90 @@ int f(void) {
   return (struct bar_s){ 0.0, foo }.y.x;
 }
 ")
+
+;; The anonymous struct in this example is in fact undefined behavior.
+;; We allow it here, treating it as an unnamed member.
+;; GCC and Clang both choose to reject the program.
+(test-valid
+  "struct foo_s { int x; };
+
+struct bar_s {
+  float x;
+  struct {
+    int : 5;
+    int : 3;
+  };
+  struct foo_s y;
+};
+
+int f(void) {
+  struct foo_s foo;
+  return (struct bar_s){ 0.0, foo }.y.x;
+}
+")
+
+;; Struct with two scalar members, undesignated list initializer.
+(test-valid
+  "struct s { int x; int y; } a = { 1, 2 };
+")
+
+;; Union initialized via its first member (no designator).
+(test-valid
+  "union u { int x; float y; } a = { 42 };
+")
+
+;; Union initialized via a named member designator.
+(test-valid
+  "union u { int x; float y; } a = { .y = 3.14f };
+")
+
+;; Flat list init of an array of structs (implicit subobject traversal).
+(test-valid
+  "struct s { int x; int y; };
+struct s arr[2] = { 1, 2, 3, 4 };
+")
+
+;; Static-storage local variable initialized with a list.
+(test-valid
+  "void f(void) {
+  static int a[2] = { 1, 2 };
+}
+")
+
+;; Designator names a field that does not exist in the struct.
+(test-valid-fail
+  "struct s { int x; } a = { .y = 42 };
+")
+
+;; Scalar initialized with a list containing more than one element.
+(test-valid-fail
+  "int x = { 1, 2 };
+")
+
+;; Struct with one member initialized with a two-element list.
+(test-valid-fail
+  "struct s { int x; } a = { 1, 2 };
+")
+
+;; Struct with two members initialized with a one-element list.
+(test-valid
+  "struct s { int x; int y; } a = { 1 };
+")
+
+;; File-scope struct variable initialized from another struct object
+;; (requires auto storage duration, but file scope is static).
+(test-valid-fail
+  "struct s { int x; };
+struct s g;
+struct s h = g;
+")
+
+;; Static-local struct initialized from a struct object
+;; (same constraint as above).
+(test-valid-fail
+  "struct s { int x; };
+void f(void) {
+  struct s a;
+  static struct s b = a;
+}
+")
