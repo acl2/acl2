@@ -67,21 +67,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult index-result
-  :short "Fixtype of indices and errors."
-  :ok index
-  :pred index-resultp
-  :prepwork ((local (in-theory (enable index-kind)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult index-list-result
-  :short "Fixtype of (i) lists of kindices and (ii) errors."
-  :ok index-list
-  :pred index-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defresult type-result
   :short "Fixtype of types and errors."
   :ok type
@@ -117,24 +102,6 @@
   :key-type string
   :val-type shape
   :pred string-shape-mapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defomap string-index-map
-  :short "Fixtype of maps from strings to indices."
-  :key-type string
-  :val-type index
-  :pred string-index-mapp
-
-  ///
-
-  (defrule string-index-mapp-of-from-lists
-    (implies (and (string-listp strings)
-                  (index-listp indices)
-                  (equal (len indices) (len strings)))
-             (string-index-mapp (omap::from-lists strings indices)))
-    :induct t
-    :enable (omap::from-lists string-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

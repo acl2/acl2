@@ -31,8 +31,6 @@
   (enable
    kindp-when-kind-resultp-and-not-reserrp
    kind-listp-when-kind-list-resultp-and-not-reserrp
-   indexp-when-index-resultp-and-not-reserrp
-   index-listp-when-index-list-resultp-and-not-reserrp
    typep-when-type-resultp-and-not-reserrp
    type-listp-when-type-list-resultp-and-not-reserrp
    type+shape-p-when-type+shape-resultp-and-not-reserrp
