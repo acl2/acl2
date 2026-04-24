@@ -46,8 +46,6 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
-(in-theory (disable take)) ; drop?
-
 ;; todo: consider putting back the stuff with finalcdr
 
 ;bozo had to enable take a lot to prove subrange rules - prove take rules first instead??
@@ -723,7 +721,7 @@
 ;;               (EQUAL Y (NTHCDR (LEN X) Z))))
 ;;   :hints (("Goal" :in-theory (enable LIST::EQUAL-APPEND-REDUCTION!))))
 
-(in-theory (disable len)) ;new
+;(in-theory (disable len)) ;new
 
 ;add to lists
 (defthm len-of-update-nth-last-val

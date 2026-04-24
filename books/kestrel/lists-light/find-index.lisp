@@ -1,6 +1,6 @@
 ; A tool to find the index of an element in a list
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 ;; occur in LST.  The latter case can be viewed as returning the index of the
 ;; item "one past" the end of the list.
 (defun find-index (item lst)
+  (declare (xargs :guard (true-listp lst)))
   (if (endp lst)
       0 ; item not found, so return the length of the list
     (if (equal item (car lst))

@@ -153,7 +153,7 @@
                   (nthcdr (+ n -1) (cdr l))))
   :hints (("Goal" :in-theory (enable nthcdr))))
 
-(theory-invariant (incompatible (:rewrite nthcdr-opener) (:rewrite |3-cdrs|)))
+(theory-invariant (incompatible (:rewrite nthcdr-opener) (:rewrite 3-cdrs)))
 
 ;rename?
 (defthmd nthcdr-of-+-opener
