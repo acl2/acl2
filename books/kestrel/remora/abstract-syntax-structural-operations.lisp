@@ -103,20 +103,6 @@
   :short "Lift @(tsee type+shape->shape) to lists."
   (type+shape->shape x))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection type+index-list->type ((x type+index-listp))
-  :returns (types type-listp)
-  :short "Lift @(tsee type+index->type) to lists."
-  (type+index->type x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection type+index-list->index ((x type+index-listp))
-  :returns (indices index-listp)
-  :short "Lift @(tsee type+index->index) to lists."
-  (type+index->index x))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define index-param->name ((param index-paramp))
