@@ -173,39 +173,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod type+index
-  :short "Fixtype of pairs consisting of a type and an index."
-  ((type type)
-   (index index))
-  :pred type+index-p)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult type+index-result
-  :short "Fixtype of (i) pairs consisting of a type and an index
-          and (ii) errors."
-  :ok type+index
-  :pred type+index-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist type+index-list
-  :short "Fixtype lists of pairs consisting of a type and an index."
-  :elt-type type+index
-  :true-listp t
-  :elementp-of-nil nil
-  :pred type+index-listp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult type+index-list-result
-  :short "Fixtype of (i) lists of pairs consisting of a type and an index
-          and (ii) errors."
-  :ok type+index-list
-  :pred type+index-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod typelist+type
   :short "Fixtype of pairs consisting of a list of types and a type."
   ((types type-list)

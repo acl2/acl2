@@ -35,8 +35,6 @@
    type-listp-when-type-list-resultp-and-not-reserrp
    type+shape-p-when-type+shape-resultp-and-not-reserrp
    type+shape-listp-when-type+shape-list-resultp-and-not-reserrp
-   type+index-p-when-type+index-resultp-and-not-reserrp
-   type+index-listp-when-type+index-list-resultp-and-not-reserrp
    typelist+type-p-when-typelist+type-resultp-and-not-reserrp
    kindedvarlist+type-p-when-kindedvarlist+type-resultp-and-not-reserrp
    shapep-when-shape-resultp-and-not-reserrp
