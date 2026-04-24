@@ -88,10 +88,7 @@
      (mv (nats1
           nat-list-resultp
           :hints
-          (("Goal"
-            :in-theory
-            (enable
-             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
+          (("Goal" :in-theory (enable acl2::nat-listp-when-result-not-error))))
          (rest-input nat-listp))
      :parents nil
      (b* (((when (endp nats)) (mv nil (nat-list-fix input)))
@@ -189,8 +186,8 @@
           (("Goal"
             :in-theory
             (enable
-             acl2::natp-when-nat-resultp-and-not-reserrp
-             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
+             acl2::natp-when-result-not-error
+             acl2::nat-listp-when-result-not-error))))
          (rest-input nat-listp))
      :parents nil
      (b* (((when (endp chars)) (mv nil (nat-list-fix input)))
@@ -253,11 +250,8 @@
      (mv (nats
           nat-list-resultp
           :hints
-          (("Goal"
-            :in-theory
-            (enable
-             acl2::natp-when-nat-resultp-and-not-reserrp
-             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
+          (("Goal" :in-theory (enable acl2::natp-when-result-not-error
+                                      acl2::nat-listp-when-result-not-error))))
          (rest-input nat-listp))
      :parents nil
      (b* (((when (endp chars)) (mv nil (nat-list-fix input)))
