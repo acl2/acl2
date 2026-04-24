@@ -26,22 +26,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local
- (in-theory
-  (enable
-   kindp-when-kind-resultp-and-not-reserrp
-   kind-listp-when-kind-list-resultp-and-not-reserrp
-   shapep-when-shape-resultp-and-not-reserrp
-   shape-listp-when-shape-list-resultp-and-not-reserrp
-   typep-when-type-resultp-and-not-reserrp
-   type-listp-when-type-list-resultp-and-not-reserrp
-   stringstringmap-pairp-when-stringstringmap-pair-resultp-and-not-reserrp
-   type+shape-p-when-type+shape-resultp-and-not-reserrp
-   type+shape-listp-when-type+shape-list-resultp-and-not-reserrp
-   typelist+type-p-when-typelist+type-resultp-and-not-reserrp
-   indexparamlist+type-p-when-indexparamlist+type-resultp-and-not-reserrp
-   kindedvarlist+type-p-when-kindedvarlist+type-resultp-and-not-reserrp
-   stringdimmap+stringshapemap-p-when-stringdimmap+stringshapemap-resultp-and-not-reserrp)))
+(local (in-theory (enable kindp-when-result-not-error
+                          kind-listp-when-result-not-error
+                          shapep-when-result-not-error
+                          shape-listp-when-result-not-error
+                          typep-when-result-not-error
+                          type-listp-when-result-not-error
+                          stringstringmap-pairp-when-result-not-error
+                          type+shape-p-when-result-not-error
+                          type+shape-listp-when-result-not-error
+                          typelist+type-p-when-result-not-error
+                          indexparamlist+type-p-when-result-not-error
+                          kindedvarlist+type-p-when-result-not-error
+                          stringdimmap+stringshapemap-p-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

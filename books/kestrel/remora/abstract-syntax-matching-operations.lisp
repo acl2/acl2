@@ -18,10 +18,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local
- (in-theory
-  (enable type+shape-p-when-type+shape-resultp-and-not-reserrp
-          type+shape-listp-when-type+shape-list-resultp-and-not-reserrp)))
+(local (in-theory (enable type+shape-p-when-result-not-error
+                          type+shape-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
