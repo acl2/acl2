@@ -18,7 +18,7 @@
 
 (defxdoc+ post-parsing
   :parents (remora)
-  :short "Post-parsing checks and convenience wrappers for the Remora parser."
+  :short "Post-parsing checks and functions for calling the Remora parser."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -139,7 +139,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; ---- Parser API ----
+;; ---- Parser Interface ----
 
 (define parse-program-from-bytes ((bytes nat-listp))
   :returns (tree abnf::tree-resultp)
