@@ -5,6 +5,9 @@
 ; Derived from src/Parser.hs, src/Syntax.hs, src/Shape.hs,
 ; and docs/language.rst
 ;
+; For reference see also "The Semantics of Rank Polymorphism"
+; https://arxiv.org/abs/1907.00509v1 (mentioned below as "the paper").
+;
 ; The input is assumed to be a sequence of valid Unicode characters
 ; not including surrogates, as represented by the natural numbers
 ; in ( %x00-D7FF / %xE000-10FFFF ).
@@ -62,9 +65,9 @@ app-exp         = exp *( ws exp )      ; [SC1]
 
 tapp-exp        = "t-app" ws exp *( ws type-exp )
 
-iapp-exp        = "i-app" ws exp *( ws extent )
+iapp-exp        = "i-app" ws exp *( ws index )
 
-unbox-exp       = "unbox" ws "(" ws *( extent-param ws )  ; [SC4]
+unbox-exp       = "unbox" ws "(" ws *( index-var ws )  ; [SC4]
                   identifier ws exp ws ")" ws exp
 
 let-exp         = "let" ws "(" *( ws bind ) ws ")" ws exp
@@ -74,7 +77,7 @@ at-app-exp      = "@" ws exp ws type-args ws idx-args *( ws exp )
 type-args       = "(" *( ws type-exp ) ws ")"
                 / "_"
 
-idx-args        = "(" *( ws extent ) ws ")"
+idx-args        = "(" *( ws index ) ws ")"
                 / "_"
 
 ; -------------------------------------------------------------------------
@@ -98,10 +101,10 @@ type-lambda     = ( "t-fn" / ( "t" %x03BB ) ) ws  ; t-fn or t<lambda>
                   exp
 
 index-lambda    = ( "i-fn" / ( "i" %x03BB ) ) ws  ; i-fn or i<lambda>
-                  "(" *( ws extent-param ) ws ")" ws
+                  "(" *( ws index-var ) ws ")" ws
                   exp
 
-box-expr        = "box" ws "(" *( ws extent ) ws ")" ws exp ws type-exp
+box-expr        = "box" ws "(" *( ws index ) ws ")" ws exp ws type-exp
 
 ; -------------------------------------------------------------------------
 ; Patterns (used in lambda parameters)
@@ -120,7 +123,7 @@ bind-body       = val-bind
                 / tfun-bind
                 / ifun-bind
                 / type-bind
-                / extent-bind
+                / index-bind
                 / at-fun-bind
 
 val-bind        = "val" ws identifier ws exp
@@ -133,12 +136,15 @@ tfun-bind       = "t-fun" ws "(" ws identifier ws
                   [ ws ":" ws type-exp ] ws ")" ws exp
 
 ifun-bind       = "i-fun" ws "(" ws identifier ws
-                  "(" *( ws extent-param ) ws ")"
+                  "(" *( ws index-var ) ws ")"
                   [ ws ":" ws type-exp ] ws ")" ws exp
 
 type-bind       = "type" ws type-param ws type-exp
 
-extent-bind     = "extent" ws extent-param ws extent
+index-bind     = "extent" ws index-var ws index
+                 ; NOTE: the surface keyword "extent" comes from the
+                 ; Haskell Remora parser. Everywhere else this
+                 ; concept is called "index".
 
 at-fun-bind     = "fun" ws "(" ws "@" ws identifier ws
                   type-params ws idx-params *( ws pat )
@@ -147,7 +153,7 @@ at-fun-bind     = "fun" ws "(" ws "@" ws identifier ws
 type-params     = "(" *( ws type-param ) ws ")"
                 / "_"
 
-idx-params      = "(" *( ws extent-param ) ws ")"
+idx-params      = "(" *( ws index-var ) ws ")"
                 / "_"
 
 ; -------------------------------------------------------------------------
@@ -165,7 +171,7 @@ array-type-var  = "*" identifier
 
 base-type       = "Bool" / "Int" / "Float"
 
-bracket-type    = "[" ws type-exp *( ws extent ) ws "]"
+bracket-type    = "[" ws type-exp *( ws index ) ws "]"
                   ; sugar for (A type shape)
 
 type-exp-paren  = array-type
@@ -183,10 +189,10 @@ forall-type     = ( "Forall" / %x2200 ) ws   ; Forall or <forall>
                   "(" *( ws type-param ) ws ")" ws type-exp
 
 pi-type         = ( "Pi" / %x03A0 ) ws        ; Pi or <Pi>
-                  "(" *( ws extent-param ) ws ")" ws type-exp
+                  "(" *( ws index-var ) ws ")" ws type-exp
 
 sigma-type      = ( "Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
-                  "(" *( ws extent-param ) ws ")" ws type-exp
+                  "(" *( ws index-var ) ws ")" ws type-exp
 
 ; -------------------------------------------------------------------------
 ; Type parameters
@@ -196,7 +202,7 @@ type-param      = "&" identifier     ; atom type parameter
                 / "*" identifier     ; array type parameter
 
 ; -------------------------------------------------------------------------
-; Dimensions, Shapes, Extents
+; Dimensions, Shapes, Indices
 ; -------------------------------------------------------------------------
 
 dim             = "$" identifier     ; dimension variable
@@ -210,7 +216,7 @@ dim-arith       = "+" *( ws dim )    ; addition
 shape           = "@" identifier     ; shape variable
                 / dim                ; a single dimension as a shape
                 / "(" ws shape-paren ws ")"
-                / "[" *( ws extent ) ws "]"   ; shape splice sugar
+                / "[" *( ws index ) ws "]"   ; shape splice sugar
 
 shape-paren     = "dims" *( ws dim )             ; (dims d1 d2 ...)
                 / "++" *( ws shape )             ; (++ s1 s2 ...)
@@ -218,10 +224,10 @@ shape-paren     = "dims" *( ws dim )             ; (dims d1 d2 ...)
 shape-lit       = "[" *( ws decimal ) ws "]"
                   ; concrete shape literal e.g. [2 3]
 
-extent          = dim                ; a dimension
-                / shape              ; a shape
+index           = dim                ; a dimension
+                / shape              ; a shape that is not a dimension [SC5]
 
-extent-param    = "$" identifier     ; dimension parameter
+index-var    = "$" identifier     ; dimension parameter
                 / "@" identifier     ; shape parameter
 
 ; -------------------------------------------------------------------------
@@ -465,16 +471,42 @@ HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
 ;   (App appears early), but this works because lId rejects keywords,
 ;   causing App to fail on keyword-headed forms.
 ;
-; [SC4] unbox-exp extent-param lookahead (tagged on: unbox-exp)
+; [SC4] unbox-exp index-var lookahead (tagged on: unbox-exp)
 ;
-;   In the Haskell parser for unbox-exp, each extent-param is guarded
-;   by notFollowedBy (symbol ")"), so that the last extent-param-like
-;   token preceding the closing paren is left for the mandatory
-;   "identifier" to match instead.  ABNF cannot express this one-token
-;   lookahead; the grammar uses a plain *( extent-param ws ) repetition.
-;
+
+;   In the Haskell parser for unbox-exp, each index-var (called
+;   extent-param there) is guarded by notFollowedBy (symbol ")"), so
+;   that the last index-var-like token preceding the closing paren is
+;   left for the mandatory "identifier" to match instead.  ABNF cannot
+;   express this one-token lookahead; the grammar uses a plain
+;   *( index-var ws ) repetition.
 ;   For well-formed input the two approaches produce identical parse
 ;   trees.  The difference is visible only in error messages for
 ;   malformed input.
 ;
+; [SC5] shape under index must not be a dim (tagged on: index)
+;
+;   In the index rule
+;       index = dim / shape
+;   the second alternative must not match a shape that was produced by
+;   the "dim" alternative of the shape rule.  That is, when shape is
+;   chosen, it must actually use one of shape's other alternatives:
+;   "@" identifier, "(" ws shape-paren ws ")", or the bracketed
+;   "[" *( ws index ) ws "]" form.
+;
+;   Without this restriction the grammar is ambiguous: every dim is
+;   also a shape (via shape = dim), so any dim on the right-hand side
+;   of index would admit two parse trees -- once as index's dim
+;   alternative, and once as index's shape alternative descending
+;   through shape's dim alternative.  A dim reading is also what makes
+;   semantic sense at an index position that names a single size, so
+;   parsing that same text as a shape-of-one-dimension would be
+;   meaningless as well.
+;
+;   The Haskell reference implementation avoids the ambiguity by
+;   committing to the dim alternative first in its index parser, so
+;   the shape branch is only tried on inputs that cannot be parsed as
+;   a dim.
+
+
 ; =========================================================================
