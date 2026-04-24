@@ -388,7 +388,7 @@
 
   (define flatten-append-in-shape ((shape shapep))
     :returns (new-shape shapep)
-    :parents (shape-equivalence flatten-append-in-shapes)
+    :parents (index-equivalence flatten-append-in-shapes)
     :short "Flatten all the nested concatenations in a shape."
     (shape-case
      shape
@@ -403,7 +403,7 @@
 
   (define flatten-append-in-shape-list ((shapes shape-listp) (appendp booleanp))
     :returns (new-shapes shape-listp)
-    :parents (shape-equivalence flatten-append-in-shapes)
+    :parents (index-equivalence flatten-append-in-shapes)
     :short "Flatten all the nested concatenations in a list of shapes,
             further flattening the resulting list if part of a concatenation."
     :long
