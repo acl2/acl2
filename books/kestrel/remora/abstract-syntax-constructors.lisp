@@ -163,8 +163,8 @@
      coercing the latter to types."))
   (cond ((stringp type) `(tvar ,type))
         ((eq type :bool) '(type-base (base-type-bool)))
-        ((eq type :char) '(type-base (base-type-char)))
         ((eq type :int) '(type-base (base-type-int)))
+        ((eq type :float) '(type-base (base-type-float)))
         (t type)))
 
 ;;;;;;;;;;;;;;;;;;;;
