@@ -100,30 +100,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum prim-op
-  :short "Fixtype of primitive operators."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The publications on Remora
-     do not pin down the primitive operators, leaving them abstract;
-     but they do provide a partial list.
-     Here we define some initial representative primitive operators,
-     consisting of the ones listed in the publications,
-     which we may extend in the future.
-     We may also parameterize our abstract syntax
-     over the exact choice of these primitive operators."))
-  (:add ())
-  (:sub ())
-  (:mul ())
-  (:div ())
-  (:append ())
-  (:reduce ())
-  (:iota ())
-  :pred prim-opp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deftagsum kind
   :short "Fixtype of kinds."
   :long
@@ -476,7 +452,6 @@
      (xdoc::p
       "There are
        base values,
-       primitive operators,
        lambda abstractions of expressions over typed variables,
        lambda abstractions of expressions over kinded variables,
        lambda abstractions of expressions over sorted variables,
@@ -486,7 +461,6 @@
        while [thesis] uses @($e$), same as term abstraction.
        We use the latter, as that seems the intent."))
     (:base ((value base-value)))
-    (:op ((op prim-op)))
     (:term-abs ((vars typed-var-list)
                 (body expr)))
     (:type-abs ((vars kinded-var-list)

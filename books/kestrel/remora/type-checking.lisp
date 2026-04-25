@@ -220,68 +220,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-of-prim-op ((op prim-opp))
-  :returns (type typep)
-  :short "Type of a primitive operation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This corresponds to the signature described in [arxiv] and [thesis].
-     This can be extended and tweaked
-     as we extend and tweak the primitive operations
-     and the base values and types,
-     which the Remora publications do not pin down.")
-   (xdoc::p
-    "[arxiv] and [thesis] exemplify the signature
-     by giving the input and output types of @('+'),
-     which we represent as @(':add').
-     Those publications mention a @('Num') (i.e. numeric type).
-     Given our current base types, we pick the integer type,
-     for this and the other three arithmetic operations;
-     they all have scalar ranks for inputs and outputs.")
-   (xdoc::p
-    "The types of @('append'), @('reduce'), and @('iota') are shown
-     in Figure 2 of [arxiv] and in Figure 4.3 of [thesis].
-     The figures elide the universal and product quantifiers,
-     but we need to include them in our definition.")
-   (xdoc::p
-    "We use the readable constructors for Remora types
-     defined in @(see abstract-syntax-constructors)."))
-  (b* ((add/sub/mul/div-type (t-> ((tarray :int (shape))
-                                   (tarray :int (shape)))
-                                  (tarray :int (shape))))
-       (append-type
-        (tforall ("t" :atom)
-                 (tpi ("$n" "$m" "@s")
-                      (t-> ((tarray "t" (shape++ (shape "$m") "@s"))
-                            (tarray "t" (shape++ (shape "$n") "@s")))
-                           (tarray "t" (shape++ (shape (dim+ "$m" "$n"))
-                                                "@s"))))))
-       (reduce-type
-        (tforall ("t" :atom)
-                 (tpi ("@s" "$d")
-                      (t-> ((tarray (t-> ((tarray "t" "@s")
-                                          (tarray "t" "@s"))
-                                         (tarray "t" "@s"))
-                                    (shape))
-                            (tarray "t" (shape++ (shape (dim+ 1 "$d")) "@s")))
-                           (tarray "t" "@s")))))
-       (iota-type
-        (tpi ("$d")
-             (t-> ((tarray :int (shape "$d")))
-                  (tarray (tsigma ("@s") (tarray :int "@s")) (shape))))))
-    (prim-op-case
-     op
-     :add add/sub/mul/div-type
-     :sub add/sub/mul/div-type
-     :mul add/sub/mul/div-type
-     :div add/sub/mul/div-type
-     :append append-type
-     :reduce reduce-type
-     :iota iota-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define nat-list-product ((nats nat-listp))
   :returns (product natp)
   :short "Product of a list of zero or more natural numbers."
@@ -827,7 +765,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The type of a base value or a primitive operator
+      "The type of a base value
        is independent from the environment(s),
        and determined via separate functions.")
      (xdoc::p
@@ -870,8 +808,6 @@
      atom
      :base
      (type-base (base-type-of-base-value atom.value))
-     :op
-     (type-of-prim-op atom.op)
      :term-abs
      (b* (((unless (no-duplicatesp-equal (typed-var-list->var atom.vars)))
            (reserr nil))
