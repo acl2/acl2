@@ -63,42 +63,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum base-value
-  :short "Fixtype of base values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "[arxiv] and [thesis] do not pin down the base values,
-     leaving them abstract,
-     but [impl] currently has booleans, integers, and floats.
-     For integers, [impl] use Haskell's @('Int'),
-     which consists of fixed-precision integers with at least 30 bits.
-     For floats, [impl] uses Haskell's @('Float'),
-     which consists of single-precision floating-point numbers,
-     ``desired'' (according to the Haskell documentation)
-     to comply with the IEEE standard.
-     For now, we use ACL2 arbitrary-precision integers and rationals;
-     we will refine them later."))
-  (:bool ((value bool)))
-  (:int ((value int)))
-  (:float ((value acl2::rational)))
-  :pred base-valuep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum base-type
-  :short "Fixtype of base types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These mirror the base values in @(tsee base-value)."))
-  (:bool ())
-  (:int ())
-  (:float ())
-  :pred base-typep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deftagsum kind
   :short "Fixtype of kinds."
   :long
@@ -309,6 +273,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum base-type
+  :short "Fixtype of base types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There are types for booleans, integers, and floats."))
+  (:bool ())
+  (:int ())
+  (:float ())
+  :pred base-typep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes types
   :short "Fixtypes of types and lists of types."
 
@@ -372,6 +349,29 @@
   :true-listp t
   :elementp-of-nil nil
   :pred typed-var-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum base-value
+  :short "Fixtype of base values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[arxiv] and [thesis] do not pin down the base values,
+     leaving them abstract,
+     but [impl] currently has booleans, integers, and floats.
+     For integers, [impl] use Haskell's @('Int'),
+     which consists of fixed-precision integers with at least 30 bits.
+     For floats, [impl] uses Haskell's @('Float'),
+     which consists of single-precision floating-point numbers,
+     ``desired'' (according to the Haskell documentation)
+     to comply with the IEEE standard.
+     For now, we use ACL2 arbitrary-precision integers and rationals;
+     we will refine them later."))
+  (:bool ((value bool)))
+  (:int ((value int)))
+  (:float ((value acl2::rational)))
+  :pred base-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
