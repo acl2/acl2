@@ -13,6 +13,7 @@
 (include-book "abstract-syntax-structural-operations")
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
+(include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "kestrel/fty/string-set" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -64,7 +65,10 @@
     "We also plan to add substitution and renaming operations
      on expressions and atoms,
      involving not only ispace and type variables,
-     but also term variables."))
+     but also term variables.")
+   (xdoc::p
+    "We need to double-check, and possibly revise,
+     the treatment of the boxing and unboxing constructs."))
   :order-subtopics t
   :default-parent t)
 
@@ -232,3 +236,26 @@
                    (make-type-forall
                     :vars type.vars
                     :type (type-rename-type-vars type.type renam))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce free-ispace-vars
+  :short "Set of free ispace variables in
+          ispaces, types, typed variables, expressions, atoms,
+          and lists thereof."
+  :types (dims shapes ispace ispace-list types typed-var exprs/atoms)
+  :result ispace-param-setp
+  :default nil
+  :combine set::union
+  :override
+  ((dim :var (set::insert (ispace-param-dim dim.name) nil))
+   (shape :var (set::insert (ispace-param-shape shape.name) nil))
+   (type :pi (set::difference (type-free-ispace-vars type.type)
+                              (set::mergesort type.params)))
+   (type :sigma (set::difference (type-free-ispace-vars type.type)
+                                 (set::mergesort type.params)))
+   (expr :unbox (set::union (expr-free-ispace-vars expr.target)
+                            (set::difference (expr-free-ispace-vars expr.body)
+                                             (set::mergesort expr.ispaces))))
+   (atom :ispace-abs (set::difference (expr-free-ispace-vars atom.body)
+                                      (set::mergesort atom.params)))))
