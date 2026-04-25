@@ -84,7 +84,15 @@
 (fty::defset ispace-param-set
   :short "Fixtype of sets of ispace parameters."
   :elt-type ispace-param
-  :pred ispace-param-setp)
+  :pred ispace-param-setp
+
+  ///
+
+  (defrule ispace-param-setp-of-mergesort
+    (implies (ispace-param-listp x)
+             (ispace-param-setp (set::mergesort x)))
+    :induct t
+    :enable set::mergesort))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
