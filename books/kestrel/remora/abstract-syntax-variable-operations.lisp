@@ -33,8 +33,8 @@
    (xdoc::p
     "The substitutions are represented as maps
      from strings (variable names) to ASTs.
-     Since indices have distinct dimension and shape variables,
-     we use two separate maps for index variable substitutions,
+     Since ispaces have distinct dimension and shape variables,
+     we use two separate maps for ispace variable substitutions,
      one for dimension variables and one for shape variables.")
    (xdoc::p
     "The renamings are represented as maps from strings to strings.")
@@ -45,39 +45,39 @@
      All the variables in a dimension are free,
      because dimensions have no binders.")
    (xdoc::p
-    "Shapes and indices contain dimension and shape variables,
+    "Shapes and ispaces contain dimension and shape variables,
      but no type or term variables;
      so they need two substitution or renaming maps.
-     All the variables in a shape or index are free,
-     because shapes and indices have no binders.")
+     All the variables in a shape or ispace are free,
+     because shapes and ispaces have no binders.")
    (xdoc::p
-    "Types contain index (dimension and shape) and type variables,
+    "Types contain ispace (dimension and shape) and type variables,
      but no term variables;
      so they need three substitution or renaming maps in general,
      but we provide separate substitution and renaming operations
-     for index and type variables in types.
-     Types have binders for both index and type variables,
-     so the operations apply to the free index and type variables;
+     for ispace and type variables in types.
+     Types have binders for both ispace and type variables,
+     so the operations apply to the free ispace and type variables;
      when encountering bound variables,
      they are removed from the substitution and renaming maps.")
    (xdoc::p
     "We also plan to add substitution and renaming operations
      on expressions and atoms,
-     involving not only index and type variables,
+     involving not only ispace and type variables,
      but also term variables."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vars-of-index-params ((params index-param-listp))
+(define vars-of-ispace-params ((params ispace-param-listp))
   :returns (mv (dim-vars string-setp) (shape-vars string-setp))
   :short "Extract the sets of dimension and shape variables
-          from a list of index parameters."
+          from a list of ispace parameters."
   (b* (((when (endp params)) (mv nil nil))
-       ((mv dim-vars shape-vars) (vars-of-index-params (cdr params)))
+       ((mv dim-vars shape-vars) (vars-of-ispace-params (cdr params)))
        (param (car params)))
-    (index-param-case
+    (ispace-param-case
      param
      :dim (mv (set::insert param.name dim-vars) shape-vars)
      :shape (mv dim-vars (set::insert param.name shape-vars))))
@@ -98,10 +98,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deffold-map subst-index-vars
-  :short "Substitute (free) index (i.e. dimension and shape) variables
-          in shapes, indices, types, and lists thereof."
-  :types (shapes index index-list types)
+(fty::deffold-map subst-ispace-vars
+  :short "Substitute (free) ispace (i.e. dimension and shape) variables
+          in shapes, ispaces, types, and lists thereof."
+  :types (shapes ispace ispace-list types)
   :extra-args ((dim-subst string-dim-mapp)
                (shape-subst string-shape-mapp))
   :override
@@ -112,10 +112,10 @@
                    (shape-var shape.name))))
    (shape :dim (shape-dim (dim-subst-dim-vars shape.dim dim-subst)))
    (shape :dims (shape-dims (dim-list-subst-dim-vars shape.dims dim-subst)))
-   (index :dim (index-dim (dim-subst-dim-vars index.dim dim-subst)))
+   (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
    (type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-index-params type.params))
+               (vars-of-ispace-params type.params))
               (dim-subst
                (omap::delete* bound-dim-vars
                               (string-dim-map-fix dim-subst)))
@@ -124,10 +124,10 @@
                               (string-shape-map-fix shape-subst))))
            (make-type-pi
             :params type.params
-            :type (type-subst-index-vars type.type dim-subst shape-subst))))
+            :type (type-subst-ispace-vars type.type dim-subst shape-subst))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-index-params type.params))
+               (vars-of-ispace-params type.params))
               (dim-subst
                (omap::delete* bound-dim-vars
                               (string-dim-map-fix dim-subst)))
@@ -136,7 +136,7 @@
                               (string-shape-map-fix shape-subst))))
            (make-type-sigma
             :params type.params
-            :type (type-subst-index-vars type.type dim-subst shape-subst))))))
+            :type (type-subst-ispace-vars type.type dim-subst shape-subst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -173,10 +173,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deffold-map rename-index-vars
-  :short "Rename (free) index (i.e. dimension and shape) variables
-          in shapes, indices, types, and lists thereof."
-  :types (shapes index index-list types)
+(fty::deffold-map rename-ispace-vars
+  :short "Rename (free) ispace (i.e. dimension and shape) variables
+          in shapes, ispaces, types, and lists thereof."
+  :types (shapes ispace ispace-list types)
   :extra-args ((dim-renam string-string-mapp)
                (shape-renam string-string-mapp))
   :override
@@ -187,10 +187,10 @@
                    (shape-var shape.name))))
    (shape :dim (shape-dim (dim-rename-dim-vars shape.dim dim-renam)))
    (shape :dims (shape-dims (dim-list-rename-dim-vars shape.dims dim-renam)))
-   (index :dim (index-dim (dim-rename-dim-vars index.dim dim-renam)))
+   (ispace :dim (ispace-dim (dim-rename-dim-vars ispace.dim dim-renam)))
    (type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-index-params type.params))
+               (vars-of-ispace-params type.params))
               (dim-renam
                (omap::delete* bound-dim-vars
                               (string-string-map-fix dim-renam)))
@@ -199,10 +199,10 @@
                               (string-string-map-fix shape-renam))))
            (make-type-pi
             :params type.params
-            :type (type-rename-index-vars type.type dim-renam shape-renam))))
+            :type (type-rename-ispace-vars type.type dim-renam shape-renam))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-index-params type.params))
+               (vars-of-ispace-params type.params))
               (dim-renam
                (omap::delete* bound-dim-vars
                               (string-string-map-fix dim-renam)))
@@ -211,7 +211,7 @@
                               (string-string-map-fix shape-renam))))
            (make-type-sigma
             :params type.params
-            :type (type-rename-index-vars type.type dim-renam shape-renam))))))
+            :type (type-rename-ispace-vars type.type dim-renam shape-renam))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

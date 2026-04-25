@@ -99,27 +99,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection type+shape-list->shape ((x type+shape-listp))
-  :returns (indices shape-listp)
+  :returns (ispaces shape-listp)
   :short "Lift @(tsee type+shape->shape) to lists."
   (type+shape->shape x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define index-param->name ((param index-paramp))
+(define ispace-param->name ((param ispace-paramp))
   :returns (name stringp)
-  :short "Name of an index parameter."
+  :short "Name of an ispace parameter."
   :long
   (xdoc::topstring
    (xdoc::p
     "Both summands have a string field,
      which is the name of the variable."))
-  (index-param-case param
-                    :dim param.name
-                    :shape param.name))
+  (ispace-param-case param
+                     :dim param.name
+                     :shape param.name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection index-param-list->name ((x index-param-listp))
+(std::defprojection ispace-param-list->name ((x ispace-param-listp))
   :returns (names string-listp)
-  :short "Lift @(tsee index-param->name) to lists."
-  (index-param->name x))
+  :short "Lift @(tsee ispace-param->name) to lists."
+  (ispace-param->name x))

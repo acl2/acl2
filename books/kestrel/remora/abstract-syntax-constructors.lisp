@@ -31,7 +31,7 @@
      These can be regarded as forming a sort of
      embedded domain-specific language for Remora.")
    (xdoc::p
-    "We start by providing constructors for indices and types.
+    "We start by providing constructors for ispaces and types.
      We plan to add constructors for other ASTs as well."))
   :order-subtopics t
   :default-parent t)
@@ -184,7 +184,7 @@
   (xdoc::topstring
    (xdoc::p
     "Strings, natural numbers, and base type keywords
-     are auto-coerced to indices and types."))
+     are auto-coerced to ispaces and types."))
   `(type-array ,(type-var/base/other type)
                ,(shape-term-from-var/dim/other dim/shape)))
 
@@ -201,24 +201,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define index-param-term-from-string ((str stringp))
-  :short "Build an index parameter term from a string."
+(define ispace-param-term-from-string ((str stringp))
+  :short "Build an ispace parameter term from a string."
   :long
   (xdoc::topstring
    (xdoc::p
     "The string must be a variable name preceded by @('$') or @('@')."))
   (b* (((mv prefix name) (var-string-split str '(#\$ #\@))))
     (case prefix
-      (#\$ `(index-param-dim ,name))
-      (#\@ `(index-param-shape ,name)))))
+      (#\$ `(ispace-param-dim ,name))
+      (#\@ `(ispace-param-shape ,name)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define index-param-terms-from-strings ((strs string-listp))
-  :short "Lift @(tsee index-param-term-from-string) to lists."
+(define ispace-param-terms-from-strings ((strs string-listp))
+  :short "Lift @(tsee ispace-param-term-from-string) to lists."
   (cond ((endp strs) nil)
-        (t (cons (index-param-term-from-string (car strs))
-                 (index-param-terms-from-strings (cdr strs))))))
+        (t (cons (ispace-param-term-from-string (car strs))
+                 (ispace-param-terms-from-strings (cdr strs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,7 +270,7 @@
     "The parameters are provided as a parenthesized list of variable strings.
      A variable or base type keyword as the body type
      is auto-coerced to a type."))
-  `(type-pi (list ,@(index-param-terms-from-strings params))
+  `(type-pi (list ,@(ispace-param-terms-from-strings params))
             ,(type-var/base/other type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -284,5 +284,5 @@
     "The parameters are provided as a parenthesized list of variable strings.
      A variable or base type keyword as the body type
      is auto-coerced to a type."))
-  `(type-sigma (list ,@(index-param-terms-from-strings params))
+  `(type-sigma (list ,@(ispace-param-terms-from-strings params))
                ,(type-var/base/other type)))

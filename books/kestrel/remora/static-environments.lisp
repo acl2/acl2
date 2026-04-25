@@ -48,9 +48,9 @@
     "A static environment consists of:")
    (xdoc::ul
     (xdoc::li
-     "The set of index variables in scope.
+     "The set of ispace variables in scope.
       This corresponds to @($\\Theta$),
-      but since our index variables include their own sort,
+      but since our ispace variables include their own sort,
       a set suffices, as opposed to a map from variables to sorts.")
     (xdoc::li
      "A map from the type variables in scope to their kinds.
@@ -58,7 +58,7 @@
     (xdoc::li
      "A map from the term variables in scope to their types.
       This corresponds to @($\\Gamma$).")))
-  ((index-vars index-param-set)
+  ((ispace-vars ispace-param-set)
    (type-vars string-kind-map)
    (term-vars string-type-map))
   :pred senvp)
@@ -116,6 +116,6 @@
    (xdoc::p
     "This is the initial, i.e. top-level, static environment.
      It only contains the primitive operations in scope."))
-  (make-senv :index-vars nil
+  (make-senv :ispace-vars nil
              :type-vars nil
              :term-vars (prim-op-types)))

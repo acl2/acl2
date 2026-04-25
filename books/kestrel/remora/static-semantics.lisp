@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "static-environments")
-(include-book "index-equivalence")
+(include-book "ispace-equivalence")
 (include-book "type-equivalence")
 (include-book "type-checking")
 
@@ -30,6 +30,6 @@
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
   :order-subtopics (static-environments
-                    index-equivalence
+                    ispace-equivalence
                     type-equivalence
                     type-checking))

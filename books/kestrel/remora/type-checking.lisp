@@ -36,7 +36,7 @@
                           type+shape-p-when-result-not-error
                           type+shape-listp-when-result-not-error
                           typelist+type-p-when-result-not-error
-                          indexparamlist+type-p-when-result-not-error
+                          ispaceparamlist+type-p-when-result-not-error
                           kindedvarlist+type-p-when-result-not-error
                           stringdimmap+stringshapemap-p-when-result-not-error)))
 
@@ -167,12 +167,12 @@
                     ((ok kind) (check-type type.type kindenv))
                     ((unless (kind-case kind :array)) (reserr nil)))
                  (kind-atom))
-       :pi (b* ((vars (index-param-list->name type.params))
+       :pi (b* ((vars (ispace-param-list->name type.params))
                 ((unless (no-duplicatesp-equal vars)) (reserr nil))
                 ((ok kind) (check-type type.type kindenv))
                 ((unless (kind-case kind :array)) (reserr nil)))
              (kind-atom))
-       :sigma (b* ((vars (index-param-list->name type.params))
+       :sigma (b* ((vars (ispace-param-list->name type.params))
                    ((unless (no-duplicatesp-equal vars)) (reserr nil))
                    ((ok kind) (check-type type.type kindenv))
                    ((unless (kind-case kind :array)) (reserr nil)))
@@ -261,8 +261,8 @@
      the shape of the argument is denoted
      @($(\\mathtt{++}\\ \\iota_a\\ \\iota)\\ldots$),
      and the shape of the input is denoted @($\\iota$);
-     they use indices in general,
-     but the indices are shapes,
+     they use ispaces in general,
+     but the ispaces are shapes,
      and our formalization directly uses shapes.
      This function takes the argument shape as the formal @('shape'),
      and the input type shape as the formal @('suffix'),
@@ -386,10 +386,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-index-params-and-args ((params index-param-listp)
-                                     (args index-listp))
+(define check-ispace-params-and-args ((params ispace-param-listp)
+                                      (args ispace-listp))
   :returns (maps stringdimmap+stringshapemap-resultp)
-  :short "Check whether a list of index parameters and index arguments match."
+  :short "Check whether a list of ispace parameters and ispace arguments match."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -408,12 +408,12 @@
           (reserr nil)))
        ((when (endp args)) (reserr nil))
        ((ok (stringdimmap+stringshapemap maps))
-        (check-index-params-and-args (cdr params) (cdr args)))
+        (check-ispace-params-and-args (cdr params) (cdr args)))
        (param (car params))
        (arg (car args)))
-    (index-param-case
+    (ispace-param-case
      param
-     :dim (index-case
+     :dim (ispace-case
            arg
            :dim (make-stringdimmap+stringshapemap
                  :dim-map (omap::update param.name
@@ -421,7 +421,7 @@
                                         maps.dim-map)
                  :shape-map maps.shape-map)
            :shape (reserr nil))
-     :shape (index-case
+     :shape (ispace-case
              arg
              :dim (reserr nil)
              :shape (make-stringdimmap+stringshapemap
@@ -511,7 +511,7 @@
        we do that via a separate function (see its documentation).
        Then we take the join of all those prefixes and the function shape
        (see documentation of @(tsee join-shapes)):
-       that is the principal shape (index), in Remora's terminology,
+       that is the principal shape (ispace), in Remora's terminology,
        denoted @($\\iota_p$) in [arxiv] and [thesis].
        Finally we return the type of the term application expression,
        which is the array type consisting of
@@ -538,7 +538,7 @@
        whose type is obtained by concatenating
        the function type to the body type.")
      (xdoc::p
-      "For an index application,
+      "For an ispace application,
        first we check the function expression,
        which must have an array type of a product type,
        whose body type is an array type.
@@ -551,7 +551,7 @@
        (@($\\iota\\ldots$) in [arxiv] and [thesis]),
        ensuring that their sorts match the ones of
        the bound variables in the product type.
-       We obtain two index maps (for dimensions and shapes),
+       We obtain two ispace maps (for dimensions and shapes),
        which we substitute to the body atom type
        to obtain the atom type of the resulting array type,
        whose shape is obtained by concatenating
@@ -559,7 +559,7 @@
        the result of applying the same substitution to the body shape.")
      (xdoc::p
       "For an unboxing expression,
-       first we check that the index parameters have no duplicate names.
+       first we check that the ispace parameters have no duplicate names.
        We check the target expression,
        which must be an array type of a sum type.
        In [arxiv] and [thesis],
@@ -567,9 +567,9 @@
        @($(x'\\ \\gamma)\\ldots$) corresponds to @('sum-params'),
        and @($\\tau_s$) corresponds to @('sum-body-type').
        The number of bound variables in the sum type must be the same as
-       the number of the index variables in the unboxing expression.
+       the number of the ispace variables in the unboxing expression.
        In the sum type body,
-       we rename the bound variables to the index variables:
+       we rename the bound variables to the ispace variables:
        we associate the resulting type
        to the term variable of the unboxing expression,
        and we extend the type environment with that association.
@@ -578,11 +578,11 @@
        we must get an array type,
        which must have the array kind.
        In [arxiv] and [thesis],
-       the latter array has atom type @($\\tau_b$) and index @($\\iota_b$),
-       which correspond to @('body-atom-type') and @('body-index') in our code.
+       the latter array has atom type @($\\tau_b$) and ispace @($\\iota_b$),
+       which correspond to @('body-atom-type') and @('body-ispace') in our code.
        The type of the unboxing expression is the array type consisting of
        the @($\\tau_b$) type as atom
-       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as index."))
+       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as ispace."))
     (expr-case
      expr
      :var
@@ -673,42 +673,42 @@
        (make-type-array
         :type (type-subst-type-vars body-atom-type subst)
         :shape (shape-append (list fun-shape body-shape))))
-     :index-app
+     :ispace-app
      (b* (((ok fun-arr-type) (check-expr expr.fun kindenv typeenv))
           ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
           (fun-type (type+shape->type fun-arr-type+shape))
           (fun-shape (type+shape->shape fun-arr-type+shape))
           ((ok fun-params+type) (type-match-product fun-type))
-          (params (indexparamlist+type->params fun-params+type))
-          (body-arr-type (indexparamlist+type->type fun-params+type))
+          (params (ispaceparamlist+type->params fun-params+type))
+          (body-arr-type (ispaceparamlist+type->type fun-params+type))
           ((ok body-type+shape) (type-match-array body-arr-type))
           (body-atom-type (type+shape->type body-type+shape))
           (body-shape (type+shape->shape body-type+shape))
-          ((ok (stringdimmap+stringshapemap index-maps))
-           (check-index-params-and-args params expr.args))
-          (body-shape-subst (shape-subst-index-vars body-shape
-                                                    index-maps.dim-map
-                                                    index-maps.shape-map)))
+          ((ok (stringdimmap+stringshapemap ispace-maps))
+           (check-ispace-params-and-args params expr.args))
+          (body-shape-subst (shape-subst-ispace-vars body-shape
+                                                     ispace-maps.dim-map
+                                                     ispace-maps.shape-map)))
        (make-type-array
-        :type (type-subst-index-vars body-atom-type
-                                     index-maps.dim-map
-                                     index-maps.shape-map)
+        :type (type-subst-ispace-vars body-atom-type
+                                      ispace-maps.dim-map
+                                      ispace-maps.shape-map)
         :shape (shape-append (list fun-shape body-shape-subst))))
      :unbox
-     (b* (((unless (no-duplicatesp-equal (index-param-list->name expr.indices)))
+     (b* (((unless (no-duplicatesp-equal (ispace-param-list->name expr.ispaces)))
            (reserr nil))
           ((ok target-arr-type) (check-expr expr.target kindenv typeenv))
           ((ok target-arr-type+shape) (type-match-array target-arr-type))
           (sum-type (type+shape->type target-arr-type+shape))
           (sum-shape (type+shape->shape target-arr-type+shape))
           ((ok sum-params+type) (type-match-sum sum-type))
-          (sum-params (indexparamlist+type->params sum-params+type))
-          (sum-body-type (indexparamlist+type->type sum-params+type))
-          ((unless (= (len expr.indices) (len sum-params))) (reserr nil))
+          (sum-params (ispaceparamlist+type->params sum-params+type))
+          (sum-body-type (ispaceparamlist+type->type sum-params+type))
+          ((unless (= (len expr.ispaces) (len sum-params))) (reserr nil))
           ((ok (stringstringmap-pair renaming))
-           (check-index-param-renaming sum-params expr.indices))
+           (check-ispace-param-renaming sum-params expr.ispaces))
           (sum-body-type-renam
-           (type-rename-index-vars sum-body-type renaming.1st renaming.2nd))
+           (type-rename-ispace-vars sum-body-type renaming.1st renaming.2nd))
           (typeenv (omap::update expr.var
                                  sum-body-type-renam
                                  (string-type-map-fix typeenv)))
@@ -786,7 +786,7 @@
        that is the type of the abstraction,
        whose bound variables are the same as the abstraction.")
      (xdoc::p
-      "For an index abstraction,
+      "For an ispace abstraction,
        first we check that there are no duplicate bound variable names.
        We check the body of the abstraction.
        The resulting type is the body of the product type
@@ -796,7 +796,7 @@
       "For a boxing atom,
        the type that is part of its syntax must be a sum type
        and must be successfully checked to have the atom kind.
-       We check that the indices in the boxing atom have the same sorts
+       We check that the ispaces in the boxing atom have the same sorts
        as the bound variables of the sum type,
        obtaining a dimension substitution and a shape substitution.
        In the body type of the sum type,
@@ -827,23 +827,23 @@
                                   (string-kind-map-fix kindenv)))
           ((ok type) (check-expr atom.body kindenv typeenv)))
        (make-type-forall :vars atom.vars :type type))
-     :index-abs
-     (b* (((unless (no-duplicatesp-equal (index-param-list->name atom.params)))
+     :ispace-abs
+     (b* (((unless (no-duplicatesp-equal (ispace-param-list->name atom.params)))
            (reserr nil))
           ((ok type) (check-expr atom.body kindenv typeenv)))
        (make-type-pi :params atom.params :type type))
      :box
      (b* (((ok params+type) (type-match-sum atom.type))
-          (params (indexparamlist+type->params params+type))
-          (body-type (indexparamlist+type->type params+type))
+          (params (ispaceparamlist+type->params params+type))
+          (body-type (ispaceparamlist+type->type params+type))
           ((ok kind) (check-type atom.type kindenv))
           ((unless (kind-case kind :atom)) (reserr nil))
           ((ok (stringdimmap+stringshapemap maps))
-           (check-index-params-and-args params atom.indices))
+           (check-ispace-params-and-args params atom.ispaces))
           (body-type-subst
-           (type-subst-index-vars body-type
-                                  maps.dim-map
-                                  maps.shape-map))
+           (type-subst-ispace-vars body-type
+                                   maps.dim-map
+                                   maps.shape-map))
           ((ok type) (check-expr atom.array kindenv typeenv))
           ((unless (type-equivp type body-type-subst)) (reserr nil)))
        atom.type))
