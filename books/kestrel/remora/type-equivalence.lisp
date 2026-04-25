@@ -176,9 +176,9 @@
                                        shape-renaming
                                        type-renaming)
                          (b* ((renamed-shape1
-                               (rename-vars-in-shape type1.shape
-                                                     dim-renaming
-                                                     shape-renaming)))
+                               (shape-rename-index-vars type1.shape
+                                                        dim-renaming
+                                                        shape-renaming)))
                            (shape-equivp renamed-shape1 type2.shape)))
              :otherwise nil)
      :fun (type-case

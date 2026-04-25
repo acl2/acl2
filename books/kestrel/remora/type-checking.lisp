@@ -739,7 +739,7 @@
           (bound-vars (kinded-var-list->var kvars))
           (subst (omap::from-lists bound-vars expr.args)))
        (make-type-array
-        :type (subst-free-type-vars-in-type body-atom-type subst)
+        :type (type-subst-type-vars body-atom-type subst)
         :shape (shape-append (list fun-shape body-shape))))
      :index-app
      (b* (((ok fun-arr-type) (check-expr expr.fun kindenv typeenv))
@@ -754,13 +754,13 @@
           (body-shape (type+shape->shape body-type+shape))
           ((ok (stringdimmap+stringshapemap index-maps))
            (check-index-params-and-args params expr.args))
-          (body-shape-subst (subst-vars-in-shape body-shape
-                                                 index-maps.dim-map
-                                                 index-maps.shape-map)))
+          (body-shape-subst (shape-subst-index-vars body-shape
+                                                    index-maps.dim-map
+                                                    index-maps.shape-map)))
        (make-type-array
-        :type (subst-free-index-vars-in-type body-atom-type
-                                             index-maps.dim-map
-                                             index-maps.shape-map)
+        :type (type-subst-index-vars body-atom-type
+                                     index-maps.dim-map
+                                     index-maps.shape-map)
         :shape (shape-append (list fun-shape body-shape-subst))))
      :unbox
      (b* (((unless (no-duplicatesp-equal (index-param-list->name expr.indices)))
@@ -776,9 +776,7 @@
           ((ok (stringstringmap-pair renaming))
            (check-index-param-renaming sum-params expr.indices))
           (sum-body-type-renam
-           (rename-free-index-vars-in-type sum-body-type
-                                           renaming.1st
-                                           renaming.2nd))
+           (type-rename-index-vars sum-body-type renaming.1st renaming.2nd))
           (typeenv (omap::update expr.var
                                  sum-body-type-renam
                                  (string-type-map-fix typeenv)))
@@ -913,9 +911,9 @@
           ((ok (stringdimmap+stringshapemap maps))
            (check-index-params-and-args params atom.indices))
           (body-type-subst
-           (subst-free-index-vars-in-type body-type
-                                          maps.dim-map
-                                          maps.shape-map))
+           (type-subst-index-vars body-type
+                                  maps.dim-map
+                                  maps.shape-map))
           ((ok type) (check-expr atom.array kindenv typeenv))
           ((unless (type-equivp type body-type-subst)) (reserr nil)))
        atom.type))
