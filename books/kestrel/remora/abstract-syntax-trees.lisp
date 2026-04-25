@@ -150,9 +150,9 @@
    (xdoc::p
     "Although [arxiv] and [thesis]
      define indices as consisting of dimensions and shapes mixed together,
-     and use sorting environments and rules to ensure index well-formedness,
+     and use sorting rules to ensure index well-formedness,
      we provide separate syntactic definitions of dimensions and shapes,
-     and avoid sorting environments and rules;
+     and avoid sorting rules;
      this is also consistent with [impl].
      The key point is that [arxiv] and [thesis] have
      one form of index variables, which may denote dimensions or shapes,
@@ -262,7 +262,7 @@
    (xdoc::p
     "An index is either a dimension or a shape:
      this enforces index sorts syntactically,
-     without the need for sorting environments and rules;
+     without the need for sorting rules;
      the key point is that dimensions and shapes have distinct variables.
      [impl], and the ABNF grammar after it,
      uses the term `extent', but we stick to `index' here."))
@@ -294,7 +294,7 @@
      i.e. they are syntactically distinct.
      This is different from [arxiv] and [thesis],
      where dimension and shape variables are syntactically the same,
-     and thus they need explcit sorting environments and rules."))
+     and thus they need explcit sorting rules."))
   (:dim ((name string)))
   (:shape ((name string)))
   :pred index-paramp)
