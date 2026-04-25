@@ -13,6 +13,8 @@
 (include-book "abstract-syntax-trees")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -36,82 +38,103 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ ivar (name)
-  :short "Construct an index variable from its name."
+(define var-string-split ((str stringp) (prefixes character-listp))
+  :returns (mv (prefix characterp) (name stringp))
+  :short "Split a string into its first character and the rest,
+          provided that the first character is among the allowed prefixes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is just a slight abbreviation for @(tsee index-var)."))
-  `(index-var ,name))
+    "This is used to turn, for example, the string @('$x')
+     into the dimension variable with name @('x');
+     the @('$') prefix is as in the concrete syntax (see ABNF grammar)."))
+  (b* ((str (str::str-fix str))
+       (prefixes (str::character-list-fix prefixes))
+       (chars (str::explode str))
+       ((unless (consp chars))
+        (raise "Empty string.")
+        (mv (code-char 0) ""))
+       (prefix (car chars))
+       ((unless (member prefix prefixes))
+        (raise "Disallowed prefix ~x0." prefix)
+        (mv (code-char 0) "")))
+    (mv prefix (str::implode (cdr chars))))
+  :no-function nil)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ iconst (value)
-  :short "Construct an index constant from its value."
+(define dim-term-from-var/const/other (dim)
+  :short "Create a dimension term from
+          a string denoting a variable,
+          or a natural number denoting a constant,
+          or some other term that is left unchanged."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is just a slight abbreviation for @(tsee index-const)."))
-  `(index-const ,value))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define index-var/const/other (index)
-  :short "Coerce a string or natural number
-          to an index variable or constant,
-          leaving other categories of indices unchanged."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used to implement index constructors
-     that can take, besides proper indices,
-     also strings and natural numbers,
-     coercing the latter to indices."))
-  (cond ((stringp index) `(ivar ,index))
-        ((natp index) `(iconst ,index))
-        (t index)))
+    "The string denoting a variable must start with @('$')."))
+  (cond ((stringp dim)
+         (b* (((mv & name) (var-string-split dim '(#\$))))
+           `(dim-var ,name)))
+        ((natp dim) `(dim-const ,dim))
+        (t dim)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define indices-var/const/other ((indices true-listp))
-  :returns (coerced-indices true-listp)
-  :short "Lift @(tsee index-var/const/other) to lists."
-  (cond ((endp indices) nil)
-        (t (cons (index-var/const/other (car indices))
-                 (indices-var/const/other (cdr indices))))))
+(define dim-terms-from-vars/consts/others ((dims true-listp))
+  :short "Lift @(tsee dim-term-from-var/const/other) to lists."
+  (cond ((endp dims) nil)
+        (t (cons (dim-term-from-var/const/other (car dims))
+                 (dim-terms-from-vars/consts/others (cdr dims))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ ishape (&rest indices)
-  :short "Construct a shape index from component indices."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Strings are auto-coerced to variables
-     and natural numbers to constants."))
-  `(index-shape (list ,@(indices-var/const/other indices))))
+(defmacro+ dim+ (&rest dims)
+  :short "Construct an addition dimension term from addend dimensions."
+  `(dim-add (list ,@(dim-terms-from-vars/consts/others dims))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ i+ (&rest indices)
-  :short "Construct an addition index from component indices."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Strings are auto-coerced to variables
-     and natural numbers to constants."))
-  `(index-add (list ,@(indices-var/const/other indices))))
+(defmacro+ shape (&rest dims)
+  :short "Construct a shape term from component dimensions."
+  `(shape-dims (list ,@(dim-terms-from-vars/consts/others dims))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ i++ (&rest indices)
-  :short "Construct a concatenation index from component indices."
+(define shape-term-from-var/dim/other (dim/shape)
+  :short "Create a shape term from
+          a string denoting a dimension or shape variable,
+          or a natural number denoting a dimension,
+          or a dimension addition term,
+          or some other term that is left unchanged."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Strings are auto-coerced to variables
-     and natural numbers to constants."))
-  `(index-append (list ,@(indices-var/const/other indices))))
+    "The string denoting a variable must start with @('$') or @('@')."))
+  (cond ((stringp dim/shape)
+         (b* (((mv prefix name) (var-string-split dim/shape '(#\$ #\@))))
+           (case prefix
+             (#\$ `(shape-dims (list (dim-var ,name))))
+             (#\@ `(shape-var ,name)))))
+        ((natp dim/shape) `(shape-dims (list (dim-const ,dim/shape))))
+        ((and (consp dim/shape)
+              (eq (car dim/shape) 'dim+))
+         `(shape-dims (list ,dim/shape)))
+        (t dim/shape)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define shape-terms-from-vars/dims/others ((dims/shapes true-listp))
+  :short "Lift @(tsee shape-term-from-var/dim/other) to lists."
+  (cond ((endp dims/shapes) nil)
+        (t (cons (shape-term-from-var/dim/other (car dims/shapes))
+                 (shape-terms-from-vars/dims/others (cdr dims/shapes))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ shape++ (&rest dims/shapes)
+  :short "Construct a shape concatenation term
+          from dimensions and shapes to concatenate."
+  `(shape-append (list ,@(shape-terms-from-vars/dims/others dims/shapes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,14 +178,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tarray (type shape)
+(defmacro+ tarray (type dim/shape)
   :short "Construct an array type from the inner type and the shape."
   :long
   (xdoc::topstring
    (xdoc::p
     "Strings, natural numbers, and base type keywords
      are auto-coerced to indices and types."))
-  `(type-array ,(type-var/base/other type) ,(index-var/const/other shape)))
+  `(type-array ,(type-var/base/other type)
+               ,(shape-term-from-var/dim/other dim/shape)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,30 +201,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bindings-to-sorted-vars ((bindings true-listp))
-  :returns (sorted-vars true-listp)
-  :short "Turn a list of alternating strings and keywords
-          into a list of sorted variables."
+(define index-param-term-from-string ((str stringp))
+  :short "Build an index parameter term from a string."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The strings are the variable names.
-     The keywords designate sorts.
-     The list must have even length,
-     with alternating strings and keywords, starting with a string."))
-  (b* (((when (endp bindings)) nil)
-       (var (car bindings))
-       (sort (case (cadr bindings)
-               (:shape '(sort-shape))
-               (:dim '(sort-dim))
-               (otherwise (raise "Unknown sort keyword: ~x0."
-                                 (cadr bindings)))))
-       (svar `(sorted-var ,var ,sort))
-       (svars (bindings-to-sorted-vars (cddr bindings))))
-    (cons svar svars))
-  :no-function nil)
+    "The string must be a variable name preceded by @('$') or @('@')."))
+  (b* (((mv prefix name) (var-string-split str '(#\$ #\@))))
+    (case prefix
+      (#\$ `(index-param-dim ,name))
+      (#\@ `(index-param-shape ,name)))))
 
 ;;;;;;;;;;;;;;;;;;;;
+
+(define index-param-terms-from-strings ((strs string-listp))
+  :short "Lift @(tsee index-param-term-from-string) to lists."
+  (cond ((endp strs) nil)
+        (t (cons (index-param-term-from-string (car strs))
+                 (index-param-terms-from-strings (cdr strs))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bindings-to-kinded-vars ((bindings true-listp))
   :returns (kinded-vars true-listp)
@@ -241,32 +261,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tpi (bindings type)
-  :short "Construct a product type from a list of bindings and a body type."
+(defmacro+ tpi (params type)
+  :short "Construct a product type term
+          from a list of parameters and a body type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The bindings are provided as a parenthesized list of
-     alternating strings and keywords (see @(tsee bindings-to-sorted-vars)).
+    "The parameters are provided as a parenthesized list of variable strings.
      A variable or base type keyword as the body type
      is auto-coerced to a type."))
-  `(type-pi (list ,@(bindings-to-sorted-vars bindings))
+  `(type-pi (list ,@(index-param-terms-from-strings params))
             ,(type-var/base/other type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tsigma (bindings type)
-  :short "Construct a sum type from a list of bindings and a body type."
+(defmacro+ tsigma (params type)
+  :short "Construct a sum type term
+          from a list of parameters and a body type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The bindings are provided as a parenthesized list of
-     alternating strings and keywords (see @(tsee bindings-to-sorted-vars)).
+    "The parameters are provided as a parenthesized list of variable strings.
      A variable or base type keyword as the body type
      is auto-coerced to a type."))
-  `(type-sigma (list ,@(bindings-to-sorted-vars bindings))
+  `(type-sigma (list ,@(index-param-terms-from-strings params))
                ,(type-var/base/other type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; TODO: constructors for expressions and atoms

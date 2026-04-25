@@ -28,7 +28,7 @@
     "We define an abstract syntax for core typed Remora,
      consisting of algebraic data types for abstract syntax trees (ASTs),
      accompanied by some fixtypes derived from the AST fixtypes,
-     and by operations organized into various categories.")
+     and by operations organized into various groups.")
    (xdoc::p
     "We may generalize this abstract syntax
      to encompass untyped and type-erased Remora,

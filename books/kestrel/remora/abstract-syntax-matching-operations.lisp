@@ -20,8 +20,8 @@
 
 (local
  (in-theory
-  (enable type+index-p-when-type+index-resultp-and-not-reserrp
-          type+index-listp-when-type+index-list-resultp-and-not-reserrp)))
+  (enable type+shape-p-when-type+shape-resultp-and-not-reserrp
+          type+shape-listp-when-type+shape-list-resultp-and-not-reserrp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,30 +43,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-array ((type typep))
-  :returns (type+index type+index-resultp)
+  :returns (type+shape type+shape-resultp)
   :short "Check if a type is an array type,
-          returning its inner type and index if successful."
+          returning its inner type and shape if successful."
   (if (type-case type :array)
-      (make-type+index :type (type-array->type type)
-                       :index (type-array->index type))
+      (make-type+shape :type (type-array->type type)
+                       :shape (type-array->shape type))
     (reserr nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-list-match-array ((types type-listp))
-  :returns (types+indices type+index-list-resultp)
+  :returns (types+shapes type+shape-list-resultp)
   :short "Check if all the types in a list are array types,
-          returning the list of their inner types and indices if successful."
+          returning the list of their inner types and shapes if successful."
   (b* (((when (endp types)) nil)
-       ((ok type+index) (type-match-array (car types)))
-       ((ok types+indices) (type-list-match-array (cdr types))))
-    (cons type+index types+indices))
+       ((ok type+shape) (type-match-array (car types)))
+       ((ok types+shapes) (type-list-match-array (cdr types))))
+    (cons type+shape types+shapes))
 
   ///
 
   (defret len-of-type-list-match-array
-    (implies (not (reserrp types+indices))
-             (equal (len types+indices)
+    (implies (not (reserrp types+shapes))
+             (equal (len types+shapes)
                     (len types)))
     :hints (("Goal" :induct t))))
 
@@ -95,21 +95,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-product ((type typep))
-  :returns (vars+type sortedvarlist+type-resultp)
+  :returns (params+type indexparamlist+type-resultp)
   :short "Check if a type is a product type,
-          returning its sorted variable list and body type if successful."
+          returning its index parameters and body type if successful."
   (if (type-case type :pi)
-      (make-sortedvarlist+type :vars (type-pi->vars type)
-                               :type (type-pi->type type))
+      (make-indexparamlist+type :params (type-pi->params type)
+                                :type (type-pi->type type))
     (reserr nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-sum ((type typep))
-  :returns (vars+type sortedvarlist+type-resultp)
+  :returns (params+type indexparamlist+type-resultp)
   :short "Check if a type is a sum type,
-          returning its sorted variable list and body type if successful."
+          returning its index parameters and body type if successful."
   (if (type-case type :sigma)
-      (make-sortedvarlist+type :vars (type-sigma->vars type)
-                               :type (type-sigma->type type))
+      (make-indexparamlist+type :params (type-sigma->params type)
+                                :type (type-sigma->type type))
     (reserr nil)))

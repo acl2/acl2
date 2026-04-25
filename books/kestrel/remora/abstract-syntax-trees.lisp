@@ -30,23 +30,34 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define fixtypes for abstract syntax trees (ASTs) for core typed Remora,
-     based on the publications on Remora mentioned in @(see remora).
-     See Figure 1 in [arxiv],
-     Figure 4.1 in [thesis],
-     and Figure 6 in [esop].
-     [arxiv] and [thesis] are quite aligned, while [esop] has some differences;
-     we adhere to the former because they are newer than the latter.")
+    "We define fixtypes for abstract syntax trees (ASTs) for typed Remora,
+     based on
+     [arxiv] (Figure 1),
+     [thesis] (Figure 4.1),
+     [esop] (Figure 6),
+     and [impl].
+     These ASTs are consistent with the "
+    (xdoc::seetopic "grammar" "ABNF grammar of Remora")
+    ".")
+   (xdoc::p
+    "The syntax definitions in [arxiv] and [thesis] are quite aligned,
+     while [esop] has some differences;
+     since [esop] is older, we just consider [arxiv] and [thesis] here.
+     [impl] makes some extensions to [arxiv] and [thesis].
+     The ABNF grammar is derived from [impl].")
+   (xdoc::p
+    "We have started defining the syntax as in [arxiv] and [thesis],
+     but we are in the process of extending it according to [impl].
+     We have started defining just the core syntax, as in [arxiv] and [thesis],
+     but we are in the process of adding non-core constructs as in [impl];
+     we plan to characterize the core subset
+     and to define a desugaring transformation
+     from the full syntax to the core syntax.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names
      (for expressions, types, and indices).
-     We may change this if needed.")
-   (xdoc::p
-    "In line with the Remora publications, which define a core language,
-     we do not yet define any higher-level constructs such as ``programs'',
-     intended as collections of named definitions.
-     But we plan to add such constructs at some point."))
+     We may change this if needed."))
   :order-subtopics t
   :default-parent t)
 
@@ -111,49 +122,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum sort
-  :short "Fixtype of sorts."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are associated to indices.
-     They denote shapes and dimensions."))
-  (:shape ())
-  (:dim ())
-  :pred sortp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist sort-list
-  :short "Fixtype of lists of sorts."
-  :elt-type sort
-  :true-listp t
-  :elementp-of-nil nil
-  :pred sort-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod sorted-var
-  :short "Fixtype of sorted variables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A sorted variable consists of a variable name and an associated sort."))
-  ((var string)
-   (sort sort))
-  :pred sorted-varp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist sorted-var-list
-  :short "Fixtype of lists of sorted variables."
-  :elt-type sorted-var
-  :true-listp t
-  :elementp-of-nil nil
-  :pred sorted-var-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deftagsum kind
   :short "Fixtype of kinds."
   :long
@@ -197,40 +165,177 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes indices
-  :short "Fixtypes of indices and lists of indices."
+(fty::deftypes dims
+  :short "Fixtypes of dimensions and lists of dimensions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Although [arxiv] and [thesis]
+     define indices as consisting of dimensions and shapes mixed together,
+     and use sorting environments and rules to ensure index well-formedness,
+     we provide separate syntactic definitions of dimensions and shapes,
+     and avoid sorting environments and rules;
+     this is also consistent with [impl].
+     The key point is that [arxiv] and [thesis] have
+     one form of index variables, which may denote dimensions or shapes,
+     while our ASTs have two separate formsm, one per sort,
+     consistently with the concrete syntax (see ABNF grammar),
+     which uses prefix symbols to explicate the sort of the variable."))
 
-  (fty::deftagsum index
-    :parents (abstract-syntax-trees indices)
-    :short "Fixtype of indices."
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum dim
+    :parents (abstract-syntax-trees dims)
+    :short "Fixtype of dimensions."
     :long
     (xdoc::topstring
      (xdoc::p
       "There are
        named variables,
        constants (natural numbers),
-       shapes (consisting of zero or more dimensions),
-       additions of indices,
-       and concatenations of indices."))
+       and additions.
+       We also plan to add multiplications and subtractions, as in [impl]."))
     (:var ((name string)))
     (:const ((value nat)))
-    (:shape ((indices index-list)))
-    (:add ((indices index-list)))
-    (:append ((indices index-list)))
-    :pred indexp)
+    (:add ((dims dim-list)))
+    :pred dimp)
 
-  (fty::deflist index-list
-    :parents (abstract-syntax-trees indices)
-    :short "Fixtype of lists of indices."
-    :elt-type index
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist dim-list
+    :parents (abstract-syntax-trees dims)
+    :short "Fixtype of lists of dimensions."
+    :elt-type dim
     :true-listp t
     :elementp-of-nil nil
-    :pred index-listp))
+    :pred dim-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes shapes
+  :short "Fixtypes of shapes and lists of shapes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee dims) for the reason why
+     we define dimensions and shapes separately,
+     as in [impl] but unlike [arxiv] and [thesis]."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum shape
+    :parents (abstract-syntax-trees shapes)
+    :short "Fixtype of shapes."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "There are
+       named variables,
+       dimensions (lifted to be shapes),
+       shapes built from zero or more dimensions,
+       concatenations of shapes,
+       and splicing of dimensions and shapes.")
+     (xdoc::p
+      "The @(':dim') and @(':splice') summands are non-core.")
+     (xdoc::p
+      "The @(':dim') summand captures the case in which
+       a shape is expected
+       (currently the only place is in an array type),
+       but a dimension is provided:
+       the dimension is auto-lifted to a singleton shape;
+       it is a convenience construct, not a core construct.
+       In contrast, the @(':dims') summand is the core constructor
+       for a shape consisting of zero or more dimensions;
+       in [arxiv] it is written as @($(\\mathtt{Shp}\\ \\iota\\ldots)$),
+       in [thesis] it is written as @($(\\mathtt{shape}\\ \\iota\\ldots)$),
+       and in [impl], as defined in the ABNF grammar,
+       it is written as @($(\\mathtt{dims}\\ ...)$),
+       so we use @(':dims') here.")
+     (xdoc::p
+      "The @(':splice') summand represents the square bracket notation.
+       Although [impl] and the ABNF grammar use indices inside the brackets,
+       since dimensions may be auto-lifted dimensions,
+       we can just use shapes, and avoid a mutual recursion with indices here.
+       This makes it apparent that
+       concatenation and splicing are equivalent constructs."))
+    (:var ((name string)))
+    (:dim ((dim dim)))
+    (:dims ((dims dim-list)))
+    (:append ((shapes shape-list)))
+    (:splice ((shapes shape-list)))
+    :pred shapep)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist shape-list
+    :parents (abstract-syntax-trees shapes)
+    :short "Fixtype of lists of shapes."
+    :elt-type shape
+    :true-listp t
+    :elementp-of-nil nil
+    :pred shape-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum index
+  :short "Fixtype of indices."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An index is either a dimension or a shape:
+     this enforces index sorts syntactically,
+     without the need for sorting environments and rules;
+     the key point is that dimensions and shapes have distinct variables.
+     [impl], and the ABNF grammar after it,
+     uses the term `extent', but we stick to `index' here."))
+  (:dim ((dim dim)))
+  (:shape ((shape shape)))
+  :pred indexp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist index-list
+  :short "Fixtype of lists of indices."
+  :elt-type index
+  :true-listp t
+  :elementp-of-nil nil
+  :pred index-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum index-param
+  :short "Fixtype of index parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are index variables used as parameters,
+     e.g. in a product or sum type;
+     they correspond to @('extent-param') in the ABNF grammar.
+     As in dimension and shape variables in @(tsee dim) and @(tsee shape),
+     index parameters carry their own sort (dimension or shape),
+     i.e. they are syntactically distinct.
+     This is different from [arxiv] and [thesis],
+     where dimension and shape variables are syntactically the same,
+     and thus they need explcit sorting environments and rules."))
+  (:dim ((name string)))
+  (:shape ((name string)))
+  :pred index-paramp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist index-param-list
+  :short "Fixtype of lists of index parameters."
+  :elt-type index-param
+  :true-listp t
+  :elementp-of-nil nil
+  :pred index-param-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes types
   :short "Fixtypes of types and lists of types."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum type
     :parents (abstract-syntax-trees types)
@@ -241,24 +346,26 @@
       "There are
        named variables,
        base types,
-       array types (consisting of an atom type and an index),
+       array types (consisting of an atom type and a shape),
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
-       product types (quantified over sorted variables),
-       and sum types (quantified over sorted variables)."))
+       product types (quantified over index parameters),
+       and sum types (quantified over index parameters)."))
     (:var ((name string)))
     (:base ((type base-type)))
     (:array ((type type)
-             (index index)))
+             (shape shape)))
     (:fun ((in type-list)
            (out type)))
     (:forall ((vars kinded-var-list)
               (type type)))
-    (:pi ((vars sorted-var-list)
+    (:pi ((params index-param-list)
           (type type)))
-    (:sigma ((vars sorted-var-list)
+    (:sigma ((params index-param-list)
              (type type)))
     :pred typep)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist type-list
     :parents (abstract-syntax-trees types)
@@ -293,6 +400,8 @@
 
 (fty::deftypes exprs/atoms
   :short "Fixtypes of expressions, atoms, and lists thereof."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr
     :parents (abstract-syntax-trees exprs/atoms)
@@ -339,11 +448,13 @@
                 (args type-list)))
     (:index-app ((fun expr)
                  (args index-list)))
-    (:unbox ((index-vars string-list)
-             (term-var string)
+    (:unbox ((indices index-param-list)
+             (var string)
              (target expr)
              (body expr)))
     :pred exprp)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist expr-list
     :parents (abstract-syntax-trees exprs/atoms)
@@ -352,6 +463,8 @@
     :true-listp t
     :elementp-of-nil nil
     :pred expr-listp)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum atom
     :parents (abstract-syntax-trees exprs/atoms)
@@ -376,12 +489,14 @@
                 (body expr)))
     (:type-abs ((vars kinded-var-list)
                 (body expr)))
-    (:index-abs ((vars sorted-var-list)
+    (:index-abs ((params index-param-list)
                  (body expr)))
     (:box ((indices index-list)
            (array expr)
            (type type)))
     :pred atomp)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist atom-list
     :parents (abstract-syntax-trees exprs/atoms)
