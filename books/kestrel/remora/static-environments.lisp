@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-derived-fixtypes")
+(include-book "abstract-syntax-constructors")
 
 (acl2::controlled-configuration)
 
@@ -61,3 +62,60 @@
    (type-vars string-kind-map)
    (term-vars string-type-map))
   :pred senvp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-op-types ()
+  :returns (term-vars string-type-mapp)
+  :short "Association of primitive operations to their types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In Remora, the primitive operations (i.e. built-in functions)
+     are syntactically variables of suitable function type;
+     these variables are implicitly in scope,
+     and thus part of the initial static environment."))
+  (b* ((add/sub/mul/div-type (t-> ((tarray :int (shape))
+                                   (tarray :int (shape)))
+                                  (tarray :int (shape))))
+       (append-type
+        (tforall ("t" :atom)
+                 (tpi ("$n" "$m" "@s")
+                      (t-> ((tarray "t" (shape++ (shape "$m") "@s"))
+                            (tarray "t" (shape++ (shape "$n") "@s")))
+                           (tarray "t" (shape++ (shape (dim+ "$m" "$n"))
+                                                "@s"))))))
+       (reduce-type
+        (tforall ("t" :atom)
+                 (tpi ("@s" "$d")
+                      (t-> ((tarray (t-> ((tarray "t" "@s")
+                                          (tarray "t" "@s"))
+                                         (tarray "t" "@s"))
+                                    (shape))
+                            (tarray "t" (shape++ (shape (dim+ 1 "$d")) "@s")))
+                           (tarray "t" "@s")))))
+       (iota-type
+        (tpi ("$d")
+             (t-> ((tarray :int (shape "$d")))
+                  (tarray (tsigma ("@s") (tarray :int "@s")) (shape))))))
+    (omap::from-alist
+     (list (cons "add" add/sub/mul/div-type)
+           (cons "sub" add/sub/mul/div-type)
+           (cons "mul" add/sub/mul/div-type)
+           (cons "div" add/sub/mul/div-type)
+           (cons "append" append-type)
+           (cons "reduce" reduce-type)
+           (cons "iota" iota-type)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-senv ()
+  :short "Initial static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the initial, i.e. top-level, static environment.
+     It only contains the primitive operations in scope."))
+  (make-senv :index-vars nil
+             :type-vars nil
+             :term-vars (prim-op-types)))
