@@ -212,17 +212,11 @@
 (define base-type-of-base-value ((bval base-valuep))
   :returns (btype base-typep)
   :short "Base type of a base value."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This can be extended and tweaked
-     as we extend and tweak the base values and types,
-     which the Remora publications do not pin down."))
   (base-value-case
    bval
    :bool (base-type-bool)
-   :char (base-type-char)
-   :int (base-type-int)))
+   :int (base-type-int)
+   :float (base-type-float)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

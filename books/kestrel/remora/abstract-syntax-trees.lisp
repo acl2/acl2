@@ -17,6 +17,7 @@
 
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
+(local (include-book "std/basic/rfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST thms
 
 (include-book "std/basic/controlled-configuration" :dir :system)
@@ -68,19 +69,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The publications on Remora
-     do not pin down the base values, leaving them abstract.
-     Here we define some initial representative base values,
-     which we may extend in the future.
-     We may also parameterize our abstract syntax
-     over the exact choice of these base values.")
-   (xdoc::p
-    "We may move this fixtype definition to a more general place,
-     since besides being part of the abstract syntax,
-     it may be part of the dynamic semantics."))
+    "[arxiv] and [thesis] do not pin down the base values,
+     leaving them abstract,
+     but [impl] currently has booleans, integers, and floats.
+     For integers, [impl] use Haskell's @('Int'),
+     which consists of fixed-precision integers with at least 30 bits.
+     For floats, [impl] uses Haskell's @('Float'),
+     which consists of single-precision floating-point numbers,
+     ``desired'' (according to the Haskell documentation)
+     to comply with the IEEE standard.
+     For now, we use ACL2 arbitrary-precision integers and rationals;
+     we will refine them later."))
   (:bool ((value bool)))
-  (:char ((value character)))
   (:int ((value int)))
+  (:float ((value acl2::rational)))
   :pred base-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -92,8 +94,8 @@
    (xdoc::p
     "These mirror the base values in @(tsee base-value)."))
   (:bool ())
-  (:char ())
   (:int ())
+  (:float ())
   :pred base-typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
