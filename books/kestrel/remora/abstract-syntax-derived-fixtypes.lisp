@@ -81,6 +81,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defset index-param-set
+  :short "Fixtype of sets of index parameters."
+  :elt-type index-param
+  :pred index-param-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap string-kind-map
   :short "Fixtype of maps from strings to kinds."
   :key-type string
