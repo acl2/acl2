@@ -12,9 +12,12 @@
 
 (include-book "abstract-syntax-structural-operations")
 
-(include-book "kestrel/fty/string-string-map" :dir :system)
+(include-book "kestrel/fty/deffold-map" :dir :system)
+(include-book "kestrel/fty/deffold-reduce" :dir :system)
+(include-book "kestrel/fty/string-set" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -27,386 +30,232 @@
   (xdoc::topstring
    (xdoc::p
     "These include substitutions of variables with other ASTs,
-     as well as variable renamings."))
+     as well as variable renamings.")
+   (xdoc::p
+    "The substitutions are represented as maps
+     from strings (variable names) to ASTs.
+     Since ispaces have distinct dimension and shape variables,
+     we use two separate maps for ispace variable substitutions,
+     one for dimension variables and one for shape variables.")
+   (xdoc::p
+    "The renamings are represented as maps from strings to strings.")
+   (xdoc::p
+    "Dimensions contain dimension variables,
+     but no shape or type or term variables;
+     so they only need one substitusion or renaming map
+     All the variables in a dimension are free,
+     because dimensions have no binders.")
+   (xdoc::p
+    "Shapes and ispaces contain dimension and shape variables,
+     but no type or term variables;
+     so they need two substitution or renaming maps.
+     All the variables in a shape or ispace are free,
+     because shapes and ispaces have no binders.")
+   (xdoc::p
+    "Types contain ispace (dimension and shape) and type variables,
+     but no term variables;
+     so they need three substitution or renaming maps in general,
+     but we provide separate substitution and renaming operations
+     for ispace and type variables in types.
+     Types have binders for both ispace and type variables,
+     so the operations apply to the free ispace and type variables;
+     when encountering bound variables,
+     they are removed from the substitution and renaming maps.")
+   (xdoc::p
+    "We also plan to add substitution and renaming operations
+     on expressions and atoms,
+     involving not only ispace and type variables,
+     but also term variables.")
+   (xdoc::p
+    "We need to double-check, and possibly revise,
+     the treatment of the boxing and unboxing constructs."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines subst-vars-in-indices
-  :short "Substitute variables in indices."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The substitution is specified by a map from strings to indices.
-     The only variables in an index are index variables.
-     All the variables in an index are free,
-     because indices have no binders."))
-
-  (define subst-vars-in-index ((index indexp) (subst string-index-mapp))
-    :returns (new-index indexp)
-    :parents (abstract-syntax-variable-operations subst-vars-in-indices)
-    :short "Substitute variables in an index."
-    (index-case
-     index
-     :var (b* ((subst (string-index-map-fix subst))
-               (var+index (omap::assoc index.name subst)))
-            (if var+index
-                (cdr var+index)
-              (index-var index.name)))
-     :const (index-const index.value)
-     :shape (index-shape (subst-vars-in-index-list index.indices subst))
-     :add (index-add (subst-vars-in-index-list index.indices subst))
-     :append (index-append (subst-vars-in-index-list index.indices subst)))
-    :measure (index-count index))
-
-  (define subst-vars-in-index-list ((indices index-listp)
-                                    (subst string-index-mapp))
-    :returns (new-indices index-listp)
-    :parents (abstract-syntax-variable-operations subst-vars-in-indices)
-    :short "Substitute variables in a list of indices."
-    (cond ((endp indices) nil)
-          (t (cons (subst-vars-in-index (car indices) subst)
-                   (subst-vars-in-index-list (cdr indices) subst))))
-    :measure (index-list-count indices)
-
-    ///
-
-    (defret len-of-subst-vars-in-index-list
-      (equal (len new-indices)
-             (len indices))
-      :hints (("Goal" :induct (len indices) :in-theory (enable len)))))
-
-  :verify-guards :after-returns
-
-  ///
-
-  (fty::deffixequiv-mutual subst-vars-in-indices))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines subst-free-index-vars-in-types
-  :short "Substitute free index variables in types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The substitution is specified by a map from strings to indices,
-     and is performed on the free variables in the indices in the types.
-     When encountering a binder of index variables,
-     the bound variables are removed from the map."))
-
-  (define subst-free-index-vars-in-type ((type typep) (subst string-index-mapp))
-    :returns (new-type typep)
-    :parents (abstract-syntax-variable-operations
-              subst-free-index-vars-in-types)
-    :short "Substitute free index variables in a type."
-    (type-case
-     type
-     :var (type-var type.name)
-     :base (type-base type.type)
-     :array (make-type-array
-             :type (subst-free-index-vars-in-type type.type subst)
-             :index (subst-vars-in-index type.index subst))
-     :fun (make-type-fun
-           :in (subst-free-index-vars-in-type-list type.in subst)
-           :out (subst-free-index-vars-in-type type.out subst))
-     :forall (make-type-forall
-              :vars type.vars
-              :type (subst-free-index-vars-in-type type.type subst))
-     :pi (b* ((bound-vars (set::mergesort (sorted-var-list->var type.vars)))
-              (subst (omap::delete* bound-vars
-                                    (string-index-map-fix subst))))
-           (make-type-pi
-            :vars type.vars
-            :type (subst-free-index-vars-in-type type.type subst)))
-     :sigma (b* ((bound-vars (set::mergesort (sorted-var-list->var type.vars)))
-                 (subst (omap::delete* bound-vars
-                                       (string-index-map-fix subst))))
-              (make-type-sigma
-               :vars type.vars
-               :type (subst-free-index-vars-in-type type.type subst))))
-    :measure (type-count type))
-
-  (define subst-free-index-vars-in-type-list ((types type-listp)
-                                              (subst string-index-mapp))
-    :returns (new-types type-listp)
-    :parents (abstract-syntax-variable-operations
-              subst-free-index-vars-in-types)
-    :short "Substitute free index variables in a list of types."
-    (cond ((endp types) nil)
-          (t (cons (subst-free-index-vars-in-type (car types) subst)
-                   (subst-free-index-vars-in-type-list (cdr types) subst))))
-    :measure (type-list-count types)
-
-    ///
-
-    (defret len-of-subst-free-index-vars-in-type-list
-      (equal (len new-types)
-             (len types))
-      :hints (("Goal" :induct (len types) :in-theory (enable len)))))
-
-  :verify-guards :after-returns
-
-  ///
-
-  (fty::deffixequiv-mutual subst-free-index-vars-in-types))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines subst-free-type-vars-in-types
-  :short "Substitute free type variables in types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The substitution is specified by a map from strings to types,
-     and is performed on the free variables in the types.
-     When encountering a binder of type variables,
-     the bound variables are removed from the map."))
-
-  (define subst-free-type-vars-in-type ((type typep) (subst string-type-mapp))
-    :returns (new-type typep)
-    :parents (abstract-syntax-variable-operations
-              subst-free-type-vars-in-types)
-    :short "Substitute free index variables in a type."
-    (type-case
-     type
-     :var (b* ((subst (string-type-map-fix subst))
-               (var+type (omap::assoc type.name subst)))
-            (if var+type
-                (cdr var+type)
-              (type-var type.name)))
-     :base (type-base type.type)
-     :array (make-type-array
-             :type (subst-free-type-vars-in-type type.type subst)
-             :index type.index)
-     :fun (make-type-fun
-           :in (subst-free-type-vars-in-type-list type.in subst)
-           :out (subst-free-type-vars-in-type type.out subst))
-     :forall (b* ((bound-vars (set::mergesort (kinded-var-list->var type.vars)))
-                  (subst (omap::delete* bound-vars
-                                        (string-type-map-fix subst))))
-               (make-type-forall
-                :vars type.vars
-                :type (subst-free-type-vars-in-type type.type subst)))
-     :pi (make-type-pi
-          :vars type.vars
-          :type (subst-free-type-vars-in-type type.type subst))
-     :sigma (make-type-sigma
-             :vars type.vars
-             :type (subst-free-type-vars-in-type type.type subst)))
-    :measure (type-count type))
-
-  (define subst-free-type-vars-in-type-list ((types type-listp)
-                                             (subst string-type-mapp))
-    :returns (new-types type-listp)
-    :parents (abstract-syntax-variable-operations
-              subst-free-type-vars-in-types)
-    :short "Substitute free index variables in a list of types."
-    (cond ((endp types) nil)
-          (t (cons (subst-free-type-vars-in-type (car types) subst)
-                   (subst-free-type-vars-in-type-list (cdr types) subst))))
-    :measure (type-list-count types)
-
-    ///
-
-    (defret len-of-subst-free-type-vars-in-type-list
-      (equal (len new-types)
-             (len types))
-      :hints (("Goal" :induct (len types) :in-theory (enable len)))))
-
-  :verify-guards :after-returns
-
-  ///
-
-  (fty::deffixequiv-mutual subst-free-type-vars-in-types))
+(define vars-of-ispace-params ((params ispace-param-listp))
+  :returns (mv (dim-vars string-setp) (shape-vars string-setp))
+  :short "Extract the sets of dimension and shape variables
+          from a list of ispace parameters."
+  (b* (((when (endp params)) (mv nil nil))
+       ((mv dim-vars shape-vars) (vars-of-ispace-params (cdr params)))
+       (param (car params)))
+    (ispace-param-case
+     param
+     :dim (mv (set::insert param.name dim-vars) shape-vars)
+     :shape (mv dim-vars (set::insert param.name shape-vars))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines rename-vars-in-indices
-  :short "Rename variables in indices."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The renaming is specified by a map from strings to strings.
-     The only variables in an index are index variables.
-     All the variables in an index are free,
-     because indices have no binders."))
-
-  (define rename-vars-in-index ((index indexp) (renaming string-string-mapp))
-    :returns (new-index indexp)
-    :parents (abstract-syntax-variable-operations rename-vars-in-indices)
-    :short "Rename variables in an index."
-    (index-case
-     index
-     :var (b* ((renaming (string-string-map-fix renaming))
-               (var+name (omap::assoc index.name renaming)))
-            (if var+name
-                (index-var (cdr var+name))
-              (index-var index.name)))
-     :const (index-const index.value)
-     :shape (index-shape (rename-vars-in-index-list index.indices renaming))
-     :add (index-add (rename-vars-in-index-list index.indices renaming))
-     :append (index-append (rename-vars-in-index-list index.indices renaming)))
-    :measure (index-count index))
-
-  (define rename-vars-in-index-list ((indices index-listp)
-                                     (renaming string-string-mapp))
-    :returns (new-indices index-listp)
-    :parents (abstract-syntax-variable-operations rename-vars-in-indices)
-    :short "Rename variables in a list of indices."
-    (cond ((endp indices) nil)
-          (t (cons (rename-vars-in-index (car indices) renaming)
-                   (rename-vars-in-index-list (cdr indices) renaming))))
-    :measure (index-list-count indices)
-
-    ///
-
-    (defret len-of-rename-vars-in-index-list
-      (equal (len new-indices)
-             (len indices))
-      :hints (("Goal" :induct (len indices) :in-theory (enable len)))))
-
-  :verify-guards :after-returns
-
-  ///
-
-  (fty::deffixequiv-mutual rename-vars-in-indices))
+(fty::deffold-map subst-dim-vars
+  :short "Substitute dimension variables in dimensions and lists of dimensions."
+  :types (dims)
+  :extra-args ((subst string-dim-mapp))
+  :override
+  ((dim :var (b* ((subst (string-dim-map-fix subst))
+                  (var+dim (omap::assoc dim.name subst)))
+               (if var+dim
+                   (cdr var+dim)
+                 (dim-var dim.name))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines rename-free-index-vars-in-types
-  :short "Rename free index variables in types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The reanming is specified by a map from strings to strings,
-     and is performed on the free variables in the indices in the types.
-     When encountering a binder of index variables,
-     the bound variables are removed from the map."))
-
-  (define rename-free-index-vars-in-type ((type typep)
-                                          (renaming string-string-mapp))
-    :returns (new-type typep)
-    :parents (abstract-syntax-variable-operations
-              rename-free-index-vars-in-types)
-    :short "Rename free index variables in a type."
-    (type-case
-     type
-     :var (type-var type.name)
-     :base (type-base type.type)
-     :array (make-type-array
-             :type (rename-free-index-vars-in-type type.type renaming)
-             :index (rename-vars-in-index type.index renaming))
-     :fun (make-type-fun
-           :in (rename-free-index-vars-in-type-list type.in renaming)
-           :out (rename-free-index-vars-in-type type.out renaming))
-     :forall (make-type-forall
-              :vars type.vars
-              :type (rename-free-index-vars-in-type type.type renaming))
-     :pi (b* ((bound-vars (set::mergesort (sorted-var-list->var type.vars)))
-              (renaming (omap::delete* bound-vars
-                                    (string-string-map-fix renaming))))
+(fty::deffold-map subst-ispace-vars
+  :short "Substitute (free) ispace (i.e. dimension and shape) variables
+          in shapes, ispaces, types, and lists thereof."
+  :types (shapes ispace ispace-list types)
+  :extra-args ((dim-subst string-dim-mapp)
+               (shape-subst string-shape-mapp))
+  :override
+  ((shape :var (b* ((shape-subst (string-shape-map-fix shape-subst))
+                    (var+shape (omap::assoc shape.name shape-subst)))
+                 (if var+shape
+                     (cdr var+shape)
+                   (shape-var shape.name))))
+   (shape :dim (shape-dim (dim-subst-dim-vars shape.dim dim-subst)))
+   (shape :dims (shape-dims (dim-list-subst-dim-vars shape.dims dim-subst)))
+   (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
+   (type :pi
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (vars-of-ispace-params type.params))
+              (dim-subst
+               (omap::delete* bound-dim-vars
+                              (string-dim-map-fix dim-subst)))
+              (shape-subst
+               (omap::delete* bound-shape-vars
+                              (string-shape-map-fix shape-subst))))
            (make-type-pi
-            :vars type.vars
-            :type (rename-free-index-vars-in-type type.type renaming)))
-     :sigma (b* ((bound-vars (set::mergesort (sorted-var-list->var type.vars)))
-                 (renaming (omap::delete* bound-vars
-                                       (string-string-map-fix renaming))))
-              (make-type-sigma
-               :vars type.vars
-               :type (rename-free-index-vars-in-type type.type renaming))))
-    :measure (type-count type))
-
-  (define rename-free-index-vars-in-type-list ((types type-listp)
-                                               (renaming string-string-mapp))
-    :returns (new-types type-listp)
-    :parents (abstract-syntax-variable-operations
-              rename-free-index-vars-in-types)
-    :short "Rename free index variables in a list of types."
-    (cond ((endp types) nil)
-          (t (cons (rename-free-index-vars-in-type (car types) renaming)
-                   (rename-free-index-vars-in-type-list (cdr types) renaming))))
-    :measure (type-list-count types)
-
-    ///
-
-    (defret len-of-rename-free-index-vars-in-type-list
-      (equal (len new-types)
-             (len types))
-      :hints (("Goal" :induct (len types) :in-theory (enable len)))))
-
-  :verify-guards :after-returns
-
-  ///
-
-  (fty::deffixequiv-mutual rename-free-index-vars-in-types))
+            :params type.params
+            :type (type-subst-ispace-vars type.type dim-subst shape-subst))))
+   (type :sigma
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (vars-of-ispace-params type.params))
+              (dim-subst
+               (omap::delete* bound-dim-vars
+                              (string-dim-map-fix dim-subst)))
+              (shape-subst
+               (omap::delete* bound-shape-vars
+                              (string-shape-map-fix shape-subst))))
+           (make-type-sigma
+            :params type.params
+            :type (type-subst-ispace-vars type.type dim-subst shape-subst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines rename-free-type-vars-in-types
-  :short "Rename free type variables in types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The renaming is specified by a map from strings to strings,
-     and is performed on the free variables in the types.
-     When encountering a binder of type variables,
-     the bound variables are removed from the map."))
+(fty::deffold-map subst-type-vars
+  :short "Substitute (free) type variables in types and lists of types."
+  :types (types)
+  :extra-args ((subst string-type-mapp))
+  :override
+  ((type :var (b* ((subst (string-type-map-fix subst))
+                   (var+type (omap::assoc type.name subst)))
+                (if var+type
+                    (cdr var+type)
+                  (type-var type.name))))
+   (type :forall (b* ((bound-vars
+                       (set::mergesort (kinded-var-list->var type.vars)))
+                      (subst (omap::delete* bound-vars
+                                            (string-type-map-fix subst))))
+                   (make-type-forall
+                    :vars type.vars
+                    :type (type-subst-type-vars type.type subst))))))
 
-  (define rename-free-type-vars-in-type ((type typep)
-                                         (renaming string-string-mapp))
-    :returns (new-type typep)
-    :parents (abstract-syntax-variable-operations
-              rename-free-type-vars-in-types)
-    :short "Reanem free index variables in a type."
-    (type-case
-     type
-     :var (b* ((renaming (string-string-map-fix renaming))
-               (var+type (omap::assoc type.name renaming)))
-            (if var+type
-                (type-var (cdr var+type))
-              (type-var type.name)))
-     :base (type-base type.type)
-     :array (make-type-array
-             :type (rename-free-type-vars-in-type type.type renaming)
-             :index type.index)
-     :fun (make-type-fun
-           :in (rename-free-type-vars-in-type-list type.in renaming)
-           :out (rename-free-type-vars-in-type type.out renaming))
-     :forall (b* ((bound-vars (set::mergesort (kinded-var-list->var type.vars)))
-                  (renaming (omap::delete* bound-vars
-                                        (string-string-map-fix renaming))))
-               (make-type-forall
-                :vars type.vars
-                :type (rename-free-type-vars-in-type type.type renaming)))
-     :pi (make-type-pi
-          :vars type.vars
-          :type (rename-free-type-vars-in-type type.type renaming))
-     :sigma (make-type-sigma
-             :vars type.vars
-             :type (rename-free-type-vars-in-type type.type renaming)))
-    :measure (type-count type))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define rename-free-type-vars-in-type-list ((types type-listp)
-                                              (renaming string-string-mapp))
-    :returns (new-types type-listp)
-    :parents (abstract-syntax-variable-operations
-              rename-free-type-vars-in-types)
-    :short "Rename free index variables in a list of types."
-    (cond ((endp types) nil)
-          (t (cons (rename-free-type-vars-in-type (car types) renaming)
-                   (rename-free-type-vars-in-type-list (cdr types) renaming))))
-    :measure (type-list-count types)
+(fty::deffold-map rename-dim-vars
+  :short "Rename dimension variables in dimensions and lists of dimensions."
+  :types (dims)
+  :extra-args ((renam string-string-mapp))
+  :override
+  ((dim :var (b* ((renam (string-string-map-fix renam))
+                  (var+name (omap::assoc dim.name renam)))
+               (if var+name
+                   (dim-var (cdr var+name))
+                 (dim-var dim.name))))))
 
-    ///
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (defret len-of-rename-free-type-vars-in-type-list
-      (equal (len new-types)
-             (len types))
-      :hints (("Goal" :induct (len types) :in-theory (enable len)))))
+(fty::deffold-map rename-ispace-vars
+  :short "Rename (free) ispace (i.e. dimension and shape) variables
+          in shapes, ispaces, types, and lists thereof."
+  :types (shapes ispace ispace-list types)
+  :extra-args ((dim-renam string-string-mapp)
+               (shape-renam string-string-mapp))
+  :override
+  ((shape :var (b* ((shape-renam (string-string-map-fix shape-renam))
+                    (var+name (omap::assoc shape.name shape-renam)))
+                 (if var+name
+                     (shape-var (cdr var+name))
+                   (shape-var shape.name))))
+   (shape :dim (shape-dim (dim-rename-dim-vars shape.dim dim-renam)))
+   (shape :dims (shape-dims (dim-list-rename-dim-vars shape.dims dim-renam)))
+   (ispace :dim (ispace-dim (dim-rename-dim-vars ispace.dim dim-renam)))
+   (type :pi
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (vars-of-ispace-params type.params))
+              (dim-renam
+               (omap::delete* bound-dim-vars
+                              (string-string-map-fix dim-renam)))
+              (shape-renam
+               (omap::delete* bound-shape-vars
+                              (string-string-map-fix shape-renam))))
+           (make-type-pi
+            :params type.params
+            :type (type-rename-ispace-vars type.type dim-renam shape-renam))))
+   (type :sigma
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (vars-of-ispace-params type.params))
+              (dim-renam
+               (omap::delete* bound-dim-vars
+                              (string-string-map-fix dim-renam)))
+              (shape-renam
+               (omap::delete* bound-shape-vars
+                              (string-string-map-fix shape-renam))))
+           (make-type-sigma
+            :params type.params
+            :type (type-rename-ispace-vars type.type dim-renam shape-renam))))))
 
-  :verify-guards :after-returns
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ///
+(fty::deffold-map rename-type-vars
+  :short "Rename (free) type variables in types and lists of types."
+  :types (types)
+  :extra-args ((renam string-string-mapp))
+  :override
+  ((type :var (b* ((renam (string-string-map-fix renam))
+                   (var+name (omap::assoc type.name renam)))
+                (if var+name
+                    (type-var (cdr var+name))
+                  (type-var type.name))))
+   (type :forall (b* ((bound-vars
+                       (set::mergesort (kinded-var-list->var type.vars)))
+                      (renam (omap::delete* bound-vars
+                                            (string-string-map-fix renam))))
+                   (make-type-forall
+                    :vars type.vars
+                    :type (type-rename-type-vars type.type renam))))))
 
-  (fty::deffixequiv-mutual rename-free-type-vars-in-types))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce free-ispace-vars
+  :short "Set of free ispace variables in
+          ispaces, types, typed variables, expressions, atoms,
+          and lists thereof."
+  :types (dims shapes ispace ispace-list types typed-var exprs/atoms)
+  :result ispace-param-setp
+  :default nil
+  :combine set::union
+  :override
+  ((dim :var (set::insert (ispace-param-dim dim.name) nil))
+   (shape :var (set::insert (ispace-param-shape shape.name) nil))
+   (type :pi (set::difference (type-free-ispace-vars type.type)
+                              (set::mergesort type.params)))
+   (type :sigma (set::difference (type-free-ispace-vars type.type)
+                                 (set::mergesort type.params)))
+   (expr :unbox (set::union (expr-free-ispace-vars expr.target)
+                            (set::difference (expr-free-ispace-vars expr.body)
+                                             (set::mergesort expr.ispaces))))
+   (atom :ispace-abs (set::difference (expr-free-ispace-vars atom.body)
+                                      (set::mergesort atom.params)))))

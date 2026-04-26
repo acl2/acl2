@@ -74,6 +74,14 @@
       This implementation is work in progress.
       We reference this as `[impl]' in the documentation."))
    (xdoc::p
+    "Since [impl] is more recent than the other sources,
+     and [impl] is under active development,
+     it is the main source,
+     and the one we follow in case of discrepancies.
+     However, the other sources contain information (e.g. typing rules)
+     not directly and explicitly present in [impl],
+     and thus they are still quite important.")
+   (xdoc::p
     "This ACL2 library is work in progress towards building
      formalizations and tools for Remora."))
   :order-subtopics (grammar

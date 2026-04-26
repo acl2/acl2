@@ -195,8 +195,8 @@
   :prepwork
   ((local
     (in-theory
-     (enable valuep-when-value-resultp-and-not-reserrp
-             value-listp-when-value-list-resultp-and-not-reserrp))))
+     (enable valuep-when-result-not-error
+             value-listp-when-result-not-error))))
 
   :verify-guards nil ; done below
   ///
@@ -331,10 +331,10 @@
   ((local
     (in-theory
      (enable
-      expressionp-when-expression-resultp-and-not-reserrp
-      expression-listp-when-expression-list-resultp-and-not-reserrp
-      struct-initp-when-struct-init-resultp-and-not-reserrp
-      struct-init-listp-when-struct-init-list-resultp-and-not-reserrp))))
+      expressionp-when-result-not-error
+      expression-listp-when-result-not-error
+      struct-initp-when-result-not-error
+      struct-init-listp-when-result-not-error))))
 
   :verify-guards nil ; done below
   ///

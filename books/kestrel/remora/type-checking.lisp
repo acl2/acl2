@@ -26,22 +26,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local
- (in-theory
-  (enable
-   sortp-when-sort-resultp-and-not-reserrp
-   sort-listp-when-sort-list-resultp-and-not-reserrp
-   kindp-when-kind-resultp-and-not-reserrp
-   kind-listp-when-kind-list-resultp-and-not-reserrp
-   indexp-when-index-resultp-and-not-reserrp
-   index-listp-when-index-list-resultp-and-not-reserrp
-   typep-when-type-resultp-and-not-reserrp
-   type-listp-when-type-list-resultp-and-not-reserrp
-   type+index-p-when-type+index-resultp-and-not-reserrp
-   type+index-listp-when-type+index-list-resultp-and-not-reserrp
-   typelist+type-p-when-typelist+type-resultp-and-not-reserrp
-   sortedvarlist+type-p-when-sortedvarlist+type-resultp-and-not-reserrp
-   kindedvarlist+type-p-when-kindedvarlist+type-resultp-and-not-reserrp)))
+(local (in-theory (enable kindp-when-result-not-error
+                          kind-listp-when-result-not-error
+                          shapep-when-result-not-error
+                          shape-listp-when-result-not-error
+                          typep-when-result-not-error
+                          type-listp-when-result-not-error
+                          stringstringmap-pairp-when-result-not-error
+                          type+shape-p-when-result-not-error
+                          type+shape-listp-when-result-not-error
+                          typelist+type-p-when-result-not-error
+                          ispaceparamlist+type-p-when-result-not-error
+                          kindedvarlist+type-p-when-result-not-error
+                          stringdimmap+stringshapemap-p-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -64,35 +61,15 @@
      sort environments with @($\\Theta$),
      kind environments with @($\\Delta$), and
      type environments with @($\\Gamma$).
-     Our code uses @('sortenv'), @('kindenv'), and @('typeenv'),
+     Our code does not use sort environments;
+     it uses @('kindenv') for kind environments,
+     and @('typeenv') for type environments,
      which are maps from strings (for variable names)
-     to the associated sorts, kinds, and types.")
-   (xdoc::p
-    "This is work in progress."))
+     to the associated kinds and types."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sorted-var-list-to-map ((svars sorted-var-listp))
-  :returns (sortenv string-sort-mapp)
-  :short "Turn a list of sorted variables into a map."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We go through the variables,
-     and put them into the map, with the associated sorts.
-     If there are duplicate variables, the leftmost ones prevail.
-     We should always call this function on
-     lists of sorte varaibles without duplilcate names;
-     perhaps we could have and verify a guard for that."))
-  (b* (((when (endp svars)) nil)
-       ((sorted-var svar) (car svars))
-       (map (sorted-var-list-to-map (cdr svars))))
-    (omap::update svar.var svar.sort map))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define kinded-var-list-to-map ((kvars kinded-var-listp))
   :returns (map string-kind-mapp)
@@ -134,82 +111,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines check-indices
-  :short "Check indices and lists of indices."
-
-  (define check-index ((index indexp) (sortenv string-sort-mapp))
-    :returns (sort sort-resultp)
-    :parents (type-checking check-indices)
-    :short "Check an index, returning its sort if successful."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "A variable is looked up in the environment.")
-     (xdoc::p
-      "A constant is always a dimension.")
-     (xdoc::p
-      "A shape is a shape (i.e. has the shape sort),
-       provided that its indices are all dimensions.")
-     (xdoc::p
-      "An addition is a dimension,
-       provided that its indices are all dimensions.")
-     (xdoc::p
-      "A concatenation is a shape,
-       provided that its indices are all shapes."))
-    (b* ((sortenv (string-sort-map-fix sortenv)))
-      (index-case
-       index
-       :var (b* ((name+sort (omap::assoc index.name sortenv))
-                 ((unless name+sort) (reserr nil)))
-              (cdr name+sort))
-       :const (sort-dim)
-       :shape (b* (((ok sorts) (check-index-list index.indices sortenv))
-                   ((unless (sort-list-dimp sorts)) (reserr nil)))
-                (sort-shape))
-       :add (b* (((ok sorts) (check-index-list index.indices sortenv))
-                 ((unless (sort-list-dimp sorts)) (reserr nil)))
-              (sort-dim))
-       :append (b* (((ok sorts) (check-index-list index.indices sortenv))
-                    ((unless (sort-list-shapep sorts)) (reserr nil)))
-                 (sort-shape))))
-    :measure (index-count index))
-
-  (define check-index-list ((indices index-listp) (sortenv string-sort-mapp))
-    :returns (sorts sort-list-resultp)
-    :parents (type-checking check-indices)
-    :short "Check a list of indices, returning their sorts if successful."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "The sorts are in the same order as the indices."))
-    (b* (((when (endp indices)) nil)
-         ((ok sort) (check-index (car indices) sortenv))
-         ((ok sorts) (check-index-list (cdr indices) sortenv)))
-      (cons sort sorts))
-    :measure (index-list-count indices)
-
-    ///
-
-    (defret len-of-check-index-list
-      (implies (not (reserrp sorts))
-               (equal (len sorts)
-                      (len indices)))
-      :hints (("Goal" :induct (len indices) :in-theory (enable len)))))
-
-  :verify-guards :after-returns
-
-  ///
-
-  (fty::deffixequiv-mutual check-indices))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines check-types
   :short "Check types and lists of types."
 
-  (define check-type ((type typep)
-                      (sortenv string-sort-mapp)
-                      (kindenv string-kind-mapp))
+  (define check-type ((type typep) (kindenv string-kind-mapp))
     :returns (kind kind-resultp)
     :parents (type-checking check-types)
     :short "Check a type, returning its kind if successful."
@@ -221,8 +126,7 @@
       "A base type has the atom kind.")
      (xdoc::p
       "An array type has the array kind,
-       provided that its inner type has the atom kind
-       and its index has the shape sort.")
+       provided that its inner type has the atom kind.")
      (xdoc::p
       "A function type has the atom kind,
        provided that its input and output types all have the array kind.")
@@ -230,64 +134,52 @@
       "For a universal type,
        we ensure that there are no duplicate variables,
        we turn the kinded variables into an environment,
-       and we use it to update the current type environment;
+       and we use it to update the current kind environment;
        this may override existing mappings, which should be intended.
        Then we check the body of the universal type,
        ensuring that it has the array kind.
        The universal type has the atom kind.")
      (xdoc::p
       "For a product or sum type,
-       we ensure that there are no duplicate variables,
-       we turn the sorted variables into an environment,
-       and we use it to update the current index environment;
-       this may override existing mappings, which should be intended.
+       we ensure that there are no duplicate variables.
        Then we check the body of the product or sum type,
        ensuring that it has the array kind.
        The product or sum type has the atom kind."))
-    (b* ((sortenv (string-sort-map-fix sortenv))
-         (kindenv (string-kind-map-fix kindenv)))
+    (b* ((kindenv (string-kind-map-fix kindenv)))
       (type-case
        type
        :var (b* ((name+kind (omap::assoc type.name kindenv))
                  ((unless name+kind) (reserr nil)))
               (cdr name+kind))
        :base (kind-atom)
-       :array (b* (((ok kind) (check-type type.type sortenv kindenv))
-                   ((unless (kind-case kind :atom)) (reserr nil))
-                   ((ok sort) (check-index type.index sortenv))
-                   ((unless (sort-case sort :shape)) (reserr nil)))
+       :array (b* (((ok kind) (check-type type.type kindenv))
+                   ((unless (kind-case kind :atom)) (reserr nil)))
                 (kind-array))
-       :fun (b* (((ok kinds) (check-type-list type.in sortenv kindenv))
+       :fun (b* (((ok kinds) (check-type-list type.in kindenv))
                  ((unless (kind-list-arrayp kinds)) (reserr nil))
-                 ((ok kind) (check-type type.out sortenv kindenv))
+                 ((ok kind) (check-type type.out kindenv))
                  ((unless (kind-case kind :array)) (reserr nil)))
               (kind-atom))
        :forall (b* ((vars (kinded-var-list->var type.vars))
                     ((unless (no-duplicatesp-equal vars)) (reserr nil))
                     (kindenv-addition (kinded-var-list-to-map type.vars))
                     (kindenv (omap::update* kindenv-addition kindenv))
-                    ((ok kind) (check-type type.type sortenv kindenv))
+                    ((ok kind) (check-type type.type kindenv))
                     ((unless (kind-case kind :array)) (reserr nil)))
                  (kind-atom))
-       :pi (b* ((vars (sorted-var-list->var type.vars))
+       :pi (b* ((vars (ispace-param-list->name type.params))
                 ((unless (no-duplicatesp-equal vars)) (reserr nil))
-                (sortenv-addition (sorted-var-list-to-map type.vars))
-                (sortenv (omap::update* sortenv-addition sortenv))
-                ((ok kind) (check-type type.type sortenv kindenv))
+                ((ok kind) (check-type type.type kindenv))
                 ((unless (kind-case kind :array)) (reserr nil)))
              (kind-atom))
-       :sigma (b* ((vars (sorted-var-list->var type.vars))
+       :sigma (b* ((vars (ispace-param-list->name type.params))
                    ((unless (no-duplicatesp-equal vars)) (reserr nil))
-                   (sortenv-addition (sorted-var-list-to-map type.vars))
-                   (sortenv (omap::update* sortenv-addition sortenv))
-                   ((ok kind) (check-type type.type sortenv kindenv))
+                   ((ok kind) (check-type type.type kindenv))
                    ((unless (kind-case kind :array)) (reserr nil)))
                 (kind-atom))))
     :measure (type-count type))
 
-  (define check-type-list ((types type-listp)
-                           (sortenv string-sort-mapp)
-                           (kindenv string-kind-mapp))
+  (define check-type-list ((types type-listp) (kindenv string-kind-mapp))
     :returns (kinds kind-list-resultp)
     :parents (type-checking check-types)
     :short "Check a list of types, returning their kinds if successful."
@@ -296,8 +188,8 @@
      (xdoc::p
       "The kinds are in the same order as the types."))
     (b* (((when (endp types)) nil)
-         ((ok kind) (check-type (car types) sortenv kindenv))
-         ((ok kinds) (check-type-list (cdr types) sortenv kindenv)))
+         ((ok kind) (check-type (car types) kindenv))
+         ((ok kinds) (check-type-list (cdr types) kindenv)))
       (cons kind kinds))
     :measure (type-list-count types)
 
@@ -320,81 +212,11 @@
 (define base-type-of-base-value ((bval base-valuep))
   :returns (btype base-typep)
   :short "Base type of a base value."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This can be extended and tweaked
-     as we extend and tweak the base values and types,
-     which the Remora publications do not pin down."))
   (base-value-case
    bval
    :bool (base-type-bool)
-   :char (base-type-char)
-   :int (base-type-int)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-of-prim-op ((op prim-opp))
-  :returns (type typep)
-  :short "Type of a primitive operation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This corresponds to the signature described in [arxiv] and [thesis].
-     This can be extended and tweaked
-     as we extend and tweak the primitive operations
-     and the base values and types,
-     which the Remora publications do not pin down.")
-   (xdoc::p
-    "[arxiv] and [thesis] exemplify the signature
-     by giving the input and output types of @('+'),
-     which we represent as @(':add').
-     Those publications mention a @('Num') (i.e. numeric type).
-     Given our current base types, we pick the integer type,
-     for this and the other three arithmetic operations;
-     they all have scalar ranks for inputs and outputs.")
-   (xdoc::p
-    "The types of @('append'), @('reduce'), and @('iota') are shown
-     in Figure 2 of [arxiv] and in Figure 4.3 of [thesis].
-     The figures elide the universal and product quantifiers,
-     but we need to include them in our definition.")
-   (xdoc::p
-    "We use the readable constructors for Remora types
-     defined in @(see abstract-syntax-constructors)."))
-  (b* ((add/sub/mul/div-type (t-> ((tarray :int (ishape))
-                                   (tarray :int (ishape)))
-                                  (tarray :int (ishape))))
-       (append-type
-        (tforall ("t" :atom)
-                 (tpi ("n" :dim
-                       "m" :dim
-                       "s" :shape)
-                      (t-> ((tarray "t" (i++ (ishape "m") "s"))
-                            (tarray "t" (i++ (ishape "n") "s")))
-                           (tarray "t" (i++ (ishape (i+ "m" "n")) "s"))))))
-       (reduce-type
-        (tforall ("t" :atom)
-                 (tpi ("s" :shape
-                       "d" :dim)
-                      (t-> ((tarray (t-> ((tarray "t" "s")
-                                          (tarray "t" "s"))
-                                         (tarray "t" "s"))
-                                    (ishape))
-                            (tarray "t" (i++ (ishape (i+ 1 "d")) "s")))
-                           (tarray "t" "s")))))
-       (iota-type
-        (tpi ("d" :dim)
-             (t-> ((tarray :int (ishape "d")))
-                  (tarray (tsigma ("s" :shape) (tarray :int "s")) (ishape))))))
-    (prim-op-case
-     op
-     :add add/sub/mul/div-type
-     :sub add/sub/mul/div-type
-     :mul add/sub/mul/div-type
-     :div add/sub/mul/div-type
-     :append append-type
-     :reduce reduce-type
-     :iota iota-type)))
+   :int (base-type-int)
+   :float (base-type-float)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -424,70 +246,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-index-suffix ((index indexp) (suffix indexp))
-  :returns (prefix index-resultp)
-  :short "Check if an index has another index as suffix,
-          returning the prefix index if successful."
+(define check-shape-suffix ((shape shapep) (suffix shapep))
+  :returns (prefix shape-resultp)
+  :short "Check if a shape has another shape as suffix,
+          returning the prefix shape if successful."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used for a term application: see @(tsee check-expr).
-     Each of the indices of the input types of the function expression
-     must be a suffix of the index of the type of
+     Each of the shapes of the input types of the function expression
+     must be a suffix of the shape of the type of
      the argument expression corresponding to the function input.
      In [arxiv] and [thesis],
-     the index of the argument is denoted
+     the shape of the argument is denoted
      @($(\\mathtt{++}\\ \\iota_a\\ \\iota)\\ldots$),
-     and the index of the input is denoted @($\\iota$).
-     This function takes the argument index as the formal @('index'),
-     and the input type index as the formal @('suffix'),
+     and the shape of the input is denoted @($\\iota$);
+     they use ispaces in general,
+     but the ispaces are shapes,
+     and our formalization directly uses shapes.
+     This function takes the argument shape as the formal @('shape'),
+     and the input type shape as the formal @('suffix'),
      and returns @($\\iota_a$) if successful,
      which is the prefix.")
    (xdoc::p
-    "To perform this check, we need to normalize both indices.
-     Since these are indices of array types,
-     they can only be variables,
-     or shapes (of dimensions),
-     or concatenations of the above;
-     the concatenation is either empty or has two or more elements,
-     because singleton concatenations are normalized to their element.")
-   (xdoc::p
-    "To facilitate comparison,
-     we turn non-concatenations (i.e. variables and shapes)
-     into singleton concatenations.
-     In other words, we end up with two lists of indices,
-     all of which are variables and (singleton) shapes,
-     to compare for the second one being a suffix of the first one.
-     If the prefix is a singleton list,
-     we return the element, so that we keep the resulting prefix normalized.")
-   (xdoc::p
-    "This function works on all categories of indices,
-     including those of the dimension sort,
-     even though it is always called with indices of the shape sort.
-     We may be able to explicate invariants
-     that will rule out these dimension sorts;
-     we will investigate that later."))
-  (b* ((index (normalize-index index))
-       (suffix (normalize-index suffix))
-       (index-elements (index-case index
-                                   :append index.indices
-                                   :otherwise (list index)))
-       (suffix-elements (index-case suffix
-                                    :append suffix.indices
-                                    :otherwise (list suffix)))
-       ((unless (<= (len suffix-elements) (len index-elements))) (reserr nil))
-       ((unless (equal suffix-elements
-                       (nthcdr (- (len index-elements)
-                                  (len suffix-elements))
-                               index-elements)))
+    "To perform this check, we need to normalize both shapes,
+     which results into two concatenations of
+     lists of variables and single-dimension shapes.
+     We check whether the second list is a suffix of the first list.
+     If the prefix is a singleton list, we return its element."))
+  (b* ((shape (normalize-shape shape))
+       (suffix (normalize-shape suffix))
+       ((unless (shape-case shape :append))
+        (raise "Internal error: normalized shape is ~x0." shape)
         (reserr nil))
-       (prefix-elements (take (- (len index-elements)
+       ((unless (shape-case suffix :append))
+        (raise "Internal error: normalized shape is ~x0." suffix)
+        (reserr nil))
+       (shape-elements (shape-append->shapes shape))
+       (suffix-elements (shape-append->shapes suffix))
+       ((unless (<= (len suffix-elements) (len shape-elements))) (reserr nil))
+       ((unless (equal suffix-elements
+                       (nthcdr (- (len shape-elements)
+                                  (len suffix-elements))
+                               shape-elements)))
+        (reserr nil))
+       (prefix-elements (take (- (len shape-elements)
                                  (len suffix-elements))
-                              index-elements)))
+                              shape-elements)))
     (if (and (consp prefix-elements)
              (endp (cdr prefix-elements)))
         (car prefix-elements)
-      (index-append prefix-elements)))
+      (shape-append prefix-elements)))
+  :no-function nil
   :guard-hints (("Goal" :in-theory (enable nfix)))
   :prepwork
   ((defrulel returns-lemma1
@@ -499,36 +309,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-index-suffixes ((indices index-listp) (suffixes index-listp))
-  :guard (equal (len suffixes) (len indices))
-  :returns (prefixes index-list-resultp)
-  :short "Check if each index in a list has
-          the corresponding index in a list as suffix,
+(define check-shape-suffixes ((shapes shape-listp) (suffixes shape-listp))
+  :guard (equal (len suffixes) (len shapes))
+  :returns (prefixes shape-list-resultp)
+  :short "Check if each shape in a list has
+          the corresponding shape in another list as suffix,
           returning each prefix if successful."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This lifts @(tsee check-index-suffix) to lists,
+    "This lifts @(tsee check-shape-suffix) to lists,
      which all have the same lengths (if successful)."))
-  (b* (((when (endp indices)) nil)
+  (b* (((when (endp shapes)) nil)
        ((unless (mbt (consp suffixes))) (reserr nil))
-       ((ok prefix) (check-index-suffix (car indices) (car suffixes)))
-       ((ok prefixes) (check-index-suffixes (cdr indices) (cdr suffixes))))
+       ((ok prefix) (check-shape-suffix (car shapes) (car suffixes)))
+       ((ok prefixes) (check-shape-suffixes (cdr shapes) (cdr suffixes))))
     (cons prefix prefixes))
 
   ///
 
-  (defret len-of-check-index-suffixes
+  (defret len-of-check-shape-suffixes
     (implies (not (reserrp prefixes))
              (equal (len prefixes)
-                    (len indices)))
+                    (len shapes)))
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define join-indices ((indices index-listp))
-  :returns (index index-resultp)
-  :short "Calculate the least upper bound of a list of indices,
+(define join-shapes ((shapes shape-listp))
+  :returns (shape shape-resultp)
+  :short "Calculate the least upper bound of a list of shapes,
           with respect to prefix as partial order."
   :long
   (xdoc::topstring
@@ -536,7 +346,7 @@
     "This is used for a term application; see @(tsee check-expr).
      After having calculated all the prefixes @($\\iota_a\\ldots$),
      we need to calculate the join (i.e. least upper bound)
-     of those indices and of the index @($\\iota_f$) of the function expression.
+     of those shapes and of the shape @($\\iota_f$) of the function expression.
      The partial order in question is the prefix relation:
      @($\\iota\\sqsubseteq\\iota'$) iff @($\\iota$) is a prefix of @($\\iota'$)
      (including the case @($\\iota=\\iota'$)).")
@@ -549,30 +359,77 @@
      If the list has two or more elements,
      we recursively calculate the join of the @(tsee cdr) of the list,
      then we normalize that and the @(tsee car) and compare them.
-     To facilitate comparisons,
-     we turn non-concatenations into singleton concatenations,
-     so we just need to compare the elements of the concatenations.
      If neither the @(tsee car) is a prefix of the join nor vice versa,
      it is an error, i.e. there is no join;
      otherwise the result is the longer concatenation."))
-  (b* (((when (endp indices)) (index-append nil))
-       ((when (endp (cdr indices))) (index-fix (car indices)))
-       ((ok cdr-index) (join-indices (cdr indices)))
-       (cdr-index (normalize-index cdr-index))
-       (car-index (normalize-index (car indices)))
-       (car-elements (index-case car-index
-                                 :append car-index.indices
-                                 :otherwise (list car-index)))
-       (cdr-elements (index-case cdr-index
-                                 :append cdr-index.indices
-                                 :otherwise (list cdr-index))))
-    (cond ((prefixp car-elements cdr-elements) (index-append cdr-elements))
-          ((prefixp cdr-elements car-elements) (index-append car-elements))
+  (b* (((when (endp shapes)) (shape-append nil))
+       ((when (endp (cdr shapes))) (shape-fix (car shapes)))
+       ((ok cdr-shape) (join-shapes (cdr shapes)))
+       (cdr-shape (normalize-shape cdr-shape))
+       (car-shape (normalize-shape (car shapes)))
+       ((unless (shape-case cdr-shape :append))
+        (raise "Internal error: normalized shape is ~x0." cdr-shape)
+        (reserr nil))
+       ((unless (shape-case car-shape :append))
+        (raise "Internal error: normalized shape is ~x0." car-shape)
+        (reserr nil))
+       (car-elements (shape-append->shapes car-shape))
+       (cdr-elements (shape-append->shapes cdr-shape)))
+    (cond ((prefixp car-elements cdr-elements) (shape-append cdr-elements))
+          ((prefixp cdr-elements car-elements) (shape-append car-elements))
           (t (reserr nil))))
+  :no-function nil
   :verify-guards :after-returns
   ///
-  (fty::deffixequiv join-indices
-    :hints (("Goal" :induct t :in-theory (enable index-list-fix)))))
+  (fty::deffixequiv join-shapes
+    :hints (("Goal" :induct t :in-theory (enable shape-list-fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ispace-params-and-args ((params ispace-param-listp)
+                                      (args ispace-listp))
+  :returns (maps stringdimmap+stringshapemap-resultp)
+  :short "Check whether a list of ispace parameters and ispace arguments match."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists must have the same number of elements,
+     and each parameter must have the same sort as the argument.
+     If the check succeeds, we return two maps,
+     one from the names of the dimension parameters
+     to the corresponding dimension arguments,
+     and one from the names of the shape parameters
+     to the corresponding shape arguments."))
+  (b* (((when (endp params))
+        (if (endp args)
+            (make-stringdimmap+stringshapemap
+             :dim-map nil
+             :shape-map nil)
+          (reserr nil)))
+       ((when (endp args)) (reserr nil))
+       ((ok (stringdimmap+stringshapemap maps))
+        (check-ispace-params-and-args (cdr params) (cdr args)))
+       (param (car params))
+       (arg (car args)))
+    (ispace-param-case
+     param
+     :dim (ispace-case
+           arg
+           :dim (make-stringdimmap+stringshapemap
+                 :dim-map (omap::update param.name
+                                        arg.dim
+                                        maps.dim-map)
+                 :shape-map maps.shape-map)
+           :shape (reserr nil))
+     :shape (ispace-case
+             arg
+             :dim (reserr nil)
+             :shape (make-stringdimmap+stringshapemap
+                     :dim-map maps.dim-map
+                     :shape-map (omap::update param.name
+                                              arg.shape
+                                              maps.shape-map)))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -584,7 +441,7 @@
     "Because of type equivalence,
      an expression or atom may not have a unique type,
      but rather a set of possible equivalent types.
-     Our checking functions return a ``canonical'' type,
+     Our checking functions return a particular type,
      based on the syntactic specifics of the expression or atom.
      Type equivalence is used to compare types,
      e.g. the type of an argument against the type of a parameter.
@@ -593,7 +450,6 @@
      but we should formally prove all of this."))
 
   (define check-expr ((expr exprp)
-                      (sortenv string-sort-mapp)
                       (kindenv string-kind-mapp)
                       (typeenv string-type-mapp))
     :returns (type type-resultp)
@@ -602,7 +458,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "A variable is looked up in the (term) environment.")
+      "A variable is looked up in the type environment.")
      (xdoc::p
       "For a (non-empty) array, there must be no zero dimension,
        and the number of atoms must match the product of the dimensions.
@@ -620,15 +476,14 @@
      (xdoc::p
       "A (non-empty) frame is similar to a (non-empty) array,
        but the expressions must have all equivalent array types,
-       and the index of the resulting array type is
+       and the shape of the resulting array type is
        the concatenation of the dimensions with
-       the index of the array type of the expressions
+       the shape of the array type of the expressions
        (we pick the first one).")
      (xdoc::p
       "An empty frame is similar to an empty array,
-       but the type must be an array type
-       with an atom type and with a shape index.
-       The latter is concatenated after the frame's dimensions.")
+       but the type must be an array type,
+       whose shape is concatenated after the frame's dimensions.")
      (xdoc::p
       "For a term application,
        first we check the function expression,
@@ -636,33 +491,33 @@
        whose input and output types are all array types.
        The atom input and output types
        are denoted @($\\tau\\ldots$) and @($\\tau'$),
-       and their indices are denoted @($\\iota\\ldots$) and @($\\iota'$),
+       and their shapes are denoted @($\\iota\\ldots$) and @($\\iota'$),
        in [arxiv] and [thesis];
        our code uses
        @('in-atom-types'), @('out-atom-type'),
-       @('in-index'), and @('out-index').
-       The index of the array type of the function expression
+       @('in-shape'), and @('out-shape').
+       The shape of the array type of the function expression
        is denoted @($\\iota_f$) in [arxiv] and [thesis];
-       our code uses @('fun-index').
+       our code uses @('fun-shape').
        The argument expressions must all have array types,
        whose atom types must be equal to
        the input atom types of the function expression.
-       The indices of the argument expressions,
-       for which our code uses @('arg-indices'),
+       The shapes of the argument expressions,
+       for which our code uses @('arg-shapes'),
        are denoted @($(\\mathtt{++}\\ \\iota_a\\ \\iota)\\ldots$),
-       which means that the indices @($\\iota\\ldots$)
+       which means that the shapes @($\\iota\\ldots$)
        of the corresponding inputs types must be suffixes,
        and that we need to extract the prefixes @($\\iota_a\\ldots$);
        we do that via a separate function (see its documentation).
-       Then we take the join of all those prefixes and the function index
-       (see documentation of @(tsee join-indices):
-       that is the principal index, in Remora's terminology,
+       Then we take the join of all those prefixes and the function shape
+       (see documentation of @(tsee join-shapes)):
+       that is the principal shape (ispace), in Remora's terminology,
        denoted @($\\iota_p$) in [arxiv] and [thesis].
        Finally we return the type of the term application expression,
        which is the array type consisting of
        the function output atom type
-       and the concatenation of the principal index
-       with the function output index.")
+       and the concatenation of the principal shape
+       with the function output shape.")
      (xdoc::p
       "For a type application,
        first we check the function expression,
@@ -671,8 +526,8 @@
        In [arxiv] and [thesis],
        @($(x\\ k)\\ldots$) corresponds to @'kvars') in our code,
        @($\\tau_u$) corresponds to @('body-atom-type'),
-       @($\\iota_u$) corresponds to @('body-index'),
-       and @($\\iota_f$) corresponds to @('fun-index').
+       @($\\iota_u$) corresponds to @('body-type'),
+       and @($\\iota_f$) corresponds to @('fun-type').
        We check all the type arguments
        (@($\\tau\\ldots$) in [arxiv] and [thesis]),
        ensuring that their kinds match the ones of
@@ -680,42 +535,41 @@
        We form a substitution from the bound variables to the argument types,
        and we apply it to the body atom type
        to obtain the atom type of the resulting array type,
-       whose index is obtained by concatenating
-       the function index to the body index.")
+       whose type is obtained by concatenating
+       the function type to the body type.")
      (xdoc::p
-      "For an index application,
+      "For an ispace application,
        first we check the function expression,
        which must have an array type of a product type,
        whose body type is an array type.
        In [arxiv] and [thesis],
-       @($(x\\ \\gamma)\\ldots$) corresponds to @'svars') in our code,
+       @($(x\\ \\gamma)\\ldots$) corresponds to @('params') in our code,
        @($\\tau_p$) corresponds to @('body-atom-type'),
-       @($\\iota_p$) corresponds to @('body-index'),
-       and @($\\iota_f$) corresponds to @('fun-index').
-       We check all the index arguments
+       @($\\iota_p$) corresponds to @('body-shape'),
+       and @($\\iota_f$) corresponds to @('fun-shape').
+       We check all the shape arguments
        (@($\\iota\\ldots$) in [arxiv] and [thesis]),
        ensuring that their sorts match the ones of
-       the variables in the product type.
-       We form a substitution from the bound variables to the argument indices,
-       and we apply it to the body atom type
+       the bound variables in the product type.
+       We obtain two ispace maps (for dimensions and shapes),
+       which we substitute to the body atom type
        to obtain the atom type of the resulting array type,
-       whose index is obtained by concatenating
-       the function index to
-       the result of applying the same substitution to the body index.")
+       whose shape is obtained by concatenating
+       the function shape to
+       the result of applying the same substitution to the body shape.")
      (xdoc::p
       "For an unboxing expression,
-       first we check the target expression,
+       first we check that the ispace parameters have no duplicate names.
+       We check the target expression,
        which must be an array type of a sum type.
        In [arxiv] and [thesis],
-       @($\\iota_s$) corresponds to @('sum-index') in our code,
-       @($(x'\\ \\gamma)\\ldots$) corresponds to @('svars'),
-       and @($\\tau_s$) corresponds to @('body-type').
-       The number of bound variables must be the same as
-       the number of the index variables in the unboxing expression.
-       We extend the sort environment with the index variables
-       associated to the sorts of the corresponding bound variables.
+       @($\\iota_s$) corresponds to @('sum-shape') in our code,
+       @($(x'\\ \\gamma)\\ldots$) corresponds to @('sum-params'),
+       and @($\\tau_s$) corresponds to @('sum-body-type').
+       The number of bound variables in the sum type must be the same as
+       the number of the ispace variables in the unboxing expression.
        In the sum type body,
-       we rename the bound variables to the index variables:
+       we rename the bound variables to the ispace variables:
        we associate the resulting type
        to the term variable of the unboxing expression,
        and we extend the type environment with that association.
@@ -724,11 +578,11 @@
        we must get an array type,
        which must have the array kind.
        In [arxiv] and [thesis],
-       the latter array has atom type @($\\tau_b$) and index @($\\iota_b$),
-       which correspond to @('body-atom-type') and @('body-index') in our code.
+       the latter array has atom type @($\\tau_b$) and ispace @($\\iota_b$),
+       which correspond to @('body-atom-type') and @('body-ispace') in our code.
        The type of the unboxing expression is the array type consisting of
        the @($\\tau_b$) type as atom
-       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as index."))
+       and the concatenation of @($\\iota_s$) and @($\\iota_b$) as ispace."))
     (expr-case
      expr
      :var
@@ -740,142 +594,135 @@
           ((unless (= (len expr.atoms)
                       (nat-list-product expr.dims)))
            (reserr nil))
-          ((ok types) (check-atom-list expr.atoms sortenv kindenv typeenv))
+          ((ok types) (check-atom-list expr.atoms kindenv typeenv))
           ((unless (type-list-all-equivp types)) (reserr nil))
           (type (car types))
-          ((ok kind) (check-type type sortenv kindenv))
+          ((ok kind) (check-type type kindenv))
           ((unless (kind-case kind :atom)) (reserr nil)))
        (make-type-array :type type
-                        :index (index-shape (index-const-list expr.dims))))
+                        :shape (shape-dims (dim-const-list expr.dims))))
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-          ((ok kind) (check-type expr.type sortenv kindenv))
+          ((ok kind) (check-type expr.type kindenv))
           ((unless (kind-case kind :atom)) (reserr nil)))
        (make-type-array :type expr.type
-                        :index (index-shape (index-const-list expr.dims))))
+                        :shape (shape-dims (dim-const-list expr.dims))))
      :frame
      (b* (((when (member-equal 0 expr.dims)) (reserr nil))
           ((unless (= (len expr.exprs)
                       (nat-list-product expr.dims)))
            (reserr nil))
-          ((ok types) (check-expr-list expr.exprs sortenv kindenv typeenv))
+          ((ok types) (check-expr-list expr.exprs kindenv typeenv))
           ((unless (type-list-all-equivp types)) (reserr nil))
           (type (car types))
-          ((ok kind) (check-type type sortenv kindenv))
+          ((ok kind) (check-type type kindenv))
           ((unless (kind-case kind :array)) (reserr nil))
-          ((ok (type+index array)) (type-match-array type)))
+          ((ok (type+shape array)) (type-match-array type)))
        (make-type-array :type array.type
-                        :index (index-append
-                                (list (index-shape (index-const-list expr.dims))
-                                      array.index))))
+                        :shape (shape-append
+                                (list (shape-dims (dim-const-list expr.dims))
+                                      array.shape))))
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-          ((ok (type+index array)) (type-match-array expr.type))
-          ((ok kind) (check-type array.type
-                                 sortenv
-                                 kindenv))
-          ((unless (kind-case kind :atom)) (reserr nil))
-          ((ok sort) (check-index array.index
-                                  sortenv))
-          ((unless (sort-case sort :shape)) (reserr nil)))
+          ((ok (type+shape array)) (type-match-array expr.type))
+          ((ok kind) (check-type array.type kindenv))
+          ((unless (kind-case kind :atom)) (reserr nil)))
        (make-type-array :type array.type
-                        :index (index-append
-                                (list (index-shape
-                                       (index-const-list expr.dims))
-                                      array.index))))
+                        :shape (shape-append
+                                (list (shape-dims (dim-const-list expr.dims))
+                                      array.shape))))
      :term-app
-     (b* (((ok fun-arr-type) (check-expr expr.fun sortenv kindenv typeenv))
-          ((ok fun-arr-type+index) (type-match-array fun-arr-type))
-          (fun-type (type+index->type fun-arr-type+index))
-          (fun-index (type+index->index fun-arr-type+index))
+     (b* (((ok fun-arr-type) (check-expr expr.fun kindenv typeenv))
+          ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
+          (fun-type (type+shape->type fun-arr-type+shape))
+          (fun-shape (type+shape->shape fun-arr-type+shape))
           ((ok fun-types+type) (type-match-fun fun-type))
           (in-types (typelist+type->types fun-types+type))
           (out-type (typelist+type->type fun-types+type))
-          ((ok in-types+indices) (type-list-match-array in-types))
-          (in-atom-types (type+index-list->type in-types+indices))
-          (in-indices (type+index-list->index in-types+indices))
-          ((ok out-type+index) (type-match-array out-type))
-          (out-atom-type (type+index->type out-type+index))
-          (out-index (type+index->index out-type+index))
-          ((ok arg-types) (check-expr-list expr.args sortenv kindenv typeenv))
-          ((ok arg-types+indices) (type-list-match-array arg-types))
-          (arg-atom-types (type+index-list->type arg-types+indices))
-          (arg-indices (type+index-list->index arg-types+indices))
+          ((ok in-types+shapes) (type-list-match-array in-types))
+          (in-atom-types (type+shape-list->type in-types+shapes))
+          (in-shapes (type+shape-list->shape in-types+shapes))
+          ((ok out-type+shape) (type-match-array out-type))
+          (out-atom-type (type+shape->type out-type+shape))
+          (out-shape (type+shape->shape out-type+shape))
+          ((ok arg-types) (check-expr-list expr.args kindenv typeenv))
+          ((ok arg-types+shapes) (type-list-match-array arg-types))
+          (arg-atom-types (type+shape-list->type arg-types+shapes))
+          (arg-shapes (type+shape-list->shape arg-types+shapes))
           ((unless (type-list-equivp arg-atom-types in-atom-types))
            (reserr nil))
-          ((ok prefix-indices) (check-index-suffixes arg-indices in-indices))
-          ((ok principal-index) (join-indices (cons fun-index prefix-indices))))
+          ((ok prefix-shapes) (check-shape-suffixes arg-shapes in-shapes))
+          ((ok principal-shape) (join-shapes (cons fun-shape prefix-shapes))))
        (make-type-array :type out-atom-type
-                        :index (index-append (list principal-index out-index))))
+                        :shape (shape-append (list principal-shape out-shape))))
      :type-app
-     (b* (((ok fun-arr-type) (check-expr expr.fun sortenv kindenv typeenv))
-          ((ok fun-arr-type+index) (type-match-array fun-arr-type))
-          (fun-type (type+index->type fun-arr-type+index))
-          (fun-index (type+index->index fun-arr-type+index))
+     (b* (((ok fun-arr-type) (check-expr expr.fun kindenv typeenv))
+          ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
+          (fun-type (type+shape->type fun-arr-type+shape))
+          (fun-shape (type+shape->shape fun-arr-type+shape))
           ((ok fun-vars+type) (type-match-forall fun-type))
           (kvars (kindedvarlist+type->vars fun-vars+type))
           (body-arr-type (kindedvarlist+type->type fun-vars+type))
-          ((ok body-type+index) (type-match-array body-arr-type))
-          (body-atom-type (type+index->type body-type+index))
-          (body-index (type+index->index body-type+index))
-          ((ok kinds) (check-type-list expr.args sortenv kindenv))
+          ((ok body-type+shape) (type-match-array body-arr-type))
+          (body-atom-type (type+shape->type body-type+shape))
+          (body-shape (type+shape->shape body-type+shape))
+          ((ok kinds) (check-type-list expr.args kindenv))
           ((unless (equal kinds (kinded-var-list->kind kvars))) (reserr nil))
           (bound-vars (kinded-var-list->var kvars))
           (subst (omap::from-lists bound-vars expr.args)))
        (make-type-array
-        :type (subst-free-type-vars-in-type body-atom-type subst)
-        :index (index-append (list fun-index body-index))))
-     :index-app
-     (b* (((ok fun-arr-type) (check-expr expr.fun sortenv kindenv typeenv))
-          ((ok fun-arr-type+index) (type-match-array fun-arr-type))
-          (fun-type (type+index->type fun-arr-type+index))
-          (fun-index (type+index->index fun-arr-type+index))
-          ((ok fun-vars+type) (type-match-product fun-type))
-          (svars (sortedvarlist+type->vars fun-vars+type))
-          (body-arr-type (sortedvarlist+type->type fun-vars+type))
-          ((ok body-type+index) (type-match-array body-arr-type))
-          (body-atom-type (type+index->type body-type+index))
-          (body-index (type+index->index body-type+index))
-          ((ok sorts) (check-index-list expr.args sortenv))
-          ((unless (equal sorts (sorted-var-list->sort svars))) (reserr nil))
-          (bound-vars (sorted-var-list->var svars))
-          (subst (omap::from-lists bound-vars expr.args))
-          (body-index-subst (subst-vars-in-index body-index subst)))
+        :type (type-subst-type-vars body-atom-type subst)
+        :shape (shape-append (list fun-shape body-shape))))
+     :ispace-app
+     (b* (((ok fun-arr-type) (check-expr expr.fun kindenv typeenv))
+          ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
+          (fun-type (type+shape->type fun-arr-type+shape))
+          (fun-shape (type+shape->shape fun-arr-type+shape))
+          ((ok fun-params+type) (type-match-product fun-type))
+          (params (ispaceparamlist+type->params fun-params+type))
+          (body-arr-type (ispaceparamlist+type->type fun-params+type))
+          ((ok body-type+shape) (type-match-array body-arr-type))
+          (body-atom-type (type+shape->type body-type+shape))
+          (body-shape (type+shape->shape body-type+shape))
+          ((ok (stringdimmap+stringshapemap ispace-maps))
+           (check-ispace-params-and-args params expr.args))
+          (body-shape-subst (shape-subst-ispace-vars body-shape
+                                                     ispace-maps.dim-map
+                                                     ispace-maps.shape-map)))
        (make-type-array
-        :type (subst-free-index-vars-in-type body-atom-type subst)
-        :index (index-append (list fun-index body-index-subst))))
+        :type (type-subst-ispace-vars body-atom-type
+                                      ispace-maps.dim-map
+                                      ispace-maps.shape-map)
+        :shape (shape-append (list fun-shape body-shape-subst))))
      :unbox
-     (b* (((ok target-arr-type)
-           (check-expr expr.target sortenv kindenv typeenv))
-          ((ok target-arr-type+index) (type-match-array target-arr-type))
-          (sum-type (type+index->type target-arr-type+index))
-          (sum-index (type+index->index target-arr-type+index))
-          ((ok sum-vars+type) (type-match-sum sum-type))
-          (svars (sortedvarlist+type->vars sum-vars+type))
-          (body-type (sortedvarlist+type->type sum-vars+type))
-          ((unless (= (len expr.index-vars) (len svars))) (reserr nil))
-          (bound-vars (sorted-var-list->var svars))
-          (sorts (sorted-var-list->sort svars))
-          (sortenv-addition (omap::from-lists expr.index-vars sorts))
-          (sortenv (omap::update* sortenv-addition
-                                  (string-sort-map-fix sortenv)))
-          (renaming (omap::from-lists bound-vars expr.index-vars))
-          (body-type-renam (rename-free-index-vars-in-type body-type renaming))
-          (typeenv (omap::update expr.term-var
-                                 body-type-renam
+     (b* (((unless (no-duplicatesp-equal (ispace-param-list->name expr.ispaces)))
+           (reserr nil))
+          ((ok target-arr-type) (check-expr expr.target kindenv typeenv))
+          ((ok target-arr-type+shape) (type-match-array target-arr-type))
+          (sum-type (type+shape->type target-arr-type+shape))
+          (sum-shape (type+shape->shape target-arr-type+shape))
+          ((ok sum-params+type) (type-match-sum sum-type))
+          (sum-params (ispaceparamlist+type->params sum-params+type))
+          (sum-body-type (ispaceparamlist+type->type sum-params+type))
+          ((unless (= (len expr.ispaces) (len sum-params))) (reserr nil))
+          ((ok (stringstringmap-pair renaming))
+           (check-ispace-param-renaming sum-params expr.ispaces))
+          (sum-body-type-renam
+           (type-rename-ispace-vars sum-body-type renaming.1st renaming.2nd))
+          (typeenv (omap::update expr.var
+                                 sum-body-type-renam
                                  (string-type-map-fix typeenv)))
-          ((ok arr-type) (check-expr expr.body sortenv kindenv typeenv))
-          ((ok arr-type+index) (type-match-array arr-type))
-          (body-atom-type (type+index->type arr-type+index))
-          (body-index (type+index->index arr-type+index))
-          ((ok kind) (check-type arr-type sortenv kindenv))
+          ((ok arr-type) (check-expr expr.body kindenv typeenv))
+          ((ok arr-type+shape) (type-match-array arr-type))
+          (body-atom-type (type+shape->type arr-type+shape))
+          (body-shape (type+shape->shape arr-type+shape))
+          ((ok kind) (check-type arr-type kindenv))
           ((unless (kind-case kind :array)) (reserr nil)))
        (make-type-array :type body-atom-type
-                        :index (index-append (list sum-index body-index)))))
+                        :shape (shape-append (list sum-shape body-shape)))))
     :measure (expr-count expr))
 
   (define check-expr-list ((exprs expr-listp)
-                           (sortenv string-sort-mapp)
                            (kindenv string-kind-mapp)
                            (typeenv string-type-mapp))
     :returns (types type-list-resultp)
@@ -886,8 +733,8 @@
      (xdoc::p
       "The types are in the same order as the expressions."))
     (b* (((when (endp exprs)) nil)
-         ((ok type) (check-expr (car exprs) sortenv kindenv typeenv))
-         ((ok types) (check-expr-list (cdr exprs) sortenv kindenv typeenv)))
+         ((ok type) (check-expr (car exprs) kindenv typeenv))
+         ((ok types) (check-expr-list (cdr exprs) kindenv typeenv)))
       (cons type types))
     :measure (expr-list-count exprs)
 
@@ -910,7 +757,6 @@
       :hints (("Goal" :induct (len exprs) :in-theory (enable len)))))
 
   (define check-atom ((atom atomp)
-                      (sortenv string-sort-mapp)
                       (kindenv string-kind-mapp)
                       (typeenv string-type-mapp))
     :returns (type type-resultp)
@@ -919,12 +765,13 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The type of a base value or a primitive operator
+      "The type of a base value
        is independent from the environment(s),
        and determined via separate functions.")
      (xdoc::p
       "For a term abstraction,
-       we check all the types of the bound variables,
+       first we check that there are no duplicate bound variable names.
+       We check all the types of the bound variables,
        which must all have the array kind.
        We extend the type environment with the bound variables,
        and we check the body of the abstraction in the extended environment.
@@ -932,15 +779,16 @@
        and its input types are the ones of the bound variables.")
      (xdoc::p
       "For a type abstraction,
-       we extend the kind environment with the bound variables,
+       first we check that there are no duplicate bound variable names.
+       We extend the kind environment with the bound variables,
        and we check the body of the abstraction in the extended enviroment.
        The resulting type is the body of the universal type
        that is the type of the abstraction,
        whose bound variables are the same as the abstraction.")
      (xdoc::p
-      "For an index abstraction,
-       we extend the sort environment with the bound variables,
-       and we check the body of the abstraction in the extended environment.
+      "For an ispace abstraction,
+       first we check that there are no duplicate bound variable names.
+       We check the body of the abstraction.
        The resulting type is the body of the product type
        that is the type of the abstraction,
        whose bound variables are the same as the abstraction.")
@@ -948,10 +796,11 @@
       "For a boxing atom,
        the type that is part of its syntax must be a sum type
        and must be successfully checked to have the atom kind.
-       The indices in the boxing atom must have the same sorts
-       as the bound variables of the sum type.
+       We check that the ispaces in the boxing atom have the same sorts
+       as the bound variables of the sum type,
+       obtaining a dimension substitution and a shape substitution.
        In the body type of the sum type,
-       we substitute the bound variables with the indices of the boxing atom;
+       we apply those substitutions;
        the resulting type must be equivalent to
        the type of the body expression of the box.
        The type of the boxing atom is the sum type."))
@@ -959,46 +808,48 @@
      atom
      :base
      (type-base (base-type-of-base-value atom.value))
-     :op
-     (type-of-prim-op atom.op)
      :term-abs
-     (b* ((types (typed-var-list->type atom.vars))
-          ((ok kinds) (check-type-list types sortenv kindenv))
+     (b* (((unless (no-duplicatesp-equal (typed-var-list->var atom.vars)))
+           (reserr nil))
+          (types (typed-var-list->type atom.vars))
+          ((ok kinds) (check-type-list types kindenv))
           ((unless (kind-list-arrayp kinds)) (reserr nil))
           (typeenv-addition (typed-var-list-to-map atom.vars))
           (typeenv (omap::update* typeenv-addition
                                   (string-type-map-fix typeenv)))
-          ((ok type) (check-expr atom.body sortenv kindenv typeenv)))
+          ((ok type) (check-expr atom.body kindenv typeenv)))
        (make-type-fun :in types :out type))
      :type-abs
-     (b* ((kindenv-addition (kinded-var-list-to-map atom.vars))
+     (b* (((unless (no-duplicatesp-equal (kinded-var-list->var atom.vars)))
+           (reserr nil))
+          (kindenv-addition (kinded-var-list-to-map atom.vars))
           (kindenv (omap::update* kindenv-addition
                                   (string-kind-map-fix kindenv)))
-          ((ok type) (check-expr atom.body sortenv kindenv typeenv)))
+          ((ok type) (check-expr atom.body kindenv typeenv)))
        (make-type-forall :vars atom.vars :type type))
-     :index-abs
-     (b* ((sortenv-addition (sorted-var-list-to-map atom.vars))
-          (sortenv (omap::update* sortenv-addition
-                                  (string-sort-map-fix sortenv)))
-          ((ok type) (check-expr atom.body sortenv kindenv typeenv)))
-       (make-type-pi :vars atom.vars :type type))
+     :ispace-abs
+     (b* (((unless (no-duplicatesp-equal (ispace-param-list->name atom.params)))
+           (reserr nil))
+          ((ok type) (check-expr atom.body kindenv typeenv)))
+       (make-type-pi :params atom.params :type type))
      :box
-     (b* (((ok vars+type) (type-match-sum atom.type))
-          (svars (sortedvarlist+type->vars vars+type))
-          (body-type (sortedvarlist+type->type vars+type))
-          ((ok kind) (check-type atom.type sortenv kindenv))
+     (b* (((ok params+type) (type-match-sum atom.type))
+          (params (ispaceparamlist+type->params params+type))
+          (body-type (ispaceparamlist+type->type params+type))
+          ((ok kind) (check-type atom.type kindenv))
           ((unless (kind-case kind :atom)) (reserr nil))
-          ((ok sorts) (check-index-list atom.indices sortenv))
-          ((unless (equal sorts (sorted-var-list->sort svars))) (reserr nil))
-          (subst (omap::from-lists (sorted-var-list->var svars) atom.indices))
-          (body-type-subst (subst-free-index-vars-in-type body-type subst))
-          ((ok type) (check-expr atom.array sortenv kindenv typeenv))
+          ((ok (stringdimmap+stringshapemap maps))
+           (check-ispace-params-and-args params atom.ispaces))
+          (body-type-subst
+           (type-subst-ispace-vars body-type
+                                   maps.dim-map
+                                   maps.shape-map))
+          ((ok type) (check-expr atom.array kindenv typeenv))
           ((unless (type-equivp type body-type-subst)) (reserr nil)))
        atom.type))
     :measure (atom-count atom))
 
   (define check-atom-list ((atoms atom-listp)
-                           (sortenv string-sort-mapp)
                            (kindenv string-kind-mapp)
                            (typeenv string-type-mapp))
     :returns (types type-list-resultp)
@@ -1009,8 +860,8 @@
      (xdoc::p
       "The types are in the same order as the atoms."))
     (b* (((when (endp atoms)) nil)
-         ((ok type) (check-atom (car atoms) sortenv kindenv typeenv))
-         ((ok types) (check-atom-list (cdr atoms) sortenv kindenv typeenv)))
+         ((ok type) (check-atom (car atoms) kindenv typeenv))
+         ((ok types) (check-atom-list (cdr atoms) kindenv typeenv)))
       (cons type types))
     :measure (atom-list-count atoms)
 
@@ -1041,50 +892,38 @@
              (equal (len x) (len y))))
 
   (defrulel lemma1
-    (implies (and (not (reserrp (check-index-list indices sortenv)))
-                  (equal (check-index-list indices sortenv)
-                         (sorted-var-list->sort x)))
-             (equal (len x)
-                    (len indices)))
-    :use ((:instance len-lemma
-                     (x (check-index-list indices sortenv))
-                     (y (sorted-var-list->sort x)))
-          len-of-check-index-list)
-    :disable len-of-check-index-list)
-
-  (defrulel lemma2
-    (implies (and (not (reserrp (check-type-list types sortenv kindenv)))
-                  (equal (check-type-list types sortenv kindenv)
+    (implies (and (not (reserrp (check-type-list types kindenv)))
+                  (equal (check-type-list types kindenv)
                          (kinded-var-list->kind x)))
              (equal (len x)
                     (len types)))
     :use ((:instance len-lemma
-                     (x (check-type-list types sortenv kindenv))
+                     (x (check-type-list types kindenv))
                      (y (kinded-var-list->kind x)))
           len-of-check-type-list)
     :disable len-of-check-type-list)
 
-  (defrulel lemma3
+  (defrulel lemma2
     (implies (and (not (reserrp
-                        (check-expr-list exprs sortenv kindenv typeenv)))
+                        (check-expr-list exprs kindenv typeenv)))
                   (not (reserrp
                         (type-list-match-array
-                         (check-expr-list exprs sortenv kindenv typeenv))))
+                         (check-expr-list exprs kindenv typeenv))))
                   (not (reserrp (type-list-match-array x)))
                   (type-list-equivp
-                   (type+index-list->type
+                   (type+shape-list->type
                     (type-list-match-array
-                     (check-expr-list exprs sortenv kindenv typeenv)))
-                   (type+index-list->type
+                     (check-expr-list exprs kindenv typeenv)))
+                   (type+shape-list->type
                     (type-list-match-array x))))
              (equal (len x)
                     (len exprs)))
     :use ((:instance same-len-when-type-list-equivp
-                     (types1 (type+index-list->type
+                     (types1 (type+shape-list->type
                               (type-list-match-array
                                (check-expr-list
-                                exprs sortenv kindenv typeenv))))
-                     (types2 (type+index-list->type
+                                exprs kindenv typeenv))))
+                     (types2 (type+shape-list->type
                               (type-list-match-array x))))))
 
   (verify-guards check-expr)

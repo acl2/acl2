@@ -1002,11 +1002,9 @@
              input))
        :no-function nil
        :prepwork
-       ((local
-         (in-theory
-          (enable treep-when-tree-resultp-and-not-reserrp
-                  tree-listp-when-tree-list-resultp-and-not-reserrp
-                  tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
+       ((local (in-theory (enable treep-when-result-not-error
+                                  tree-listp-when-result-not-error
+                                  tree-list-listp-when-result-not-error))))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-rulename '-<=)
@@ -1069,11 +1067,9 @@
              input))
        :no-function nil
        :prepwork
-       ((local
-         (in-theory
-          (enable treep-when-tree-resultp-and-not-reserrp
-                  tree-listp-when-tree-list-resultp-and-not-reserrp
-                  tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
+       ((local (in-theory (enable treep-when-result-not-error
+                                  tree-listp-when-result-not-error
+                                  tree-list-listp-when-result-not-error))))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-group '-<=)
@@ -1142,11 +1138,9 @@
              input))
        :no-function nil
        :prepwork
-       ((local
-         (in-theory
-          (enable treep-when-tree-resultp-and-not-reserrp
-                  tree-listp-when-tree-list-resultp-and-not-reserrp
-                  tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
+       ((local (in-theory (enable treep-when-result-not-error
+                                  tree-listp-when-result-not-error
+                                  tree-list-listp-when-result-not-error))))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-option '-<=)
@@ -1217,8 +1211,7 @@
                          ,@(and check-error-p
                                 '(:hints
                                   (("Goal" :in-theory
-                                    (enable
-                                     treep-when-tree-resultp-and-not-reserrp))))))
+                                    (enable treep-when-result-not-error))))))
                   (rest-input nat-listp))
      :short ,(str::cat "Helper: parse COUNT elements for " short ".")
      (if (zp count)
@@ -1402,8 +1395,8 @@
            :returns
            (mv (trees tree-list-resultp
                       :hints
-                      (("Goal" :in-theory
-                        (enable treep-when-tree-resultp-and-not-reserrp))))
+                      (("Goal"
+                        :in-theory (enable treep-when-result-not-error))))
                (rest-input nat-listp))
            :short ,short
            (b* (,@mand-binds
@@ -1489,11 +1482,9 @@
         (defdefparse-gen-code-for-element
           rep.element nil prefix group-table option-table))
        (prepwork
-        '((local
-           (in-theory
-            (enable treep-when-tree-resultp-and-not-reserrp
-                    tree-listp-when-tree-list-resultp-and-not-reserrp
-                    tree-list-listp-when-tree-list-list-resultp-and-not-reserrp)))))
+        '((local (in-theory (enable treep-when-result-not-error
+                                    tree-listp-when-result-not-error
+                                    tree-list-listp-when-result-not-error)))))
        (short (str::cat "Parse a @('" (pretty-print-repetition rep) "')."))
 
        ;; Case: *element (min=0, max=infinity)

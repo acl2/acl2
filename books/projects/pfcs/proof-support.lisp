@@ -754,7 +754,7 @@
                                   (constraint-satp constr defs asg p)))))
      :enable (constraint-satp-of-relation
               definition-satp
-              acl2::nat-listp-when-nat-list-resultp-and-not-reserrp
+              acl2::nat-listp-when-result-not-error
               eval-expr-list-of-expression-var-list-and-omap-from-lists)
      :expand (constraint-relation-satp
               (constraint-relation->name constr)

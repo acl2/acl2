@@ -53,12 +53,7 @@
   :mnemonics '(BT BTS BTR BTC BSF BSR
                   SETB/NAE/C SETNB/AE/NC SETNBE/A SETP/PE SETNP/PO SETL/NGE
                   SETNL/GE SETLE/NG SETNLE/G SETZ/E SETNZ/NE SETBE/NA
-                  SETS SETNS SETO SETNO  TEST CRC32 POPCNT)
-  :doc "<p>Unimplemented instructions are:</p>
-<ul>
-<li>BTC</li>
-<li>CRC32</li>
-</ul>")
+                  SETS SETNS SETO SETNO  TEST CRC32 POPCNT))
 
 (def-sdm-instruction-section "5.1.7 Control Transfer Instructions"
   :mnemonics '(JMP JB/NAE/C JNB/AE/NC JZ/E JNZ/NE JBE/NA JNBE/A JP/PE JNP/PO JL/NGE
@@ -114,8 +109,7 @@
   :mnemonics '(STC CLC CMC CLD STD LAHF SAHF PUSHF/D/Q POPF/D/Q STI CLI))
 
 (def-sdm-instruction-section "5.1.12 Segment Register Instructions"
-  :mnemonics '(LDS LES LFS LGS LSS)
-  :doc "<p>None of these are implemented</p>")
+  :mnemonics '(LDS LES LFS LGS LSS))
 
 (def-sdm-instruction-section "5.1.13 Miscellaneous Instructions"
   :mnemonics '(

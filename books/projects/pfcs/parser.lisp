@@ -29,8 +29,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
- (in-theory (enable abnf::treep-when-tree-resultp-and-not-reserrp
-                    abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)))
+ (in-theory (enable abnf::treep-when-result-not-error
+                    abnf::tree-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

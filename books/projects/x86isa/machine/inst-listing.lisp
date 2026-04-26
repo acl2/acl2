@@ -1416,7 +1416,7 @@
           'NIL)
     (INST "LES" (OP :OP #xC4 :MODE :I64)
           (ARG :OP1 '(G Z) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST :VEX2-BYTE0 (OP :OP #xC5 :MODE :O64)
@@ -1425,7 +1425,7 @@
           'NIL)
     (INST "LDS" (OP :OP #xC5 :MODE :I64)
           (ARG :OP1 '(G Z) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "MOV"
@@ -10310,7 +10310,7 @@
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "LSS" (OP :OP #xFB2)
           (ARG :OP1 '(G V) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "BTR" (OP :OP #xFB3)
@@ -10319,12 +10319,12 @@
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "LFS" (OP :OP #xFB4)
           (ARG :OP1 '(G V) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "LGS" (OP :OP #xFB5)
           (ARG :OP1 '(G V) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "MOVZX" (OP :OP #xFB6)

@@ -153,6 +153,9 @@ to the list.</li>
 <li>Run the @('update-libs.sh') script.  This should download the new libraries
 into your @('quicklisp/bundle') directory.</li>
 
+<li> IMPORTANT: Look at the PATCHES TO CHECK output after running
+@('update-libs.sh'), and reapply any patches needed.</li>
+
 <li>Extend @('quicklisp/base-raw.lsp') to load the new library and
 certify it.  This @('base') book really is just a way to get the bundle loaded
 into an ACL2 session so that the libraries can be found as needed.  It
@@ -268,7 +271,7 @@ in the directory:</p>
 <path-to-acl2>/books/quicklisp/asdf-home/cache/common-lisp/*/<path-to-acl2>/books/quicklisp/bundle/software/osicat-20220220-git/posix/
 })
 
-<p>Important detail: file timestamp comparisons are all at whole-second granularity; 
+<p>Important detail: file timestamp comparisons are all at whole-second granularity;
 fractional seconds are truncated.</p>
 
 <p>On Linux, you can use @('ls -la --time-style=full-iso <file>') to see the
@@ -278,7 +281,7 @@ full timestamp. On macOS, you can use @('ls -lT <file>').</p>
 of the other two timestamps, this is the issue.
 The fix is to update the timestamp of @('wrappers__wrapper.o') to fall
 within the same second as the later of the other two timestamps.  For example, if
-you are on linux and @('wrappers__wrapper.o') and 
+you are on linux and @('wrappers__wrapper.o') and
 @('libosicat.so') were written in the
 same second, but @('wrappers.processed-wrapper-file') was written in the
 next second, you can use the command

@@ -35,6 +35,8 @@
                     nat-list
                     nat-list-fix
                     prefixp
+                    string-setp
+                    string-string-map
                     string-string-mapp
                     string-string-map-fix
                     fty::patbind-ok
