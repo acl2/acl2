@@ -207,7 +207,7 @@
 
 (fty::defprod ispacevarlist+type
   :short "Fixtype of pairs consisting of a list of ispace variables and a type."
-  ((params ispace-var-list)
+  ((vars ispace-var-list)
    (type type))
   :pred ispacevarlist+type-p)
 

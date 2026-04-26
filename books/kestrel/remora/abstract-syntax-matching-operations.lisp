@@ -93,21 +93,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-product ((type typep))
-  :returns (params+type ispacevarlist+type-resultp)
+  :returns (vars+type ispacevarlist+type-resultp)
   :short "Check if a type is a product type,
           returning its ispace parameter variables and body type if successful."
   (if (type-case type :pi)
-      (make-ispacevarlist+type :params (type-pi->params type)
+      (make-ispacevarlist+type :vars (type-pi->params type)
                                :type (type-pi->type type))
     (reserr nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-sum ((type typep))
-  :returns (params+type ispacevarlist+type-resultp)
+  :returns (vars+type ispacevarlist+type-resultp)
   :short "Check if a type is a sum type,
           returning its ispace parameter variables and body type if successful."
   (if (type-case type :sigma)
-      (make-ispacevarlist+type :params (type-sigma->params type)
+      (make-ispacevarlist+type :vars (type-sigma->params type)
                                :type (type-sigma->type type))
     (reserr nil)))

@@ -543,7 +543,7 @@
        which must have an array type of a product type,
        whose body type is an array type.
        In [arxiv] and [thesis],
-       @($(x\\ \\gamma)\\ldots$) corresponds to @('params') in our code,
+       @($(x\\ \\gamma)\\ldots$) corresponds to @('vars') in our code,
        @($\\tau_p$) corresponds to @('body-atom-type'),
        @($\\iota_p$) corresponds to @('body-shape'),
        and @($\\iota_f$) corresponds to @('fun-shape').
@@ -564,7 +564,7 @@
        which must be an array type of a sum type.
        In [arxiv] and [thesis],
        @($\\iota_s$) corresponds to @('sum-shape') in our code,
-       @($(x'\\ \\gamma)\\ldots$) corresponds to @('sum-params'),
+       @($(x'\\ \\gamma)\\ldots$) corresponds to @('sum-vars'),
        and @($\\tau_s$) corresponds to @('sum-body-type').
        The number of bound variables in the sum type must be the same as
        the number of the ispace variables in the unboxing expression.
@@ -678,14 +678,14 @@
           ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
           (fun-type (type+shape->type fun-arr-type+shape))
           (fun-shape (type+shape->shape fun-arr-type+shape))
-          ((ok fun-params+type) (type-match-product fun-type))
-          (params (ispacevarlist+type->params fun-params+type))
-          (body-arr-type (ispacevarlist+type->type fun-params+type))
+          ((ok fun-vars+type) (type-match-product fun-type))
+          (vars (ispacevarlist+type->vars fun-vars+type))
+          (body-arr-type (ispacevarlist+type->type fun-vars+type))
           ((ok body-type+shape) (type-match-array body-arr-type))
           (body-atom-type (type+shape->type body-type+shape))
           (body-shape (type+shape->shape body-type+shape))
           ((ok (stringdimmap+stringshapemap ispace-maps))
-           (check-ispace-vars-and-args params expr.args))
+           (check-ispace-vars-and-args vars expr.args))
           (body-shape-subst (shape-subst-ispace-vars body-shape
                                                      ispace-maps.dim-map
                                                      ispace-maps.shape-map)))
@@ -701,12 +701,12 @@
           ((ok target-arr-type+shape) (type-match-array target-arr-type))
           (sum-type (type+shape->type target-arr-type+shape))
           (sum-shape (type+shape->shape target-arr-type+shape))
-          ((ok sum-params+type) (type-match-sum sum-type))
-          (sum-params (ispacevarlist+type->params sum-params+type))
-          (sum-body-type (ispacevarlist+type->type sum-params+type))
-          ((unless (= (len expr.ispaces) (len sum-params))) (reserr nil))
+          ((ok sum-vars+type) (type-match-sum sum-type))
+          (sum-vars (ispacevarlist+type->vars sum-vars+type))
+          (sum-body-type (ispacevarlist+type->type sum-vars+type))
+          ((unless (= (len expr.ispaces) (len sum-vars))) (reserr nil))
           ((ok (stringstringmap-pair renaming))
-           (check-ispace-var-renaming sum-params expr.ispaces))
+           (check-ispace-var-renaming sum-vars expr.ispaces))
           (sum-body-type-renam
            (type-rename-ispace-vars sum-body-type renaming.1st renaming.2nd))
           (typeenv (omap::update expr.var
@@ -833,13 +833,13 @@
           ((ok type) (check-expr atom.body kindenv typeenv)))
        (make-type-pi :params atom.params :type type))
      :box
-     (b* (((ok params+type) (type-match-sum atom.type))
-          (params (ispacevarlist+type->params params+type))
-          (body-type (ispacevarlist+type->type params+type))
+     (b* (((ok vars+type) (type-match-sum atom.type))
+          (vars (ispacevarlist+type->vars vars+type))
+          (body-type (ispacevarlist+type->type vars+type))
           ((ok kind) (check-type atom.type kindenv))
           ((unless (kind-case kind :atom)) (reserr nil))
           ((ok (stringdimmap+stringshapemap maps))
-           (check-ispace-vars-and-args params atom.ispaces))
+           (check-ispace-vars-and-args vars atom.ispaces))
           (body-type-subst
            (type-subst-ispace-vars body-type
                                    maps.dim-map
