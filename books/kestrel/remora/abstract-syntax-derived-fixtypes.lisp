@@ -81,6 +81,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defset ispace-param-set
+  :short "Fixtype of sets of ispace parameters."
+  :elt-type ispace-param
+  :pred ispace-param-setp
+
+  ///
+
+  (defrule ispace-param-setp-of-mergesort
+    (implies (ispace-param-listp x)
+             (ispace-param-setp (set::mergesort x)))
+    :induct t
+    :enable set::mergesort))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap string-kind-map
   :short "Fixtype of maps from strings to kinds."
   :key-type string
@@ -190,20 +205,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod indexparamlist+type
-  :short "Fixtype of pairs consisting of a list of index parameters and a type."
-  ((params index-param-list)
+(fty::defprod ispaceparamlist+type
+  :short "Fixtype of pairs consisting of a list of ispace parameters and a type."
+  ((params ispace-param-list)
    (type type))
-  :pred indexparamlist+type-p)
+  :pred ispaceparamlist+type-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult indexparamlist+type-result
+(fty::defresult ispaceparamlist+type-result
   :short "Fixtype of
-          (i) pairs consisting of a list of index parameters and a type
+          (i) pairs consisting of a list of ispace parameters and a type
           and (ii) errors."
-  :ok indexparamlist+type
-  :pred indexparamlist+type-resultp
+  :ok ispaceparamlist+type
+  :pred ispaceparamlist+type-resultp
   :prepwork ((local (in-theory (enable strip-cars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

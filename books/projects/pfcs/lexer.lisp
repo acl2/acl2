@@ -224,7 +224,7 @@
     (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*digit')."
   (b* (((mv tree-thing1 input-after-thing1)

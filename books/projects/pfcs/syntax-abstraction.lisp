@@ -38,28 +38,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
- (in-theory
-  (enable
-   namep-when-name-resultp-and-not-reserrp
-   reserrp-when-name-resultp-and-not-namep
-   name-listp-when-name-list-resultp-and-not-reserrp
-   expressionp-when-expression-resultp-and-not-reserrp
-   expression-listp-when-expression-list-resultp-and-not-reserrp
-   constraintp-when-constraint-resultp-and-not-reserrp
-   constraint-listp-when-constraint-list-resultp-and-not-reserrp
-   definitionp-when-definition-resultp-and-not-reserrp
-   definition-listp-when-definition-list-resultp-and-not-reserrp
-   acl2::characterp-when-character-resultp-and-not-reserrp
-   acl2::character-listp-when-character-list-resultp-and-not-reserrp
-   acl2::natp-when-nat-resultp-and-not-reserrp
-   acl2::reserrp-when-nat-resultp-and-not-natp
-   abnf::treep-when-tree-resultp-and-not-reserrp
-   abnf::tree-listp-when-tree-list-resultp-and-not-reserrp
-   abnf::tree-list-listp-when-tree-list-list-resultp-and-not-reserrp
-   abnf::tree-list-tuple2p-when-tree-list-tuple2-resultp-and-not-reserrp
-   abnf::tree-list-tuple3p-when-tree-list-tuple3-resultp-and-not-reserrp
-   abnf::tree-list-tuple4p-when-tree-list-tuple4-resultp-and-not-reserrp
-   abnf::tree-list-tuple8p-when-tree-list-tuple8-resultp-and-not-reserrp)))
+ (in-theory (enable namep-when-result-not-error
+                    reserrp-when-name-resultp-not-ok
+                    name-listp-when-result-not-error
+                    expressionp-when-result-not-error
+                    expression-listp-when-result-not-error
+                    constraintp-when-result-not-error
+                    constraint-listp-when-result-not-error
+                    definitionp-when-result-not-error
+                    definition-listp-when-result-not-error
+                    acl2::characterp-when-result-not-error
+                    acl2::character-listp-when-result-not-error
+                    acl2::natp-when-result-not-error
+                    acl2::reserrp-when-nat-resultp-not-ok
+                    abnf::treep-when-result-not-error
+                    abnf::tree-listp-when-result-not-error
+                    abnf::tree-list-listp-when-result-not-error
+                    abnf::tree-list-tuple2p-when-result-not-error
+                    abnf::tree-list-tuple3p-when-result-not-error
+                    abnf::tree-list-tuple4p-when-result-not-error
+                    abnf::tree-list-tuple8p-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

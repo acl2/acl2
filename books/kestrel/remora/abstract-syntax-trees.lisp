@@ -17,6 +17,7 @@
 
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
+(local (include-book "std/basic/rfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST thms
 
 (include-book "std/basic/controlled-configuration" :dir :system)
@@ -55,70 +56,10 @@
      from the full syntax to the core syntax.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
-     we use ACL2 strings for variable names
-     (for expressions, types, and indices).
+     we use ACL2 strings for variable names.
      We may change this if needed."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum base-value
-  :short "Fixtype of base values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The publications on Remora
-     do not pin down the base values, leaving them abstract.
-     Here we define some initial representative base values,
-     which we may extend in the future.
-     We may also parameterize our abstract syntax
-     over the exact choice of these base values.")
-   (xdoc::p
-    "We may move this fixtype definition to a more general place,
-     since besides being part of the abstract syntax,
-     it may be part of the dynamic semantics."))
-  (:bool ((value bool)))
-  (:char ((value character)))
-  (:int ((value int)))
-  :pred base-valuep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum base-type
-  :short "Fixtype of base types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These mirror the base values in @(tsee base-value)."))
-  (:bool ())
-  (:char ())
-  (:int ())
-  :pred base-typep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum prim-op
-  :short "Fixtype of primitive operators."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The publications on Remora
-     do not pin down the primitive operators, leaving them abstract;
-     but they do provide a partial list.
-     Here we define some initial representative primitive operators,
-     consisting of the ones listed in the publications,
-     which we may extend in the future.
-     We may also parameterize our abstract syntax
-     over the exact choice of these primitive operators."))
-  (:add ())
-  (:sub ())
-  (:mul ())
-  (:div ())
-  (:append ())
-  (:reduce ())
-  (:iota ())
-  :pred prim-opp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -171,13 +112,13 @@
   (xdoc::topstring
    (xdoc::p
     "Although [arxiv] and [thesis]
-     define indices as consisting of dimensions and shapes mixed together,
-     and use sorting environments and rules to ensure index well-formedness,
+     define ispaces as consisting of dimensions and shapes mixed together,
+     and use sorting rules to ensure ispace well-formedness,
      we provide separate syntactic definitions of dimensions and shapes,
-     and avoid sorting environments and rules;
+     and avoid sorting rules;
      this is also consistent with [impl].
      The key point is that [arxiv] and [thesis] have
-     one form of index variables, which may denote dimensions or shapes,
+     one form of ispace variables, which may denote dimensions or shapes,
      while our ASTs have two separate formsm, one per sort,
      consistently with the concrete syntax (see ABNF grammar),
      which uses prefix symbols to explicate the sort of the variable."))
@@ -253,9 +194,9 @@
        so we use @(':dims') here.")
      (xdoc::p
       "The @(':splice') summand represents the square bracket notation.
-       Although [impl] and the ABNF grammar use indices inside the brackets,
+       Although [impl] and the ABNF grammar use ispaces inside the brackets,
        since dimensions may be auto-lifted dimensions,
-       we can just use shapes, and avoid a mutual recursion with indices here.
+       we can just use shapes, and avoid a mutual recursion with ispaces here.
        This makes it apparent that
        concatenation and splicing are equivalent constructs."))
     (:var ((name string)))
@@ -277,58 +218,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum index
-  :short "Fixtype of indices."
+(fty::deftagsum ispace
+  :short "Fixtype of ispaces."
   :long
   (xdoc::topstring
    (xdoc::p
-    "An index is either a dimension or a shape:
-     this enforces index sorts syntactically,
-     without the need for sorting environments and rules;
-     the key point is that dimensions and shapes have distinct variables.
-     [impl], and the ABNF grammar after it,
-     uses the term `extent', but we stick to `index' here."))
+    "An ispace (short for `index space') is either a dimension or a shape.
+     The rationale for this terminology is that ispaces
+     (one for dimensions, zero or more for shapes)
+     range over the dimensions and shapes.
+     [arxiv], [thesis], and [esop] use the term `index' for ispace,
+     but [impl] uses the newer term `ispace'."))
   (:dim ((dim dim)))
   (:shape ((shape shape)))
-  :pred indexp)
+  :pred ispacep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist index-list
-  :short "Fixtype of lists of indices."
-  :elt-type index
+(fty::deflist ispace-list
+  :short "Fixtype of lists of ispaces."
+  :elt-type ispace
   :true-listp t
   :elementp-of-nil nil
-  :pred index-listp)
+  :pred ispace-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum index-param
-  :short "Fixtype of index parameters."
+(fty::deftagsum ispace-param
+  :short "Fixtype of ispace parameters."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are index variables used as parameters,
+    "These are ispace variables used as parameters,
      e.g. in a product or sum type;
-     they correspond to @('extent-param') in the ABNF grammar.
+     they correspond to @('ispace-var') in the ABNF grammar.
      As in dimension and shape variables in @(tsee dim) and @(tsee shape),
-     index parameters carry their own sort (dimension or shape),
+     ispace parameters carry their own sort (dimension or shape),
      i.e. they are syntactically distinct.
      This is different from [arxiv] and [thesis],
      where dimension and shape variables are syntactically the same,
-     and thus they need explcit sorting environments and rules."))
+     and thus they need explcit sorting rules."))
   (:dim ((name string)))
   (:shape ((name string)))
-  :pred index-paramp)
+  :pred ispace-paramp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist index-param-list
-  :short "Fixtype of lists of index parameters."
-  :elt-type index-param
+(fty::deflist ispace-param-list
+  :short "Fixtype of lists of ispace parameters."
+  :elt-type ispace-param
   :true-listp t
   :elementp-of-nil nil
-  :pred index-param-listp)
+  :pred ispace-param-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum base-type
+  :short "Fixtype of base types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There are types for booleans, integers, and floats."))
+  (:bool ())
+  (:int ())
+  (:float ())
+  :pred base-typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -349,8 +303,8 @@
        array types (consisting of an atom type and a shape),
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
-       product types (quantified over index parameters),
-       and sum types (quantified over index parameters)."))
+       product types (quantified over ispace parameters),
+       and sum types (quantified over ispace parameters)."))
     (:var ((name string)))
     (:base ((type base-type)))
     (:array ((type type)
@@ -359,9 +313,9 @@
            (out type)))
     (:forall ((vars kinded-var-list)
               (type type)))
-    (:pi ((params index-param-list)
+    (:pi ((params ispace-param-list)
           (type type)))
-    (:sigma ((params index-param-list)
+    (:sigma ((params ispace-param-list)
              (type type)))
     :pred typep)
 
@@ -398,6 +352,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum base-value
+  :short "Fixtype of base values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[arxiv] and [thesis] do not pin down the base values,
+     leaving them abstract,
+     but [impl] currently has booleans, integers, and floats.
+     For integers, [impl] use Haskell's @('Int'),
+     which consists of fixed-precision integers with at least 30 bits.
+     For floats, [impl] uses Haskell's @('Float'),
+     which consists of single-precision floating-point numbers,
+     ``desired'' (according to the Haskell documentation)
+     to comply with the IEEE standard.
+     For now, we use ACL2 arbitrary-precision integers and rationals;
+     we will refine them later."))
+  (:bool ((value bool)))
+  (:int ((value int)))
+  (:float ((value acl2::rational)))
+  :pred base-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes exprs/atoms
   :short "Fixtypes of expressions, atoms, and lists thereof."
 
@@ -418,9 +395,9 @@
        applications of expressions to expressions
        (called `term applications' in the Remora publications),
        applications of expressions to types,
-       applications of expressions to indices,
+       applications of expressions to ispaces,
        and unboxing of expressions;
-       the latter binds zero or more variables to indices,
+       the latter binds zero or more variables to ispaces,
        a variable to the boxed value,
        and then returns the body expression.")
      (xdoc::p
@@ -446,9 +423,9 @@
                 (args expr-list)))
     (:type-app ((fun expr)
                 (args type-list)))
-    (:index-app ((fun expr)
-                 (args index-list)))
-    (:unbox ((indices index-param-list)
+    (:ispace-app ((fun expr)
+                 (args ispace-list)))
+    (:unbox ((ispaces ispace-param-list)
              (var string)
              (target expr)
              (body expr)))
@@ -474,24 +451,22 @@
      (xdoc::p
       "There are
        base values,
-       primitive operators,
        lambda abstractions of expressions over typed variables,
        lambda abstractions of expressions over kinded variables,
        lambda abstractions of expressions over sorted variables,
-       and boxed arrays with given indices and type.")
+       and boxed arrays with given ispaces and type.")
      (xdoc::p
-      "[arxiv] uses @($v$) as the body of type and index abstraction,
+      "[arxiv] uses @($v$) as the body of type and ispace abstraction,
        while [thesis] uses @($e$), same as term abstraction.
        We use the latter, as that seems the intent."))
     (:base ((value base-value)))
-    (:op ((op prim-op)))
     (:term-abs ((vars typed-var-list)
                 (body expr)))
     (:type-abs ((vars kinded-var-list)
                 (body expr)))
-    (:index-abs ((params index-param-list)
-                 (body expr)))
-    (:box ((indices index-list)
+    (:ispace-abs ((params ispace-param-list)
+                  (body expr)))
+    (:box ((ispaces ispace-list)
            (array expr)
            (type type)))
     :pred atomp)
