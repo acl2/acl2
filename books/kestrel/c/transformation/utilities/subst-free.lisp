@@ -576,7 +576,8 @@
      (designor-list-subst-free (c$::desiniter->designors desiniter)
                                subst bound-vars)
      (initer-subst-free (c$::desiniter->initer desiniter)
-                        subst bound-vars))
+                        subst bound-vars)
+     nil)
     :measure (desiniter-count desiniter))
 
   (define desiniter-list-subst-free

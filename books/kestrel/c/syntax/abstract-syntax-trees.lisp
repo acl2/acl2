@@ -2381,7 +2381,8 @@
        while a non-empty list captures the designation,
        which has a non-empty list of designators."))
     ((designors designor-list)
-     (initer initer))
+     (initer initer)
+     (info any))
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :pred desiniterp
     :layout :fulltree
@@ -3553,6 +3554,17 @@
   :returns (declspecs decl-spec-listp)
   :short "Lift @(tsee decl-spec-typespec) to lists."
   (decl-spec-typespec x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption designor-option
+  designor
+  :short "Fixtype of optional designators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Designators are defined in @(tsee designor)."))
+  :pred designor-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

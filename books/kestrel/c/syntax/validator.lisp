@@ -4669,6 +4669,12 @@
     (b* (((reterr)
           (irr-desiniter) (irr-initer-subobjects-stack) nil (irr-valid-table))
          ((desiniter desiniter) desiniter)
+         (info
+          (desiniter-info
+            (if (and (endp desiniter.designors)
+                     (not (subobjects-stack-end-p subobjects-stack)))
+                (subobjects-stack-to-designors subobjects-stack ienv)
+              nil)))
          ((erp new-design subobjects-stack types table)
           (if (endp desiniter.designors)
               (retok desiniter.designors
@@ -4693,7 +4699,7 @@
                ;; TODO: this case is impossible.
                new-subobjects-stack
              (subobjects-stack-advance new-subobjects-stack))))
-      (retok (make-desiniter :designors new-design :initer new-init)
+      (retok (make-desiniter :designors new-design :initer new-init :info info)
              new-subobjects-stack
              (set::union types more-types)
              table))
