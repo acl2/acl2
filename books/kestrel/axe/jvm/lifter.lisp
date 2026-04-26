@@ -6019,7 +6019,7 @@
                            (g :monitor options))
           :assumptions hyps
           :normalize-xors nil
-          :print-interval 10000
+          :print-interval (g :print-interval options)
           :print print ;;:print t
           :use-internal-contextsp t ;trying this... Wed Apr 29 16:32:19 2015 ;;this leads to occurrences of ':irrelevant
           :check-inputs nil
@@ -6352,6 +6352,7 @@
                           user-assumptions
                           classes-to-assume-initialized
                           print
+                          print-interval
                           ignore-exceptions
                           ignore-errors
                           invariants
@@ -6401,6 +6402,7 @@
                           (or (booleanp prune-branches) ; todo: precise or approx?
                               (natp prune-branches))
                           (booleanp disable-loop-openers)
+                          (natp print-interval) ; todo: allow nil?
                           )
                   :mode :program))
   (b* ( ;; Check whether an identical call to the lifter has already been done:
@@ -6517,7 +6519,8 @@
                                                                          (s :symbolic-execution-rules symbolic-execution-rules
                                                                             (s :use-lets-in-terms use-lets-in-terms
                                                                                (s :disable-loop-openers disable-loop-openers
-                                                                                  nil)))))))))))))))))))))))
+                                                                                  (s :print-interval print-interval
+                                                                                     nil))))))))))))))))))))))))
        (input-vars (append param-input-vars other-input-vars)) ;input variables (assumptions can be about these, and they become params of the generated function) , a symbol-listp
        ;;((mv erp event state)
 ;todo: clean up here:
@@ -6627,6 +6630,7 @@
                                  (assumptions 'nil)
                                  (classes-to-assume-initialized 'nil)
                                  (print 'nil)
+                                 (print-interval '10000)
                                  (ignore-exceptions 'nil)
                                  (ignore-errors 'nil)
                                  (invariants 'nil)
@@ -6662,6 +6666,7 @@
                                   ,assumptions
                                   ,classes-to-assume-initialized
                                   ,print
+                                  ,print-interval
                                   ,ignore-exceptions
                                   ,ignore-errors
                                   ,invariants
@@ -6727,6 +6732,7 @@
                                   assumptions
                                   classes-to-assume-initialized
                                   print
+                                  print-interval
                                   ignore-exceptions
                                   ignore-errors
                                   invariants
@@ -6759,7 +6765,8 @@
                               (or (string-listp classes-to-assume-initialized)
                                   (eq :all classes-to-assume-initialized))
                               (or (member-eq call-stp '(t nil))
-                                  (natp call-stp))) ;todo: what else?
+                                  (natp call-stp))
+                              (natp print-interval)) ;todo: what else?
                   :mode :program))
   (b* (;; Check whether this call to the lifter has already been made:
        ((when (command-is-redundantp whole-form state))
@@ -6817,7 +6824,8 @@
                                                        (s :monitor monitor
                                                           ;; todo: :use-prover-for-invars, :use-lets-in-terms, :disable-loop-openers, ...
                                                           (s :symbolic-execution-rules symbolic-execution-rules
-                                                             nil))))))))))))))))
+                                                             (s :print-interval print-interval
+                                                                nil)))))))))))))))))
        ((mv erp final-state-dag generated-events generated-rules   ;;fixme think about these ignores
             & ;interpreted-function-alist-alist
             interpreted-function-alist state)
@@ -6882,6 +6890,7 @@
                                          (assumptions 'nil)
                                          (classes-to-assume-initialized 'nil)
                                          (print 'nil)
+                                         (print-interval '10000)
                                          (ignore-exceptions 'nil)
                                          (ignore-errors 'nil)
                                          (invariants 'nil)
@@ -6910,6 +6919,7 @@
                                           ,assumptions
                                           ,classes-to-assume-initialized
                                           ,print
+                                          ,print-interval
                                           ,ignore-exceptions
                                           ,ignore-errors
                                           ,invariants
@@ -6941,6 +6951,7 @@
                                               (assumptions 'nil)
                                               (classes-to-assume-initialized 'nil)
                                               (print 'nil)
+                                              (print-interval '10000)
                                               (ignore-exceptions 'nil)
                                               (ignore-errors 'nil)
                                               (invariants 'nil)
@@ -6967,6 +6978,7 @@
                               ,assumptions
                               ,classes-to-assume-initialized
                               ,print
+                              ,print-interval
                               ,ignore-exceptions
                               ,ignore-errors
                               ,invariants
