@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-variable-operations")
-(include-book "index-equivalence")
+(include-book "ispace-equivalence")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
@@ -21,10 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local
- (in-theory
-  (enable
-   stringstringmap-pairp-when-stringstringmap-pair-resultp-and-not-reserrp)))
+(local (in-theory (enable stringstringmap-pairp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,9 +39,9 @@
     "The current (decidable) equivalence of types
      is described in [arxiv] and [thesis],
      in terms of inference rules
-     that involve the semantic equivalence of indices;
+     that involve the semantic equivalence of ispaces;
      the latter is defined in terms of normalization
-     (see @(see index-equivalence)).
+     (see @(see ispace-equivalence)).
      We plan to formalize type equivalence,
      both at a high level and as executable code.
      For now we provide something that is mostly a placeholder."))
@@ -53,10 +50,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-index-param-renaming ((params1 index-param-listp)
-                                    (params2 index-param-listp))
+(define check-ispace-param-renaming ((params1 ispace-param-listp)
+                                     (params2 ispace-param-listp))
   :returns (dim-and-shape-maps stringstringmap-pair-resultp)
-  :short "Check if two lists of index parameters match in number and sorts,
+  :short "Check if two lists of ispace parameters match in number and sorts,
           and if so return maps between the dimension and shape variables."
   (b* (((when (endp params1))
         (if (endp params2)
@@ -64,18 +61,18 @@
           (reserr nil)))
        ((when (endp params2)) (reserr nil))
        ((ok (stringstringmap-pair maps))
-        (check-index-param-renaming (cdr params1) (cdr params2)))
+        (check-ispace-param-renaming (cdr params1) (cdr params2)))
        (param1 (car params1))
        (param2 (car params2)))
-    (index-param-case
+    (ispace-param-case
      param1
-     :dim (index-param-case
+     :dim (ispace-param-case
            param2
            :dim (make-stringstringmap-pair
                  :1st (omap::update param1.name param2.name maps.1st)
                  :2nd maps.2nd)
            :shape (reserr nil))
-     :shape (index-param-case
+     :shape (ispace-param-case
              param2
              :dim (reserr nil)
              :shape (make-stringstringmap-pair
@@ -179,9 +176,9 @@
                                        shape-renaming
                                        type-renaming)
                          (b* ((renamed-shape1
-                               (rename-vars-in-shape type1.shape
-                                                     dim-renaming
-                                                     shape-renaming)))
+                               (shape-rename-ispace-vars type1.shape
+                                                         dim-renaming
+                                                         shape-renaming)))
                            (shape-equivp renamed-shape1 type2.shape)))
              :otherwise nil)
      :fun (type-case
@@ -215,8 +212,8 @@
               :otherwise nil)
      :pi (type-case
           type2
-          :pi (b* ((maps (check-index-param-renaming type1.params
-                                                     type2.params))
+          :pi (b* ((maps (check-ispace-param-renaming type1.params
+                                                      type2.params))
                    ((when (reserrp maps)) nil)
                    ((stringstringmap-pair maps) maps)
                    (dim-renaming (omap::update*
@@ -233,8 +230,8 @@
           :otherwise nil)
      :sigma (type-case
              type2
-             :sigma (b* ((maps (check-index-param-renaming type1.params
-                                                           type2.params))
+             :sigma (b* ((maps (check-ispace-param-renaming type1.params
+                                                            type2.params))
                          ((when (reserrp maps)) nil)
                          ((stringstringmap-pair maps) maps)
                          (dim-renaming (omap::update*

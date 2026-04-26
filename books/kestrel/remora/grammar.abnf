@@ -228,7 +228,7 @@ index           = dim                ; a dimension
                 / shape              ; a shape that is not a dimension [SC5]
 
 index-var    = "$" identifier     ; dimension parameter
-                / "@" identifier     ; shape parameter
+             / "@" identifier     ; shape parameter
 
 ; -------------------------------------------------------------------------
 ; Base values (literals)

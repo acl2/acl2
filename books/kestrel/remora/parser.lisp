@@ -1325,8 +1325,8 @@
   :returns-hints
   (("Goal"
     :in-theory
-    (e/d (abnf::treep-when-tree-resultp-and-not-reserrp
-          abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)
+    (e/d (abnf::treep-when-result-not-error
+          abnf::tree-listp-when-result-not-error)
          (parse-type-exp parse-bracket-type parse-type-exp-paren
           parse-array-type parse-arrow-type parse-forall-type
           parse-pi-type parse-sigma-type parse-*-ws-type-exp)))
@@ -2096,8 +2096,8 @@
   :returns-hints
   (("Goal"
     :in-theory
-    (e/d (abnf::treep-when-tree-resultp-and-not-reserrp
-          abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)
+    (e/d (abnf::treep-when-result-not-error
+          abnf::tree-listp-when-result-not-error)
          (parse-exp parse-bracket-frame parse-paren-exp
           parse-paren-exp-body parse-app-exp parse-array-exp
           parse-frame-exp parse-tapp-exp parse-iapp-exp
@@ -2331,8 +2331,8 @@
   (verify-guards parse-exp
     :hints (("Goal"
              :in-theory
-             (e/d (abnf::treep-when-tree-resultp-and-not-reserrp
-                   abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)
+             (e/d (abnf::treep-when-result-not-error
+                   abnf::tree-listp-when-result-not-error)
                   (parse-exp parse-bracket-frame parse-paren-exp
                    parse-paren-exp-body parse-app-exp parse-array-exp
                    parse-frame-exp parse-tapp-exp parse-iapp-exp

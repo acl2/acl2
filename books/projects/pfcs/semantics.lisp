@@ -364,8 +364,8 @@
   :prepwork
   ((local
     (in-theory
-     (enable acl2::natp-when-nat-resultp-and-not-reserrp
-             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
+     (enable acl2::natp-when-result-not-error
+             acl2::nat-listp-when-result-not-error))))
 
   ///
 
@@ -425,8 +425,8 @@
                     (or (reserrp (eval-expr expr asg p))
                         (reserrp (eval-expr-list exprs asg p)))))
     :enable (acl2::not-reserrp-when-nat-listp
-             acl2::natp-when-nat-resultp-and-not-reserrp
-             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))
+             acl2::natp-when-result-not-error
+             acl2::nat-listp-when-result-not-error))
 
   (defruled reserrp-of-eval-expr-list-of-append
     (implies (primep p)

@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -447,7 +447,7 @@
              get-funtype
              funinfo-to-funtype-of-cdr-of-in
              not-reserrp-when-funtypep
-             funtypep-when-funtype-resultp-and-not-reserrp)
+             funtypep-when-result-not-error)
     :prep-lemmas
     ((defrule lemma
        (implies (and (funtablep funtab)
@@ -507,7 +507,7 @@
            (reserrp (funtable-for-fundefs fundefs)))
     :enable (funscope-for-fundefs
              funtable-for-fundefs
-             funtablep-when-funtable-resultp-and-not-reserrp
+             funtablep-when-result-not-error
              not-reserrp-when-funtablep
              in-funscope-for-fundefs-iff-in-funtable-for-fundefs))
 
@@ -519,7 +519,7 @@
              funscope-for-fundefs
              funtable-for-fundefs
              error-funscope-for-fundefs-iff-error-funtable-for-fundefs
-             funscopep-when-funscope-resultp-and-not-reserrp
+             funscopep-when-result-not-error
              funscope-to-funtable-of-update
              in-funscope-for-fundefs-iff-in-funtable-for-fundefs))
 
@@ -541,7 +541,7 @@
              error-funscope-for-fundefs-iff-error-funtable-for-fundefs
              ensure-funscope-disjoint
              not-reserrp-when-funenvp
-             funscopep-when-funscope-resultp-and-not-reserrp
+             funscopep-when-result-not-error
              keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
              set::intersect-of-union))
 
@@ -554,10 +554,10 @@
              error-funscope-for-fundefs-iff-error-funtable-for-fundefs
              ensure-funscope-disjoint
              not-reserrp-when-funenvp
-             funscopep-when-funscope-resultp-and-not-reserrp
+             funscopep-when-result-not-error
              keys-of-funscope-for-fundefs-is-keys-of-funtable-for-fundefs
              set::intersect-of-union
-             funtablep-when-funtable-resultp-and-not-reserrp))
+             funtablep-when-result-not-error))
 
   (defrule funinfo-safep-of-funinfo-for-fundef
     (implies (not (reserrp (check-safe-fundef fundef funtab)))
@@ -573,7 +573,7 @@
     :enable (funscope-safep
              funscope-for-fundefs
              check-safe-fundef-list
-             funscopep-when-funscope-resultp-and-not-reserrp))
+             funscopep-when-result-not-error))
 
   (defruled car-of-add-funs
     (implies (not (reserrp (add-funs fundefs funenv)))
@@ -824,9 +824,9 @@
              (not (reserrp (read-vars-values vars cstate))))
     :enable (check-var-list
              read-vars-values
-             valuep-when-value-resultp-and-not-reserrp
+             valuep-when-result-not-error
              not-reserrp-when-value-listp
-             value-listp-when-value-list-resultp-and-not-reserrp)))
+             value-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1401,9 +1401,9 @@
                error-add-funs-iff-error-add-funtypes
                check-safe-fundef-list-of-statements-to-fundefs
                error-add-funs-iff-error-add-funtypes
-               mode-setp-when-mode-set-resultp-and-not-reserrp
+               mode-setp-when-result-not-error
                mode-leave-if-not-regular/continue/break
-               identifier-setp-when-identifier-set-resultp-and-not-reserrp
+               identifier-setp-when-result-not-error
                check-safe-block-when-funenv-safep
                len-of-funinfo->inputs
                len-of-funinfo->outputs

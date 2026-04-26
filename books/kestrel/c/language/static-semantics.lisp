@@ -1713,9 +1713,8 @@
                   :hints (("Goal"
                            :induct t
                            :in-theory
-                           (enable
-                            typep-when-type-resultp-and-not-reserrp
-                            type-listp-when-type-list-resultp-and-not-reserrp))))
+                           (enable typep-when-result-not-error
+                                   type-listp-when-result-not-error))))
   :short "Check a list of pure expressions."
   :long
   (xdoc::topstring
@@ -2587,9 +2586,7 @@
    :union (reserrf (list :union-not-supported (tag-declon-fix declon)))
    :enum (reserrf (list :enum-not-supported (tag-declon-fix declon))))
   :guard-hints
-  (("Goal"
-    :in-theory
-    (enable member-type-listp-when-member-type-list-resultp-and-not-reserrp)))
+  (("Goal" :in-theory (enable member-type-listp-when-result-not-error)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

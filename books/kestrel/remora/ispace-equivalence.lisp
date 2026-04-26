@@ -18,28 +18,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ index-equivalence
+(defxdoc+ ispace-equivalence
   :parents (static-semantics)
-  :short "Equivalence of indices."
+  :short "Equivalence of ispaces."
   :long
   (xdoc::topstring
    (xdoc::p
     "The static semantics of Remora involves
-     the equivalence of indices used in types,
+     the equivalence of ispaces used in types,
      which in turn determines the equivalence of types.
-     Currently index equivalence in Remora is decidable,
+     Currently ispace equivalence in Remora is decidable,
      but the language may evolve towards undecidability.")
    (xdoc::p
-    "The current (decidable) equivalence of indices
+    "The current (decidable) equivalence of ispaces
      is described in [arxiv] and [thesis],
-     in terms of normalization of indices:
-     two indices are equivalent iff they normalize to the same index.
+     in terms of normalization of ispaces:
+     two ispaces are equivalent iff they normalize to the same ispace.
      We plan to formalize this notion at a higher level,
      and to prove that it is correct with respect to
-     a suitable evaluation semantics of indices.
+     a suitable evaluation semantics of ispaces.
      We start by defining high-level executable code
-     to normalize indices,
-     and then define index equivalence based on that.
+     to normalize ispaces,
+     and then define ispace equivalence based on that.
      We plan to verify the correctness of this normalization code."))
   :order-subtopics t
   :default-parent t)
@@ -105,7 +105,7 @@
 
   (define flatten-add-in-dim ((dim dimp))
     :returns (new-dim dimp)
-    :parents (index-equivalence flatten-add-in-dims)
+    :parents (ispace-equivalence flatten-add-in-dims)
     :short "Flatten all the nested additions in a dimension."
     :long
     (xdoc::topstring
@@ -131,7 +131,7 @@
 
   (define flatten-add-in-dim-list ((dims dim-listp) (addp booleanp))
     :returns (new-dims dim-listp)
-    :parents (index-equivalence flatten-add-in-dims)
+    :parents (ispace-equivalence flatten-add-in-dims)
     :short "Flatten all the nested additions in a list of dimensions,
             further flattening the resulting list if part of an addition."
     :long
@@ -142,7 +142,7 @@
        we splice any obtained sub-addition into the current list,
        which is put into the super-addition by @(tsee flatten-add-in-dim).
        The @('addp') flag is @('t') exactly when
-       the indices passed to this function are addends of an addition."))
+       the ispaces passed to this function are addends of an addition."))
     (b* (((when (endp dims)) nil)
          (new-dim (flatten-add-in-dim (car dims)))
          (new-dims (flatten-add-in-dim-list (cdr dims) addp)))
@@ -270,7 +270,7 @@
 
   (define normalize-dims-in-shape ((shape shapep))
     :returns (new-shape shapep)
-    :parents (index-equivalence normalize-dims-in-shapes)
+    :parents (ispace-equivalence normalize-dims-in-shapes)
     :short "Normalize dimensions in a shape."
     (shape-case
      shape
@@ -285,7 +285,7 @@
 
   (define normalize-dims-in-shape-list ((shapes shape-listp))
     :returns (new-shapes shape-listp)
-    :parents (index-equivalence normalize-dims-in-shapes)
+    :parents (ispace-equivalence normalize-dims-in-shapes)
     :short "Normalize dimensions in a list of shapes."
     (cond ((endp shapes) nil)
           (t (cons (normalize-dims-in-shape (car shapes))
@@ -322,7 +322,7 @@
 
   (define normalize-shapes-single-in-shape ((shape shapep))
     :returns (new-shape shapep)
-    :parents (index-equivalence normalize-shapes-single-in-shapes)
+    :parents (ispace-equivalence normalize-shapes-single-in-shapes)
     :short "Normalize shapes to single dimensions in a shape."
     (shape-case
      shape
@@ -344,7 +344,7 @@
 
   (define normalize-shapes-single-in-shape-list ((shapes shape-listp))
     :returns (new-shapes shape-listp)
-    :parents (index-equivalence normalize-shapes-single-in-shapes)
+    :parents (ispace-equivalence normalize-shapes-single-in-shapes)
     :short "Normalize shapes to single dimensions in a list of shapes."
     (cond ((endp shapes) nil)
           (t (cons (normalize-shapes-single-in-shape (car shapes))
@@ -388,7 +388,7 @@
 
   (define flatten-append-in-shape ((shape shapep))
     :returns (new-shape shapep)
-    :parents (index-equivalence flatten-append-in-shapes)
+    :parents (ispace-equivalence flatten-append-in-shapes)
     :short "Flatten all the nested concatenations in a shape."
     (shape-case
      shape
@@ -403,7 +403,7 @@
 
   (define flatten-append-in-shape-list ((shapes shape-listp) (appendp booleanp))
     :returns (new-shapes shape-listp)
-    :parents (index-equivalence flatten-append-in-shapes)
+    :parents (ispace-equivalence flatten-append-in-shapes)
     :short "Flatten all the nested concatenations in a list of shapes,
             further flattening the resulting list if part of a concatenation."
     :long

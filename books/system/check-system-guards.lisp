@@ -53,24 +53,24 @@
   (local
    (progn!
     (assign ld-okp t)
-    (ld "workshops/2004/legato/support/proof-by-generalization-mult.lisp"
-        :dir :system :ld-error-action :error))))
+    (ld "workshops/2004/legato/support/proof-by-generalization-mult.lisp" :dir :system 
+        :ld-error-action :error))))
 
 (encapsulate
   ()
   (local
    (progn!
     (assign ld-okp t)
-    (ld "projects/hexnet/hexnet-model.lisp"
-        :dir :system :ld-error-action :error))))
+    (ld "projects/hexnet/hexnet-model.lisp" :dir :system
+        :ld-error-action :error))))
 
 (encapsulate
   ()
   (local
    (progn!
     (assign ld-okp t)
-    (ld "projects/apply/loop-tests.lisp"
-        :dir :system :ld-error-action :error))))
+    (ld "projects/apply/loop-tests.lisp" :dir :system
+        :ld-error-action :error))))
 
 ; We can report results during both passes of certification.
 ; But note that we will not be able to include this book in

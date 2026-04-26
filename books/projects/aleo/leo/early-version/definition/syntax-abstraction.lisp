@@ -352,8 +352,8 @@
    (("Goal"
      :in-theory
      (enable
-      acl2::characterp-when-character-resultp-and-not-reserrp
-      acl2::character-listp-when-character-list-resultp-and-not-reserrp))))
+      acl2::characterp-when-result-not-error
+      acl2::character-listp-when-result-not-error))))
   :short "Abstract a @('*( letter / digit / \"_\" )')
           to a list of ACL2 characters."
   (b* (((when (endp trees)) nil)
@@ -450,8 +450,8 @@
         (("Goal"
           :in-theory
           (enable
-           annotationp-when-annotation-resultp-and-not-reserrp
-           annotation-listp-when-annotation-list-resultp-and-not-reserrp))))
+           annotationp-when-result-not-error
+           annotation-listp-when-result-not-error))))
   :short "Abstract a @('*annotation') to a list of annotations."
   (b* (((when (endp trees)) nil)
        ((okf ann) (abs-annotation (car trees)))
@@ -494,8 +494,8 @@
    (("Goal"
      :in-theory
      (enable
-      acl2::characterp-when-character-resultp-and-not-reserrp
-      acl2::character-listp-when-character-list-resultp-and-not-reserrp))))
+      acl2::characterp-when-result-not-error
+      acl2::character-listp-when-result-not-error))))
   :short "Abstract a @('*( lowercase-letter / decimal-digit )')
           to a list of ACL2 characters."
   (b* (((when (endp trees)) nil)
@@ -831,8 +831,8 @@
                   (("Goal"
                     :in-theory
                     (enable
-                     charp-when-char-resultp-and-not-reserrp
-                     char-listp-when-char-list-resultp-and-not-reserrp))))
+                     charp-when-result-not-error
+                     char-listp-when-result-not-error))))
   :short "Abstract a @('*string-literal-element') to a list of Leo characters."
   (b* (((when (endp trees)) nil)
        ((okf char) (abs-string-literal-element (car trees)))
@@ -1201,8 +1201,8 @@
 
   :prepwork
   ((local
-    (in-theory (enable typep-when-type-resultp-and-not-reserrp
-                       type-listp-when-type-list-resultp-and-not-reserrp))))
+    (in-theory (enable typep-when-result-not-error
+                       type-listp-when-result-not-error))))
 
   :verify-guards nil ; done below
   ///
@@ -2044,11 +2044,11 @@
   ((local
     (in-theory
      (enable
-      struct-initp-when-struct-init-resultp-and-not-reserrp
-      struct-init-listp-when-struct-init-list-resultp-and-not-reserrp
-      expressionp-when-expression-resultp-and-not-reserrp
-      expression-listp-when-expression-list-resultp-and-not-reserrp
-      abnf::tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
+      struct-initp-when-result-not-error
+      struct-init-listp-when-result-not-error
+      expressionp-when-result-not-error
+      expression-listp-when-result-not-error
+      abnf::tree-list-listp-when-result-not-error))))
 
   :verify-guards nil ; done below
   ///
@@ -2538,8 +2538,8 @@
   (("Goal"
     :in-theory
     (enable
-     statementp-when-statement-resultp-and-not-reserrp
-     statement-listp-when-statement-list-resultp-and-not-reserrp)))
+     statementp-when-result-not-error
+     statement-listp-when-result-not-error)))
 
   :verify-guards nil ; done below
   ///
@@ -2598,8 +2598,8 @@
             (("Goal"
               :in-theory
               (enable
-               funparamp-when-funparam-resultp-and-not-reserrp
-               funparam-listp-when-funparam-list-resultp-and-not-reserrp))))
+               funparamp-when-result-not-error
+               funparam-listp-when-result-not-error))))
   :short "Abstract a @('*( \",\" function-parameter )')
           to a list of function parameters."
   (b* (((when (endp trees)) nil)
@@ -2617,8 +2617,8 @@
             (("Goal"
               :in-theory
               (enable
-               funparamp-when-funparam-resultp-and-not-reserrp
-               funparam-listp-when-funparam-list-resultp-and-not-reserrp))))
+               funparamp-when-result-not-error
+               funparam-listp-when-result-not-error))))
   :short "Abstract a @('function-parameters') to a list of function parameters."
   (b* (((okf (abnf::tree-list-tuple3 sub))
         (abnf::check-tree-nonleaf-3 tree "function-parameters"))
@@ -2835,8 +2835,8 @@
         (("Goal"
           :in-theory
           (enable
-           compdeclp-when-compdecl-resultp-and-not-reserrp
-           compdecl-listp-when-compdecl-list-resultp-and-not-reserrp))))
+           compdeclp-when-result-not-error
+           compdecl-listp-when-result-not-error))))
   :short "Abstract a @('*( \",\" struct-component-declaration )') to a list of @('compdecl')."
   (b* (((when (endp trees)) nil)
        ((okf comp) (abs-comma-struct-component-declaration (car trees)))
@@ -2859,8 +2859,8 @@
         (("Goal"
           :in-theory
           (enable
-           compdeclp-when-compdecl-resultp-and-not-reserrp
-           compdecl-listp-when-compdecl-list-resultp-and-not-reserrp))))
+           compdeclp-when-result-not-error
+           compdecl-listp-when-result-not-error))))
   :short "Abstract a @('struct-component-declarations') to a list of @('compdecl')."
   (b* (((okf (abnf::tree-list-tuple3 sub))
         (abnf::check-tree-nonleaf-3 tree "struct-component-declarations"))
@@ -3007,8 +3007,8 @@
     (("Goal"
       :in-theory
       (enable
-       topdeclp-when-topdecl-resultp-and-not-reserrp
-       topdecl-listp-when-topdecl-list-resultp-and-not-reserrp))))
+       topdeclp-when-result-not-error
+       topdecl-listp-when-result-not-error))))
   :short "Abstract a @('*declaration') to a list of top-level declarations."
   (b* (((when (endp trees)) nil)
        ((okf decl) (abs-declaration (car trees)))
@@ -3051,8 +3051,8 @@
     (("Goal"
       :in-theory
       (enable
-       topdeclp-when-topdecl-resultp-and-not-reserrp
-       topdecl-listp-when-topdecl-list-resultp-and-not-reserrp))))
+       topdeclp-when-result-not-error
+       topdecl-listp-when-result-not-error))))
   :short "Abstract a @('*program-item') to a list of @('topdecl')."
   (b* (((when (endp trees)) nil)
        ((okf decl) (abs-program-item (car trees)))
@@ -3114,8 +3114,8 @@
     (("Goal"
       :in-theory
       (enable
-       importdeclp-when-importdecl-resultp-and-not-reserrp
-       importdecl-listp-when-importdecl-list-resultp-and-not-reserrp))))
+       importdeclp-when-result-not-error
+       importdecl-listp-when-result-not-error))))
   :short "Abstract a @('*declaration') to a list of import declarations."
   (b* (((when (endp trees)) nil)
        ((okf decl) (abs-import-declaration (car trees)))
