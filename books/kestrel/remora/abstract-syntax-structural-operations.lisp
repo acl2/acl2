@@ -105,21 +105,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-param->name ((param ispace-paramp))
+(define ispace-var->name ((param ispace-varp))
   :returns (name stringp)
-  :short "Name of an ispace parameter."
+  :short "Name of an ispace variable."
   :long
   (xdoc::topstring
    (xdoc::p
     "Both summands have a string field,
      which is the name of the variable."))
-  (ispace-param-case param
-                     :dim param.name
-                     :shape param.name))
+  (ispace-var-case param
+                   :dim param.name
+                   :shape param.name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection ispace-param-list->name ((x ispace-param-listp))
+(std::defprojection ispace-var-list->name ((x ispace-var-listp))
   :returns (names string-listp)
-  :short "Lift @(tsee ispace-param->name) to lists."
-  (ispace-param->name x))
+  :short "Lift @(tsee ispace-var->name) to lists."
+  (ispace-var->name x))

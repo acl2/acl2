@@ -58,7 +58,7 @@
     (xdoc::li
      "A map from the term variables in scope to their types.
       This corresponds to @($\\Gamma$).")))
-  ((ispace-vars ispace-param-set)
+  ((ispace-vars ispace-var-set)
    (type-vars string-kind-map)
    (term-vars string-type-map))
   :pred senvp)

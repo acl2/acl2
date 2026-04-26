@@ -81,16 +81,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defset ispace-param-set
-  :short "Fixtype of sets of ispace parameters."
-  :elt-type ispace-param
-  :pred ispace-param-setp
+(fty::defset ispace-var-set
+  :short "Fixtype of sets of ispace variables."
+  :elt-type ispace-var
+  :pred ispace-var-setp
 
   ///
 
-  (defrule ispace-param-setp-of-mergesort
-    (implies (ispace-param-listp x)
-             (ispace-param-setp (set::mergesort x)))
+  (defrule ispace-var-setp-of-mergesort
+    (implies (ispace-var-listp x)
+             (ispace-var-setp (set::mergesort x)))
     :induct t
     :enable set::mergesort))
 
@@ -205,20 +205,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod ispaceparamlist+type
-  :short "Fixtype of pairs consisting of a list of ispace parameters and a type."
-  ((params ispace-param-list)
+(fty::defprod ispacevarlist+type
+  :short "Fixtype of pairs consisting of a list of ispace variables and a type."
+  ((params ispace-var-list)
    (type type))
-  :pred ispaceparamlist+type-p)
+  :pred ispacevarlist+type-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult ispaceparamlist+type-result
+(fty::defresult ispacevarlist+type-result
   :short "Fixtype of
-          (i) pairs consisting of a list of ispace parameters and a type
+          (i) pairs consisting of a list of ispace variables and a type
           and (ii) errors."
-  :ok ispaceparamlist+type
-  :pred ispaceparamlist+type-resultp
+  :ok ispacevarlist+type
+  :pred ispacevarlist+type-resultp
   :prepwork ((local (in-theory (enable strip-cars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

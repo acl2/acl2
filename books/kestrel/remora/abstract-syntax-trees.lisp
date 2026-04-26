@@ -244,32 +244,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum ispace-param
-  :short "Fixtype of ispace parameters."
+(fty::deftagsum ispace-var
+  :short "Fixtype of ispace variables."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are ispace variables used as parameters,
-     e.g. in a product or sum type;
-     they correspond to @('ispace-var') in the ABNF grammar.
-     As in dimension and shape variables in @(tsee dim) and @(tsee shape),
-     ispace parameters carry their own sort (dimension or shape),
+    "This corresponds to @('ispace-var') in the ABNF grammar.
+     As in @(tsee dim) and @(tsee shape),
+     these variables carry their own sort (dimension or shape),
      i.e. they are syntactically distinct.
      This is different from [arxiv] and [thesis],
      where dimension and shape variables are syntactically the same,
      and thus they need explcit sorting rules."))
   (:dim ((name string)))
   (:shape ((name string)))
-  :pred ispace-paramp)
+  :pred ispace-varp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist ispace-param-list
-  :short "Fixtype of lists of ispace parameters."
-  :elt-type ispace-param
+(fty::deflist ispace-var-list
+  :short "Fixtype of lists of ispace variables."
+  :elt-type ispace-var
   :true-listp t
   :elementp-of-nil nil
-  :pred ispace-param-listp)
+  :pred ispace-var-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -303,8 +301,8 @@
        array types (consisting of an atom type and a shape),
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
-       product types (quantified over ispace parameters),
-       and sum types (quantified over ispace parameters)."))
+       product types (quantified over ispace variables),
+       and sum types (quantified over ispace variables)."))
     (:var ((name string)))
     (:base ((type base-type)))
     (:array ((type type)
@@ -313,9 +311,9 @@
            (out type)))
     (:forall ((vars kinded-var-list)
               (type type)))
-    (:pi ((params ispace-param-list)
+    (:pi ((params ispace-var-list)
           (type type)))
-    (:sigma ((params ispace-param-list)
+    (:sigma ((params ispace-var-list)
              (type type)))
     :pred typep)
 
@@ -425,7 +423,7 @@
                 (args type-list)))
     (:ispace-app ((fun expr)
                  (args ispace-list)))
-    (:unbox ((ispaces ispace-param-list)
+    (:unbox ((ispaces ispace-var-list)
              (var string)
              (target expr)
              (body expr)))
@@ -464,7 +462,7 @@
                 (body expr)))
     (:type-abs ((vars kinded-var-list)
                 (body expr)))
-    (:ispace-abs ((params ispace-param-list)
+    (:ispace-abs ((params ispace-var-list)
                   (body expr)))
     (:box ((ispaces ispace-list)
            (array expr)

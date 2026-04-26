@@ -74,14 +74,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vars-of-ispace-params ((params ispace-param-listp))
+(define vars-of-ispace-vars ((params ispace-var-listp))
   :returns (mv (dim-vars string-setp) (shape-vars string-setp))
   :short "Extract the sets of dimension and shape variables
-          from a list of ispace parameters."
+          from a list of ispace variables."
   (b* (((when (endp params)) (mv nil nil))
-       ((mv dim-vars shape-vars) (vars-of-ispace-params (cdr params)))
+       ((mv dim-vars shape-vars) (vars-of-ispace-vars (cdr params)))
        (param (car params)))
-    (ispace-param-case
+    (ispace-var-case
      param
      :dim (mv (set::insert param.name dim-vars) shape-vars)
      :shape (mv dim-vars (set::insert param.name shape-vars))))
@@ -119,7 +119,7 @@
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
    (type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-ispace-params type.params))
+               (vars-of-ispace-vars type.params))
               (dim-subst
                (omap::delete* bound-dim-vars
                               (string-dim-map-fix dim-subst)))
@@ -131,7 +131,7 @@
             :type (type-subst-ispace-vars type.type dim-subst shape-subst))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-ispace-params type.params))
+               (vars-of-ispace-vars type.params))
               (dim-subst
                (omap::delete* bound-dim-vars
                               (string-dim-map-fix dim-subst)))
@@ -194,7 +194,7 @@
    (ispace :dim (ispace-dim (dim-rename-dim-vars ispace.dim dim-renam)))
    (type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-ispace-params type.params))
+               (vars-of-ispace-vars type.params))
               (dim-renam
                (omap::delete* bound-dim-vars
                               (string-string-map-fix dim-renam)))
@@ -206,7 +206,7 @@
             :type (type-rename-ispace-vars type.type dim-renam shape-renam))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-ispace-params type.params))
+               (vars-of-ispace-vars type.params))
               (dim-renam
                (omap::delete* bound-dim-vars
                               (string-string-map-fix dim-renam)))
@@ -244,12 +244,12 @@
           ispaces, types, typed variables, expressions, atoms,
           and lists thereof."
   :types (dims shapes ispace ispace-list types typed-var exprs/atoms)
-  :result ispace-param-setp
+  :result ispace-var-setp
   :default nil
   :combine set::union
   :override
-  ((dim :var (set::insert (ispace-param-dim dim.name) nil))
-   (shape :var (set::insert (ispace-param-shape shape.name) nil))
+  ((dim :var (set::insert (ispace-var-dim dim.name) nil))
+   (shape :var (set::insert (ispace-var-shape shape.name) nil))
    (type :pi (set::difference (type-free-ispace-vars type.type)
                               (set::mergesort type.params)))
    (type :sigma (set::difference (type-free-ispace-vars type.type)

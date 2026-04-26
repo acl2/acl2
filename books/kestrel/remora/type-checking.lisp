@@ -36,7 +36,7 @@
                           type+shape-p-when-result-not-error
                           type+shape-listp-when-result-not-error
                           typelist+type-p-when-result-not-error
-                          ispaceparamlist+type-p-when-result-not-error
+                          ispacevarlist+type-p-when-result-not-error
                           kindedvarlist+type-p-when-result-not-error
                           stringdimmap+stringshapemap-p-when-result-not-error)))
 
@@ -167,12 +167,12 @@
                     ((ok kind) (check-type type.type kindenv))
                     ((unless (kind-case kind :array)) (reserr nil)))
                  (kind-atom))
-       :pi (b* ((vars (ispace-param-list->name type.params))
+       :pi (b* ((vars (ispace-var-list->name type.params))
                 ((unless (no-duplicatesp-equal vars)) (reserr nil))
                 ((ok kind) (check-type type.type kindenv))
                 ((unless (kind-case kind :array)) (reserr nil)))
              (kind-atom))
-       :sigma (b* ((vars (ispace-param-list->name type.params))
+       :sigma (b* ((vars (ispace-var-list->name type.params))
                    ((unless (no-duplicatesp-equal vars)) (reserr nil))
                    ((ok kind) (check-type type.type kindenv))
                    ((unless (kind-case kind :array)) (reserr nil)))
@@ -386,8 +386,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-ispace-params-and-args ((params ispace-param-listp)
-                                      (args ispace-listp))
+(define check-ispace-vars-and-args ((params ispace-var-listp)
+                                    (args ispace-listp))
   :returns (maps stringdimmap+stringshapemap-resultp)
   :short "Check whether a list of ispace parameters and ispace arguments match."
   :long
@@ -408,10 +408,10 @@
           (reserr nil)))
        ((when (endp args)) (reserr nil))
        ((ok (stringdimmap+stringshapemap maps))
-        (check-ispace-params-and-args (cdr params) (cdr args)))
+        (check-ispace-vars-and-args (cdr params) (cdr args)))
        (param (car params))
        (arg (car args)))
-    (ispace-param-case
+    (ispace-var-case
      param
      :dim (ispace-case
            arg
@@ -559,7 +559,7 @@
        the result of applying the same substitution to the body shape.")
      (xdoc::p
       "For an unboxing expression,
-       first we check that the ispace parameters have no duplicate names.
+       first we check that the ispace variables have no duplicate names.
        We check the target expression,
        which must be an array type of a sum type.
        In [arxiv] and [thesis],
@@ -679,13 +679,13 @@
           (fun-type (type+shape->type fun-arr-type+shape))
           (fun-shape (type+shape->shape fun-arr-type+shape))
           ((ok fun-params+type) (type-match-product fun-type))
-          (params (ispaceparamlist+type->params fun-params+type))
-          (body-arr-type (ispaceparamlist+type->type fun-params+type))
+          (params (ispacevarlist+type->params fun-params+type))
+          (body-arr-type (ispacevarlist+type->type fun-params+type))
           ((ok body-type+shape) (type-match-array body-arr-type))
           (body-atom-type (type+shape->type body-type+shape))
           (body-shape (type+shape->shape body-type+shape))
           ((ok (stringdimmap+stringshapemap ispace-maps))
-           (check-ispace-params-and-args params expr.args))
+           (check-ispace-vars-and-args params expr.args))
           (body-shape-subst (shape-subst-ispace-vars body-shape
                                                      ispace-maps.dim-map
                                                      ispace-maps.shape-map)))
@@ -695,18 +695,18 @@
                                       ispace-maps.shape-map)
         :shape (shape-append (list fun-shape body-shape-subst))))
      :unbox
-     (b* (((unless (no-duplicatesp-equal (ispace-param-list->name expr.ispaces)))
+     (b* (((unless (no-duplicatesp-equal (ispace-var-list->name expr.ispaces)))
            (reserr nil))
           ((ok target-arr-type) (check-expr expr.target kindenv typeenv))
           ((ok target-arr-type+shape) (type-match-array target-arr-type))
           (sum-type (type+shape->type target-arr-type+shape))
           (sum-shape (type+shape->shape target-arr-type+shape))
           ((ok sum-params+type) (type-match-sum sum-type))
-          (sum-params (ispaceparamlist+type->params sum-params+type))
-          (sum-body-type (ispaceparamlist+type->type sum-params+type))
+          (sum-params (ispacevarlist+type->params sum-params+type))
+          (sum-body-type (ispacevarlist+type->type sum-params+type))
           ((unless (= (len expr.ispaces) (len sum-params))) (reserr nil))
           ((ok (stringstringmap-pair renaming))
-           (check-ispace-param-renaming sum-params expr.ispaces))
+           (check-ispace-var-renaming sum-params expr.ispaces))
           (sum-body-type-renam
            (type-rename-ispace-vars sum-body-type renaming.1st renaming.2nd))
           (typeenv (omap::update expr.var
@@ -828,18 +828,18 @@
           ((ok type) (check-expr atom.body kindenv typeenv)))
        (make-type-forall :vars atom.vars :type type))
      :ispace-abs
-     (b* (((unless (no-duplicatesp-equal (ispace-param-list->name atom.params)))
+     (b* (((unless (no-duplicatesp-equal (ispace-var-list->name atom.params)))
            (reserr nil))
           ((ok type) (check-expr atom.body kindenv typeenv)))
        (make-type-pi :params atom.params :type type))
      :box
      (b* (((ok params+type) (type-match-sum atom.type))
-          (params (ispaceparamlist+type->params params+type))
-          (body-type (ispaceparamlist+type->type params+type))
+          (params (ispacevarlist+type->params params+type))
+          (body-type (ispacevarlist+type->type params+type))
           ((ok kind) (check-type atom.type kindenv))
           ((unless (kind-case kind :atom)) (reserr nil))
           ((ok (stringdimmap+stringshapemap maps))
-           (check-ispace-params-and-args params atom.ispaces))
+           (check-ispace-vars-and-args params atom.ispaces))
           (body-type-subst
            (type-subst-ispace-vars body-type
                                    maps.dim-map

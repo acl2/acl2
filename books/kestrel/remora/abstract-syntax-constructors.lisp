@@ -201,24 +201,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-param-term-from-string ((str stringp))
-  :short "Build an ispace parameter term from a string."
+(define ispace-var-term-from-string ((str stringp))
+  :short "Build an ispace variable term from a string."
   :long
   (xdoc::topstring
    (xdoc::p
     "The string must be a variable name preceded by @('$') or @('@')."))
   (b* (((mv prefix name) (var-string-split str '(#\$ #\@))))
     (case prefix
-      (#\$ `(ispace-param-dim ,name))
-      (#\@ `(ispace-param-shape ,name)))))
+      (#\$ `(ispace-var-dim ,name))
+      (#\@ `(ispace-var-shape ,name)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-param-terms-from-strings ((strs string-listp))
-  :short "Lift @(tsee ispace-param-term-from-string) to lists."
+(define ispace-var-terms-from-strings ((strs string-listp))
+  :short "Lift @(tsee ispace-var-term-from-string) to lists."
   (cond ((endp strs) nil)
-        (t (cons (ispace-param-term-from-string (car strs))
-                 (ispace-param-terms-from-strings (cdr strs))))))
+        (t (cons (ispace-var-term-from-string (car strs))
+                 (ispace-var-terms-from-strings (cdr strs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -263,26 +263,26 @@
 
 (defmacro+ tpi (params type)
   :short "Construct a product type term
-          from a list of parameters and a body type."
+          from a list of variables (parameters) and a type (body)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The parameters are provided as a parenthesized list of variable strings.
+    "The variables are provided as a parenthesized list of variable strings.
      A variable or base type keyword as the body type
      is auto-coerced to a type."))
-  `(type-pi (list ,@(ispace-param-terms-from-strings params))
+  `(type-pi (list ,@(ispace-var-terms-from-strings params))
             ,(type-var/base/other type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ tsigma (params type)
   :short "Construct a sum type term
-          from a list of parameters and a body type."
+          from a list of variables (parameters) and a type (body)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The parameters are provided as a parenthesized list of variable strings.
+    "The variables are provided as a parenthesized list of variable strings.
      A variable or base type keyword as the body type
      is auto-coerced to a type."))
-  `(type-sigma (list ,@(ispace-param-terms-from-strings params))
+  `(type-sigma (list ,@(ispace-var-terms-from-strings params))
                ,(type-var/base/other type)))
