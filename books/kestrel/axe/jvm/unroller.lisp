@@ -80,22 +80,7 @@
                      (er hard? 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above).")))
       t)))
 
-;; Works for terms or dag-exprs
-(defund elide-make-frame-args (fn args)
-  (declare (xargs :guard t)) ;strengthen?
-  (if (and (eq fn 'jvm::make-frame)
-           (= 6 (len args))
-           ;; for termination:
-           (myquotep (fifth args))
-           (consp (unquote (fifth args)))
-           )
-      (list (first args)
-            (second args)
-            (third args)
-            (fourth args)
-            '':method-info-elided ;; (fifth args)
-            (sixth args))
-    args))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm pseudo-term-listp-of-elide-make-frame-args
   (implies (pseudo-term-listp args)
@@ -178,30 +163,6 @@
 ;;   (progn$ (cw "(")
 ;;           (print-dag-array-with-elided-method-info-aux nodenum dag-array-name dag-array t)
 ;;           (cw ")~%")))
-
-(defund print-dag-with-elided-method-info-aux (dag first-elementp)
-  (declare (xargs :guard (and (weak-dagp-aux dag)
-                              (booleanp first-elementp))))
-  (if (endp dag)
-      nil
-    (let* ((entry (first dag))
-           (nodenum (car entry))
-           (expr (cdr entry))
-           (expr (if (or (not (consp expr))
-                         (eq 'quote (ffn-symb expr)))
-                     expr
-                   (let ((fn (ffn-symb expr)))
-                     (cons fn (elide-make-frame-args fn (cdr expr)))))))
-      (progn$ (if (not first-elementp) (cw "~% ") nil)
-              (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
-              (print-dag-with-elided-method-info-aux (rest dag) nil)))))
-
-;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
-(defund print-dag-with-elided-method-info (dag)
-  (declare (xargs :guard (weak-dagp-aux dag)))
-  (progn$ (cw "(")
-          (print-dag-with-elided-method-info-aux dag t)
-          (cw ")~%")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

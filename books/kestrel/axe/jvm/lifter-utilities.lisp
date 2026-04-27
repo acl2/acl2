@@ -1,4 +1,4 @@
-; Utilities supporting the lifter(s)
+; Utilities supporting the JVM lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2026 Kestrel Institute
@@ -15,6 +15,7 @@
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "../make-axe-rules") ; for make-axe-rules-from-theorem
 (include-book "../priorities")
+(include-book "../dags")
 ;(include-book "../jvm/heap0")
 (include-book "kestrel/jvm/jvm" :dir :system) ;for JVM::CALL-STACK-SIZE
 (include-book "kestrel/jvm/method-designator-strings" :dir :system)
@@ -737,3 +738,47 @@
     jvm::no-locked-object
     jvm::empty-operand-stack
     ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Works for terms or dag-exprs
+(defund elide-make-frame-args (fn args)
+  (declare (xargs :guard t)) ;strengthen?
+  (if (and (eq fn 'jvm::make-frame)
+           (= 6 (len args))
+           ;; for termination:
+           (myquotep (fifth args))
+           (consp (unquote (fifth args)))
+           )
+      (list (first args)
+            (second args)
+            (third args)
+            (fourth args)
+            '':method-info-elided ;; (fifth args)
+            (sixth args))
+    args))
+
+(defund print-dag-with-elided-method-info-aux (dag first-elementp)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (booleanp first-elementp))))
+  (if (endp dag)
+      nil
+    (let* ((entry (first dag))
+           (nodenum (car entry))
+           (expr (cdr entry))
+           (expr (if (or (not (consp expr))
+                         (eq 'quote (ffn-symb expr)))
+                     expr
+                   (let ((fn (ffn-symb expr)))
+                     (cons fn (elide-make-frame-args fn (cdr expr)))))))
+      (progn$ (if (not first-elementp) (cw "~% ") nil)
+              (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
+              (print-dag-with-elided-method-info-aux (rest dag) nil)))))
+
+;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
+;; TODO: Generalize to use the elision-spec machinery
+(defund print-dag-with-elided-method-info (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (progn$ (cw "(")
+          (print-dag-with-elided-method-info-aux dag t)
+          (cw ")~%")))
