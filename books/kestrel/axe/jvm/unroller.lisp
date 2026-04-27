@@ -307,8 +307,10 @@
                                                    (reduce-print-level print)
                                                    rules-to-monitor
                                                    *no-warn-ground-functions-jvm*
-                                                   '(program-at) ; fns-to-elide
-                                                   ))
+                                                   ;; fns-to-elide:
+                                                   '(program-at
+                                                     ;; jvm::make-frame ; todo uncomment but just elide the method-info part?
+                                                     )))
          ((when erp) (mv erp dag hits state))
          (hits (combine-hits hits hits-this-time))
          ((when (quotep dag-or-quotep))
