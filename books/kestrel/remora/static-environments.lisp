@@ -53,51 +53,60 @@
       but since our ispace variables include their own sort,
       a set suffices, as opposed to a map from variables to sorts.")
     (xdoc::li
-     "A map from the type variables in scope to their kinds.
-      This corresponds to @($\\Delta$).")
+     "The set of type variables in scope.
+      This corresponds to @($\\Delta$),
+      but since our type variables include their own kind,
+      a set suffices, as opposed to a map from variables to kinds.")
     (xdoc::li
-     "A map from the term variables in scope to their types.
+     "A map from the expression variables in scope to their array types.
       This corresponds to @($\\Gamma$).")))
   ((ispace-vars ispace-var-set)
-   (type-vars string-kind-map)
-   (term-vars string-type-map))
+   (type-vars type-var-set)
+   (expr-vars string-arraytype-map))
   :pred senvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prim-op-types ()
-  :returns (term-vars string-type-mapp)
+  :returns (term-vars string-arraytype-mapp)
   :short "Association of primitive operations to their types."
   :long
   (xdoc::topstring
    (xdoc::p
     "In Remora, the primitive operations (i.e. built-in functions)
-     are syntactically variables of suitable function type;
-     these variables are implicitly in scope,
+     are syntactically variables of (zero-rank array type of) a function type.
+     These variables are implicitly in scope,
      and thus part of the initial static environment."))
-  (b* ((add/sub/mul/div-type (t-> ((tarray :int (shape))
-                                   (tarray :int (shape)))
-                                  (tarray :int (shape))))
+  (b* ((add/sub/mul/div-type
+        (t[] (t-> (:int :int) :int) (shape)))
        (append-type
-        (tforall ("t" :atom)
-                 (tpi ("$n" "$m" "@s")
-                      (t-> ((tarray "t" (shape++ (shape "$m") "@s"))
-                            (tarray "t" (shape++ (shape "$n") "@s")))
-                           (tarray "t" (shape++ (shape (dim+ "$m" "$n"))
-                                                "@s"))))))
+        (t[] (tforall ("&t")
+                      (tpi ("$n" "$m" "@s")
+                           (t-> ((t[] "&t" (shape++ (shape "$m")
+                                                    "@s"))
+                                 (t[] "&t" (shape++ (shape "$n")
+                                                    "@s")))
+                                (t[] "&t" (shape++ (shape (dim+ "$m"
+                                                                "$n"))
+                                                   "@s")))))
+             (shape)))
        (reduce-type
-        (tforall ("t" :atom)
-                 (tpi ("@s" "$d")
-                      (t-> ((tarray (t-> ((tarray "t" "@s")
-                                          (tarray "t" "@s"))
-                                         (tarray "t" "@s"))
-                                    (shape))
-                            (tarray "t" (shape++ (shape (dim+ 1 "$d")) "@s")))
-                           (tarray "t" "@s")))))
+        (t[] (tforall ("&t")
+                      (tpi ("@s" "$d")
+                           (t-> ((t[] (t-> ((t[] "&t" "@s")
+                                            (t[] "&t" "@s"))
+                                           (t[] "&t" "@s"))
+                                      (shape))
+                                 (t[] "&t" (shape++ (shape (dim+ 1
+                                                                 "$d"))
+                                                    "@s")))
+                                (t[] "&t" "@s"))))
+             (shape)))
        (iota-type
-        (tpi ("$d")
-             (t-> ((tarray :int (shape "$d")))
-                  (tarray (tsigma ("@s") (tarray :int "@s")) (shape))))))
+        (t[] (tpi ("$d")
+                  (t-> ((t[] :int (shape "$d")))
+                       (tsigma ("@s") (t[] :int "@s"))))
+             (shape))))
     (omap::from-alist
      (list (cons "add" add/sub/mul/div-type)
            (cons "sub" add/sub/mul/div-type)
@@ -118,4 +127,4 @@
      It only contains the primitive operations in scope."))
   (make-senv :ispace-vars nil
              :type-vars nil
-             :term-vars (prim-op-types)))
+             :expr-vars (prim-op-types)))

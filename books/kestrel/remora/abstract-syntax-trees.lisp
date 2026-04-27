@@ -63,49 +63,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum kind
-  :short "Fixtype of kinds."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are associated to types.
-     They denote arrays and atoms."))
-  (:array ())
-  (:atom ())
-  :pred kindp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist kind-list
-  :short "Fixtype of lists of kinds."
-  :elt-type kind
-  :true-listp t
-  :elementp-of-nil nil
-  :pred kind-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod kinded-var
-  :short "Fixtype of kinded variables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A kinded variable consists of a variable name and an associated kind."))
-  ((var string)
-   (kind kind))
-  :pred kinded-varp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist kinded-var-list
-  :short "Fixtype of lists of kinded variables."
-  :elt-type kinded-var
-  :true-listp t
-  :elementp-of-nil nil
-  :pred kinded-var-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deftypes dims
   :short "Fixtypes of dimensions and lists of dimensions."
   :long
@@ -269,6 +226,21 @@
   :elementp-of-nil nil
   :pred ispace-var-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset ispace-var-set
+  :short "Fixtype of sets of ispace variables."
+  :elt-type ispace-var
+  :pred ispace-var-setp
+
+  ///
+
+  (defrule ispace-var-setp-of-mergesort
+    (implies (ispace-var-listp x)
+             (ispace-var-setp (set::mergesort x)))
+    :induct t
+    :enable set::mergesort))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum base-type
@@ -284,48 +256,151 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes types
-  :short "Fixtypes of types and lists of types."
+(fty::deftagsum type-var
+  :short "Fixtype of type variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('type-var') in the ABNF grammar.
+     Similarly to @(tsee ispace-var),
+     these variables carry their own kind (atom or array),
+     i.e. they are syntactically distinct.
+     This is different from [arxiv] and [thesis],
+     where atom type variables and array type variables
+     are syntactically the same,
+     and thus they need explicit kinding rules."))
+  (:atom ((name string)))
+  (:array ((name string)))
+  :pred type-varp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist type-var-list
+  :short "Fixtype of lists of type variables."
+  :elt-type type-var
+  :true-listp t
+  :elementp-of-nil nil
+  :pred type-var-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset type-var-set
+  :short "Fixtype of sets of type variables."
+  :elt-type type-var
+  :pred type-var-setp
+
+  ///
+
+  (defrule type-var-setp-of-mergesort
+    (implies (type-var-listp x)
+             (type-var-setp (set::mergesort x)))
+    :induct t
+    :enable set::mergesort))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes atom/array-types
+  :short "Fixtypes of atom types, array types, and lists of array types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Analogously to how our definition of ispaces
+     enforces well-sortnedness syntactically,
+     we define types to enforce well-kindedness syntactically as well.
+     We separate atom and array types syntactically,
+     but the two are mutually recursive.
+     As with ishapes, the key point is that
+     type variables are tagged by their kind,
+     namely @('&') for atoms and @('*') for arrays in concrete syntax
+     (see ABNF grammar).")
+   (xdoc::p
+    "In contrast, [arxiv] and [thesis] give a flat definition of types.
+     [impl] has both a flat definition and a partitioned one:
+     the flat one, called `type expressions', is produced by the parser,
+     and it includes source position annotations;
+     the latter is perhaps used for further processing,
+     but we have not investigated that yet."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum type
-    :parents (abstract-syntax-trees types)
-    :short "Fixtype of types."
+  (fty::deftagsum atom-type
+    :parents (abstract-syntax-trees atom/array-types)
+    :short "Fixtype of atom types."
     :long
     (xdoc::topstring
      (xdoc::p
       "There are
        named variables,
        base types,
-       array types (consisting of an atom type and a shape),
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
-       product types (quantified over ispace variables),
-       and sum types (quantified over ispace variables)."))
+       product types (quantified over ispace parameters),
+       and sum types (quantified over ispace parameters)."))
     (:var ((name string)))
     (:base ((type base-type)))
-    (:array ((type type)
-             (shape shape)))
-    (:fun ((in type-list)
-           (out type)))
-    (:forall ((vars kinded-var-list)
-              (type type)))
+    (:fun ((in array-type-list)
+           (out array-type)))
+    (:forall ((params type-var-list)
+              (type array-type)))
     (:pi ((params ispace-var-list)
-          (type type)))
+          (type array-type)))
     (:sigma ((params ispace-var-list)
-             (type type)))
-    :pred typep)
+             (type array-type)))
+    :pred atom-typep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist type-list
-    :parents (abstract-syntax-trees types)
-    :short "Fixtype of lists of types."
-    :elt-type type
+  (fty::deftagsum array-type
+    :parents (abstract-syntax-trees atom/array-types)
+    :short "Fixtype of array types."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "There are
+       named variables
+       and explicit array types consisting of
+       an atom type for the elements
+       and a shape in which the elements are arranged."))
+    (:var ((name string)))
+    (:array ((type atom-type)
+             (shape shape)))
+    :pred array-typep)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist array-type-list
+    :parents (abstract-syntax-trees atom/array-types)
+    :short "Fixtype of lists of array types."
+    :elt-type array-type
     :true-listp t
     :elementp-of-nil nil
-    :pred type-listp))
+    :pred array-type-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist atom-type-list
+  :short "Fixtype of lists of atom types."
+  :elt-type atom-type
+  :true-listp t
+  :elementp-of-nil nil
+  :pred atom-type-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum type
+  :short "Fixtype of types."
+  (:atom ((type atom-type)))
+  (:array ((type array-type)))
+  :pred typep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist type-list
+  :short "Fixtype of lists of types."
+  :elt-type type
+  :true-listp t
+  :elementp-of-nil nil
+  :pred type-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,9 +409,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A typed variable consists of a variable name and an associated type."))
+    "A typed variable consists of a variable name and an associated array type.
+     The type is an array one because variables are expressions, not atoms."))
   ((var string)
-   (type type))
+   (type array-type))
   :pred typed-varp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -387,16 +463,16 @@
       "There are
        named variables,
        non-empty arrays with at least one atom,
-       empty arrays with the atom type,
+       empty arrays with the atom type of the elements,
        non-empty frames with at least one expression,
-       empty frames with the cell type,
+       empty frames with the array type of the cells,
        applications of expressions to expressions
        (called `term applications' in the Remora publications),
        applications of expressions to types,
        applications of expressions to ispaces,
        and unboxing of expressions;
        the latter binds zero or more variables to ispaces,
-       a variable to the boxed value,
+       binds a variable to the boxed expression,
        and then returns the body expression.")
      (xdoc::p
       "The non-emptiness of the atom list in @(':array')
@@ -412,11 +488,11 @@
     (:array ((dims nat-list)
              (atoms atom-list)))
     (:array-empty ((dims nat-list)
-                   (type type)))
+                   (type atom-type)))
     (:frame ((dims nat-list)
              (exprs expr-list)))
     (:frame-empty ((dims nat-list)
-                   (type type)))
+                   (type array-type)))
     (:term-app ((fun expr)
                 (args expr-list)))
     (:type-app ((fun expr)
@@ -450,9 +526,13 @@
       "There are
        base values,
        lambda abstractions of expressions over typed variables,
-       lambda abstractions of expressions over kinded variables,
-       lambda abstractions of expressions over sorted variables,
-       and boxed arrays with given ispaces and type.")
+       lambda abstractions of expressions over type variables,
+       lambda abstractions of expressions over ispace variables,
+       and boxed arrays with given ispaces and type.
+       Since the type in a boxing construct must be a sum type,
+       we could enforce this syntactically,
+       but we follow [arxiv], [thesis], and [impl],
+       which all use a generic type.")
      (xdoc::p
       "[arxiv] uses @($v$) as the body of type and ispace abstraction,
        while [thesis] uses @($e$), same as term abstraction.
@@ -460,7 +540,7 @@
     (:base ((value base-value)))
     (:term-abs ((vars typed-var-list)
                 (body expr)))
-    (:type-abs ((vars kinded-var-list)
+    (:type-abs ((params type-var-list)
                 (body expr)))
     (:ispace-abs ((params ispace-var-list)
                   (body expr)))
