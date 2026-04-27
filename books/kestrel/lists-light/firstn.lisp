@@ -1,6 +1,6 @@
 ; A lightweight book about firstn.
 ;
-; Copyright (C) 2018-2025 Kestrel Institute
+; Copyright (C) 2018-2026 Kestrel Institute
 ; See books/coi/lists/basic.lisp for the copyright on firstn itself.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,22 +17,12 @@
 ;; Unlike TAKE, FIRSTN may return fewer than the requested number of elements
 ;; if the list is too short.
 
+(include-book "firstn-def")
 (local (include-book "nthcdr"))
 (local (include-book "append"))
 (local (include-book "take"))
 (local (include-book "len"))
 (local (include-book "true-list-fix"))
-
-;; From coi/lists/basic.lisp:
-(defun firstn (n l)
-  "The sublist of L consisting of its first N elements."
-  (declare (xargs :guard (and (true-listp l)
-                              (integerp n)
-                              (<= 0 n))))
-  (cond ((endp l) nil)
-        ((zp n) nil)
-        (t (cons (car l)
-                 (firstn (1- n) (cdr l))))))
 
 (defthm firstn-of-nil
   (equal (firstn n nil)

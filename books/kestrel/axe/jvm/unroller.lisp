@@ -1,7 +1,7 @@
 ; A tool to unroll Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -315,6 +315,7 @@
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
           (mv (erp-nil) dag-or-quotep hits state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
+         (dag-before-pruning dag) ; remember this for comparison below
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
          ((mv erp dag-or-quotep state)
           (maybe-prune-dag-approximately prune-approx dag assumptions *no-warn-ground-functions-jvm* print
@@ -341,11 +342,37 @@
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
           (mv (erp-nil) dag-or-quotep hits state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
-         (dag-fns (dag-fns dag)) ; optimize to not create the whole list
+         (dag-fns (dag-fns dag)) ; todo: optimize to not create the whole list
          (run-completedp (not (acl2::contains-anyp-eq *incomplete-run-fns* dag-fns))))
       (if run-completedp
-          (prog2$ (cw "Note: The run has completed.~%")
-                  (mv (erp-nil) dag hits state))
+          (if (equal dag dag-before-pruning)
+              ;; Pruning did nothing, so we don't need to simplify again:
+              (prog2$ (cw "Note: The run has completed.~%")
+                      (mv (erp-nil) dag hits state))
+            ;; Pruning did something, so we might be able to simplify more (e.g., if a myif branch got pruned away and now a remaining myif can become a bvif):
+            ;; We could make this final simplification optional.
+            (b* ((- (cw "Note: The run has completed. Doing final simplification.~%"))
+                 ((mv erp dag-or-quotep
+                      & ;limits
+                      hits-this-time)
+                  (acl2::simplify-dag-with-rule-alists-jvm dag
+                                                           assumptions
+                                                           rule-alists ; todo exclude the symbolic execution rules since the run is done?
+                                                           nil ; interpreted-function-alist
+                                                           (acl2::known-booleans (w state))
+                                                           normalize-xors
+                                                           limits
+                                                           (empty-hits)
+                                                           memoizep
+                                                           count-hits
+                                                           (reduce-print-level print)
+                                                           rules-to-monitor
+                                                           *no-warn-ground-functions-jvm*
+                                                           '(program-at) ; fns-to-elide
+                                                           ))
+                 ((when erp) (mv erp dag hits state))
+                 (hits (combine-hits hits hits-this-time)))
+              (mv (erp-nil) dag-or-quotep hits state)))
         (if nil ;todo: (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (todo: update this for JVM)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag hits state))
