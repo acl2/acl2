@@ -572,13 +572,13 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by 3join-when-not-booleanp-of-arg2)
 
-(defruled monotinicity-of-3join-left
+(defruled monotonicity-of-3join-left
   (implies (and (3<= x0 x1))
            (3<= (3join x0 y)
                 (3join x1 y)))
   :enable 3join)
 
-(defruled monotinicity-of-3join-right
+(defruled monotonicity-of-3join-right
   (implies (and (3<= y0 y1))
            (3<= (3join x y0)
                 (3join x y1)))
@@ -1006,7 +1006,7 @@
            3fix
            3p))
 
-(defrule 3xor-of-arg1-or-nil
+(defrule 3xor-of-arg1-and-nil
   (equal (3xor x nil)
          (3fix x))
   :enable (3xor
@@ -1104,7 +1104,7 @@
          t)
   :enable 3implies)
 
-(defrule 3implies-of-arg1-or-nil
+(defrule 3implies-of-arg1-and-nil
   (equal (3implies x nil)
          (3not x))
   :enable (3implies
@@ -1117,7 +1117,7 @@
          (3fix y))
   :enable 3implies)
 
-(defrule 3implies-of-arg1-or-t
+(defrule 3implies-of-arg1-and-t
   (equal (3implies x t)
          t)
   :enable 3implies)

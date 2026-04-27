@@ -1,6 +1,6 @@
 ; Adding a prefix to each member of a list of strings
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,3 +17,9 @@
       nil
     (cons (concatenate 'string prefix (first strings))
           (add-prefix-to-strings prefix (rest strings)))))
+
+(defthm string-listp-of-add-prefix-to-strings
+  (implies (and (stringp prefix)
+                (string-listp strings))
+           (string-listp (add-prefix-to-strings prefix strings)))
+  :hints (("Goal" :in-theory (enable add-prefix-to-strings))))

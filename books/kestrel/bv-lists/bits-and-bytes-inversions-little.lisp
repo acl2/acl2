@@ -1,7 +1,7 @@
 ; Inversion proofs of little-endian conversions between bit lists and byte lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -52,7 +52,7 @@
                   x))
   :hints (("Goal" :in-theory (enable bytes-to-bits-little bits-to-bytes-little))))
 
-;; Somewhat unusal because the inner function operates on a single byte but the
+;; Somewhat unusual because the inner function operates on a single byte but the
 ;; outer function returns a list of bytes.
 (defthm bits-to-bytes-little-of-byte-to-bits-little
   (implies (unsigned-byte-p 8 byte)

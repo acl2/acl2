@@ -6,7 +6,7 @@
   args:                            # default value: ['acl2'], if provided the
                                    # cpp wont be run.
   input: empty.cpp                 # default value: NAME.cpp
-  should_report_error:             # default value: false
+  should_report_error: true        # default value: false
   ref_generated:                   # default value: NAME.ref.ast.lsp
   ref_stderr:                      # default value: NAME.ref.stderr
   ref_stdout:                      # default value: NAME.ref.stdout

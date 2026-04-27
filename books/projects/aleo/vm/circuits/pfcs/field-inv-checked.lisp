@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ field-inv-checked
-  :parents (circuits)
+  :parents (circuits-pfcs)
   :short "Formalization and verification of a circuit
           for checked field inversion."
   :long

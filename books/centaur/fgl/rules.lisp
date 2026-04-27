@@ -150,7 +150,8 @@
     (implies (and (rules-ev-meta-extract-global-facts)
                   (equal wrld (w state)))
              (rules-ev-good-rewrite-rulesp (fgetprop fn 'acl2::lemmas nil wrld)))
-    :hints(("Goal" :in-theory (e/d (rules-ev-good-rewrite-rulesp-by-badguy)
+    :hints(("Goal" :in-theory (e/d (rules-ev-good-rewrite-rulesp-by-badguy
+                                    rules-ev-theoremp)
                                    (rules-ev-good-rewrite-rulesp
                                     rules-ev-good-rewrite-rulesp-badguy
                                     acl2::rewrite-rule-term
@@ -225,7 +226,8 @@
              (rules-ev-good-fgl-rules-p rules))
     :hints(("Goal" :in-theory (enable rules-ev-good-fgl-rules-p
                                       rules-ev-good-fgl-rule-p
-                                      rules-ev-good-rewrite-rulesp)))))
+                                      rules-ev-good-rewrite-rulesp
+                                      rules-ev-theoremp)))))
 
 (define fgl-rules-from-rewrite (rune (fgl-rune fgl-rune-p) fn-lemma-map)
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
@@ -294,7 +296,8 @@
   (defret rules-ev-good-fgl-rule-p-of-<fn>
     (implies (rules-ev-theoremp form)
              (rules-ev-good-fgl-rules-p rules))
-    :hints(("Goal" :in-theory (enable rules-ev-when-theoremp)))))
+    :hints(("Goal" :in-theory (enable rules-ev-when-theoremp
+                                      rules-ev-theoremp)))))
 
 
 (local (in-theory (disable w)))
@@ -343,7 +346,8 @@
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable rules-ev-good-fgl-rules-p)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable rules-ev-good-fgl-rule-p))))))
+                 '(:in-theory (enable rules-ev-good-fgl-rule-p
+                                      rules-ev-theoremp))))))
 
 (define fgl-rules-from-runes ((runes fgl-runelist-p) (fn-lemma-map) (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)

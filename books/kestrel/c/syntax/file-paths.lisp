@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,15 +20,12 @@
 
 (defxdoc+ file-paths
   :parents (concrete-syntax)
-  :short "A simple notion of file paths."
+  :short "File paths."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is factored into its own file and XDOC topic because,
-     besides its primary use in our model of @(see files),
-     it is also used in the abstract syntax,
-     which can therefore just include this
-     without including the model of files."))
+    "This is more general than C,
+     so it could be moved to a more general library."))
   :order-subtopics t
   :default-parent t)
 
@@ -39,12 +36,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we formalize a file path as anything,
-     which we wrap to keep things more abstract and separate.
-     In the future we may refine this type with more structure.
-     But note that, for instance,
-     we could already use strings with slashes and such as file paths."))
-  ((unwrap any))
+    "We formalize a file path as an isomorphic wrapping of a string.
+     File paths can be normally represented as strings (e.g. in a terminal),
+     and ACL2 strings, being isomorphic to lists of bytes,
+     are expressive enough to represent Unicode (via UTF-8).")
+   (xdoc::p
+    "In the future we may refine this type with more internal structure,
+     and/or with additional restrictions on the strings."))
+  ((string string))
   :pred filepathp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

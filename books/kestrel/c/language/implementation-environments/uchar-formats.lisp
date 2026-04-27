@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -81,7 +81,7 @@
    (xdoc::p
     "This directly derives from @('CHAR_BIT'),
      as discussed in @(tsee uchar-format),
-     and in footnote 50 of [C17:6.2.6.1//3],
+     and in footnote 50 of [C17:6.2.6.1/3],
      which says that @('unsigned char') values
      range from 0 to @($2^{\\mathtt{CHAR\\_BIT}}-1$).")
    (xdoc::p
@@ -90,7 +90,7 @@
 
   ///
 
-  (defret uchar-format->-max-type-prescription
+  (defret uchar-format->max-type-prescription
     (and (posp max)
          (> max 1))
     :rule-classes :type-prescription

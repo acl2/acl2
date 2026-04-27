@@ -466,8 +466,8 @@
   ((local
     (in-theory
      (enable
-      expressionp-when-expression-resultp-and-not-reserrp
-      expression-listp-when-expression-list-resultp-and-not-reserrp))))
+      expressionp-when-result-not-error
+      expression-listp-when-result-not-error))))
 
   :verify-guards nil ; done below
   ///
@@ -688,10 +688,10 @@
   ((local
     (in-theory
      (enable
-      statementp-when-statement-resultp-and-not-reserrp
-      statement-listp-when-statement-list-resultp-and-not-reserrp
-      branchp-when-branch-resultp-and-not-reserrp
-      branch-listp-when-branch-list-resultp-and-not-reserrp))))
+      statementp-when-result-not-error
+      statement-listp-when-result-not-error
+      branchp-when-result-not-error
+      branch-listp-when-result-not-error))))
 
   :verify-guards nil ; done below
   ///

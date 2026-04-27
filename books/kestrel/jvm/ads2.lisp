@@ -1,7 +1,7 @@
 ; More material on addresses
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -124,8 +124,7 @@
 (defthm new-ad-aux-of-insert-irrel2
   (implies (and (not (equal ad (new-ad-aux ads current-try)))
                 (natp current-try)
-                (natp ad)
-                (natp n))
+                (natp ad))
            (equal (new-ad-aux (set::insert ad ads) current-try)
                   (new-ad-aux ads current-try)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -423,8 +422,7 @@
 
 (defthm new-ad-of-delete-irrel2
   (implies (and (< (new-ad ads) x)
-                (natp x)
-                (natp current-try))
+                (natp x))
            (equal (new-ad (set::delete x ads))
                   (new-ad ads)))
   :hints (("Goal" :in-theory (enable new-ad))))

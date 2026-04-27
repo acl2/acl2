@@ -1,7 +1,7 @@
 ; Utilities supporting the lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -201,7 +201,7 @@
 
 ; A dummy function that has special meaning when used in invariants (it gets
 ; replaced by a term representing the field of the given object with the given
-; class-name-field-name pair in the headp of the over-arching state).
+; class-name-field-name pair in the heap of the over-arching state).
 (defstub field (address pair) t)
 
 ;; ; A dummy function that has special meaning when used in invariants (it gets
@@ -437,7 +437,7 @@
                             (mv (erp-nil) (first param-names))
                           (if local-variable-table
                               (let ((name-and-type
-                                     (lookup-in-local-variable-table slot 0 ;PC 0 means the start of the method
+                                     (jvm::lookup-in-local-variable-table slot 0 ;PC 0 means the start of the method
                                                                      local-variable-table)))
                                 (if (not name-and-type)
                                     (prog2$ (er hard? 'make-param-slot-to-name-alist-aux "No binding found in the local var table for param ~x0." slot)
@@ -457,7 +457,7 @@
                                                      param-names
                                                    (rest param-names)))))
       (if (member-eq name (strip-cdrs res))
-          ;; Can happen if two param names differe only in case:
+          ;; Can happen if two param names differ only in case:
           (er hard? 'make-param-slot-to-name-alist-aux "Parameter name clash on ~x0." name)
         (acons slot name res)))))
 
@@ -659,6 +659,7 @@
                                                      param-slot-to-name-alist array-length-alist th state-var)))))
 
 
+;only used by compositional lifters
 (defun make-poised-assumptions (staticp method-class method-name method-descriptor parameter-types state-var)
   (let* ((specialp (equal "<init>" method-name) ;;todo: what about super calls that use invokespecial? always make 2 theorems, one for invokespecial and one for invokevirtual
                    )
@@ -675,7 +676,12 @@
                            ;; what's the normal form here?
                            (jvm::method-program (jvm::method-info (jvm::thread-top-frame (th) ,state-var))))
              '(,invoke-opcode
-               ,method-class ,method-name ,method-descriptor ,parameter-types ,@interface-args)))))
+               ,method-class ,method-name ,method-descriptor ,parameter-types ,@interface-args))
+      ,@(if (not staticp)
+            `((addressp (jvm::top-operand ,(jvm::pop-items-off-stack  ; todo: test this with a non-empty list of params!  may need to unroll this (now or when assumptions are simplified)
+                                            parameter-types
+                                            '(jvm::stack (jvm::thread-top-frame (th) s0))))))
+          nil))))
 
 (defforall-simple method-designator-stringp)
 (verify-guards all-method-designator-stringp)
@@ -714,7 +720,7 @@
                               (jvm::jvm-statep s))
                   :verify-guards nil))
   (let ((jvm::inst (jvm::current-inst jvm::th s)))
-    (jvm::do-inst (jvm::op-code jvm::inst)
+    (jvm::do-inst (jvm::instruction-opcode jvm::inst)
                   jvm::inst jvm::th s)))
 
 (defthmd step-always-open-correct

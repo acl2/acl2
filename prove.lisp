@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -612,11 +612,11 @@
          ""))
       ((do-not-induct do-not-induct-otf-flg-override)
        (msg "Normally we would attempt to prove ~@0 by induction.  However, a ~
-             :DO-NOT-INDUCT hint was supplied to abort the proof attempt.~|"
+             ~x1 hint was supplied to abort the proof attempt.~|"
             cl-id-phrase
             (if (eq temp 'do-not-induct)
-                t
-              :otf-flg-override)))
+                :DO-NOT-INDUCT
+              :OTF-FLG-OVERRIDE)))
       (induction-depth-limit-exceeded
        (msg "Normally we would attempt to prove ~@0 by induction.  However, ~
              that would cause the induction-depth-limit of ~x1 to be ~
@@ -1804,10 +1804,10 @@
 ; then clauses just the singleton list contain the same clause the :OR was
 ; attached to.  But ttree contains an :or tag with value (parent-cl-id nil
 ; ((user-hint1 . hint-settings1)...))  indicating what is to be done to the
-; clause.  Eventually the nil we be replaced, on each branch, by the number of
-; that branch.  See change-or-hit-history-entry.  The number of branches is the
-; length of the third element.  The parent-cl-id in the value is the same as
-; the cl-id passed in.
+; clause.  Eventually the nil will be replaced, on each branch, by the number
+; of that branch.  See change-or-hit-history-entry.  The number of branches is
+; the length of the third element.  The parent-cl-id in the value is the same
+; as the cl-id passed in.
 
   (let* ((val (tagged-object :or ttree))
          (branch-cnt (length (nth 2 val))))
@@ -1879,7 +1879,7 @@
 
 ; The presence of :use indicates that a :use hint was applied to one
 ; or more clauses to give the output clauses.  If there is also a
-; :cases tag in the ttree, then the input clause was split into to 2
+; :cases tag in the ttree, then the input clause was split into two
 ; or more cases first and then the :use hint was applied to each.  If
 ; there is no :cases tag, the :use hint was applied to the input
 ; clause alone.  Each application of the :use hint adds literals to
@@ -2031,7 +2031,7 @@
 
 ; NOTE: This function has not been called since Version_2.5.  However,
 ; we reference the comment below in a comment in settled-down-clause,
-; so for now we keep this comment, if for no other other reason than
+; so for now we keep this comment, if for no other reason than
 ; historical.
 
 ; Context: We are about to print cl-id and clause in waterfall-msg.
@@ -3387,7 +3387,7 @@
 ; Observe also that if we added to type-alist2 the binding (u
 ; *ts-cons*) then condition (1) of our definition still holds but (2)
 ; does not.  Further, if we mistakenly regarded type-alist2 as the
-; weaker then proving (consp u) under type-alist2 would not ensure a
+; weaker, then proving (consp u) under type-alist2 would not ensure a
 ; proof of (consp u) under type-alist1.
 
   (and (dumb-type-alist-implicationp1 type-alist1 type-alist2 nil)
@@ -3832,8 +3832,8 @@
               (t (mv@par nil val nil state))))))
      (t (mv@par nil nil nil state)))))
 
-; Before we can can complete the definition of waterfall-step, we need support
-; for rw-cache operations (see the Essay on Rw-cache) at the pspv level.
+; Before we can complete the definition of waterfall-step, we need support for
+; rw-cache operations (see the Essay on Rw-cache) at the pspv level.
 
 (defun set-rw-cache-state-in-pspv (pspv val)
   (declare (xargs :guard (member-eq val *legal-rw-cache-states*)))
@@ -4426,8 +4426,7 @@
       (cond
        ((or erp bad-historyp)
 
-; We will act like an error occurred.  We have to decided which kind of
-; error.
+; We will act like an error occurred.  We have to decide which kind of error.
 
         (mv-let (error-string abort-cause)
           (cond
@@ -4446,7 +4445,7 @@
                        (cond
                         ((eq abort-cause
                              'subgoal-path-length-violation)
-                         (msg "The maximum subgoal depth has of ~x0 has been ~
+                         (msg "The maximum subgoal depth of ~x0 has been ~
                                reached.  The proof attempt has failed.  See ~
                                :DOC set-subgoal-loop-limits."
                               (car subgoal-loop-limits)))

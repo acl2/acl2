@@ -1,7 +1,7 @@
 ; A tool to prove a theorem using the Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -53,13 +53,13 @@
                            (rules 'nil)
                            (rule-lists 'nil)
                            (remove-rules 'nil)
-                           (counter-example 't)
+                           (counterexample 't)
                            (monitor 'nil) ; gets evaluated
                            (rule-classes ':auto)
                            (print 'nil))
   (if (and (consp term)
            (eq :eval (car term)))
       ;; Evaluate TERM:
-      `(make-event (defthm-axe-fn ',name ,(cadr term) ,rules ,rule-lists ,remove-rules ',counter-example ,monitor ',rule-classes ',print state))
+      `(make-event (defthm-axe-fn ',name ,(cadr term) ,rules ,rule-lists ,remove-rules ',counterexample ,monitor ',rule-classes ',print state))
     ;; Don't evaluate TERM:
-    `(make-event (defthm-axe-fn ',name ',term ,rules ,rule-lists ,remove-rules ',counter-example ,monitor ',rule-classes ',print state))))
+    `(make-event (defthm-axe-fn ',name ',term ,rules ,rule-lists ,remove-rules ',counterexample ,monitor ',rule-classes ',print state))))

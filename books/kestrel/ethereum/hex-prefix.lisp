@@ -178,7 +178,7 @@
      whose encodings are equal,
      an executable implementation of decoding,
      which returns a unique nibble array and boolean flag,
-     could not be shown to be equal to @('hp-endoding-witness'),
+     could not be shown to be equal to @('hp-encoding-witness'),
      which is introduced by a @(tsee defchoose) inside @(tsee defun-sk)
      and therefore could be either pair (of a nibble array and a boolean flag).
      Thus, we defer the injectivity and left inverse proofs for now."))

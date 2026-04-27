@@ -1,7 +1,7 @@
 ; ACL2 arrays that grow as needed
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -460,7 +460,7 @@
   :hints (("Goal" :in-theory (enable maybe-expand-array expand-array))))
 
 (defthm <-of-alen1-of-maybe-expand-array-linear
-  (implies (and (< index *max-1d-array-length*))
+  (implies (< index *max-1d-array-length*)
            (< index (alen1 array-name (maybe-expand-array array-name array index))))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable maybe-expand-array expand-array))))

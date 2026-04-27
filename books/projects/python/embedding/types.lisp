@@ -2,6 +2,10 @@
 This file contains Python type definitions and attaches appropriate enumerators to them
 |#
 
+; Search below for "This event fails in ACL2(p)" to see why ACL2(p) is being
+; excluded here from regression testing.
+; cert_param: (non-acl2p)
+
 (in-package "ACL2S")
 (include-book "enumerators/string")
 (include-book "enumerators/listof")
@@ -92,17 +96,34 @@ This file contains Python type definitions and attaches appropriate enumerators 
            (!= (make-nat-upto-2-expt-65 r1 r2 r3) (1- (expt 2 65))))))
 ;; And 1- 2^65 should be the max that can be generated
 (must-succeed
+
+; Matt K. mod: This event fails in ACL2(p), even after
+; (set-waterfall-parallelism nil), because when using cert.pl we get the
+; following error (seen only using :with-output-off nil, which I added below.)
+; To see this error, use cert.pl with environment variable ACL2_CUSTOMIZATION
+; set to:
+; <path_to_acl2_directory>//acl2-customization-files/parallel-resource-based.lisp
+
+#|
+ACL2 Error in ( THM ...):  You have duplicate occurrences of the hint
+keyword :BACKTRACK in your hint.  While duplicate occurrences of keywords
+are permitted by CLTL, the semantics ignores all but the left-most.
+We therefore suspect that you have made a mistake in presenting your
+hints.
+|#
+
   (thm (=> (and (unsigned-byte-p 31 r1)
                 (unsigned-byte-p 31 r2)
                 (unsigned-byte-p 31 r3))
-           (!= (make-nat-upto-2-expt-65 r1 r2 r3) (expt 2 65)))))
+           (!= (make-nat-upto-2-expt-65 r1 r2 r3) (expt 2 65))))
+  :with-output-off nil)
 
-(defun python-int-enum/acc (n seed)  
+(defun python-int-enum/acc (n seed)
   (declare (xargs :mode :program))
   (declare (ignore n)
            (type (unsigned-byte 31) seed))
   (b* (((mv choice seed)
-        (defdata::weighted-switch-nat 
+        (defdata::weighted-switch-nat
           '(
             85  ; +- 2^64 +- 2^16
             6   ; +- [1, ..., 2^65]
@@ -142,7 +163,7 @@ This file contains Python type definitions and attaches appropriate enumerators 
       (4 (mv 0 seed))
       (t (mv 1 seed)))))
 
-(defun python-int-enum (n)  
+(defun python-int-enum (n)
   (declare (xargs :mode :program))
   (b* (((mv x &) (python-int-enum/acc 0 n)))
     x))
@@ -192,7 +213,7 @@ This file contains Python type definitions and attaches appropriate enumerators 
   (declare (ignore n))
   (declare (type (unsigned-byte 31) seed))
   (b* (((mv choice seed)
-        (defdata::weighted-switch-nat 
+        (defdata::weighted-switch-nat
           '(
             76  ;; n/k for n,k integers
             5   ;; +- 2^i + {-1,0,1} for |i| <= 64

@@ -1,3 +1,13 @@
+; More utilities about axe-rules
+;
+; Copyright (C) 2020-2026 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "make-axe-rules")
@@ -32,5 +42,5 @@
         (mv (er hard? 'lhs-and-rhs-of-simple-rule "Rules with hyps are not yet supported.") nil))
        (known-booleans (known-booleans wrld))
        ((mv erp lhs rhs) (lhs-and-rhs-of-conc body rule-name known-booleans)) ;may throw an error
-       ((when erp) (mv (er hard? 'lhs-and-rhs-of-simple-rule "Can't extract an LHS nd RHS from ~x0." rule-name) nil)))
+       ((when erp) (mv (er hard? 'lhs-and-rhs-of-simple-rule "Can't extract LHS and RHS from ~x0." rule-name) nil)))
     (mv lhs rhs)))

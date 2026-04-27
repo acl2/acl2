@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function read-byte$.
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -102,7 +102,7 @@
                            (nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                             true-listp)))))
 
-(defthm integer-of-mv-nth-0-of-read-byte$-iff
+(defthm integerp-of-mv-nth-0-of-read-byte$-iff
   (implies (and (open-input-channel-p channel :byte state)
                 (state-p1 state))
            (iff (integerp (mv-nth 0 (read-byte$ channel state)))

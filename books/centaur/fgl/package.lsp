@@ -39,7 +39,7 @@
 
 (defpkg "FGL"
   (append
-   (remove1 'acl2::remove-assoc *acl2-exports*)
+   (set-difference-eq *acl2-exports* '(assume remove-assoc))
    *common-lisp-symbols-from-main-lisp-package*
    *stobjs-exports*
    std::*std-exports*

@@ -106,7 +106,7 @@ space. However, accessing a byte requires walking a 3 level hierarchy.</p>
 <p>@(tsee bigmem-asymmetric::bigmem-asymmetric) provides faster access to the
 lower 6GB of physical memory, because those values are stored in an array, but
 slower access to the rest of the address space, since it stores the rest of the
-values in in an ordered alist.</p>
+values in an ordered alist.</p>
 
 <p>If you're only going to be using the lower 6GB of memory (or mostly using
 the lower 6 GB) of memory, using the @(tsee

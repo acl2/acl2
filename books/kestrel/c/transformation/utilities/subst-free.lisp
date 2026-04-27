@@ -1068,7 +1068,7 @@
     :returns (result c$::attribp)
     (c$::attrib-case
      attrib
-     :name (c$::attrib-fix attrib)
+     :name-only (c$::attrib-fix attrib)
      :name-params
      (c$::attrib-name-params (c$::attrib-name-params->name attrib)
                              (expr-list-subst-free

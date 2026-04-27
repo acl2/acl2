@@ -216,7 +216,8 @@
        do not exist yet when @('defparse-name-repetition-table') is called.
        The call merely defines the names of these functions,
        which are created later via
-       @('defparse-name-*-rulename') and @('defparse-name-*-group')
+       @('defparse-name-*-rulename'), @('defparse-name-1*-rulename'),
+       @('defparse-name-*-group'), or @('defparse-name-1*-group')
        (see below)."))
 
     (xdoc::desc
@@ -282,21 +283,40 @@
      "@('defparse-name-*-rulename')"
      (xdoc::p
       "Macro to generate a parsing function for
-       a repetition of zero or more instances of a rule name.")
+       a repetition of instances of a rule name.")
      (xdoc::p
       "It is called as")
      (xdoc::codeblock
-      "(defparse-name-*-rulename \"<rulename>\")")
+      "(defparse-name-*-rulename \"<rulename>\" :min <min> :max <max>)")
      (xdoc::p
       "where @('<rulename>') is a rule name in the grammar,
        for which a parsing function must have already been generated
-       when this call is made.")
+       when this call is made.
+       The @(':min') and @(':max') keyword arguments are optional,
+       defaulting to 0 and @(':infinity').
+       @(':max') may be a natural number or @(':infinity').")
+     (xdoc::p
+      "This supports the following repetition forms:")
+     (xdoc::ul
+      (xdoc::li "@('*') (zero or more): the default, @(':min 0 :max :infinity').")
+      (xdoc::li "@('n*') (n or more): @(':min n').")
+      (xdoc::li "@('n') (exactly n): @(':min n :max n').")
+      (xdoc::li "@('n*m') (n to m): @(':min n :max m')."))
      (xdoc::p
       "The repetition must be
        in the table generated via @('defparse-name-repetition-table')
        (see above).
        The name of the generated parsing function
        is the corresponding one in the table."))
+
+    (xdoc::desc
+     "@('defparse-name-1*-rulename')"
+     (xdoc::p
+      "Shorthand for
+       @('(defparse-name-*-rulename \"<rulename>\" :min 1)').")
+     (xdoc::p
+      "Macro to generate a parsing function for
+       a repetition of one or more instances of a rule name."))
 
     (xdoc::desc
      "@('defparse-name-group')"
@@ -340,22 +360,34 @@
      "@('defparse-name-*-group')"
      (xdoc::p
       "Macro to generate a parsing function for
-       a repetition of zero or more instances of a group.")
+       a repetition of instances of a group.")
      (xdoc::p
       "It is called as")
      (xdoc::codeblock
-      "(defparse-name-*-group \"<group>\")")
+      "(defparse-name-*-group \"<group>\" :min <min> :max <max>)")
      (xdoc::p
       "where @('<group>') is a group in the grammar
        written in ABNF concrete syntax,
        for which a parsing function must have already been generated
-       when this call is made.")
+       when this call is made.
+       The @(':min') and @(':max') keyword arguments are optional,
+       defaulting to 0 and @(':infinity'), as in
+       @('defparse-name-*-rulename') (see above).")
      (xdoc::p
       "The repetition must be
        in the table generated via @('defparse-name-repetition-table')
        (see above).
        The name of the generated parsing function
        is the corresponding one in the table."))
+
+    (xdoc::desc
+     "@('defparse-name-1*-group')"
+     (xdoc::p
+      "Shorthand for
+       @('(defparse-name-*-group \"<group>\" :min 1)').")
+     (xdoc::p
+      "Macro to generate a parsing function for
+       a repetition of one or more instances of a group."))
 
     (xdoc::desc
      "@('defparse-name-option')"

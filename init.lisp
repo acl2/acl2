@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -24,7 +24,7 @@
 
 ; This file need not be distributed with ACL2 and is unimportant for
 ; the correct operation of ACL2.  This file is loaded automatically by
-; ACKL when it starts up, but not by ACL2 when running in any other
+; AKCL when it starts up, but not by ACL2 when running in any other
 ; Common Lisp.
 
 ; Bob Boyer sometimes uses the following for debugging in CCL:

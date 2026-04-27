@@ -1,7 +1,7 @@
 ; A tool to read and parse a Java .class file
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,53 +22,57 @@
 
 (local (in-theory (disable w boundp-global)))
 
-;; Returns (mv erp class-name class-info field-defconsts state constant-pool).
+;; Returns (mv erp class-name class-info field-defconsts state).
 ;; If PATH-TO-CLASS-FILE is a relative path, it is interprted relative to the
 ;; cbd (connected book directory).
-(defund read-and-parse-class-file (path-to-class-file error-if-doesnt-existp state constant-pool)
+(defund read-and-parse-class-file (path-to-class-file error-if-doesnt-existp state)
   (declare (xargs ;; :guard (stringp path-to-class-file) ; including this may impose invariant-risk on callers
-                  :stobjs (state constant-pool)))
+                  :stobjs (state)))
   (b* (((when (not (stringp path-to-class-file)))
         (er hard? 'read-and-parse-class-file "File name is not a string: ~x0." path-to-class-file)
-        (mv :bad-filename nil nil nil state constant-pool))
+        (mv :bad-filename nil nil nil state))
        ((mv existsp state) ; consider skipping this step?
         (file-existsp path-to-class-file state))
        ((when (not existsp))
         (and error-if-doesnt-existp (er hard? 'read-and-parse-class-file "File does not exist: ~x0." path-to-class-file))
-        (mv :file-does-not-exist nil nil nil state constant-pool))
+        (mv :file-does-not-exist nil nil nil state))
        ((mv erp bytes state)
         (read-file-into-byte-list path-to-class-file state))
        ((when erp)
         (prog2$ (er hard? 'read-and-parse-class-file "Failed to read from file ~x0.  Result: ~x1." path-to-class-file bytes)
-                (mv erp nil nil nil state constant-pool)))
+                (mv erp nil nil nil state)))
        ;; Parse the bytes read:
-       ((mv erp class-name class-info field-defconsts constant-pool)
-        (parse-class-file-bytes bytes constant-pool))
-       ((when erp) (mv erp nil nil nil state constant-pool)))
-    (mv (erp-nil) class-name class-info field-defconsts state constant-pool)))
+       ((mv erp class-name class-info field-defconsts)
+        (parse-class-file-bytes bytes))
+       ((when erp) (mv erp nil nil nil state)))
+    (mv (erp-nil) class-name class-info field-defconsts state)))
 
 (defthm class-namep-of-mv-nth-1-of-read-and-parse-class-file
-  (implies (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
-           (jvm::class-namep (mv-nth 1 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool))))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state)))
+                )
+           (jvm::class-namep (mv-nth 1 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
 
 (defthm class-infop0-of-mv-nth-2-of-read-and-parse-class-file
-  (implies (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
-           (jvm::class-infop0 (mv-nth 2 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool))))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state)))
+                )
+           (jvm::class-infop0 (mv-nth 2 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
 
 (defthm class-infop-of-mv-nth-2-of-read-and-parse-class-file
-  (implies (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
-           (jvm::class-infop (mv-nth 2 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool))
-                             (mv-nth 1 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool))))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state)))
+                )
+           (jvm::class-infop (mv-nth 2 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state))
+                             (mv-nth 1 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
 
 (defthm true-listp-of-mv-nth-3-of-read-and-parse-class-file
-  (implies (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
-           (true-listp (mv-nth 3 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool))))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state)))
+                )
+           (true-listp (mv-nth 3 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
 
-;; Returns (mv erp class-name class-info field-defconsts state constant-pool).
+;; Returns (mv erp class-name class-info field-defconsts state).
 ;; PATH-TO-CLASS-FILE is relative to either the cbd (if DIR is nil), or toa the directory previously associated
 ;; with DIR (if DIR is non-nil), e.g., by a previous call of add-include-book-dir.
 ;; TODO: Error if DIR is non-nil but path-to-class-file is an absolute path?
@@ -76,8 +80,8 @@
                                             dir ; nil, or something added by add-include-book-dir, such as :kestrel-acl2
                                             error-if-doesnt-existp
                                             state
-                                            constant-pool)
-  (declare (xargs :stobjs (state constant-pool)
+                                           )
+  (declare (xargs :stobjs (state)
                   :guard (and (stringp path-to-class-file)
                               (or (null dir)
                                   (keywordp dir))
@@ -86,29 +90,33 @@
                       (include-book-dir$ dir state)
                     "./"))
        ((when (not (stringp directory)))
-        (mv `(:bad-include-book-dir ,directory) nil nil nil state constant-pool))
+        (mv `(:bad-include-book-dir ,directory) nil nil nil state))
        (path-to-class-file (concatenate 'string directory path-to-class-file)))
-    (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state constant-pool)))
+    (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state)))
 
 (defthm class-namep-of-mv-nth-1-of-read-and-parse-class-file-with-dir
-  (implies (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
-           (jvm::class-namep (mv-nth 1 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool))))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state)))
+                )
+           (jvm::class-namep (mv-nth 1 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file-with-dir))))
 
 (defthm class-infop0-of-mv-nth-2-of-read-and-parse-class-file-with-dir
-  (implies (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
-           (jvm::class-infop0 (mv-nth 2 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool))))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state)))
+                )
+           (jvm::class-infop0 (mv-nth 2 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file-with-dir))))
 
 (defthm class-infop-of-mv-nth-2-of-read-and-parse-class-file-with-dir
-  (implies (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
-           (jvm::class-infop (mv-nth 2 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool))
-                             (mv-nth 1 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool))))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state)))
+                )
+           (jvm::class-infop (mv-nth 2 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state))
+                             (mv-nth 1 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file-with-dir))))
 
 (defthm true-listp-of-mv-nth-3-of-read-and-parse-class-file-with-dir
-  (implies (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool)))
-           (true-listp (mv-nth 3 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state constant-pool))))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state)))
+                )
+           (true-listp (mv-nth 3 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file-with-dir))))
 
 ;; ;;;
@@ -143,21 +151,21 @@
 (defund show-class-info-fn (path-to-class-file
                             dir ; nil, or something added by add-include-book-dir, such as :kestrel-acl2
                             state
-                            constant-pool)
-  (declare (xargs :stobjs (state constant-pool)
+                           )
+  (declare (xargs :stobjs (state)
                   :guard (and (stringp path-to-class-file)
                               (or (null dir)
                                   (keywordp dir)))))
   (b* (((mv erp class-name class-info
             & ; field-defconsts
-            state constant-pool) (read-and-parse-class-file-with-dir path-to-class-file dir t state constant-pool))
-       ((when erp) (mv erp nil state constant-pool)))
+            state) (read-and-parse-class-file-with-dir path-to-class-file dir t state))
+       ((when erp) (mv erp nil state)))
     (progn$ (cw "Info for class ~s0:~%" class-name)
             (cw "~X01" class-info nil)
-            (mv (erp-nil) nil state constant-pool))))
+            (mv (erp-nil) nil state))))
 
 ;; Show class-info for the given class
 (defmacro show-class-info (path-to-class-file
                            &key
                            (dir 'nil))
-  `(show-class-info-fn ,path-to-class-file ',dir state constant-pool))
+  `(show-class-info-fn ,path-to-class-file ',dir state))

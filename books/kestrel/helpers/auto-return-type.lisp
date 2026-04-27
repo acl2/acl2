@@ -107,7 +107,6 @@
 (register-list-predicate characterp character-listp)
 (register-list-predicate standard-char-p standard-char-listp)
 (register-list-predicate true-listp true-list-listp)
-(register-list-predicate pseudo-termp pseudo-term-listp)
 (register-list-predicate natp nat-listp)
 (register-list-predicate posp pos-listp)
 (register-list-predicate eqlablep eqlable-listp)

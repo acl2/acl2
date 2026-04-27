@@ -1,6 +1,6 @@
 ; A clause processor that performs a simple form of subsumption
 
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -395,7 +395,6 @@
            (logic-term-list-listp (simple-subsumption-clause-processor clause) w))
   :hints (("Goal" :in-theory (enable simple-subsumption-clause-processor))))
 
-;todo: add :well-formedness proof
 (defthm simple-subsumption-clause-processor-correct
   (implies (if-and-not-eval (conjoin-clauses (simple-subsumption-clause-processor clause)) a)
            (if-and-not-eval (disjoin clause) a))

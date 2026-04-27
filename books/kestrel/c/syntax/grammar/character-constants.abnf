@@ -1,0 +1,38 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains rules for character constants
+; that are common to all the C dialects
+; [C17:6.4.4.4/1] [C23:6.4.5.5].
+; Together with the rules
+; in the dialect-specific files character-constants-*.abnf,
+; they define the character constants of each C dialect.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+c-char-sequence = c-char
+                / c-char-sequence c-char
+
+c-char = character-not-single-quote-or-backslash-or-new-line
+       / escape-sequence
+
+escape-sequence = simple-escape-sequence
+                / octal-escape-sequence
+                / hexadecimal-escape-sequence
+                / universal-character-name
+
+octal-escape-sequence = "\" octal-digit
+                      / "\" octal-digit octal-digit
+                      / "\" octal-digit octal-digit octal-digit
+
+hexadecimal-escape-sequence = %s"\x" hexadecimal-digit
+                            / hexadecimal-escape-sequence hexadecimal-digit

@@ -97,8 +97,7 @@
                (subsetp-equal y z))
            (subsetp-equal (intersection-equal x y) z)))
 
-;rename
-(defthm acl2-number-of-lookup-equal-when-all-natp-of-strip-cdrs
+(defthm acl2-numberp-of-lookup-equal-when-all-natp-of-strip-cdrs
   (implies (all-natp (strip-cdrs acc))
            (iff (acl2-numberp (lookup-equal var acc))
                 (member-equal var (strip-cars acc))))

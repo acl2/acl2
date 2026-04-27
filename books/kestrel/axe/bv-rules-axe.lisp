@@ -1,7 +1,7 @@
 ; Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -41,6 +41,7 @@
 (local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/bv/leftrotate-rules" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -130,7 +131,7 @@
   :hints (("Goal" :do-not '(preprocess) :in-theory (enable bvcat UNSIGNED-BYTE-P-FORCED))))
 
 ;or should we bring heavier terms to the front to increase sharing?
-;ffixme these differe from what simplify-bitxors does in terms of the order of terms?!
+;ffixme these differ from what simplify-bitxors does in terms of the order of terms?!
 (defthmd bitxor-commutative-axe
   (implies (axe-syntaxp (should-commute-axe-argsp 'bitxor x y dag-array))
            (equal (bitxor x y)
@@ -194,9 +195,9 @@
   :hints (("Goal" :in-theory (enable bvand))))
 
 (defthmd bvand-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-axe-argsp 'bvand y x dag-array))
-           (equal (bvand size y (bvand size x z))
-                  (bvand size x (bvand size y z))))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'bvand x y dag-array))
+           (equal (bvand size x (bvand size y z))
+                  (bvand size y (bvand size x z))))
   :hints (("Goal" :use (:instance bvand-commutative-2)
            :in-theory (disable bvand-commutative-2))))
 
@@ -209,9 +210,9 @@
   :hints (("Goal" :in-theory (enable bvor))))
 
 (defthmd bvor-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-axe-argsp 'bvor y x dag-array))
-           (equal (bvor size y (bvor size x z))
-                  (bvor size x (bvor size y z))))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'bvor x y dag-array))
+           (equal (bvor size x (bvor size y z))
+                  (bvor size y (bvor size x z))))
   :hints (("Goal" :use (:instance bvor-commutative-2)
            :in-theory (disable bvor-commutative-2))))
 
@@ -1944,7 +1945,6 @@
                 (< n size)
                 (integerp n)
                 (integerp size)
-                (integerp xsize)
                 (unsigned-byte-p-forced ysize y))
            (equal (getbit n (bvor size x y))
                   (getbit n x)))
@@ -2009,3 +2009,52 @@
                   (bvchop size k)))
   :hints (("Goal" :use (:instance bvchop-subst-constant (free free) (size size))
            :in-theory (disable bvchop-subst-constant))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Cancel X from the BVPLUS nest rooted at Y
+(defund cancel-bvplus-arg (path size x y)
+  (declare (ignore path))
+  (bvminus size y x))
+
+(defthmd cancel-bvplus-arg-of-nil
+  (equal (cancel-bvplus-arg nil size x x)
+         0)
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+(defthmd cancel-bvplus-arg-left
+  (implies (and (consp path)
+                (equal :l (car path)))
+           (equal (cancel-bvplus-arg path size x (bvplus size y z))
+                  (bvplus size (cancel-bvplus-arg (cdr path) size x y) z)))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+(defthmd cancel-bvplus-arg-right
+  (implies (and (consp path)
+                (equal :r (car path)))
+           (equal (cancel-bvplus-arg path size x (bvplus size y z))
+                  (bvplus size y (cancel-bvplus-arg (cdr path) size x z))))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+;; Searches for Y in the nest rooted at X.
+(defthmd bvminus-cancel-axe
+  (implies (and (syntaxp (quotep size))
+                ;; finds the path where Y occurs in X:
+                (axe-bind-free (bind-path-in-bvplus-nest y size x dag-array) '(path)))
+           (equal (bvminus size x y)
+                  (cancel-bvplus-arg path size y x)))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd equal-of-constant-and-bvnot
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)
+                              (not (quotep x)) ; prevents loops
+                              ))
+                (natp size))
+           (equal (equal k (bvnot size x))
+                  (and (unsigned-byte-p size k)
+                       (equal (bvchop size x) (bvnot size k)))))
+  :hints (("Goal" :use equal-of-bvnot-and-constant
+                  :in-theory (disable equal-of-bvnot-and-constant))))

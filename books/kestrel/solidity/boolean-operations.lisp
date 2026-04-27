@@ -1,10 +1,10 @@
 ; Solidity Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,7 +21,7 @@
   (xdoc::topstring
    (xdoc::p
     "Since here we are formalizing the boolean operations on values,
-     we do not capture here the short-circuiting of @('&&') and @('||') here.
+     we do not capture the short-circuiting of @('&&') and @('||') here.
      That is captured when formalizing the evaluation of expressions."))
   :order-subtopics t
   :default-parent t)

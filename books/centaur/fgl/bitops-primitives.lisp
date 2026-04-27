@@ -135,7 +135,7 @@
   :hints(("Goal" :in-theory (enable pos-fix)))
   :ruler-extenders (cons)
   :hooks ((:fix :hints(("Goal" :in-theory (enable pos-fix)))))
-  `(intcons (if (intcar x) 't 'nil)
+  `(intcons (intcar x)
             ,(if (eql (lposfix n) 1)
                  'y
                `((lambda (x y)

@@ -552,9 +552,6 @@
               (member k keys))))
 
 
-
-(local (deflist pseudo-var-list :elt-type pseudo-var :true-listp t))
-
 (define lambda-nest-to-bindinglist ((x pseudo-termp))
   :returns (mv (bindings bindinglist-p)
                (body pseudo-termp))

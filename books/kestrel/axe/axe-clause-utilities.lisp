@@ -1,7 +1,7 @@
 ; Utilities for dealing with clauses represented as DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,6 +20,7 @@
 
 ;nodenums are the disjuncts, and we are trying to prove at least one of them true
 ;it can help to think about the case where they are all false, to see what is contradictory
+; Ex: (or A B C) is (implies (and (not A) (not B) (not C)) nil), so the case to consider is (and (not A) (not B) (not C)).
 ;fixme add the ability to read the output of this back in and apply the prover to it
 ;fixme make tail rec (could just print each one instead of consing up the list..)
 (defund expressions-for-this-case (items dag-array dag-len)
@@ -66,10 +67,10 @@
                  )
             ;; if the item is a NOT, negate it by stripping the NOT:
             (cons (first (dargs expr))
-                  (expressions-for-this-case (cdr items) dag-array dag-len))
+                  (expressions-for-this-case-simple (cdr items) dag-array dag-len))
           ;; if the item isn't a NOT, negate it by adding a NOT:
           (cons `(not ,item)
-                (expressions-for-this-case (cdr items) dag-array dag-len)))))))
+                (expressions-for-this-case-simple (cdr items) dag-array dag-len)))))))
 
 ;any non-nil constant proves the clause (we are proving a disjunction), any nil is dropped (because (or nil x) = x)
 ;; Returns (mv provedp nodenum-disjuncts).

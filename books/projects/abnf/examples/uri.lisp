@@ -26,7 +26,7 @@
   :long
   (xdoc::topstring-p
    "The URI syntax is specified by "
-   (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3968")
+   (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3986")
    ".")
   :order-subtopics t
   :default-parent t)

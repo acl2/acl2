@@ -24,7 +24,7 @@
    (xdoc::p
     "We show that the concrete syntax rules are well-formed.")
    (xdoc::p
-    "Additonal properties, such as closure,
+    "Additional properties, such as closure,
      do not hold just for the concrete syntax rules:
      they must be completed with (some of) the core rules.
      See @(see concrete-syntax-validation).")

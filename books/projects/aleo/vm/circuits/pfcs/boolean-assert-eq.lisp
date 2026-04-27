@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ boolean-assert-eq
-  :parents (circuits)
+  :parents (circuits-pfcs)
   :short "Formalization and verification of a circuit
           for asserting that two booleans are equal."
   :long

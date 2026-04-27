@@ -1,7 +1,7 @@
 ; A lifter for x86 code, based on Axe, that can handle (some) code with loops
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -40,6 +40,9 @@
 
 ;; TODO: Continue adding and verifying guards
 
+;; TODO: Can we unify this with the unrolling lifter?
+
+(include-book "lifter-support")
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
@@ -68,7 +71,7 @@
 (include-book "kestrel/x86/write-over-write-rules" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
-(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
+(include-book "kestrel/executable-parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/rflags" :dir :system)
 (include-book "kestrel/x86/rflags2" :dir :system)
 (include-book "kestrel/x86/separate" :dir :system)
@@ -76,7 +79,7 @@
 (include-book "kestrel/x86/alt-defs" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "rule-lists")
-(include-book "kestrel/x86/run-until-return" :dir :system)
+(include-book "kestrel/x86/run-until-return" :dir :system) ; drop?
 ;(include-book "kestrel/x86/assumptions" :dir :system)
 (include-book "kestrel/x86/assumptions32" :dir :system)
 ;(include-book "kestrel/x86/assumptions64" :dir :system)
@@ -436,7 +439,7 @@
                                   (loop-lifter-state-component-extraction-rules))
                           (w state)))
 
-;; Returns (mv erp rsp-dag limits).
+;; Returns (mv erp rsp-dag limits hits).
 (defun extract-rsp-dag (state-dag
                         assumptions ; avoids a logext because we know the rsp is canonical
                         ;; rules-to-monitor
@@ -446,10 +449,10 @@
                               (<= (len state-dag) 1152921504606846974)
                               (pseudo-term-listp assumptions))))
   (b* (((mv erp dag) (wrap-term-around-dag '(rsp :x86) :x86 state-dag))
-       ((when erp) (mv erp nil nil))
+       ((when erp) (mv erp nil nil nil))
        ((when (quotep dag))
-        (er hard? 'extract-rsp-dag "Unexpected constant RSP extraction term: ~x0.")
-        (mv :unexpected-term nil nil)))
+        (er hard? 'extract-rsp-dag "Unexpected constant RSP extraction term: ~x0." dag)
+        (mv :unexpected-term nil nil nil)))
     (simplify-dag-basic dag
                             assumptions
                             *loop-lifter-state-component-extraction-rule-alist*
@@ -466,7 +469,7 @@
                             *no-warn-ground-functions*
                             nil)))
 
-;; Returns (mv erp rbp-dag limits).
+;; Returns (mv erp rbp-dag limits hits).
 (defun extract-rbp-dag (state-dag
                         assumptions ; avoids a logext because we know the rbp is canonical
                         ;;rules-to-monitor
@@ -476,10 +479,10 @@
                               (<= (len state-dag) 1152921504606846974)
                               (pseudo-term-listp assumptions))))
   (b* (((mv erp dag) (wrap-term-around-dag '(rbp :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
-       ((when erp) (mv erp nil nil))
+       ((when erp) (mv erp nil nil nil))
        ((when (quotep dag))
-        (er hard? 'extract-rbp-dag "Unexpected constant RBP extraction term: ~x0.")
-        (mv :unexpected-term nil nil)))
+        (er hard? 'extract-rbp-dag "Unexpected constant RBP extraction term: ~x0." dag)
+        (mv :unexpected-term nil nil nil)))
     (simplify-dag-basic dag
                             assumptions
                             *loop-lifter-state-component-extraction-rule-alist*
@@ -496,7 +499,7 @@
                             *no-warn-ground-functions*
                             nil)))
 
-;; Returns (mv erp pc-dag limits).
+;; Returns (mv erp pc-dag limits hits).
 (defun extract-pc-dag (state-dag
                        assumptions
                        ;;rules-to-monitor
@@ -506,10 +509,10 @@
                               (<= (len state-dag) 1152921504606846974)
                               (pseudo-term-listp assumptions))))
   (b* (((mv erp dag) (wrap-term-around-dag '(rip :x86) :x86 state-dag))
-       ((when erp) (mv erp nil nil))
+       ((when erp) (mv erp nil nil nil))
        ((when (quotep dag))
-        (er hard? 'extract-pc-dag "Unexpected constant PC extraction term: ~x0.")
-        (mv :unexpected-term nil nil)))
+        (er hard? 'extract-pc-dag "Unexpected constant PC extraction term: ~x0." dag)
+        (mv :unexpected-term nil nil nil)))
     (simplify-dag-basic dag
                             assumptions ;need to know that text offset is reasonable
                             *loop-lifter-pc-extraction-rule-alist*
@@ -620,9 +623,9 @@
          ;; (- (and (acl2::print-level-at-least-tp print) (cw "(DAG to prove: ~x0.)~%" dag-to-prove)))
          ;; (- (cw "(Using ~x0 assumptions.)~%" (len all-assumptions)))
          ;; prove that the original assumptions imply that the updated assumption holds over state-dag
-         ((mv erp res & state)
+         ((mv erp res & & state)
           (if (quotep dag-to-prove)
-              (mv nil dag-to-prove nil state) ; todo: bool-fix it?
+              (mv nil dag-to-prove nil nil state) ; todo: bool-fix it?
             (acl2::simplify-dag-x86 dag-to-prove
                                     all-assumptions
                                     rule-alist
@@ -641,7 +644,7 @@
                                                   (cons updated-assumption proved-assumptions-acc)
                                                   failed-assumptions-acc
                                                   state))
-        (prog2$ (cw "Failed.  Candidate assumption rewrote to ~x0.)~%" (dag-to-term res)) ;todo: think about blowup
+        (prog2$ (cw "Failed.  Candidate assumption rewrote to ~x0.)~%" (dag2term res)) ;todo: think about blowup
                 (try-to-reestablish-assumptions (rest assumptions) state-dag state-var previous-state-vars all-assumptions
                                                 rule-alist rules-to-monitor print known-booleans
                                                 proved-assumptions-acc
@@ -708,7 +711,7 @@
             `(,if-variant ,test ,exit-test-term1 ,exit-test-term2) ;gets simplified in the wrapper
             state))
     ;; loop-body-term should be an x86 state.  Test whether it has exited the loop:
-    (b* (((mv erp exitp state)
+    (b* (((mv erp exitp & state)
           (acl2::simplify-term-to-term-x86
             ;; `(if (stack-height-decreased-wrt ,loop-body-term ,loop-top-rsp-term)
            ;;     't
@@ -786,7 +789,7 @@
         (if (eq :none exit-term)
             (prog2$ (er hard? 'analyze-loop-body "There appear to be no branches that exit the loop.")
                     (mv (erp-t) nil nil nil state))
-          (b* (((mv erp exit-test-term)
+          (b* (((mv erp exit-test-term &)
                 (acl2::simplify-term-to-term exit-test-term
                                          nil
                                          (make-rule-alist!
@@ -1024,7 +1027,7 @@
        (base-addr2 (second mem-pair2))
        (- (cw "(Proving that there is no overlap between ~x0 bytes starting at ~x1 and ~x2 bytes starting at ~x3.~%" num-bytes1 base-addr1 num-bytes2 base-addr2))
        (separation-term `(disjoint-regions48p ,num-bytes1 ,base-addr1 ,num-bytes2 ,base-addr2))
-       ((mv erp result state)
+       ((mv erp result & state)
         (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (known-booleans (w state)) nil nil nil nil nil nil nil nil state))
        ((when erp) (mv erp nil state)))
     (if (equal result *t*)
@@ -1091,7 +1094,7 @@
     (b* ((address-term (first address-terms))
          (address-unchanged-term
           `(equal ,address-term ,(acl2::sublis-var-simple (acons state-var one-rep-term nil) address-term)))
-         ((mv erp result state)
+         ((mv erp result & state)
           (acl2::simplify-term-to-term-x86 address-unchanged-term nil ; assumptions
                                            rule-alist nil (known-booleans (w state)) nil nil nil nil nil nil nil nil state))
          ((when erp) (mv erp nil state)))
@@ -1439,7 +1442,7 @@
          (- (and (acl2::print-level-at-least-tp print) (cw "(Term to prove: ~x0.)~%" term-to-prove)))
          (- (and (acl2::print-level-at-least-tp print) (cw "(Assumptions to use: ~x0.)~%" assumptions)))
          ;; Try to prove the invariant by rewriting:
-         ((mv erp simplified-invariant state)
+         ((mv erp simplified-invariant & state)
           (acl2::simplify-term-to-term-x86 term-to-prove assumptions rule-alist nil (known-booleans (w state)) nil nil nil
                                nil nil
                                '(x86isa::xr-of-xw-diff
@@ -1752,20 +1755,20 @@
          (prog2$ (er hard? 'lift-loop "Assumptions should not mention the state var ~x0." state-var)
                  (mv (erp-t) nil nil nil state)))
         ;; Extract the PC at the loop top:
-        ((mv erp loop-top-pc-dag &) ; todo: do we need the assumptions?
+        ((mv erp loop-top-pc-dag & &) ; todo: do we need the assumptions?
          (extract-pc-dag loop-top-state-dag assumptions))
         ((when erp) (mv erp nil nil nil state))
-        (loop-top-pc-term (dag-to-term loop-top-pc-dag))
+        (loop-top-pc-term (dag2term loop-top-pc-dag))
         (- (cw "(Loop top PC is ~x0.)~%" loop-top-pc-term))
         (pc-offset (get-added-offset loop-top-pc-term 'base-address)) ; relative to base-address
         ;; Assume that the RIP is at the loop top:
         (pc-assumption `(equal (rip ,state-var) ,loop-top-pc-term))
         (- (cw "(Loop top PC assumption: ~x0.)~%" pc-assumption))
         ;; Extract the RSP at the loop top: ; todo: do we need the assumptions?
-        ((mv erp loop-top-rsp-dag &)
+        ((mv erp loop-top-rsp-dag & &)
          (extract-rsp-dag loop-top-state-dag assumptions))
         ((when erp) (mv erp nil nil nil state))
-        (loop-top-rsp-term (dag-to-term loop-top-rsp-dag))
+        (loop-top-rsp-term (dag2term loop-top-rsp-dag))
         ;; (- (cw "(Original RSP was ~x0.)~%" original-rsp-term)) ;will always be (xr ':rgf '4 x86_0) ?
         ;; ((when (not (equal original-rsp-term '(xr ':rgf '4 x86_0)))) ;todo: allow x86_1, etc. here
         ;;  (prog2$ (er hard? 'lift-loop "Unexpected RSP term.")
@@ -1784,10 +1787,10 @@
         ;; (- (cw "(RSP adjustment is ~x0.)~%" rsp-adjustment))
 
         ;; Extract the RBP at the loop top: ; todo: do we need the assumptions?
-        ((mv erp loop-top-rbp-dag &)
+        ((mv erp loop-top-rbp-dag & &)
          (extract-rbp-dag loop-top-state-dag assumptions))
         ((when erp) (mv erp nil nil nil state))
-        (loop-top-rbp-term (dag-to-term loop-top-rbp-dag))
+        (loop-top-rbp-term (dag2term loop-top-rbp-dag))
         (- (cw "(Loop top RBP is ~x0.)~%" loop-top-rbp-term))
 
         (- (cw "(Determining which assumptions still hold at the loop top:~%"))
@@ -1855,11 +1858,11 @@
                             remove-rules rules-to-monitor loop-alist measure-alist base-name lifter-rules 64-bitp print state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Loop body DAG: ~x0)~%" loop-body-dag))
-        (loop-body-term (dag-to-term loop-body-dag)) ;todo: watch for blow-up here
+        (loop-body-term (dag2term loop-body-dag)) ;todo: watch for blow-up here
         (- (cw "(Loop body term: ~x0)~%" (untranslate loop-body-term nil (w state))))
         ((when (member-eq 'run-until-exit-segment-or-hit-loop-header
                           (dag-fns loop-body-dag)))
-         (cw "~X01" (dag-to-term loop-body-dag) nil) ;todo: can blow up
+         (cw "~X01" (dag2term loop-body-dag) nil) ;todo: can blow up
          (er hard? 'lift-loop "Symbolic execution for loop body did not finish; a call of run-until-exit-segment-or-hit-loop-header remains in the DAG (see above).")
          (mv erp nil nil nil state))
         ;; Split loop-body into the one-rep-term (from leaves that returned to the loop top), the exit-test-term, and the exit-term:
@@ -2101,7 +2104,7 @@
         ;(initial-params-term (make-cons-nest initial-params-terms))
         (loop-function-call-term `(,loop-fn ,@initial-params-terms))
         ;; Simplify it (applies read over write rules):
-        ((mv erp loop-function-call-dag state)
+        ((mv erp loop-function-call-dag & state)
          ;;(acl2::simplify-term-to-term loop-function-call-term :rules (append (extra-loop-lifter-rules) lifter-rules))
          (acl2::simplify-term-x86 loop-function-call-term
                                   nil ; assumptions
@@ -2119,7 +2122,7 @@
                                               loop-top-state-dag t))
         ((when erp) (mv erp nil nil nil state))
         ;; Simplify again (why?):
-        ((mv erp new-state-dag & state)
+        ((mv erp new-state-dag & & state)
          (acl2::simplify-dag-x86 new-state-dag
                                  nil
                                  (make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
@@ -2244,11 +2247,11 @@
                   ((mv erp state-dag)
                    (dagify-term state-term))
                   ((when erp) (mv erp nil state))
-                  ((mv erp pc-dag &)
+                  ((mv erp pc-dag & &)
                    (extract-pc-dag state-dag
                                    assumptions))
                   ((when erp) (mv erp nil state))
-                  (pc-term (dag-to-term pc-dag))
+                  (pc-term (dag2term pc-dag))
                   (- (cw "(PC term is ~x0.)~%" pc-dag)))
                (if (equal pc-term
                           ;; We've jumped to the return address of the main subroutine, so we've exited the segment:
@@ -2347,7 +2350,7 @@
         ;; Perform the symbolic execution:
         ;; TODO: Suppress printing of result here?:
         ;; TODO: Add support for printing a combined summary at the end of all rewrite phases...
-        ((mv erp state-dag & state)
+        ((mv erp state-dag & & state)
          (acl2::simplify-dag-x86 dag-to-run
                                  assumptions
                                  ;; todo: can we do more of this just once?
@@ -2374,7 +2377,7 @@
          (mv (erp-t) nil nil nil state))
         ;; Print the result of running:
         (- (cw "(DAG after running: ~x0)~%" state-dag))
-        (state-term (dag-to-term state-dag))
+        (state-term (dag2term state-dag))
         (- (cw "(Term after running: ~x0)~%" state-term))
         ;; Now, handle any loops:
         ((mv erp changep state-dag generated-events next-loop-num state)
@@ -2474,7 +2477,7 @@
         ;;                                   nil ; don't memoize (avoids time spent making empty-memoizations)
         ;;                                   t ; todo: do this warning just once?
         ;;                                   state))
-        ((mv erp assumptions)
+        ((mv erp assumptions &)
          (acl2::simplify-conjunction-basic assumptions rule-alist (known-booleans (w state)) rules-to-monitor
                                            *no-warn-ground-functions*
                                            nil ; don't memoize (avoids time spent making empty-memoizations)
@@ -2488,10 +2491,10 @@
         ((when erp) (mv erp nil nil nil state))
 
         ;; Extract the RSP:
-        ((mv erp rsp-dag &)
+        ((mv erp rsp-dag & &)
          (extract-rsp-dag state-dag assumptions))
         ((when erp) (mv erp nil nil nil state))
-        (rsp-term (dag-to-term rsp-dag))
+        (rsp-term (dag2term rsp-dag))
         (- (cw "(RSP is ~x0.)~%" rsp-term))
         ;; Run until all leaves are at a loop header or have exited the
         ;; segment (perhaps by exiting the subroutine):
@@ -2546,6 +2549,7 @@
                            stack-slots
                            existing-stack-slots
                            position-independent
+                           feature-flags
                            ;; todo: continue reordering args below here
                            loop-alist ; relative to the target-offset (but adjusted below)
                            extra-rules
@@ -2565,8 +2569,7 @@
                    non-executable ; todo
                    ))
   (b* ( ;; Check whether this call to the lifter has already been made:
-       (previous-result (previous-lifter-result whole-form state))
-       ((when previous-result)
+       ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Check the lifted-name argument:
        ((when (not (symbolp lifted-name)))
@@ -2576,7 +2579,7 @@
        ((when (not (stringp target)))
         (er hard? 'lift-subroutine-fn "No :target supplied (must be the name of a subroutine).")
         (mv (erp-t) nil state))
-       ;; Check the executable argument:
+       ;; Check and resolve the executable argument:
        ((when (eq :none executable))
         (er hard? 'lift-subroutine-fn "No :executable supplied (should usually be a string (file name or path).") ; todo: mention the parsed-executable option
         (mv (erp-t) nil state))
@@ -2584,6 +2587,15 @@
                        (acl2::parsed-executablep executable))))
         (er hard? 'lift-subroutine-fn "Bad value for :executable argument: ~x0." executable)
         (mv (erp-t) nil state))
+       ((mv erp parsed-executable state)
+        (if (stringp executable)
+            ;; it's a filename, so parse the file:
+            (acl2::parse-executable executable state)
+          ;; it's already a parsed-executable:
+          (mv nil executable state)))
+       ((when erp)
+        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (mv t nil state))
        ;; Check the inputs argument:
        ((when (not (or (eq :skip inputs) (names-and-typesp inputs))))
         (er hard? 'lift-subroutine-fn "Bad value for :inputs argument: ~x0." inputs)
@@ -2605,9 +2617,14 @@
                        (eq :auto existing-stack-slots))))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for existing-stack-slots: ~x0" existing-stack-slots)
                 (mv (erp-t) nil state)))
-       ;; Check the position-independent argument:
-       ((when (not (booleanp position-independent)))
+       ;; Check and resolve the position-independent argument:
+       ((when (not (member-eq position-independent '(t nil :auto))))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for position-independent ~x0" position-independent)
+                (mv (erp-t) nil state)))
+       (position-independentp (resolve-position-independent position-independent parsed-executable))
+       ;; Check the feature-flags argument:
+       ((when (not (feature-flagsp feature-flags)))
+        (prog2$ (er hard? 'lift-subroutine-fn "Bad value for feature-flags ~x0" feature-flags)
                 (mv (erp-t) nil state)))
        ;; Check the loop-alist argument::
        ((when (eq :none loop-alist))
@@ -2628,15 +2645,7 @@
        ;; Done checking args:
        (- (cw "(Lifting subroutine ~x0:~%" target))
        ;; Generate assumptions for lifting:
-       ((mv erp parsed-executable state)
-        (if (stringp executable)
-            ;; it's a filename, so parse the file:
-            (acl2::parse-executable executable state)
-          ;; it's already a parsed-executable:
-          (mv nil executable state)))
-       ((when erp)
-        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
-        (mv t nil state))
+
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Throws an error if we have a non-x86 executable:
        (- (acl2::ensure-x86 parsed-executable))
@@ -2651,7 +2660,8 @@
        ((mv erp tool-assumptions &)
         (if (eq :mach-o-64 executable-type)
             (assumptions-macho64-new target
-                                     position-independent
+                                     position-independentp
+                                     feature-flags
                                      stack-slots
                                      existing-stack-slots
                                      'x86_0
@@ -2662,7 +2672,8 @@
                                      parsed-executable)
           (if (eq :pe-64 executable-type)
               (assumptions-pe64-new target
-                                    position-independent
+                                    position-independentp
+                                    feature-flags
                                     stack-slots
                                     existing-stack-slots
                                     'x86_0
@@ -2673,7 +2684,8 @@
                                     parsed-executable)
             (if (eq :elf-64 executable-type)
                 (assumptions-elf64-new target
-                                       position-independent
+                                       position-independentp
+                                       feature-flags
                                        stack-slots
                                        existing-stack-slots
                                        'x86_0
@@ -2735,7 +2747,7 @@
        ((mv erp output-dag) (wrap-term-around-dag '(rax :dag) :dag dag)) ; todo: use eax if 32-bit
        ((when erp) (mv erp nil state))
        (- (cw "(output-dag: ~x0)~%" output-dag))
-       ((mv erp output-dag & state)
+       ((mv erp output-dag & & state)
         (acl2::simplify-dag-x86 output-dag
                                 assumptions
                                 (make-rule-alist! (set-difference-eq
@@ -2748,7 +2760,7 @@
                                 *no-warn-ground-functions*
                                 nil state))
        ((when erp) (mv erp nil state))
-       (output-term (dag-to-term output-dag))
+       (output-term (dag2term output-dag))
        ;; TODO: Generalize:
        (output-term (replace-components-of-initial-state-in-term output-term))
        ;; (output-term (acl2::replace-in-term output-term
@@ -2789,13 +2801,13 @@
                  ,output-term))
        (event `(progn ,@events
                       ,defun))
-       (event (extend-progn event `(table x86-lifter-table ',whole-form ',event)))
+       (event (extend-progn event (redundancy-table-event whole-form event)))
        (- (cw "Done Lifting subroutine ~x0)~%" target))
        )
     (mv erp event state)))
 
-;; todo: add position-indendent option
-(defmacro lift-subroutine (&whole
+(make-event
+ `(defmacro lift-subroutine (&whole
                            whole-form
                            lifted-name ;the name to use for the function created by the lifter
                            &key
@@ -2809,8 +2821,8 @@
                            (assume-bytes ':all) ; todo: change the default to :non-write
                            (stack-slots '10)
                            (existing-stack-slots ':auto)
-                           (position-independent 't)
-
+                           (position-independent ':auto)
+                           (feature-flags ',*default-feature-flags*)
                            (loops ':none) ; required (for now)
                            (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops
                            (extra-rules 'nil)
@@ -2836,7 +2848,7 @@
                            ',stack-slots
                            ',existing-stack-slots
                            ',position-independent
-
+                           ',feature-flags
                            ',loops
                            ,extra-rules
                            ,remove-rules
@@ -2854,7 +2866,7 @@
          state)
        ;; Normal exit (remove the temp-dir, if it exists):
        (maybe-remove-temp-dir ; ,keep-temp-dir
-         state))))
+         state)))))
 
 ;(defttag t)
 ;(remove-untouchable acl2::verify-termination-on-raw-program-okp nil)

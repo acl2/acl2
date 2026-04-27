@@ -3581,7 +3581,7 @@
               :val nil
               :msg ,(msg "The measure theorem has failed for the ~
                           event:~|~%~x0.~|~%See :DOC apt::simplify-failure, ~
-                          and perhaps see output above, for ideas about on ~
+                          and perhaps see output above, for ideas about ~
                           how to address this failure."
                          new-def-event-pre))
              (encapsulate

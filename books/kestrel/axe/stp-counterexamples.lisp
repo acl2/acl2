@@ -1,7 +1,7 @@
 ; Parsing counterexamples from STP
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -60,7 +60,7 @@
 ;; since it does so anyway for single bit vars (maybe for any var whose size is
 ;; not a multiple of 4 bits so hex digits would be a bit deceptive?)
 
-;; A raw-counterexample pairs nodenums or arraynodeum/index pairs to values (that
+;; A raw-counterexample pairs nodenums or arraynodenum/index pairs to values (that
 ;; is, arrays are split into assignments of their individual elements).
 (defun raw-counterexamplep (cex)
   (declare (xargs :guard t))
@@ -284,7 +284,7 @@
   (declare (xargs :guard (character-listp chars)))
   (if (not (eql #\[ (first chars)))
       (mv nil chars)
-    ;; there is an index t parse:
+    ;; there is an index to parse:
     (b* ((chars (rest chars)) ;skip the [
          ((mv matchp chars)
           (match-chars '(#\0 #\b) chars))
@@ -482,7 +482,7 @@
                         (fixup-counterexample (rest cut-nodenum-type-alist) raw-counterexample (acons nodenum nil acc)))
               (let ((val (cdr res)))
                 (if (not (booleanp val))
-                    (prog2$ (er hard? 'fixup-counterexample "Bad value, ~x0, in countexample.  Expected a boolean." val)
+                    (prog2$ (er hard? 'fixup-counterexample "Bad value, ~x0, in counterexample.  Expected a boolean." val)
                             (mv :bad-val-in-counterexample nil))
                   (fixup-counterexample (rest cut-nodenum-type-alist) raw-counterexample (acons nodenum val acc))))))
         (if (bv-typep type)
@@ -494,7 +494,7 @@
                 (let ((val (cdr res))
                       (width (bv-type-width type)))
                   (if (not (unsigned-byte-p width val))
-                      (prog2$ (er hard? 'fixup-counterexample "Bad value, ~x0, in countexample.  Expected a BV of size ~x1." val width)
+                      (prog2$ (er hard? 'fixup-counterexample "Bad value, ~x0, in counterexample.  Expected a BV of size ~x1." val width)
                               (mv :bad-val-in-counterexample nil))
                     (fixup-counterexample (rest cut-nodenum-type-alist) raw-counterexample (acons nodenum val acc))))))
           (if (and (bv-array-typep type)

@@ -73,6 +73,8 @@
 
 ; non-wormhole ld of *standard-oi* must be at ld-level 1 
 (redefun+rewrite
+; Chk-acceptable-ld-fn1-pair is defined in ACL2 source file ld.lisp:
+; (depends-on "../../../../ld.lisp")
  acl2::chk-acceptable-ld-fn1-pair
  (:carpat (and (symbolp %val%)
                (open-input-channel-p %val% :object state) . %cdr%)
@@ -91,6 +93,8 @@
 
  ; exit properly on *standard-oi* EOF
 (redefun+rewrite
+; Ld-read-eval-print is defined in ACL2 source file ld.lisp:
+; (depends-on "../../../../ld.lisp")
  acl2::ld-read-eval-print
  (:carpat (prog2$ (and (equal (standard-oi state) *standard-oi*)
                        (good-bye))

@@ -1,7 +1,7 @@
 ; Material on Java strings.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,35 +15,62 @@
 
 (include-book "types")
 (include-book "java-types")
-(include-book "kestrel/bv/bvchop" :dir :system)
+(include-book "kestrel/bv/bvchop-def" :dir :system)
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 
-;todo: change to JVM package
-(defun acl2::all-java-charp (x)
+(in-theory (disable mv-nth))
+
+;; Recognizes a true-list of 16-bit Java chars.
+(defund java-char-listp (chars)
   (declare (xargs :guard t))
-  (if (atom x)
-      t
-      (and (acl2::java-charp (first x))
-           (acl2::all-java-charp (rest x)))))
+  (if (atom chars)
+      (null chars)
+    (and (acl2::java-charp (first chars))
+         (java-char-listp (rest chars)))))
 
+(defthm java-char-listp-of-cdr
+  (implies (java-char-listp chars)
+           (java-char-listp (cdr chars)))
+  :hints (("Goal" :in-theory (enable java-char-listp))))
+
+(defthm java-char-listp-of-cons
+  (equal (java-char-listp (cons char chars))
+         (and (acl2::java-charp char)
+              (java-char-listp chars)))
+  :hints (("Goal" :in-theory (enable java-char-listp))))
+
+(defthm java-char-listp-of-append
+  (equal (java-char-listp (append chars1 chars2))
+         (and (java-char-listp (true-list-fix chars1))
+              (java-char-listp chars2)))
+  :hints (("Goal" :in-theory (enable java-char-listp))))
+
+(defthm java-char-listp-of-nthcdr
+  (implies (java-char-listp chars)
+           (java-char-listp (nthcdr n chars)))
+  :hints (("Goal" :in-theory (enable java-char-listp nthcdr))))
+
+
+
+;; Converts a list of Java chars into a list of ACL2 characters (chops down any char > 255).
 ;todo use defmap
-(defun code-char-list (characters)
-  (declare (xargs :guard (and (true-listp characters)
-                              (acl2::all-java-charp characters))
-                  :guard-hints (("Goal" :expand ((ACL2::ALL-JAVA-CHARP CHARACTERS))
-                                 :in-theory (enable acl2::all-java-charp ACL2::JAVA-CHARP UNSIGNED-BYTE-P)))
-                  ))
-  (if (endp characters)
+(defun code-char-list (chars)
+  (declare (xargs :guard (java-char-listp chars)
+                  :guard-hints (("Goal" :expand ((java-char-listp chars))
+                                 :in-theory (enable java-char-listp acl2::java-charp unsigned-byte-p)))))
+  (if (endp chars)
       nil
-    (cons (code-char (acl2::bvchop 8 (first characters))) ;;TTODO: Drop the bvchop (actually, use Alessandro's representation of Java strings)
-          (code-char-list (rest characters)))))
+    (cons (code-char (bvchop 8 (first chars))) ;;TTODO: Drop the bvchop (actually, use Alessandro's representation of Java strings?)
+          (code-char-list (rest chars)))))
 
 (defun char-list-to-string (java-chars)
-  (declare (xargs :guard (and (true-listp java-chars)
-                              (acl2::all-java-charp java-chars))))
+  (declare (xargs :guard (java-char-listp java-chars)))
   (let ((acl2-characters (code-char-list java-chars)))
     (coerce acl2-characters 'string)))
 
-;todo use defmap
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo use defmap, or rename map-char-code
 (defun char-code-list (characters)
   (declare (xargs :guard (character-listp characters)
                   :guard-hints (("Goal" :in-theory (enable character-listp)))
@@ -57,6 +84,8 @@
   (iff (char-code-list characters)
        (not (endp characters))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;Convert an ACL2 string to a list of Java chars (unsigned 16-bit integers)
 ;FIXME What about unicode?
 (defun string-to-char-list (string)
@@ -64,6 +93,7 @@
   (let ((characters (coerce string 'list)))
     (char-code-list characters)))
 
+;move
 (defthm equal-nil-string-to-char-list-helper
   (implies (and (equal nil (coerce string 'list))
                 (stringp string))

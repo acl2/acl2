@@ -292,7 +292,9 @@
 
 (defthm collect-constants-times-equal
   (implies (and (syntaxp (and (quotep k)
-                              (quotep k2)))
+                              (quotep k2)
+                              (not (quotep x)) ; may prevent loops
+                              ))
                 (not (equal 0 k))
                 (not (equal 0 k2))
                 (acl2-numberp k)
@@ -319,14 +321,6 @@
                          (not (quotep x))))
            (equal (+ x (+ y z))
                   (+ y (+ x z)))))
-
-;uses the equal phrasing
-(defthm rationalp-of-+
-  (implies (and (rationalp x)
-                (rationalp y))
-           (rationalp (+ x y))))
-
-(in-theory (disable rationalp-+))
 
 (defthm commutativity-of-*-when-constant
   (implies (syntaxp (and (quotep y)

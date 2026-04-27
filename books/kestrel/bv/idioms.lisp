@@ -92,7 +92,7 @@
                   (bvand 32 (bvchop size x) (bvchop size y))))
   :hints (("Goal" :in-theory (enable bvshr bvand))))
 
-(theory-invariant (incompatible (:rewrite bvand-extend-to-32bits) (:rewrite bvand-of-constant-tighten)))
+(theory-invariant (incompatible (:rewrite bvand-extend-to-32bits) (:rewrite bvand-of-constant-tighten))) ; others?
 
 (defthmd bvor-extend-to-32bits
   (implies (and (natp size)
@@ -100,6 +100,8 @@
            (equal (bvor size x y)
                   (bvor 32 (bvchop size x) (bvchop size y))))
   :hints (("Goal" :in-theory (enable bvshr bvor))))
+
+(theory-invariant (incompatible (:rewrite bvor-extend-to-32bits) (:rewrite bvor-of-bvor-tighten-2))) ; others?
 
 (defthm usb-when-usb8
   (implies (and (unsigned-byte-p 8 x) ;; e.g., since it's in a usb list

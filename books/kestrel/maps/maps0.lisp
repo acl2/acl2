@@ -1,7 +1,7 @@
 ; Additions to the records library
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 (defmacro empty-map () nil)
 
 ;used when we want to fail immediately if the indicated key isn't found;
-;with plain old g, we'd return nil in such a case, which would cause a failure downstream (or perhaps a loop, which i've seen)
+;with plain old g, we'd return nil in such a case, which would cause a failure downstream (or perhaps a loop, which I've seen)
 ;fixme use this more
 (defun g-safe (a x)
   (declare (type t a x))

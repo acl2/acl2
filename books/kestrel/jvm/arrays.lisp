@@ -1,7 +1,7 @@
 ; Arrays in the JVM
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -107,7 +107,7 @@
                   (jvm::all-java-floatp contents)
                 (if (equal element-type ':double)
                     (jvm::all-java-doublep contents)
-                  (er hard 'primitive-array-contents-okp "Unexpeted type: ~x0" element-type))))))))))
+                  (er hard 'primitive-array-contents-okp "Unexpected type: ~x0" element-type))))))))))
 
 (defthm primitive-array-contents-okp-of-int
   (equal (primitive-array-contents-okp contents :int)
@@ -299,14 +299,16 @@
                 )
            (equal (array-length ad heap)
                   (car dims)))
-  :hints (("Goal" :in-theory (enable array-refp))))
+  :hints (("Goal" :in-theory (enable array-refp array-length))))
 
 ;similar to the above
 (defthm len-of-contents-when-array-refp
   (implies (and (array-refp ad dims type heap) ;dims is a free variable
                 (consp dims))
            (equal (len (get-field ad (array-contents-pair) heap))
-                  (car dims))))
+                  (car dims)))
+  :hints (("Goal" :expand (array-refp ad dims type heap)
+                  :in-theory (enable array-length))))
 
 ;similar to the above
 ;breaks the get-field abstraction (but we might do that in the machine model for efficiency)

@@ -138,7 +138,7 @@
   :short "Numeric value elements are never ambiguous."
   :long
   (xdoc::topstring-p
-   "This is a simple consequnce of @(tsee num-val-unambiguous).")
+   "This is a simple consequence of @(tsee num-val-unambiguous).")
   (implies (element-case element :num-val)
            (element-unambiguousp element rules))
   :enable (element-unambiguousp tree-match-element-p))
@@ -149,7 +149,7 @@
   :short "Character value elements are never ambiguous."
   :long
   (xdoc::topstring
-   "This is a simple consequnce of @(tsee char-val-unambiguous).")
+   "This is a simple consequence of @(tsee char-val-unambiguous).")
   (implies (element-case element :char-val)
            (element-unambiguousp element rules))
   :enable (element-unambiguousp tree-match-element-p))
@@ -208,7 +208,7 @@
                     (trees1 (tree-list-fix trees1))
                     (trees2 (tree-list-fix trees2))))
 
-  (defrule empty-repetition-umabiguous
+  (defrule empty-repetition-unambiguous
     (implies (equal (repetition->range repetition)
                     (repeat-range 0 (nati-finite 0)))
              (repetition-unambiguousp repetition rules))
@@ -353,7 +353,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule alternation-unambiguousp-of-cons-when-disjointp
-  :short "If an umambiguous concatenation
+  :short "If an unambiguous concatenation
           is disjoint from an unambiguous alternation,
           then adding the concatenation maintains the alternation unambiguous."
   :long

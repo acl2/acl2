@@ -70,3 +70,7 @@
 (defcong unequiv equal (run-counterexample params msg) 2)
 (add-fgl-congruence unequiv-implies-equal-run-counterexample-1)
 (add-fgl-congruence unequiv-implies-equal-run-counterexample-2)
+
+(add-fgl-id-congruence fgl-prog2)
+(add-fgl-id-congruence unconditional)
+(add-fgl-id-congruence left-to-right)

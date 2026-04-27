@@ -471,7 +471,8 @@
                                      (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                              (interp-st->pathcond interp-st)
                                                              (interp-st->logicman interp-st))
-                                     (interp-st-bvar-db-ok new-interp-st env))
+                                     (interp-st-bvar-db-ok new-interp-st env)
+                                     (not (interp-st->errmsg new-interp-st)))
                                 (equal (fgl-ev-context-fix contexts
                                                            (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
                                        (fgl-ev-context-fix contexts
@@ -1177,7 +1178,8 @@
                   (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                           (interp-st->pathcond interp-st)
                                           (interp-st->logicman interp-st))
-                  (interp-st-bvar-db-ok new-interp-st env))
+                  (interp-st-bvar-db-ok new-interp-st env)
+                  (not (interp-st->errmsg new-interp-st)))
              (equal (fgl-ev-context-fix contexts
                                         (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
                     (fgl-ev-context-fix contexts
@@ -1252,7 +1254,8 @@
                                           (interp-st->pathcond interp-st)
                                           (interp-st->logicman interp-st))
                   (pseudo-fnsym-p origfn)
-                  (interp-st-bvar-db-ok new-interp-st env))
+                  (interp-st-bvar-db-ok new-interp-st env)
+                  (not (interp-st->errmsg new-interp-st)))
              (fgl-ev-context-equiv-forall-extensions
               contexts
               (fgl-ev (cons origfn (kwote-lst
@@ -1337,7 +1340,8 @@
                    rhs eval-alist)
                   (eval-alist-extension-p eval-alist (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))
                   (pseudo-fnsym-p origfn)
-                  (interp-st-bvar-db-ok new-interp-st env))
+                  (interp-st-bvar-db-ok new-interp-st env)
+                  (not (interp-st->errmsg new-interp-st)))
              (equal (fgl-ev-context-fix contexts (fgl-ev (cons origfn
                                                                (cons (pseudo-term-quote rhs-val)
                                                                      (kwote-lst

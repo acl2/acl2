@@ -1,6 +1,6 @@
-; A nicer interface to defevaluator
+; Tests of defevaluator+
 ;
-; Copyright (C) 2014-2021 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,7 +31,7 @@
      (EQUAL (LEN (MYEV-LIST TERMS A))
             (LEN TERMS))
      :HINTS (("Goal" :IN-THEORY (ENABLE APPEND (:I LEN)))))
-   (DEFTHM MYEV-LIST-OF-TRUE-LIST_FIX
+   (DEFTHM MYEV-LIST-OF-TRUE-LIST-FIX
      (EQUAL (MYEV-LIST (TRUE-LIST-FIX TERMS) A)
             (MYEV-LIST TERMS A))
      :HINTS (("Goal" :IN-THEORY (ENABLE APPEND (:I LEN)))))

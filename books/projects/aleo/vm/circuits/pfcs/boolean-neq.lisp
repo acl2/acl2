@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ boolean-neq
-  :parents (circuits)
+  :parents (circuits-pfcs)
   :short "Formalization and verification of a circuit
           for boolean non-equality."
   :long

@@ -372,7 +372,7 @@
   (if (= (len src-types) (len dst-types))
       (atj-types-conv-allowed-p-aux src-types dst-types)
     (raise "Internal error: ~
-            the type lists ~x0 and ~x1 differe in length."
+            the type lists ~x0 and ~x1 differ in length."
            src-types dst-types))
 
   :prepwork

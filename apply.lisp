@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -57,12 +57,12 @@
 ;    discuss BADGER.  These properties are not immediately obvious from the
 ;    defun of GUESS-ILKS-ALIST because it is iterative and is full of error
 ;    messages.  To state this theorem we will define the :LOGIC mode function
-;    CHECK-ILKS.  But the sources and the model differ in when they they do
-;    this.  In the sources, we just leave the essay to remind us that
-;    guess-ilks-alist is known to imply properties (b)-(e) and we don't
-;    actually define CHECK-ILKS.  That is done during :acl2-devel, during
-;    certification of books/system/apply.  In the model, we define CHECK-ILKS
-;    and do the proof, but only locally.
+;    CHECK-ILKS.  But the sources and the model differ in when they do this.
+;    In the sources, we just leave the essay to remind us that guess-ilks-alist
+;    is known to imply properties (b)-(e) and we don't actually define
+;    CHECK-ILKS.  That is done during :acl2-devel, during certification of
+;    books/system/apply.  In the model, we define CHECK-ILKS and do the proof,
+;    but only locally.
 
 ; 7. Functional Equivalence
 ;    Define the functional equivalence relation and prove that it is a
@@ -579,7 +579,7 @@
 ;           badged functions, then we wouldn't have to check that such
 ;           functions as sys-call are not involved.)
 
-;      (G2) fn's body is ancestrally dependent on apply$-usefn and
+;      (G2) fn's body is ancestrally dependent on apply$-userfn and
 
 ;        (a) one of these conditions hold:
 ;            * fn is not recursively defined, or
@@ -908,7 +908,7 @@
 ; (defun fn (x y z) (if (endp x) nil (fn (cdr x) z y))).
 
 ; Alist maps the variables we've seen so far to one of the three known ilks,
-; NIL, :FN, or :EXPR.  If a variable is not bound in alist, it it as though it
+; NIL, :FN, or :EXPR.  If a variable is not bound in alist, it is as though it
 ; is bound to :UNKNOWN.  Thus, the nil alist is the appropriate initial value.
 ; When we're done with the first pass we complete the alist by assigning nil to
 ; all variables not otherwise bound.  Once the alist binds every formal to a
@@ -2132,7 +2132,7 @@
 ; (G1) fn's body is ancestrally independent of apply$-userfn and ancestrally
 ;      independent of inapplicative functions, like sys-call.
 
-; (G2) fn's body is ancestrally dependent on apply$-usefn and
+; (G2) fn's body is ancestrally dependent on apply$-userfn and
 
 ;  (a) one of these conditions hold:
 ;      * fn is not recursively defined, or

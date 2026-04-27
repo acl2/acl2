@@ -33,15 +33,15 @@
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripci髇:
+;;; Descripci贸n:
 ;;;
 ;;; Desarrollo del producto externo de un monomio por un polinomio y
 ;;; del producto de polinomios. Las funciones se completan
 ;;; cuidadosamente, de lo contrario, no es posible establecer las
-;;; congruencias, ya que 閟tas no pueden contener hip髏esis. Se
+;;; congruencias, ya que 茅stas no pueden contener hip贸tesis. Se
 ;;; demuestra que los polinomios con el producto forman un monoide
 ;;; conmutativo y que el producto distribuye respecto de la suma,
-;;; complet醤dose con esto la demostraci髇 de las propiedades del
+;;; complet谩ndose con esto la demostraci贸n de las propiedades del
 ;;; anillo de polinomios.
 ;;; ----------------------------------------------------------------
 #|
@@ -130,12 +130,12 @@ To certify this book, first, create a world with the following packages:
   (implies (polinomiop (double-rewrite p))
 	   (= (*-monomio (FUMON::identidad) p) p)))
 
-;;; Cancelaci髇
+;;; Cancelaci贸n
 
 ;;; NOTA:
 ;;;
-;;; Primero se demuestra sint醕ticamente, introduciendo la forma
-;;; normal. Luego se extiende a la igualdad sem醤tica.
+;;; Primero se demuestra sint谩cticamente, introduciendo la forma
+;;; normal. Luego se extiende a la igualdad sem谩ntica.
 
 (defthm |m = 0 => fn(m *M p) =e 0|
   (implies (FUMON::nulop m)
@@ -163,7 +163,7 @@ To certify this book, first, create a world with the following packages:
 ;;; NOTA:
 ;;;
 ;;; Esta propiedad permite cambiar un producto externo por otro
-;;; m醩 sencillo sobre monomios.
+;;; m谩s sencillo sobre monomios.
 
 (defthm |m1 *M (m2 *M p) = (m1 * m2) *M p|
   (implies (and (monomiop (double-rewrite m1))
@@ -246,7 +246,7 @@ To certify this book, first, create a world with the following packages:
 (defthm |1 * p = p|
   (= (* (identidad) p) p))
 
-;;; Cancelaci髇
+;;; Cancelaci贸n
 
 (defthm |0 * p =e 0|
   (equal (* (nulo) p) (nulo)))
@@ -264,8 +264,8 @@ To certify this book, first, create a world with the following packages:
 
 ;;; NOTA:
 ;;;
-;;; La inducci髇 apropiada es m鷏tiple. Unas veces se requiere una
-;;; hip髏esis de inducci髇 sobre uno de los par醡etros, otras veces
+;;; La inducci贸n apropiada es m煤ltiple. Unas veces se requiere una
+;;; hip贸tesis de inducci贸n sobre uno de los par谩metros, otras veces
 ;;; sobre el otro y otras sobre ambos. Hemos de suministrar el
 ;;; esquema.
 

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -80,9 +80,12 @@
           fundef-option
           ext-declon
           ext-declon-list
-          transunit
-          filepath-transunit-map
-          transunit-ensemble
+          hash-if/elif-expr
+          hash-if/ifdef/ifndef
+          trans-items
+          trans-unit
+          filepath-trans-unit-map
+          trans-ensemble
           code-ensemble)
   :result booleanp
   :default t
@@ -216,6 +219,11 @@
              (stmt-unambp stmt))
     :expand (stmt-unambp stmt))
 
+  (defruled trans-item-unambp-when-line-comment
+    (implies (trans-item-case item :line-comment)
+             (trans-item-unambp item))
+    :enable trans-item-unambp)
+
   ;; These are variants that negate the cases.
   ;; Attempting to replace these with theorems of the form above
   ;; causes some disambiguator proofs to fail.
@@ -231,6 +239,12 @@
                   (not (ext-declon-case ext-declon :declon)))
              (ext-declon-unambp ext-declon))
     :enable ext-declon-unambp)
+
+  (defruled trans-item-unambp-when-not-declon/cond
+    (implies (and (not (trans-item-case item :declon))
+                  (not (trans-item-case item :cond)))
+             (trans-item-unambp item))
+    :enable trans-item-unambp)
 
   ;; The following theorems exclude certain cases from consideration.
 
@@ -318,23 +332,6 @@
     :rule-classes :forward-chaining
     :enable block-item-unambp)
 
-  ;; These were found necessary at some point,
-  ;; but they should be re-assessed.
-
-  (defruled expr-unambp-of-type-spec-typeof-expr->expr
-    (implies (and (type-spec-unambp tyspec)
-                  (equal (type-spec-kind tyspec) :typeof-expr))
-             (expr-unambp (type-spec-typeof-expr->expr tyspec)))
-    :rule-classes :forward-chaining
-    :enable type-spec-unambp)
-
-  (defruled tyname-unambp-of-type-spec-typeof-type->type
-    (implies (and (type-spec-unambp tyspec)
-                  (equal (type-spec-kind tyspec) :typeof-type))
-             (tyname-unambp (type-spec-typeof-type->type tyspec)))
-    :rule-classes :forward-chaining
-    :enable type-spec-unambp)
-
   ;; Add the above theorems to the rule set.
 
   (add-to-ruleset abstract-syntax-unambp-rules
@@ -349,14 +346,16 @@
                     type-spec-unambp-when-struct-empty
                     spec/qual-unambp-when-typequal
                     spec/qual-unambp-when-attrib
-                    decl-spec-unambp-when-not-tyspec/align
                     designor-unambp-when-dot
                     dirdeclor-unambp-when-ident
                     label-unambp-when-name
                     stmt-unambp-when-null-attrib
                     stmt-unambp-when-goto
                     stmt-unambp-when-asm
+                    trans-item-unambp-when-line-comment
+                    decl-spec-unambp-when-not-tyspec/align
                     ext-declon-unambp-when-not-fundef/declon
+                    trans-item-unambp-when-not-declon/cond
                     expr-not-sizeof-when-unambp
                     expr-not-alignof-when-unambp
                     expr-not-cast/call-ambig-when-unambp
@@ -370,9 +369,7 @@
                     param-declor-not-ambig-when-unambp
                     dirabsdeclor-not-dummy-base-when-unambp
                     stmt-not-for-ambig-when-unambp
-                    block-item-not-ambig-when-unambp
-                    expr-unambp-of-type-spec-typeof-expr->expr
-                    tyname-unambp-of-type-spec-typeof-type->type)))
+                    block-item-not-ambig-when-unambp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

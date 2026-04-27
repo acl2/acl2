@@ -420,7 +420,7 @@
      Then we check whether it is a keyword,
      in which case we re-classify the ABNF tree as a @('keyword') tree.
      Otherwise, we check whether it is a boolean literal,
-     in which case we re-classify the ABNF tree as a @('boolean-literal).
+     in which case we re-classify the ABNF tree as a @('boolean-literal').
      Otherwise, we check whether it is an address:
      in this case, we need to re-lex it,
      so that we can construct and return an @('address-literal').
@@ -474,7 +474,7 @@
                 :hints
                 (("Goal"
                   :in-theory
-                  (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+                  (enable abnf::treep-when-result-not-error))))
                (rest-input nat-listp))
   :short "Lex a @('1*decimal-digit')."
   (b* (((mv tree input) (lex-decimal-digit input))

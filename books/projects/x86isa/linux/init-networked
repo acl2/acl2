@@ -1,0 +1,14 @@
+#!/bin/busybox sh
+
+mount -t devtmpfs none /dev
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts -o mode=0620,gid=5,ptmxmode=0666
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+
+hostname x86isa-linux
+export HOME=/root
+
+$(which sshd)
+stty -echo
+/tunstdio 10.0.0.1/24 2>/dev/null

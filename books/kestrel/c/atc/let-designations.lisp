@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -79,7 +79,7 @@
      described above for @(tsee let).")
    (xdoc::p
     "For these @(tsee mv-let) cases,
-     we use a similiar approach to the @(tsee let) cases,
+     we use a similar approach to the @(tsee let) cases,
      i.e. we explicitly use indicators for declarations and assignments.
      But the functions @(tsee declar) and @(tsee assign)
      cannot be applied to multi-valued terms.

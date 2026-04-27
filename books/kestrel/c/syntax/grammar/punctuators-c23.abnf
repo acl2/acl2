@@ -1,0 +1,72 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains rules for puncutators for the C23 dialects [C17:6.4.7].
+; The only difference with C17 is the addition of '::'.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+punctuator = "["
+           / "]"
+           / "("
+           / ")"
+           / "{"
+           / "}"
+           / "."
+           / "->"
+           / "++"
+           / "--"
+           / "&"
+           / "*"
+           / "+"
+           / "-"
+           / "~"
+           / "!"
+           / "/"
+           / "%"
+           / "<<"
+           / ">>"
+           / "<"
+           / ">"
+           / "<="
+           / ">="
+           / "=="
+           / "!="
+           / "^"
+           / "|"
+           / "&&"
+           / "||"
+           / "?"
+           / ":"
+           / "::" ; not in C17
+           / ";"
+           / "..."
+           / "="
+           / "*="
+           / "/="
+           / "%="
+           / "+="
+           / "-="
+           / "<<="
+           / ">>="
+           / "&="
+           / "^="
+           / "|="
+           / ","
+           / "#"
+           / "##"
+           / "<:"
+           / ":>"
+           / "<%"
+           / "%>"
+           / "%:"
+           / "%:%:"

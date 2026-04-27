@@ -1,6 +1,6 @@
 ; Utilities to extract data from zip files
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -186,15 +186,6 @@
   (if (zp n)
       (reverse acc)
     (readnbytes-from-byte-array-stobj-aux (+ -1 n) (+ 1 index) byte-array-stobj (cons (bytesi index byte-array-stobj) acc))))
-
-(defthm byte-listp-of-readnbytes-from-byte-array-stobj-aux
-  (implies (and (byte-listp acc)
-                (<= (+ n index) (bytes-length byte-array-stobj))
-                (natp index)
-                (natp n)
-                (byte-array-stobjp byte-array-stobj))
-           (byte-listp (readnbytes-from-byte-array-stobj-aux n index byte-array-stobj acc)))
-  :hints (("Goal" :in-theory (enable readnbytes-from-byte-array-stobj-aux))))
 
 (defthm byte-listp-of-readnbytes-from-byte-array-stobj-aux
   (implies (and (byte-listp acc)

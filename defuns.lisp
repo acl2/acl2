@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -83,7 +83,7 @@
 ;   (read-file "foo.cert" state)
 
 ; We see that the :CERT-DATA in foo.cert has :TYPE-PRESCRIPTION entries for f1
-; and f3, but has no :TRANSLATE entries.
+; and g, but has no :TRANSLATE entries.
 
 ; Part 2: Type Prescriptions
 
@@ -366,7 +366,7 @@
 ; (6) Because of our calls of make-fast-alist in the definition of the function
 ; cert-data-fal, it is unnecessary to store cert-data entries as fast-alists
 ; in the .cert file.  But profiling has suggested that it is harmless to do so.
-; The type-prescription cert-data is already a fast-alists anyhow; we'd have to
+; The type-prescription cert-data is already a fast-alist anyhow; we'd have to
 ; free it if we want to avoid storing it as a fast-alist.
 
 ; (7) As a sort of optimization, saving space in .cert files at the expense of
@@ -999,7 +999,7 @@
 
 (defun guess-measure (name defun-flg args pos t-machine ctx wrld state)
 
-; T-machine is a termination machine, i.e., a lists of tests-and-call.  Because
+; T-machine is a termination machine, i.e., a list of tests-and-call.  Because
 ; of mutual recursion, we do not know that the call of a tests-and-call is a
 ; call of name; it may be a call of a sibling of name.  We look for the first
 ; formal that is (a) somehow tested in every test and (b) somehow changed in
@@ -1464,7 +1464,7 @@
 ; definductor, that takes the name of an admitted loop$ recursive function and
 ; produces an induction scheme for it.  But our current understanding of this
 ; problem produces plausible schemes only for plain, possibly nested loop$s
-; targetting formal variables or car/cdr nests of formal variables.
+; targeting formal variables or car/cdr nests of formal variables.
 ; Furthermore, these schemes impose additional restrictions on the acceptable
 ; measures justifying the loop$ recursive functions -- restrictions that are
 ; not necessary just for admission.  Finally, our current understanding has not
@@ -4374,7 +4374,7 @@
       (value-cmp (cons :term term)))))))
 
 (defun guard-simplify-msg (x)
-  (msg "The only legal values for :GUARD-SIMPIFY are ~x0 and ~x1.  The value ~
+  (msg "The only legal values for :GUARD-SIMPLIFY are ~x0 and ~x1.  The value ~
         ~x2 is thus illegal.~@3"
        t :limited x
        (if (eq x nil)
@@ -4973,11 +4973,21 @@
                     new-wrld)))
              (maybe-remove-invariant-risk (cdr names) wrld new-wrld)))))
 
+(defun chk-otf-flg (otf-flg ctx state)
+  (declare (xargs :stobjs state
+                  :guard (error1-state-p state)))
+  (cond ((booleanp otf-flg)
+         (value otf-flg))
+        (t (er soft ctx
+               "The value of :OTF-FLG must be ~x0 or ~x1.  The value ~x2 is ~
+                thus illegal."
+               t nil otf-flg))))
+
 (defun verify-guards-fn1 (names hints otf-flg guard-debug
                                 guard-simplify ctx state)
 
-; This function is called on a either a singleton list containing a theorem
-; name or a well-formed lambda expression or a list of one or more recursively
+; This function is called on either a singleton list containing a theorem name
+; or a well-formed lambda expression or a list of one or more recursively
 ; defined fns.
 
 ; In any case, we know the theorem/functions are composed entirely of compliant
@@ -5204,7 +5214,8 @@
   (let ((wrld (w state))
         (ens (ens state)))
     (er-let*
-     ((pair (prove-guard-clauses names hints otf-flg guard-debug guard-simplify
+     ((otf-flg (chk-otf-flg otf-flg ctx state))
+      (pair (prove-guard-clauses names hints otf-flg guard-debug guard-simplify
                                  ctx ens wrld state)))
 
 ; Pair is of the form (col . ttree)
@@ -6909,8 +6920,9 @@
                            (fetch-dcl-fields '(type :guard)
                                              all-but-body2)))
                (msg "although the proposed and existing definitions for ~x0 ~
-                     agree on the their type and :guard declarations, they ~
-                     disagree on the combined orders of those declarations.")))))
+                     agree on their type and :guard declarations, they ~
+                     disagree on the combined orders of those declarations."
+                    (car def1))))))
      ((let ((split-types1 (fetch-dcl-field :split-types all-but-body1))
             (split-types2 (fetch-dcl-field :split-types all-but-body2)))
         (or (not (eq (all-nils split-types1) (all-nils split-types2)))
@@ -8474,6 +8486,35 @@
                           :dir ,(sysfile-key book-name)))
                        (t `(include-book ,(remove-lisp-suffix book-name
                                                               t))))))))))))
+#-acl2-loop-only
+(defun update-hcomp-fn-ht-redundant-in-encapsulate (names localp)
+
+; Warning: Keep this in sync with the binding of the variable, skip-reason in
+; install-defs-for-add-trip.  Except, we don't do anything here when localp is
+; true, since the point here is to store symbol-functions in *hcomp-fn-ht* for
+; defuns that will be processed in pass 2, and if we encounter such a defun in
+; pass 2 then we will encounter it non-locally in pass 1.
+
+; This function is an analogue of install-defs-for-add-trip for the case of
+; redundant defuns during pass 1 of encapsulate.  Since these defuns are
+; redundant, we can skip the part of install-defs-for-add-trip that deals with
+; proclaiming (which presumably has already been done); and since we are
+; dealing with encapsulate pass 1, we can restrict the behavior of
+; install-defs-for-add-trip to that case.
+
+  (declare (special *hcomp-fn-ht*))
+  (when (and (not localp)
+             (eq *hcomp-status* 'encapsulate-pass-1))
+    (let ((hcomp-fn-ht *hcomp-fn-ht*))
+      (assert hcomp-fn-ht)
+      (loop for name in names
+            as *1*name = (*1*-symbol name)
+            do
+            (progn (assert (and (fboundp name) (fboundp *1*name)))
+                   (setf (gethash name hcomp-fn-ht)
+                         (symbol-function name))
+                   (setf (gethash *1*name hcomp-fn-ht)
+                         (symbol-function *1*name)))))))
 
 (defun chk-acceptable-defuns-redundancy (names defun-mode ctx wrld state)
 
@@ -8541,11 +8582,12 @@
 ; Note that we can avoid the restriction for local definitions, since those
 ; will be ignored in the compiled file.
 
-  (cond ((and (not (f-get-global 'in-local-flg state))
-              (not (global-val 'boot-strap-flg (w state)))
-              (not (f-get-global 'redundant-with-raw-code-okp state))
-              (let ((recp (getpropc (car names) 'recursivep nil wrld))
-                    (bad-fns
+  (let ((localp (f-get-global 'in-local-flg state)))
+    (cond ((and (not localp)
+                (not (global-val 'boot-strap-flg (w state)))
+                (not (f-get-global 'redundant-with-raw-code-okp state))
+                (let ((recp (getpropc (car names) 'recursivep nil wrld))
+                      (bad-fns
 
 ; The test below isn't right if a built-in function with raw Lisp code has been
 ; promoted to logic mode after assigning state global
@@ -8553,21 +8595,23 @@
 ; only be done with a trust tag, and the documentation warns that doing this
 ; promotion could be unsound.  So we don't worry about that case here.
 
-                     (if (eq (symbol-class (car names) wrld)
-                             :program)
+                       (if (eq (symbol-class (car names) wrld)
+                               :program)
+                           (f-get-global
+                            'program-fns-with-raw-code
+                            state)
                          (f-get-global
-                          'program-fns-with-raw-code
-                          state)
-                       (f-get-global
-                        'logic-fns-with-raw-code
-                        state))))
-                (if recp
-                    (intersectp-eq recp bad-fns)
-                  (member-eq (car names) bad-fns))))
-         (er soft ctx
-             "~@0"
-             (redundant-predefined-error-msg (car names) wrld)))
-        (t (value (cons 'redundant defun-mode)))))
+                          'logic-fns-with-raw-code
+                          state))))
+                  (if recp
+                      (intersectp-eq recp bad-fns)
+                    (member-eq (car names) bad-fns))))
+           (er soft ctx
+               "~@0"
+               (redundant-predefined-error-msg (car names) wrld)))
+          (t (progn$ #-acl2-loop-only
+                     (update-hcomp-fn-ht-redundant-in-encapsulate names localp)
+                     (value (cons 'redundant defun-mode)))))))
 
 (defun chk-acceptable-defuns-verify-guards-er (names ctx wrld state)
 
@@ -10499,6 +10543,7 @@
                       (value nil)
                     (get-unambiguous-xargs-flg :OTF-FLG
                                                fives t ctx state)))
+         (otf-flg (chk-otf-flg otf-flg ctx state))
          (guard-debug (get-unambiguous-xargs-flg :GUARD-DEBUG
                                                  fives
 
@@ -11787,7 +11832,7 @@
 
                       *t*
                       wrld)))))))))))
-  (& (er hard 'store-signature "Unrecognized signature!"))))
+  (& (er hard 'intro-udf "Unrecognized signature!"))))
 
 (defun intro-udf-lst1 (insigs wrld)
   (cond ((null insigs) wrld)

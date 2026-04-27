@@ -3422,7 +3422,4 @@
 ;;                              bvand-1-of-getbit-arg2
 ;;                              bvif-of-getbit-arg3
 ;;                              bvif-of-getbit-arg4
-;;                              trim-to-n-bits-meta-rule
-;;                              trim-to-n-bits-meta-rule-for-logops
-;;                              trim-to-n-bits-meta-rule-for-slice
 ;;                              ))

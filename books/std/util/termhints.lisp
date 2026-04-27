@@ -133,9 +133,10 @@ list, which is stored in a table:</p>
            :clause-processor (remove-hyp-cp clause ',(car clause)))))
       (& (use-termhint-find-hint (cdr clause) world)))))
 
-(defmacro use-termhint (hint-term)
+(defmacro use-termhint (hint-term &key immediate-hints)
   `'(:computed-hint-replacement
-     ((and stable-under-simplificationp
+     (,@immediate-hints
+      (and stable-under-simplificationp
            (use-termhint-find-hint clause world)))
      :use ((:instance use-termhint-hyp-is-true
             (x ,hint-term)))))

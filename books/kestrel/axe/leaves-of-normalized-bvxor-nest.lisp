@@ -1,7 +1,7 @@
 ; Extract leaves from a nest of BVXORs in a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,8 +14,9 @@
 
 (include-book "dag-arrays")
 (include-book "kestrel/utilities/forms" :dir :system) ;for call-of
-(include-book "kestrel/bv/bvxor" :dir :system) ; since this tool knows about bvxor
+(include-book "kestrel/bv/bvxor-def" :dir :system) ; since this tool knows about bvxor
 (local (include-book "kestrel/bv/bvchop" :dir :system))
+(local (include-book "kestrel/bv/bvxor" :dir :system))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

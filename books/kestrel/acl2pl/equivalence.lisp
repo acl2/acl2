@@ -72,7 +72,7 @@
   (defrule program-equivp-reflexive
     (program-equivp program program))
 
-  (defrule program-equivp-symmetic
+  (defrule program-equivp-symmetric
     (implies (program-equivp program1 program2)
              (program-equivp program2 program1))
     :rule-classes nil

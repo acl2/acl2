@@ -1,6 +1,6 @@
 ; Tests of the bv-list functions
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,4 +12,3 @@
 
 (include-book "packbv-tests")
 (include-book "map-packbv-tests")
-(include-book "bv-array-conversions2-tests")

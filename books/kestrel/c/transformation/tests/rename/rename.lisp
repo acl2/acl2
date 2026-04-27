@@ -32,7 +32,7 @@
                                  (acons (c$::ident "x") (c$::ident "y")
                                         nil))))
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"

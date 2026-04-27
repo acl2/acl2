@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -39,22 +39,22 @@
   (xdoc::topstring
    (xdoc::p
     "Values of the @('signed char') type, like all the other values,
-     must be represented as one or more bytes [ISO:6.2.6.1/4].
+     must be represented as one or more bytes [C17:6.2.6.1/4].
      Objects of the @('signed char') type,
      like all other signed integer objects,
      must have no more value bits
      than value bits of their unsigned counterpart
-     [ISO:6.2.6.2/2],
+     [C17:6.2.6.2/2],
      i.e. @('unsigned char') objects in this case,
      which consist of exactly one byte (see @(tsee uchar-format)):
      therefore, @('signed char') objects must take exactly one byte as well.")
    (xdoc::p
     "Since @('signed char') objects must have one sign bit and no padding bits
-     [ISO:6.2.6.2/2],
+     [C17:6.2.6.2/2],
      they must have exactly @($\\mathtt{CHAR\\_BIT} - 1$) value bits.
      Since the values of the value bits of a signed integer type
      must be equal to the value bits of the unsigned integer type counterpart
-     [ISO:6.2.6.2/2],
+     [C17:6.2.6.2/2],
      the value bits of @('signed char') values are the low bits of the byte,
      and the sign is the high bit.")
    (xdoc::p
@@ -62,7 +62,7 @@
      the exact values represented by this byte/bit format depend on the "
     (xdoc::seetopic "signed-format" "signed format")
     " (when the sign bit is 1).
-     Furthermore, [ISO:6.2.6.2/2] identifies one specific bit pattern,
+     Furthermore, [C17:6.2.6.2/2] identifies one specific bit pattern,
      for each signed format,
      as a possible trap representation:
      it either is a trap representation or it is not.

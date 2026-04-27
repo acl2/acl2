@@ -44,6 +44,11 @@
 (local (in-theory (disable w)))
 
 
+(fancy-ev-add-primitive interp-st-prof-reset t)
+(fancy-ev-add-primitive interp-st-prof-report t)
+(fancy-ev-add-primitive interp-st-prof-print-report t)
+(fancy-ev-add-primitive interp-st-stack-frames$inline t)
+
 (fancy-ev-add-primitive interp-st-prev-bindings
                         (< 1 (interp-st-stack-frames interp-st)))
 
@@ -89,6 +94,8 @@
 (fancy-ev-add-primitive acl2::time-tracker-fn t)
 
 (fancy-ev-add-primitive fgl-interp-store-debug-info (not (eq msg :unreachable)))
+
+(fancy-ev-add-primitive interp-st-get-term->bvar (fgl-object-p x))
 
 (define interp-st-print-aignet-stats ((name stringp) interp-st)
   (stobj-let ((logicman (interp-st->logicman interp-st)))

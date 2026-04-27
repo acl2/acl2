@@ -1,7 +1,7 @@
 ; Representing DAGs as stobjs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -33,11 +33,11 @@
   ;; The "length" of the DAG (number of valid nodes):
   (sdag-len :type (integer 0 *)
             :initially 0)
-  ;; For each node, stores what we call it's "FN", which is either :var, quote,
+  ;; For each node, stores what we call its "FN", which is either :var, quote,
   ;; or a regular function symbol:
   (sdag-fns :type (array symbol (1000))
             :initially nil)
-  ;; For each node, stores what we call it's "ARGS".  For :var, this is the
+  ;; For each node, stores what we call its "ARGS".  For :var, this is the
   ;; variable (a symbol).  For quote, this is the quoted value.  For a regular
   ;; function, this is the list of args:
   (sdag-args :type (array t (1000))

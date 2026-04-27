@@ -47,9 +47,9 @@
 
 (defun env-read$notinline (x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::env-read$notinline
@@ -60,9 +60,9 @@
 
 (defun env-write$notinline (env x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::env-write$notinline
@@ -73,10 +73,10 @@
 
 (defun read-x86-file-des$notinline (id x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
             (equal (f-get-global
-                    'in-verify-flg ACL2::*the-live-state*)
+                    'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::read-x86-file-des$notinline
       (X86ISA::read-x86-file-des-logic id x86)))
@@ -86,10 +86,10 @@
 
 (defun read-x86-file-contents$notinline (name x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
             (equal (f-get-global
-                    'in-verify-flg ACL2::*the-live-state*)
+                    'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::read-x86-file-contents$notinline
       (X86ISA::read-x86-file-contents-logic name x86)))
@@ -99,10 +99,10 @@
 
 (defun write-x86-file-des$notinline (fd fd-field x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
             (equal (f-get-global
-                    'in-verify-flg ACL2::*the-live-state*)
+                    'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::write-x86-file-des$notinline
       (X86ISA::write-x86-file-des-logic fd fd-field x86)))
@@ -112,10 +112,10 @@
 
 (defun delete-x86-file-des$notinline (fd x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
             (equal (f-get-global
-                    'in-verify-flg ACL2::*the-live-state*)
+                    'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::delete-x86-file-des$notinline
       (X86ISA::delete-x86-file-des-logic fd x86)))
@@ -125,10 +125,10 @@
 
 (defun write-x86-file-contents$notinline (name contents-field x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
             (equal (f-get-global
-                    'in-verify-flg ACL2::*the-live-state*)
+                    'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::write-x86-file-contents$notinline
       (X86ISA::write-x86-file-contents-logic name contents-field x86)))
@@ -138,10 +138,10 @@
 
 (defun delete-x86-file-contents$notinline (name x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
             (equal (f-get-global
-                    'in-verify-flg ACL2::*the-live-state*)
+                    'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::delete-x86-file-contents$notinline
       (X86ISA::delete-x86-file-contents-logic name x86)))
@@ -151,10 +151,10 @@
 
 (defun pop-x86-oracle$notinline (x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
             (equal (f-get-global
-                    'in-verify-flg ACL2::*the-live-state*)
+                    'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::pop-x86-oracle$notinline
       (X86ISA::pop-x86-oracle-logic x86)))
@@ -170,9 +170,9 @@
   ;; ssize_t read(int fd, void *buf, size_t count);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable fd *buf count x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg ACL2::*the-live-state*)
+            (equal (f-get-global 'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-read$notinline
       (X86ISA::syscall-read-logic fd *buf count x86)))
@@ -221,9 +221,9 @@
   ;; ssize_t write(int fd, const void *buf, size_t count);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable fd *buf count x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-write$notinline
@@ -256,9 +256,9 @@
   ;; int creat(const char *pathname, mode_t mode);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable pathname oflags mode x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-open$notinline
@@ -285,9 +285,9 @@
   ;; int close(int fd);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable fd x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-close$notinline
@@ -310,9 +310,9 @@
   ;; off_t lseek(int fd, off_t offset, int whence);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable fd offset whence x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-lseek$notinline
@@ -333,9 +333,9 @@
   ;; int fadvise64(int fd, off_t offset, off_t len, int advice);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable fd offset len advice x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-fadvise64$notinline
@@ -357,9 +357,9 @@
   ;; int link(const char* oldpath, const char* newpath);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable oldpath newpath x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-link$notinline
@@ -377,9 +377,9 @@
   ;; int unlink(const char* path);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable path x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-unlink$notinline
@@ -396,9 +396,9 @@
   ;; int dup(int oldfd);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable oldfd x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-dup$notinline
@@ -417,9 +417,9 @@
   ;; int dup2(int oldfd, int newfd);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable oldfd newfd x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-dup2$notinline
@@ -441,9 +441,9 @@
   ;; int dup3(int oldfd, int newfd, int flags);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable oldfd newfd flags x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-dup3$notinline
@@ -466,9 +466,9 @@
   ;; int fcntl(int fd, int cmd, long arg);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable fd cmd arg x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-fcntl$notinline
@@ -489,9 +489,9 @@
   ;; int truncate(const char* path, long len);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable path len x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-truncate$notinline
@@ -508,9 +508,9 @@
   ;; int ftruncate(int fd, unsigned long len);
   (declare (xargs :mode :program :stobjs x86)
            (ignorable fd len x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg
+            (equal (f-get-global 'acl2::in-verify-flg
                                  ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-ftruncate$notinline
@@ -549,9 +549,9 @@
   ;; int stat(const char* path, struct stat* buf)
   (declare (xargs :mode :program :stobjs x86)
            (ignorable path buf x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg ACL2::*the-live-state*)
+            (equal (f-get-global 'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-stat$notinline
       (X86ISA::syscall-stat-logic path buf x86)))
@@ -596,9 +596,9 @@
   ;; int fstat(int fd, struct stat* buf)
   (declare (xargs :mode :program :stobjs x86)
            (ignorable fd buf x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg ACL2::*the-live-state*)
+            (equal (f-get-global 'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-fstat$notinline
       (X86ISA::syscall-fstat-logic fd buf x86)))
@@ -645,9 +645,9 @@
   ;; int lstat(const char* path, struct stat* buf)
   (declare (xargs :mode :program :stobjs x86)
            (ignorable path buf x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
-            (equal (f-get-global 'in-verify-flg ACL2::*the-live-state*)
+            (equal (f-get-global 'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::syscall-lstat$notinline
       (X86ISA::syscall-lstat-logic path buf x86)))

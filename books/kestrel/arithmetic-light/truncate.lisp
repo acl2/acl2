@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function truncate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-;; Note that truncate is less well supported for reasonong than floor, so
+;; Note that truncate is less well supported for reasoning than floor, so
 ;; consider enabling one of the truncate-becomes-floor rules.
 
 (local (include-book "floor"))

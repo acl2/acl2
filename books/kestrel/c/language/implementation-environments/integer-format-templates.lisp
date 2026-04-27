@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -590,14 +590,14 @@
     "This is for unsigned integer objects
      other than those of type @('unsigned char'),
      which are covered by @(tsee uchar-format).
-     See [C17:6.2.6.2./1].")
+     See [C17:6.2.6.2/1].")
    (xdoc::p
     "The format definition includes a list of bit roles,
      which should be thought as the juxtaposition of
      the bytes that form the unsigned integer object,
      in little endian order, i.e. from lower to higher address.
      The length of the list of bit roles
-     must be a mulitple of @('CHAR_BIT'),
+     must be a multiple of @('CHAR_BIT'),
      which we capture in @(tsee uchar-format):
      we express this constraint elsewhere,
      because we do not have that value available here.
@@ -624,14 +624,14 @@
     "This is for signed integer objects
      other than those of type @('signed char'),
      which are covered by @(tsee schar-format).
-     See [C17:6.2.6.2./2].")
+     See [C17:6.2.6.2/2].")
    (xdoc::p
     "The format definition includes a list of bit roles,
      which should be thought as the juxtaposition of
-     the bytes that form the unsigned integer object,
+     the bytes that form the signed integer object,
      in little endian order, i.e. from lower to higher address.
      The length of the list of bit roles
-     must be a mulitple of @('CHAR_BIT'),
+     must be a multiple of @('CHAR_BIT'),
      which we capture in @(tsee uchar-format):
      we express this constraint elsewhere,
      because we do not have that value available here.
@@ -640,7 +640,7 @@
     "The format description also identifies one of the three signed formats.
      It is not clear from [C17] whether all the signed integer type,
      within an implementation, use that same signed format,
-     but out model allows them to differ.")
+     but our model allows them to differ.")
    (xdoc::p
     "We also include a placeholder component meant to define
      which bit values are trap representations [C17:6.2.6.2/5].
@@ -811,7 +811,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is parameterized over @('n'), which must be positiive."))
+    "This is parameterized over @('n'), which must be positive."))
   (make-uinteger-format
    :bits (uinteger-bit-roles-inc-n (pos-fix n))
    :traps nil)
@@ -840,7 +840,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is parameterized over @('n'), which must be positiive."))
+    "This is parameterized over @('n'), which must be positive."))
   (make-sinteger-format
    :bits (sinteger-bit-roles-inc-n-and-sign (pos-fix n))
    :signed (signed-format-twos-complement)
@@ -897,7 +897,7 @@
      This is for @('signed short') and @('unsigned short'),
      or for @('signed int') and @('unsigned int'),
      etc.
-     This consists of a an unsigned and a signed integer format,
+     This consists of an unsigned and a signed integer format,
      constrained to be well-formed relative to each other.")
    (xdoc::p
     "The reason for introducing and using
@@ -972,7 +972,6 @@
   (defret integer-format->bit-size-type-prescription
     (and (posp size)
          (> size 1))
-    :hyp (integer-formatp format)
     :rule-classes :type-prescription
     :hints (("Goal" :in-theory (e/d (integer-format->bit-size-alt-def
                                      (:e tau-system))

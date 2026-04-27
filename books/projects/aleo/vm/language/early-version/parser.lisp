@@ -401,7 +401,7 @@
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*plain-ws')."
   (b* (((mv tree-1-plain-ws input-after-1)
@@ -789,7 +789,7 @@
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*digit')."
   (b* (((mv tree-1 input-after-1)
@@ -888,7 +888,7 @@
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*( digit *\"_\"')."
   (b* (((mv tree-thing1 input-after-thing1)
@@ -1028,7 +1028,7 @@
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*( address-char *\"_\" )')."
   (b* (((mv tree-thing1 input-after-thing1)
@@ -1282,7 +1282,7 @@ mapping account:
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*tuple')."
   (b* (((mv tree-1-tuple input-after-1)
@@ -1602,7 +1602,7 @@ struct message:
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('2( operand ws )')."
 
@@ -1646,7 +1646,7 @@ struct message:
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('3( operand ws )')."
 
@@ -1741,7 +1741,7 @@ struct message:
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*( ws operand )')."
   (b* (((mv tree-thing1 input-after-thing1)
@@ -1790,7 +1790,7 @@ struct message:
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*( ws register )')."
   (b* (((mv tree-thing1 input-after-thing1)
@@ -1908,7 +1908,7 @@ increment account[r0] by r1;"))
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*instruction')."
   (b* (((mv tree-thing1 input-after-thing1)
@@ -1964,7 +1964,7 @@ function is_even_and_nonzero:
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*command')."
   (b* (((mv tree-thing1 input-after-thing1)
@@ -2051,7 +2051,7 @@ transition transfer_private:
   (mv (trees abnf::tree-list-resultp
              :hints
              (("Goal" :in-theory
-               (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+               (enable abnf::treep-when-result-not-error))))
       (rest-input nat-listp))
   :short "Lex @('1*( mapping / struct / record / function / transition )')."
   (b* (((mv tree-thing1 input-after-thing1)

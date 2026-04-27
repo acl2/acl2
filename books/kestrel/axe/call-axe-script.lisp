@@ -1,6 +1,6 @@
 ; A tool to call Axe-related scripts
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,7 +34,7 @@
            (stringp (concatenate-strings-with-spaces strings)))
   :hints (("Goal" :in-theory (enable concatenate-strings-with-spaces))))
 
-; Returns (mv status state) where status is the numeric exits status of calling
+; Returns (mv status state) where status is the numeric exit status of calling
 ; SCRIPT-NAME on SCRIPT-ARGS.  A status of 0 indicates no error.
 ;; Example: (call-axe-script "ls.sh" (list "call-axe-script.lisp") state)
 (defund call-axe-script (script-name ; wrt the axe/ dir

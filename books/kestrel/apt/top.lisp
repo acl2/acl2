@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2021-2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -37,6 +37,8 @@
 (include-book "schemalg")
 
 (include-book "simplify")
+
+(include-book "simplify-conjunctions")
 
 (include-book "solve")
 (include-book "solve-method-acl2-rewriter")

@@ -443,7 +443,7 @@
      because at the top level we always start by decoding a tree,
      never a list of trees."))
 
-  (defrule rlp-encode-tree-umamb-prefix
+  (defrule rlp-encode-tree-unamb-prefix
     (implies (and (not (mv-nth 0 (rlp-encode-tree x)))
                   (not (mv-nth 0 (rlp-encode-tree y))))
              (equal (prefixp (mv-nth 1 (rlp-encode-tree x))

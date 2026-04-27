@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function print-object$-fn
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "channels"))
 (local (include-book "open-output-channel-p"))
 
@@ -53,4 +54,9 @@
 (defthm global-table-of-print-object$-fn
   (equal (global-table (print-object$-fn x control channel state))
          (global-table state))
+  :hints (("Goal" :in-theory (enable print-object$-fn))))
+
+(defthm w-of-print-object$-fn
+  (equal (w (print-object$-fn x control channel state))
+         (w state))
   :hints (("Goal" :in-theory (enable print-object$-fn))))

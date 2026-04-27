@@ -2712,14 +2712,17 @@ registers are not used.</p>"
     numerator rationalp realpart
     stringp symbol-name symbol-package-name
     symbolp
-    binder syntax-interp-fn abort-rewrite unequiv assume narrow-equiv fgl-interp-obj trigger-constraints
+    binder syntax-interp-fn abort-rewrite unequiv assume-fn
+    narrow-equiv fgl-interp-obj trigger-constraints conditionalize-fn
     fgl-time-fn fgl-hide
     #+:non-standard-analysis acl2::floor1
 
     equal not if iff int bool
     concrete match-assums return-last synp cons car cdr
     intcons intcons* endint intcar intcdr int-endp
-    typespec-check implies fgl-sat-check))
+    typespec-check implies fgl-sat-check
+    disallow-boolean-var-intro
+    handle-error-fn))
 
 (defun def-fgl-object-eval-fn (prefix fns union-previous wrld)
   (declare (xargs :mode :program))

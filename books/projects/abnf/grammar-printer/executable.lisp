@@ -148,7 +148,7 @@
      except that we omit the maximum if it is infinity.
      This is a minimal printing strategy,
      in the sense that it prints the prefix in the shortest possible way;
-     noenetheless, we might extend the abstract syntax
+     nonetheless, we might extend the abstract syntax
      to preserve more information from the concrete syntax,
      and thus support different printed forms."))
   (b* (((repeat-range range) range)

@@ -1,4 +1,4 @@
-; A function t recognize a true list of (8-bit) bytes
+; A function to recognize a true list of (8-bit) bytes
 ;
 ; Copyright (C) 2020-2024 Kestrel Institute
 ; The definition of byte-listp is in books/kestrel/fty/byte-list.lisp.

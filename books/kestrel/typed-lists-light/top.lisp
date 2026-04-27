@@ -1,6 +1,6 @@
-; A lightwright library about lists whose elements have particular types
+; A lightweight library about lists whose elements have particular types
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;

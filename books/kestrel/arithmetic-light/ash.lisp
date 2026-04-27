@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function ash
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -193,8 +193,8 @@
              (<= (* i (expt 2 c)) i))
     :rule-classes :linear))
 
-(defthm <=-of-ash-when-left-shift-linear
-  (implies (and (<= c 0) ; left shift (or no shift)
+(defthm <=-of-ash-when-right-shift-linear
+  (implies (and (<= c 0) ; right shift (or no shift)
                 ;; (integerp c)
                 (<= 0 i))
            (<= (ash i c) i))
@@ -203,8 +203,8 @@
                           (and (integerp c) (not (equal c 0))))
            :in-theory (enable ash <-of-floor-arg2-gen))))
 
-(defthm <-of-ash-when-left-shift-linear
-  (implies (and (< c 0) ; left shift
+(defthm <-of-ash-when-right-shift-linear
+  (implies (and (< c 0) ; right shift
                 ;; (integerp i)
                 (< 0 i) ; positive i means the shifted value is strictly less
                 (integerp c))

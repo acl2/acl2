@@ -452,12 +452,14 @@
 
 
 
+
 (defthm o-p-when-theoremp
-  (implies (o-p (indev meas (indev-falsify (list 'o-p meas))))
+  (implies (indev-theoremp (list 'o-p meas))
            (o-p (indev meas a)))
-  :hints (("goal" :use ((:instance indev-falsify
+  :hints (("goal" :use ((:instance indev-theoremp-implies
                          (x (list 'o-p meas))
-                         (a a))))))
+                         (a a)))
+           :in-theory (disable indev-theoremp-implies))))
 
 (defthm measure-decr-when-measure-decrs-subs
   (implies (and (indev-theoremp
@@ -472,7 +474,7 @@
            :in-theory (enable nth))
           (and stable-under-simplificationp
                '(:expand ((measure-decrs-subs meas pred subs orig-clause))
-                 :use ((:instance indev-falsify
+                 :use ((:instance indev-theoremp-implies
                         (x (disjoin `(,@orig-clause
                                       (not ,pred)
                                       (o< ,(substitute-into-term meas (car
@@ -499,19 +501,16 @@
 (defthm o-p-with-clause-when-theoremp
   (implies (and (not (indev (disjoin clause) a))
                 (not (o-p (indev meas a))))
-           (and (not (indev (disjoin clause)
-                            (indev-falsify (disjoin (Append clause (list (list 'o-p meas)))))))
-                (not (o-p (indev meas
-                                 (indev-falsify (disjoin (Append clause (list (list 'o-p meas))))))))))
-  :hints (("goal" :use ((:instance indev-falsify
+           (not (indev-theoremp (disjoin (append clause (list (list 'o-p meas)))))))
+  :hints (("goal" :use ((:instance indev-theoremp-implies
                          (x (disjoin (Append clause (list (list 'o-p meas)))))
-                         (a a))))))
+                         (a a)))
+           :in-theory (disable indev-theoremp-implies))))
 
 
 (defthm induction-step-right
-  (implies (and (indev
-                 (conjoin-clauses (induction-steps clause inductions))
-                 (indev-falsify (conjoin-clauses (induction-steps clause inductions))))
+  (implies (and (indev-theoremp
+                 (conjoin-clauses (induction-steps clause inductions)))
                 (indev (car (nth n inductions)) a)
                 (not (indev (disjoin clause) a))
                 (< (nfix n) (len inductions)))
@@ -523,7 +522,7 @@
           :induct (nth n inductions))
           (and stable-under-simplificationp
                '(:expand ((induction-steps clause inductions))
-                 :use ((:instance indev-falsify
+                 :use ((:instance indev-theoremp-implies
                         (x (disjoin `((not (if ,(caar inductions)
                                                ,(conjoin-clauses
                                                  (substitute-list-into-clause
@@ -577,11 +576,11 @@
                                indev-alist induction-steps
                                substitute-list-into-clause
                                pseudo-termp nthcdr))
-          '(:use ((:instance indev-falsify
+          '(:use ((:instance indev-theoremp-implies
                    (x (disjoin (cons (disjoin (strip-cars inductions)) clause)))
                    (a a))))
           (and stable-under-simplificationp
-               '(:use ((:instance indev-falsify
+               '(:use ((:instance indev-theoremp-implies
                         (x (disjoin (cons (disjoin (strip-cars inductions)) clause)))
                         (a (indev-alist (nth nsub (cdr (nth nstep inductions))) a)))))))
   :rule-classes nil)
@@ -612,12 +611,13 @@
            :in-theory (disable nth measure-decrs substitute-into-term
                                indev-alist induction-steps
                                substitute-list-into-clause
-                               pseudo-termp nthcdr))
-          '(:use ((:instance indev-falsify
+                               pseudo-termp nthcdr
+                               indev-theoremp-implies))
+          '(:use ((:instance indev-theoremp-implies
                    (x (disjoin (cons (disjoin (strip-cars inductions)) clause)))
                    (a a))))
           (and stable-under-simplificationp
-               '(:use ((:instance indev-falsify
+               '(:use ((:instance indev-theoremp-implies
                         (x (disjoin (cons (disjoin (strip-cars inductions)) clause)))
                         (a (indev-alist (nth nsub (cdr (nth nstep inductions))) a)))))))
   :rule-classes nil)
@@ -663,35 +663,48 @@
                          (x (disjoin (cons x y)))))
            :in-theory (disable indev-theorem-disjoin-clause))))
 
+(local
+ (defthm induction-cp-correct-aux
+   (implies (and (pseudo-term-listp clause)
+                 (alistp a)
+                 (indev-theoremp (conjoin-clauses (induction-cp clause hint))))
+            (indev (disjoin clause) a))
+   :hints (("goal" :use ((:instance induction-cp-correct-rec-with-orig-clause
+                          (meas (car hint))
+                          (inductions (cadr hint))
+                          (flg 'steps)
+                          (nstep 0))
+                         (:instance induction-cp-correct-rec-without-orig-clause
+                          (meas (car hint))
+                          (inductions (cadr hint))
+                          (flg 'steps)
+                          (nstep 0))
+                         (:instance indev-theoremp-implies
+                          (x (disjoin (cons (disjoin (strip-cars (cadr hint))) clause)))
+                          (a a)))
+            :in-theory (disable measure-decrs induction-steps
+                                pseudo-termp
+                                pseudo-term-listp
+                                pseudo-term-val-alistp
+                                indev-disjoin-cons
+                                indev-of-o-p-call
+                                indev-of-variable
+                                indev-of-quote
+                                INDEV-DISJOIN-APPEND
+                                INDEV-THEOREMP-DISJOIN-CONS-UNLESS-THEOREMP
+                                indev-theoremp-implies)
+            :do-not-induct t))
+   ;; :rule-classes :clause-processor
+   :otf-flg t))
+
 (defthm induction-cp-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
-                (indev-theoremp (conjoin-clauses (induction-cp clause hint))))
+                (indev-theoremp* (conjoin-clauses (induction-cp clause hint))))
            (indev (disjoin clause) a))
-  :hints (("goal" :use ((:instance induction-cp-correct-rec-with-orig-clause
-                         (meas (car hint))
-                         (inductions (cadr hint))
-                         (flg 'steps)
-                         (nstep 0))
-                        (:instance induction-cp-correct-rec-without-orig-clause
-                         (meas (car hint))
-                         (inductions (cadr hint))
-                         (flg 'steps)
-                         (nstep 0))
-                        (:instance indev-falsify
-                         (x (disjoin (cons (disjoin (strip-cars (cadr hint))) clause)))
-                         (a a)))
-           :in-theory (disable measure-decrs induction-steps
-                               pseudo-termp
-                               pseudo-term-listp
-                               pseudo-term-val-alistp
-                               indev-disjoin-cons
-                               indev-of-o-p-call
-                               indev-of-variable
-                               indev-of-quote
-                               INDEV-DISJOIN-APPEND
-                               INDEV-THEOREMP-DISJOIN-CONS-UNLESS-THEOREMP)
-           :do-not-induct t))
+  :hints (("goal" :use induction-cp-correct-aux
+           :in-theory (e/d (indev-theoremp)
+                           (induction-cp))))
   :rule-classes :clause-processor
   :otf-flg t)
 

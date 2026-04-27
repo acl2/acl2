@@ -1,7 +1,7 @@
 ; Utilities to support Axe's version of syntaxp, bind-free, etc.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -78,6 +78,6 @@
 (defun axe-binding-hyp (x) x)
 
 ;; A wrapper indicating that an SMT solver should be used to try to resolve the hyp if rewriting can't.
-;; We leavie this enabled, so that it vanishes during proofs.
+;; We leave this enabled, so that it vanishes during proofs.
 ;; TODO: Allow passing arguments, such as the timeout:
 (defun axe-smt (x) x)

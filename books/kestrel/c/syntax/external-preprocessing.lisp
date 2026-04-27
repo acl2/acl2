@@ -279,7 +279,7 @@
                           :state state)))
     (retok (fileset (omap::update (filepath (first files))
                                   filedata
-                                  fileset.unwrap))
+                                  fileset.files))
            state))
   :guard-hints
   (("Goal" :in-theory

@@ -42,9 +42,11 @@
              def-ruleset def-ruleset! add-to-ruleset add-to-ruleset!
              a b c d e f g h i j k l m n o p q r s v x y z
              pseudo-var pseudo-var-p pseudo-var-fix pseudo-var-equiv
+             pseudo-var-list-p pseudo-var-list-fix pseudo-var-list
              pseudo-fn pseudo-fn-p pseudo-fn-fix pseudo-fn-equiv
              pseudo-lambda pseudo-lambda-p pseudo-lambda-fix pseudo-lambda-equiv
              pseudo-fnsym pseudo-fnsym-p pseudo-fnsym-fix pseudo-fnsym-equiv
+             pseudo-fnsymlist-p pseudo-fnsymlist-fix pseudo-fnsymlist
              pseudo-term pseudo-term-kind pseudo-term-case
              pseudo-term-fix pseudo-term-equiv pseudo-term-count
              pseudo-term-list pseudo-term-list-fix pseudo-term-list-equiv pseudo-term-list-count

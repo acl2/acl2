@@ -537,7 +537,7 @@
 (define primitive-function-arity ((name symbol-valuep))
   :guard (primitive-function-namep name)
   :returns (arity natp)
-  :short "Arith of a primitive function."
+  :short "Arity of a primitive function."
   (cond
    ((symbol-value-equiv name (lift-symbol 'acl2::acl2-numberp)) 1)
    ((symbol-value-equiv name (lift-symbol 'common-lisp::rationalp)) 1)

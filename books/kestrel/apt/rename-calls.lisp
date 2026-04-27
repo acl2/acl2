@@ -1,6 +1,6 @@
 ; A transformation to rename called functions
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,7 @@
 ;; Produces a list of symbols representing rules to be enabled for proofs.  The
 ;; rules justify renaming calls of all functions that have been registered in
 ;; the table.
-;; TODO: Or just did the rules about of the world and don't have the table?
+;; TODO: Or just dig the rules out of the world and don't have the table?
 (defund rename-calls-enables (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
   (let ((alist (table-alist 'renaming-rule-table wrld)))
@@ -50,5 +50,5 @@
   :description "<p>To inspect the resulting forms, call @('show-rename-calls') on the same
 arguments.</p>"
   :transform-specific-arg-descriptions
-  ;; TODO: Think about the best way to specify which functions to rename, what they get renamed to (if mulitple options exist) and how to find the corresponding rules.
+  ;; TODO: Think about the best way to specify which functions to rename, what they get renamed to (if multiple options exist) and how to find the corresponding rules.
   ((extra-function-renaming "The renaming to apply to called functions (each entry should have a corresponding entry in the renaming-rule-table).")))

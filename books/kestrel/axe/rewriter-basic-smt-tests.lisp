@@ -1,6 +1,6 @@
 ; Tests of rewriter-basic-smt
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,7 +20,7 @@
 ;(local (include-book "kestrel/bv/top" :dir :system))
 
 ;; todo: also translate the term?
-;; todo: auto-generate this for each rewrietr?
+;; todo: auto-generate this for each rewriter?
 (defmacro simplify-term-to-term-basic-smt-wrapper (term
                                                     &key
                                                     (assumptions 'nil)
@@ -35,7 +35,8 @@
                                                     (monitor 'nil)
                                                     (no-warn-ground-functions 'nil)
                                                     (fns-to-elide 'nil))
-  `(simplify-term-to-term-basic-smt ,term
+  `(b* (((mv erp term & state)
+         (simplify-term-to-term-basic-smt ,term
                                     ,assumptions
                                     ,rule-alist
                                     ,interpreted-function-alist
@@ -48,7 +49,8 @@
                                     ,monitor
                                     ,no-warn-ground-functions
                                     ,fns-to-elide
-                                    state))
+                                    state)))
+     (mv erp term state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

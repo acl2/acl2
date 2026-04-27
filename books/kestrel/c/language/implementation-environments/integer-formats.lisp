@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -82,7 +82,7 @@
   ///
 
   (defrule integer-format-short-wf-bit-size-lower-bound
-    (implies (integer-format-short-wfp short-format uchar-format schar-fomat)
+    (implies (integer-format-short-wfp short-format uchar-format schar-format)
              (>= (integer-format->bit-size short-format)
                  16))
     :rule-classes :linear
@@ -132,7 +132,7 @@
   ///
 
   (defrule integer-format-int-wf-bit-size-lower-bound
-    (implies (integer-format-int-wfp int-format uchar-format short-fomat)
+    (implies (integer-format-int-wfp int-format uchar-format short-format)
              (>= (integer-format->bit-size int-format)
                  16))
     :rule-classes :linear
@@ -183,7 +183,7 @@
   ///
 
   (defrule integer-format-long-wf-bit-size-lower-bound
-    (implies (integer-format-long-wfp long-format uchar-format int-fomat)
+    (implies (integer-format-long-wfp long-format uchar-format int-format)
              (>= (integer-format->bit-size long-format)
                  32))
     :rule-classes :linear
@@ -235,7 +235,7 @@
   ///
 
   (defrule integer-format-llong-wf-bit-size-lower-bound
-    (implies (integer-format-llong-wfp llong-format uchar-format long-fomat)
+    (implies (integer-format-llong-wfp llong-format uchar-format long-format)
              (>= (integer-format->bit-size llong-format)
                  64))
     :rule-classes :linear
@@ -573,7 +573,7 @@
 
   ///
 
-  (defrule integer-format-llong-wfp-of-long-format-64tcnt
+  (defrule integer-format-llong-wfp-of-llong-format-64tcnt
     (integer-format-llong-wfp (llong-format-64tcnt)
                               (uchar-format-8)
                               (long-format-32tcnt)))

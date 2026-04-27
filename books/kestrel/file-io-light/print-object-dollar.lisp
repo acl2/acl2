@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function print-object$
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -49,4 +49,9 @@
 (defthm global-table-of-print-object$
   (equal (global-table (print-object$ x channel state))
          (global-table state))
+  :hints (("Goal" :in-theory (enable print-object$))))
+
+(defthm w-of-print-object$
+  (equal (w (print-object$ x channel state))
+         (w state))
   :hints (("Goal" :in-theory (enable print-object$))))

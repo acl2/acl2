@@ -129,7 +129,7 @@
 ;;; Declare the .o and .so files as compilation outputs,
 ;;; so they get picked up by bundle operations.
 #.(when (version<= "3.1.6" (asdf-version))
-    '(defmethod output-files ((op compile-op) (c wrapper-file))
+   #+nil '(defmethod output-files ((op compile-op) (c wrapper-file))
       (destructuring-bind (generated-lisp lib-file c-file o-file) (output-files 'process-op c)
         (declare (ignore generated-lisp c-file))
         (multiple-value-bind (files translatedp) (call-next-method)

@@ -41,7 +41,8 @@
 (in-package "X86ISA")
 
 (include-book "syscall-numbers")
-(include-book "environment" :ttags (:undef-flg))
+(include-book "environment")
+(include-book "tools/include-raw" :dir :system) ; needed when X86ISA_EXEC is t
 
 (local (include-book "std/lists/nthcdr" :dir :system))
 
@@ -1215,12 +1216,12 @@ x86isa-build-instructions) for details.</p>
    ;; The top-level Makefile for these x86isa books (../Makefile)
    ;; write out syscalls.acl2 when X86ISA_EXEC=t.  This file contains
    ;; the definition of the function x86isa_syscall_exec_support,
-   ;; which we provide as the first argument of the macro
+   ;; which we provide as the second argument of the macro
    ;; build-with-full-exec-support.  If this function is undefined
    ;; (i.e., if the x86 books are not certified using the accompanying
    ;; Makefile or if X86ISA_EXEC=nil), then
-   ;; build-with-full-exec-support will return its third argument.
-   ;; Otherwise, it will return its first argument.
+   ;; build-with-full-exec-support will return its fourth argument.
+   ;; Otherwise, it will return its third argument.
 
    (supported-platform?)
 

@@ -16,7 +16,7 @@
 (include-book "../unguarded-built-ins") ; for nth-unguarded
 (include-book "../unguarded-defuns2") ; for binary-logand-unguarded
 (include-book "kestrel/risc-v/executable/decoding-executable" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
 ;(local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/logapp" :dir :system)) ; for loghead-becomes-bvchop

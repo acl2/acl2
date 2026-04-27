@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function array1p
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -96,12 +96,12 @@
   :hints (("Goal" :in-theory (enable ARRAY1P-rewrite))))
 
 (defthm array1p-of-acons-header
-  (equal (ARRAY1P NAME2 (aCONS :header (LIST
-                                         :DIMENSIONS (LIST dim)
-                                         :MAXIMUM-LENGTH max
-                                         :DEFAULT NIL
-                                         :NAME NAME)
-                               ALIST))
+  (equal (array1p name2 (acons :header (list
+                                         :dimensions (list dim)
+                                         :maximum-length max
+                                         :default nil
+                                         :name name)
+                               alist))
          (and (bounded-integer-alistp alist dim)
               (posp dim)
               (< dim max)

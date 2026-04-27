@@ -34,7 +34,7 @@
     (xdoc::li
      "Generate only strings of ASCII codes.")
     (xdoc::li
-     "Are the same (module ordering) as the resulting of
+     "Are the same (module ordering) as the result of
       plugging the core rules into the concrete syntax rules."))
    (xdoc::p
     "These theorems are in a separate file

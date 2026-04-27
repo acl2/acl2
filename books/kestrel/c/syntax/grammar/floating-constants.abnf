@@ -1,0 +1,46 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains rules for floating constants
+; that are common to all the C dialects
+; [C17:6.4.4.2/1] [C23:6.4.5.3].
+; Together with the rules
+; in the dialect-specific files floating-constants-*.abnf,
+; they define the floating constants of each C dialect.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+floating-constant = decimal-floating-constant
+                  / hexadecimal-floating-constant
+
+decimal-floating-constant =
+      fractional-constant [ exponent-part ] [ floating-suffix ]
+    / digit-sequence exponent-part [ floating-suffix ]
+
+fractional-constant = [ digit-sequence ] "." digit-sequence
+                    / digit-sequence "."
+
+hexadecimal-floating-constant =
+      hexadecimal-prefix hexadecimal-fractional-constant
+                         binary-exponent-part [floating-suffix ]
+    / hexadecimal-prefix hexadecimal-digit-sequence
+                         binary-exponent-part [ floating-suffix ]
+
+exponent-part = %i"e" [ sign ] digit-sequence
+
+sign = "+" / "-"
+
+hexadecimal-fractional-constant =
+      [ hexadecimal-digit-sequence ] "." hexadecimal-digit-sequence
+    / hexadecimal-digit-sequence "."
+
+binary-exponent-part = %i"p" [ sign ] digit-sequence

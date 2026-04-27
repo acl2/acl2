@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -1022,7 +1022,7 @@
 
 ; Now that the two operations under the above without-interrupts are complete,
 ; it is once again OK to be interrupted with a function that throws to the tag
-; :results-no-longer-needed.  Note that wait-for-children-to-finish is called
+; :result-no-longer-needed.  Note that wait-for-children-to-finish is called
 ; again in the cleanup form below, so we don't have to worry about dangling
 ; child threads even if we don't complete evaluation of the following form.
 

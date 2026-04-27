@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -316,7 +316,7 @@
         GET-IN-THEORY-REDUNDANT-OKP GET-OUTPUT-STREAM-STRING$
         GET-PERSISTENT-WHS
         GET-REAL-TIME GET-REGISTER-INVARIANT-RISK GET-SERIALIZE-CHARACTER
-        GET-TIMER GET-WORMHOLE-STATUS
+        GET-TIMER
         GETENV$ GETPROP GETPROP-DEFAULT GETPROPC GETPROPS
         GETPROPS1 GLOBAL-TABLE GLOBAL-TABLE-CARS
         GLOBAL-TABLE-CARS1 GLOBAL-VAL

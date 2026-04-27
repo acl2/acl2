@@ -1,6 +1,6 @@
 ; Proofs about substitute-constants-in-lambdas.lisp
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -642,14 +642,12 @@
     (defthm no-duplicate-lambda-formals-in-termp-of-substitute-constants-in-lambdas-aux
       (implies (and (no-duplicate-lambda-formals-in-termp term)
                     (myquote-listp (strip-cdrs alist))
-                    (no-duplicate-lambda-formals-in-termp term)
                     (pseudo-termp term))
                (no-duplicate-lambda-formals-in-termp (substitute-constants-in-lambdas-aux term alist)))
       :flag substitute-constants-in-lambdas-aux)
     (defthm no-duplicate-lambda-formals-in-termsp-of-substitute-constants-in-lambdas-aux-lst
       (implies (and (no-duplicate-lambda-formals-in-termsp terms)
                     (myquote-listp (strip-cdrs alist))
-                    (no-duplicate-lambda-formals-in-termsp terms)
                     (pseudo-term-listp terms))
                (no-duplicate-lambda-formals-in-termsp (substitute-constants-in-lambdas-aux-lst terms alist)))
       :flag substitute-constants-in-lambdas-aux-lst)

@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -13,10 +13,9 @@
 
 (include-book "abstract-syntax-operations")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -66,7 +65,7 @@
      or a product of a constant (natural number) by a variable,
      or a product of a negated constant (negative number) by a variable.")
    (xdoc::p
-    "Although it could be supported, for simplicity we disallow a product of 
+    "Although it could be supported, for simplicity we disallow a product of
      a constant (natural number) by a negated variable."))
   (or (expression-case expr :const)
       (expression-case expr :var)
@@ -79,8 +78,7 @@
                (and (expression-case (expression-mul->arg1 expr) :neg)
                     (expression-case (expression-neg->arg
                                       (expression-mul->arg1 expr)) :const)))
-           (expression-case (expression-mul->arg2 expr) :var)))
-  :hooks (:fix))
+           (expression-case (expression-mul->arg2 expr) :var))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,9 +100,7 @@
       (and (expression-case expr :sub)
            (r1cs-polynomialp (expression-sub->arg1 expr))
            (r1cs-monomialp (expression-sub->arg2 expr))))
-  :measure (expression-count expr)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :hooks (:fix))
+  :measure (expression-count expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,8 +119,7 @@
          (and (expression-case left :mul)
               (r1cs-polynomialp (expression-mul->arg1 left))
               (r1cs-polynomialp (expression-mul->arg2 left))
-              (r1cs-polynomialp right))))
-  :hooks (:fix))
+              (r1cs-polynomialp right)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,9 +131,7 @@
   (xdoc::topstring
    (xdoc::p
     "This lifts @(tsee r1cs-constraintp) to lists."))
-  (r1cs-constraintp x)
-  ///
-  (fty::deffixequiv r1cs-constraint-listp))
+  (r1cs-constraintp x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -151,8 +144,7 @@
     "There must be no definitions,
      and all the constraints must be in R1CS form."))
   (and (endp (system->definitions sys))
-       (r1cs-constraint-listp (system->constraints sys)))
-  :hooks (:fix))
+       (r1cs-constraint-listp (system->constraints sys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -171,8 +163,7 @@
   (constraint-case
    constr
    :equal (r1cs-constraintp constr)
-   :relation (expression-const/var-listp constr.args))
-  :hooks (:fix))
+   :relation (expression-const/var-listp constr.args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,9 +175,7 @@
   (xdoc::topstring
    (xdoc::p
     "This lifts @(tsee sr1cs-constraintp) to lists."))
-  (sr1cs-constraintp x)
-  ///
-  (fty::deffixequiv sr1cs-constraint-listp))
+  (sr1cs-constraintp x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,8 +183,7 @@
   :returns (yes/no booleanp)
   :short "Check if a PFCS definition
           consists of structured R1CS constraints."
-  (sr1cs-constraint-listp (definition->body def))
-  :hooks (:fix))
+  (sr1cs-constraint-listp (definition->body def)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -207,9 +195,7 @@
   (xdoc::topstring
    (xdoc::p
     "This lifts @(tsee sr1cs-definitionp) to lists."))
-  (sr1cs-definitionp x)
-  ///
-  (fty::deffixequiv sr1cs-definition-listp))
+  (sr1cs-definitionp x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -218,5 +204,4 @@
   :short "Check if a PFCS system consits of structured R1CS constraints."
   (b* (((system sys) sys))
     (and (sr1cs-definition-listp sys.definitions)
-         (sr1cs-constraint-listp sys.constraints)))
-  :hooks (:fix))
+         (sr1cs-constraint-listp sys.constraints))))

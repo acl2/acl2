@@ -1,7 +1,7 @@
 ; Simpler functions for reading and writing memory
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -32,6 +32,7 @@
 (include-book "kestrel/bv/putbits" :dir :system)
 ;(include-book "linear-memory")
 ;(include-book "support") ;reduce?
+(local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -916,7 +917,7 @@
 
 ;; Often N and PADDR and BYTES are constants
 ;(include-book "kestrel/bv-lists/packbv-little" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 ;todo: delete the specializations above..
@@ -3317,7 +3318,6 @@
   (implies (and (<= m n)
                 (natp n)
                 (natp m)
-                (natp n)
                 (<= n (expt 2 48))
 ;                (< n (expt 2 48))
 ;                (unsigned-byte-p 48 n)
@@ -3338,7 +3338,6 @@
                 (natp m1)
                 (natp m2)
                 ;;(unsigned-byte-p 48 n)
-                (natp n)
                 ;(<= n (expt 2 48))
                 (< n (expt 2 48))
                 (integerp ad))

@@ -125,8 +125,8 @@
             (("Goal"
               :in-theory
               (enable
-               abnf::treep-when-tree-resultp-and-not-reserrp
-               abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+               abnf::treep-when-result-not-error
+               abnf::tree-listp-when-result-not-error))))
       (next-token abnf::tree-optionp)
       (rest-input abnf::tree-listp))
   :short "Parse a @('*input-item')."
@@ -346,8 +346,8 @@
             (("Goal"
               :in-theory
               (enable
-               abnf::treep-when-tree-resultp-and-not-reserrp
-               abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+               abnf::treep-when-result-not-error
+               abnf::tree-listp-when-result-not-error))))
       (next-token abnf::tree-optionp)
       (rest-input abnf::tree-listp))
   :short "Parse a @('*input-section')."

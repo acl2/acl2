@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; Makes sure we can include both this libary and std/alists without any name
+;; Makes sure we can include both this library and std/alists without any name
 ;; clashes:
 (include-book "std/alists/top" :dir :system)
 (include-book "std/typed-alists/top" :dir :system)

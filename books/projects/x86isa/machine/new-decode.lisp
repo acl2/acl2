@@ -42,8 +42,7 @@
 ;; declarative style of instruction specification.
 
 (in-package "X86ISA")
-(include-book "decoding-and-spec-utils"
-              :ttags (:syscall-exec :undef-flg))
+(include-book "decoding-and-spec-utils")
 (include-book "std/util/defenum" :dir :system)
 (include-book "inst-structs")
 
@@ -223,7 +222,7 @@
 
        (t
         (er hard 'get-operand-size
-            "This should've been reachable! ~
+            "This should not have been reachable! ~
              Addressing Method Code: ~x0 Operand Type Code: ~x1 ~
              Rex Byte: ~x2 Prefixes: ~x3~%"
             addressing-method-code

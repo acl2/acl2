@@ -1,6 +1,6 @@
 ; A parser for XML files
 ;
-; Copyright (C) 2014-2025 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -222,7 +222,7 @@
                   ;; :guard-hints (("Goal" :in-theory (enable two-non-whitespace-chars-existp skip-whitespace)))
                   ))
   (if (or (endp chars) (endp (rest chars))) ;for termination (think about this)
-      (er hard? 'skip-through-two-chars "Not enough chars" nil)
+      (er hard? 'skip-through-two-chars "Not enough chars")
     (if (and (eql first-non-whitespace-char (next-non-whitespace-char chars))
              (eql second-non-whitespace-char (second-non-whitespace-char chars)))
         (skip-two-chars chars)

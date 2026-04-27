@@ -142,7 +142,7 @@
   (xdoc::topstring
 
    (xdoc::p
-    "For brevity, the paper makes the following slight simplfications
+    "For brevity, the paper makes the following slight simplifications
      compared to the ABNF library:")
 
    (xdoc::ul

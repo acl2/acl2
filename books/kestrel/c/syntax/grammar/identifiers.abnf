@@ -1,0 +1,36 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains rules for identifiers
+; that are common to all the C dialects.
+; Together with the rules in the dialect-specific files identifiers-*.abnf,
+; they define the identifiers of each C dialect.
+
+; Although the formulation of our rules differs between C17 and C23,
+; the two formulations are equivalent:
+; we define an identifier as a non-empty sequence
+; that starts with a letter or underscore
+; and continues with letters, digits, and underscores;
+; note that our current rules are more restrictive than [C17] and [C23].
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The rule for nondigits is equivalent to [C17:6.4.2.1] and [C23:6.4.3.1],
+; but instead of listing the letters we use our rule 'letter'
+; that is part of our rules for the source character set in characters.abnf.
+
+nondigit = "_"
+         / letter
+
+; The rule 'digit', also in [C17:6.4.2.1] and [C23:6.4.3.1]
+; is among the rules in characters.abnf,
+; because we use that rule to define the source character set.

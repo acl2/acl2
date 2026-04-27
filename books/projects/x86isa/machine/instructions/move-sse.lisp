@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, May - August 2023, Regents of the University of Texas
-; Copyright (C) 2025, Kestrel Technology, LLC
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; Copyright (C) August 2023 - May 2024, Yahya Sohail
 ; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
@@ -46,7 +46,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../decoding-and-spec-utils" :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
@@ -1187,11 +1187,12 @@
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "Move Packed Single Precision Floating-Point Values High to Low"
+  :short "Move packed single precision floating-point values high to low."
 
   :long
-  "<h3>Op/En = RM: \[OP XMM, XMM\]</h3>
-  NP 0F 12: MOVHLPS xmm1, xmm2<br/>"
+  "<code>
+   NP 0F 12 /r    MOVHLPS xmm1, xmm2
+   </code>"
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -1199,57 +1200,80 @@
 
   :body
 
-  (b* (((the (unsigned-byte 4) xmm-index)
-        (reg-index reg rex-byte #.*r*))
+  (b* ((operand-size 16) ; 128 bits
 
-       (p2 (prefixes->seg prefixes))
+       ;; Operand 1 (destination) is in Reg.
+       ((the (unsigned-byte 4) xmm1-index) (reg-index reg rex-byte #.*r*))
 
-       (p4? (eql #.*addr-size-override*
-                 (prefixes->adr prefixes)))
+       ;; Operand 2 (source) is in R/M.
+       ((the (unsigned-byte 4) xmm2-index) (reg-index r/m rex-byte #.*b*))
+       ((the (unsigned-byte 128) xmm2) (xmmi-size operand-size xmm2-index x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       ;; High quadword of xmm2.
+       ((the (unsigned-byte 64) high-qword)
+        (mbe :logic (part-select xmm2 :low 64 :high 127)
+             :exec  (the (unsigned-byte 64)
+                         (logand #uxFFFF_FFFF_FFFF_FFFF
+                                 (ash xmm2 -64)))))
 
-       (inst-ac? ;; Exceptions Type 5
-        t)
-       ((mv flg0
-            (the (unsigned-byte 128) xmm)
-            (the (integer 0 4) increment-RIP-by)
-            (the (signed-byte 64) ?addr)
-            x86)
-        (x86-operand-from-modr/m-and-sib-bytes proc-mode
-                                                #.*xmm-access*
-                                                16
-                                                inst-ac?
-                                                nil ;; Not a memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                0 ;; No immediate operand
-                                                x86))
-       ((when flg0)
-        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+       ;; Update xmm1 (just its low 64 bits).
+       (x86 (!xmmi-size 8 xmm1-index high-qword x86))
 
-       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-       ((when flg) (!!ms-fresh :rip-increment-error flg))
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-       (high-qword (mbe :logic (part-select xmm :low 64 :high 127)
-                        :exec  (the (unsigned-byte 64)
-                                 (logand #uxFFFF_FFFF_FFFF_FFFF
-                                         (ash xmm -64)))))
-
-       ;; Update the x86 state:
-       (x86 (!xmmi-size 8 xmm-index high-qword x86))
-
+       ;; Update instruction pointer.
        (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; MOVLHPS
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-movlhps-sse
+
+  :parents (two-byte-opcodes fp-opcodes)
+
+  :short "Move packed single precision floating-point values low to high."
+
+  :long
+  "<code>
+   NP 0F 16 /r    MOVLHPS xmm1, xmm2
+   </code>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* ((operand-size 16) ; 128 bits
+
+       ;; Operand 1 (destination) is in Reg.
+       ((the (unsigned-byte 4) xmm1-index) (reg-index reg rex-byte #.*r*))
+       ((the (unsigned-byte 128) xmm1) (xmmi-size operand-size xmm1-index x86))
+
+       ;; Operand 2 (source) is in R/M.
+       ((the (unsigned-byte 4) xmm2-index) (reg-index r/m rex-byte #.*b*))
+       ((the (unsigned-byte 128) xmm2) (xmmi-size operand-size xmm2-index x86))
+
+       ;; Low quadword of xmm2.
+       ((the (unsigned-byte 64) low-qword)
+        (mbe :logic (part-select xmm2 :low 0 :high 63)
+             :exec  (the (unsigned-byte 64)
+                         (logand #uxFFFF_FFFF_FFFF_FFFF
+                                 xmm2))))
+
+       ;; New value for xmm1.
+       ((the (unsigned-byte 128) new-xmm1)
+        (part-install low-qword xmm1 :low 64 :high 127))
+
+       ;; Update xmm1.
+       (x86 (!xmmi-size operand-size xmm1-index new-xmm1 x86))
+
+       ;; Update instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
     x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

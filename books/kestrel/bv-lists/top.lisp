@@ -1,7 +1,7 @@
 ; A library about lists of bit vectors.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -53,6 +53,7 @@
 (include-book "bvxor-list-rules")
 (include-book "bvnot-list")
 (include-book "bvchop-list")
+(include-book "bvchop-list2")
 (include-book "getbit-list")
 (include-book "map-slice")
 (include-book "map-bvsx")
@@ -63,6 +64,7 @@
 (include-book "packbv-def")
 (include-book "packbv")
 (include-book "packbv-theorems")
+(include-book "unpackbv-def")
 (include-book "unpackbv")
 (include-book "packbv-and-unpackbv")
 (include-book "map-packbv")
@@ -81,30 +83,20 @@
 (include-book "packbvs")
 (include-book "packbvs-little")
 
-(include-book "bv-arrayp")
-(include-book "bv-array-read")
-(include-book "bv-array-read-rules")
-(include-book "bv-array-write")
-(include-book "bv-array-clear")
-(include-book "bv-array-clear-range")
-(include-book "bv-array-if")
-(include-book "append-arrays")
-(include-book "array-of-zeros")
-(include-book "bv-arrays")
-(include-book "bv-array-conversions")
-(include-book "bv-array-conversions2")
-(include-book "bv-array-conversions-gen")
-(include-book "array-patterns")
-
 (include-book "bv-list-read-chunk-little")
-(include-book "bv-array-read-chunk-little")
 
+(include-book "nth2")
 (include-book "bvnth")
 
 (include-book "list-patterns")
+(include-book "negated-elems-listp")
 
 (include-book "bvplus-list")
 
 (include-book "logext-list")
 
 (include-book "byte-fix-list")
+
+(include-book "string-to-bits")
+
+(include-book "doc")

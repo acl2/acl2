@@ -1,7 +1,7 @@
 ; DAGs, represented as lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -227,23 +227,25 @@
            :in-theory (enable bounded-dag-exprp
                               dag-exprp))))
 
-(defthm dag-exprp-of-lookup-equal-when-weak-dagp-aux
-  (implies (and (weak-dagp-aux dag)
-                (lookup-equal n dag))
-           (dag-exprp (lookup-equal n dag)))
-  :hints (("Goal" :in-theory (enable weak-dagp-aux lookup-equal))))
+(local
+ (defthm dag-exprp-of-lookup-equal-when-weak-dagp-aux
+   (implies (and (weak-dagp-aux dag)
+                 (lookup-equal n dag))
+            (dag-exprp (lookup-equal n dag)))
+   :hints (("Goal" :in-theory (enable weak-dagp-aux lookup-equal)))))
 
-(defthm symbolp-of-car-of-lookup-equal-when-weak-dagp-aux
-  (implies (and (weak-dagp-aux dag)
-;                (<= nodenum-or-quotep (car (car dag)))
-                ;(natp nodenum-or-quotep)
-                )
-           (symbolp (car (lookup-equal nodenum-or-quotep dag)))))
+(local
+ (defthm symbolp-of-car-of-lookup-equal-when-weak-dagp-aux
+   (implies (and (weak-dagp-aux dag)
+                 ;; (<= nodenum-or-quotep (car (car dag)))
+                 ;; (natp nodenum-or-quotep)
+                 )
+            (symbolp (car (lookup-equal nodenum-or-quotep dag))))))
 
 (defthm natp-of-maxelem-of-strip-cars-when-weak-dagp-aux
-  (implies (and (weak-dagp-aux rev-dag)
-                (consp rev-dag))
-           (natp (maxelem (strip-cars rev-dag))))
+  (implies (and (weak-dagp-aux dag)
+                (consp dag))
+           (natp (maxelem (strip-cars dag))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable weak-dagp-aux strip-cars))))
 
@@ -325,13 +327,13 @@
 
 (defthm bounded-darg-listp-of-dargs-of-lookup-equal-when-weak-dagp
   (implies (and (weak-dagp dag)
-                (natp nodenum)
-                (natp nodenum2)
-                (<= nodenum nodenum2)
-                (consp (lookup-equal nodenum dag))
                 (not (equal (car (lookup-equal nodenum dag))
-                            'quote)))
-           (bounded-darg-listp (dargs (lookup-equal nodenum dag)) nodenum2))
+                            'quote))
+                (natp nodenum)
+                (natp bound)
+                (<= nodenum bound)
+                (consp (lookup-equal nodenum dag)))
+           (bounded-darg-listp (dargs (lookup-equal nodenum dag)) bound))
   :hints (("Goal" :in-theory (enable weak-dagp))))
 
 (defthm dag-exprp-of-lookup-equal-when-weak-dagp
@@ -899,9 +901,17 @@
 
 (defthmd len-when-pseudo-dagp
   (implies (and (pseudo-dagp dag)
-                (consp dag))
+                ;; (consp dag)
+                )
            (equal (len dag)
                   (+ 1 (car (car dag)))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
+(defthm nth-0-of-nth-0-when-pseudo-dagp-cheap
+  (implies (pseudo-dagp dag)
+           (equal (nth 0 (nth 0 dag))
+                  (+ -1 (len dag))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defthm max-key-when-pseudo-dagp-aux
@@ -922,20 +932,14 @@
                        max-so-far)))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
-(defthm nth-0-of-nth-0-when-pseudo-dagp-cheap
-  (implies (pseudo-dagp dag)
-           (equal (nth 0 (nth 0 dag))
-                  (+ -1 (len dag))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable pseudo-dagp))))
-
-(defthm assoc-equal-when-PSEUDO-DAGP-AUX
- (IMPLIES (AND (PSEUDO-DAGP-AUX DAG m)
-               (<= N m)
-               (natp N)
-               (natp m))
-          (ASSOC-EQUAL N DAG))
- :hints (("Goal" :in-theory (enable PSEUDO-DAGP-AUX))))
+(local
+ (defthm assoc-equal-when-PSEUDO-DAGP-AUX
+   (IMPLIES (AND (PSEUDO-DAGP-AUX DAG m)
+                 (<= N m)
+                 (natp N)
+                 (natp m))
+            (ASSOC-EQUAL N DAG))
+   :hints (("Goal" :in-theory (enable PSEUDO-DAGP-AUX)))))
 
 (defthmd assoc-equal-when-PSEUDO-DAGP
   (IMPLIES (AND (PSEUDO-DAGP DAG)
@@ -1219,13 +1223,6 @@
                     0)))
   :hints (("Goal" :in-theory (enable darg-listp nth))))
 
-;; (defthm <-of-car-when-bounded-darg-listp
-;;   (implies (and (bounded-darg-listp items bound)
-;;                 (not (consp (car items)))
-;;                 (consp items))
-;;            (< (car items) bound))
-;;   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
-
 (defthm bounded-natp-alistp-when-pseudo-dagp
   (implies (pseudo-dagp dag)
            (bounded-natp-alistp dag (len dag)))
@@ -1440,21 +1437,22 @@
            (pseudo-dagp-aux dag (binary-+ '-1 (len dag))))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
-(defthm rational-listp-of-strip-cars-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag current-nodenum)
-                (integerp current-nodenum))
-           (rational-listp (strip-cars dag)))
-  :hints (("Goal" :in-theory (enable pseudo-dagp-aux bounded-dag-exprp strip-cars))))
+(local
+ (defthm rational-listp-of-strip-cars-when-pseudo-dagp-aux
+   (implies (and (pseudo-dagp-aux dag current-nodenum)
+                 (integerp current-nodenum))
+            (rational-listp (strip-cars dag)))
+   :hints (("Goal" :in-theory (enable pseudo-dagp-aux bounded-dag-exprp strip-cars)))))
+
+(defthmd rational-listp-of-strip-cars-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (rational-listp (strip-cars dag))))
 
 (defthm all-<-of-strip-cars-and-+-1-of-caar
   (implies (pseudo-dagp-aux dag (car (car dag)))
            (all-< (strip-cars dag)
                   (+ 1 (car (car dag)))))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux strip-cars))))
-
-(defthm rational-listp-of-strip-cars-when-pseudo-dagp
-  (implies (pseudo-dagp dag)
-           (rational-listp (strip-cars dag))))
 
 (defthm maxelem-of-strip-cars-when-pseudo-dagp
   (implies (pseudo-dagp dag)

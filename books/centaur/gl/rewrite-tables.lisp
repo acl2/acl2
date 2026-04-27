@@ -111,7 +111,8 @@
     (implies (and (acl2::mextract-ev-global-facts)
                   (equal wrld (w state)))
              (mextract-good-rewrite-rulesp (fgetprop fn 'acl2::lemmas nil wrld)))
-    :hints(("Goal" :in-theory (e/d (mextract-good-rewrite-rulesp-by-badguy)
+    :hints(("Goal" :in-theory (e/d (mextract-good-rewrite-rulesp-by-badguy
+                                    acl2::mextract-ev-theoremp)
                                    (mextract-good-rewrite-rulesp
                                     mextract-good-rewrite-rulesp-badguy
                                     acl2::rewrite-rule-term

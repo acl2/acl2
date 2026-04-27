@@ -30,12 +30,10 @@
 
 (in-package "CMR")
 
-(include-book "clause-processors/pseudo-term-fty" :dir :system)
-(include-book "centaur/fty/deftypes" :dir :system)
+(include-book "fnsymlist")
 
 (fty::defmap pseudo-term-subst :key-type pseudo-var :val-type pseudo-term :true-listp t)
 
-(deflist pseudo-var-list :elt-type pseudo-var :true-listp t)
 
 (defthm pseudo-term-subst-p-of-pair-vars
   (implies (pseudo-term-listp vals)

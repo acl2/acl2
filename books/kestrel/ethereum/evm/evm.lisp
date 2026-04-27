@@ -1,6 +1,6 @@
 ; A formal model of the EVM (Ethereum Virtual Machine)
 ;
-; Copyright (C) 2019-2025 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -359,7 +359,7 @@
 
 (std::defaggregate block$ ;todo: remove-block-p from the package imports
                    ((header block-headerp)
-                    (transations all-transactionp)
+                    (transactions all-transactionp)
                     (ommer-headers all-block-headerp)))
 
 ; "I"
@@ -1268,7 +1268,7 @@
                     (stack-item 1 mu))
                  (stack-item 2 mu))))
 
-;; The semantic function for :mulmod.
+;; The semantic function for :exp.
 (def-simple-op :exp
   (bvchop 256
                  (expt (stack-item 0 mu)
@@ -1282,8 +1282,7 @@
   (implies (and (bvlt 256 x k2)
                 (<= k2 (+ -1 k))
                 (unsigned-byte-p 256 x)
-                (unsigned-byte-p 256 k2)
-                (unsigned-byte-p 256 k1))
+                (unsigned-byte-p 256 k2))
            (not (< k x)))
   :hints (("Goal" :in-theory (enable acl2::bvlt))))
 
@@ -1304,7 +1303,7 @@
   (declare (xargs :guard (n256p word)))
   (acl2::unpackbv 32 8 word))
 
-;; Convert an array of 32 bytes into a 256-bit word, in big-endian fashoon,
+;; Convert an array of 32 bytes into a 256-bit word, in big-endian fashion,
 ;; with the first byte occupying the most significant bits of the result, and
 ;; so on.
 (defun bytes-to-word (bytes)
@@ -1635,7 +1634,7 @@
       ;; (#xfd (execute-REVERT sigma mu a i))
       ;; (#xfe (execute-INVALID sigma mu a i))
       ;; (#xff (execute-SELFDESTRUCT sigma mu a i))
-      (otherwise (prog2$ (er hard? 'step-machine "Unrecognzied instruction ~x0." opcode)
+      (otherwise (prog2$ (er hard? 'step-machine "Unrecognized instruction ~x0." opcode)
                          (mv sigma mu a i))))))
 
 (defun initial-machine-state (gas)
@@ -1770,7 +1769,7 @@
                      (list mnemonic (take (+ -1 inst-len) (cdr c)))
                    mnemonic)))
       (cons (list i info)
-            (disassemble-evm-code-aux (+ 1 i) (nthcdr inst-len c))))))
+            (disassemble-evm-code-aux (+ inst-len i) (nthcdr inst-len c))))))
 
 ;; Given the program as a list of bytes, return an array mapping program locations to instruction mnemonics.
 (defun disassemble-evm-code (c)

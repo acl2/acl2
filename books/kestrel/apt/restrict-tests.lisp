@@ -538,7 +538,7 @@
  (must-succeed (restrict nfix (natp x) :print :error)
                :with-output-off nil)
 
- ;; result output::
+ ;; result output:
  (must-succeed (restrict nfix (natp x) :print :result)
                :with-output-off nil)
 

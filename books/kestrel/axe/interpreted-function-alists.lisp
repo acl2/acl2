@@ -1,7 +1,7 @@
 ; Operations on interpreted-function-alists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -104,7 +104,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund interpreted-function-alist-completep-aux (alist
-                                                  ok-fns ; includss all functions built-in to the evaluator and all functions in the original alist
+                                                  ok-fns ; includes all functions built-in to the evaluator and all functions in the original alist
                                                   )
   (declare (xargs :guard (and (interpreted-function-alistp alist)
                               (symbol-listp ok-fns))
@@ -119,7 +119,7 @@
            (body (cadr info))
            (mentioned-fns (get-fns-in-term body)))
       (if (not (subsetp-equal mentioned-fns ok-fns))
-          (prog2$ (cw "WARNING: Intepreted-function-alist is missing defs for: ~x0 (called by ~x1)." (set-difference-eq mentioned-fns ok-fns) fn)
+          (prog2$ (cw "WARNING: Interpreted-function-alist is missing defs for: ~x0 (called by ~x1)." (set-difference-eq mentioned-fns ok-fns) fn)
                   nil)
         (interpreted-function-alist-completep-aux (rest alist) ok-fns)))))
 

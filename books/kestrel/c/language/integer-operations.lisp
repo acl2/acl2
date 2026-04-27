@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -563,16 +563,17 @@
 
   :prepwork
   ((defruled uaconvert-values-not-error-lemma
-     (implies (and (value-arithmeticp val)
-                   (type-arithmeticp type))
-              (and (valuep
-                    (convert-integer-value val
-                                           (uaconvert-types (type-of-value val)
-                                                            type)))
-                   (valuep
-                    (convert-integer-value val
-                                           (uaconvert-types type
-                                                            (type-of-value val))))))
+     (implies
+      (and (value-arithmeticp val)
+           (type-arithmeticp type))
+      (and (valuep
+            (convert-integer-value val
+                                   (uaconvert-types (type-of-value val)
+                                                    type)))
+           (valuep
+            (convert-integer-value val
+                                   (uaconvert-types type
+                                                    (type-of-value val))))))
      :enable (uaconvert-types
               promote-type
               value-arithmeticp
@@ -698,7 +699,8 @@
      This ACL2 function serves to accomplish the last step.
      The type of the result,
      which is also the type of the operand(s)
-     (after the usual arithmetic conversions [C17:6.3.1.8] for binary operations),
+     (after the usual arithmetic conversions [C17:6.3.1.8]
+     for binary operations),
      is passed as argument to this ACL2 function,
      along with the mathematical integer of the result.
      We return a value or an error,
@@ -775,7 +777,8 @@
      the value has been already promoted,
      so we put that restriction in the guard.")
    (xdoc::p
-    "The type of the result is the (promoted) type of the operand [C17:6.5.3.3/3],
+    "The type of the result is the (promoted) type of the operand
+     [C17:6.5.3.3/3],
      so it is the same type as the input value of this ACL2 function.
      We use @(tsee result-integer-value) to return the resulting value,
      or an error, as documented in that function."))

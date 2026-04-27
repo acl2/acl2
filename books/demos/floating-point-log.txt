@@ -1280,7 +1280,7 @@ a quoted true list of Booleans.  See :DOC ec-call.
 
 ACL2 Error [Translate] in ( DEFUN F6 ...):  In the attempt to macroexpand
 the form (EC-CALL (UNARY-DF- (TO-DF X)) :DFS-OUT (T)), evaluation of
-the macro body caused the error below.
+the macro body caused an error.  An explanation may be found above.
 
 Evaluation aborted.  To debug see :DOC print-gv, see :DOC trace, and
 see :DOC wet.
@@ -1517,7 +1517,7 @@ a quoted true list of Booleans.  See :DOC ec-call.
 
 ACL2 Error [Translate] in ( DEFUN F8-LOGIC ...):  In the attempt to
 macroexpand the form (EC-CALL (F7 X) :DFS-OUT (T T T)), evaluation
-of the macro body caused the error below.
+of the macro body caused an error.  An explanation may be found above.
 
 Evaluation aborted.  To debug see :DOC print-gv, see :DOC trace, and
 see :DOC wet.

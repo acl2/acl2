@@ -1,6 +1,6 @@
 ; Utilities for dealing with dependencies among community books
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,7 +26,7 @@
   (if (endp strs)
       (reverse acc)
     (let ((first-str (first strs)))
-      (if (string-ends-withp first-str ".cert")
+      (if (string-ends-withp first-str str)
           (keep-strings-that-end-in (rest strs) str (cons first-str acc))
         (keep-strings-that-end-in (rest strs) str acc)))))
 

@@ -1,7 +1,7 @@
 ; Indicating code locations within collections of classes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,14 @@
 
 (in-package "ACL2") ;todo: use jvm package?
 
-(include-book "execution-common") ;for th
+;(include-book "execution-common")
+(include-book "th")
+(include-book "class-names")
+(include-book "method-names")
+(include-book "method-descriptors")
+(include-book "instructions") ; for pcp
+(include-book "frames") ; for jvm::cur-class-name
+(include-book "states") ; for thread-top-frame ; todo: move that
 
 ;;;
 ;;; pc-designatorp

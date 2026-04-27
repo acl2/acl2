@@ -226,7 +226,7 @@
        (- (or rel-defined-p
               rel-sysfile
               (er hard 'defunt
-                  "The well-founded relation ~x0 is, suprisingly, neither ~
+                  "The well-founded relation ~x0 is, surprisingly, neither ~
                    defined nor mentioned in the alist, ~x1.  This could be an ~
                    implementation error."
                   rel '*td-wf-rel-alist*)))

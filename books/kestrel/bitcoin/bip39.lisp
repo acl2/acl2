@@ -341,7 +341,7 @@
     ") is the same as the one on the text of "
     (xdoc::seetopic "crypto::pbkdf2-hmac-sha-512-interface"
                   "@('pbkdf2-hmac-sha-512')")
-    " dimished by 8 to account for
+    " diminished by 8 to account for
      the appended string constant ``@('mnemonic')''."))
   (b* ((password (string=>nats mnemonic))
        (salt (string=>nats (string-append "mnemonic"

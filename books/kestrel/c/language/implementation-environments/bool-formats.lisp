@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -72,7 +72,7 @@
    (xdoc::p
     "The index of the value bit must be within
      the range of indices of the bits that form the @('_Bool') object.
-     This depends on the number of bits in a bit,
+     This depends on the number of bits in a byte,
      which is defined by the @('unsigned char') format.
      So we need a separate predicate (this one) to express this condition,
      which could not be part of the @(tsee bool-format) fixtype."))

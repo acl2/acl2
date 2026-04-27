@@ -1,7 +1,7 @@
 ; BV Lists Library: bvchop-list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,13 +11,14 @@
 
 (in-package "ACL2")
 
-(include-book "../bv/bvchop")
+(include-book "../bv/bvchop-def")
 (include-book "../typed-lists-light/all-integerp")
 (include-book "all-unsigned-byte-p")
 (include-book "unsigned-byte-listp")
 (local (include-book "../lists-light/cons"))
 (local (include-book "../lists-light/nth"))
 (local (include-book "../lists-light/len"))
+(local (include-book "../bv/bvchop"))
 (local (include-book "../bv/unsigned-byte-p"))
 
 ;; Apply BVCHOP with the indicated SIZE to every element in LST
@@ -234,11 +235,6 @@
   (implies (< arg 0)
            (equal (bvchop-list arg lst)
                   (bvchop-list 0 lst)))
-  :hints (("Goal" :in-theory (enable bvchop-list))))
-
-(defthm bvchop-list-of-true-list-fix
-  (equal (bvchop-list element-size (true-list-fix lst))
-         (bvchop-list element-size lst))
   :hints (("Goal" :in-theory (enable bvchop-list))))
 
 (defthm equal-of-true-list-fix-and-bvchop-list-same

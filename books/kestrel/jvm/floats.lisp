@@ -1,7 +1,7 @@
 ; A partial formalization of Java floating point values
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +11,12 @@
 
 (in-package "JVM")
 
+(include-book "values")
 (include-book "kestrel/bv/bvshl-def" :dir :system)
 (include-book "kestrel/bv/bvshr-def" :dir :system)
 (include-book "kestrel/bv/defs-bitwise" :dir :system)
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
+(include-book "kestrel/bv/logext-def" :dir :system)
+;(include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "kestrel/bv/bvshr" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -325,10 +327,10 @@
 
 
 (defconst *max-signed-int32* (+ -1 (expt 2 31)))
-(defconst *min-signed-int32* (acl2::bvchop 32 (- (expt 2 31))))
+(defconst *min-signed-int32* (bvchop 32 (- (expt 2 31))))
 
 (defconst *max-signed-int64* (+ -1 (expt 2 63)))
-(defconst *min-signed-int64* (acl2::bvchop 64 (- (expt 2 63))))
+(defconst *min-signed-int64* (bvchop 64 (- (expt 2 63))))
 
 
 ;convert double to int
@@ -343,7 +345,7 @@
       (if (eq *double-negative-infinity* d)
           *min-signed-int32*
         (let* ((val (regular-double-value d))
-               (int-val (floor val 1)))
+               (int-val (truncate val 1)))
           (if (> int-val (acl2::logext 32 *max-signed-int32*))
               *max-signed-int32*
             (if (< int-val (acl2::logext 32 *min-signed-int32*))
@@ -362,7 +364,7 @@
       (if (eq *double-negative-infinity* d)
           *min-signed-int64*
         (let* ((val (regular-double-value d))
-               (int-val (floor val 1)))
+               (int-val (truncate val 1)))
           (if (> int-val (acl2::logext 64 *max-signed-int64*))
               *max-signed-int64*
             (if (< int-val (acl2::logext 64 *min-signed-int64*))
@@ -372,7 +374,7 @@
 ;; TODO: This should perform rounding (and perhaps range checking)
 (defun i2f (int)
   (declare (xargs :guard (unsigned-byte-p 32 int)))
-  (make-regular-float (if (< int 0) :neg :pos) int))
+  (make-regular-float (if (< (decode-signed int) 0) :neg :pos) int))
 
 ;; (can't call this float-sign because that symbol is already in the main LISP package)
 (defun sign-of-float (f)
@@ -437,11 +439,11 @@
               (and (<= #xff800001 bits)
                    (<= bits #xffffffff)))
           jvm::*float-NaN*
-        (let* ((s (if (eql (acl2::bvshr 32 bits 31) 0) 1 -1)) ;sign
-               (e (acl2::bvand 32 (acl2::bvshr 32 bits 23) #xff))   ;exponent
+        (let* ((s (if (eql (bvshr 32 bits 31) 0) 1 -1)) ;sign
+               (e (bvand 32 (bvshr 32 bits 23) #xff))   ;exponent
                (m (if (eql e 0)
-                      (acl2::bvshl 32 (acl2::bvand 32 bits #x7fffff) 1)
-                    (acl2::bvor 32 (acl2::bvand 32 bits #x7fffff) #x800000))))
+                      (bvshl 32 (bvand 32 bits #x7fffff) 1)
+                    (bvor 32 (bvand 32 bits #x7fffff) #x800000))))
           (jvm::make-regular-float (if (eql s 1) :pos :neg)
                                    (* m (expt 2 (- e 150)))))))))
 
@@ -464,11 +466,11 @@
               (and (<= #xfff0000000000001 bits)
                    (<= bits #xffffffffffffffff)))
           jvm::*double-NaN*
-        (let* ((s (if (eql (acl2::bvshr 64 bits 63) 0) 1 -1)) ;sign
-               (e (acl2::bvand 64 (acl2::bvshr 64 bits 52) #x7ff))   ;exponent
+        (let* ((s (if (eql (bvshr 64 bits 63) 0) 1 -1)) ;sign
+               (e (bvand 64 (bvshr 64 bits 52) #x7ff))   ;exponent
                (m (if (eql e 0)
-                      (acl2::bvshl 64 (acl2::bvand 64 bits #xfffffffffffff) 1)
-                    (acl2::bvor 64 (acl2::bvand 64 bits #xfffffffffffff) #x10000000000000))))
+                      (bvshl 64 (bvand 64 bits #xfffffffffffff) 1)
+                    (bvor 64 (bvand 64 bits #xfffffffffffff) #x10000000000000))))
           (jvm::make-regular-double (if (eql s 1) :pos :neg)
                                     (* m (expt 2 (- e 1075)))))))))
 

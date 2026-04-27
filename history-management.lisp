@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -2505,11 +2505,6 @@
 (defun lmi-techs (lmi)
   (cond
    ((atom lmi) nil)
-   ((eq (car lmi) '(:theorem
-                    :termination-theorem
-                    :termination-theorem!
-                    :guard-theorem))
-    nil)
    ((eq (car lmi) :instance)
     (add-to-set-equal "in~-stan~-ti~-a~-tion"
                       (lmi-techs (cadr lmi))))
@@ -3203,7 +3198,7 @@
               (f-put-global 'proof-tree nil state)))))
          (if make-event-save-event-data-p
 
-; One could argue that it it is inefficient to make the calls of put-event-data
+; One could argue that it is inefficient to make the calls of put-event-data
 ; above (either lexically above, or within function calls), since we are about
 ; to smash last-event-data.  But we expect that this
 ; make-event-save-event-data-p case is relatively rare, so we'd rather pay that
@@ -5893,8 +5888,7 @@
                                    (t (caddr cd)))
                              (cond ((null (cddr cd)) 0)
                                    (t (cadddr cd)))
-                             pat
-                             cd))
+                             pat))
                         (t (value ans)))))))
          (t (er soft ctx msg cd))))
        (otherwise
@@ -12104,8 +12098,8 @@
 ; We can view this function as providing a modified new-constraints that is
 ; just an alpha-variant of the original, to which alist can safely be applied
 ; naively.  When we think of constraint-lst as an alpha-equivalence class of
-; universally quantified sentences, it it clear that this renaming not cause a
-; problem for our maintenance of world global
+; universally quantified sentences, it is clear that this renaming does not
+; cause a problem for our maintenance of world global
 ; 'proved-functional-instances-alist; just view that global as saying which
 ; (properly applied) functional instances of the universally quantified formula
 ; are known to be valid.
@@ -13397,7 +13391,7 @@
 ; We could be more restrictive here in the lambda-application case, by moving
 ; (car env) into clause only if there is some call (tbl-get 'st ...) in (car
 ; env) for which some (possibly other) (tbl-get 'st ...) call, with the same
-; st, occurs in clause.  But we'll go ahead an move every lambda application
+; st, occurs in clause.  But we'll go ahead and move every lambda application
 ; from env to clause.
 
          (mv-let (env1 clause1)
@@ -16258,7 +16252,7 @@
 ; (a) We allow a hint of the form term, where term is a term single-threaded in
 ; state that returns a single non-stobj value or an error triple and contains
 ; no free vars other than ID, CLAUSE, WORLD, STABLE-UNDER-SIMPLIFICATIONP,
-; HIST, PSPV, CTX, and STATE, except that if if hint-type is non-nil then there
+; HIST, PSPV, CTX, and STATE, except that if hint-type is non-nil then there
 ; may be additional variables.
 ;
 ; If term is such a term, we return the translated hint:
@@ -17385,12 +17379,11 @@
 ; keyword-alist as an untranslated hint-settings and translate it.  We inspect
 ; chr to see whether it is (a) nil, (b) t, or (c) something else.  The first
 ; two mean the hint is to be (a) deleted or (b) preserved.  The last is
-; understood as a list of terms to be be spliced into the hints in place of
-; this one.  But these terms must be translated and so we do that.  Then we
-; return (:COMPUTED-HINT-REPLACEMENT chr' . hint-settings), where chr' is the
-; possibly translated chr and hint-settings' is the translated keyword-alist.
-; It is left to our caller to interpret chr' and modify the hints
-; appropriately.
+; understood as a list of terms to be spliced into the hints in place of this
+; one.  But these terms must be translated and so we do that.  Then we return
+; (:COMPUTED-HINT-REPLACEMENT chr' . hint-settings), where chr' is the possibly
+; translated chr and hint-settings' is the translated keyword-alist.  It is
+; left to our caller to interpret chr' and modify the hints appropriately.
 
 ; Finally the third inaccuracy of our initial description above is that it
 ; fails to account for override-hints.  We apply the given override-hints if
@@ -17421,8 +17414,8 @@
             nil)))
 
 ; The use of flg below might save a few conses.  We do this only because we
-; can.  The real reason we have have the flg component in the computed hint
-; tuple has to do with optimizing find-applicable-hint-settings.
+; can.  The real reason we have the flg component in the computed hint tuple
+; has to do with optimizing find-applicable-hint-settings.
 
     (er-let*@par
      ((val0 (xtrans-eval@par
@@ -17481,7 +17474,9 @@
               (cons str
                     (cadr (fargn term 1)))
               val0))
-           ((not (consp (cdr val0)))
+           ((not (and (consp (cdr val0))
+                      (or (member-eq (cadr val0) '(t nil))
+                          (true-listp (cadr val0)))))
             (er@par soft
               (msg
                "a computed hint for ~x0:  The computed hint ~% ~q1 produced ~
@@ -18215,17 +18210,17 @@
 ;   (defun f (x) x)
 
 ; When we process the final defun with fast-cert mode active, we will see that
-; it is redundant with a local event.  We then go ahead an add its cltl-command
-; to the cltl-command-stack, resulting in a cltl-command-stack with two such
-; cltl-commands.  Of course, for the second defun we could have looked in the
-; cltl-command-stack to see if there is already an entry; but in the worst case
-; that is quadratic behavior as we go through the book, unless we use a
-; fast-alist -- but then we'd need to be careful to maintain that fast-alist as
-; we undo events before the second pass of encapsulate.  Instead, we allow such
-; duplication, which is ultimately removed by the "compress" process mentioned
-; earlier, i.e., the call of compress-cltl-command-stack (which does use a
-; fast-alist) in certify-book-fn.  That compression is careful regarding
-; defun-mode, in particular the reclassifying case.
+; it is redundant with a local event.  We then go ahead and add its
+; cltl-command to the cltl-command-stack, resulting in a cltl-command-stack
+; with two such cltl-commands.  Of course, for the second defun we could have
+; looked in the cltl-command-stack to see if there is already an entry; but in
+; the worst case that is quadratic behavior as we go through the book, unless
+; we use a fast-alist -- but then we'd need to be careful to maintain that
+; fast-alist as we undo events before the second pass of encapsulate.  Instead,
+; we allow such duplication, which is ultimately removed by the "compress"
+; process mentioned earlier, i.e., the call of compress-cltl-command-stack
+; (which does use a fast-alist) in certify-book-fn.  That compression is
+; careful regarding defun-mode, in particular the reclassifying case.
 
 ; When the function put-cltl-command is given a cltl-command for a redundant
 ; event with fast-cert mode active, it extends the cltl-command-stack only if
@@ -18950,7 +18945,7 @@
                        ", none of them STATE, other stobjs, or :DF values")
                      term
                      (if (cdr stobjs-out)
-                         (msg "has output signature"
+                         (msg "has output signature ~x0"
                               (cons 'mv stobjs-out))
 ; See comment above about stobj creators.
                        (msg "returns ~#0~[a :DF value~/STATE~]"
@@ -19073,8 +19068,9 @@
   (let* ((ctx (cons 'table name))
          (wrld (w state))
          (ens (ens state))
-         (strictp (ffn-symb-p (getpropc name 'table-guard *t* wrld)
-                              'strict-table-guard))
+         (strictp (and (symbolp name) ; checked later; this guards getpropc
+                       (ffn-symb-p (getpropc name 'table-guard *t* wrld)
+                                   'strict-table-guard)))
          (alist (if (or (eq name 'acl2-defaults-table)
                         strictp)
                     nil

@@ -35,6 +35,7 @@
 ;(in-theory (disable mod-x-y-=-x+y-for-rationals)) ;seemed to lead to generalization
 
 ;todo: think about this
+;todo: rename
 (defthmd signed-byte-p-of-bvchop
   (signed-byte-p 64 (bvchop 32 x))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
@@ -134,11 +135,6 @@
   :hints (("Goal" :in-theory (enable bvor))))
 
 ;(in-theory (disable getbit-of-logior)) ; consider what to do here
-
-;todo: think about this
-(defthm signed-byte-p-of-bvchop
-  (signed-byte-p 64 (bvchop 32 x))
-  :hints (("Goal" :in-theory (enable signed-byte-p))))
 
 ;; This can help if the model splits into cases unnecessarily, but we are
 ;; attempting to handle that better by keeping JCC/CMOVCC/SETCC-SPEC disabled.

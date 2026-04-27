@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -163,7 +163,7 @@
 (defun trace-exit-rec (name original-name l state exit evisc-tuple)
 
 ; We construct the (excl:advise <fn-name> :after ...) form that performs the
-; tracing on entry.
+; tracing on exit.
 
   (cond ((null l)
          (cond

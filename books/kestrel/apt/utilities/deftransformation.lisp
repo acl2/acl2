@@ -1,6 +1,6 @@
 ; A tool to automate the boilerplate stuff that a transformation does.
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -32,6 +32,8 @@
 ;;
 ;; 4. The XXX-programmatic macro.
 
+;; TODO: Move to the APT package?
+
 ;; TODO: Add support for including xdoc in the generated forms.
 
 (include-book "kestrel/utilities/defmacrodoc" :dir :system) ; for xdoc-for-macro-general-form
@@ -42,6 +44,7 @@
 (include-book "print-specifiers")
 
 (defun maybe-wrap-with-revert-world (revert-world form)
+  (declare (xargs :guard (booleanp revert-world)))
   (if revert-world
       `(revert-world ,form)
     form))
@@ -63,14 +66,14 @@
   :hints (("Goal" :in-theory (enable keyword-args-and-defaultsp))))
 
 ;; Returns a progn.
-(defun deftransformation-fn (name ;the name of the transformation
+(defun deftransformation-fn (name ; name of the transformation to create
                              required-args
                              keyword-args-and-defaults
                              pass-print ;whether to pass the print arg to the -event function (will come after the keyword args)
                              pass-context ;whether to pass the context arg to the -event function (will come just before state)
                              revert-world
                              suppress-xdoc ; todo: drop this?  just look at whether any of the xdoc-related args are given?
-                             parents
+                             parents ; usually should include apt::apt
                              short ; a form that evaluates to a string or to nil
                              arg-descriptions ; todo: can we allow these to contain forms to be evaluated?
                              description ; a form that evaluates to a string or to nil
@@ -83,8 +86,7 @@
                               (booleanp revert-world)
                               (booleanp suppress-xdoc)
                               (symbol-listp parents)
-                              (macro-arg-descriptionsp arg-descriptions))
-                  :mode :program))
+                              (macro-arg-descriptionsp arg-descriptions))))
   (b* (((when (not (consp required-args))) ;seems sensible, for printing the context
         (er hard? 'deftransformation "A transformation must have at least one required argument."))
        (event-generator-name (add-suffix name "-EVENT"))
@@ -128,8 +130,8 @@
                                         ctx-symbol
                                         state)
          (declare (xargs :stobjs state
-                         :mode :program) ;because of the call to XXX-event
-                  )
+                         :mode :program ;because of calls to: EVENT-GENERATOR-NAME and set-gag-mode-FN and pop-inhibit-output-lst-stack
+                         ))
          (b* ( ;; Check inputs that are not / may not be passed through:
               (ctx (cons ctx-symbol ,(first required-args))) ;odd format for this
               ((when (not (apt::print-specifier-p print)))

@@ -965,8 +965,8 @@
   :prepwork
   ((local
     (in-theory
-     (enable expr-typep-when-expr-type-resultp-and-not-reserrp
-             expr-type-listp-when-expr-type-list-resultp-and-not-reserrp))))
+     (enable expr-typep-when-result-not-error
+             expr-type-listp-when-result-not-error))))
 
   :verify-guards nil ; done below
   ///
@@ -1336,7 +1336,7 @@
   ((local
     (in-theory
      (enable
-      type-option-setp-when-type-option-set-resultp-and-not-reserrp))))
+      type-option-setp-when-result-not-error))))
 
   :verify-guards nil ; done below
   ///

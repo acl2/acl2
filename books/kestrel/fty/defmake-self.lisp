@@ -293,6 +293,7 @@
 (define defmake-self-gen-prod
   ((sum flexsum-p)
    (mutrecp booleanp)
+   (topic-name symbolp)
    (member-names symbol-listp)
    (fty-table alistp)
    (make-self-table alistp))
@@ -318,7 +319,7 @@
           (defmake-self-gen-sum-case
             type prod member-names fty-table make-self-table))))
     `(define ,type-make-self ((,type ,recog))
-       :parents (,(defmake-self-gen-topic-name type))
+       :parents (,topic-name)
        ,body
        ,@(cond (mutrecp
                  `(:measure (acl2::nat-list-measure
@@ -333,6 +334,7 @@
 (define defmake-self-gen-sum
   ((sum flexsum-p)
    (mutrecp booleanp)
+   (topic-name symbolp)
    (member-names symbol-listp)
    (fty-table alistp)
    (make-self-table alistp))
@@ -358,7 +360,7 @@
                  type prods member-names fty-table make-self-table)))
           `(,type-case ,type ,@cases))))
     `(define ,type-make-self ((,type ,recog))
-       :parents (,(defmake-self-gen-topic-name type))
+       :parents (,topic-name)
        ,body
        ,@(cond (mutrecp
                  `(:measure (acl2::nat-list-measure
@@ -373,6 +375,7 @@
 (define defmake-self-gen-option
   ((sum flexsum-p)
    (mutrecp booleanp)
+   (topic-name symbolp)
    (fty-table alistp))
   :guard (eq (flexsum->typemacro sum) 'defoption)
   :returns (event acl2::pseudo-event-formp)
@@ -397,7 +400,7 @@
                           :some (,base-type-make-self (,accessor ,type))
                           :none nil)))
     `(define ,type-make-self ((,type ,recog))
-       :parents (,(defmake-self-gen-topic-name type))
+       :parents (,topic-name)
        ,body
        ,@(cond (mutrecp
                  `(:measure (acl2::nat-list-measure
@@ -412,6 +415,7 @@
 (define defmake-self-gen-prod/sum/option
   ((sum flexsum-p)
    (mutrecp booleanp)
+   (topic-name symbolp)
    (member-names symbol-listp)
    (fty-table alistp)
    (make-self-table alistp))
@@ -422,13 +426,13 @@
     (cond
      ((eq typemacro 'defprod)
       (defmake-self-gen-prod
-        sum mutrecp member-names fty-table make-self-table))
+        sum mutrecp topic-name  member-names fty-table make-self-table))
      ((eq typemacro 'deftagsum)
       (defmake-self-gen-sum
-        sum mutrecp member-names fty-table make-self-table))
+        sum mutrecp topic-name member-names fty-table make-self-table))
      ((eq typemacro 'defoption)
       (defmake-self-gen-option
-        sum mutrecp fty-table))
+        sum mutrecp topic-name fty-table))
      (t (prog2$
          (raise "Internal error: unsupported sum type ~x0." sum)
          '(_))))))
@@ -438,6 +442,7 @@
 (define defmake-self-gen-list
   ((list flexlist-p)
    (mutrecp booleanp)
+   (topic-name symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (events acl2::pseudo-event-form-listp)
@@ -481,14 +486,14 @@
                 (cons 'list (,type-make-self-loop ,type))
               'nil))))
     `((define ,type-make-self-loop ((,type ,recog))
-        :parents (,(defmake-self-gen-topic-name type))
+        :parents (,topic-name)
         ,loop-body
         ,@(if mutrecp
               `(:measure (acl2::nat-list-measure
                            (list (,type-count ,type) 0)))
             `(:measure (,(or type-count 'acl2-count) ,type))))
       (define ,type-make-self ((,type ,recog))
-        :parents (,(defmake-self-gen-topic-name type))
+        :parents (,topic-name)
         ,body
         ,@(and mutrecp
                `(:measure (acl2::nat-list-measure
@@ -499,6 +504,7 @@
 (define defmake-self-gen-omap
   ((omap flexomap-p)
    (mutrecp booleanp)
+   (topic-name symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (event acl2::pseudo-event-formp)
@@ -556,7 +562,7 @@
                     `(omap::head-val ,type))
                  (,type-make-self (omap::tail ,type))))))
     `(define ,type-make-self ((,type ,recog))
-       :parents (,(defmake-self-gen-topic-name type))
+       :parents (,topic-name)
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -566,19 +572,22 @@
 (define defmake-self-gen-type
   (flex
    (mutrecp booleanp)
+   (topic-name symbolp)
    (member-names symbol-listp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (events acl2::pseudo-event-form-listp)
   :short "Generate the ``make-self'' function for a type."
   (cond ((flexsum-p flex)
-         (list (defmake-self-gen-prod/sum/option
-                 flex mutrecp member-names fty-table make-self-table)))
-        ((flexlist-p flex)
-         (defmake-self-gen-list flex mutrecp fty-table make-self-table))
-        ((flexomap-p flex)
          (list
-           (defmake-self-gen-omap flex mutrecp fty-table make-self-table)))
+           (defmake-self-gen-prod/sum/option
+             flex mutrecp topic-name member-names fty-table make-self-table)))
+        ((flexlist-p flex)
+         (defmake-self-gen-list
+           flex mutrecp topic-name fty-table make-self-table))
+        ((flexomap-p flex)
+         (list (defmake-self-gen-omap
+                 flex mutrecp topic-name fty-table make-self-table)))
         (t (prog2$ (raise "Internal error: unsupported type ~x0." flex)
                    (list '(_))))))
 
@@ -587,6 +596,7 @@
 (define defmake-self-gen-types
   ((flexs true-listp)
    (mutrecp booleanp)
+   (topic-name symbolp)
    (member-names symbol-listp)
    (fty-table alistp)
    (make-self-table alistp))
@@ -595,15 +605,15 @@
   (b* (((when (endp flexs)) nil)
        (events1
         (defmake-self-gen-type
-          (car flexs) mutrecp member-names fty-table make-self-table))
+          (car flexs) mutrecp topic-name member-names fty-table make-self-table))
        (events2
         (defmake-self-gen-types
-          (cdr flexs) mutrecp member-names fty-table make-self-table)))
+          (cdr flexs) mutrecp topic-name member-names fty-table make-self-table)))
     (append events1 events2)))
 
 (defrulel defmake-self-gen-types-under-iff
   (iff (defmake-self-gen-types
-         flexs mutrecp member-names fty-table make-self-table)
+         flexs mutrecp topic-name member-names fty-table make-self-table)
        (consp flexs))
   :induct t
   :enable defmake-self-gen-types)
@@ -643,6 +653,7 @@
 
 (define defmake-self-gen-clique
   ((clique-name symbolp)
+   (topic-name symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (mv (er? acl2::maybe-msgp)
@@ -670,14 +681,14 @@
        (mutrecp (< 1 (len members)))
        (definition-events
          (defmake-self-gen-types
-           members mutrecp member-names fty-table make-self-table))
+           members mutrecp topic-name member-names fty-table make-self-table))
        (table-events
          (defmake-self-gen-table-events clique-name member-names))
        ((unless mutrecp)
         (retok (append definition-events table-events)))
        (defines-event
          `(defines ,clique-name-make-self
-            :parents (,(defmake-self-gen-topic-name clique-name))
+            :parents (,topic-name)
             ,@definition-events
             :hints (("Goal" :in-theory (enable o< o-finp)))
             :flag-local nil
@@ -694,6 +705,7 @@
 
 (define defmake-self-gen-cliques
   ((clique-names symbol-listp)
+   (topic-name symbolp)
    (fty-table alistp)
    (make-self-table alistp))
   :returns (mv (er? acl2::maybe-msgp)
@@ -704,10 +716,10 @@
         (retok nil))
        ((erp events1)
         (defmake-self-gen-clique
-          (first clique-names) fty-table make-self-table))
+          (first clique-names) topic-name fty-table make-self-table))
        ((erp events2)
         (defmake-self-gen-cliques
-          (rest clique-names) fty-table make-self-table)))
+          (rest clique-names) topic-name fty-table make-self-table)))
     (retok (append events1 events2)))
   ///
   (more-returns
@@ -741,9 +753,10 @@
        ((unless (symbolp clique-name))
         (retmsg$ "Internal error: malformed clique name ~x0." clique-name))
        (clique-names (topo-dependencies clique-name fty-table))
-       ((erp make-self-events)
-         (defmake-self-gen-cliques clique-names fty-table make-self-table))
        (xdoc-name (defmake-self-gen-topic-name clique-name))
+       ((erp make-self-events)
+        (defmake-self-gen-cliques
+          clique-names xdoc-name fty-table make-self-table))
        (xdoc-event
         `(acl2::defxdoc+ ,xdoc-name
            ,@(and parents-presentp `(:parents ,parents))

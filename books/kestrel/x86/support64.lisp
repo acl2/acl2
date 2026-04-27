@@ -13,8 +13,8 @@
 ;; This book mixed x86isa notions with bv notions, so we put it in the X package.
 
 (include-book "readers-and-writers64") ; for set-rip
-;(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
-(include-book "kestrel/bv-lists/array-patterns" :dir :system) ; for bv-array-read-cases
+;(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/array-patterns" :dir :system) ; for bv-array-read-cases
 
 ;; todo: to be more general, support splitting when the bv-array-read is not the entire new rip term.
 ;; approach: create an identify function that causes things to be split (and ifs to be lifted)? and propagate it downward through a non-constant set-rip argument when there is something to split.

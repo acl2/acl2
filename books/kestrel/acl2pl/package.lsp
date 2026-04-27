@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,6 +27,7 @@
                                               value
                                               values))
                          '(acl2-number
+                           char-upcase
                            define-sk
                            defxdoc+
                            explode
@@ -33,6 +35,9 @@
                            ffn-symb
                            formals+
                            fquotep
+                           fty::reserrp
+                           fty::reserrf
+                           fty::reserrf-push
                            good-pseudo-termp
                            good-pseudo-term-listp
                            good-valuep
@@ -41,6 +46,8 @@
                            lambda-body
                            lambda-formals
                            lower-case-p
+                           nat-list-fix
                            str-fix
+                           string-upcase
                            ubody+
                            variablep)))

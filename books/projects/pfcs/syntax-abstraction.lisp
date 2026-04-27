@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -29,6 +29,35 @@
 (include-book "std/strings/letter-digit-uscore-chars" :dir :system)
 (include-book "std/strings/ucletter-chars" :dir :system)
 (include-book "std/strings/lcletter-chars" :dir :system)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
+
+(acl2::controlled-configuration :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (in-theory (enable namep-when-result-not-error
+                    reserrp-when-name-resultp-not-ok
+                    name-listp-when-result-not-error
+                    expressionp-when-result-not-error
+                    expression-listp-when-result-not-error
+                    constraintp-when-result-not-error
+                    constraint-listp-when-result-not-error
+                    definitionp-when-result-not-error
+                    definition-listp-when-result-not-error
+                    acl2::characterp-when-result-not-error
+                    acl2::character-listp-when-result-not-error
+                    acl2::natp-when-result-not-error
+                    acl2::reserrp-when-nat-resultp-not-ok
+                    abnf::treep-when-result-not-error
+                    abnf::tree-listp-when-result-not-error
+                    abnf::tree-list-listp-when-result-not-error
+                    abnf::tree-list-tuple2p-when-result-not-error
+                    abnf::tree-list-tuple3p-when-result-not-error
+                    abnf::tree-list-tuple4p-when-result-not-error
+                    abnf::tree-list-tuple8p-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -90,24 +119,23 @@
        ((when (endp treess)) :pass)
        ((okf trees) (abnf::check-tree-list-list-1 treess))
        ((okf tree) (abnf::check-tree-list-1 trees)))
-    (abnf::check-tree-ichars tree ","))
-  :hooks (:fix))
+    (abnf::check-tree-ichars tree ",")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-decimal-digit-to-nat ((tree abnf::treep))
-  :returns (nat nat-resultp)
+  :returns (nat nat-resultp :hints (("Goal" :in-theory (enable natp))))
   :short "Abstract a @('digit') to a natural number."
   (b* (((okf nat) (abnf::check-tree-nonleaf-num-range tree "digit" #x30 #x39)))
     (- nat #x30))
-  :hooks (:fix)
 
   ///
 
   (defret natp-of-decimal-digit-to-nat
     (implies (not (reserrp nat))
              (natp nat))
-    :rule-classes :forward-chaining)
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable natp))))
 
   (defret abs-decimal-digit-to-nat-bound
     (implies (not (reserrp nat))
@@ -121,7 +149,6 @@
   :short "Abstract a @('*decimal-digit') to a natural number,
           interpreting the digits in big endian."
   (abs-*-decimal-digit-to-nat-aux trees 0)
-  :hooks (:fix)
 
   :prepwork
   ((define abs-*-decimal-digit-to-nat-aux ((trees abnf::tree-listp)
@@ -132,8 +159,7 @@
           ((okf digit-nat) (abs-decimal-digit-to-nat (car trees))))
        (abs-*-decimal-digit-to-nat-aux (cdr trees)
                                        (+ digit-nat
-                                          (* (nfix current) 10))))
-     :hooks (:fix)))
+                                          (* (nfix current) 10))))))
 
   ///
 
@@ -149,7 +175,6 @@
   :short "Abstract a @('digit') to an ACL2 character."
   (b* (((okf nat) (abnf::check-tree-nonleaf-num-range tree "digit" #x30 #x39)))
     (code-char nat))
-  :hooks (:fix)
 
   ///
 
@@ -166,7 +191,6 @@
   (b* (((okf nat)
         (abnf::check-tree-nonleaf-num-range tree "uppercase-letter" #x41 #x5a)))
     (code-char nat))
-  :hooks (:fix)
 
   ///
 
@@ -183,7 +207,6 @@
   (b* (((okf nat)
         (abnf::check-tree-nonleaf-num-range tree "lowercase-letter" #x61 #x7a)))
     (code-char nat))
-  :hooks (:fix)
 
   ///
 
@@ -203,7 +226,6 @@
        (char (abs-lowercase-letter tree))
        ((when (not (reserrp char))) char))
     (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))
-  :hooks (:fix)
 
   ///
 
@@ -226,7 +248,6 @@
        (pass (abnf::check-tree-ichars tree "_"))
        ((when (not (reserrp pass))) #\_))
     (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))
-  :hooks (:fix)
 
   ///
 
@@ -239,28 +260,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-*-letter/decimaldigit/underscore ((trees abnf::tree-listp))
-  :returns
-  (chars
-   character-list-resultp
-   :hints
-   (("Goal"
-     :in-theory
-     (enable
-      acl2::characterp-when-character-resultp-and-not-reserrp
-      acl2::character-listp-when-character-list-resultp-and-not-reserrp))))
+  :returns (chars character-list-resultp)
   :short "Abstract a @('*( letter / digit / \"_\" )')
           to a list of ACL2 characters."
   (b* (((when (endp trees)) nil)
        ((okf char) (abs-letter/decimaldigit/underscore (car trees)))
        ((okf chars) (abs-*-letter/decimaldigit/underscore (cdr trees))))
     (cons char chars))
-  :hooks (:fix)
 
   ///
 
   (defret letter/digit/uscore-char-listp-of-abs-*-letter/decimaldigit/underscore
     (implies (not (reserrp chars))
-             (str::letter/digit/uscore-charlist-p chars))))
+             (str::letter/digit/uscore-charlist-p chars))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,8 +288,7 @@
        ((okf char) (abs-letter letter-tree))
        ((okf chars) (abs-*-letter/decimaldigit/underscore sub.2nd))
        (string (str::implode (cons char chars))))
-    (name-simple string))
-  :hooks (:fix))
+    (name-simple string)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -289,42 +301,25 @@
        ((okf tree) (abnf::check-tree-list-1 sub.1st))
        ((okf &) (abnf::check-tree-ichars tree ","))
        ((okf tree) (abnf::check-tree-list-1 sub.2nd)))
-    (abs-identifier tree))
-  :hooks (:fix))
+    (abs-identifier tree)))
 
 (define abs-*-comma-identifier ((trees abnf::tree-listp))
-  :returns
-  (ids
-   name-list-resultp
-   :hints
-   (("Goal"
-     :in-theory
-     (enable
-      namep-when-name-resultp-and-not-reserrp
-      name-listp-when-name-list-resultp-and-not-reserrp))))
+  :returns (ids name-list-resultp)
   :short "Abstract a @('*( \",\" identifier )') to a list of identifiers."
   (b* (((when (endp trees)) nil)
        ((okf id) (abs-comma-identifier (car trees)))
        ((okf ids) (abs-*-comma-identifier (cdr trees))))
     (cons id ids))
-  :hooks (:fix)
 
   ///
 
   (defret identifier-listp-of-abs-*-comma-identifier
     (implies (not (reserrp ids))
-             (name-listp ids))))
+             (name-listp ids))
+    :hints (("Goal" :induct t))))
 
 (define abs-?-identifier-*-comma-identifier ((tree abnf::treep))
-  :returns
-  (ids
-   name-list-resultp
-   :hints
-   (("Goal"
-     :in-theory
-     (enable
-      namep-when-name-resultp-and-not-reserrp
-      name-listp-when-name-list-resultp-and-not-reserrp))))
+  :returns (ids name-list-resultp)
   :short "Abstract a @('[ identifier *( \",\" identifier ) ]')
           to a list of identifiers (strings)."
   (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
@@ -334,7 +329,6 @@
        ((okf id) (abs-identifier tree))
        ((okf ids) (abs-*-comma-identifier sub.2nd)))
     (cons id ids))
-  :hooks (:fix)
 
   ///
 
@@ -349,8 +343,7 @@
   :short "Abstract a @('numeral') to a natural number."
   (b* (((okf sub) (abnf::check-tree-nonleaf-1 tree "numeral"))
        ((unless (consp sub)) (reserrf (list :empty-numeral))))
-    (abs-*-decimal-digit-to-nat sub))
-  :hooks (:fix))
+    (abs-*-decimal-digit-to-nat sub)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -363,8 +356,7 @@
        ((okf tree) (abnf::check-tree-list-1 trees))
        (pass (abnf::check-tree-ichars tree "-"))
        ((when (reserrp pass)) pass))
-    t)
-  :hooks (:fix))
+    t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -487,14 +479,6 @@
 
   :ruler-extenders :all
 
-  :prepwork
-  ((local
-    (in-theory
-     (enable
-      expressionp-when-expression-resultp-and-not-reserrp
-      expression-listp-when-expression-list-resultp-and-not-reserrp
-      abnf::tree-list-listp-when-tree-list-list-resultp-and-not-reserrp))))
-
   :verify-guards nil ; done below
 
   ///
@@ -502,7 +486,6 @@
   (verify-guards abs-expression)
 
   (fty::deffixequiv-mutual abs-expressions))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -515,46 +498,28 @@
        ((okf tree) (abnf::check-tree-list-1 sub.1st))
        ((okf &) (abnf::check-tree-ichars tree ","))
        ((okf tree) (abnf::check-tree-list-1 sub.2nd)))
-    (abs-expression tree))
-  :hooks (:fix))
+    (abs-expression tree)))
 
 (define abs-*-comma-expression ((trees abnf::tree-listp))
-  :returns
-  (exprs
-   expression-list-resultp
-   :hints
-   (("Goal"
-     :in-theory
-     (enable
-      expressionp-when-expression-resultp-and-not-reserrp
-      expression-listp-when-expression-list-resultp-and-not-reserrp))))
+  :returns (exprs expression-list-resultp)
   :short "Abstract a @('*( \",\" expression )') to a list of expressions."
   (b* (((when (endp trees)) nil)
        ((okf expr) (abs-comma-expression (car trees)))
        ((okf exprs) (abs-*-comma-expression (cdr trees))))
     (cons expr exprs))
   :measure (abnf::tree-list-count trees)
-  :hooks (:fix)
   :verify-guards nil
 
   ///
 
   (verify-guards abs-*-comma-expression)
 
-  (defret expression-list-of-abs-*-comma-expression
+  (defret expression-listp-of-abs-*-comma-expression
     (implies (not (reserrp exprs))
              (expression-listp exprs))))
 
 (define abs-?-expression-*-comma-expression ((tree abnf::treep))
-  :returns
-  (exprs
-   expression-list-resultp
-   :hints
-   (("Goal"
-     :in-theory
-     (enable
-      expressionp-when-expression-resultp-and-not-reserrp
-      expression-listp-when-expression-list-resultp-and-not-reserrp))))
+  :returns (exprs expression-list-resultp)
   :short "Abstract a @('[ expression *( \",\" expression ) ]')
             to a list of expressions."
   (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
@@ -564,7 +529,6 @@
        ((okf expr) (abs-expression tree))
        ((okf exprs) (abs-*-comma-expression sub.2nd)))
     (cons expr exprs))
-  :hooks (:fix)
 
   ///
 
@@ -592,8 +556,7 @@
        ((okf rhs) (abs-expression tree)))
 
     (make-constraint-equal :left lhs
-                           :right rhs))
-  :hooks (:fix))
+                           :right rhs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -616,8 +579,7 @@
        ((okf &) (abnf::check-tree-schars tree ")")))
 
     (make-constraint-relation :name id
-                              :args expressions))
-  :hooks (:fix))
+                              :args expressions)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -630,30 +592,20 @@
            (abs-equality-constraint tree))
           ((equal rulename? "relation-constraint")
            (abs-relation-constraint tree))
-          (t (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))))
-  :hooks (:fix))
+          (t (reserrf (list :found-subtree (abnf::tree-info-for-error tree)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Syntax around abs-constraint used for other rules
 
 (define abs-*-constraint ((trees abnf::tree-listp))
-  :returns
-  (constraints
-   constraint-list-resultp
-   :hints
-   (("Goal"
-     :in-theory
-     (enable
-      constraintp-when-constraint-resultp-and-not-reserrp
-      constraint-listp-when-constraint-list-resultp-and-not-reserrp))))
+  :returns (constraints constraint-list-resultp)
   :short "Abstract a @('*constraint') to a list of constraints."
   (b* (((when (endp trees)) nil)
        ((okf constraint) (abs-constraint (car trees)))
        ((okf constraints) (abs-*-constraint (cdr trees))))
     (cons constraint constraints))
   :measure (abnf::tree-list-count trees)
-  :hooks (:fix)
   :verify-guards nil
 
   ///
@@ -671,26 +623,16 @@
        ((okf tree) (abnf::check-tree-list-1 sub.1st))
        ((okf &) (abnf::check-tree-ichars tree ","))
        ((okf tree) (abnf::check-tree-list-1 sub.2nd)))
-    (abs-constraint tree))
-  :hooks (:fix))
+    (abs-constraint tree)))
 
 (define abs-*-comma-constraint ((trees abnf::tree-listp))
-  :returns
-  (constraints
-   constraint-list-resultp
-   :hints
-   (("Goal"
-     :in-theory
-     (enable
-      constraintp-when-constraint-resultp-and-not-reserrp
-      constraint-listp-when-constraint-list-resultp-and-not-reserrp))))
+  :returns (constraints constraint-list-resultp)
   :short "Abstract a @('*( \",\" constraint )') to a list of constraints."
   (b* (((when (endp trees)) nil)
        ((okf constraint) (abs-comma-constraint (car trees)))
        ((okf constraints) (abs-*-comma-constraint (cdr trees))))
     (cons constraint constraints))
   :measure (abnf::tree-list-count trees)
-  :hooks (:fix)
   :verify-guards nil
 
   ///
@@ -702,15 +644,7 @@
              (constraint-listp constraints))))
 
 (define abs-?-constraint-*-comma-constraint ((tree abnf::treep))
-  :returns
-  (constraints
-   constraint-list-resultp
-   :hints
-   (("Goal"
-     :in-theory
-     (enable
-      constraintp-when-constraint-resultp-and-not-reserrp
-      constraint-listp-when-constraint-list-resultp-and-not-reserrp))))
+  :returns (constraints constraint-list-resultp)
   :short "Abstract a @('[ constraint *( \",\" constraint ) ]')
             to a list of constraints."
   (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
@@ -720,7 +654,6 @@
        ((okf constraint) (abs-constraint tree))
        ((okf constraints) (abs-*-comma-constraint sub.2nd)))
     (cons constraint constraints))
-  :hooks (:fix)
 
   ///
 
@@ -762,28 +695,18 @@
 
     (make-definition :name id
                      :para params
-                     :body constraints))
-  :hooks (:fix))
+                     :body constraints)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-*-definition ((trees abnf::tree-listp))
-  :returns
-  (definitions
-    definition-list-resultp
-    :hints
-    (("Goal"
-      :in-theory
-      (enable
-       definitionp-when-definition-resultp-and-not-reserrp
-       definition-listp-when-definition-list-resultp-and-not-reserrp))))
+  :returns (definitions definition-list-resultp)
   :short "Abstract a @('*definition') to a list of definitions."
   (b* (((when (endp trees)) nil)
        ((okf definition) (abs-definition (car trees)))
        ((okf definitions) (abs-*-definition (cdr trees))))
     (cons definition definitions))
   :measure (abnf::tree-list-count trees)
-  :hooks (:fix)
   :verify-guards nil
 
   ///
@@ -806,5 +729,4 @@
        ((okf constraints) (abs-*-constraint sub.2nd)))
 
     (make-system :definitions defs
-                 :constraints constraints))
-  :hooks (:fix))
+                 :constraints constraints)))

@@ -1,6 +1,6 @@
 ; An interface to prove$ that indicates whether a step limit was reached.
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -57,7 +57,7 @@
                 (progn$ (and print (cw "Failed to prove (time limit of ~x0 reached).~%" time-limit))
                         (mv nil nil :time-limit-reached state))
               ;; todo: can we detect whether the rewrite stack limit was reached?
-              (progn$ (and print (cw "Failed to prove (unknown reason).~%" prover-steps))
+              (progn$ (and print (cw "Failed to prove (unknown reason).~%"))
                       (mv nil nil :unknown state)))))))))
 
 ;; Returns (mv erp provedp failure-info state), where failure-info may be

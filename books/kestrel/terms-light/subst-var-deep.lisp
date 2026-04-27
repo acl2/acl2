@@ -1,6 +1,6 @@
 ; An alternative to subst-var that can sometimes go into lambda bodies
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,7 +24,7 @@
 ;; See proofs in subst-var-deep-proofs.lisp.
 ;; See tests in subst-var-deep-tests.lisp.
 
-;; TODO: Generalize the support multiple vars?
+;; TODO: Generalize to support multiple vars?
 
 (local (in-theory (disable mv-nth)))
 

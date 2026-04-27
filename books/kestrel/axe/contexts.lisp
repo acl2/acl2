@@ -1,7 +1,7 @@
 ; Computing contexts from overarching DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -941,7 +941,7 @@
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                               (context-arrayp 'context-array context-array dag-len)
-                              ;; not necesarly equal:
+                              ;; not necessarily equal:
                               (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                               (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len)
                               (< nodenum dag-len))
@@ -974,7 +974,7 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 (context-arrayp 'context-array context-array dag-len)
-                ;; not necesarly equal:
+                ;; not necessarily equal:
                 (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                 (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len)
                 (< nodenum dag-len))
@@ -986,7 +986,7 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 (bounded-context-arrayp 'context-array context-array dag-len bound)
-                ;; not necesarly equal:
+                ;; not necessarily equal:
                 (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                 (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                 (<= dag-len bound)
@@ -1010,7 +1010,7 @@
                               (posp dag-len)
                               (<= dag-len *max-1d-array-length*)
                               (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                              ;; not necesarly equal:
+                              ;; not necessarily equal:
                               (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                               (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len))
                   :guard-hints (("Goal" :in-theory (enable dag-parent-arrayp)))))
@@ -1030,7 +1030,7 @@
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (posp dag-len)
                 (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                ;; not necesarly equal:
+                ;; not necessarily equal:
                 (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                 (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len))
            (context-arrayp 'context-array (make-full-context-array-with-parents dag-array-name dag-array dag-len dag-parent-array) dag-len))

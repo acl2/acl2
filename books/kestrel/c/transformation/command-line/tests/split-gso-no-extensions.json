@@ -1,0 +1,8 @@
+{"command": "split-gso",
+ "arguments":
+ {"old-dir" : "input-files",
+  "new-dir" : "split-gso-no-extensions.output",
+  "files": ["file1.c", "file2.c"],
+  "extensions": false,
+  "object-name": "foo_data",
+  "split-members": ["a2", "a2_size"]}}

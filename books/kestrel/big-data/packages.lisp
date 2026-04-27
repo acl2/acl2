@@ -1,6 +1,6 @@
 ; Checking for package conflicts
 
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 ;; This book attempts to include as many different packages as possible, by
-;; including portcullis many books.  Packages that do not have portcullis.lisp
+;; including many portcullis books.  Packages that do not have portcullis.lisp
 ;; files are brought in via packages.acl2 instead, so see that file as well.
 
 ;; These came from running 'find ../../.. -name portcullis.lisp':

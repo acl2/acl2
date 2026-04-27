@@ -124,7 +124,7 @@
      without errors.")
    (xdoc::p
     "Furthermore, the rule list thus obtained
-     is identical @(tsee *core-rules*),
+     is identical to @(tsee *core-rules*),
      which is the definition of the concrete syntax of ABNF
      written manually using the abstract syntax of ABNF.")
    (xdoc::p

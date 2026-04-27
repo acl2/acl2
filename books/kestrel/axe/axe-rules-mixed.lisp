@@ -1,7 +1,7 @@
 ; Mixed Axe rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -320,7 +320,7 @@
                 (< ysize 32)
                 (natp ysize)
                 (integerp k)
-                (< (bvchop 32 k) (- (expt 2 30) (expt 2 ysize))) ;should get computed (shows that there is no oveflow)
+                (< (bvchop 32 k) (- (expt 2 30) (expt 2 ysize))) ;should get computed (shows that there is no overflow)
                 (unsigned-byte-p-forced ysize y)
                 )
            (equal (bvplus '32 x (bvplus '30 k y))

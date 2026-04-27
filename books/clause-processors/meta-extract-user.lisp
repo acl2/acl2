@@ -113,7 +113,8 @@
   :hints (("goal" :use ((:instance mextract-global-badguy)
                         (:instance mextract-ev-falsify
                          (x (meta-extract-global-fact+ obj st state))))
-           :in-theory (disable meta-extract-global-fact+))))
+           :in-theory (e/d (mextract-ev-theoremp)
+                           (meta-extract-global-fact+)))))
 
 
 (local (in-theory (disable w sublis-var)))
@@ -223,6 +224,15 @@
            (mextract-ev (meta-extract-formula name st) a))
   :hints(("Goal" :use ((:instance mextract-global-badguy-sufficient
                         (obj (list :formula name)))))))
+
+(defthm mextract-formula-theoremp
+  (implies (and (mextract-ev-global-facts)
+                (equal (w st) (w state)))
+           (mextract-ev-theoremp (meta-extract-formula name st)))
+  :hints(("Goal" :in-theory (e/d (mextract-ev-theoremp)
+                                 (mextract-formula))
+          :use ((:instance mextract-formula
+                 (a (mextract-ev-falsify (meta-extract-formula name st))))))))
 
 ;; The following is used to show that any member of a list may be accessed by
 ;; nth, which is needed for mextract-lemma below
@@ -672,13 +682,20 @@
                               (x (meta-extract-global-fact+ obj st state))))
                 :in-theory (disable meta-extract-global-fact))))
 
+     (defthmd evfn-meta-extract-global-badguy-theoremp
+       (implies (evfn-meta-extract-global-facts)
+                (evfn-theoremp (meta-extract-global-fact+ obj st state)))
+       :hints (("goal" :in-theory (enable evfn-theoremp
+                                          evfn-meta-extract-global-badguy-sufficient))))
+
      (defthm evfn-meta-extract-global-badguy-true-listp
        (true-listp (evfn-meta-extract-global-badguy state))
        :hints (("goal" :use evfn-meta-extract-global-badguy))
        :rule-classes (:rewrite :type-prescription))
 
      (local (in-theory (enable evfn-meta-extract-global-badguy-sufficient
-                               evfn-meta-extract-contextual-badguy-sufficient)))
+                               evfn-meta-extract-contextual-badguy-sufficient
+                               evfn-meta-extract-global-badguy-theoremp)))
 
      (local (in-theory (disable meta-extract-global-fact
                                 meta-extract-contextual-fact)))
@@ -813,10 +830,27 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
+        (mextract-global-badguy evfn-meta-extract-global-badguy))
+       :hints((and stable-under-simplificationp
+                   '(:in-theory (enable evfn-theoremp))))
+       :translate nil
+       :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
+                     (mextract-ev-contextual-facts evfn-meta-extract-contextual-facts)))
+
+     (def-functional-instance
+       evfn-meta-extract-formula-theoremp
+       mextract-formula-theoremp
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
                      (mextract-ev-contextual-facts evfn-meta-extract-contextual-facts)))
+
+     (in-theory (disable evfn-meta-extract-formula-theoremp))
 
      (def-functional-instance
        evfn-meta-extract-lemma-term
@@ -824,6 +858,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -835,6 +870,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -846,6 +882,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -857,6 +894,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -868,6 +906,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -879,6 +918,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -890,6 +930,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -901,6 +942,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -913,6 +955,7 @@
      ;;   ((mextract-ev evfn)
      ;;    (mextract-ev-lst evlst-fn)
      ;;    (mextract-ev-falsify evfn-falsify)
+     ;;    (mextract-ev-theoremp evfn-theoremp)
      ;;    (mextract-global-badguy evfn-meta-extract-global-badguy)))
 
      (def-functional-instance
@@ -921,6 +964,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -933,6 +977,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -944,6 +989,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
@@ -955,6 +1001,7 @@
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)
+        (mextract-ev-theoremp evfn-theoremp)
         (mextract-global-badguy evfn-meta-extract-global-badguy))
        :translate nil
        :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)

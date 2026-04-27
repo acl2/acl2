@@ -171,10 +171,14 @@
       (convert-bibtex-diacritics (strip-brackets author-str))
     "Unknown Author"))
 
-(defun format-title (title-str)
+(defun format-title (title-str doi)
   "Format title for display"
   (if (stringp title-str)
-      (convert-bibtex-diacritics (convert-math-syntax (strip-brackets title-str)))
+      (let ((title-str (convert-bibtex-diacritics (convert-math-syntax (strip-brackets title-str)))))
+        (if doi
+            ;; If a doi is present, use it to make the title a link:
+            (concatenate 'string "<a href=\"https://doi.org/" doi "\">" title-str "</a>")
+          title-str))
     "Untitled"))
 
 (defun get-field-value (field-name fields)
@@ -225,10 +229,11 @@
          (booktitle (get-field-value "booktitle" fields))
          (month (get-field-value "month" fields))
          (isbn (get-field-value "isbn" fields))
-         (doi (get-field-value "doi" fields)))
+         (doi (get-field-value "doi" fields))
+         (doi (and doi (strip-brackets doi))))
 
     (concatenate 'string
-                 "<li><b>" (format-title title) "</b>, "
+                 "<li><b>" (format-title title doi) "</b>, "
                  (format-author-names author)
                  (if booktitle
                      (concatenate 'string ", in <i>" (strip-brackets booktitle) "</i>")
@@ -249,13 +254,13 @@
                      (concatenate 'string ", ISBN: " (strip-brackets isbn))
                    "")
                  (if doi
-                     (concatenate 'string ", DOI: " (strip-brackets doi))
+                     (concatenate 'string ", DOI: " doi)
                    "")
                  ". [" (format-entry-type entry-type) "]"
                  "</li>")))
 
 (defun generate-bibtex-entries-XDOC (entries)
-  "Generate XDOC list items for all BibTeX entries"
+  "Generate XDOC list items for the BibTeX entries"
   (if (endp entries)
       ""
     (let ((entry-pair (car entries)))
@@ -266,3 +271,17 @@
                        (generate-bibtex-entry-XDOC (cdr entry-pair))
                        (generate-bibtex-entries-XDOC (cdr entries)))
         (generate-bibtex-entries-XDOC (cdr entries))))))
+
+;; Each group is of the form (<group-name> . <entry-pairs>).
+(defun generate-bibtex-groups-XDOC (groups)
+  (if (endp groups)
+      ""
+    (let* ((group-name-and-entries (first groups))
+           (group-name (car group-name-and-entries))
+           (entries (cdr group-name-and-entries)))
+      (concatenate 'string
+                   "<h3>" group-name "</h3>"
+                   "<ul>"
+                   (generate-bibtex-entries-XDOC entries)
+                   "</ul>"
+                   (generate-bibtex-groups-XDOC (rest groups))))))

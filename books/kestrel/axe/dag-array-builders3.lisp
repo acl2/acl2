@@ -1,7 +1,7 @@
 ; dag-array-builders that involve memoization
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -641,7 +641,6 @@
 
 (defthm all-<-of-strip-cdrs-of-mv-nth-5-of-add-function-call-expr-to-dag-array-with-memo
   (implies (and (bounded-dag-constant-alistp dag-constant-alist dag-len)
-                (symbolp var)
                 (natp dag-len))
            (all-< (strip-cdrs (mv-nth 5 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization)))
                   (mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))))
@@ -649,7 +648,6 @@
 
 (defthm bounded-dag-constant-alistp-of-mv-nth-5-of-add-function-call-expr-to-dag-array-with-memo
   (implies (and (bounded-dag-constant-alistp dag-constant-alist dag-len)
-                (symbolp var)
                 (natp dag-len))
            (bounded-dag-constant-alistp (mv-nth 5 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))
                                        (mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))))

@@ -43,7 +43,7 @@
           "This must be a symbol that names an existing ACL2 constant
           that contains a  validated code ensemble,
           i.e. a value of type @(tsee code-ensemble)
-          whose translation unit ensemble results from "
+          whose translation ensemble results from "
           (xdoc::seetopic "c$::validator" "validation")
           ", and in particular containing "
           (xdoc::seetopic "c$::validation-information" "validation information")
@@ -96,7 +96,7 @@
         (xdoc::li
           "For a wrapper to be defined, a declaration must be found in the
            translation unit. "
-          (xdoc::seetopic "c$::gcc-builtins" "Built-in")
+          (xdoc::seetopic "c$::built-ins" "Built-in")
           " functions which are used without declaration are unsupported.")
         (xdoc::li
           "No mechanism is provided to differentiate functions of the same

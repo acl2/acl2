@@ -1,6 +1,6 @@
 ; Utilities about the LD-HISTORY
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,8 +11,7 @@
 (in-package "ACL2")
 
 (local (in-theory (disable weak-ld-history-entry-p get-global
-                           ;;boundp-global
-                           )))
+                           boundp-global boundp-global1)))
 
 ;; Recognize a true list of ld-history-entries.
 (defun weak-ld-history-entry-list-p (entries)
@@ -75,11 +74,9 @@
 ;; Returns the most recent THM or DEFTHM submitted by the user, or throws an error is there isn't one.
 ;; TODO: What if the most recent theorem is inside an encapsulate or some other compound event (see what redo-flat does?)?
 (defund most-recent-failed-command (event-types state)
-  (declare (xargs :stobjs state
-                  :guard (and (symbol-listp event-types)
-                              ;; is this implied by statep?:
-                              (boundp-global 'ld-history state)
-                              (weak-ld-history-entry-list-p (get-global 'ld-history state)))))
+  (declare (xargs :guard (and (symbol-listp event-types)
+                              (weak-ld-history-entry-list-p (get-global 'ld-history state)))
+                  :stobjs state))
   (let ((ld-history (ld-history state)))
     (if (endp ld-history)
         (er hard? 'most-recent-failed-command "Can't find a theorem in the history, which is empty!")
@@ -94,10 +91,8 @@
     defrule defruled defrulel defruledl))
 
 (defund most-recent-failed-theorem-goal (state)
-  (declare (xargs :stobjs state
-                  ;; is this implied by statep?:
-                  :guard (and (boundp-global 'ld-history state)
-                              (weak-ld-history-entry-list-p (get-global 'ld-history state)))))
+  (declare (xargs :guard (weak-ld-history-entry-list-p (get-global 'ld-history state))
+                  :stobjs state))
   (let ((form (most-recent-failed-command *theorem-event-types* state)))
     (if (not (true-listp form))
         (er hard? 'most-recent-failed-theorem-goal "Unexpected form for most-recent-failed-theorem: ~x0." form)
@@ -110,7 +105,6 @@
 
 ;; We are in multiple entry mode IFF the ld-history has length at least 2.
 (defund multiple-ld-history-entry-modep (state)
-  (declare (xargs :stobjs state
-                  :guard-hints (("Goal" :in-theory (enable state-p1))) ; todo: Drop?
-                  ))
+  (declare (xargs :guard-hints (("Goal" :in-theory (enable state-p1))) ; todo: Drop?
+                  :stobjs state))
   (< 1 (len (ld-history state))))

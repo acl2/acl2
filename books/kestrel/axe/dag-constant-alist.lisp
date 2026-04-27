@@ -1,7 +1,7 @@
 ; Index for constant nodes in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-;; The dag-constant-alist is an index into the dag that node expressions that
+;; The dag-constant-alist is an index into the dag that maps node expressions that
 ;; are constants, including calls of 0-ary functions, to their nodenums. Since
 ;; these nodes have no children, we cannot use the parent-array to find them.
 ;; The entries in the dag-constant-alist should be sorted by decreasing

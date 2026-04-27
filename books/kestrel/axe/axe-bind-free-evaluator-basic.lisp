@@ -1,7 +1,7 @@
 ; A basic axe-bind-free-evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,8 +18,10 @@
 (make-axe-bind-free-evaluator 'basic '(bind-bv-size-axe
                                        bind-bv-array-length-axe
                                        bind-bv-array-element-size-axe
-                                       bind-low-zero-count-in-bvcat-nest)
+                                       bind-low-zero-count-in-bvcat-nest
+                                       bind-path-in-bvplus-nest)
                               :enables '(bind-bv-array-length-axe
                                          bind-bv-array-element-size-axe
                                          bind-bv-size-axe
-                                         symbol-alistp-of-bind-low-zero-count-in-bvcat-nest))
+                                         symbol-alistp-of-bind-low-zero-count-in-bvcat-nest
+                                         bind-path-in-bvplus-nest))

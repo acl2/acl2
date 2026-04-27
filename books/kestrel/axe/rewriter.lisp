@@ -1,7 +1,7 @@
 ; The Axe Rewriter (somewhat old)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,7 +16,7 @@
 ;; rewriter-jvm or another custom rewriter if possible.  Unlike this one, they
 ;; do not depend on any skip-proofs.
 
-;; NOTE: This currentlty depends on the JVM model, for the axe-syntaxp and
+;; NOTE: This currently depends on the JVM model, for the axe-syntaxp and
 ;; axe-bind-free functions.
 
 ;; TODO: Consider adding support for normalizing bvxor and bitxor nests during
@@ -459,7 +459,7 @@
                                                (cw ")~%")))
                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))))))))))))))
 
- ;;returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
+ ;; Returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
  (defund try-to-apply-rules (stored-rules ;the list of rules for the fn in question
                             rewriter-rule-alist args-to-match
                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -470,7 +470,8 @@
    (if (endp stored-rules) ;no rule fired
        (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
      (b* ((stored-rule (first stored-rules))
-          ((when (and limits (limit-reachedp stored-rule limits print)))
+          (limit-reached (limit-reached stored-rule limits print)) ; todo: just pass in the rule-symbol (extracted below)?
+          ((when (eq t limit-reached))
            ;; the limit for this rule has been reached, so skip this rule:
            (try-to-apply-rules (rest stored-rules) rewriter-rule-alist args-to-match
                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist refined-assumption-alist equality-assumption-alist
@@ -504,7 +505,18 @@
                                         print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state))
                  ;;if there are no hyps, don't even bother: BOZO inefficient?:
                  (mv (erp-nil) t alist-or-fail dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))
-              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)))
+              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))
+              ;; Check that relieving hyps didn't exhaust the limit:
+              (limit-reached-after-hyps (if hyps
+                                            (and ;; (eq :not-yet limit-reached) ; todo: uncomment to optimize (if there was no limit before, these is still no limit)
+                                             (limit-reached stored-rule limits print))
+                                          ;; no hyps, so limit unchanged:
+                                          limit-reached))
+              ((when (eq t limit-reached-after-hyps))
+               (try-to-apply-rules (rest stored-rules) rewriter-rule-alist args-to-match
+                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist refined-assumption-alist equality-assumption-alist
+                                   node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
+                                   embedded-dag-depth work-hard-when-instructedp tag limits state)))
            (if hyps-relievedp
                ;; the hyps were relieved, so instantiate the RHS:
                (prog2$ (and (eq print :verbose!)
@@ -516,7 +528,8 @@
                            ;;no need to assemble the info if we are not going to print it
                            (maybe-increment-hit-count (stored-rule-symbol stored-rule) hit-counts)
                            tries
-                           (and limits (decrement-rule-limit stored-rule limits))
+                           ;; limit-reached-after-hyps=nil would mean there is no limit to decrement:
+                           (if (eq :not-yet limit-reached-after-hyps) (decrement-rule-limit stored-rule limits) limits)
                            state))
              ;;failed to relieve the hyps, so try the next rule:
              (prog2$ (and (eq print :verbose!)
@@ -536,7 +549,7 @@
  ;;returns (mv erp renaming-array2 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
  (defund merge-embedded-dag-into-dag (rev-dag
                                      renaming-array-name
-                                     renaming-array2 ;associates nodenums in the embedded dag with the nodenums (or qupteps) they rewrote to in the main dag
+                                     renaming-array2 ;associates nodenums in the embedded dag with the nodenums (or quoteps) they rewrote to in the main dag
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                      embedded-dag-var-alist ;associates vars in the embedded dag with their nodenums (or quoteps) in the main dag
                                      rewriter-rule-alist
@@ -704,7 +717,7 @@
                           (mv (erp-nil)
                               (aref1 renaming-array-for-merge-embedded-dag-name renaming-array-for-merge-embedded-dag (top-nodenum embedded-dag))
                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))))
-                  ;; No rule fired, so no simplifcation can be done:
+                  ;; No rule fired, so no simplification can be done:
                   ;; This node is ready to add to the dag
                   ;; in-line this?
                   (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization)
@@ -990,7 +1003,7 @@
                                  (simplify-tree-and-add-to-dag (farg1 tree) ;size param
                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                rewriter-rule-alist
-                                                               nil ;no trees are yet known equal to the the size param
+                                                               nil ;no trees are yet known equal to the size param
                                                                refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                                embedded-dag-depth work-hard-when-instructedp tag limits state))
                                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))
@@ -1235,7 +1248,7 @@
 ;; TODO: Consider having this return an array.
 ;change this to load the dag into the array first and to use assumptions that refer to that array (instead of possibly being huge terms)??
 ;; TODO: consider doing a top-down pass using a worklist to determine which nodes actually need to be simplified (making use of ifs, etc.)
-;ffffixme include only the necesary nodes in the context?!
+;ffffixme include only the necessary nodes in the context?!
 ;; TODO: external contexts could allow us to drop whole subdags and not waste time simplifying them..
 ;; Smashes 'dag-array, 'dag-parent-array, and 'renaming-array (fixme anything else?)
 (defun simplify-dag (dag ;; must not be a quotep, (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?),
@@ -2149,7 +2162,7 @@
 ;;                      :monitor monitored-rules
 ;;                      :print (if monitored-rules t nil)))
 ;;          ((when erp) (mv erp nil state))
-;;          (new-term (dag-to-term dag))
+;;          (new-term (dag2term dag))
 ;;          ((mv erp new-terms state)
 ;;           (simplify-terms-to-new-terms-aux (rest terms) rule-alist monitored-rules state))
 ;;          ((when erp) (mv erp nil state)))
@@ -2190,7 +2203,7 @@
 ;;                    :check-inputs nil)
 ;;         (if erp
 ;;             (mv erp nil nil state)
-;;           (let ((result-term (dag-to-term result-dag))) ;fixme could this ever blow up?
+;;           (let ((result-term (dag2term result-dag))) ;fixme could this ever blow up?
 ;;             (if (equal result-term term)
 ;;                 ;;no change, so keep looking
 ;;                 (find-a-term-to-simplify (rest terms-to-simplify) rule-alist monitored-symbols all-terms state)
@@ -2277,7 +2290,7 @@
                      :warn-missingp warn-missingp
                      :check-inputs nil))
          ((when erp) (mv erp nil nil state))
-         (result-term (dag-to-term result-dag))) ; todo: in theory, this could blow up
+         (result-term (dag2term result-dag))) ; todo: in theory, this could blow up
       (if (equal result-term term) ;; no change:
           (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-symbols memoizep warn-missingp againp state)
         (if (equal *t* result-term) ;todo: also check for *nil*?

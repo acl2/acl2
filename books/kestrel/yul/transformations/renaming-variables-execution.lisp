@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -412,7 +412,7 @@
              fundef-list-renamevar
              funscope-renamevarp-of-update
              funinfo-renamevarp-of-funinfo-for-fundef
-             funscopep-when-funscope-resultp-and-not-reserrp)
+             funscopep-when-result-not-error)
     :expand (fundef-renamevar (car old-funs) (car new-funs)))
 
   (defruled funenv-renamevarp-of-add-funs
@@ -504,7 +504,7 @@
                       (reserrp new-scope1))))
     :enable (funscope-for-fundefs
              fundef-list-renamevar
-             funscopep-when-funscope-resultp-and-not-reserrp
+             funscopep-when-result-not-error
              funscope-renamevarp-of-funscope-for-fundefs
              not-reserrp-when-funscopep)
     :expand (fundef-renamevar (car old-funs) (car new-funs))
@@ -548,7 +548,7 @@
              same-funscope-for-fundefs-error-when-renamevar
              funscope-renamevarp-of-funscope-for-fundefs
              not-reserrp-when-funenvp
-             funscopep-when-funscope-resultp-and-not-reserrp)
+             funscopep-when-result-not-error)
     :use (:instance same-ensure-funscope-disjoint-when-renamevar
           (old-funscope (funscope-for-fundefs old-funs))
           (new-funscope (funscope-for-fundefs new-funs)))))
@@ -1150,8 +1150,8 @@
                   (not (reserrp (paths-to-vars new)))))
     :enable (path-list-renamevar
              paths-to-vars
-             identifierp-when-identifier-resultp-and-not-reserrp
-             identifier-listp-when-identifier-list-resultp-and-not-reserrp
+             identifierp-when-result-not-error
+             identifier-listp-when-result-not-error
              not-reserrp-when-identifier-listp
              path-to-var-not-error-when-path-renamevar))
 
@@ -1386,8 +1386,8 @@
     :enable (paths-to-vars
              not-reserr-limitp-of-path-to-var
              reserr-limitp-of-reserr-of-info
-             identifierp-when-identifier-resultp-and-not-reserrp
-             identifier-listp-when-identifier-list-resultp-and-not-reserrp
+             identifierp-when-result-not-error
+             identifier-listp-when-result-not-error
              not-reserrp-when-identifier-listp))
 
   (defruled not-reserr-limitp-of-read-var-value
@@ -1406,8 +1406,8 @@
     :enable (read-vars-values
              not-reserr-limitp-of-read-var-value
              reserr-limitp-of-reserr-of-info
-             valuep-when-value-resultp-and-not-reserrp
-             value-listp-when-value-list-resultp-and-not-reserrp
+             valuep-when-result-not-error
+             value-listp-when-result-not-error
              not-reserrp-when-value-listp))
 
   (defruled not-reserr-limitp-of-write-var-value
@@ -2721,12 +2721,12 @@
                   not-reserr-limitp-of-write-vars-values
                   write-vars-values-when-renamevar
                   var-list-renamevar-not-error-when-path-list-renamevar
-                  identifier-listp-when-identifier-list-resultp-and-not-reserrp
+                  identifier-listp-when-result-not-error
                   not-reserr-limitp-of-path-to-var
                   not-reserr-limitp-of-write-var-value
                   write-var-value-when-renamevar
                   var-renamevar-not-error-when-path-renamevar
-                  identifierp-when-identifier-resultp-and-not-reserrp
+                  identifierp-when-result-not-error
                   not-reserr-limitp-of-add-vars-values
                   add-vars-values-when-renamevar
                   same-len-when-add-vars-to-var-renaming
@@ -2761,7 +2761,7 @@
                        soutcome-result-renamevarp
                        soutcome-renamevarp
                        not-reserr-limitp-of-read-vars-values
-                       value-listp-when-value-list-resultp-and-not-reserrp
+                       value-listp-when-result-not-error
                        var-list-renamevar-when-add-vars-to-var-renaming)
                       ((:e renaming)))
                  :use ((:instance funinfo+funenv-renamevarp-of-find-fun

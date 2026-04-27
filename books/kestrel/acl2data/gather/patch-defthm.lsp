@@ -48,7 +48,8 @@
        (with-waterfall-parallelism-timings
         name
         (er-let*
-            ((ignore (chk-all-but-new-name name ctx nil wrld state))
+            ((otf-flg (chk-otf-flg otf-flg ctx state))
+             (ignore (chk-all-but-new-name name ctx nil wrld state))
              (cert-data-flg/tterm0
               (translate-for-defthm name term ctx wrld state))
              (cert-data-flg (value (car cert-data-flg/tterm0)))

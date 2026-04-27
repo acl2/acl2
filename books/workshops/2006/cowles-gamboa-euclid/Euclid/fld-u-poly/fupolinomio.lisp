@@ -29,11 +29,11 @@
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; DescripciÛn:
+;;; Descripci√≥n:
 ;;;
-;;; RepresentaciÛn abstracta de los polinomios mediante listas propias
+;;; Representaci√≥n abstracta de los polinomios mediante listas propias
 ;;; de ACL2 formadas por monomios que contienen coeficientes y
-;;; tÈrminos abstractos.
+;;; t√©rminos abstractos.
 ;;; -------------------------------------------------------------------
 #|
 To certify this book, first, create a world with the following packages:
@@ -96,16 +96,16 @@ To certify this book, first, create a world with the following packages:
 
 ;;; NOTA:
 ;;;
-;;; Posteriormente definiremos la igualdad sem·ntica entre
-;;; polinomios. Entonces, esta definiciÛn corresponder· al
-;;; representante canÛnico de la clase de equivalencia formada por los
+;;; Posteriormente definiremos la igualdad sem√°ntica entre
+;;; polinomios. Entonces, esta definici√≥n corresponder√° al
+;;; representante can√≥nico de la clase de equivalencia formada por los
 ;;; polinomios nulos.
 
 (defmacro nulo () nil)
 
 ;;; NOTA:
 ;;;
-;;; La siguiente versiÛn se emplea en los casos base de las funciones
+;;; La siguiente versi√≥n se emplea en los casos base de las funciones
 ;;; recursivas que trabajan con polinomios.
 
 (defmacro nulop (p)

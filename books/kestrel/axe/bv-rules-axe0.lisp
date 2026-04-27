@@ -1,7 +1,7 @@
 ; Basic Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,8 +17,8 @@
 ;; file does not use the Axe syntax functions.
 
 (include-book "kestrel/bv/bvplus-def" :dir :system)
-(include-book "kestrel/bv/bvxor" :dir :system)
-(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvxor-def" :dir :system)
+(include-book "kestrel/bv/bvor-def" :dir :system)
 (include-book "kestrel/bv/bvnot" :dir :system)
 (include-book "kestrel/bv/bvand" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)

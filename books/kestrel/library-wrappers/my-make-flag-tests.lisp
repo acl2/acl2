@@ -1,6 +1,6 @@
 ; Tests of my-make-flag
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,6 +45,7 @@
   ;; ACL2's simplification makes it harder to prove.
   (my-make-flag tamep))
 
+;;todo: duplicates a test above
 (deftest
   ;; In this call, the clause-processor finishes the whole proof of the measure conjecture:
   (my-make-flag pseudo-termp))

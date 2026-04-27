@@ -106,6 +106,12 @@
            (integerp (emax k p)))
   :hints (("Goal" :in-theory (enable emax))))
 
+(defthm <=-of-1-and-emax-linear
+  (implies (formatp k p)
+           (<= 1 (emax k p)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable formatp emax))))
+
 ;; Check the values in Table 3.5:
 (thm (equal (emax *binary16-k* *binary16-p*) 15))
 (thm (equal (emax *binary32-k* *binary32-p*) 127))
@@ -123,6 +129,11 @@
   (implies (formatp k p)
            (integerp (emin k p)))
   :hints (("Goal" :in-theory (enable emin))))
+
+(defthm <-of-emin-and-emax
+  (implies (formatp k p)
+           (< (emin k p) (emax k p)))
+  :hints (("Goal" :in-theory (enable emin emax))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -549,7 +560,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Given the 3 components, decode them, returning a floating-point datum.
-;; TODO: Compare to parse-float in class-file-parser.lisp
+;; TODO: Compare to parse-float in kestrel/jvm/class-file-parser.lisp
 (defund decode (k
                 p
                 sign                 ; sign bit, called "S"
@@ -837,6 +848,12 @@
                   (expt 2 (emin k p))))
   :hints (("Goal" :in-theory (enable smallest-positive-normal decode-normal-number emin bias))))
 
+(defthm log2-of-smallest-positive-normal
+  (implies (formatp k p)
+           (equal (log2 (smallest-positive-normal k p))
+                  (emin k p)))
+  :hints (("Goal" :in-theory (enable smallest-positive-normal-redef))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv sign biased-exponent trailing-significand).
@@ -1043,18 +1060,20 @@
                  (<= y z))
             (< x z))))
 
-(defthmd *-of-2-and-expt
-  (implies (integerp i)
-           (equal (* 2 (expt 2 i))
-                  (expt 2 (+ 1 i))))
-  :hints (("Goal" :in-theory (enable expt-of-+))))
+(local
+ (defthmd *-of-2-and-expt
+   (implies (integerp i)
+            (equal (* 2 (expt 2 i))
+                   (expt 2 (+ 1 i))))
+   :hints (("Goal" :in-theory (enable expt-of-+)))))
 
-(defthm <-of-expt-2-and-*-of-2-and-expt-2
-  (implies (and (integerp i)
-                (integerp j))
-           (equal (< (expt '2 i) (binary-* '2 (expt '2 j)))
-                  (< i (+ 1 j))))
-  :hints (("Goal" :in-theory (enable *-of-2-and-expt))))
+(local
+ (defthm <-of-expt-2-and-*-of-2-and-expt-2
+   (implies (and (integerp i)
+                 (integerp j))
+            (equal (< (expt '2 i) (* 2 (expt 2 j)))
+                   (< i (+ 1 j))))
+   :hints (("Goal" :in-theory (enable *-of-2-and-expt)))))
 
 (local
  (defthm helper
@@ -1448,10 +1467,12 @@
 
 ;; or define a nanp function
 (defthm equal-of-decode-and-float-nan
-  (equal (equal ':float-nan (decode k p sign biased-exponent trailing-significand))
+  (equal (equal :float-nan (decode k p sign biased-exponent trailing-significand))
          (and (equal biased-exponent (+ (expt 2 (- k p)) -1))
               (not (equal 0 trailing-significand))))
   :hints (("Goal" :in-theory (enable decode wfn))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Tests whether X, which should be a floating-point datum, is either kind of infinity.
 ;; Could add a guard but then this would have to take k and p.

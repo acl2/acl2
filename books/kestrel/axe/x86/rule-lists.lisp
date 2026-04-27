@@ -1,7 +1,7 @@
 ; Rule Lists used by the x86 Axe tools
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -997,7 +997,7 @@
     x86isa::!prefixes->adr$inline
     x86isa::!prefixes->nxt$inline
 
-    ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
+    ;; are constant-openers better than enabling these functions? todo: remove once built into x86 evaluator and other evaluators no longer used
     X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
     x86isa::!prefixes->seg$inline-constant-opener
 
@@ -1255,9 +1255,9 @@
   '(acl2::logand-becomes-bvand-arg1-axe
     acl2::logand-becomes-bvand-arg2-axe
     acl2::logior-becomes-bvor-arg1-axe ; based on the form of arg1
-    acl2::logior-becomes-bvor-arg1-axe ; based on the form of arg2
+    acl2::logior-becomes-bvor-arg2-axe ; based on the form of arg2
     acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg1
-    acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg2
+    acl2::logxor-becomes-bvxor-arg2-axe ; based on the form of arg2
     ;acl2::logxor-bvchop-bvchop        ; introduce bvxor
     ;acl2::logxor-of-bvchop-becomes-bvxor-arg1 ; introduce bvxor
     ;;            acl2::bvplus-of-logxor-arg1                     ; introduce bvxor
@@ -1383,7 +1383,11 @@
     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
 
     acl2::bvmod-of-power-of-2 ; replaces bvmod with bvchop
-    ))
+
+    acl2::bvminus-cancel-axe ; build these 4 in deeper? ; this is because we are not rewriting bvminus away
+    acl2::cancel-bvplus-arg-of-nil ; must have these if we have bvminus-cancel-axe
+    acl2::cancel-bvplus-arg-left
+    acl2::cancel-bvplus-arg-right))
 
 ;; ;not used?
 ;; (defund canonical-address-rules ()
@@ -1871,8 +1875,8 @@
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
 
-;; Do this late, to give the bitp rules a chance to fire first:
-(set-axe-rule-priority acl2::bitp-becomes-unsigned-byte-p 1)
+;; Do this first, since we'll use unsigned-byte-p as the normal form
+(set-axe-rule-priority acl2::bitp-becomes-unsigned-byte-p -1)
 
 ;; Fire very early to remove bvchop from things like (+ 4 (ESP X86)), at least for now:
 (set-axe-rule-priority bvchop-of-+-of-esp-becomes-+-of-esp -2)
@@ -1886,7 +1890,7 @@
 (defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
   '(    ;; newer scheme, 32-bit:
-    run-until-return4
+    run-until-return32
     run-until-esp-is-above-opener-axe ; not for IFs
     run-until-esp-is-above-base-axe ; not for IFs
     run-until-esp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
@@ -1913,7 +1917,7 @@
     acl2::equal-of-+-cancel-2
 
     ;; newer scheme:
-    run-until-return3
+    run-until-return64
     run-until-rsp-is-above-opener-axe ; not for IFs
     run-until-rsp-is-above-base-axe ; not for IFs
     run-until-rsp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
@@ -1952,7 +1956,7 @@
     ;; run-until-rsp-is-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
 
     ;;newer-scheme:
-    run-until-return-or-reach-pc3
+    run-until-return-or-reach-pc64
     run-until-rsp-is-above-or-reach-pc-opener-axe
     run-until-rsp-is-above-or-reach-pc-base-axe
     acl2::memberp-of-cons-irrel-strong ; for resolving the stop-pcs check
@@ -5624,9 +5628,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Try this rule first
-(set-axe-rule-priority read-of-write-irrel -1) ; todo: also below
-
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
 ;; (set-axe-rule-priority read-when-program-at 1)
 ;; these are no longer used:
@@ -5820,7 +5821,7 @@
 (defund extra-tester-rules ()
   (declare (xargs :guard t))
   '(acl2::integerp-of-expt
-    acl2::integerp-of-*                 ; for array index calcs
+    ;acl2::integerp-of-*                 ; for array index calcs
     acl2::my-integerp-<-non-integerp    ; for array index calcs
     acl2::bvsx-when-bvlt
     ;; x86isa::canonical-address-p-between-special5 ; todo: move these
@@ -5969,7 +5970,7 @@
             ;acl2::bvcat-of-0-arg2
             acl2::bvmod-tighten-64-32
             acl2::bvdiv-tighten-64-32
-            acl2::not-bvlt-of-max-when-unsiged-byte-p
+            acl2::not-bvlt-of-max-when-unsigned-byte-p
             ;x86isa::sf-spec32-rewrite ; trying without...
             ;jle-condition-rewrite-1-with-bvif ; this one works on bvif
             ;jle-condition-rewrite-1-with-bvif-and-bvchop
@@ -6027,8 +6028,8 @@
             acl2::bvplus-of-+-arg2 ; todo: drop once we characterize long negation?
             acl2::bvplus-of-+-arg3 ; todo: drop once we characterize long negation?
             ;acl2::integerp-when-unsigned-byte-p-free ; needed for the bvplus-of-+ rules.
-            acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
-            min ; why is min arising?  or add min-same
+            ;; acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
+            ;; min ; why is min arising?  or add min-same
             ;; acl2::<-becomes-bvlt-axe-bind-free-arg1-strong
             ;; acl2::<-becomes-bvlt-dag-gen-better2
             ;; after adding core-rules-bv:
@@ -6396,6 +6397,38 @@
           (unsigned-canonical-rules)
           (canonical-rules-bv)))
 
+;; This should include all rules used by the unroller:
+(defund all-unroller-rules ()
+  (declare (xargs :guard t))
+  (append (unroller-rules32)
+          (unroller-rules64)
+          (read-and-write-rules-bv)
+          ;;  (read-and-write-rules-non-bv)
+          (assumption-simplification-rules32)
+          (assumption-simplification-rules64)
+          (step-opener-rules32)
+          (step-opener-rules64)
+          (new-normal-form-rules-common)
+          (canonical-rules-bv)
+          (new-normal-form-rules64)
+          (unsigned-canonical-rules)
+          (symbolic-execution-rules32)
+          (symbolic-execution-rules64)
+          (prune-dag-post-rewrite-rules)))
+
+(defun additional-rules-for-tester ()
+  (declare (xargs :guard t))
+  (append (extra-tester-rules)
+          (extra-tester-lifting-rules)
+          (tester-proof-rules)))
+
+;; This should include all rules used by the tester:
+(defund all-tester-rules ()
+  (declare (xargs :guard t))
+  (append (all-unroller-rules)
+          (pre-stp-rules) ; since we call the tactic-prover
+          (additional-rules-for-tester)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Based on how commonly these rules were used in an example:
@@ -6459,7 +6492,7 @@
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
 (set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
-(set-axe-rule-priority read-of-write-irrel -1)
+(set-axe-rule-priority read-of-write-irrel -1) ; Try this rule first
 (set-axe-rule-priority read-of-write-irrel-bv-axe-smt 1) ; try late, as this uses SMT
 (set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt 1)
 (set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt-alt 1)

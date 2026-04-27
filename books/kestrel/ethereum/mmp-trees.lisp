@@ -261,7 +261,7 @@
      See that function for details.")
    (xdoc::p
     "When updating the map, the result of this function is the maximum of
-     the length of the udpated key and the result prior to updating."))
+     the length of the updated key and the result prior to updating."))
   (b* (((unless (mbt (nibblelist-bytelist-mapp map))) 0)
        ((when (omap::emptyp map)) 0)
        ((mv key &) (omap::head map)))
@@ -927,11 +927,11 @@
     "@(tsee mmp-encode-n) calls @(tsee mmp-encode-c)
      with the same arguments @('map') and @('i'),
      and therefore the measure must involve the fact that
-     @(tsee mmp-encode-c) is ``smaller'' than @(tsee mmp-encode-c).
+     @(tsee mmp-encode-c) is ``smaller'' than @(tsee mmp-encode-n).
      Similarly, @(tsee mmp-encode-c) calls @(tsee mmp-encode-u)
      with the same arguments @('map') and @('i'),
      and therefore the measure must involve the fact that
-     @(tsee mmp-encode-u) is ``smaller'' than @(tsee mmp-encode-u).
+     @(tsee mmp-encode-u) is ``smaller'' than @(tsee mmp-encode-c).
      Thus, we order these functions by assigning 0, 1, and 2 to them:
      this is the second component of the lexicographic measure.")
    (xdoc::p
@@ -1301,7 +1301,7 @@
      (e.g. using <see topic='@(url apt::apt)'>APT</see>):
      if there were two different maps whose encodings are equal,
      an executable implementation of decoding, which returns a unique map,
-     could not be shown to be equal to @('mmp-endoding-witness'),
+     could not be shown to be equal to @('mmp-encoding-witness'),
      which is introduced by a @(tsee defchoose) inside @(tsee defun-sk)
      and therefore could be either map.
      Thus, we defer the injectivity and left inverse proofs for now."))

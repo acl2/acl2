@@ -1,6 +1,6 @@
 ; BV Lists Library: map-bvplus-val
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,7 +26,7 @@
   :hints (("Goal" :in-theory (enable map-bvplus-val))))
 
 (defthm len-of-map-bvplus-val
-  (equal (len (map-bvplus-val high low data))
+  (equal (len (map-bvplus-val size val data))
          (len data))
   :hints (("Goal" :in-theory (enable map-bvplus-val))))
 

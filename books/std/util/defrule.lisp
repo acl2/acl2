@@ -152,9 +152,9 @@ argument.</p>
     :prep-lemmas                                ...)
     ((defrule pretend-we-need-this            (defrule pretend-we-need-this-too
        ...)                                     ...)))
-     (defrule pretend-we-need-this-too        (local (progn (include-book
-       ...))                                                \"arithmetic/top\"
-                                                            :dir :system)))
+     (defrule pretend-we-need-this-too      (local (progn (include-book
+       ...))                                              \"arithmetic/top\"
+                                                          :dir :system)))
     :prep-books                             (defthm lets-loop (equal (+ x y) (+ y x))
       ((include-book \"arithmetic/top\"             ...))
       :dir :system)))

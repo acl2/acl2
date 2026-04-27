@@ -265,7 +265,7 @@
      which says that if decoding is successful,
      then encoding is successful
      and the resulting encoding,
-     concatenated with the reamining bytes from the decoding,
+     concatenated with the remaining bytes from the decoding,
      is the initial input of the encoding (modulo fixing).
      The proof is by induction on the parsing functions.
      It is not particularly difficult.")

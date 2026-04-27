@@ -1,7 +1,7 @@
 ; JVM instructions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,17 +11,19 @@
 
 (in-package "JVM")
 
-(include-book "floats")
+(include-book "floats") ; for java-floatp
 (include-book "fields") ;for field-idp
 (include-book "method-descriptors")
 (include-book "method-names")
+(include-book "kestrel/bv-lists/signed-byte-listp-def" :dir :system)
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 
 (local (in-theory (disable member-equal jvm::typep))) ;for speed
 
 ;takes the decimal number version of the opcode and gives back the symbolic name
 ;fixme could use an array for this, for speed.
 ;fixme generalize this to map from the number to the format of the opcode?
-(defconst acl2::*opcode-to-name-table*
+(defconst *opcode-to-name-table*
   '((0 . :nop)
     (1 . :aconst_null)
     (2 . :iconst_m1)
@@ -225,8 +227,163 @@
     (200 . :goto_w)
     (201 . :jsr_w)))
 
-;todo package
-(defconst acl2::*opcodes* (strip-cdrs acl2::*opcode-to-name-table*))
+;These are the ops that have only one byte (the opcode itself) in the
+;instruction stream.  The order here shouldn't matter (could sort by
+;frequency).
+(defconst *one-byte-ops*
+  '(:AALOAD
+    :AASTORE
+    :ACONST_NULL
+    :ALOAD_0
+    :ALOAD_1
+    :ALOAD_2
+    :ALOAD_3
+    :ARETURN
+    :ARRAYLENGTH
+    :ASTORE_0
+    :ASTORE_1
+    :ASTORE_2
+    :ASTORE_3
+    :ATHROW
+    :BALOAD
+    :BASTORE
+    :CALOAD
+    :CASTORE
+    :D2F
+    :D2I
+    :D2L
+    :DADD
+    :DALOAD
+    :DASTORE
+    :DCMPG
+    :DCMPL
+    :DCONST_0
+    :DCONST_1
+    :DDIV
+    :DLOAD_0
+    :DLOAD_1
+    :DLOAD_2
+    :DLOAD_3
+    :DMUL
+    :DNEG
+    :DREM
+    :DRETURN
+    :DSTORE_0
+    :DSTORE_1
+    :DSTORE_2
+    :DSTORE_3
+    :DSUB
+    :DUP
+    :DUP_X1
+    :DUP_X2
+    :DUP2
+    :DUP2_X1
+    :DUP2_X2
+    :F2D
+    :F2I
+    :F2L
+    :FADD
+    :FALOAD
+    :FASTORE
+    :FCMPG
+    :FCMPL
+    :FCONST_0
+    :FCONST_1
+    :FCONST_2
+    :FDIV
+    :FLOAD_0
+    :FLOAD_1
+    :FLOAD_2
+    :FLOAD_3
+    :FMUL
+    :FNEG
+    :FREM
+    :FRETURN
+    :FSTORE_0
+    :FSTORE_1
+    :FSTORE_2
+    :FSTORE_3
+    :FSUB
+    :I2B
+    :I2C
+    :I2D
+    :I2F
+    :I2L
+    :I2S
+    :IADD
+    :IALOAD
+    :IAND
+    :IASTORE
+    :ICONST_M1
+    :ICONST_0
+    :ICONST_1
+    :ICONST_2
+    :ICONST_3
+    :ICONST_4
+    :ICONST_5
+    :IDIV
+    :ILOAD_0
+    :ILOAD_1
+    :ILOAD_2
+    :ILOAD_3
+    :IMUL
+    :INEG
+    :IOR
+    :IREM
+    :IRETURN
+    :ISHL
+    :ISHR
+    :ISTORE_0
+    :ISTORE_1
+    :ISTORE_2
+    :ISTORE_3
+    :ISUB
+    :IUSHR
+    :IXOR
+    :L2D
+    :L2F
+    :L2I
+    :LADD
+    :LALOAD
+    :LAND
+    :LASTORE
+    :LCMP
+    :LCONST_0
+    :LCONST_1
+    :LDIV
+    :LLOAD_0
+    :LLOAD_1
+    :LLOAD_2
+    :LLOAD_3
+    :LMUL
+    :LNEG
+    :LOR
+    :LREM
+    :LRETURN
+    :LSHL
+    :LSHR
+    :LSTORE_0
+    :LSTORE_1
+    :LSTORE_2
+    :LSTORE_3
+    :LSUB
+    :LUSHR
+    :LXOR
+    :MONITORENTER
+    :MONITOREXIT
+    :NOP
+    :POP
+    :POP2
+    :RETURN
+    :SALOAD
+    :SASTORE
+    :SWAP))
+
+(defconst *opcodes* (remove-eq :wide (strip-cdrs *opcode-to-name-table*)))
+
+(defun opcodep (opcode)
+  (declare (xargs :guard t))
+  (if (member-eq opcode *opcodes*) t nil))
 
 ;fixme add into the below.  or deprecate?
 (defun invokevirtual-instructionp (x)
@@ -240,29 +397,173 @@
               (method-descriptorp (third args))
               (all-typep (fourth args))))))
 
-;fixme guard should restrict this to an instruction
-(defun instruction-args (x)
-  (declare (xargs :guard (true-listp x)))
-  (acl2::fargs x))
-
 (defun inst-lengthp (len)
   (declare (xargs :guard t))
-  (natp len))
+  (posp len))
 
-(defund jvm-instructionp (inst)
+;; Recognizes a list of well-formed arguments for the given OPCODE.
+;; This does not check jump targets, as that requires knowing the set of valid PCs, but see jvm-instruction-okayp.
+(defund instruction-argsp (opcode args)
+  (declare (xargs :guard (and (opcodep opcode)
+                              (true-listp args))))
+  (if (member-eq opcode *one-byte-ops*)
+      (null args)
+    (case opcode
+      ((:aload :astore :dload :dstore :fload :fstore :iload :istore :lload :lstore :ret)
+       (and (= 2 (len args))
+            (unsigned-byte-p 16 (first args)) ; 1 or 2 bytes depending on :wide
+            (inst-lengthp (second args)) ;total length of the instruction (stored because of :wide)
+            (or (= 2 (second args))      ; depending on :wide
+                (= 4 (second args)))))
+      ((:anewarray :checkcast :instanceof)
+       (and (= 1 (len args))
+            (typep (first args))))
+      (:bipush
+       (and (= 1 (len args))
+            (signed-byte-p 8 (first args))))
+      ((:getfield :getstatic :putfield :putstatic)
+       (and (= 3 (len args))
+            (class-namep (first args))
+            (field-idp (second args))
+            (booleanp (third args))))
+      ((:goto :jsr) ; combine with a case below?
+       (and (= 1 (len args))
+            (signed-byte-p 16 (first args))))
+      ((:goto_w :jsr_w)
+       (and (= 1 (len args))
+            (signed-byte-p 32 (first args))))
+      ((:if_acmpeq :if_acmpne
+                   :if_icmpeq :if_icmpne :if_icmplt :if_icmpge :if_icmpgt :if_icmple
+                   :ifeq :ifne :iflt :ifge :ifgt :ifle
+                   :ifnull :ifnonnull)
+       (and (= 1 (len args))
+            (signed-byte-p 16 (first args))))
+      (:iinc
+       (and (= 3 (len args))
+            (unsigned-byte-p 16 (first args)) ; 1 or 2 bytes depending on :wide
+            (signed-byte-p 16 (second args))  ; 1 or 2 bytes depending on :wide
+            (inst-lengthp (third args))
+            (or (eql 3 (third args))
+                (eql 6 (third args)))))
+      (:invokedynamic ; todo: check once implemented
+       (and (= 1 (len args))
+            (unsigned-byte-p 16 (first args))))
+      ((:invokeinterface :invokevirtual)
+       (and (= 4 (len args))
+            (reference-typep (first args)) ;todo: think about array types
+            (method-namep (second args))
+            (method-descriptorp (third args))
+            (true-listp (fourth args))
+            (all-typep (fourth args))))
+      ((:invokespecial :invokestatic)
+       (and (= 5 (len args))
+            (reference-typep (first args)) ;todo: think about array types
+            (method-namep (second args))
+            (method-descriptorp (third args))
+            (true-listp (fourth args))
+            (all-typep (fourth args))
+            (booleanp (fifth args))))
+      ((:ldc :ldc_w)
+       (and (= 1 (len args))
+            (let ((tagged-value (first args)))
+              (and (consp tagged-value)
+                   (let* ((tag (car tagged-value))
+                          (value (cdr tagged-value)))
+                     (or (and (eq :int tag)
+                              (unsigned-byte-p 32 value))
+                         (and (eq :float tag)
+                              (java-floatp value))
+                         (and (eq :string tag)
+                              (stringp value))
+                         (and (eq :class tag)
+                              (class-namep value))))))))
+      (:ldc2_w
+       (and (= 1 (len args))
+            (let ((tagged-value (first args)))
+              (and (consp tagged-value)
+                   (let* ((tag (car tagged-value))
+                          (value (cdr tagged-value)))
+                     (or (and (eq :long tag)
+                              (unsigned-byte-p 64 value))
+                         (and (eq :double tag)
+                              (java-doublep value))))))))
+      (:lookupswitch
+       (and (= 3 (len args))
+            (signed-byte-p 32 (first args)) ; default
+            (and (alistp (second args))     ; match-offset pairs
+                 ;; todo: avoid consing here (also avoid walking down the alist twice):
+                 (acl2::signed-byte-listp 32 (strip-cars (second args)))
+                 (acl2::signed-byte-listp 32 (strip-cdrs (second args))))
+            (inst-lengthp (third args)) ; inst-len ; todo: add lower bound
+            ))
+      (:multianewarray
+       (and (= 2 (len args))
+            (typep (first args))
+            (unsigned-byte-p 8 (second args))))
+      (:new
+       (and (= 1 (len args))
+            (class-namep (first args))))
+      (:newarray
+       (and (= 1 (len args))
+            (member-eq (first args) *primitive-types*)))
+      (:sipush (and (= 1 (len args))
+                    (signed-byte-p 16 (first args)) ; todo: check this
+                    ))
+      (:tableswitch
+       (and (= 5 (len args))
+            (signed-byte-p 32 (first args))
+            (signed-byte-p 32 (second args))
+            (signed-byte-p 32 (third args))
+            (and (true-listp (fourth args))
+                 (acl2::signed-byte-listp 32 (fourth args))
+                 )
+            (inst-lengthp (fifth args)) ; inst-len ; todo: add lower bound
+            ))
+      ;; :wide is handled specially (not a valid instruction)
+      (otherwise (er hard? 'instruction-argsp "Unknown opcode: ~x0" opcode)))))
+
+(defund instructionp (inst)
   (declare (xargs :guard t))
   (and (consp inst)
-       (member-eq (car inst) acl2::*opcodes*)
-       (true-listp (cdr inst))))
+       (let ((opcode (car inst))
+             (args (cdr inst)))
+         (and (member-eq opcode *opcodes*)
+              ;; (not (eq (car inst) :wide)) ; gets handled in the parser
+              (true-listp args)
+              (instruction-argsp opcode args)))))
 
-(defthm jvm-instructionp-forward-to-consp
-  (implies (jvm-instructionp inst)
+(defthm instructionp-forward-to-consp
+  (implies (instructionp inst)
            (consp inst))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable jvm-instructionp))))
+  :hints (("Goal" :in-theory (enable instructionp))))
 
+;;extracts the op-code from an instruction
+(defund instruction-opcode (inst)
+  (declare (xargs :guard (instructionp inst)))
+  (car inst))
+
+;;extracts the arguments from an instruction
+(defund instruction-args (inst)
+  (declare (xargs :guard (instructionp inst)))
+  (cdr inst))
+
+(defthmd instructionp-redef
+  (equal (instructionp inst)
+         (and (consp inst)
+              (let ((opcode (instruction-opcode inst))
+                    (args (instruction-args inst)))
+                (and (member-eq opcode *opcodes*)
+                     (true-listp args)
+                     (instruction-argsp opcode args)))))
+  :hints (("Goal" :in-theory (enable instructionp
+                                     instruction-args
+                                     instruction-opcode))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: invokedynamic
+;todo: what about NEW and other things that can invoke a staticinitializer?
 (defund len-of-invoke-instruction (opcode)
   (declare (xargs :guard t))
   (case opcode
@@ -276,173 +577,75 @@
                            3 ;needed to show that the new frame is ok
                            ))))
 
-(defthm len-of-invoke-instruction-constant-opener
-  (implies (syntaxp (quotep opcode))
-           (equal (len-of-invoke-instruction opcode)
-                  (case opcode
-                    (:INVOKEVIRTUAL 3)
-                    (:INVOKESTATIC 3)
-                    (:INVOKESPECIAL 3)
-                    (:invokeinterface 5)
-                    (:ldc 2) ; LDC now counts as an invoke instruction because it can run a dummy method to build a class object
-                    (:ldc_w 3)
-                    (otherwise (prog2$ (er hard? 'len-of-invoke-instruction "Unknown invoke instruction: ~x0" opcode)
-                                       3 ;needed to show that the new frame is ok
-                                       )))))
-  :hints (("Goal" :in-theory (enable LEN-OF-INVOKE-INSTRUCTION))))
+(acl2::def-constant-opener len-of-invoke-instruction)
 
-;These are the ops that have only one byte (the opcode itself) in the
-;instruction stream.  The order here shouldn't matter (could sort by
-;frequency).
-(defconst *one-byte-ops*
-  '(:NOP
-    :ACONST_NULL
-    :ICONST_M1
-    :ICONST_0
-    :ICONST_1
-    :ICONST_2
-    :ICONST_3
-    :ICONST_4
-    :ICONST_5
-    :LCONST_0
-    :LCONST_1
-    :FCONST_0
-    :FCONST_1
-    :FCONST_2
-    :DCONST_0
-    :DCONST_1
-    :ILOAD_0
-    :ILOAD_1
-    :ILOAD_2
-    :ILOAD_3
-    :LLOAD_0
-    :LLOAD_1
-    :LLOAD_2
-    :LLOAD_3
-    :FLOAD_0
-    :FLOAD_1
-    :FLOAD_2
-    :FLOAD_3
-    :DLOAD_0
-    :DLOAD_1
-    :DLOAD_2
-    :DLOAD_3
-    :ALOAD_0
-    :ALOAD_1
-    :ALOAD_2
-    :ALOAD_3
-    :ISTORE_0
-    :ISTORE_1
-    :ISTORE_2
-    :ISTORE_3
-    :LSTORE_0
-    :LSTORE_1
-    :LSTORE_2
-    :LSTORE_3
-    :FSTORE_0
-    :FSTORE_1
-    :FSTORE_2
-    :FSTORE_3
-    :DSTORE_0
-    :DSTORE_1
-    :DSTORE_2
-    :DSTORE_3
-    :ASTORE_0
-    :ASTORE_1
-    :ASTORE_2
-    :ASTORE_3
-    :POP
-    :POP2
-    :DUP
-    :DUP_X1
-    :DUP_X2
-    :DUP2
-    :DUP2_X1
-    :DUP2_X2
-    :SWAP
-    :IADD
-    :LADD
-    :FADD
-    :DADD
-    :ISUB
-    :LSUB
-    :FSUB
-    :DSUB
-    :IMUL
-    :LMUL
-    :FMUL
-    :DMUL
-    :IDIV
-    :LDIV
-    :FDIV
-    :DDIV
-    :IREM
-    :LREM
-    :FREM
-    :DREM
-    :INEG
-    :LNEG
-    :FNEG
-    :DNEG
-    :ISHL
-    :LSHL
-    :ISHR
-    :LSHR
-    :IUSHR
-    :LUSHR
-    :IAND
-    :LAND
-    :IOR
-    :LOR
-    :IXOR
-    :LXOR
-    :I2L
-    :I2F
-    :I2D
-    :L2I
-    :L2F
-    :L2D
-    :F2I
-    :F2L
-    :F2D
-    :D2I
-    :D2L
-    :D2F
-    :I2B
-    :I2C
-    :I2S
-    :LCMP
-    :FCMPL
-    :FCMPG
-    :DCMPL
-    :DCMPG
-    :IRETURN
-    :LRETURN
-    :FRETURN
-    :DRETURN
-    :ARETURN
-    :RETURN
-    :ARRAYLENGTH
-    :ATHROW
-    :MONITORENTER
-    :MONITOREXIT
-    :IALOAD
-    :LALOAD
-    :FALOAD
-    :DALOAD
-    :AALOAD
-    :BALOAD
-    :CALOAD
-    :SALOAD
-    :IASTORE
-    :LASTORE
-    :FASTORE
-    :DASTORE
-    :AASTORE
-    :BASTORE
-    :CASTORE
-    :SASTORE))
+;; Returns the length of the instruction INST.  Instructions that can be
+;; preceded by :wide have their lengths stored in the instruction, as do
+;; :lookupswitch and :tableswitch.
+(defund inst-len (inst)
+  (declare (xargs :guard (instructionp inst)
+                  :guard-hints (("Goal" :in-theory (enable instructionp member-equal instruction-opcode)))))
+  (let ((opcode (instruction-opcode inst)))
+    (if (member-eq opcode *one-byte-ops*)
+        1
+      (case opcode
+        ;; Two-byte opcodes:
+        ((:bipush :ldc :newarray) 2)
+        ;; Three-byte opcodes:
+        ((:anewarray
+          :checkcast
+          :getfield :getstatic
+          :goto
+          :if_acmpeq :if_acmpne
+          :if_icmpeq :if_icmpne :if_icmplt :if_icmpge :if_icmpgt :if_icmple
+          :ifeq :ifne :iflt :ifge :ifgt :ifle
+          :ifnonnull :ifnull
+          :instanceof
+          :invokespecial
+          :invokestatic
+          :invokevirtual
+          :jsr
+          :ldc_w
+          :ldc2_w
+          :new
+          :putfield :putstatic
+          :sipush)
+         3)
+        ;; Four-byte opcodes:
+        (:multianewarray 4)
+        ;; Five-byte opcodes:
+        ((:goto_w :invokedynamic :invokeinterface :jsr_w) 5)
+        ;; These can be preceded by :wide, so they store the length in arg2:
+        ((:aload :astore
+          :dload :dstore
+          :fload :fstore
+          :iload :istore
+          :lload :lstore
+          :ret)
+         (nfix (farg2 inst))  ; todo: remove the nfix
+         )
+        ;; This can be preceded by :wide, so it stores the length in arg3:
+        (:iinc (nfix (farg3 inst))) ; todo: drop the nfix
+        ;; These have variable lengths, so they store the length as the last arg:
+        (:lookupswitch (nfix (farg3 inst)))    ; todo: drop the nfix
+        (:tableswitch (nfix (farg5 inst)))    ; todo: drop the nfix
+        ;; No case for :wide here because that gets handled when we parse the
+        ;; class file, depending on the next opcode.
+        (otherwise (er hard 'inst-len "Unhandled opcode."))))))
 
+(defthm natp-of-inst-len
+  (implies (instructionp inst)
+           (natp (inst-len inst)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable inst-len instructionp member-equal instruction-opcode))))
+
+(defthm posp-of-inst-len
+  (implies (instructionp inst)
+           (posp (inst-len inst)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable inst-len instructionp member-equal instruction-opcode instruction-argsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize a program counter.
 (defund pcp (val)
@@ -450,45 +653,51 @@
   (natp val))
 
 ;; Recognize a list of program counters.
-(defund acl2::all-pcp (pcs)
+(defund all-pcp (pcs)
   (declare (xargs :guard t))
   (if (atom pcs)
       t
     (and (jvm::pcp (first pcs))
-         (acl2::all-pcp (rest pcs)))))
+         (all-pcp (rest pcs)))))
 
 (defthm all-pcp-of-revappend
-  (implies (and (acl2::all-pcp x)
-                (acl2::all-pcp y))
-           (acl2::all-pcp (revappend x y)))
+  (implies (and (all-pcp x)
+                (all-pcp y))
+           (all-pcp (revappend x y)))
   :hints (("Goal" :induct t
-           :in-theory (enable acl2::all-pcp revappend))))
+           :in-theory (enable all-pcp revappend))))
 
 (defthm all-pcp-of-reverse
-  (implies (and (acl2::all-pcp x)
+  (implies (and (all-pcp x)
                 (true-listp x))
-           (acl2::all-pcp (acl2::reverse x)))
+           (all-pcp (acl2::reverse x)))
   :hints (("Goal" ; :induct t
            :in-theory (enable acl2::reverse))))
 
 (defthm pcp-of-car
-  (implies (acl2::all-pcp pcs)
+  (implies (all-pcp pcs)
            (equal (pcp (car pcs))
                   (consp pcs)))
-  :hints (("Goal" :in-theory (enable acl2::all-pcp))))
+  :hints (("Goal" :in-theory (enable all-pcp))))
 
 (defthm all-pcp-of-cdr
-  (implies (acl2::all-pcp pcs)
-           (acl2::all-pcp (cdr pcs)))
-  :hints (("Goal" :in-theory (enable acl2::all-pcp))))
+  (implies (all-pcp pcs)
+           (all-pcp (cdr pcs)))
+  :hints (("Goal" :in-theory (enable all-pcp))))
 
 (defund valid-pcp (pc valid-pcs)
   (declare (xargs :guard (and; (pcp pc)
                               (true-listp valid-pcs)
-                              (acl2::all-pcp valid-pcs))
+                              (all-pcp valid-pcs))
                  :guard-hints (("Goal" :in-theory (enable pcp)))))
   (and (pcp pc) ;drop?
        (member pc valid-pcs)))
+
+(defthm valid-pcp-forward-to-pcp
+  (implies (valid-pcp pc valid-pcs)
+           (pcp pc))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable valid-pcp))))
 
 ;recognize an offset to a program counter
 (defund pc-offsetp (val)
@@ -499,147 +708,57 @@
   (pcp (len-of-invoke-instruction opcode))
   :hints (("Goal" :in-theory (enable len-of-invoke-instruction))))
 
-;fixme move or copy some of these checks (the ones not involving PC) into jvm-instructionp
-;fixme improve to check the args of the instructions (e.g., that the inst-len stored is an integer for those instructions that can be preceded by WIDE)
 ;we need the pc here to make sure that relative jumps are okay
 (defund jvm-instruction-okayp (inst pc valid-pcs)
-  (declare (xargs :guard (and (pcp pc)
+  (declare (xargs :guard (and (instructionp inst) ; includes basic checks on args
+                              (pcp pc)
                               (true-listp valid-pcs)
-                              (acl2::all-pcp valid-pcs))
-                  :guard-hints (("Goal" :in-theory (e/d (jvm-instructionp len-of-invoke-instruction)
+                              (all-pcp valid-pcs))
+                  :guard-hints (("Goal" :in-theory (e/d (instructionp
+                                                         len-of-invoke-instruction
+                                                         instruction-argsp
+                                                         instruction-opcode
+                                                         member-equal)
                                                         ( ;memberp-of-cons
                                                          ))))))
-  (and (jvm-instructionp inst) ;fixme eventually drop this (or at least the member-eq)
-       ;; (not (cw "Checking ~x0~%" inst))
-       (or (member-eq (car inst) *one-byte-ops*)
-           (case (car inst)
-             ;;fixme add the rest of the cases!
-             (:new (and (= 1 (len (instruction-args inst)))
-                        (class-namep (farg1 inst))
-                        (valid-pcp (+ 3 pc) valid-pcs) ;todo: either drop these or change to a more efficient check
-                        ))
-             (:putfield (and (= 3 (len (instruction-args inst)))
-                             (class-namep (farg1 inst))
-                             (field-idp (farg2 inst))
-                             (valid-pcp (+ 3 pc) valid-pcs)))
-             ((:invokevirtual :invokeinterface)
-              (and (= 4 (len (instruction-args inst)))
-                   (reference-typep (farg1 inst)) ;todo: think about array types
-                   (method-namep (farg2 inst))
-                   (method-descriptorp (farg3 inst))
-                   (true-listp (farg4 inst))
-                   (all-typep (farg4 inst))
-                   (valid-pcp (+ (len-of-invoke-instruction (car inst)) pc) valid-pcs)))
-             ((:invokestatic :invokespecial)
-              (and (= 5 (len (instruction-args inst)))
-                   (reference-typep (farg1 inst)) ;todo: think about array types
-                   (method-namep (farg2 inst))
-                   (method-descriptorp (farg3 inst))
-                   (true-listp (farg4 inst))
-                   (all-typep (farg4 inst))
-                   (booleanp (farg5 inst))
-                   (valid-pcp (+ (len-of-invoke-instruction (car inst)) pc) valid-pcs)))
-             ((:if_acmpeq :if_acmpne :if_icmpeq :if_icmpne
-                          :if_icmplt :if_icmpge :if_icmpgt :if_icmple
-                          :ifeq :ifne :iflt :ifge :ifgt :ifle
-                          :ifnull :ifnonnull)
-              (and (= 1 (len (instruction-args inst)))
-                   (pc-offsetp (farg1 inst))
-                   (valid-pcp (+ 3 pc) valid-pcs)
-                   (valid-pcp (+ (farg1 inst) pc) valid-pcs)))
-             ((:goto :jsr)
-              (and (= 1 (len (instruction-args inst)))
-                   (pc-offsetp (farg1 inst))
-                   (valid-pcp (+ (farg1 inst) pc) valid-pcs) ;no need to check the instr following this unconditional jump
-                   ))
-             ((:getfield :putfield :getstatic :putstatic)
-              (and (= 3 (len (instruction-args inst)))
-                   (class-namep (farg1 inst))
-                   (field-idp (farg2 inst))
-                   (booleanp (farg3 inst))))
-             ((:iload :lload :fload
-                      :dload :aload :istore
-                      :lstore
-                      :fstore :dstore
-                      :astore :ret)
-              (and (= 2 (len (instruction-args inst)))
-                   (unsigned-byte-p 16 (farg2 inst))
-                   (inst-lengthp (farg2 inst)) ;total length of the instruction (stored because of wide)
-                   ))
-             (:iinc (and (= 3 (len (instruction-args inst)))
-                         (unsigned-byte-p 16 (farg1 inst))
-                         (signed-byte-p 16 (farg2 inst))
-                         (or (eql 3 (farg3 inst))
-                             (eql 6 (farg3 inst)))))
-             ((:checkcast :anewarray :instanceof)
-              (and (= 1 (len (instruction-args inst)))
-                   (typep (farg1 inst))))
-             (:newarray (and (= 1 (len (instruction-args inst)))
-                             (member-eq (farg1 inst) *primitive-types*)))
-             (:bipush (and (= 1 (len (instruction-args inst)))
-                           (signed-byte-p 8 (farg1 inst))))
-             (:sipush (and (= 1 (len (instruction-args inst)))
-                           (signed-byte-p 16 (farg1 inst))))
-             ((:ldc :ldc_w)
-              (and (= 1 (len (instruction-args inst)))
-                   (let ((tagged-value (farg1 inst)))
-                     (and (consp tagged-value)
-                          (let* ((tag (car tagged-value))
-                                 (value (cdr tagged-value)))
-                            (or (and (eq :int tag)
-                                     (unsigned-byte-p 32 value))
-                                (and (eq :float tag)
-                                     (java-floatp value))
-                                (and (eq :string tag)
-                                     (stringp value))
-                                (and (eq :class tag)
-                                     (class-namep value))))))))
-             (:ldc2_w
-              (and (= 1 (len (instruction-args inst)))
-                   (let ((tagged-value (farg1 inst)))
-                     (and (consp tagged-value)
-                          (let* ((tag (car tagged-value))
-                                 (value (cdr tagged-value)))
-                            (or (and (eq :long tag)
-                                     (unsigned-byte-p 64 value))
-                                (and (eq :double tag)
-                                     (java-doublep value))))))))
-             ((:goto_w :jsr_w)
-              (and (= 1 (len (instruction-args inst)))
-                   (signed-byte-p 32 (farg1 inst))))
-             (:invokedynamic ;may change
-              (and (= 1 (len (instruction-args inst)))
-                   (unsigned-byte-p 16 (farg1 inst))))
-             (:multianewarray
-              (and (= 2 (len (instruction-args inst)))
-                   (typep (farg1 inst))
-                   (unsigned-byte-p 8 (farg2 inst))))
-             (:tableswitch
-              (and (= 4 (len (instruction-args inst)))
-                   (signed-byte-p 32 (farg1 inst))
-                   (signed-byte-p 32 (farg2 inst))
-                   (signed-byte-p 32 (farg3 inst))
-                   (and (true-listp (farg4 inst))
-                        ;(all-signed-byte-p 32 (farg4 inst))
-                        )))
-             (:lookupswitch
-              (and (= 2 (len (instruction-args inst)))
-                   (and (alistp (farg1 inst))
-                        ;(all-signed-byte-p 32 (strip-cars (farg1 inst)))
-                        ;(all-signed-byte-p 32 (strip-cdrs (farg1 inst)))
-                        )
-                   (signed-byte-p 32 (farg2 inst))))
-             ;; :wide is handled specially
-             (otherwise (er hard? 'jvm-instruction-okayp "Unknown opcode: ~x0" (car inst)))))))
+  (case (instruction-opcode inst)
+    ((:aload :astore :dload :dstore :fload :fstore :iload :istore :lload :lstore :ret)
+     (valid-pcp (+ (farg2 inst) pc) valid-pcs))
+    (:iinc
+     (valid-pcp (+ (farg3 inst) pc) valid-pcs))
+    ((:goto :jsr)
+     (valid-pcp (+ (farg1 inst) pc) valid-pcs))
+    ((:goto_w :jsr_w) ; combine with the above?
+     (valid-pcp (+ (farg1 inst) pc) valid-pcs))
+    ((:if_acmpeq :if_acmpne
+                 :if_icmpeq :if_icmpne :if_icmplt :if_icmpge :if_icmpgt :if_icmple
+                 :ifeq :ifne :iflt :ifge :ifgt :ifle
+                 :ifnull :ifnonnull)
+     (valid-pcp (+ (farg1 inst) pc) valid-pcs))
+    ;; todo: add checks for these instructions?:
+    ;; (:tableswitch
+    ;;  (and (= 5 (len (instruction-args inst)))
+    ;;       (signed-byte-p 32 (farg1 inst))
+    ;;       (signed-byte-p 32 (farg2 inst))
+    ;;       (signed-byte-p 32 (farg3 inst))
+    ;;       (and (true-listp (farg4 inst))
+    ;;            (acl2::signed-byte-listp 32 (farg4 inst))
+    ;;            )
+    ;;       (inst-lengthp (farg5 inst)) ; inst-len ; todo: add lower bound
+    ;;       ))
+    ;;     (:lookupswitch
+    ;;  (and (= 3 (len (instruction-args inst)))
+    ;;       (signed-byte-p 32 (farg1 inst)) ; default
+    ;;       (and (alistp (farg2 inst))      ; match-offset pairs
+    ;;            ;; todo: avoid consing here (also avoid walking down the alist twice):
+    ;;            (acl2::signed-byte-listp 32 (strip-cars (farg2 inst)))
+    ;;            (acl2::signed-byte-listp 32 (strip-cdrs (farg2 inst))))
+    ;;       (inst-lengthp (farg3 inst)) ; inst-len ; todo: add lower bound
+    ;;       ))
+    ;; :wide is handled specially (not a valid instruction)
+    (otherwise t)))
 
-(defthm jvm-instructionp-when-jvm-instruction-okayp
-  (implies (jvm-instruction-okayp inst pc valid-pcs)
-           (jvm-instructionp inst))
-  :hints (("Goal" :in-theory (enable jvm-instruction-okayp))))
-
-;extract the op-code from an instruction
-;make a macro? (why?)
-(defund op-code (inst)
-  (declare (xargs :guard (jvm-instructionp inst)
-                  :guard-hints (("Goal" :in-theory (enable jvm-instructionp)))))
-  (car inst))
+;; (defthm instructionp-when-jvm-instruction-okayp
+;;   (implies (jvm-instruction-okayp inst pc valid-pcs)
+;;            (instructionp inst))
+;;   :hints (("Goal" :in-theory (enable jvm-instruction-okayp))))

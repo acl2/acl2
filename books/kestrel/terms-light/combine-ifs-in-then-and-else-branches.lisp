@@ -1,6 +1,6 @@
 ; A utility to combine IFs
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,7 +25,7 @@
 
 (local (in-theory (disable acl2-count)))
 
-;; Returns (mv changep new-term) where if CHANGEP is then NEW-TERM is the new term.
+;; Returns (mv changep new-term) where if CHANGEP is non-nil, then NEW-TERM is the new term.
 ;; If CHANGEP is nil, then NEW-TERM is irrelevant,
 (defund combine-if-from-then-part (test then-part else-part)
   (declare (xargs :guard (and (pseudo-termp test)

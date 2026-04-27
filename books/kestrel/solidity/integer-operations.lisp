@@ -34,7 +34,7 @@
     xdoc::*sld-types-conversions-implicit*
     ". Thus, once the operator is actually applied to the two operand values,
      the implicit conversion must have succeeded
-     and thus the values must have the same time.
+     and thus the values must have the same type.
      Therefore, the ACL2 functions that model binary integer operations
      have guards requiring the two operands to have the same type
      (i.e. the same signedness and the same size).")
@@ -49,7 +49,7 @@
     " suggests that operands may have different types for these operations,
      in a way that no conversion to a common type may be possible.")
    (xdoc::p
-    "For now we strictly follow the same-rule type,
+    "For now we strictly follow the same-type rule,
      and therefore must exclude exponentiation and shifts on signed integers.
      However, we may need to adjust our formalization as noted above,
      and add exponentiation and shifts involving signed integers

@@ -1,6 +1,6 @@
 ; A utility to get the user's username
 ;
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -43,8 +43,7 @@
   :hints (("Goal" :in-theory (enable get-username))))
 
 (defthm state-p1-of-mv-nth-1-of-get-username
-  (implies (and (symbolp name)
-                (state-p1 state))
+  (implies (state-p1 state)
            (state-p1 (mv-nth 1 (get-username state))))
   :hints (("Goal" :in-theory (enable get-username))))
 

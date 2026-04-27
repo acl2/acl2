@@ -1,7 +1,7 @@
 ; More material on the JVM heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,18 +22,12 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
 (local (in-theory (disable true-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm len-of-strip-cars
-  (equal (len (strip-cars x))
-         (len x)))
-
-(defthm len-of-strip-cads
-  (equal (len (strip-cdrs x))
-         (len x)))
 
 (defthm alistp-of-append
   ;; [Jared] changed for compatibility with std/alists/alistp.lisp
@@ -129,11 +123,6 @@
   (alistp (gen-init-bindings-for-class field-info-alist class-name))
   :hints (("Goal" :in-theory (enable gen-init-bindings-for-class))))
 
-(defthm all-name-type-pairsp-of-strip-cars
-  (implies (jvm::field-info-alistp field-info-alist)
-           (jvm::all-field-idp (strip-cars field-info-alist)))
-  :hints (("Goal" :in-theory (enable jvm::field-info-alistp))))
-
 (defthm len-gen-init-bindings-for-class
   (equal (len (gen-init-bindings-for-class field-info-alist class-name))
          (len field-info-alist))
@@ -152,7 +141,7 @@
 
 ;; todo: do we need to reify these?
 (defund gen-init-bindings (class-names class-table)
-  (declare (xargs :guard (and (jvm::all-class-namesp class-names)
+  (declare (xargs :guard (and (jvm::class-name-listp class-names)
                               (true-listp class-names)
                               (jvm::class-tablep class-table)
                               (jvm::all-bound-in-class-tablep class-names class-table))
@@ -181,7 +170,7 @@
   :hints (("Goal" :in-theory (e/d (acl2::gen-init-bindings-for-class JVM::FIELD-INFO-ALISTP) (jvm::field-idp)))))
 
 (defthm all-heap-object-keyp-of-strip-cars-of-gen-init-bindings
-  (implies (and (jvm::all-class-namesp class-names)
+  (implies (and (jvm::class-name-listp class-names)
                 (jvm::all-bound-in-class-tablep class-names class-table)
                 (jvm::class-tablep class-table))
            (jvm::all-heap-object-keyp (strip-cars (acl2::gen-init-bindings class-names class-table))))
@@ -435,7 +424,7 @@
                                    (g ad heap))
                         heap)))
      :hints (("Goal" :do-not '(generalize eliminate-destructors)
-              :in-theory (e/d (s-many set-fields set-field) ( ;S==R
+              :in-theory (e/d (s-many set-fields set-field strip-cars strip-cdrs) ( ;S==R
                                                              )))))))
 
 ;todo: the unique test might be expensive and seems like overkill
@@ -446,7 +435,7 @@
            (equal (rkeys (set-fields ad pairs heap))
                   (set::insert ad (rkeys heap))))
   :hints (("Goal" :in-theory (enable set-fields-rewrite ;NO-DUPLICATESP-EQUAL-OF-CONS
-                                     ))))
+                                     strip-cdrs))))
 
 
 (defthm in-of-rkeys-of-set-fields-irrel

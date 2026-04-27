@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,7 +27,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These functions may be be useful when writing
+    "These functions may be useful when writing
      @(tsee fty::defresult)-based parsers for
      languages specified via ABNF grammars.
      These functions take lists of natural numbers as inputs
@@ -88,10 +88,7 @@
      (mv (nats1
           nat-list-resultp
           :hints
-          (("Goal"
-            :in-theory
-            (enable
-             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
+          (("Goal" :in-theory (enable acl2::nat-listp-when-result-not-error))))
          (rest-input nat-listp))
      :parents nil
      (b* (((when (endp nats)) (mv nil (nat-list-fix input)))
@@ -189,8 +186,8 @@
           (("Goal"
             :in-theory
             (enable
-             acl2::natp-when-nat-resultp-and-not-reserrp
-             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
+             acl2::natp-when-result-not-error
+             acl2::nat-listp-when-result-not-error))))
          (rest-input nat-listp))
      :parents nil
      (b* (((when (endp chars)) (mv nil (nat-list-fix input)))
@@ -253,11 +250,8 @@
      (mv (nats
           nat-list-resultp
           :hints
-          (("Goal"
-            :in-theory
-            (enable
-             acl2::natp-when-nat-resultp-and-not-reserrp
-             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
+          (("Goal" :in-theory (enable acl2::natp-when-result-not-error
+                                      acl2::nat-listp-when-result-not-error))))
          (rest-input nat-listp))
      :parents nil
      (b* (((when (endp chars)) (mv nil (nat-list-fix input)))

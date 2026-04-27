@@ -1,7 +1,7 @@
 ; Tool to auto-generate theorems about functions that build dags
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -176,7 +176,7 @@
                   :in-theory '(wf-dagp))))
 
        ;; implied by wf-dagp (someday, when wf-dagp is never opened, we might not need this)
-       (defthm ,(pack$ 'bounded-dag-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
+       (defthm ,(pack$ 'bounded-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
          (implies (and (wf-dagp ,dag-array-name dag-array dag-len ,dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth ,erp-rv ,call)) ;no error
                        ,@hyps)
@@ -187,17 +187,17 @@
 
        ;; implied by wf-dagp (someday, when wf-dagp is never opened, we might not need this)
        ;; It may often be possible to drop the first 2 hyps
-       (defthm ,(pack$ 'dag-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
+       (defthm ,(pack$ 'dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
          (implies (and (wf-dagp ,dag-array-name dag-array dag-len ,dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth ,erp-rv ,call)) ;no error
                        ,@hyps)
                   (dag-constant-alistp (mv-nth ,dag-constant-alist-rv ,call)))
-         :hints (("Goal" :use ,(pack$ 'bounded-dag-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
+         :hints (("Goal" :use ,(pack$ 'bounded-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
                   :in-theory '(bounded-dag-constant-alistp-forward-to-dag-constant-alistp))))
 
        ;; implied by wf-dagp (someday, when wf-dagp is never opened, we might not need this)
        ;; We could also add a theorem that simplify shows dag-variable-alistp.
-       (defthm ,(pack$ 'bounded-dag-dag-variable-alistp-of-mv-nth- dag-variable-alist-rv '-of- fn)
+       (defthm ,(pack$ 'bounded-dag-variable-alistp-of-mv-nth- dag-variable-alist-rv '-of- fn)
          (implies (and (wf-dagp ,dag-array-name dag-array dag-len ,dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth ,erp-rv ,call)) ;no error
                        ,@hyps)

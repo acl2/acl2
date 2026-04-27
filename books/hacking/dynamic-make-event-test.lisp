@@ -32,6 +32,8 @@ This is a regression test for the dynamic-make-event book.
 (progn+touchable
  :all
  (redefun+rewrite
+; Defuns-fn is defined in ACL2 source file defuns.lisp:
+; (depends-on "../../defuns.lisp")
   defuns-fn
   (:carpat %body%
    :repl (if (eq (caar def-lst) 'the-magic-name)

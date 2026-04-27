@@ -84,7 +84,7 @@
         (pcert-file (concatenate 'string filename ".mpcert")))
     (ld `((cw "Provisionally certifying ~x0.~%" ,filename)
           (ld ,lisp-file :ld-error-action :error)
-          (mv-let (channel state) (open-output-channel ,pcert-file :object state)
+          (mv-let (channel state) (open-output-channel ,pcert-file :character state)
             (mv-let (sum state) (check-sum-file ,lisp-file state)
               (let* ((state (fms! "~f0 check-sum ~f1~|"
                                   (list (cons #\0 ,lisp-file)

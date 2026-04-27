@@ -158,8 +158,8 @@
      ((and subst-p
            (not (doublet-style-symbol-to-symbol-alistp subst)))
       (er soft ctx
-          "The :subst argument, is not a list of pairs of the form (old-sym ~
-           new-sym)"
+          "The :subst argument, ~x0, is not a list of pairs of the form ~
+           (old-sym new-sym)"
           subst))
      ((and subst-p
            (not (subsetp-eq (strip-cars subst) fn-nest)))

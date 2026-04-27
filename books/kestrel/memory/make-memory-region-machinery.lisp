@@ -1,6 +1,6 @@
 ; Reasoning about disjointness and inclusion in memory regions
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -131,7 +131,7 @@
            :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
          ;; if the region size is 2^,num-address-bits-1, being in the region means not being the single address just before the region
-         (defthm ,(acl2::pack-in-package pkg in-regionp-name '-of-2^num-address-bits-1)
+         (defthm ,(acl2::pack-in-package pkg in-regionp-name '-of-2^ num-address-bits "-1") ; or could put in the actual large value
            (equal (,in-regionp-name ad (+ -1 (expt 2 ,num-address-bits)) start-ad)
                   (not (equal (bvchop ,num-address-bits ad) (bvminus ,num-address-bits start-ad 1))))
            :hints (("Goal" :in-theory (enable ,in-regionp-name bvuminus bvplus ifix acl2::bvchop-of-sum-cases))))
@@ -711,7 +711,7 @@
                     (,disjoint-regionsp-spec-name len1 ad1 len2 ad2))
            :hints (("Goal" :in-theory (enable ,disjoint-regionsp-spec-name))))
 
-         ;; Shows that the complicated defintion of disjoint-regionsp agrees with the higher-level spec.
+         ;; Shows that the complicated definition of disjoint-regionsp agrees with the higher-level spec.
          (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-correct)
            (equal (,disjoint-regionsp-spec-name len1 ad1 len2 ad2)
                   (,disjoint-regionsp-name len1 ad1 len2 ad2))
@@ -773,7 +773,7 @@
                     (,subregionp-name len1 ad1 len2 ad2))
            :hints (("Goal" :in-theory (enable ,subregionp-name))))
 
-         ;; A region is a subregion or some other region of size 0 only if it iself has size 0.
+         ;; A region is a subregion of some other region of size 0 only if it itself has size 0.
          (defthm ,(acl2::pack-in-package pkg subregionp-name '-of-0-arg3)
            (equal (,subregionp-name len1 ad1 0 ad2)
                   (zp len1))
@@ -1123,7 +1123,7 @@
                                  (:type-prescription acl2::natp-of-bvchop-type))
                     )))
 
-         ;; The bad guy is an address in r1 but not in r2, is there if such an address
+         ;; The bad guy is an address in r1 but not in r2, if there is such an address
          (local
            (defund bad-guy (len1 ad1 len2 ad2)
              (if (zp len1)
@@ -1203,7 +1203,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-         ;; It R1 and R2 are disjoint, and R3 is within R1, and R4 is within R2, than R3 and R4 are disjoint.
+         ;; If R1 and R2 are disjoint, and R3 is within R1, and R4 is within R2, then R3 and R4 are disjoint.
          (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-when- disjoint-regionsp-name '-and- subregionp-name '-and- subregionp-name)
            (implies (and (,disjoint-regionsp-name len1 ad1 len2 ad2)
                          (,subregionp-name len3 ad3 len1 ad1) ; expand to bv ops?

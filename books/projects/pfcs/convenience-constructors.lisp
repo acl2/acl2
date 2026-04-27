@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -14,16 +14,15 @@
 
 (include-book "abstract-syntax-trees")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(include-book "std/basic/yyyjoin" :dir :system)
+
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ convenience-constructors
   :parents (abstract-syntax)
-  :short "Utilities to convniently construct PFCS abstract syntax."
+  :short "Utilities to conveniently construct PFCS abstract syntax."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -32,21 +31,6 @@
      in the abstract syntax."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define yyyjoin (fn rev-args)
-  :short "Spread a binary function over two or more arguments."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is similar to the builtin @('xxxjoin'),
-     but it associates left instead of right,
-     and arguments are passed reversed."))
-  :mode :program
-  (if (cdr (cdr rev-args))
-      (list fn (yyyjoin fn (cdr rev-args)) (car rev-args))
-    (list fn (second rev-args) (first rev-args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,6 +1,6 @@
 ; Inversion proof for TEA
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,6 @@
 (include-book "tea")
 (local (include-book "kestrel/bv/bvplus" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
-(local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for the bvmult-of-bvplus rules
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/bv-lists/packbv-and-unpackbv" :dir :system))

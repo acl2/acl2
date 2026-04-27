@@ -1,7 +1,7 @@
 ; Representing equality assumptions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -22,7 +22,7 @@
 ;; Returns a new term, or nil to indicate no change.
 ;; Looks for an equality-pair of the form (lhs . rhs), where LHS is equal to FN applied to ARGS and, if one is found, returns the term RHS.
 (defund replace-fun-call-using-equality-pairs (equality-pairs fn args dag-array)
-  (declare (xargs :guard (and (equality-pairsp equality-pairs) ;TOOD: Should these be lambda-free?
+  (declare (xargs :guard (and (equality-pairsp equality-pairs) ;TODO: Should these be lambda-free?
                               (symbolp fn)
                               (not (eq 'quote fn))
                               (darg-listp args)

@@ -3,7 +3,7 @@
 # A script to call the STP solver.
 #
 # Copyright (C) 2008-2011 Eric Smith and Stanford University
-# Copyright (C) 2013-2023 Kestrel Institute
+# Copyright (C) 2013-2026 Kestrel Institute
 #
 # License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 #
@@ -28,8 +28,8 @@ COUNTEREXAMPLE=$4 # Whether to generate a counterexample ("y" or "n")
 # Use STP environment var, if set, otherwise look for 'stp' on the user's path:
 STP=${STP:-stp}
 
-# By default, we use the newest STP syntax, but set ACL2_STP_VARIETY
-# to "0" or "1" to override that.
+# By default, we use variety 2 of the STP syntax, but set ACL2_STP_VARIETY
+# to "0" or "1" or "3" to override that.
 ACL2_STP_VARIETY=${ACL2_STP_VARIETY:-2}
 
 if [ ${COUNTEREXAMPLE} = "y" ] ; then
@@ -51,22 +51,23 @@ MULT_OPTIONS=""
 #TODO: The STP timeout is hardly graceful.  It says "Aborted..." Try the new STP?  <-- old comment?
 
 if [[ $ACL2_STP_VARIETY == "0" ]] ; then
+    # echo "CALLING ${STP} (variety 0)"
     # Use -g for max conflicts option:
     # May be necessary for very old STP versions.
-    # echo "CALLING ${STP} (variety 0)"
     ${STP} ${COUNTEREXAMPLE_ARGS} -g $MAX_CONFLICTS -r ${MULT_OPTIONS} ${INPUT_FILE} > ${OUTPUT_FILE}
 elif [[ $ACL2_STP_VARIETY == "1" ]] ; then
+    # echo "CALLING ${STP} (variety 1)"
     # Use underscores in max conflicts option:
     # May be necessary for a somewhat old STP (circa 2021 is fine).
-    # echo "CALLING ${STP} (variety 1)"
     ${STP} ${COUNTEREXAMPLE_ARGS} --max_num_confl $MAX_CONFLICTS -r ${MULT_OPTIONS} ${INPUT_FILE} > ${OUTPUT_FILE}
 elif [[ $ACL2_STP_VARIETY == "2" ]] ; then
+    # echo "CALLING ${STP} (variety 2)"
     # Use dashes in max conflicts option:
     ${STP} ${COUNTEREXAMPLE_ARGS} --max-num-confl $MAX_CONFLICTS -r ${MULT_OPTIONS} ${INPUT_FILE} > ${OUTPUT_FILE}
 elif [[ $ACL2_STP_VARIETY == "3" ]] ; then
+    # echo "CALLING ${STP} (variety 3)"
     # Use dashes in max conflicts option:
     # For the latest STP, this may be needed (or maybe either dashes or underscores are ok, if the boost library is new enough):
-    # echo "CALLING ${STP} (variety 2)"
     # For the obscure options here, see:
     # https://github.com/stp/stp/issues/463
     # and

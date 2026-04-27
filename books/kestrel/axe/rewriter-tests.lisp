@@ -146,7 +146,7 @@
 ;;             :rules nil
 ;;             :use-internal-contextsp t
 ;;             :memoizep nil)
-;;   (mv erp (dag-to-term res) state))
+;;   (mv erp (dag2term res) state))
 
 (test-simp-form
  (simplify-terms-repeatedly '((if (equal x '3) y z)  (equal x '3)) nil nil t t state)

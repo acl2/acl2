@@ -696,6 +696,24 @@ counteract previous uses of @(see enable-split-ifs).</p>")
             (change-fgl-function-mode mode :split-ifs nil))))
 
 
+(defxdoc disable-if-merge-args
+  :parents (fgl-handling-if-then-elses)
+  :short "Disable @('if') recursive merging of arguments when both branches are a call of this function.")
+
+
+(defmacro disable-if-merge-args (fnname)
+  `(table fgl-fn-modes
+          ',fnname
+          (b* ((mode (fgl-function-mode-lookup ',fnname (table-alist 'fgl-fn-modes world))))
+            (change-fgl-function-mode mode :dont-if-merge-args t))))
+
+(defmacro enable-if-merge-args (fnname)
+  `(table fgl-fn-modes
+          ',fnname
+          (b* ((mode (fgl-function-mode-lookup ',fnname (table-alist 'fgl-fn-modes world))))
+            (change-fgl-function-mode mode :dont-if-merge-args nil))))
+
+
 (defsection def-fgl-rewrite
   :parents (fgl-rewrite-rules)
   :short "Define a rewrite rule for FGL to use on term-level objects"

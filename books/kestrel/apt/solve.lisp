@@ -1,10 +1,10 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -167,7 +167,7 @@
         (er-soft+ ctx t nil
                   "The matrix ~x0 of the target function ~x1, ~
                    after translation and LET expansion, ~
-                   must contains exactly one call of ~x2, ~
+                   must contain exactly one call of ~x2, ~
                    but it contains ~@3 instead."
                   imatrix
                   old
@@ -275,7 +275,7 @@
                          the :METHOD input is :MANUAL, ~
                          but it is ~x1 instead."
                         solution-name method))
-             (desc (msg "The function ~x0 specified by the :SOLUTION-INPUT"
+             (desc (msg "The function ~x0 specified by the :SOLUTION-NAME input"
                         solution-name))
              ((er &) (ensure-function-is-logic-mode$ solution-name desc t nil))
              ((er &) (ensure-function-is-defined$ solution-name desc t nil))

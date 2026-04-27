@@ -19,8 +19,8 @@
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 
 (include-book "core")
-(include-book "extensionality")
-(include-book "delete")
+(local (include-book "extensionality"))
+(local (include-book "delete"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -227,6 +227,11 @@
 (verify-termination-boot-strap brr-data-lst) ; and guards
 (verify-termination-boot-strap cbd-fn)
 (verify-guards cbd-fn :hints (("Goal" :in-theory (enable state-p1))))
+(verify-termination-boot-strap remove-adjacent-duplicates)
+(verify-termination-boot-strap pairs-to-macro-alias-msgs)
+(verify-termination-boot-strap defevaluator-check-msg)
+(verify-termination-boot-strap defevaluator-guard-msg)
+; See books/system/error1.lisp for defevaluator-check.
 
 ; The following has caused the following error with "make proofs".
 ; > Error: HARD ACL2 ERROR in EXECUTABLE-BADGE:  It is illegal to call this function

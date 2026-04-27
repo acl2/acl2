@@ -315,6 +315,19 @@
          (cons (car lst)
                (filter-out-seen (cdr lst) seen)))))
 
+(defun absstobj-supporters (absstobj-tuples)
+
+; Absstobj-tuples is a list of tuples (name logic exec . updater).
+
+  (cond ((endp absstobj-tuples) nil)
+        (t (let ((tuple (car absstobj-tuples)))
+             (list* (cadr tuple)
+                    (caddr tuple)
+                    (if (cdddr tuple)
+                        (cons (cdddr tuple)
+                              (absstobj-supporters (cdr absstobj-tuples)))
+                      (absstobj-supporters (cdr absstobj-tuples))))))))
+
 (mutual-recursion
 
 (defun supporters-of-1-lst (defs min max macro-aliases wrld state-vars seen)
@@ -376,17 +389,26 @@
                (attachment-alist (and (not (eq (car attachment-prop)
                                                :attachment-disallowed))
                                       attachment-prop))
+               (absstobj-info
+                (and (consp ev) ; always true?
+                     (eq (car ev) 'defabsstobj)
+                     (getpropc (cadr ev) 'absstobj-info nil wrld)))
+               (absstobj-supporters
+                (and absstobj-info ; optimization
+                     (absstobj-supporters (cdr absstobj-info))))
                (new-fns
                 (and (or formula ; non-nil if guard is non-nil
+                         absstobj-supporters
                          attachment-alist)
                      (all-fnnames1
                       nil
                       formula ; OK even if formula=nil (treated as var)
-                      (and (or guard attachment-alist)
+                      (and (or absstobj-supporters guard attachment-alist)
                            (all-fnnames1
                             nil
                             guard
-                            (append (strip-cars attachment-alist)
+                            (append absstobj-supporters
+                                    (strip-cars attachment-alist)
                                     (strip-cdrs attachment-alist)))))))
                (new-fns (filter-out-seen new-fns seen)))
           (mv-let (new-fns seen)
@@ -554,8 +576,8 @@
 (defun events-from-supporters-fal (pairs min max wrld acc)
 
 ; Each element of pairs is of the form (n . ev) where ev is an event, and pairs
-; is sorted by car in increasing order.  We collect suitably-adjusted cadrs
-; from pairs until a car exceeds max.
+; is sorted by car in increasing order.  We collect suitably-adjusted cdrs from
+; pairs until a car exceeds max.
 
   (cond
    ((or (endp pairs)
@@ -852,7 +874,9 @@
     (mv-let (names tables show with-output events)
       (with-supporters-args rest nil nil nil nil nil)
       (let* ((form
-              `(let ((min (max-absolute-event-number (w state)))
+              `(let ((min (cdr (assoc-eq :min
+                                         (table-alist 'with-supporters-table
+                                                      (w state)))))
                      (ctx 'with-supporters))
                  (er-progn
                   ,(cadr local-event)
@@ -883,8 +907,7 @@
                                 fns (ens state) wrld min nil))
                               (ev
                                (list*
-                                'encapsulate
-                                ()
+                                'progn
                                 ',local-event
                                 '(set-enforce-redundancy t)
                                 '(set-bogus-defun-hints-ok t)
@@ -916,8 +939,19 @@
                                            "Illegal value of :show, ~x0"
                                            show)))))))))))
         (if with-output
-            `(make-event (with-output! ,@with-output ,form))
-          `(make-event ,form)))))))
+            `(with-output ,@with-output
+               (encapsulate
+                 ()
+                 (local (table with-supporters-table :min
+                               (max-absolute-event-number world)))
+                 ,local-event
+                 (make-event ,form)))
+          `(encapsulate
+             ()
+             (local (table with-supporters-table :min
+                           (max-absolute-event-number world)))
+             ,local-event
+             (make-event ,form))))))))
 
 (defmacro with-supporters (local-event &rest rest)
   (with-supporters-fn local-event rest))

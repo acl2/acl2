@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -110,7 +110,7 @@ is using two characters to indicate a new line?"))
 ; character set.  As explained above, we only intend soundness in the case that
 ; all books are certified from scratch using the same host Lisp, and we do not
 ; actually assume ASCII characters -- more precisely, we do not assume any
-; particular values for code-char and code-char -- so this check is not really
+; particular values for code-char and char-code -- so this check is not really
 ; necessary, except for a claim about ASCII characters in "Precise Description
 ; of the ACL2 Logic", which should perhaps be removed.  However, as of January
 ; 2012 we seem to be able to make the following check in all supported Lisps,
@@ -267,16 +267,16 @@ is using two characters to indicate a new line?"))
                  ~s)~%is ~s but should be ~s."
                 ch
                 (char-upcase ch)
-                (if (and (>= i 65)
-                         (<= i 90))
+                (if (and (>= i 97)
+                         (<= i 122))
                     (code-char (- (char-code ch) 32))
                   ch)))))
 
-; The following test supports the partial-encapslate in axioms.lisp that
+; The following test supports the partial-encapsulate in axioms.lisp that
 ; introduces alpha-char-p-non-standard, upper-case-p-non-standard,
 ; lower-case-p-non-standard, char-downcase-non-standard, and
-; char-upcase-non-standard.  See comments there referencing:
-; "Checks on character case".
+; char-upcase-non-standard.  See comments there referencing: "Checks on
+; character case".
 
 (dotimes (i 256)
   (let ((ch (code-char i))
@@ -297,6 +297,10 @@ is using two characters to indicate a new line?"))
                         (char-upcase ch))
                        ch))
       (setq bad 3))
+    (unless (<= (char-code (char-downcase ch)) 255)
+      (setq bad 4))
+    (unless (<= (char-code (char-upcase ch)) 255)
+      (setq bad 5))
     (when bad
       (exit-with-build-error
        "This Common Lisp is unsuitable for ACL2 because the~%~
@@ -315,6 +319,8 @@ is using two characters to indicate a new line?"))
                  (equal (char-downcase
                          (char-upcase ch))
                         ch)))
+         (4 '(<= (char-code (char-downcase ch)) 255))
+         (5 '(<= (char-code (char-upcase ch)) 255))
          (otherwise
           "Implementation Error!   Please contact the ACL2 implementors."))
        #-cmucl ""
@@ -382,7 +388,7 @@ NOTE: Please update your cmucl to the 8/2024 snapshot or later."
   (if badvars
       (exit-with-build-error
        "The following constants or special variables in the main~%Lisp ~
-        package needs to be included in the ~
+        package need to be included in the ~
         list~%*common-lisp-specials-and-constants*:~%~s."
        badvars)))
 

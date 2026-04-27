@@ -1,6 +1,6 @@
 ; A custom-keyword hint to generate 2^N combinations of N cases
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(include-book "kestrel/utilities/negate-form" :dir :system)
 
 ;dup
 (defun cons-onto-all (item lsts)
@@ -23,11 +25,7 @@
   (if (endp terms)
       nil
     (let* ((term (first terms))
-           (negated-term (if (and (consp term)
-                                  (eq 'not (car term))
-                                  (consp (cdr term)))
-                             (cadr term)
-                           `(not ,term))))
+           (negated-term (negate-form term)))
       (if (endp (rest terms))
           (list (list term) (list negated-term))
         (append (cons-onto-all term
@@ -44,7 +42,7 @@
     (if (= 1 (len terms))
         ;; special case (no AND required):
         (let ((term (first terms)))
-          (list term `(not ,term)))
+          (list term (negate-form term)))
       (cons-onto-all 'and (all-case-combinations-aux terms)))))
 
 (add-custom-keyword-hint :casesx (splice-keyword-alist :casesx (list :cases (all-case-combinations val)) keyword-alist)

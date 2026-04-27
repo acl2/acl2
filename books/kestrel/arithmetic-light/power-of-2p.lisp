@@ -1,7 +1,7 @@
 ; A recognizer for a power of 2
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,6 @@
 (local (include-book "times"))
 (local (include-book "times-and-divide"))
 (local (include-book "floor"))
-(local (include-book "integer-length"))
 
 (include-book "power-of-2p-def")
 

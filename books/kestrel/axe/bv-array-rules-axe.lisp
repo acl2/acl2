@@ -1,7 +1,7 @@
 ; Axe rules about BV arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,13 +20,14 @@
 ;(include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "axe-syntax")
 (include-book "axe-syntax-functions-bv")
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system)
+(include-book "kestrel/bv-arrays/bv-arrays" :dir :system)
 (include-book "kestrel/bv/trim" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
+(include-book "kestrel/bv-arrays/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/map-bvplus-val" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv-lists/bv-list-read-chunk-little" :dir :system) ; is this really an array op?
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 ;(include-book "kestrel/bv/bvplus" :dir :system)
 ;(include-book "list-rules") ;for EQUAL-OF-UPDATE-NTH
@@ -42,7 +43,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
-(local (include-book "kestrel/bv-lists/array-patterns" :dir :system)) ; reduce?
+(local (include-book "kestrel/bv-arrays/array-patterns" :dir :system)) ; reduce?
 
 (add-known-boolean bv-arrayp)
 
@@ -579,3 +580,10 @@
                                          index)
                                  (rest data))))
   :hints (("Goal" :use bv-array-read-shorten-when-not-zero)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-constant-opener packbv-little)
+(def-constant-opener unsigned-byte-listp)
+
+(def-constant-opener bv-list-read-chunk-little) ; is this really an array rule?

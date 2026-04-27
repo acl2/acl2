@@ -22,7 +22,7 @@
 (acl2::must-succeed
   (b* (((mv erp - - state)
         (preprocess-file "stdbool.c" :extra-args (list "-std=c17"))))
-    (value (not erp))))
+    (acl2::value (not erp))))
 
 (acl2::must-succeed
   (acl2::must-eval-to-t
@@ -30,13 +30,13 @@
           (preprocess-file "stdbool.c"
                            :out "stdbool.i"
                            :extra-args (list "-std=c17"))))
-      (value (and (not erp)
-                  (stringp out))))))
+      (acl2::value (and (not erp)
+                        (stringp out))))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
         (preprocess-file "stdbool.i" :extra-args (list "-std=c17"))))
-    (value (not erp))))
+    (acl2::value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
@@ -44,17 +44,17 @@
                          :out "stdbool.i"
                          :save nil
                          :extra-args (list "-std=c17"))))
-    (value (not erp))))
+    (acl2::value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
         (preprocess-file "nonexistent-file.c")))
-    (value (and erp t))))
+    (acl2::value (and erp t))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
         (preprocess-file "../tests/stdint.c" :extra-args (list "-std=c17"))))
-    (value (not erp))))
+    (acl2::value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - state)
@@ -62,13 +62,13 @@
           (list "stdbool.c"
                 "stdint.c")
           :extra-args (list "-std=c17"))))
-    (value (not erp))))
+    (acl2::value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp fileset state)
         (preprocess-files nil)))
-    (value (and (not erp)
-                (equal fileset (fileset nil))))))
+    (acl2::value (and (not erp)
+                      (equal fileset (fileset nil))))))
 
 (acl2::must-succeed
   (b* (((mv erp - state)
@@ -77,4 +77,4 @@
                 "stdint.c")
           :path "../tests"
           :extra-args (list "-std=c17"))))
-    (value (not erp))))
+    (acl2::value (not erp))))

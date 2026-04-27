@@ -1,8 +1,7 @@
 ; Matt K. addition: Exclude from GCL runs because of the mem field of the rv32
 ; stobj, which has size 2^32, which exceeds the array-dimension-limit of
-; 268435456 in GCL 2.7.2pre.  Similarly exclude LispWorks, where ACL2 complains
-; that 4294967296 exceeds the array-dimension-limit of 536870911.
-; cert_param: (non-gcl , non-lispworks)
+; 268435456 in GCL 2.7.2pre and 536870911 in both LispWorks and 32-bit CMUCL.
+; cert_param: (non-gcl , non-lispworks , non-cmucl)
 
 (in-package "ACL2")
 (include-book "misc-events")

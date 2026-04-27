@@ -530,7 +530,7 @@
 
 ;; Stuff about readable-files:
 
-(defthm true-list-of-cdr-of-assoc-equal-of-readable-files
+(defthm true-listp-of-cdr-of-assoc-equal-of-readable-files
   (implies (readable-files-p readable-files)
            (true-listp (cdr (assoc-equal key readable-files))))
   :hints (("Goal" :in-theory (enable readable-files-p))))

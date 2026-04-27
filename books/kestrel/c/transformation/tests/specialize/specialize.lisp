@@ -35,7 +35,7 @@
                            :core (c$::dec/oct/hex-const-dec 1)))))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -65,7 +65,7 @@
                            :core (c$::dec/oct/hex-const-dec 42)))))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test2.c"

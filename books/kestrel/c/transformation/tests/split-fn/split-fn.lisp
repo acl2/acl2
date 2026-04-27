@@ -32,7 +32,7 @@
             :split-point 1)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -61,7 +61,7 @@ int foo(int y) {
             :split-point 2)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test2.c"
@@ -97,7 +97,7 @@ unsigned long add_and_sub_all(long arr[], unsigned int len) {
             :split-point 1)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test3.c"
@@ -130,7 +130,7 @@ int foo(int x) {
             :split-point 1)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test4.c"
@@ -162,7 +162,7 @@ int foo(int x) {
             :split-point 1)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test5.c"
@@ -193,7 +193,7 @@ int foo() {
             :split-point 2)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/alias.c"

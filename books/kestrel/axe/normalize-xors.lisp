@@ -1,7 +1,7 @@
 ; A tool to normalize XOR nests in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -24,7 +24,7 @@
 ;operands to bitxor/bvxor are sorted into decreasing order - i hope that helps with sharing
 ;all constants are combined and put first
 
-;this may now efficiently handle even xor nests with an exponetial number of leaves.. - how will that apply to functions that don't have the nice property of xor that x xor x = 0
+;this may now efficiently handle even xor nests with an exponential number of leaves.. - how will that apply to functions that don't have the nice property of xor that x xor x = 0
 ;well, for and and or, you can drop all but one of a set of equal operands
 
 ;BBOZO handle negations! -well, we handle xoring with 1, right?
@@ -524,9 +524,7 @@
                     (< nil bound))))
   :hints (("Goal" :in-theory (e/d (all-< nth) (nth-of-cdr)))))
 
-(local (in-theory (disable <-OF-NTH-WHEN-BOUNDED-DARG-LISTP)))
-
-(local (in-theory (enable CAR-BECOMES-NTH-OF-0)))
+(local (in-theory (enable car-becomes-nth-of-0))) ; why?
 
 (local (in-theory (enable not-<-of-nth-and-0-when-all-natp)))
 
@@ -817,9 +815,6 @@
 ;;                                      0   ;accumulated-constant
 ;;                                      )))
 
-(local (in-theory (enable ;not-cddr-when-bounded-darg-listp ;maybe enable for all axe stuff?
-                          ;<-OF-NTH-WHEN-BOUNDED-DARG-LISTP ;make a cheap version with a free var
-                          )))
 
 ;; ;returns (mv new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist translation-array)
 ;; ;check this over..
@@ -1055,7 +1050,7 @@
    :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
                                    (pseudo-dag-arrayp))))))
 
-(defthm integer-of-mv-nth-1-of-bvxor-nest-leaves-aux
+(defthm integerp-of-mv-nth-1-of-bvxor-nest-leaves-aux
   (implies (integerp accumulated-constant)
            (integerp (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))
   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp)))))

@@ -12,4 +12,4 @@
 
 (include-book "rtl/rel11/portcullis" :dir :system)
 
-; cert-flags: ? T :TTAGS :ALL
+; cert-flags: ? T

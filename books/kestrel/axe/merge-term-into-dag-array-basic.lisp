@@ -1,7 +1,7 @@
 ; Utilities to merge terms into dags (and to convert terms into dags).
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -36,7 +36,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
-(local (include-book "kestrel/lists-light/take" :dir :system))
+;(local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
@@ -62,7 +62,11 @@
                         ;;bounded-darg-listp-when-all-consp
                         strip-cdrs
                         ;; for speed:
-                        pseudo-termp))))
+                        pseudo-termp
+                        cddr-when-pseudo-termp-and-quotep
+                        natp
+                        ;; myquotep ; need myquotep-when-pseudo-termp
+                        ))))
 
 (defthmd true-listp-of-nth-1-of-nth-0-when-pseudo-termp
   (implies (and (pseudo-termp term)

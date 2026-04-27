@@ -27,7 +27,7 @@
 (include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly, brings in skip-proofs ; todo: try rewriter-basic but we might need support for embedded dags
 ;(include-book "dag-size")
-(include-book "dagify") ; for dag-or-term-to-term
+(include-book "dagify") ; for dag-or-term-to-term ; todo: skip-proofs
 (include-book "make-term-into-dag-basic")
 (include-book "make-term-into-dag-simple")
 ;(include-book "equivalent-dags")
@@ -44,13 +44,15 @@
 ;(include-book "kestrel/utilities/real-time-since" :dir :system)
 ;(include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
+(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
 (include-book "basic-rules")
 (include-book "arithmetic-rules-axe")
 (include-book "bv-array-rules-axe") ; not all are needed, but we need integerp-of-bv-array-read
 (include-book "bv-intro-rules")
-(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
+(include-book "kestrel/bv-arrays/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BVCHOP, etc?
@@ -338,7 +340,7 @@
        ;; WARNING: This can blow up:
        (term (dag-to-term dag))
        ;; Call the rewriter:
-       ((mv erp dag-or-quotep)
+       ((mv erp dag-or-quotep &) ; use the hits?
         (simplify-term-basic term
                              assumptions
                              rule-alist
@@ -369,7 +371,7 @@
                       *max-1d-array-length*)))
         (cw "ERROR: Dags too large.")
         (mv *error* nil state))
-       (- (and print (cw "Done applying the Axe rewriter wiith contexts (term size: ~x0, DAG size: ~x1))~%"
+       (- (and print (cw "Done applying the Axe rewriter with contexts (term size: ~x0, DAG size: ~x1))~%"
                          (dag-or-quotep-size dag-or-quotep)
                          (if (quotep dag-or-quotep)
                              1
@@ -494,7 +496,7 @@
                   ))
   (b* ((dag (first problem))
        (assumptions (second problem))
-       (term (dag-to-term dag))
+       (term (dag-or-constant-to-term dag))
        (- (and print (cw "(Calling ACL2 on term ~x0.~%" term)))
        ((mv & provedp state)
         (prove$ ;TODO: Add support for hints
@@ -600,6 +602,7 @@
         (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
         (mv *error* nil state))
        ((mv erp dag-or-quotep & ;limits
+            & ; hits
             )
         (simplify-dag-basic dag
                             assumptions
@@ -648,7 +651,7 @@
        ((mv provedp negated-assumption-nodenums) ; todo: can there really be constants in negated-assumption-nodenum-or-quoteps?
         (handle-constant-disjuncts negated-assumption-nodenum-or-quoteps nil))
        ((when provedp)
-        (cw "NOTE: STP tactic proved it due to a assumption of false.)~%") ; balances "(Applying STP tactic"
+        (cw "NOTE: STP tactic proved it due to an assumption of false.)~%") ; balances "(Applying STP tactic"
         (mv *valid* nil state))
        ;; We'll try prove that either the conclusion is true or one of the assumptions is false:
        (disjunct-nodenums (cons top-nodenum negated-assumption-nodenums))
@@ -875,7 +878,7 @@
                  (cw "The DAG is:~%")
                  (print-dag-or-quotep dag)
                  (if (< (dag-or-quotep-size dag) 10000)
-                     (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
+                     (cw "~%(Term: ~X01)~%" (dag-or-constant-to-term dag) nil)
                    nil)
                  (mv *unknown* info-acc state)))
      (b* ((tactic (first tactics))
@@ -1094,7 +1097,7 @@
                   :mode :program
                   :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ;; Check some inputs:
        ((when (not (member-eq type '(:bit :boolean))))
         (er hard 'prove-with-tactics-fn "Illegal value of :type argument: ~x0.  Must be :boolean or :bit." type)
@@ -1129,11 +1132,11 @@
        (state (if debug state (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of theorem succeeded.~%"))
-             (table-event `(table prove-with-tactics-table ',whole-form ',name)) ; just using the name here, since there may be no theorem
+             (table-event (redundancy-table-event whole-form name)) ; just using the name here, since there may be no theorem ; just use :fake or :result-not-stored?
              (maybe-theorem
                (and produce-theoremp
                     (b* ((theorem-conclusion (if (< (dag-or-quotep-size dag-or-constant) 1000)
-                                                 (if (quotep dag-or-constant) dag-or-constant (dag-to-term dag-or-constant))
+                                                 (if (quotep dag-or-constant) dag-or-constant (dag-or-constant-to-term dag-or-constant))
                                                (embed-dag-in-term dag-or-constant (w state))))
                          (defthm-name (or name (fresh-name-in-world-with-$s 'prove-with-tactics nil (w state))))
                          (disablep (if rule-classes t nil)) ;can't disable if :rule-classes nil ;todo: make this an option
@@ -1223,7 +1226,7 @@
                   :mode :program
                   :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ;; Check inputs:
        ((when (not (tacticsp tactics)))
         (er hard 'prove-equal-with-tactics-fn "Illegal tactics: ~x0. See TACTICP." tactics)
@@ -1240,7 +1243,7 @@
        (state (if debug state (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of equivalence succeeded.~%"))
-             (table-event `(table prove-equal-with-tactics-table ',whole-form ',name)) ; just using the name here, since there may be no theorem
+             (table-event (redundancy-table-event whole-form name)) ; just using the name here, since there may be no theorem
              (maybe-theorem
                (and produce-theoremp
                     (b* ((term1 (dag-or-term-to-term dag-or-term1 state)) ; todo: can blow up?

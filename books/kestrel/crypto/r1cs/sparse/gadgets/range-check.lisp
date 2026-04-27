@@ -1,6 +1,6 @@
 ; An R1CS gadget for comparing a packed value to a constant
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -238,7 +238,6 @@
 (defthm alistp-of-mv-nth-1-of-make-range-check-pi-constraints-aux
   (implies (and (alistp pivar-renaming)
                 ;(nat-listp (strip-cars pivar-renaming))
-                (alistp pivar-renaming)
                 (symbol-listp pivars))
            (alistp (mv-nth 1 (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming))))
   :hints (("Goal" :in-theory (enable make-range-check-pi-constraints-aux))))
@@ -246,14 +245,12 @@
 (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-make-range-check-pi-constraints-aux
   (implies (and (alistp pivar-renaming)
                 (nat-listp (strip-cars pivar-renaming))
-                (alistp pivar-renaming)
                 (symbol-listp pivars))
            (nat-listp (strip-cars (mv-nth 1 (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming)))))
   :hints (("Goal" :in-theory (enable make-range-check-pi-constraints-aux))))
 
 (defthm symbol-listp-of-strip-cdrs-of-mv-nth-1-of-make-range-check-pi-constraints-aux
   (implies (and (alistp pivar-renaming)
-                ;; (alistp pivar-renaming)
                 (symbol-listp pivars)
                 (symbol-listp (strip-cdrs pivar-renaming)))
            (symbol-listp (strip-cdrs (mv-nth 1 (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming)))))
@@ -319,7 +316,6 @@
 (defthm subsetp-equal-of-indices-for-1s-and-indices-for-1s
   (implies (and (<= low low+)
                 (integerp high)
-                (integerp low)
                 (natp low)
                 (integerp low+))
            (SUBSETP-EQUAL (indices-for-1s high low+ C)
@@ -774,8 +770,7 @@
                            (bitp)))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-aux-type-1
-  (implies (and (primep p)
-                (integerp i)
+  (implies (and (integerp i)
                 (natp tvar)
                 (symbol-listp avars)
                 (symbol-listp pivars)
@@ -806,8 +801,7 @@
                            (bitp)))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-aux-type-2
-  (implies (and (primep p)
-                (integerp i)
+  (implies (and (integerp i)
                 (natp tvar)
                 (symbol-listp avars)
                 (symbol-listp pivars)
@@ -868,8 +862,7 @@
                                          (acons (+ -1 n) a_n-1 nil))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-type-1
-  (implies (and (primep p)
-                (symbol-listp avars)
+  (implies (and (symbol-listp avars)
                 (symbol-listp pivars)
                 (no-duplicatesp-equal pivars)
                 (no-duplicatesp-equal avars)
@@ -890,8 +883,7 @@
            :in-theory (enable make-range-check-pi-constraints))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-type-2
-  (implies (and (primep p)
-                (symbol-listp avars)
+  (implies (and (symbol-listp avars)
                 (symbol-listp pivars)
                 (no-duplicatesp-equal pivars)
                 (no-duplicatesp-equal avars)
@@ -1445,7 +1437,6 @@
 (defthm indices-for-1s-split-bottom-index
   (implies (and (equal 1 (getbit low c))
                 (integerp high)
-                (integerp low)
                 (<= low high)
                 (natp low))
            (equal (indices-for-1s high low c)
@@ -1456,7 +1447,6 @@
 (defthm indices-for-1s-when-low-bit-0
   (implies (and (equal 0 (getbit low c))
                 (integerp high)
-                (integerp low)
                 (<= low high)
                 (natp low))
            (equal (indices-for-1s high low c)

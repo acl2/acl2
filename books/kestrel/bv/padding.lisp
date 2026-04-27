@@ -17,7 +17,7 @@
 (include-book "bvmult")
 (include-book "bvif")
 (include-book "bvcat")
-(include-book "bvxor")
+(include-book "bvxor-def")
 
 ;Depending on how we translate to SMT, We might prefer, for example:
 ;(bvxor 8 x (bvchop 8 (foo x)) (slice 7 0 y))

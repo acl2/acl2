@@ -2,7 +2,7 @@
 ;
 ; acl2-doc.lisp - Documentation for the ACL2 Theorem Prover
 ;
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 ;
 ; This documentation was derived from the ACL2 system in October 2013, which
@@ -73,6 +73,7 @@
     (ASSERT! "[books]/std/testing/assert-bang.lisp")
     (ASSERT!-STOBJ "[books]/std/testing/assert-bang-stobj.lisp")
     (B* "[books]/std/util/bstar.lisp")
+    (BEST-PRACTICES "[books]/doc/practices.lisp")
     (BIT-VECTORS "[books]/doc/more-topics.lisp")
     (BRIDGE "[books]/centaur/bridge/top.lisp")
     (OSLIB::CATPATH "[books]/oslib/catpath.lisp")
@@ -94,7 +95,6 @@
     (DEFTHM<W "[books]/kestrel/utilities/auto-instance.lisp")
     (DEFTHMG "[books]/tools/defthmg.lisp")
     (ACL2S::DEFUNC "[books]/acl2s/defunc.lisp")
-    (DEFXDOC "[books]/xdoc/topics.lisp")
     (GETOPT-DEMO::DEMO2 "[books]/centaur/getopt/demo2.lisp")
     (DEVELOPERS-GUIDE "[books]/system/doc/developers-guide.lisp")
     (DEVELOPERS-GUIDE-UTILITIES "[books]/system/doc/developers-guide.lisp")
@@ -132,6 +132,7 @@
     (NOTE-8-4-BOOKS "[books]/doc/relnotes.lisp")
     (NOTE-8-5-BOOKS "[books]/doc/relnotes.lisp")
     (NOTE-8-6-BOOKS "[books]/doc/relnotes.lisp")
+    (NOTE-8-7-BOOKS "[books]/doc/relnotes.lisp")
     (STR::NUMBERS "[books]/std/strings/top.lisp")
     (OPEN-TRACE-FILE! "[books]/tools/open-trace-file-bang.lisp")
     (ORACLE-TIMELIMIT "[books]/tools/oracle-timelimit.lisp")
@@ -143,7 +144,10 @@
     (STR::PRETTY-PRINTING "[books]/std/strings/pretty.lisp")
     (PROFILE-ACL2 "[books]/centaur/memoize/old/profile.lisp")
     (PROFILE-ALL "[books]/centaur/memoize/old/profile.lisp")
+    (PROJECTS "[books]/projects/top-doc.lisp")
     (PROVE$ "[books]/tools/prove-dollar.lisp")
+    (PUBLICATIONS "[books]/doc/publications.lisp")
+    (PUBS::PUBS-BOOKS "[books]/doc/publications.lisp")
     (QUICKLISP "[books]/quicklisp/top.lisp")
     (RELEASE-NOTES-BOOKS "[books]/doc/relnotes.lisp")
     (REMOVABLE-RUNES "[books]/tools/removable-runes.lisp")
@@ -177,6 +181,7 @@
     (WITH-TIMEOUT "[books]/acl2s/cgen/with-timeout.lisp")
     (WITHOUT-SUBSUMPTION "[books]/tools/without-subsumption.lisp")
     (WORKING-WITH-PACKAGES "[books]/doc/practices.lisp")
+    (WORKSHOPS "[books]/doc/more-topics.lisp")
     (WRITE-LIST "[books]/misc/file-io-doc.lisp")
     (XDOC "[books]/xdoc/topics.lisp")))
 
@@ -189,7 +194,7 @@
 ; who are looking at an older version of ACL2 will see the corresponding
 ; ACL2+Books Manual at this link.
 
-  "https://www.cs.utexas.edu/users/moore/acl2/v8-6/")
+  "https://www.cs.utexas.edu/users/moore/acl2/v8-7/")
 
 (defun acl2-url-ref (path s)
 
@@ -3470,19 +3475,18 @@
   (active-runep '(:rewrite left-to-right))
 
   General Form:
-  (active-runep rune &optional strict)
+  (active-runep x &optional strict)
  })
 
- <p>where @('rune') has the shape of a @(see rune).  This macro expands to an
- expression using the variables @('ens') and @('state'), and returns
- non-@('nil') when the given rune exists and is @(see enable)d (according to
- the given ``enabled structure,'' @('ens'), and the current logical @(see
- world) of the given @(tsee state)).  See @(see theory-invariant) for how this
- macro can be of use.</p>
+ <p>This macro expands to an expression using the variables @('ens') and
+ @('state'), and returns non-@('nil') when the argument evaluates to an @(see
+ enable)d @(see rune) (according to the given ``enabled structure,'' @('ens'),
+ and the current logical @(see world) of the given @(tsee state)).  See @(see
+ theory-invariant) for how this macro can be of use.</p>
 
  <p>When the optional argument is @('nil') or is omitted, then although the
- argument is required to have the shape of a @(see rune), it need not be a
- rune.  For example, if there is no rewrite rule named @('left-to-right'), then
+ argument generally has the shape of a @(see rune), it need not be a rune.  For
+ example, if there is no rewrite rule named @('left-to-right'), then
  @('(active-runep '(:rewrite left-to-right))') will simply return @('nil').  If
  instead you'd like this call to cause an error, use a non-nil optional
  argument or, equivalently, use @(tsee active-or-non-runep).</p>")
@@ -4606,6 +4610,20 @@ and @(tsee include-book)"
  </ul>
 
  ")
+
+;;; The following is commented out because alist-keys is already documented in
+;;; std/alists/alist-keys.lisp.
+; (defxdoc alist-keys
+;   :parents (stobj acl2-built-ins)
+;   :short "Count the number of keys in association list"
+;   :long "<p>@('(Alist-keys al)') returns the sorted list of keys in an
+;  association list.  The sorting function is @(tsee merge-sort-lexorder).</p>
+; 
+;  <p>@('Alist-keys') has a guard of @('t').  This function is called in the body
+;  of function, @('<h>-keys') where @('<h>') is a hash-table field of a @(see
+;  stobj).  See @(see defstobj).</p>
+; 
+;  @(def alist-keys)")
 
 (defxdoc alist-keys-subsetp
   :parents (alists acl2-built-ins)
@@ -15309,19 +15327,17 @@ way to split up large ACL2 developments into separate modules."
  is also used for reading from the terminal; but, sadly, this may not hold for
  all host Lisps, and may not even be possible for some of them.</p>
 
- <p>The use of the above encoding could in principle cause problems if one's
- editor produces files using an encoding other than ISO-8859-1, at least if one
- uses non-standard characters.  In particular, the default Emacs buffer
- encoding may be utf-8.  If your file has non-standard characters, then in
- Emacs you can evaluate the form</p>
+ <p>Despite the use of Latin-1 for reading files, it is possible to use
+ UTF-8-encoded characters in ACL2 books.  Note though that the use of such
+ characters may result in surprising behavior, since a single user-perceived
+ character may correspond to multiple ACL2 @(see characters).  See
+ @(see using-utf-8) for more details on the possible pitfalls related to
+ UTF-8.</p>
 
- @({
-  (setq save-buffer-coding-system 'iso-8859-1)
- })
-
- <p>before saving the buffer into a file.  This will happen automatically for
- users who load distributed file @('emacs-acl2.el') (from a suitable directory;
- see @(see emacs)) into their Emacs sessions.</p>
+ <p>For users of @(see emacs), the buffer encoding is typically inferred from
+ the file, defaulting to UTF-8 if no special characters are found.  If
+ necessary, @(see emacs) can be instructed to convert the character encoding on
+ file save by setting the @('save-buffer-coding-system') variable.</p>
 
  <p>For an example of character encodings in action, see the community book
  @('books/misc/character-encoding-test.lisp').</p>")
@@ -19341,8 +19357,6 @@ subtree of X with T, without duplication.</p>
  of function, @('<h>-count') where @('<h>') is a hash-table field of a @(see
  stobj).  See @(see defstobj).</p>
 
- @(def hons-remove-assoc)
-
  @(def count-keys)")
 
 (defxdoc course-materials
@@ -19494,7 +19508,8 @@ href='http://www.cs.utexas.edu/users/moore/classes/index.html'>here</a>.</li>
  <p>The time taken to carry out this process depends on the host Lisp and the
  host processor but may well be under a minute.  The size of the resulting
  binary image is dependent on which Lisp was used, but it may be on the order
- of a couple hundred megabytes or so.</p>
+ of a couple hundred megabytes or so (probably several hundred if GCL was
+ used).</p>
 
  <p>This @('make') command works for the supported host Common Lisp
  implementations; see @(see obtaining-common-lisp), on systems we have
@@ -22547,7 +22562,7 @@ href='http://www.cs.utexas.edu/users/moore/classes/index.html'>here</a>.</li>
   below.  The basic idea is that a formal can be assigned ilk @(':FN') (or ilk
   @(':EXPR')) iff it is sometimes passed into a @(':FN') (or @(':EXPR')) slot
   in the body of @('fn') and is never passed into any other kind of slot.  A
-  formal can be be assigned ilk @('NIL') iff it is never passed into a slot of
+  formal can be assigned ilk @('NIL') iff it is never passed into a slot of
   ilk @(':FN') or @(':EXPR'), i.e., if it is used exclusively as an
   ``ordinary'' object.  We are more precise below.</p>
 
@@ -23089,14 +23104,15 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
      ((g1 x1 ... xn_1)
       ...
       (gk x1 ... xn_k))
-     :namedp flg)       ; [optional keyword argument]
+     :namedp flg ; [optional keyword argument]
+     :skip-checks sflg ; [optional keyword argument]
+     )
  })
 
  <p>where @('ev') and @('ev-list') are new function symbols and @('g1'), ...,
  @('gk') are old function symbols with the indicated number of formals, i.e.,
- each @('gi') has @('n_i') formals.  If the @(':namedp') keyword argument
- is provided, its value should be Boolean.  If not provided, the default
- value for @('flg') is @('nil').</p>
+ each @('gi') has @('n_i') formals.  Each keyword argument should be Boolean
+ and defaults to @('nil').</p>
 
  <p>This function provides a convenient way to constrain @('ev') and
  @('ev-list') to be mutually-recursive evaluator functions for the symbols
@@ -23109,12 +23125,12 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  a proof that it is correct for any larger evaluator function.  See @(see meta)
  for a discussion of metafunctions.</p>
 
- <p>If the @(':namedp') @('flg') is @('nil') (the default) constraints have
+ <p>If the @(':namedp') @('nflg') is @('nil') (the default) constraints have
  names of the form <i>ev</i>@('-CONSTRAINT-')<i>i</i>, e.g.,
- @('EV-CONSTRAINT-0'), @('EV-CONSTRAINT-1'), etc.  If @('flg') is non-@('nil'),
- the constraints are named more mnemonically, e.g., @('EV-OF-VARIABLE'),
- @('EV-OF-REVAPPEND-CALL'), etc.  We illustrate the @(':namedp t') names
- below.</p>
+ @('EV-CONSTRAINT-0'), @('EV-CONSTRAINT-1'), etc.  If @('nflg') is
+ non-@('nil'), the constraints are named more mnemonically, e.g.,
+ @('EV-OF-VARIABLE'), @('EV-OF-REVAPPEND-CALL'), etc.  We illustrate the
+ @(':namedp t') names below.</p>
 
  <p>@('Defevaluator') executes an @(tsee encapsulate) after generating the
  appropriate @(tsee defun) and @(tsee defthm) events.  Perhaps the easiest way
@@ -23223,6 +23239,12 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  @('(caddar x)').  However, ACL2 lambda expressions are all <i>closed</i>: in
  @('(lambda (v1 ... vn) body)'), the only free variables in @('body') are among
  the @('vi').  See @(see term).)</p>
+
+ <p>The @(':skip-checks') argument is @('nil') by default, in which case
+ certain preliminary checks are made in order to provide helpful error
+ messages.  When this argument is @('t'), those checks are skipped, in which
+ case the resultin @('encapsulate') event will fail if those checks would have
+ produced an error, but the error message may be less helpful.</p>
 
  <p>Acknowledgment: We thank Sol Swords and Jared Davis for their community
  book @('tools/defevaluator-fast.lisp'), which provided the model on which the
@@ -24972,7 +24994,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  creator, accessors, updaters, constants.  For fields of @('ARRAY') type, this
  event also introduces length and resize functions.  For fields of
  @('HASH-TABLE') type, this event also introduces boundp, get?, remove, count,
- clear, and initialization functions.  Fields of @('STOBJ-TABLE') type
+ keys, clear, and initialization functions.  Fields of @('STOBJ-TABLE') type
  introduce those functions as well except for the get? function.</p>
 
  <h3>The Single-Threaded Object Introduced</h3>
@@ -25039,7 +25061,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  introduced; see @(see defstobj-element-type) for discussion of the
  @(':element-type') keyword that may be provided for performance .  For fields
  of @('HASH-TABLE') or @('STOBJ-TABLE') type, this event also introduces
- boundp, get? (@('HASH-TABLE') types only), remove, count, clear, and
+ boundp, get? (@('HASH-TABLE') types only), remove, count, keys, clear, and
  initialization functions, as discussed below.  Constants are introduced that
  correspond to the accessor functions.</p>
 
@@ -25251,6 +25273,9 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  <li>a ``count'' function that returns the number of (distinct) bound
  keys;</li>
 
+ <li>a ``keys'' function that returns the list of bound keys, sorted with
+ @(tsee merge-sort-lexorder);</li>
+
  <li>a ``clear'' function that creates a new empty hash table (and logically,
  the empty alist);</li>
 
@@ -25311,14 +25336,14 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
 
  <p>These functions &mdash; the recognizer, accessor, and updater, and also
  length and resize functions in the case of array fields, and boundp, get?,
- remove, count, clear, and init functions in the case of hash-table fields
- &mdash; have ``default names.''  The default names depend on the field name,
- @('fieldi'), and on whether the field is an array field, a hash-table field,
- or neither (i.e., a scalar field).  For clarity, suppose @('fieldi') is named
- @('c'). The default names are shown below in calls, which also indicate the
- arities of the functions.  In the expressions, we use @('x') as the object to
- be recognized by field recognizers, @('i') as an array index or the size of a
- resized array, @('k') as a key (for the logical association list or raw-Lisp
+ remove, count, keys, clear, and init functions in the case of hash-table
+ fields &mdash; have ``default names.''  The default names depend on the field
+ name, @('fieldi'), and on whether the field is an array field, a hash-table
+ field, or neither (i.e., a scalar field).  For clarity, suppose @('fieldi') is
+ named @('c'). The default names are shown below in calls, which also indicate
+ the arities of the functions.  In the expressions, we use @('x') as the object
+ to be recognized by field recognizers, @('i') as an array index or the size of
+ a resized array, @('k') as a key (for the logical association list or raw-Lisp
  hash table associated with the field), @('v') as the ``new value'' to be
  installed by an updater, and @('name') as the single-threaded object.</p>
 
@@ -25336,6 +25361,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   get? [For hash-tables only, not stobj-tables]        (c-get? k name)
   remove                                               (c-rem k name)
   count                                                (c-count name)
+  keys                                                 (c-keys name)
   clear                                                (c-clear name)
   init                                                 (c-init ht-size
                                                                rehash-size
@@ -25390,6 +25416,8 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
                                    ;   (mv nil nil) if key is not bound in H
   (DEFUN H-REM (K $S) ...)         ; remove key K from field H
   (DEFUN H-COUNT ($S) ...)         ; the number of (distinct) keys in field H
+  (DEFUN H-KEYS ($S) ...)          ; the sorted list of (distinct) keys in
+                                   ;   field H, sorted by merge-sort-lexorder
   (DEFUN H-CLEAR ($S) ...)         ; empty the hash table for field H
   (DEFUN H-INIT (HT-SIZE REHASH-SIZE REHASH-THRESHOLD $S) ...)
                                    ; replace the hash table for field H with
@@ -27626,7 +27654,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   below.  The basic idea is that a formal can be assigned ilk @(':FN') (or ilk
   @(':EXPR')) iff it is sometimes passed into a @(':FN') (or @(':EXPR')) slot
   in the body of @('fn') and is never passed into any other kind of slot.  A
-  formal can be be assigned ilk @('NIL') iff it is never passed into a slot of
+  formal can be assigned ilk @('NIL') iff it is never passed into a slot of
   ilk @(':FN') or @(':EXPR'), i.e., if it is used as an ``ordinary'' object.
   We are more precise below.</p>
 
@@ -27988,7 +28016,7 @@ ld) and @(tsee include-book)"
  <p>The predicate @('dfp') recognizes those rational numbers that have a
  floating-point representation.  We do not review floating-point numbers here,
  other than to note that a floating-point number is equal to a binary
- significand between 1 and 2 times 2 to a power, such as as @('1.01100 *
+ significand between 1 and 2 times 2 to a power, such as @('1.01100 *
  2^30').  For example, 1/4 is representable but 1/3 is not.</p>
 
  @({
@@ -32310,26 +32338,34 @@ ld) and @(tsee include-book)"
   :parents (acl2-tutorial)
   :short "Emacs support for ACL2"
   :long "<p>Many successful users of ACL2 take advantage of the Emacs editor,
- for example by running ACL2 in an Emacs shell buffer.  If you do so, then you
- may wish to load the distributed file @('emacs-acl2.el') from one of two
- directories under the main ACL2 directory: @('books/emacs/') if you use a
- recent version of Emacs, or @('emacs/') if you use Emacs 24.  An easy way to
- arrange this is to put the load form into your @('.emacs') file; here,
- @('DIR') denotes your main ACL2 directory.</p>
+ for example by running ACL2 in an Emacs shell buffer.  See @(see
+ emacs-workflow).  If you use ACL2 with Emacs, then you may wish to load the
+ file @('emacs-acl2.el'), which provides many helpful ACL2-specific
+ commands and settings.  Most users should use the following Emacs command:</p>
 
  @({
- (load \"DIR/books/emacs/emacs-acl2.el\") ; for recent Emacs versions
+ (load \"DIR/books/emacs/emacs-acl2.el\")
  })
 
- <p><b>-OR-</b></p>
+ <p>where @('DIR') should be changed to the path to your main ACL2 directory.
+ </p>
+
+ <p>An easy way to arrange this is to put this @('load') command into your
+ Emacs init file (e.g., @('~/.emacs.d/init.el') or @('~/.emacs')).</p>
+
+ <p>Users of Emacs 24 (an older version) may instead prefer to use the
+ following command to load a version of the file that is suitable for Emacs
+ 24:</p>
 
  @({
  (load \"DIR/emacs/emacs-acl2.el\") ; for Emacs 24
  })
 
- <p>The file begins with considerable comments describing what it offers.</p>
+ <p>The file @('emacs-acl2.el') begins with considerable comments describing
+ what it offers.  We recommend reading through the file to see what commands
+ are available and how to invoke them using Emacs key combinations.</p>
 
- <p>In particular, the above file provides the ACL2-Doc browser, a convenient
+ <p>Notably, @('emacs-acl2.el') provides the ACL2-Doc browser, a convenient
  tool for viewing, in Emacs, documentation for both the ACL2 system and the
  documented community books, as well as custom manuals.  See @(see
  ACL2-Doc).</p>
@@ -35177,7 +35213,7 @@ ld) and @(tsee include-book)"
  example, @('(p -7)'), @('(p 'abc)'), and @('(p 0)') are all established by
  Base Case 1.  @('(p 1)') is established by Base Case 2.  @('(p 2)') is
  established from @('(p 0)') and the Induction Step.  Think about it!  @('(p
- 3)') is established form @('(p 1)') and the Induction Step, etc.</p>
+ 3)') is established from @('(p 1)') and the Induction Step, etc.</p>
 
  <p>A function that suggests this induction is:</p>
 
@@ -35359,7 +35395,7 @@ ld) and @(tsee include-book)"
  </code>
 
  <p>Note that the induction hypothesis is about an @('i') that is <i>bigger</i>
- than the @('i') in in the conclusion.  In induction, as in recursion, the
+ than the @('i') in the conclusion.  In induction, as in recursion, the
  sense of one thing being ``smaller'' than another is determined by an
  arbitrary measure of all the variables, not the magnitude or extent of some
  particular variable.</p>
@@ -53191,7 +53227,7 @@ tables in the current Hons Space."
  infinities.</p>
 
  <p>Then for @('e') to be in interval @('x'), it must be the case that @('e')
- satisfies the domain predicate <i>dom</i> (where where <i>dom</i>=@('nil')
+ satisfies the domain predicate <i>dom</i> (where <i>dom</i>=@('nil')
  means there is no restriction on the domain) and @('(<? ')<i>lo-rel lo</i>@('
  e)') and @('(<? ')<i>hi-rel</i>@(' e ')<i>hi</i>@(')').  [Note: ``Appropriate
  treatment of infinities'' is slightly awkward if both infinities are
@@ -53497,7 +53533,12 @@ tables in the current Hons Space."
  arguments are not evaluated.  @('Invariant') is just a macro that expands into
  a term that checks that not both @(see rune)s are enabled.  See @(see
  theory-invariant).  Also see @(see incompatible!) for a variant that insists
- the arguments are indeed runes, not merely having the shapes of runes.</p>")
+ the arguments are indeed runes, not merely having the shapes of runes.</p>
+
+ <p>Note that each argument must have the shape of a rune, as defined by
+ @('weak-runep').</p>
+
+ @(def weak-runep)")
 
 (defxdoc incompatible!
   :parents (theories)
@@ -54542,9 +54583,9 @@ tables in the current Hons Space."
  <li>Decide which of the following you want to install:
    <ul>
          <li>The <b>latest ACL2 release</b>
-         (<see topic='@(url note-8-6)'>version 8.6</see>).  The release is
+         (<see topic='@(url note-8-7)'>version 8.7</see>).  The release is
          stable and very well tested but does not include any improvements
-         or fixes made since October, 2024.  It may be appropriate
+         or fixes made since March, 2026.  It may be appropriate
          if you do not need the very latest tools and libraries and
          do not plan to contribute to the @(see community-books).  A
          <see topic='@(url pre-built-binary-distributions)'>pre-built
@@ -54575,19 +54616,19 @@ tables in the current Hons Space."
  <li>Depending on your decision in Step 1, download ACL2 by doing
      either of the following:
     <ul>
-        <li><b>For the latest ACL2 release</b> (version 8.6):
+        <li><b>For the latest ACL2 release</b> (version 8.7):
           <ol>
             <li>Change to a directory that does not already contain a
-            subdirectory called @('acl2-8.6').</li>
-            <li>Download <a href='https://github.com/acl2-devel/acl2-devel/releases/download/8.6/acl2-8.6.tar.gz'>
-            @('acl2-8.6.tar.gz')</a> to that directory.</li>
+            subdirectory called @('acl2-8.7').</li>
+            <li>Download <a href='https://github.com/acl2-devel/acl2-devel/releases/download/8.7/acl2-8.7.tar.gz'>
+            @('acl2-8.7.tar.gz')</a> to that directory.</li>
             <li>Execute the following:
             @({
-            tar xfz acl2-8.6.tar.gz
-            cd acl2-8.6
+            tar xfz acl2-8.7.tar.gz
+            cd acl2-8.7
             })</li>
           </ol>
-          The new subdirectory @('acl2-8.6') should now
+          The new subdirectory @('acl2-8.7') should now
           be your shell's current directory.
         </li>
 
@@ -55864,7 +55905,7 @@ tables in the current Hons Space."
 
   <p>The current documentation topic takes a slightly more informal approach
   but covers much of the same ground.  In particular, after some preliminary
-  remarks we coach you through a few simple simple exercises involving
+  remarks we coach you through a few simple exercises involving
   @('apply$') and related concepts.  During these exercises we draw your
   attention to some basic lessons to keep in mind.  At the end of this topic we
   list some simple challenge problems.</p>
@@ -75039,7 +75080,7 @@ it."
  })
 
  <p>Notice that in the following (silly) conjecture, ACL2 initially does only
- does the simplification directed by the metafunction; a second goal is
+ the simplification directed by the metafunction; a second goal is
  generated before the commutativity of addition can be applied.  If the above
  calls of @('UNHIDE') and @('HIDE') had been stripped off, then @('Goal'')
  would have been the term printed in @('Goal''') below.</p>
@@ -76321,7 +76362,7 @@ it."
  no printing.</p>
 
  <p>Some @(':rewrite') rules are considered ``simple abbreviations''; see @(see
- simple).  These can be be monitored, but are only tried at certain times
+ simple).  These can be monitored, but are only tried at certain times
  during the proof.  Monitoring is carried out by code inside the rewriter but
  abbreviation rules may be applied by a special purpose simplifier inside the
  so-called <i>preprocess</i> phase of a proof.  If you desire to monitor an
@@ -76382,7 +76423,7 @@ it."
  the @('lhs') matches the target, the rewriter then attempts to establish the
  @('hypi') by rewriting each of them in turn, instantiating each @('hypi') with
  the substitution.  If the instance of each @('hypi') rewrites to true, we know
- &mdash; by the theorem justifying this rule &mdash; that that the instance of
+ &mdash; by the theorem justifying this rule &mdash; that the instance of
  @('lhs') is equivalent to the corresponding instance of @('rhs'), but the
  instance of @('lhs') is the target.  So the rewriter is logically justified in
  replacing the occurrence of the target by the instance of @('rhs') and
@@ -82132,7 +82173,7 @@ it."
                  (implies (and (op x y) (op y z)) (op x z))
                  :rule-classes :forward-chaining))
 
-  ; fails in Version_2.6; succeeds in in Version_2.7
+  ; fails in Version_2.6; succeeds in Version_2.7
   (thm (implies (and (op a b) (op b c) (op b e)) (op a c)))
  })
 
@@ -88586,7 +88627,7 @@ it."
 
 ; Fixed a bug in :pso, specifically in its "So we now return to" messages,
 ; which were printing a goal that had just been proved for induction.  The fix
-; involved handling of of jppl-flg values in functions pop-clause-msg1 and
+; involved handling of jppl-flg values in functions pop-clause-msg1 and
 ; pop-clause-msg.
 
 ; The bug that could cause certify-book to fail with local make-event forms was
@@ -97854,7 +97895,7 @@ it."
 
 ; Fixed the guard error message for pkg-imports to report a violation for that
 ; function, not (as had been the case) for function pkg-witness.  More
-; generally, did miscellaneous cleaning of of code pertaining to those two
+; generally, did miscellaneous cleaning of code pertaining to those two
 ; functions.
 
 ; Modified the handling of print-number-base-16-upcase-digits so that it is
@@ -102776,7 +102817,7 @@ it."
  Keshav Kini for the suggestion.</p>
 
  <p>For documentation printed at the terminal with @(':')@(tsee doc), links
- (enclosed in in square brackets, ``[..]'') continue to be printed with respect
+ (enclosed in square brackets, ``[..]'') continue to be printed with respect
  to the @('\"ACL2\"') package (that is, as though the current package were
  @('\"ACL2\"')).  Now, however, where a link formerly might be printed as
  ``[acl2::foo]'', it is now printed as ``[foo]''; that is, a package prefix of
@@ -109021,6 +109062,21 @@ it."
 
 (defxdoc note-8-7
 
+; Total number of release note items: 46, as categorized below.  Note that
+; these numbers are based on the sections labeled with <h3>..</h3> in the
+; string below; in particular, Lisp comments below do not contribute to these
+; numbers.
+
+;    7 ; Changes to Existing Features
+;    3 ; New Features
+;    4 ; Heuristic and Efficiency Improvements
+;   23 ; Bug Fixes
+;    9 ; Changes at the System Level
+;    0 ; EMACS Support
+;    0 ; Experimental Versions
+
+; Not discussed below are exensions to the constant, *acl2-exports*.
+
 ; Corrected many long-standing typos in comments.  Thanks to Bob Boyer for
 ; reporting them.
 
@@ -109233,7 +109289,7 @@ it."
 ; built on SBCL with safety 3.
 
   :parents (release-notes)
-  :short "ACL2 Version  8.7 (xxx, 20xx) Notes"
+  :short "ACL2 Version  8.7 (March, 2026) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
  documentation) has been updated to reflect all changes that are recorded
  here.</p>
@@ -109286,6 +109342,10 @@ it."
  <p>The behavior and documentation for @(tsee read-file-into-string) have been
  cleaned up and put in sync.  Thanks to Eric Smith and Grant Jurgensen for
  communication that led to these improvements.</p>
+
+ <p>ACL2 now checks that the value of keyword @(':OTF-FLG') is @('T') or
+ @('NIL'), and causes an error if not.  Thanks to Eric Smith for suggesting
+ that we consider this change.</p>
 
  <h3>New Features</h3>
 
@@ -109377,7 +109437,9 @@ it."
  can be expected to be compiled twice, once for each pass of the encapsulate.
  Implementation-level details are explained in the section entitled
  &ldquo;Appendix 2: Extension for Encapsulate&rdquo; in the ACL2 source code
- comment, &ldquo;Essay on Hash Table Support for Compilation&rdquo;.</p>
+ comment, &ldquo;Essay on Hash Table Support for Compilation&rdquo;.  In
+ particular, the end of that Essay discusses an enhancement that saves compiled
+ code for redundant @('defun')s.</p>
 
  <h3>Bug Fixes</h3>
 
@@ -109561,6 +109623,8 @@ it."
  ACL2 source macro @('with-hcomp-bindings').)  Thanks to Jim White for
  reporting the bug.</p>
 
+ <p>Fixed a bug that could cause a raw Lisp error when using @(tsee dmr).</p>
+
  <h3>Changes at the System Level</h3>
 
  <p>Modifications have been made that allow ACL2 to be hosted on GCL Version
@@ -109621,6 +109685,134 @@ it."
  <p>The documentation for @(tsee do-loop$) has been extended to illustrate how
  to signal a soft error from within the body of a @('DO') @(tsee loop$)
  expression.</p>
+
+ <p>Fixed an issue reported by Eric McCarthy when certifying books with
+ &ldquo;ACL2 in Docker image (platform linux/amd64) running on WSL2 (Windows
+ Subsystem for Linux v2) on Windows 11 host&rdquo;: the @(see certificate) file
+ could be a bit newer than the compiled file, which shouldn't happen.  The fix
+ is specific to WSL2.  Thanks to Eric McCarthy for reporting the problem and
+ for testing the fix.</p>
+
+ <h3>EMACS Support</h3>
+
+ <p><i>[None]</i></p>
+
+ <h3>Experimental Versions</h3>
+
+ <p><i>[None]</i></p>
+
+ ")
+
+(defxdoc note-8-8
+  :parents (release-notes)
+  :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
+  :long "<p>NOTE!  New users can ignore these release notes, because the @(see
+ documentation) has been updated to reflect all changes that are recorded
+ here.</p>
+
+ <p>Below we roughly organize the changes to ACL2 since Version  8.7 into the
+ following categories of changes: existing features, new features, heuristic
+ and efficiency improvements, bug fixes, changes at the system level, Emacs
+ support, and experimental versions.  Each change is described in just one
+ category, though of course many changes could be placed in more than one
+ category.</p>
+
+ <p>Note that only ACL2 system changes are listed below.  See also @(see
+ note-8-8-books) for a summary of changes made to the ACL2 Community Books
+ since ACL2  8.7, including the build system.</p>
+
+ <h3>Changes to Existing Features</h3>
+
+ <p>(SBCL only) Modified SBCL to avoid its &ldquo;readtable
+ normalization&rdquo; feature for reading symbols containing Unicode
+ characters.  This avoids cases that otherwise create non-ACL2 characters in
+ the resulting @(tsee symbol-name).  Thanks to Eric McCarthy, who provided a
+ solution as well as the following raw Lisp example; see also <a
+ href='https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162'>the
+ Zulip discussion of this issue</a>.</p>
+
+ @({
+ (char-code (char (symbol-name (read-from-string
+                                (format nil \"~c\" (code-char 181))))
+                  0))
+ => 924  ; GREEK CAPITAL LETTER MU
+ })
+
+ <p>Strengthened the checks on the arguments to @(tsee incompatible) by using a
+ new function, @('weak-runep'), which checks that the keyword specifies one of
+ the known @(see rule-classes).  This can catch typos such as @('(:definiitioon
+ foo)').  Thanks to Eric Smith for the idea, which was brought to his attention
+ by Claude Code.</p>
+
+ <p>Improved an error message printed after a hard error that is encountered
+ during macroexpansion.  Now, that message suggests to look <i>above</i> for an
+ explanation (i.e., the hard error message).  It formerly said
+ &ldquo;below&rdquo; rather than &ldquo;above&rdquo;, but the only message
+ below it was pointing out &ldquo;Evaluation aborted&rdquo;.</p>
+
+ <p>Improved error messages for ill-formed first and second arguments of @(tsee
+ defund), @(tsee defun-nx), and @(tsee defund-nx).  The case of @('defund-nx')
+ was reported by Claude Code as showing no error message at all, for example
+ when evaluting the form, @('(defund-nx 42 (x) x)').  Thanks to Eric Smith for
+ bringing these to our attention.</p>
+
+ <p>Improved the @(see guard), as well as the guard violation message, for
+ @(tsee defevaluator).</p>
+
+ <h3>New Features</h3>
+
+ <p>For @(tsee defstobj) fields of hash-table type, a new &ldquo;keys&rdquo;
+ function returns a sorted list of keys of the hash table.  See @(see
+ defstobj).  Thanks to Eric Smith for requesting this enhancement.</p>
+
+ <h3>Heuristic and Efficiency Improvements</h3>
+
+ <h3>Bug Fixes</h3>
+
+ <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
+ character.  All ACL2 characters have codes less than 256, but the expression
+ @('(char-code (char-upcase (code-char 255)))') evaluated to 376 in ACL2 built
+ on every host Lisp except GCL.  Thanks to Eric McCarthy for <a
+ href='https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162'>pointing
+ out this bug as well as code relevant to a fix</a>.</p>
+
+ <p>Checks were improved to avoid raw Lisp errors in the following situations:</p>
+
+ <ul>
+
+ <li>when the first argument of a call of @(tsee table) is not a symbol;</li>
+
+ <li>when a @(see computed-hint) evaluates to an expression of the form
+ @('(:computed-hint-replacement x ...)') where @('x') is neither @('t'),
+ @('nil'), nor a true list; and</li>
+
+ <li>when the second argument of @(tsee defevaluator) is ill-formed.</li>
+
+ </ul>
+
+ <p>Thanks to Eric Smith for passing along these bug reports from Claude
+ Code (which reported, for the first two: &ldquo;Four subagents tested ~270
+ malformed inputs across nearly every ACL2 event type.... Out of ~270 tests,
+ only 2 bugs were found&rdquo;).</p>
+
+ <p>Fixed many dozens of typos in comments and error messages, as reported by
+ Eric Smith, who used Claude Code and filtered out some false positives.</p>
+
+ <p>Fixed the behavior of aborts to avoid printing a newline to the terminal
+ when, like everything else, it should be printed to standard output.  Thanks
+ to Eric McCarthy for finding this bug as well as providing a detailed
+ explanation and the fix.</p>
+
+ <p>Fixed bugs in the raw Lisp definitions supporting @(tsee mfc-rw+) and
+ @(tsee mfc-relieve-hyp).  Thanks to Eric Smith for sending a report he
+ produced with Claude Code that points out the bugs and provides the fixes.</p>
+
+ <h3>Changes at the System Level</h3>
+
+ <p>The built-in @(see events) @('Integer-1') and @('cons-equal') are now
+ @(tsee defthm) events instead of @(tsee defaxiom) events.  Thanks to Eric
+ Smith for showing us a report from Claude Code, which explained how those two
+ formulas are provable from the other axioms.</p>
 
  <h3>EMACS Support</h3>
 
@@ -113362,12 +113554,13 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  Fog&rdquo; and complete @(see waterfall) processing before starting any proof
  by induction.</p>
 
- <p>The default value for @(':otf-flg') is @('nil') except during processing of
- @(tsee defun) events, where the default is @('t') for both termination and
- @(see guard) proofs (see @(see defun)).  Note that the default for
- @(':otf-flg') is thus @('t') for processing @(tsee verify-termination) events,
- since they abbreviate @('defun') events.  However, the default for
- @(':otf-flg') is @('nil') for processing @(tsee verify-guards) events.</p>
+ <p>The value for @(':otf-flg') must be @('t') or @('nil').  The default is
+ @('nil') except during processing of @(tsee defun) events, for which the
+ default is @('t') for both termination and @(see guard) proofs (see @(see
+ defun)).  Note that the default for @(':otf-flg') is thus @('t') for
+ processing @(tsee verify-termination) events, since they abbreviate @('defun')
+ events.  However, the default for @(':otf-flg') is @('nil') for processing
+ @(tsee verify-guards) events.</p>
 
  <h3>Further Explanation</h3>
 
@@ -116773,7 +116966,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
 
  <p><font color='red'><b>WARNING</b></font>: Some of these packages might
  be for old versions of ACL2.  We recommend that you use the latest
- version of ACL2 (Version 8.6).</p>
+ version of ACL2 (Version 8.7).</p>
 
  <h3>Linux/Mac/Windows Binaries in ACL2s</h3>
 
@@ -128929,7 +129122,7 @@ work on <tt>(q x)</tt>.</p>
  @({
     (defun n3 () 0)
     (defun n4 () 1)
-    (defun n5 () (> (n3) (n4))) ; body is see normalized to nil
+    (defun n5 () (> (n3) (n4))) ; body is normalized to nil
     (thm (equal (n5) nil)) ; succeeds, trivially
     (set-ld-redefinition-action '(:warn . :overwrite) state)
     (defun n3 () 2)
@@ -129412,7 +129605,7 @@ work on <tt>(q x)</tt>.</p>
   <p>In frame 4 we are to maintain @('FEQ') on a call of @('G').  In frame 5 we
   are rewriting the second argument of @('G') and used
   @('G2EQ2-IMPLIES-FEQ-G-2') to derive the new geneqv containing @('G2EQ2').
-  We could get @('G2EQ1') into that new geneqv is only we had a congruence rule
+  We could get @('G2EQ1') into that new geneqv if only we had a congruence rule
   that says @('FEQ') is maintained on @('G') when rewriting the second argument
   of @('G') maintaining @('G2EQ1').  That's just the ``forgotten'' @('(DEFCONG
   G2EQ1 FEQ (G X Y) 2)').  Of course we could alternatively have chosen to
@@ -129496,13 +129689,14 @@ work on <tt>(q x)</tt>.</p>
   :short "ACL2 releases"
   :long "<p>The current ACL2 release on the <a
  href='http://www.cs.utexas.edu/users/moore/acl2/index.html'>ACL2 home page</a>
- is Version 8.6; see @(see note-8-6) for release notes.</p>
+ is Version 8.7; see @(see note-8-7) for release notes.</p>
 
  <p>Below is a list of past releases and their corresponding past ACL2 home
  pages.  (Note: Some older versions of the manuals have been made unreadable to
  avoid potential security issues.)</p>
 
  <ul>
+ <li><a href='http://www.cs.utexas.edu/users/moore/acl2/v8-6/index.html'>Version 8.6 (October, 2024)</a></li>
  <li><a href='http://www.cs.utexas.edu/users/moore/acl2/v8-5/index.html'>Version 8.5 (July, 2022)</a></li>
  <li><a href='http://www.cs.utexas.edu/users/moore/acl2/v8-4/index.html'>Version 8.4 (August, 2021)</a></li>
  <li><a href='http://www.cs.utexas.edu/users/moore/acl2/v8-3/index.html'>Version 8.3 (April, 2020)</a></li>
@@ -137530,7 +137724,7 @@ work on <tt>(q x)</tt>.</p>
   (set-inhibit-er string1 string2 ...)
  })
 
- <p>where each string is considered without regard to case.  This macro is is
+ <p>where each string is considered without regard to case.  This macro is
  essentially @('(local (table inhibit-er-table nil 'alist :clear))'),
  where @('alist') pairs each supplied string with @('nil'): that is, @('alist')
  is @('(pairlis$ lst nil)') where @('lst') is the list of strings supplied.
@@ -137687,7 +137881,7 @@ work on <tt>(q x)</tt>.</p>
   (set-inhibit-warnings string1 string2 ...)
  })
 
- <p>where each string is considered without regard to case.  This macro is is
+ <p>where each string is considered without regard to case.  This macro is
  essentially @('(local (table inhibit-warnings-table nil 'alist :clear))'),
  where @('alist') pairs each supplied string with @('nil'): that is, @('alist')
  is @('(pairlis$ lst nil)') where @('lst') is the list of strings supplied.
@@ -143046,8 +143240,8 @@ work on <tt>(q x)</tt>.</p>
 
  @({
   ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  + ACL2 Version 8.6+ (a development snapshot based on ACL2 Version 8.6) +
-  +   built January 14, 2026  10:09:28.                                  +
+  + ACL2 Version 8.7+ (a development snapshot based on ACL2 Version 8.7) +
+  +   built April 14, 2026  10:09:28.                                    +
   +   (Git commit hash: 1234567890abcdefghijklmnopqrstuvwxyz!@#$)        +
   + Copyright (C) 2026, Regents of the University of Texas.              +
   + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and   +
@@ -143064,8 +143258,8 @@ work on <tt>(q x)</tt>.</p>
 
  @({
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + ACL2 Version 8.6+ (a development snapshot based on ACL2 Version 8.6) +
- +   built January 14, 2026  09:56:49.                                  +
+ + ACL2 Version 8.7+ (a development snapshot based on ACL2 Version 8.7) +
+ +   built April 14, 2026  09:56:49.                                    +
  +   (Note from the environment when this executable was saved:         +
  +    This is my private executable.)                                   +
  + Copyright (C) 2026, Regents of the University of Texas.              +
@@ -144745,7 +144939,7 @@ work on <tt>(q x)</tt>.</p>
  @('TipCnt'), that the formal @('counters') is used.  From the discussion in
  @(see stobj-example-1) it has been made clear that @('TipCnt') can only be
  called on the @('counters') object.  And yet, in that same discussion it was
- said that an argument is so treated only if it it declared among the
+ said that an argument is so treated only if it is declared among the
  @(':stobjs') in the definition of the function.  So why doesn't @('TipCnt')
  include something like @('(declare (xargs :stobjs (counters)))')?</p>
 
@@ -153620,7 +153814,7 @@ work on <tt>(q x)</tt>.</p>
  is passed to the native Lisp trace (after removing the @(':native') and
  @(':multiplicity') options).  Each trace spec generates its own call of Lisp
  @('trace'): directly in most cases, but if SBCL is the host Lisp then the SBCL
- @('trace') syntax is accommodated by placing the the function symbol last,
+ @('trace') syntax is accommodated by placing the function symbol last,
  after any keyword options.  A trust tag (see @(see defttag)) is required in
  order to use the @(':native') option, because arbitrary raw Lisp may be
  executed by the options!</p>
@@ -161062,6 +161256,58 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
 
  <p><see topic='@(url |Overview of the Proof of a Trivial Consequence|)'><img
  src='res/tours/walking.gif'></img></see></p>")
+
+(defxdoc using-utf-8
+  :parents (character-encoding)
+  :short "Tips and warnings for using UTF-8."
+  :long "<p>Non-standard characters may be encoded in UTF-8 in ACL2 despite the
+ use of ISO-8859-1 (also known as Latin-1) for reading files and input.
+ Furthermore, UTF-8 is more widely supported and a more common default across
+ various editors, viewers, terminals, etc.  Therefore, it may be desirable to
+ use UTF-8 instead of Latin-1 in ACL2 books.  However, as alluded to in
+ @(see character-encoding), the ACL2 interpretation of strings which include
+ UTF-8 characters may surprise users unless they understand certain details of
+ the encoding and the ACL2 reader.</p>
+
+ <p>Recall that ACL2 @(see strings) are sequences of ACL2 @(see characters).
+ Furthermore, there are 256 distinct ACL2 characters, each corresponding to a
+ distinct 8-bit byte.  Users may expect their perceived characters to align
+ with ACL2's notion of characters.  However, this assumption is broken when
+ a UTF-8 ``character'' is represented by more than one byte.  Since the ACL2
+ reader uses Latin-1, the multi-byte UTF-8 ``character'' will be read by ACL2
+ as multiple ACL2 characters, one for each byte.  Nonetheless, strings
+ containing such sequences of bytes will print properly in environments which
+ are configured to expect UTF-8.
+ </p>
+
+ <p>We now consider a concrete example of UTF-8 in ACL2 strings.  In UTF-8, the
+ ``lowercase alpha'' character, &alpha;, is represented by the two byte
+ sequence @('#xCE') @('#xB1').  We can explicitly create the string consisting
+ of just the UTF-8-encoded lowercase alpha, as in the following constant.</p>
+
+ @({
+ (defconst *utf8-alpha*
+   (coerce (list (code-char #xCE) (code-char #xB1)) 'string))
+ })
+
+ <p>In UTF-8 environments, printing this string will result in the single
+ visible lowercase alpha character.  However, if we evaluate
+ @('(length *utf8-alpha*)'), we get @('2'), since the string consists of two
+ ACL2 @(see characters), one for each byte. Similarly, we might reverse the
+ string.</p>
+
+ @({
+ (reverse *utf8-alpha*)
+ })
+
+ <p>
+ Doing so yields a string which is not valid UTF-8.  In Emacs, this string is
+ rendered using the octal codes for each byte.
+ </p>
+
+ @({
+ \"\\261\\316\"
+ })")
 
 (defxdoc value-triple
   :parents (events acl2-built-ins errors)
@@ -173039,7 +173285,7 @@ expand function call at the current subterm, without simplifying"
   used microprocessor built by Motorola, within the mathematical logic of the
   automated reasoning system Nqthm, a.k.a. the Boyer-Moore Theorem Prover.
   Using this formal description, we have mechanically checked the correctness
-  of MC68020 object code programs for for binary search, Hoare's Quick Sort,
+  of MC68020 object code programs for binary search, Hoare's Quick Sort,
   twenty-one functions from the Berkeley Unix C string library, and other
   well-known algorithms.  The object code for these examples was generated
   using the Gnu C, the Verdix Ada, and the AKCL common Lisp compilers.  We have

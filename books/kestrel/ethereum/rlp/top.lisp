@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,9 +34,9 @@
     An earlier reference is the page `RLP' of [Wiki],
     which we reference as `[Wiki:RLP]';
     but see @(see ethereum) about [Wiki].")
-  :order-subtopics (big-endian
-                    trees
-                    encoding
-                    decodability
-                    decoding-declarative
-                    decoding-executable))
+  :order-subtopics (rlp-big-endian-representations
+                    rlp-tree
+                    rlp-encoding
+                    rlp-decodability
+                    rlp-decoding-declarative
+                    rlp-decoding-executable))

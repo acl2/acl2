@@ -1,7 +1,8 @@
 This file describes the original of the present directory and how it
 was modified from the original in the HOL4 repository.  It also
-describes how to use the script tests/doit to run tests not currently
-included in regression testing.
+describes how to use the script tests/doit to run tests, as this was
+originally not included in regression testing (though it was added on
+3/4/2026).
 
 .....
 
@@ -11,22 +12,14 @@ been obtained as follows.
 
 git clone https://github.com/HOL-Theorem-Prover/HOL.git .
 
-Normal regression testing will certify the books in this directory
-(and, recursively, in subdirectories).  To run an additional test, run
-the script file, doit, in the tests/ subdirectory -- but first set
-environment variables as explained in file .acl2holrc.bash in the
-present directory.  That doit script can be run after certifying
-appropriate books in the regression; optionally, you can first clean
-the books under the present directory or under tests/.
-
 Here is a summary of those replacements.  (The present file,
 README-acl2, is new here.)
 
 ----------
 
-The script .acl2holrc.bash has been modified so that the user is
-required to supply the value of variable ACL2_SRC, e.g., as
-/Users/kaufmann/acl2/acl2 .
+The script .acl2holrc.bash has been modified appropriately, and
+scripts have been converted from csh to bash.  The csh scripts
+are now in lisp/obsolete-csh/.
 
 ----------
 

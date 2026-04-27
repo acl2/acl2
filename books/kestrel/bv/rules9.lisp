@@ -1,7 +1,7 @@
 ; BV rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,7 +20,7 @@
 (include-book "rightrotate")
 (include-book "bvcat")
 (include-book "bitnot")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bitxor")
 (include-book "rotate")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -75,7 +75,7 @@
   (implies (and (< 32 n)
                 (integerp n))
            (equal (bvplus 32 z (bvplus n x y))
-                  (bvplus 32 (bvplus 32 x y) z)))
+                  (bvplus 32 z (bvplus 32 x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvcat-of-bitnot-low
@@ -137,8 +137,7 @@
            (equal (bvcat 1 (bitxor k highval) lowsize lowval)
                   (bvxor (+ 1 lowsize)
                                (bvcat 1 k lowsize 0) ;should get computed
-                               (bvcat 1 highval lowsize lowval))))
-  :hints (("Goal" :cases ((equal 0 highsize)))))
+                               (bvcat 1 highval lowsize lowval)))))
 
 (defthm bvcat-of-bvnot-high
   (implies (and (natp lowsize)
@@ -303,8 +302,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1) ;why?
@@ -333,8 +332,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1) ;why?
@@ -453,8 +452,8 @@
                 ;(<= low2 high2minus1)
                 (natp low1)
                 (natp low2)
-                (natp high1)
-                (natp high2)
+                ;; (natp high1)
+                ;; (natp high2)
                 (posp high1) ;why?
                 (posp high2) ;why?
                 (natp zsize))
@@ -480,8 +479,8 @@
                 ;(<= low2 high2minus1)
                 (natp low1)
                 (natp low2)
-                (natp high1)
-                (natp high2)
+                ;; (natp high1)
+                ;; (natp high2)
                 (posp high1) ;why?
                 (posp high2) ;why?
                 (natp zsize))
@@ -512,8 +511,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1)  ;why?
@@ -546,8 +545,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1)  ;why?
@@ -668,48 +667,6 @@
            (equal (mod (+ x y) 4294967296)
                   (bvplus 32 x y)))
   :hints (("Goal" :in-theory (enable bvplus bvchop))))
-
-(defthm getbit-of-+-of-constant-irrel
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep n)))
-                (equal 0 (bvchop (+ 1 n) k))
-                (natp n)
-                (integerp x)
-                (integerp k))
-           (equal (getbit n (+ k x))
-                  (getbit n x)))
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
-
-(defthm getbit-of-+-of-expt-same-arg1
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ (expt 2 n) x))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (
-                                   )))))
-
-(defthm getbit-of-+-of-expt-same-arg2
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ x (expt 2 n)))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (
-                                   )))))
-
-(defthm getbit-of-+-of-expt-same-when-constant
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep n)))
-                (equal k (expt 2 n))
-                (natp n)
-                (integerp x)
-                ;(integerp k)
-                )
-           (equal (getbit n (+ k x))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :use (getbit-of-+-of-expt-same-arg1)
-           :in-theory (disable getbit-of-+-of-expt-same-arg1))))
 
 (defthm bvxor-of-+-of-expt-of-one-less-arg2
   (implies (and (integerp x)

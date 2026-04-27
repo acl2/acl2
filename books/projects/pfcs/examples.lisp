@@ -27,7 +27,7 @@
 ; Then the lifted (shallowly embedded) definition
 ; is proved equivalent to the specification.
 ; Finally the original definition is proved equivalent to the specification,
-; by composing the liftin theorem with the manually proved theorem;
+; by composing the lifting theorem with the manually proved theorem;
 ; (this theorem composition could be automated).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

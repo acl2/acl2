@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,13 +11,16 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-trees")
+(include-book "positions")
+(include-book "spans")
 
-(include-book "../language/implementation-environments/versions")
+(include-book "../language/keywords")
 
 (include-book "kestrel/fty/byte-list" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
 
@@ -43,14 +46,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>token</i> in the grammar in [C17:A.1.1] [C17:6.4].")
+    "This corresponds to the rule for tokens in the ABNF grammar.
+     By the time we run the parser,
+     preprocessing tokens (see the rule for them in the ABNF grammar)
+     have been turned into tokens.")
    (xdoc::p
-    "This is used by the parser.
-     It is not part of the abstract syntax in @(see abstract-syntax),
-     even though the ABNF grammar has a rule for @('token').
+    "This notion of token is used by the parser.
+     It is not part of the ASTs defined in @(see abstract-syntax-trees),
+     even though the ABNF grammar has rules
+     for @('token') and @('preprocessing-token').
      Our parser is structured in two levels, which is common:
-     (i) lexing/tokenization; and (ii) parsing proper.
-     Thus, it is useful to have an abstract-syntax-like type for tokens,
+     (i) lexing/tokenization; and (ii) parsing proper
+     (currently preprocessing precedes lexing/tokenization,
+     but in the future we may integrate them).
+     Thus, it is useful to have an AST-like type for tokens,
      which is what this fixtype is.")
    (xdoc::p
     "We represent a C keyword or punctuator as an ACL2 string,
@@ -60,18 +69,19 @@
      for keywords and punctuators instead,
      and use them here instead of strings.")
    (xdoc::p
-    "We use the identifiers, constants, and string literals
+    "We use the identifiers, constants, string literals, and header names
      from the abstract syntax
      to represent the corresponding tokens.
      However, note that the parser never generates enumeration constants,
      which overlap with identifiers,
      but need type checking to be distinguished from identifiers;
      the parser always classifies those as identifiers."))
-  (:keyword ((unwrap string)))
-  (:ident ((unwrap ident)))
-  (:const ((unwrap const)))
-  (:string ((unwrap stringlit)))
-  (:punctuator ((unwrap stringp)))
+  (:keyword ((keyword string)))
+  (:ident ((ident ident)))
+  (:const ((const const)))
+  (:string ((literal stringlit)))
+  (:punctuator ((punctuator stringp)))
+  (:header ((name header-name)))
   :pred tokenp
   :layout :fulltree)
 
@@ -118,7 +128,7 @@
      since we normally call this function on an optional token."))
   (and token
        (token-case token :keyword)
-       (equal (the string (token-keyword->unwrap token))
+       (equal (the string (token-keyword->keyword token))
               (the string keyword)))
   :hooks nil
 
@@ -144,7 +154,7 @@
      since we normally call this function on an optional token."))
   (and token
        (token-case token :punctuator)
-       (equal (the string (token-punctuator->unwrap token))
+       (equal (the string (token-punctuator->punctuator token))
               (the string punctuator)))
   :hooks nil
 
@@ -157,87 +167,6 @@
     (implies (token-punctuatorp token punctuator)
              token)
     :rule-classes :forward-chaining))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod position
-  :short "Fixtype of positions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A position within a file is normally specified by
-     a combination of a line number and column number.
-     We number lines from 1,
-     which is consistent with [C17:6.10.4/2]:
-     since the characters in the first line
-     have 0 preceding new-line characters,
-     the number of the first line is 1 plus 0, i.e. 1.
-     We number columns from 0,
-     but we could change that to 1.
-     Numbering lines from 1 and columns from 0
-     is also consistent with Emacs."))
-  ((line pos)
-   (column nat))
-  :pred positionp
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-position
-  :short "An irrelevant position."
-  :type positionp
-  :body (make-position :line 1 :column 0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define position-init ()
-  :returns (pos positionp)
-  :short "Initial position in a file."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is at line 1 and column 0."))
-  (make-position :line 1 :column 0)
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define position-inc-column ((columns natp) (pos positionp))
-  :returns (new-pos positionp)
-  :short "Increment a position by a number of columns."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The line number is unchanged."))
-  (change-position pos :column (+ (the unsigned-byte (position->column pos))
-                                  (the unsigned-byte columns)))
-  :inline t
-  :hooks nil
-
-  ///
-
-  (fty::deffixequiv position-inc-column
-    :args ((pos positionp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define position-inc-line ((lines posp) (pos positionp))
-  :returns (new-pos positionp)
-  :short "Increment a position by a number of lines."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The column is reset to 0."))
-  (make-position :line (+ (the (integer 1 *) (position->line pos))
-                          (the (integer 1 *) lines))
-                 :column 0)
-  :inline t
-  :hooks nil
-
-  ///
-
-  (fty::deffixequiv position-inc-line
-    :args ((pos positionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,50 +204,6 @@
                          (<= (nfix i) (len chars)))))
     :induct t
     :enable (update-nth nfix zp len)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod span
-  :short "Fixtype of spans."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A span consists of two positions,
-     which characterize a contiguous portion of a file.
-     Each parsed construct has a span.
-     The ending position of a span is inclusive."))
-  ((start position)
-   (end position))
-  :pred spanp
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-span
-  :short "An irrelevant span."
-  :type spanp
-  :body (make-span :start (irr-position) :end (irr-position)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption span-option
-  span
-  :short "Fixtype of optional spans."
-  :pred span-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define span-join ((span1 spanp) (span2 spanp))
-  :returns (span spanp)
-  :short "Join two spans."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The first span must come before the second one.
-     We return a new span that goes
-     from the start of the first span to the end of the second span."))
-  (make-span :start (span->start span1)
-             :end (span->end span2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -362,7 +247,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Our parsing functions take and return parser states.")
+    "Our (lexing and) parsing functions take and return parser states.")
    (xdoc::p
     "The parser state is a stobj, which we turn into a fixtype
      by adding a fixer along with readers and writers
@@ -513,7 +398,7 @@
      via the three stobj components
      @('tokens'), @('tokens-read'), and @('tokens-unread').")
    (xdoc::p
-    "We include the C version.
+    "We include the C dialect.
      This parser state component is set at the beginning and never changes,
      but it is useful to have it as part of the parser state
      to avoid passing an additional parameter.")
@@ -526,6 +411,21 @@
      Ideally we should obtain this optimization using @(tsee apt::isodata),
      but that transformation currently does not quite handle
      all of the parser's functions.")
+   (xdoc::p
+    "The @('skip-control-lines') says whether control lines,
+     i.e. a subset of the preprocessing directives [C17:6.10],
+     should be skipped by the lexer like comments and white space.
+     As described in the documentation accompanying
+     the ABNF grammar rule for lexemes,
+     when using an external preprocessor,
+     certain (harmless) directives may survive preprocessing;
+     when the @('skip-control-lines') flag in this stobj is @('t'),
+     our lexer skips (i.e. ignores) such directives.
+     The flag must be set to @('nil') when instead we use our preprocessor,
+     which purposely preserves some directives
+     so that our (lexer and) parser can recognize them
+     and turn into ASTs;
+     our lexer does not skip control lines if this flag is @('nil').")
    (xdoc::p
     "The definition of the stobj itself is straightforward,
      but we use a @(tsee make-event) so we can use
@@ -612,10 +512,16 @@
                    :initially 0)
       (tokens-unread :type (integer 0 *)
                      :initially 0)
-      (version :type (satisfies c::versionp)
-               :initially ,(c::version-c23))
+      (dialect :type (satisfies c::dialectp)
+               :initially ,(c::make-dialect :std (c::standard-c23)))
       (size :type (integer 0 *)
             :initially 0)
+      (skip-control-lines :type (satisfies booleanp)
+                          :initially nil)
+      ;; Expected invariant: (equal keywords (c::keywords-for dialect))
+      (keywords :type (satisfies string-listp)
+                :initially ,(c::keywords-for
+                              (c::make-dialect :std (c::standard-c23))))
       :renaming (;; field recognizers:
                  (bytesp raw-parstate->bytes-p)
                  (positionp raw-parstate->position-p)
@@ -625,8 +531,10 @@
                  (tokensp raw-parstate->tokens-p)
                  (tokens-readp raw-parstate->tokens-read-p)
                  (tokens-unreadp raw-parstate->tokens-unread-p)
-                 (versionp raw-parstate->version-p)
+                 (dialectp raw-parstate->dialect-p)
                  (sizep raw-parstate->size-p)
+                 (skip-control-linesp raw-parstate->skip-control-lines-p)
+                 (keywordsp raw-parstate->keywords-p)
                  ;; field readers:
                  (bytes raw-parstate->bytes)
                  (position raw-parstate->position)
@@ -638,8 +546,10 @@
                  (tokensi raw-parstate->token)
                  (tokens-read raw-parstate->tokens-read)
                  (tokens-unread raw-parstate->tokens-unread)
-                 (version raw-parstate->version)
+                 (dialect raw-parstate->dialect)
                  (size raw-parstate->size)
+                 (skip-control-lines raw-parstate->skip-control-lines)
+                 (keywords raw-parstate->keywords)
                  ;; field writers:
                  (update-bytes raw-update-parstate->bytes)
                  (update-position raw-update-parstate->position)
@@ -651,9 +561,13 @@
                  (update-tokensi raw-update-parstate->token)
                  (update-tokens-read raw-update-parstate->tokens-read)
                  (update-tokens-unread raw-update-parstate->tokens-unread)
-                 (update-version raw-update-parstate->version)
-                 (update-size raw-update-parstate->size))
-      :inline t))
+                 (update-dialect raw-update-parstate->dialect)
+                 (update-size raw-update-parstate->size)
+                 (update-skip-control-lines
+                  raw-update-parstate->skip-control-lines)
+                 (update-keywords raw-update-parstate->keywords))
+      :inline t
+      :non-executable t))
 
   ;; fixer:
 
@@ -694,6 +608,13 @@
     :induct t
     :enable (raw-parstate->tokens-p
              token+span-listp))
+
+  (defrule raw-parstate->keywords-p-becomes-string-listp
+    (equal (raw-parstate->keywords-p x)
+           (string-listp x))
+    :induct t
+    :enable (raw-parstate->keywords-p
+             string-listp))
 
   ;; needed for reader/writer proofs:
 
@@ -804,12 +725,12 @@
     :inline t
     :hooks nil)
 
-  (define parstate->version (parstate)
-    :returns (version c::versionp)
+  (define parstate->dialect (parstate)
+    :returns (dialect c::dialectp)
     (mbe :logic (if (parstatep parstate)
-                    (raw-parstate->version parstate)
-                  (c::version-c23))
-         :exec (raw-parstate->version parstate))
+                    (raw-parstate->dialect parstate)
+                  (c::make-dialect :std (c::standard-c23)))
+         :exec (raw-parstate->dialect parstate))
     :inline t
     :hooks nil)
 
@@ -821,6 +742,26 @@
          :exec (raw-parstate->size parstate))
     :inline t
     :hooks nil)
+
+  (define parstate->skip-control-lines (parstate)
+    :returns (skip-control-lines booleanp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->skip-control-lines parstate)
+                  nil)
+         :exec (raw-parstate->skip-control-lines parstate))
+    :inline t
+    :hooks nil)
+
+  (define parstate->keywords (parstate)
+    :returns (keywords string-listp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->keywords parstate)
+                  (c::keywords-for (c::make-dialect :std (c::standard-c23))))
+         :exec (raw-parstate->keywords parstate))
+    :inline t
+    ///
+    (more-returns
+     (keywords true-listp :rule-classes :type-prescription)))
 
   ;; writers:
 
@@ -937,10 +878,10 @@
     :inline t
     :hooks nil)
 
-  (define update-parstate->version ((version c::versionp) parstate)
+  (define update-parstate->dialect ((dialect c::dialectp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->version (c::version-fix version) parstate))
+      (raw-update-parstate->dialect (c::dialect-fix dialect) parstate))
     :inline t
     :hooks nil)
 
@@ -948,6 +889,22 @@
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->size (lnfix size) parstate))
+    :inline t
+    :hooks nil)
+
+  (define update-parstate->skip-control-lines ((skip-control-lines booleanp)
+                                               parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->skip-control-lines (bool-fix skip-control-lines)
+                                               parstate))
+    :inline t
+    :hooks nil)
+
+  (define update-parstate->keywords ((keywords string-listp) parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->keywords (string-list-fix keywords) parstate))
     :inline t
     :hooks nil)
 
@@ -1020,6 +977,27 @@
              parstate-fix
              length))
 
+  (defrule parstate->size-of-update-parstate->skip-control-lines
+    (equal (parstate->size
+            (update-parstate->skip-control-lines skip-control-lines parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->skip-control-lines
+             parstatep
+             parstate-fix
+             length
+             nfix))
+
+  (defrule parstate->size-of-update-parstate->keywords
+    (equal (parstate->size (update-parstate->keywords keywords parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->keywords
+             parstatep
+             parstate-fix
+             length
+             nfix))
+
   ;; writers over readers:
 
   (defrule update-parstate->chars-read-of-parstate->chars-read
@@ -1052,23 +1030,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parstate->gcc ((parstate parstatep))
-  :returns (gcc booleanp)
-  :short "Flag saying whether GCC extensions are supported or not."
-  (c::version-gccp (parstate->version parstate))
+(define parstate->gcc/clang ((parstate parstatep))
+  :returns (gcc/clang booleanp)
+  :short "Flag saying whether GCC/Clang extensions are supported or not."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently, we have no need to distinguish
+     between GCC and Clang extensions during parsing,
+     beyond getting the appropriate keywords."))
+  (c::dialect-gcc/clangp (parstate->dialect parstate))
   :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp) (version c::versionp) parstate)
+(define init-parstate ((file stringp)
+                       (data byte-listp)
+                       (dialect c::dialectp)
+                       (skip-control-lines booleanp)
+                       parstate)
   :returns (parstate parstatep)
   :short "Initialize the parser state."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the state when we start parsing a file.
-     Given (the data of) a file to parse,
-     and a C version,
+     Given the name/path and the data of a file to parse,
+     a C dialect,
+     and a flag for skipping control lines or not,
      the initial parsing state consists of
      the data to parse,
      no read characters or tokens,
@@ -1083,15 +1072,19 @@
      but then we may need to resize the array as needed
      while lexing and parsing."))
   (b* ((parstate (update-parstate->bytes data parstate))
-       (parstate (update-parstate->position (position-init) parstate))
+       (parstate (update-parstate->position (position-init file) parstate))
        (parstate (update-parstate->chars-length (len data) parstate))
        (parstate (update-parstate->chars-read 0 parstate))
        (parstate (update-parstate->chars-unread 0 parstate))
        (parstate (update-parstate->tokens-length (len data) parstate))
        (parstate (update-parstate->tokens-read 0 parstate))
        (parstate (update-parstate->tokens-unread 0 parstate))
-       (parstate (update-parstate->version version parstate))
-       (parstate (update-parstate->size (len data) parstate)))
+       (parstate (update-parstate->dialect dialect parstate))
+       (parstate (update-parstate->size (len data) parstate))
+       (parstate
+        (update-parstate->skip-control-lines skip-control-lines parstate))
+       (parstate
+        (update-parstate->keywords (c::keywords-for dialect) parstate)))
     parstate)
   :hooks nil)
 
@@ -1113,15 +1106,16 @@
   ///
 
   (defrule parsize-of-initparstate
-    (equal (parsize (init-parstate nil version parstate))
+    (equal (parsize
+            (init-parstate file nil dialect skip-control-lines parstate))
            0)
     :enable init-parstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Fixtype version of PARSTATE stobj (useful for debugging and testing).
+; Fixtype dialect of PARSTATE stobj (useful for debugging and testing).
 ; This is how the parser state was originally defined,
-; before using a stobj and before caching the size.
+; before using a stobj and before caching the size and keywords.
 (fty::defprod parstate$
   ((bytes byte-list)
    (position position)
@@ -1129,7 +1123,8 @@
    (chars-unread char+position-list)
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
-   (version c::version))
+   (dialect c::dialect)
+   (skip-control-lines booleanp))
   :layout :fulltree)
 
 ; Convert PARSTATE stobj to fixtype value (useful for debugging and testing).
@@ -1147,7 +1142,8 @@
                                           parstate)
    :tokens-unread (to-parstate$-tokens-unread (parstate->tokens-unread parstate)
                                               parstate)
-   :version (parstate->version parstate))
+   :dialect (parstate->dialect parstate)
+   :skip-control-lines (parstate->skip-control-lines parstate))
   :hooks nil
 
   :prepwork

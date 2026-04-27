@@ -1,7 +1,7 @@
 ; A faster version of the code in unify-term-and-dag.lisp.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,8 +26,8 @@
 ;; TODO: Consider marking variables that occur only once in the rule and don't
 ;; bother binding them in the alist.
 
-;; TODO: Consider marking each occurence of a var in the lhs according to
-;; whether it is the first occurence of that var (don't bother to look it up in
+;; TODO: Consider marking each occurrence of a var in the lhs according to
+;; whether it is the first occurrence of that var (don't bother to look it up in
 ;; the alist) or a later occurrence (check the alist but don't consider binding
 ;; the var because it is bound).
 
@@ -90,7 +90,7 @@
  ;; The ALIST returned (and ALIST-ACC) binds variables from the term to nodenums and/or quoteps.
  ;; Any time a variable in the term gets unified, it must match the binding already present (if any) for that variable in ALIST-ACC.
  ;; A term containing lambdas won't match, since lambdas are not present in DAGs, but LHSes of rules are lambda-free.
- ;; It would be convenient to use nil to indicate failure (would allow ANDin the two recursive calls), but nil may just mean that the subtree in question has no vars, so we use :fail.
+ ;; It would be convenient to use nil to indicate failure (would allow ANDing the two recursive calls), but nil may just mean that the subtree in question has no vars, so we use :fail.
  ;; TODO: Don't pass through dag-len
  (defund unify-term-and-dag-when-skeleton-correct (term darg dag-array dag-len alist)
    (declare (xargs :guard (and (pseudo-termp term)
@@ -189,7 +189,7 @@
   :hints (("Goal" :use alistp-of-unify-term-and-dag-when-skeleton-correct
            :in-theory (disable alistp-of-unify-term-and-dag-when-skeleton-correct))))
 
-(defthm true-listp-of-unify-terms-and-dag-when-skeleton-correct
+(defthm consp-of-unify-terms-and-dag-when-skeleton-correct
   (implies (and (alistp alist)
                 ;;(pseudo-term-listp terms)
                 (not (equal :fail (unify-terms-and-dag-when-skeleton-correct terms dargs dag-array dag-len alist)))

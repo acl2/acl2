@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 ;; The pattern (if x x y) can come from translating (or x y), but we don't want to rewrite X twice if we can avoid it.
-;; TODO: Consider also bool-fixing constants (see below, or sepatately?)
+;; TODO: Consider also bool-fixing constants (see below, or separately?)
 ;; TODO: Consider lambda binding the X when we don't have boolean info.
 
 (include-book "make-lambda-with-hint")

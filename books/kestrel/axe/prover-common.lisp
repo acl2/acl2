@@ -1,7 +1,7 @@
 ; Supporting utilities for the Axe Prover(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -473,7 +473,7 @@
 ;; ;each context-indicator is one of the following 4 things:
 ;; ;(t) means the predicate is known to be true for the node (all paths from the root to the node pass through the "then branch" of an ITE with the predicate as the if-test)
 ;; ;(nil) means the predicate is known to be false for the node (all paths from the root to the node pass through the "else branch" of an ITE with the predicate as the if-test)
-;; ;() means we don't know anything about that prediate on the node
+;; ;() means we don't know anything about that predicate on the node
 ;; ;(t nil) is possible and means that the node is "unreachable" from the root (all paths pass through both an else branch and a then branch and the node's value is irrelevant, so we can rewrite it any way we want??) --ffixme what if it's reachable along other paths? <- huh?
 ;; (defun make-context-indicator-list-array-aux (nodenum dag-array-name dag-array dag-parent-array context-indicator-list-array predicate-nodenums)
 ;;   (declare (xargs :measure (nfix (+ 1 nodenum))
@@ -1346,14 +1346,14 @@
 ;; the second smallest, then substitute that into the third smallest, and so
 ;; on.  Doing so means that only a little bit of structure needs to be rebuilt
 ;; each time.  A bad ordering would substitute the biggest/highest term (in
-;; terms of where it will appear in the resuls) that can be substituted, then
+;; terms of where it will appear in the result) that can be substituted, then
 ;; put the second biggest into that (on the bottom), etc.  With such an
 ;; ordering, more and more structure gets rebuilt each time.
 
 
 
 
-;; ;fixme change this to do less consing in the usual case of an objectcive of ?
+;; ;fixme change this to do less consing in the usual case of an objective of ?
 
 ;; ;fixme think about get-result vs. get-result-expandable
 ;; ;returns a nodenum-or-quotep, or nil

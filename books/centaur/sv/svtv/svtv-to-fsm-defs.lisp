@@ -57,13 +57,13 @@
     (or (equal (svar/4vec-kind x) :4vec)
         (equal (svar/4vec-kind x) :svar))
     :rule-classes ((:forward-chaining :trigger-terms ((svar/4vec-kind x)))))
-  
-  (defthm svar/4vec-p-when-when-kind-is-4vec
+
+  (defthm svar/4vec-p-when-kind-is-4vec
     (implies (equal (svar/4vec-kind x) :4vec)
              (equal (svar/4vec-p x) (4vec-p x)))
     :hints(("Goal" :in-theory (enable svar/4vec-p svar-p))))
 
-  (defthm svar/4vec-p-when-when-kind-is-svar
+  (defthm svar/4vec-p-when-kind-is-svar
     (implies (equal (svar/4vec-kind x) :svar)
              (equal (svar/4vec-p x) (svar-p x)))
     :hints(("Goal" :in-theory (enable svar/4vec-p 4vec-p))))
@@ -102,7 +102,7 @@
   (defthm svar/4vec-fix-when-kind-is-4vec
     (implies (equal (svar/4vec-kind x) :4vec)
              (equal (svar/4vec-fix x) (4vec-fix x))))
-  
+
   (defthm svar/4vec-fix-when-kind-is-svar
     (implies (equal (svar/4vec-kind x) :svar)
              (equal (svar/4vec-fix x) (svar-fix x))))
@@ -219,9 +219,9 @@
                  (svar/4vec-eval (cdr look) env)
                (4vec-x))))
     :hints(("Goal" :in-theory (enable svex-env-lookup-of-cons))))
-  
+
   (local (in-theory (enable svar/4vec-alist-fix))))
-       
+
 
 (fty::deflist svar/4vec-alistlist :elt-type svar/4vec-alist :true-listp t)
 
@@ -269,7 +269,7 @@
     :hints(("Goal" :in-theory (enable svex-alistlist-eval
                                       svex-alistlist-noncall-p
                                       svar/4vec-alist-eval-in-terms-of-svex-alist-eval)))))
-  
+
 
 
 
@@ -381,7 +381,7 @@ to signed values.</p>"
   (defthm svex-env-extract-nil-under-svex-envs-similar
     (svex-envs-similar (svex-env-extract vars nil) nil)
     :hints(("Goal" :in-theory (enable svex-envs-similar))))
-  
+
   (defthm nth-of-svex-envlist-extract
     (svex-envs-similar (nth n (svex-envlist-extract-keys vars x))
                        (svex-env-extract vars (nth n x)))
@@ -403,7 +403,7 @@ to signed values.</p>"
     :hints(("Goal" :in-theory (enable lhs-eval-zx
                                       lhatom-vars
                                       lhatom-eval-zero))))
-  
+
   (defthm lhprobe-eval-of-svex-envlist-extract-vars
     (implies (subsetp-equal (lhprobe-vars x) (Svarlist-fix vars))
              (equal (lhprobe-eval x (svex-envlist-extract-keys vars envs))
@@ -483,7 +483,7 @@ to signed values.</p>"
                     (lhprobe-map-eval x envs2)))
     :hints(("Goal" :in-theory (enable lhprobe-map-eval
                                       lhprobe-map-vars)))))
-       
+
 
 
 (define lhprobe/4vec-p (x)
@@ -505,13 +505,13 @@ to signed values.</p>"
     (or (equal (lhprobe/4vec-kind x) :4vec)
         (equal (lhprobe/4vec-kind x) :lhprobe))
     :rule-classes ((:forward-chaining :trigger-terms ((lhprobe/4vec-kind x)))))
-  
-  (defthm lhprobe/4vec-p-when-when-kind-is-4vec
+
+  (defthm lhprobe/4vec-p-when-kind-is-4vec
     (implies (equal (lhprobe/4vec-kind x) :4vec)
              (equal (lhprobe/4vec-p x) (4vec-p x)))
     :hints(("Goal" :in-theory (enable lhprobe/4vec-p lhprobe-p))))
 
-  (defthm lhprobe/4vec-p-when-when-kind-is-lhprobe
+  (defthm lhprobe/4vec-p-when-kind-is-lhprobe
     (implies (equal (lhprobe/4vec-kind x) :lhprobe)
              (equal (lhprobe/4vec-p x) (lhprobe-p x)))
     :hints(("Goal" :in-theory (enable lhprobe/4vec-p 4vec-p))))
@@ -550,7 +550,7 @@ to signed values.</p>"
   (defthm lhprobe/4vec-fix-when-kind-is-4vec
     (implies (equal (lhprobe/4vec-kind x) :4vec)
              (equal (lhprobe/4vec-fix x) (4vec-fix x))))
-  
+
   (defthm lhprobe/4vec-fix-when-kind-is-lhprobe
     (implies (equal (lhprobe/4vec-kind x) :lhprobe)
              (equal (lhprobe/4vec-fix x) (lhprobe-fix x))))
@@ -577,7 +577,7 @@ to signed values.</p>"
   ///
 
 
-  
+
   (defthm lhprobe/4vec-eval-of-svex-envlist-extract-vars
     (implies (subsetp-equal (lhprobe/4vec-vars x) (Svarlist-fix vars))
              (equal (lhprobe/4vec-eval x (svex-envlist-extract-keys vars envs))
@@ -752,7 +752,7 @@ to signed values.</p>"
     (iff (svex-env-boundp v eval)
          (hons-assoc-equal (svar-fix v) (lhprobe-map-fix x)))
     :hints(("Goal" :in-theory (enable svex-env-boundp-of-cons-split))))
-  
+
   (local (in-theory (enable lhprobe-map-fix))))
 
 
@@ -801,7 +801,7 @@ to signed values.</p>"
   (defthm lhprobe-map-max-stage-lower-bound
     (<= -1 (lhprobe-map-max-stage x))
     :rule-classes :linear)
-  
+
   (local (in-theory (enable lhprobe-map-fix))))
 
 (define lhprobe-constraint-max-stage ((x lhprobe-constraint-p))
@@ -848,13 +848,13 @@ to signed values.</p>"
   ///
   (local (in-theory (disable nth take ;; acl2::take-of-len-free acl2::take-when-atom acl2::take-of-too-many
                              )))
-  
+
   (defthm lhprobe-constraintlist-overridemux-eval-of-take-envs
     (implies (< (lhprobe-constraintlist-max-stage x) (nfix n))
              (equal (lhprobe-constraintlist-overridemux-eval x (take n envs) outs)
                     (lhprobe-constraintlist-overridemux-eval x envs outs)))
     :hints(("Goal" :in-theory (enable lhprobe-constraintlist-overridemux-eval))))
-  
+
   (defthm lhprobe-constraintlist-overridemux-eval-of-take-outs
     (implies (< (lhprobe-constraintlist-max-stage x) (nfix n))
              (equal (lhprobe-constraintlist-overridemux-eval x envs (take n outs))
@@ -870,7 +870,7 @@ to signed values.</p>"
   (defthm lhprobe-constraintlist-max-stage-lower-bound
     (<= -1 (lhprobe-constraintlist-max-stage x))
     :rule-classes :linear)
-  
+
   (defthm lhprobe-constraintlist-max-stage-of-append
     (Equal (lhprobe-constraintlist-max-stage (append x y))
            (max (lhprobe-constraintlist-max-stage x)
@@ -1050,8 +1050,8 @@ to signed values.</p>"
   ;; Add constraints based on equating lhprobe and binding under the assumption
   ;; that svtv variables are mapped to lhprobes as in bindings.
 
-  
-  
+
+
   :returns (constraints lhprobe-constraintlist-p)
   (svar/4vec-case binding
     :4vec
@@ -1092,15 +1092,15 @@ to signed values.</p>"
         (svtv-spec-fsm-constraints-for-alist (cdr x) stage namemap overridetype bindings))
        (lhs (cdr look))
        ;; FIXME -- See the comment about signedness in svtv-spec-fsm-bindings-for-alist.
-       ;; 
+       ;;
        (lhprobe (make-lhprobe :lhs (lhs-change-override lhs overridetype) :stage stage
                               :signedp (lhprobe-signedness-for-alist overridetype val))))
-    (append       
+    (append
      (svtv-spec-fsm-constraints-for-lhprobe lhprobe val bindings)
      (svtv-spec-fsm-constraints-for-alist (cdr x) stage namemap overridetype bindings)))
   ///
   (local (in-theory (enable svar/4vec-alist-fix))))
-       
+
 (define svtv-spec-fsm-constraints-for-alists ((x svar/4vec-alistlist-p)
                                               (stage natp)
                                               (namemap svtv-name-lhs-map-p)

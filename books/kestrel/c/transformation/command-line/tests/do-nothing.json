@@ -1,0 +1,5 @@
+{"command": "do-nothing",
+ "arguments":
+ {"old-dir" : "input-files",
+  "new-dir" : "do-nothing.output",
+  "files": ["file11.c"]}}

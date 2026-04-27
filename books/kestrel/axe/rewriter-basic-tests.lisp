@@ -40,7 +40,8 @@
                                     (monitored-symbols 'nil)
                                     (no-warn-ground-functions 'nil)
                                     (fns-to-elide 'nil))
-  `(simplify-term-to-term-basic ,term
+  `(b* (((mv erp term &)
+         (simplify-term-to-term-basic ,term
                     ,assumptions
                     ,rule-alist
                     ,interpreted-function-alist
@@ -52,7 +53,8 @@
                     ,print
                     ,monitored-symbols
                     ,no-warn-ground-functions
-                    ,fns-to-elide))
+                    ,fns-to-elide)))
+     (mv erp term)))
 
 ;; A simple test that applies the rewrite rule CAR-CONS to simplify a term:
 (assert!
@@ -92,15 +94,17 @@
 
 ;; A test that returns a variable
 (assert!
- (mv-let (erp res)
-   (simplify-term-to-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil nil)
+ (mv-let (erp res hits)
+     (simplify-term-to-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil nil)
+   (declare (ignore hits))
    (and (not erp)
         (equal res 'x))))
 
 ;; A test that returns a constant
 (assert!
- (mv-let (erp res)
+ (mv-let (erp res hits)
    (simplify-term-to-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil nil)
+   (declare (ignore hits))
    (and (not erp)
         (equal res ''2))))
 
@@ -114,7 +118,7 @@
                                      (memoizep 't)
                                      (count-hits 't))
   `(assert!
-     (mv-let (erp term)
+     (mv-let (erp term hits)
        (simplify-term-to-term-basic ',input-term
                         ',assumptions
                         (make-rule-alist! ,rules (w state))
@@ -128,7 +132,8 @@
                         nil ; monitored-symbols
                         nil ; no-warn-ground-functions
                         nil ; fns-to-elide
-                        )
+        )
+       (declare (ignore hits))
        (and (not erp)
             (equal term ',output-term)))))
 
@@ -240,7 +245,8 @@
                                        (monitored-symbols 'nil)
                                        (no-warn-ground-functions 'nil)
                                        (fns-to-elide 'nil))
-  `(simplify-term-basic ,term
+  `(b* (((mv erp term &)
+         (simplify-term-basic ,term
                         ,assumptions
                         ,rule-alist
                         ,interpreted-function-alist
@@ -252,7 +258,8 @@
                         ,print
                         ,monitored-symbols
                         ,no-warn-ground-functions
-                        ,fns-to-elide))
+                        ,fns-to-elide)))
+     (mv erp term)))
 
 (assert!
  (mv-let (erp result) ;; result is always DAG or a quotep
@@ -294,7 +301,7 @@
    (simplify-term-basic-wrapper '(if (natp x) (natp x) y)
                                 :known-booleans (known-booleans (w state)) :memoizep nil :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (natp x) 't y)))))
+        (equal (dag2term res) '(if (natp x) 't y)))))
 
 ;; Test that (non-negated) if tests don't rewrite in the then branch when not boolean
 (assert!
@@ -302,7 +309,7 @@
    (simplify-term-basic-wrapper '(if (foo x) (foo x) y)
                                 :known-booleans (known-booleans (w state)) :memoizep nil :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (foo x) (foo x) y)))))
+        (equal (dag2term res) '(if (foo x) (foo x) y)))))
 
 ;; Test that (non-negated) if tests rewrite to nil in the else branch
 (assert!
@@ -310,7 +317,7 @@
    (simplify-term-basic-wrapper '(if x y x)
                                 :known-booleans (known-booleans (w state)) :memoizep nil :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if x y 'nil)))))
+        (equal (dag2term res) '(if x y 'nil)))))
 
 ;; Test that negated if tests rewrite to nil in the then branch
 (assert!
@@ -318,7 +325,7 @@
    (simplify-term-basic-wrapper '(if (not (natp x)) (natp x) y)
                                 :known-booleans (known-booleans (w state)) :memoizep nil :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (natp x)) 'nil y)))))
+        (equal (dag2term res) '(if (not (natp x)) 'nil y)))))
 
 ;; Test that negated if tests rewrite to nil in the then branch, negated in branch
 (assert!
@@ -326,7 +333,7 @@
    (simplify-term-basic-wrapper '(if (not (natp x)) (not (natp x)) y)
                                 :known-booleans (known-booleans (w state)) :memoizep nil :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (natp x)) 't y)))))
+        (equal (dag2term res) '(if (not (natp x)) 't y)))))
 
 ;; Test that negated if tests rewrite to t in the else branch when boolean
 (assert!
@@ -334,7 +341,7 @@
    (simplify-term-basic-wrapper '(if (not (natp x)) y (natp x))
                                 :known-booleans (known-booleans (w state)) :memoizep nil :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (natp x)) y 't)))))
+        (equal (dag2term res) '(if (not (natp x)) y 't)))))
 
 ;; Test that negated if tests rewrite to t in the else branch when boolean, negated in branch
 (assert!
@@ -342,7 +349,7 @@
    (simplify-term-basic-wrapper '(if (not (natp x)) y (not (natp x)))
                                 :known-booleans (known-booleans (w state)) :memoizep nil :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (natp x)) y 'nil)))))
+        (equal (dag2term res) '(if (not (natp x)) y 'nil)))))
 
 ;; Test that negated if tests don't rewrite in the else branch when not boolean
 (assert!
@@ -350,7 +357,7 @@
    (simplify-term-basic-wrapper '(if (not (foo x)) y (foo x))
                                 :known-booleans (known-booleans (w state)) :memoizep nil :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (foo x)) y (foo x))))))
+        (equal (dag2term res) '(if (not (foo x)) y (foo x))))))
 
 ;; Special case: Test that negated if tests rewrite in the else branch when negated there, even when not boolean.
 (assert!
@@ -358,7 +365,7 @@
    (simplify-term-basic-wrapper '(if (not (foo x)) y (not (foo x)))
                                 :known-booleans (known-booleans (w state)) :memoizep nil :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (foo x)) y 'nil)))))
+        (equal (dag2term res) '(if (not (foo x)) y 'nil)))))
 
 ;;;
 ;;; Tests when memoizing (no context info should be used)
@@ -371,7 +378,7 @@
                                  :known-booleans (known-booleans (w state)) :count-hits nil
                                 )
    (and (not erp)
-        (equal (dag-to-term res) '(if (natp x) (natp x) y)))))
+        (equal (dag2term res) '(if (natp x) (natp x) y)))))
 
 ;; Non-negated test in else-branch (boolean)
 (assert!
@@ -379,7 +386,7 @@
    (simplify-term-basic-wrapper '(if (natp x) y (natp x))
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (natp x) y (natp x))))))
+        (equal (dag2term res) '(if (natp x) y (natp x))))))
 
 ;; Non-negated test in then-branch (not boolean)
 (assert!
@@ -387,7 +394,7 @@
    (simplify-term-basic-wrapper '(if (foo x) (foo x) y)
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (foo x) (foo x) y)))))
+        (equal (dag2term res) '(if (foo x) (foo x) y)))))
 
 ;; Non-negated test in else-branch (not boolean)
 (assert!
@@ -395,7 +402,7 @@
    (simplify-term-basic-wrapper '(if (foo x) y (foo x))
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (foo x) y (foo x))))))
+        (equal (dag2term res) '(if (foo x) y (foo x))))))
 
 ;; Negated test in then-branch (boolean)
 (assert!
@@ -403,7 +410,7 @@
    (simplify-term-basic-wrapper '(if (not (natp x)) (not (natp x)) y)
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (natp x)) (not (natp x)) y)))))
+        (equal (dag2term res) '(if (not (natp x)) (not (natp x)) y)))))
 
 ;; Negated test in then-branch (boolean), no negation in branch
 (assert!
@@ -411,7 +418,7 @@
    (simplify-term-basic-wrapper '(if (not (natp x)) (natp x) y)
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (natp x)) (natp x) y)))))
+        (equal (dag2term res) '(if (not (natp x)) (natp x) y)))))
 
 ;; Negated test in else-branch (boolean)
 (assert!
@@ -419,7 +426,7 @@
    (simplify-term-basic-wrapper '(if (not (natp x)) y (not (natp x)))
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (natp x)) y (not (natp x)))))))
+        (equal (dag2term res) '(if (not (natp x)) y (not (natp x)))))))
 
 ;; Negated test in else-branch (boolean), no negation in branch
 (assert!
@@ -427,7 +434,7 @@
    (simplify-term-basic-wrapper '(if (not (natp x)) y (natp x))
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (natp x)) y (natp x))))))
+        (equal (dag2term res) '(if (not (natp x)) y (natp x))))))
 
 ;; Negated test in then-branch (not boolean)
 (assert!
@@ -435,7 +442,7 @@
    (simplify-term-basic-wrapper '(if (not (foo x)) (not (foo x)) y)
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (foo x)) (not (foo x)) y)))))
+        (equal (dag2term res) '(if (not (foo x)) (not (foo x)) y)))))
 
 ;; Negated test in then-branch (not boolean), no negation in branch
 (assert!
@@ -443,7 +450,7 @@
    (simplify-term-basic-wrapper '(if (not (foo x)) (foo x) y)
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (foo x)) (foo x) y)))))
+        (equal (dag2term res) '(if (not (foo x)) (foo x) y)))))
 
 ;; Negated test in else-branch (not boolean)
 (assert!
@@ -451,7 +458,7 @@
    (simplify-term-basic-wrapper '(if (not (foo x)) y (not (foo x)))
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (foo x)) y (not (foo x)))))))
+        (equal (dag2term res) '(if (not (foo x)) y (not (foo x)))))))
 
 ;; Negated test in else-branch (not boolean), no negation in branch
 (assert!
@@ -459,7 +466,7 @@
    (simplify-term-basic-wrapper '(if (not (foo x)) y (foo x))
                                  :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (foo x)) y (foo x))))))
+        (equal (dag2term res) '(if (not (foo x)) y (foo x))))))
 
 ;; Test with a non-boolean assumption that appears in an IF test.  This works
 ;; because we store :non-nil for it in the node-replacement-array
@@ -471,7 +478,7 @@
                                 :known-booleans (known-booleans (w state))
                                 :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) 'w))))
+        (equal (dag2term res) 'w))))
 
 ;; The known assumption appears in a call of NOT.
 (assert!
@@ -480,7 +487,7 @@
                                 :assumptions '((member-equal x y))
                                 :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) 'z))))
+        (equal (dag2term res) 'z))))
 
 ;; Test with a non-boolean assumption that appears in an IF test.  This works
 ;; because we store :non-nil for it in the node-replacement-array
@@ -490,7 +497,7 @@
                                 :assumptions '((not (member-equal x y)))
                                 :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) 'z))))
+        (equal (dag2term res) 'z))))
 
 ;; The known assumption appears in a call of NOT.
 (assert!
@@ -499,7 +506,7 @@
                                 :assumptions '((not (member-equal x y)))
                                 :known-booleans (known-booleans (w state)) :count-hits nil)
    (and (not erp)
-        (equal (dag-to-term res) 'w))))
+        (equal (dag2term res) 'w))))
 
 
 
@@ -514,7 +521,7 @@
                                   :memoizep nil ; can't be memoizing if we want to use contexts
                                   :count-hits nil)
      (and (not erp)
-          (equal (dag-to-term res) ''t)))))
+          (equal (dag2term res) ''t)))))
 
 ;; Note that the IF-TEST has a term that is needed for free var matching
 (deftest
@@ -529,7 +536,7 @@
                                   :monitored-symbols '(<-trans-simple)
                                   :memoizep nil :count-hits nil)
      (and (not erp)
-          (equal (dag-to-term res) '(if (< x y) (if (< y z) 't blah) blah2))))))
+          (equal (dag2term res) '(if (< x y) (if (< y z) 't blah) blah2))))))
 
 ;;; test (DEF-SIMPLIFIED-BASIC *foo* '((2 if 1 0 '3) (1 . 't) (0 . x)))
 
@@ -540,21 +547,21 @@
    (simplify-term-basic-wrapper '(bvxor '32 x y)
                                 :known-booleans (known-booleans (w state)) :count-hits nil :normalize-xors t)
    (and (not erp)
-        (equal (dag-to-term res) '(bvxor '32 x y)))))
+        (equal (dag2term res) '(bvxor '32 x y)))))
 
 (assert!
  (mv-let (erp res)
    (simplify-term-basic-wrapper '(bvxor '32 x (bvxor '32 y x))
                                 :known-booleans (known-booleans (w state)) :count-hits nil :normalize-xors t)
    (and (not erp)
-        (equal (dag-to-term res) '(bvchop '32 y)))))
+        (equal (dag2term res) '(bvchop '32 y)))))
 
 (assert!
  (mv-let (erp res)
    (simplify-term-basic-wrapper '(bvxor '32 '16 (bvxor '32 x '1))
                                 :known-booleans (known-booleans (w state)) :count-hits nil :normalize-xors t)
    (and (not erp)
-        (equal (dag-to-term res) '(bvxor '32 '17 x)))))
+        (equal (dag2term res) '(bvxor '32 '17 x)))))
 
 ;; tests about the memoization:
 
@@ -568,7 +575,7 @@
                                 :count-hits nil
                                 :normalize-xors t)
    (and (not erp)
-        (equal (dag-to-term res) '(if (not (consp x)) (equal '3 (car x)) (equal '4 (car x)))))))
+        (equal (dag2term res) '(if (not (consp x)) (equal '3 (car x)) (equal '4 (car x)))))))
 
 ;; Example where a BVIF becomes a (bvchop '32 '1), which can be evaluated.
 ;; Since we simplify the result, all is well.
@@ -578,145 +585,164 @@
                                 :known-booleans (known-booleans (w state))
                                 :count-hits nil :normalize-xors t)
    (and (not erp)
-        (equal (dag-to-term res) ''1))))
+        (equal (dag2term res) ''1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert!
- (mv-let (erp res limits)
-   (simplify-dag-basic (make-term-into-dag-simple! '(cons a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+ (mv-let (erp res limits hits)
+     (simplify-dag-basic (make-term-into-dag-simple! '(cons a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+   (declare (ignore hits))
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! '(cons a b))))))
 
 ;; The test gets resolved:
 (assert!
-  (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(if 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+  (mv-let (erp res limits hits)
+      (simplify-dag-basic (make-term-into-dag-simple! '(if 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'a)))))
 
 ;; The test gets resolved:
 (assert!
-  (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(if 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+  (mv-let (erp res limits hits)
+      (simplify-dag-basic (make-term-into-dag-simple! '(if 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'b)))))
 
 ;; The test gets resolved:
 (assert!
-  (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(myif 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+  (mv-let (erp res limits hits)
+      (simplify-dag-basic (make-term-into-dag-simple! '(myif 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'a)))))
 
 ;; The test gets resolved:
 (assert!
-  (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(myif 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+  (mv-let (erp res limits hits)
+      (simplify-dag-basic (make-term-into-dag-simple! '(myif 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'b)))))
 
 ;; The test gets resolved:
 (assert!
-  (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(boolif 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+  (mv-let (erp res limits hits)
+      (simplify-dag-basic (make-term-into-dag-simple! '(boolif 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! '(bool-fix$inline a))))))
 
 ;; The test gets resolved:
 (assert!
-  (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(boolif 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+  (mv-let (erp res limits hits)
+      (simplify-dag-basic (make-term-into-dag-simple! '(boolif 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! '(bool-fix$inline b))))))
 
 ;; The test gets resolved:
 (assert!
-  (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(bvif '32 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+  (mv-let (erp res limits hits)
+      (simplify-dag-basic (make-term-into-dag-simple! '(bvif '32 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! '(bvchop '32 a))))))
 
 ;; The test gets resolved:
 (assert!
-  (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(bvif '32 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+  (mv-let (erp res limits hits)
+      (simplify-dag-basic (make-term-into-dag-simple! '(bvif '32 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! '(bvchop '32 b))))))
 
 ;; The test gets resolved, even when it's an assumption:
 (assert!
-  (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(if (natp x) a b)) '((natp x)) (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+  (mv-let (erp res limits hits)
+      (simplify-dag-basic (make-term-into-dag-simple! '(if (natp x) a b)) '((natp x)) (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'a)))))
 
 ;; The test gets resolved, even when it's an assumption and is non-boolean:
 (assert!
-  (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(if x a b)) '(x) (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+  (mv-let (erp res limits hits)
+      (simplify-dag-basic (make-term-into-dag-simple! '(if x a b)) '(x) (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'a)))))
 
 (assert!
- (mv-let (erp res limits)
-   (simplify-dag-basic (make-term-into-dag-simple! '(not 't)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+ (mv-let (erp res limits hits)
+     (simplify-dag-basic (make-term-into-dag-simple! '(not 't)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+   (declare (ignore hits))
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
 (assert!
- (mv-let (erp res limits)
-   (simplify-dag-basic (make-term-into-dag-simple! '(not '3)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+ (mv-let (erp res limits hits)
+     (simplify-dag-basic (make-term-into-dag-simple! '(not '3)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+   (declare (ignore hits))
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
 (assert!
- (mv-let (erp res limits)
-   (simplify-dag-basic (make-term-into-dag-simple! '(not 'nil)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+ (mv-let (erp res limits hits)
+     (simplify-dag-basic (make-term-into-dag-simple! '(not 'nil)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+   (declare (ignore hits))
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! ''t)))))
 
 (assert!
- (mv-let (erp res limits)
+ (mv-let (erp res limits hits)
    (simplify-dag-basic (make-term-into-dag-simple! '(not x))
                        '(x) ; assumptions
-                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+   (declare (ignore hits))
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
 ;; todo: the NOT did not get resolved:
 (assert!
- (mv-let (erp res limits)
+ (mv-let (erp res limits hits)
    (simplify-dag-basic (make-term-into-dag-simple! '(not (foo x)))
                        '((foo x)) ; assumptions
-                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+   (declare (ignore hits))
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
 ;; Rewriter replaces (foo x) with t because the args of boolif can be simplified using iff:
 (assert!
- (mv-let (erp res limits)
+ (mv-let (erp res limits hits)
    (simplify-dag-basic (make-term-into-dag-simple! '(boolif test (foo x) 'nil))
                        '((foo x)) ; assumptions
-                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+   (declare (ignore hits))
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! '(boolif test 't 'nil))))))
 
 ;; Rewriter replaces (foo x) with t because the args of boolif can be simplified using iff:
 (assert!
- (mv-let (erp res limits)
+ (mv-let (erp res limits hits)
    (simplify-dag-basic (make-term-into-dag-simple! '(boolif test 'nil (foo x)))
                        '((foo x)) ; assumptions
-                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+   (declare (ignore hits))
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! '(boolif test 'nil 't))))))
 
 ;; Substitutes 8 for x in the then-branch:
 (assert!
-  (mv-let (erp res limits)
+  (mv-let (erp res limits hits)
     (simplify-dag-basic (make-term-into-dag-simple! '(if (equal x '8) (binary-+ x '1) '0))
                         '() ; assumptions
-                        (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+     (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
+    (declare (ignore hits))
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! '(if (equal x '8) '9 '0))))))
 
@@ -732,7 +758,7 @@
                   (+ xlen (len y)))))
 
 (assert!
- (mv-let (erp term)
+ (mv-let (erp term hits)
    (simplify-term-to-term-basic '(len (binary-append '(1 2 3 4 5 6) y))
                     nil     ; assumptions
                     (make-rule-alist! '(rule1) (w state))
@@ -746,14 +772,15 @@
                     nil     ; monitored-symbols
                     nil ; no-warn-ground-functions
                     nil     ; fns-to-elide
-                    )
+    )
+   (declare (ignore hits))
    (and (not erp) ;no error
         ;; resulting term is (FOO X):
         (equal term '(binary-+ '6 (len y))))))
 
 ;; the rule doesn't fire because of the (< 5 xlen) hyp
 (assert!
- (mv-let (erp term)
+ (mv-let (erp term hits)
    (simplify-term-to-term-basic '(len (binary-append '(1 2 3) y))
                     nil     ; assumptions
                     (make-rule-alist! '(rule1) (w state))
@@ -767,7 +794,8 @@
                     nil     ; monitored-symbols
                     nil ; no-warn-ground-functions
                     nil     ; fns-to-elide
-                    )
+    )
+      (declare (ignore hits))
    (and (not erp) ;no error
         ;; resulting term is (FOO X):
         (equal term '(len (binary-append '(1 2 3) y))))))

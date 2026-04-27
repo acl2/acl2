@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -39,7 +39,7 @@
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -85,7 +85,7 @@ int main(void) {
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -127,7 +127,7 @@ int main(void) {
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -173,7 +173,7 @@ int main(void) {
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test2.c"
@@ -207,105 +207,8 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Test an ensemble
-
 (acl2::must-succeed*
-  (c$::input-files :files '("static-struct1.c"
-                            "static-struct2.c"
-                            "extern-struct.c")
-                   :const *old*)
-
-  (split-gso *old*
-             *new*
-             :object-name "s"
-             ;; :object-filepath "extern-struct.c"
-             :new-object1 "s1"
-             :new-object2 "s2"
-             :new-type1 "S1"
-             :new-type2 "S2"
-             :split-members ("x"))
-
-  (c$::output-files :const *new*
-                    :path "new")
-
-  (assert-file-contents
-    :file "new/static-struct1.c"
-    :content "struct myStruct {
-  int foo;
-  _Bool bar;
-  unsigned long int baz;
-};
-
-static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
-
-int main(void) {
-  int x = my.foo + (-my.baz);
-  struct myStruct my;
-  return my.foo + (-my.baz);
-}
-")
-  (assert-file-contents
-    :file "new/static-struct2.c"
-    :content "struct myStruct {
-  int a;
-  int b;
-};
-
-static struct myStruct my = {.a = 0, .b = 0, };
-
-struct S {
-  int x;
-};
-
-struct S1;
-
-struct S2 {
-  int x;
-};
-
-struct S1 s1;
-
-struct S2 s2;
-
-int foo(void) {
-  int x = my.a + (-my.b);
-  struct myStruct my;
-  if (s2.x) {
-    return my.a + (-my.b);
-  }
-  return 0;
-}
-")
-  (assert-file-contents
-    :file "new/extern-struct.c"
-    :content "struct S {
-  unsigned int x;
-  unsigned int y;
-};
-
-struct S1 {
-  unsigned int y;
-};
-
-struct S2 {
-  unsigned int x;
-};
-
-struct S1 s1;
-
-struct S2 s2 = {.x = 0};
-")
-
-  :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Same as above, but with the :object-filepath
-
-(acl2::must-succeed*
-  (c$::input-files :files '("static-struct1.c"
-                           "static-struct2.c"
-                           "extern-struct.c")
+  (c$::input-files :files '("extern-struct.c")
                    :const *old*)
 
   (split-gso *old*
@@ -319,7 +222,101 @@ struct S2 s2 = {.x = 0};
              :split-members ("x"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/extern-struct.c"
+    :content "struct S {
+  unsigned int x;
+  unsigned int y;
+};
+
+struct S1 {
+  unsigned int y;
+};
+
+struct S2 {
+  unsigned int x;
+};
+
+struct S1 s1;
+
+struct S2 s2;
+
+struct S1 s1;
+
+struct S2 s2 = {.x = 0};
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files '("extern-struct2.c")
+                   :const *old*)
+
+  (split-gso *old*
+             *new*
+             :object-name "s"
+             :object-filepath "extern-struct2.c"
+             :new-object1 "s1"
+             :new-object2 "s2"
+             :new-type1 "S1"
+             :new-type2 "S2"
+             :split-members ("x"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/extern-struct2.c"
+    :content "struct S {
+  unsigned int x;
+  unsigned int y;
+};
+
+struct S1 {
+  unsigned int y;
+};
+
+struct S2 {
+  unsigned int x;
+};
+
+extern struct S1 s1;
+
+extern struct S2 s2;
+
+struct S1 s1;
+
+struct S2 s2 = {.x = 0};
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Test an ensemble
+
+(acl2::must-succeed*
+  (c$::input-files :files '("static-struct1.c"
+                            "static-struct2.c"
+                            "extern-struct.c")
+                   :const *old*)
+
+  (split-gso *old*
+             *new*
+             :object-name "s"
+             :object-filepath "extern-struct.c"
+             :new-object1 "s1"
+             :new-object2 "s2"
+             :new-type1 "S1"
+             :new-type2 "S2"
+             :split-members ("x"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/static-struct1.c"
@@ -356,14 +353,12 @@ struct S2 {
   int x;
 };
 
-struct S1 s1;
-
-struct S2 s2;
+static struct S static_s;
 
 int foo(void) {
   int x = my.a + (-my.b);
   struct myStruct my;
-  if (s2.x) {
+  if (static_s.x) {
     return my.a + (-my.b);
   }
   return 0;
@@ -386,6 +381,10 @@ struct S2 {
 
 struct S1 s1;
 
+struct S2 s2;
+
+struct S1 s1;
+
 struct S2 s2 = {.x = 0};
 ")
 
@@ -395,8 +394,8 @@ struct S2 s2 = {.x = 0};
 
 (acl2::must-succeed*
   (c$::input-files :files '("static-struct1.c"
-                           "static-struct2.c"
-                           "extern-struct.c")
+                            "static-struct2.c"
+                            "extern-struct.c")
                    :const *old*)
 
   (split-gso *old*
@@ -410,7 +409,7 @@ struct S2 s2 = {.x = 0};
              :split-members ("b"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/static-struct1.c"
@@ -451,12 +450,12 @@ struct S {
   int x;
 };
 
-extern struct S s;
+static struct S static_s;
 
 int foo(void) {
   int x = my1.a + (-my2.b);
   struct myStruct my;
-  if (s.x) {
+  if (static_s.x) {
     return my.a + (-my.b);
   }
   return 0;
@@ -469,6 +468,8 @@ int foo(void) {
   unsigned int y;
 };
 
+struct S s;
+
 struct S s = {.x = 0};
 ")
 
@@ -478,17 +479,18 @@ struct S s = {.x = 0};
 
 (acl2::must-succeed*
   (c$::input-files :files '("static-struct1.c"
-                           "static-struct2.c"
-                           "extern-struct.c")
+                            "static-struct2.c"
+                            "extern-struct.c")
                    :const *old*)
 
   (split-gso *old*
              *new*
-             :object-name "s"
+             :object-name "static_s"
+             :object-filepath "static-struct2.c"
              :split-members ("x"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/static-struct1.c"
@@ -525,14 +527,14 @@ struct S_1 {
   int x;
 };
 
-struct S_0 s_0;
+static struct S_0 static_s_0;
 
-struct S_1 s_1;
+static struct S_1 static_s_1;
 
 int foo(void) {
   int x = my.a + (-my.b);
   struct myStruct my;
-  if (s_1.x) {
+  if (static_s_1.x) {
     return my.a + (-my.b);
   }
   return 0;
@@ -545,17 +547,9 @@ int foo(void) {
   unsigned int y;
 };
 
-struct S_0 {
-  unsigned int y;
-};
+struct S s;
 
-struct S_1 {
-  unsigned int x;
-};
-
-struct S_0 s_0;
-
-struct S_1 s_1 = {.x = 0};
+struct S s = {.x = 0};
 ")
 
   :with-output-off nil)
@@ -572,7 +566,7 @@ struct S_1 s_1 = {.x = 0};
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   ;; No definitions of my_0 and my_1!
   (assert-file-contents
@@ -617,7 +611,7 @@ int main(void) {
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/typedef2.c"

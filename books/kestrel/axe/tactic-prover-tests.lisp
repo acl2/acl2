@@ -1,7 +1,7 @@
 ; Tests of the tactic prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -136,7 +136,7 @@
 (deftest
   (prove-with-tactics '(equal (bvplus '32 x y) (bvplus '32 y x)) :tactics '(:stp)))
 
-;; STP finds the counter-example of 0 and 1
+;; STP finds the counterexample of 0 and 1
 (deftest
   (must-fail (prove-with-tactics '(equal (bvplus '32 x y) (bvplus '32 x x)) :tactics '(:stp))))
 

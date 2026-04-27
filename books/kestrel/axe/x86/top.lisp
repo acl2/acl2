@@ -19,6 +19,7 @@
 (include-book "syntaxp-evaluator-x86")
 (include-book "bind-free-evaluator-x86")
 (include-book "rewriter-x86")
+(include-book "lifter-support")
 
 ;;Lifters:
 (include-book "unroller")

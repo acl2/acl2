@@ -1,7 +1,7 @@
 ; Rules about lookup-equal
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,8 +51,7 @@
   (equal (lookup-equal key (acons key2 val alist))
          (if (equal key key2)
              val
-           (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable))))
+           (lookup-equal key alist))))
 
 (defthm lookup-equal-of-acons-same
   (equal (lookup-equal key (acons key val alist))

@@ -1,7 +1,7 @@
 ; New tools for substituting equated vars in DAGS
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -905,8 +905,6 @@
             (<= (car y) a))
    :hints (("Goal" :in-theory (enable sortedp-<= member-equal)))))
 
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
-
 (local
  (defthm member-equal-when-<=-of-len-and-1
    (implies (<= (len y) 1)
@@ -1500,7 +1498,6 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp prover-depth)
-                (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
@@ -1521,7 +1518,6 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp prover-depth)
-                (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
@@ -1538,7 +1534,6 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp prover-depth)
-                (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
@@ -1562,7 +1557,6 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp prover-depth)
-                (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)

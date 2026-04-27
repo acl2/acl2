@@ -157,16 +157,14 @@ AIG to BDD Conversion Algorithm</a>.  In ITP 2010,LNCS 6172, Springer.  Pages
   :parents (top)
   :short "Libraries for working with hardware description languages, modeling
  circuits, etc."
- :long "Also see the (probably incomplete) <a
- href='http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html'>page
- of ACL2-related publications</a>.")
+ :long "Also see the (probably incomplete) documentation for ACL2-related @(see
+ publications).")
 
 (defsection software-verification
   :parents (top)
   :short "Software verification projects, tools, etc."
-  :long "Also see the (probably incomplete) <a
- href='http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html'>page
- of ACL2-related publications</a>.")
+  :long "Also see the (probably incomplete) documentation for ACL2-related @(see
+ publications).")
 
 (defxdoc macro-libraries
   :parents (top macros)

@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -256,9 +256,11 @@ implementations.")
 ; following with SBCL 2.9.11 on ARM64 (Ubuntu 24.04.3 LTS running in Docker
 ; container): demos/congruent-stobjs-book, demos/brr-test-book,
 ; demos/refinement-failure-test-book, demos/brr-free-variables-book, and
-; workshops/2023/kaufmann-moore/brr-book.  If SBCL bug #2137765 is fixed
-; (https://bugs.launchpad.net/sbcl/+bug/2137765), then we might remove this
-; change sometime later.
+; workshops/2023/kaufmann-moore/brr-book.  Now that SBCL bug #2137765
+; (https://bugs.launchpad.net/sbcl/+bug/2137765) has been fixed (starting with
+; SBCL 2.6.1), we could remove this change, at least conditioned on the
+; lisp-implementation-version showing at least 2.6.1.  But we're not aware of
+; any reason to need xref recording, so we simply leave it disabled for now.
 ;
 ; Disable xref recording in SBCL to avoid overflow errors in
 ; SB-C::PACK-XREF-DATA when line numbers exceed (UNSIGNED-BYTE 32).
@@ -305,7 +307,7 @@ with ordinary ACL2 builds on the same set of books."))))
    (t
 
 ; The absolute value of most-positive-fixnum or of most-negative-fixnum is too
-; sall for ACL2.
+; small for ACL2.
 
     (error "This Lisp implementation is not a suitable host for ACL2:
 the values of most-negative-fixnum and most-positive-fixnum are
@@ -438,7 +440,7 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
       (x arguments)
       (setq result (concatenate 'string result " " x)))
     #-unix
-    (excl::run-shell-commad result)
+    (excl::run-shell-command result)
     #+unix
 
 ; In Allegro CL in Unix, we can avoid spawning a new shell by calling
@@ -927,9 +929,8 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
 ;   (1) Replace the value below by t when making a release, then to nil after a
 ;       release.
 
-;   (2) More generally, see UT CS file
-;       /projects/acl2/devel-misc/release.cmds
-;       for release instructions.
+;   (2) More generally, see the release instructions stored in the repository:
+;       https://github.com/acl2/maintenance
 
   nil)
 
@@ -1495,9 +1496,27 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
            (t (format nil "+ (a development snapshot based on ~a)"
                       *copy-of-acl2-version*)))))
 
+(defvar *wsl*
+
+; This variable is intended to be non-nil when running in Windows Subsystem for
+; Linux.  We set it when ACL2 starts up; see acl2-default-restart.  We use it
+; in the implementation of certify-book to prevent an issue with
+; file-write-dates, as noted in a comment where this variable is accessed.
+
+  nil)
+
 (defun acl2-default-restart (&optional called-by-lp)
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
+  (setq *wsl*
+
+; This code is courtesy of hints from Eric McCarthy and perplexity.com.
+; The value is true when we are running under Windows Subsystem for
+; Linux.
+
+        (ignore-errors
+          (with-open-file (s "/proc/version")
+            (search "microsoft" (string-downcase (read-line s nil ""))))))
   #+cmu
   (when *print-startup-banner*
     (extensions::print-herald t))
@@ -1663,7 +1682,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; We pass options "-init -" and "-siteinit -" to inhibit loading init and patch
 ; files because we assume that whatever such files were to be loaded, were in
 ; fact loaded at the time the original Lispworks executable was saved.  Of
-; course, individual users who doesn't like this decision and know better could
+; course, individual users who don't like this decision and know better could
 ; always edit this script file, i.e., lw-exec-file, in the same spirit as
 ; changing the underlying Lisp implementation before building ACL2 (again,
 ; presumably based on knowledge of the host Lisp implementation).

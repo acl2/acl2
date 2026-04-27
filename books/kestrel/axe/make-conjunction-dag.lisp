@@ -1,7 +1,7 @@
 ; Making a conjunction of two DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,7 +19,7 @@
 ;; DAG1 is a quotep or dag-lst.
 ;; DAG2 is a quotep or dag-lst
 ;; Returns (mv erp res) where res is a quotep or dag-lst.
-;todo: consider returning the auxilary data structures.
+;todo: consider returning the auxiliary data structures.
 (defund make-conjunction-dag (dag1 dag2)
   (declare (xargs :guard (and (or (myquotep dag1)
                                   (and (pseudo-dagp dag1)

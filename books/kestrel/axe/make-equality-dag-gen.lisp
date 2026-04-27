@@ -1,7 +1,7 @@
-; The tactic-based prover
+; Making equality DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -46,7 +46,7 @@
                (cw "NOTE: The two dags have different variables.~%")))
        ((when (and different-varsp
                    (not different-vars-ok)))
-        (mv (er hard? 'make-equality-dag-gen "The two dags have different variables.  Consider supplying :DIFFERENT-VARS-OK t." nil)
+        (mv (er hard? 'make-equality-dag-gen "The two dags have different variables.  Consider supplying :DIFFERENT-VARS-OK t.")
             nil)))
     (make-equality-dag dag1 dag2)))
 

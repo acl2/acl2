@@ -1,6 +1,6 @@
 ; A tool to substitute lambda formals when we can do so without causing clashes
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,7 +37,6 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "sublis-var-simple-proofs"))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
-(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 ;(local (include-book "subst-var-alt-proofs")) ; todo, for pairlis$-of-empty-eval-list, which introduces empty-eval-cdrs -- why?
@@ -409,8 +408,8 @@
     (implies (and (not (intersection-equal set keys))
                   (consp keys))
              (not (member-equal (bad-guy-for-alists-equiv-on keys a1 a2) set)))
-    :hints (("Goal" :use (member-equal-of-bad-guy-for-alists-equiv-on-sam) ; fix name
-             :in-theory (disable member-equal-of-bad-guy-for-alists-equiv-on-sam
+    :hints (("Goal" :use (member-equal-of-bad-guy-for-alists-equiv-on-same)
+             :in-theory (disable member-equal-of-bad-guy-for-alists-equiv-on-same
                                  member-equal-of-bad-guy-for-alists-equiv-when-subsetp-equal)))))
 
 (local
@@ -419,8 +418,8 @@
                   (not (equal formal-to-subst (bad-guy-for-alists-equiv-on keys a1 a2)))
                   (consp keys))
              (not (member-equal (bad-guy-for-alists-equiv-on keys a1 a2) set)))
-    :hints (("Goal" :use (member-equal-of-bad-guy-for-alists-equiv-on-sam) ; fix name
-             :in-theory (disable member-equal-of-bad-guy-for-alists-equiv-on-sam
+    :hints (("Goal" :use (member-equal-of-bad-guy-for-alists-equiv-on-same)
+             :in-theory (disable member-equal-of-bad-guy-for-alists-equiv-on-same
                                  member-equal-of-bad-guy-for-alists-equiv-when-subsetp-equal)))))
 
 ;; Correctness theorem for subst-formal-in-lambda-application.  Shows that it
@@ -656,8 +655,8 @@
     (implies (and (not (intersection-equal keys set)) ; flipped
                   (consp keys))
              (not (member-equal (bad-guy-for-alists-equiv-on keys a1 a2) set)))
-    :hints (("Goal" :use (member-equal-of-bad-guy-for-alists-equiv-on-sam) ; fix name
-             :in-theory (disable member-equal-of-bad-guy-for-alists-equiv-on-sam
+    :hints (("Goal" :use (member-equal-of-bad-guy-for-alists-equiv-on-same)
+             :in-theory (disable member-equal-of-bad-guy-for-alists-equiv-on-same
                                  member-equal-of-bad-guy-for-alists-equiv-when-subsetp-equal)))))
 
 (local
@@ -666,8 +665,8 @@
                   (not (member-equal (bad-guy-for-alists-equiv-on keys a1 a2) diff))
                   (consp keys))
              (not (member-equal (bad-guy-for-alists-equiv-on keys a1 a2) set)))
-    :hints (("Goal" :use (member-equal-of-bad-guy-for-alists-equiv-on-sam) ; fix name
-             :in-theory (disable member-equal-of-bad-guy-for-alists-equiv-on-sam
+    :hints (("Goal" :use (member-equal-of-bad-guy-for-alists-equiv-on-same)
+             :in-theory (disable member-equal-of-bad-guy-for-alists-equiv-on-same
                                  member-equal-of-bad-guy-for-alists-equiv-when-subsetp-equal)))))
 
 ;; formals-to-subst is a free var

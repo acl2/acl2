@@ -49,6 +49,8 @@
 (include-book "annotation")
 (include-book "backtrace")
 (include-book "supertrace")
+(include-book "reduce-alist")
+(include-book "reference-ctrex")
 
 (local (in-theory (disable w)))
 

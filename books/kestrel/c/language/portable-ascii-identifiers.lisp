@@ -48,7 +48,7 @@
      "The ten numeric digits (but not in the starting position).")
     (xdoc::li
      "The 26 uppercase Latin letters,
-      the 26 lowercase Latin letter,
+      the 26 lowercase Latin letters,
       and the underscore.")
     (xdoc::li
      "Some ranges of universal characters

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function pairlis$
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -71,9 +71,7 @@
   (equal (pairlis$ (cons x xs) y)
          (cons (cons x (car y))
                (pairlis$ xs (cdr y))))
-  :hints (("Goal" :in-theory (enable pairlis$)
-           :induct (double-cdr-induct x y)
-           )))
+  :hints (("Goal" :in-theory (enable pairlis$))))
 
 (defthm pairlis$-of-append-arg1
   (equal (pairlis$ (append x y) z)

@@ -197,7 +197,7 @@
           nil)))))
 
 ;;Returns (mv attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced).
-(defun tabulate-resuls-for-model (model
+(defun tabulate-results-for-model (model
                                   result-alist
                                   attempt-count
                                   successful-attempt-count
@@ -223,7 +223,7 @@
          (model-results (cdr result-entry))
          (this-model-result (assoc-eq model model-results)))
       (if (not this-model-result) ; maybe print a warning?
-          (tabulate-resuls-for-model model (rest result-alist) attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
+          (tabulate-results-for-model model (rest result-alist) attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
         (let* ((total-recs (second this-model-result))
                (first-working-rec-num-or-nil (third this-model-result)) ; todo: also tabulate the times
                (successp first-working-rec-num-or-nil)
@@ -231,7 +231,7 @@
                (top-10 (and successp (<= first-working-rec-num-or-nil 10))) ; todo: what if we don't even ask for 10, or there are not 10, or :add-hyp gets removed?
                (unique-successp (and successp
                                      (all-other-models-failedp model model-results))))
-          (tabulate-resuls-for-model model (rest result-alist)
+          (tabulate-results-for-model model (rest result-alist)
                                      (+ 1 attempt-count)
                                      (if successp (+ 1 successful-attempt-count) successful-attempt-count)
                                      (if unique-successp (+ 1 unique-successful-attempt-count) unique-successful-attempt-count)
@@ -244,7 +244,7 @@
                                      ))))))
 
 (local
- (defthm tabulate-resuls-for-model-type
+ (defthm tabulate-results-for-model-type
    (implies (and (keywordp model) ; todo: improve?
                  (result-alistp result-alist)
                  (natp attempt-count)
@@ -255,7 +255,7 @@
                  (nat-listp successful-rec-nums-acc)
                  (natp total-recs-produced))
             (mv-let (attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced)
-              (tabulate-resuls-for-model model result-alist attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
+              (tabulate-results-for-model model result-alist attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
               (and (natp attempt-count)
                    (natp successful-attempt-count)
                    (natp unique-successful-attempt-count)
@@ -263,7 +263,7 @@
                    (natp top-10-count)
                    (nat-listp successful-rec-nums)
                    (natp total-recs-produced))))
-   :hints (("Goal" :in-theory (enable tabulate-resuls-for-model)))))
+   :hints (("Goal" :in-theory (enable tabulate-results-for-model)))))
 
 ;; Returns (mv successful-rec-num num-recs-produced).
 (defun union-model-results (model-results
@@ -304,7 +304,7 @@
 
 ;; Tabulates results for a hypothetical model that combines all the models (if any can prove something, the union model can prove it).
 ;; Returns (mv attempt-count successful-attempt-count successful-rec-nums total-recs-produced).
-(defun tabulate-resuls-for-union-model (result-alist
+(defun tabulate-results-for-union-model (result-alist
                                         attempt-count
                                         successful-attempt-count
                                         ;; top-1-count top-10-count
@@ -320,10 +320,10 @@
     (b* ((result-entry (first result-alist))
          (model-results (cdr result-entry))
          ((when (not model-results))
-          (er hard? 'tabulate-resuls-for-union-model "No model results for test.")
+          (er hard? 'tabulate-results-for-union-model "No model results for test.")
           (mv nil nil nil nil))
          ((mv this-successful-rec-num this-recs-produced) (union-model-results model-results nil 0)))
-      (tabulate-resuls-for-union-model (rest result-alist)
+      (tabulate-results-for-union-model (rest result-alist)
                                        (+ 1 attempt-count)
                                        (if this-successful-rec-num (+ 1 successful-attempt-count) successful-attempt-count)
                                        (if this-successful-rec-num (cons this-successful-rec-num successful-rec-nums-acc) successful-rec-nums-acc)
@@ -433,7 +433,7 @@
             & & ; top-1-count top-10-count
             successful-rec-nums
             total-recs-produced)
-        (tabulate-resuls-for-model model result-alist 0 0 0 0 0 nil 0))
+        (tabulate-results-for-model model result-alist 0 0 0 0 0 nil 0))
        (successful-attempt-percentage (quotient-as-percent-string successful-attempt-count attempt-count))
        (unique-successful-attempt-percentage (quotient-as-percent-string unique-successful-attempt-count attempt-count))
        (model-name-string (symbol-name model)) ; all uppercase, no leading colon
@@ -476,7 +476,7 @@
        (- (show-success-percentages alist)) ; for each model
        ;; Now the combined results:
        (- (cw "~%Combined results:~%"))
-       ((mv combined-attempt-count combined-successful-attempt-count combined-successful-rec-nums combined-total-recs-produced) (tabulate-resuls-for-union-model result-alist 0 0 nil 0))
+       ((mv combined-attempt-count combined-successful-attempt-count combined-successful-rec-nums combined-total-recs-produced) (tabulate-results-for-union-model result-alist 0 0 nil 0))
        (combined-successful-attempt-percentage (quotient-as-percent-string combined-successful-attempt-count combined-attempt-count))
        (- (cw " Attempts: ~x0~%" combined-attempt-count))
        (- (cw " Successes: ~x0 (~s1%)~%" combined-successful-attempt-count combined-successful-attempt-percentage))

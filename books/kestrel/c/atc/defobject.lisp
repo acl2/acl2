@@ -369,7 +369,7 @@
            (b* (((unless (true-listp init))
                  (reterr (msg "Since the object's type is ~x0, ~
                                the :INIT input must be a list, ~
-                               but it is ~x0 instead."
+                               but it is ~x1 instead."
                               type init)))
                 (elemtype (type-array->of type))
                 (size (type-array->size type))

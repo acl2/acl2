@@ -787,7 +787,7 @@
 (define abstract-repeat ((tree treep))
   :returns (range repeat-rangep)
   :short "A @('repeat') parse tree is abstracted to
-          its correspoding repetition range."
+          its corresponding repetition range."
   :long
   (xdoc::topstring-p
    "The two alternatives of the @('repeat') rule

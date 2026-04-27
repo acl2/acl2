@@ -85,7 +85,7 @@
       This return specifier is:
       @('(erp (implies erp (equal erp error-erp)))')
       if @('<mode>') is @(':logic'); and
-      @('(erp \"@('nil') or @('error-erp').\")')
+      @('(erp \"nil or error-erp.\")')
       if @('<mode>') is @(':program').")
     (xdoc::li
      "@('<val>') is a "
@@ -100,8 +100,7 @@
       @('(val (and (implies erp (equal val error-val))
                    (implies (and (not erp) error-erp) (not val))))');
       if no @('<returns>') argument is supplied and @('<mode>') is @(':program'),
-      then @('<val>') is
-      @('(val \"@('nil') if @('erp') is @('nil'), otherwise @('error-val').\")');
+      then @('<val>') is @('(val \"nil if erp is nil, otherwise error-val.\")');
       if a @('<returns>') argument is supplied,
       then @('<val>') is @('<returns>').")
     (xdoc::li

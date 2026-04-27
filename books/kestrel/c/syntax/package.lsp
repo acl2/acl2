@@ -32,7 +32,8 @@
                                    standardp
                                    type
                                    typep
-                                   unread-char))
+                                   unread-char
+                                   value))
               '(any
                 assert!-stobj
                 bool
@@ -42,6 +43,7 @@
                 byte-listp
                 byte-list-fix
                 byte-list-listp
+                char-fix
                 character-list
                 defirrelevant
                 defmacro+
@@ -50,9 +52,12 @@
                 er-soft+
                 erp
                 impossible
+                int
                 keyword-listp
                 keyword-value-list-to-alist
+                lifix
                 lnfix
+                lposfix
                 make-event-terse
                 maybe-msgp
                 msg$
@@ -88,4 +93,5 @@
                 str::oct-digit-char-list
                 str::oct-digit-char-listp
                 str::str-fix
+                str::string-list
                 str::string-list-fix)))

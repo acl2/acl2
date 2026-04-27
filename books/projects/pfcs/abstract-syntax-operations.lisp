@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -15,14 +15,13 @@
 
 (include-book "std/util/deflist" :dir :system)
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/intersectp" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,11 +37,7 @@
   :guard (string-listp x)
   :returns (names name-listp)
   :short "Lift @(tsee name-simple) to lists."
-  (name-simple x)
-
-  ///
-
-  (fty::deffixequiv name-simple-list))
+  (name-simple x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,6 +57,7 @@
           (name (name-indexed base n-1))
           (names (names-indexed-below-rev base n-1)))
        (cons name names))
+     :prepwork ((local (in-theory (enable nfix))))
 
      ///
 
@@ -180,11 +176,7 @@
   :guard (name-listp x)
   :returns (exprs expression-listp)
   :short "Lift @(tsee expression-var) to lists."
-  (expression-var x)
-
-  ///
-
-  (fty::deffixequiv expression-var-list))
+  (expression-var x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,8 +319,7 @@
        ((when (equal (definition->name def)
                      (name-fix name)))
         (definition-fix def)))
-    (lookup-definition name (cdr defs)))
-  :hooks (:fix))
+    (lookup-definition name (cdr defs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -371,8 +362,7 @@
                    :relation (set::insert
                               (make-constrel :name constr.name
                                              :args constr.args)
-                              nil))
-  :hooks (:fix))
+                              nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -387,8 +377,7 @@
   (cond ((endp constrs) nil)
         (t (set::union (constraint-constrels (car constrs))
                        (constraint-list-constrels (cdr constrs)))))
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -404,8 +393,7 @@
      This function is used to define @(tsee constraint-list-rels)."))
   (constraint-case constr
                    :equal nil
-                   :relation (set::insert constr.name nil))
-  :hooks (:fix))
+                   :relation (set::insert constr.name nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -419,5 +407,4 @@
   (cond ((endp constrs) nil)
         (t (set::union (constraint-rels (car constrs))
                        (constraint-list-rels (cdr constrs)))))
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)

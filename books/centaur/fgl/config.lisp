@@ -57,7 +57,18 @@
     "If true, skip applying rewrite rules to calls of the function when trying
      to resolve an IF test to a Boolean formula.")
    (dont-primitive-exec booleanp
-    "If true, skip applying primitives to calls of the function.")))
+    "If true, skip applying primitives to calls of the function.")
+   (dont-if-merge-args
+    booleanp
+    "If we encounter an IF term where both branches rewrite to a call of this
+     function and no merge rules apply, we may produce a single call of the function
+     where the arguments are recursively merged, unless this flag is set.")))
+
+(define fgl-function-mode-fix! (x)
+  :guard-hints(("Goal" :in-theory (enable fgl-function-mode-fix)))
+  :enabled t
+  (mbe :logic (fgl-function-mode-fix x)
+       :exec (loghead 7 (ifix x))))
 
 (fty::defmap fgl-function-mode-alist :key-type symbolp :val-type fgl-function-mode :true-listp t)
 
@@ -70,6 +81,8 @@
 (defenum fgl-toplevel-sat-check-mode-p
   (t nil :insert))
 
+(defenum reference-ctrex-action-p
+  (:preserve :set nil))
 
 (defconst *fgl-config-fields*
   '((trace-rewrites booleanp :default 'nil
@@ -130,7 +143,13 @@ that the SAT check will be attempted when the interpreter gets there.. If
                         "If NIL, we use SAT to check vacuity of the
 hypotheses. Set to T to disable this vacuity check.")
     (evisc-tuple t :default '(nil 12 100 nil)
-                 "Evisc tuple to use for printing potentially large objects.")))
+                 "Evisc tuple to use for printing potentially large objects.")
+    (reference-ctrex-action
+     reference-ctrex-action-p :default 'nil
+     "If set to :set, copies the counterexample from the previous run into the
+reference counterexample. If :preserve, preserves the reference counterexample
+as-is. By default (nil), empties the reference counterexample. See @(see
+reference-ctrex) for details.")))
 
 (local
  (defun fgl-config-process-field (field)

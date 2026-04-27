@@ -1,7 +1,7 @@
 ; More theorems about all-unsigned-byte-p
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,7 @@
 (include-book "../lists-light/update-subrange2")
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "../lists-light/subrange"))
 (local (include-book "../lists-light/len"))
 (local (include-book "../lists-light/take"))
@@ -89,7 +90,7 @@
 (defthm all-unsigned-byte-p-of-update-subrange
   (implies (and (all-unsigned-byte-p size lst)
                 (all-unsigned-byte-p size vals)
-                (integerp start) (natp start)
+                (natp start)
                 (integerp end)
                 (natp size)
                 (true-listp lst) ;drop?

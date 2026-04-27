@@ -1,0 +1,25 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for floating constants
+; that are specific to the C17 standard [C17:6.4.4.2/1].
+; Together with the generic rules in floating-constants.abnf
+; and with the additional specialized rules in floating-constants-c17-*.abnf,
+; they form the rules for floating constants of each C17 dialect.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+digit-sequence = digit
+               / digit-sequence digit
+
+hexadecimal-digit-sequence = hexadecimal-digit
+                           / hexadecimal-digit-sequence hexadecimal-digit

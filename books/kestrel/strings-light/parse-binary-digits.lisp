@@ -1,6 +1,6 @@
 ; Lightweight utilities for parsing binary digits from strings
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -127,7 +127,7 @@
     (if res
         ;; At least one binary digit is present:
         (parse-binary-digits-from-chars chars res)
-      ;; No binary digts present:
+      ;; No binary digits present:
       (mv nil chars))))
 
 (defthm parse-binary-number-from-chars-len-bound

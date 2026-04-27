@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-;; Prune irrelevant if-then-else branches in terms and DAGs using rewriting and calls to STP.
+;; Prunes irrelevant if-then-else branches in terms and DAGs using rewriting and calls to STP.
+;; This uses rewriter-basic.
 
 ;; TODO: Use counterexamples returned by STP to avoid later calls that will fail.
 
@@ -22,7 +23,7 @@
 (include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
 (include-book "rule-alists")
 (include-book "count-branches")
-(include-book "rewriter-basic") ;because we call simplify-term-basic
+(include-book "rewriter-basic") ; for simplify-term-basic
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -30,8 +31,6 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
-
-;(in-theory (disable table-alist)) ;why?
 
 (local (in-theory (disable symbol-listp
                            ;; subsetp-car-member ; bad?
@@ -54,9 +53,9 @@
                            ;; todo: many of these should either not be imported or be at least disabled:
                            car-of-car-when-pseudo-dagp-aux consp-of-car-when-pseudo-dagp consp-of-car-when-pseudo-dagp-aux consp-of-car-when-pseudo-dagp-aux-2 ; todo: disable globally?
                            integerp-of-nth-when-all-natp
-                           equal-of-non-natp-and-caar-when-when-bounded-natp-alistp
+                           equal-of-non-natp-and-caar-when-bounded-natp-alistp
                            quote-lemma-for-bounded-darg-listp-gen-alt
-                           true-listp-of-car-when-when-bounded-natp-alistp
+                           consp-of-car-when-bounded-natp-alistp
                            len-when-dargp-cheap
                            )))
 
@@ -83,16 +82,17 @@
                               (print-levelp print))))
   (if (not (and (consp assumption)
                 (eq 'equal (ffn-symb assumption))
-                (eql 2 (len (fargs assumption))) ;for guards
+                (consp (rest (fargs assumption))) ;for guards
                 ))
       (list assumption)
-    (if (subtermp (farg1 assumption) (farg2 assumption))
+    (if (subtermp (farg1 assumption) (farg2 assumption)) ; (equal <subterm> <superterm>)
         (prog2$ (and (print-level-at-least-briefp print)
                      (cw "(Note: re-orienting equality assumption ~x0.)~%" assumption))
                 `((equal ,(farg2 assumption) ,(farg1 assumption))))
-      (if (quotep (farg1 assumption))
+      (if (quotep (farg1 assumption)) ; (equal <constant> <x>)
           (list assumption)
-        (if (quotep (farg2 assumption))
+        (if (quotep (farg2 assumption)) ; (equal <non-constant> <constant>)
+            ;; todo: why rebuild?
             `((equal ,(farg1 assumption) ,(farg2 assumption)))
           (prog2$ (and (print-level-at-least-briefp print)
                        (cw "(Note: Dropping equality assumption ~x0.)~%" assumption))
@@ -113,6 +113,7 @@
                               (print-levelp print))))
   (if (endp assumptions)
       nil
+    ;; just use append?
     (union-equal (fixup-assumption (first assumptions) print)
                  (fixup-assumptions (rest assumptions) print))))
 
@@ -174,7 +175,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; We name this to try to avoid case splits in later guard proofs
+;; We name this to try to avoid case splits in later guard proofs.
 (defund call-stp-optionp (call-stp)
   (declare (xargs :guard t))
   (or (booleanp call-stp)
@@ -205,9 +206,9 @@
        ;; TODO: Consider first doing something faster than a DAG-producing
        ;; rewrite, such as evaluating ground terms, using assumptions, and
        ;; applying rules that don't expand the term size too much.
-       ;; TODO: Skip this if the test is known to already be simplified, but if we are calling this we may be usig precise contexts for the first time (perhaps combine pruning and dag-to-term?).
+       ;; TODO: Skip this if the test is known to already be simplified, but if we are calling this we may be using precise contexts for the first time (perhaps combine pruning and dag-to-term?).
        ;; TODO: Can we skip this if there are no rules (well, there may be assumptions mentioning subterms of the test).  We could add a rewritep option.
-       ((mv erp simplified-dag-or-quotep)
+       ((mv erp simplified-dag-or-quotep &) ; use the hits?
         (simplify-term-basic test
                              assumptions ;no equality assumptions here to prevent loops (todo: think about this)
                              rule-alist
@@ -232,11 +233,12 @@
         (if (unquote simplified-dag-or-quotep)
             (mv nil :true state)
           (mv nil :false state)))
+       (simplified-dag simplified-dag-or-quotep) ; it is in fact a dag
        ;; Test did not rewrite to a constant, so try other things:
-       ;; (- (cw "(Simplified to ~X01.)~%" simplified-dag-or-quotep nil))
+       ;; (- (cw "(Simplified to ~X01.)~%" simplified-dag nil))
        (- (and (print-level-at-least-verbosep print)
                (cw "Test did not simplify to a constant.)~%")))
-       ;; Is this needed, given that we simplified the test above using the assumptions?
+       ;; Is this needed, given that we simplified the test above using the assumptions (maybe if non-boolean)?
        ;; TODO: Also look for an equality in the other order?:
        ((when (or (member-equal test assumptions)
                   (member-equal test equality-assumptions))) ;; In case the test is not a known boolean (so rewriting can't rewrite it to t). ;todo: use simplified-test-term here?
@@ -250,7 +252,7 @@
              (cw "Failed to resolve test by rewriting and we have been told not to call STP.)"))
         (mv nil :unknown state)) ; give up if we are not allowed to call STP
        ;; TODO: Avoid turning the DAG into a term:
-       (simplified-test-term (dag-to-term simplified-dag-or-quotep)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
+       (simplified-test-term (dag-to-term simplified-dag)) ;TODO: check that this is not huge (I suppose it could be if something gets unrolled)
        ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test, or getting an indication of which branch we expect to be pruned away).
        (- (and (print-level-at-least-verbosep print)
                (cw "(Attempting to prove test true with STP:~%")))
@@ -294,10 +296,10 @@
        ((when (eq *valid* false-result)) ;; STP proved the negation of the test
         (prog2$ (and (print-level-at-least-verbosep print)
                      (cw "STP proved the test false.))~%"))
-                (mv nil :false state))))
-    (prog2$ (and (print-level-at-least-verbosep print)
-                 (cw "STP did not resolve the test.))~%"))
-            (mv nil :unknown state))))
+                (mv nil :false state)))
+       (- (and (print-level-at-least-verbosep print)
+               (cw "STP did not resolve the test.))~%"))))
+    (mv nil :unknown state)))
 
 (local
   (defthm w-of-mv-nth-2-of-try-to-resolve-test
@@ -312,8 +314,9 @@
  ;; to TERM. Tries to rewrite each if/myif/boolif/bvif test using context from all overarching
  ;; tests (and any given assumptions).
  ;; TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
- ;; TODO: Consider filtering out assumptions unusable by STP once instead of each time try-to-resolve-test is called (or perhaps improve STP to use the known-booleans machinery so it rejects many fewer assumptions).
+ ;; TODO: Consider filtering out assumptions unusable by STP once instead of each time try-to-resolve-test is called (or perhaps improve STP translation to use the known-booleans machinery so it rejects many fewer assumptions).
   ;; TODO: Before recurring, don't bother if there is no function that can be pruned.
+  ;; TODO: Add an argument for the objective (e.g., try to prove true, based on which branch is bad, such as an error branch).
  (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
    (declare (xargs :guard (and (pseudo-termp term)
                                (pseudo-term-listp assumptions)
@@ -574,7 +577,6 @@
     :skip-others t
     :hints (("Goal" :in-theory (enable prune-terms-aux)))))
 
-;; todo: slow
 (local
   (defthm-flag-prune-term-aux
     (defthm prune-term-aux-return-type
@@ -597,9 +599,14 @@
                                                              rule-alist interpreted-function-alist
                                                              monitored-rules call-stp no-warn-ground-functions print state))))
       :flag prune-terms-aux)
-    :hints (("Goal" :in-theory (e/d (prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp)
-                                    (;pseudo-term-listp quotep
-                                     ))))))
+    :hints (("Goal"
+             ;; this :expand hint is much faster than an enable:
+             :expand ((prune-term-aux term assumptions equality-assumptions
+                                             rule-alist interpreted-function-alist
+                                             monitored-rules call-stp
+                                             no-warn-ground-functions print state))
+             :in-theory (e/d (prune-terms-aux symbolp-when-member-equal-and-symbol-listp)
+                             (pseudo-term-listp quotep))))))
 
 (verify-guards prune-term-aux :hints (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-2))))
 
@@ -620,6 +627,9 @@
 ;; Returns (mv erp changep result-term state).
 ;; TODO: Print some stats about the pruning process?
 ;; TODO: Allow rewriting to be suppressed (just call STP)?
+;; TODO: Add option to only prune top-level IFs (during lifting, these will
+;; have states as their then and else parts and thus represent unresolved
+;; conditional branches in the code).
 (defund prune-term (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp assumptions)
@@ -635,6 +645,7 @@
        ;; (- (cw "(Term: ~x0)~%" term))  ;; TODO: Print, but only if small (and thread through a print arg)
        ((mv erp new-term state)
         (prune-term-aux term
+                        ;; Splitting the assumptions here may not be needed, as the rewriter doesn't rewrite replacements
                         (fixup-assumptions assumptions print)
                         (get-equalities assumptions)
                         rule-alist

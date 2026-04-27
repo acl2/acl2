@@ -1,7 +1,7 @@
 ; Onw-way unification of terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -117,15 +117,15 @@
 
 (defthm alistp-of-mv-nth-1-of-unify-term
   (alistp (mv-nth 1 (unify-term term pattern)))
-  :hints (("Goal" :in-theory (enable acl2::unify-term))))
+  :hints (("Goal" :in-theory (enable unify-term))))
 
 (defthm symbol-alistp-of-mv-nth-1-of-unify-term
   (implies (pseudo-termp pattern)
            (symbol-alistp (mv-nth 1 (unify-term term pattern))))
-  :hints (("Goal" :in-theory (enable acl2::unify-term))))
+  :hints (("Goal" :in-theory (enable unify-term))))
 
 (defthm symbol-term-alistp-of-mv-nth-1-of-unify-term
   (implies (and (pseudo-termp term)
                 (pseudo-termp pattern))
            (symbol-term-alistp (mv-nth 1 (unify-term term pattern))))
-  :hints (("Goal" :in-theory (enable acl2::unify-term))))
+  :hints (("Goal" :in-theory (enable unify-term))))

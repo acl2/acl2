@@ -1,5 +1,3 @@
-(in-package "HELP")
-
 ; A simple model to recommend enabling functions in a theorem
 ;
 ; Copyright (C) 2022-2023 Kestrel Institute
@@ -9,6 +7,8 @@
 ; Author: Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "HELP")
 
 (include-book "recommendations")
 (include-book "std/util/bstar" :dir :system)
@@ -88,7 +88,7 @@
        ;; todo: remove any functions already enabled, at least in the goal hint?
        ;; todo: try all defined functions in the conclusion
        ;; todo: try all defined functions
-       ;; perhaps count occurences
+       ;; perhaps count occurrences
        ;; the order here matters (todo: what order to choose?)
        (fns-to-try-enabling (set-difference-eq fns-in-goal *fns-to-never-enable*))
        ;; (fns-to-try-enabling (acl2::remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
@@ -310,7 +310,7 @@
        ;; todo: prefer ones in the conclusion
        ;; todo: prefer more recent ones (e.g., ones introduced in the current book)?
        ;; todo: exclude ones whose hyps are obviously false for this theorem
-       ;; perhaps count occurences
+       ;; perhaps count occurrences
        ;; the order here matters (todo: what order to choose?)
        ;; (fns-to-try-enabling (set-difference-eq fns-in-goal *fns-to-never-enable*))
        ;; (fns-to-try-enabling (acl2::remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
@@ -344,7 +344,7 @@
        ;; todo: make a rec that enables all (sensible) rules?
        ;; todo: remove any rules already enabled, at least in the goal hint?
        ;; todo: prefer ones in the conclusion
-       ;; perhaps count occurences
+       ;; perhaps count occurrences
        ;; the order here matters (todo: what order to choose?)
        ;; (fns-to-try-enabling (set-difference-eq fns-in-goal *fns-to-never-enable*))
        ;; (fns-to-try-enabling (acl2::remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each

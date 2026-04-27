@@ -1,6 +1,6 @@
 ; Transformation to rename parameters of a function
 ;
-; Copyright (C) 2015-2022 Kestrel Institute
+; Copyright (C) 2015-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -56,9 +56,7 @@
 
 (local
  (defthm symbolp-of-cdr-assoc-equal-symbol-symbol-alist
-  (implies (and (symbolp x)
-                (symbol-symbol-alistp alist)
-                (assoc-equal (car l) alist))
+  (implies (symbol-symbol-alistp alist)
            (symbolp (cdr (assoc-equal x alist))))))
 
 (local

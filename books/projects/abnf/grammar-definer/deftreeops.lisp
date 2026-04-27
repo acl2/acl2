@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -2493,7 +2493,7 @@
        (bounds-thm-events
         (cons bounds-thm-event
               (and (evmac-input-print->= print :result)
-                   `((cw-event "Function ~x0.~%" ',info.bounds-thm))))))
+                   `((cw-event "Theorem ~x0.~%" ',info.bounds-thm))))))
     (mv get-nat-fn-events
         bounds-thm-events
         (list (cons info.get-nat-fn

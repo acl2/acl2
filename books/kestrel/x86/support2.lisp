@@ -1,7 +1,7 @@
 ; More supporting material for x86 reasoning
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -203,16 +203,6 @@
 
 ;; could move some of this stuff to linear-memory.lisp:
 
-(defthm mv-nth-0-of-rb-1-of-set-flag
-  (equal (mv-nth 0 (rb-1 n addr r-x (set-flag flag val x86)))
-         (mv-nth 0 (rb-1 n addr r-x x86)))
-  :hints (("Goal" :in-theory (enable rb-1))))
-
-(defthm mv-nth-0-of-rb-1-of-set-flag
-  (equal (mv-nth 0 (rb-1 n addr r-x (set-flag flag val x86)))
-         (mv-nth 0 (rb-1 n addr r-x x86)))
-  :hints (("Goal" :in-theory (enable rb-1))))
-
 (defthm mv-nth-0-of-rvm08-of-set-flag
   (equal (mv-nth 0 (rvm08 addr (set-flag flag val x86)))
          (mv-nth 0 (rvm08 addr x86)))
@@ -222,6 +212,11 @@
   (equal (mv-nth 1 (rvm08 addr (set-flag flag val x86)))
          (mv-nth 1 (rvm08 addr x86)))
   :hints (("Goal" :in-theory (enable rvm08))))
+
+(defthm mv-nth-0-of-rb-1-of-set-flag
+  (equal (mv-nth 0 (rb-1 n addr r-x (set-flag flag val x86)))
+         (mv-nth 0 (rb-1 n addr r-x x86)))
+  :hints (("Goal" :in-theory (enable rb-1))))
 
 (defthm mv-nth-1-of-rb-1-of-set-flag
   (implies (app-view x86)

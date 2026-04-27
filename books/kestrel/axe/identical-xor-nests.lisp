@@ -1,6 +1,6 @@
 ; Quickly recognizing identical xor nests
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -168,7 +168,7 @@
                            ((mv worklist1 constant1)
                             (combine-bitxor-darg-with-worklist-or-constant darg2 worklist1 constant1)))
                         (identical-bitxor-nestsp worklist1 worklist2 constant1 constant2 dag-array-name dag-array dag-len))
-                    ;; node1 is not a bitxor, and we know it is not present in the other worklist, so fail (todo: maybe deference constant a node here):
+                    ;; node1 is not a bitxor, and we know it is not present in the other worklist, so fail (todo: maybe dereference a constant node here):
                     nil))
               ;; We'll process node2:
               (let ((expr (aref1 dag-array-name dag-array node2)))
@@ -186,5 +186,5 @@
                          ((mv worklist2 constant2)
                           (combine-bitxor-darg-with-worklist-or-constant darg2 worklist2 constant2)))
                       (identical-bitxor-nestsp worklist1 worklist2 constant1 constant2 dag-array-name dag-array dag-len))
-                  ;; node2 is not a bitxor, and we know the node is not present in the other worklist, so fail (todo: maybe deference constant a node here):
+                  ;; node2 is not a bitxor, and we know the node is not present in the other worklist, so fail (todo: maybe dereference a constant node here):
                   nil)))))))))

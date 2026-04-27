@@ -1,6 +1,6 @@
-; A lightweight book the built-in function reverse, when applied to strings
+; A lightweight book about the built-in function reverse, when applied to strings
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;

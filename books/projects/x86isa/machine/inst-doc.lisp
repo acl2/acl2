@@ -533,6 +533,9 @@
   @('*pre-one-byte-opcode-map*') in the book @('inst-listing.lisp').  These are
   the constants to edit in order to add new instructions, etc. in the future.
   The dispatch, modr/m and prefixes computation, and generation of
-  documentation is done automatically from these constants.</p>")
+  documentation is done automatically from these constants.</p>
+
+ <p>Also see @(see implemented-instructions) for lists
+ organized according to Chapter 5 of the Intel manual Volume 1.</p>")
 
 ;; ----------------------------------------------------------------------

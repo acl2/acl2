@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -115,9 +115,9 @@
 ; the very end, a 1500 line Essay on Admitting a Model for Apply$ and the
 ; Functions that Use It.  That essay is mentioned in the above cited paper,
 ; ``Limited Second Order Functionality in a First Order Setting,'' which
-; explains that we can can build a model of apply$ and all warranted functions
-; so that all warrants are valid, but the paper only sketches the proof that
-; the model can be admitted.  The essay contains the full proof.
+; explains that we can build a model of apply$ and all warranted functions so
+; that all warrants are valid, but the paper only sketches the proof that the
+; model can be admitted.  The essay contains the full proof.
 
 ; At the time apply$ was integrated (Version_8.0) the relevant definitions in
 ; the Source Code Group files were the same (modulo some bootstrapping issues
@@ -147,7 +147,7 @@
 ; then build the public image of ACL2 in which we trustingly use
 ; *system-verify-guards-alist* to assert that the functions terminate and are
 ; guard verified.  The books in the Bootstrapping group must track the
-; definitions in the Source Code group: changing one without the changing the
+; definitions in the Source Code group: changing one without changing the
 ; other will probably result in the failure of the :acl2-devel certification of
 ; the system/ books.)
 
@@ -294,7 +294,7 @@
 ; probably most efficient to look for apply$ and ev$ instead of just
 ; apply$-userfn.  Would it be more efficient still to include the loop$ scions
 ; in this list?  On the one hand it would save us from exploring them.  On the
-; other, we'd the list would be longer and more often than not we wouldn't find
+; other hand, the list would be longer and more often than not we wouldn't find
 ; fn on it anyway.  We opt not to include the loop$ scions.
 
 (defconst *apply$-userfn-callers*
@@ -478,6 +478,7 @@
     (CONS-PPR1-GUARDP)
     (CONS-TERM1-MV2)
     (DEF-BODY)
+    (DEFEVALUATOR-CHECK)
     (DEFSTOBJ-FNNAME)
     (DEFSTOBJ-FNNAME-KEY2)
     (DEFUN-MODE)

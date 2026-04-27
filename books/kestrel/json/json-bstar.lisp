@@ -612,7 +612,7 @@ and the details on the pattern variables.
         ((symbolp jpat-inner-string)
          (mv nil (list (list jpat-inner-string form-to-string))))
         (t
-         (mv (er hard? 'top-level "Unforseen case in jpat-collect-match-requirements--string") nil))))
+         (mv (er hard? 'top-level "Unforeseen case in jpat-collect-match-requirements--string") nil))))
 
 ;; Handles the <something> in (:NUMBER <something>)
 (define jpat-collect-match-requirements--number ((jpat-inner-number atom) form-to-number)
@@ -628,7 +628,7 @@ and the details on the pattern variables.
         ((symbolp jpat-inner-number)
          (mv nil (list (list jpat-inner-number form-to-number))))
         (t
-         (mv (er hard? 'top-level "Unforseen case in jpat-collect-match-requirements--number") nil))))
+         (mv (er hard? 'top-level "Unforeseen case in jpat-collect-match-requirements--number") nil))))
 
 (define jpat-collect-match-requirements--member-name ((jpat atom) form)
   :returns (mv (match-reqts true-listp) (var-bindings true-listp))
@@ -724,7 +724,7 @@ and the details on the pattern variables.
             (jpat-collect-match-requirements--object-members (cdr jpat) `(value-object->members ,form))
           (mv (cons new-match-requirement inner-match-requirements)
               inner-var-bind-forms))))
-     (t (mv (er hard? 'top-level "Unforseen case in jpat-collect-match-requirements--value") nil))))
+     (t (mv (er hard? 'top-level "Unforeseen case in jpat-collect-match-requirements--value") nil))))
 
   (define jpat-collect-match-requirements--array-elements
             ((rest-of-jpat (and (true-listp rest-of-jpat)

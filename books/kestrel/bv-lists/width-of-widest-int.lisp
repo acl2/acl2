@@ -1,7 +1,7 @@
 ; A function to return the integer, from a list, that uses the most bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 
 (local (in-theory (disable unsigned-byte-p)))
 
-;; TODO: Strengthen guard to requite that ints have at least one element?
+;; TODO: Strengthen guard to require that ints have at least one element?
 ;; TODO: Consider renaming this to match the (perhaps unfortunate) terminology
 ;; implicit in the name integer-length (that the number of bits in an integer
 ;; is its "length" rather than its "width").

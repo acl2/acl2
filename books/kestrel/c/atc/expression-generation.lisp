@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -346,7 +346,7 @@
                                      nil
                                      nil
                                      nil
-                                     wrld))
+                                     state))
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
@@ -504,7 +504,7 @@
                                      nil
                                      nil
                                      nil
-                                     wrld))
+                                     state))
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
@@ -673,7 +673,7 @@
                                      nil
                                      nil
                                      nil
-                                     wrld))
+                                     state))
                  (okp-lemma-hints
                   `(("Goal"
                      :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
@@ -859,7 +859,6 @@
   :short "Generate a C expression and theorem from an ACL2 term
           that represents a ternary conditional expression."
   (b* (((reterr) (irr-expr-gout))
-       (wrld (w state))
        ((expr-gin gin) gin)
        ((unless (equal then-type else-type))
         (reterr
@@ -940,28 +939,28 @@
        (instructions
         `((casesplit
            ,(atc-contextualize test-term
-                               gin.context nil nil nil nil nil nil wrld))
+                               gin.context nil nil nil nil nil nil state))
           (claim ,(atc-contextualize `(test* ,test-term)
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize
                    `(equal (condexpr (if* ,test-term ,then-term ,else-term))
                            ,then-term)
-                   gin.context nil nil nil nil nil nil wrld)
+                   gin.context nil nil nil nil nil nil state)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true
                                        condexpr
                                        test*))))
           (prove :hints ,hints-then)
           (claim ,(atc-contextualize `(test* (not ,test-term))
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize
                    `(equal (condexpr (if* ,test-term ,then-term ,else-term))
                            ,else-term)
-                   gin.context nil nil nil nil nil nil wrld)
+                   gin.context nil nil nil nil nil nil state)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false
                                        condexpr
@@ -1024,7 +1023,6 @@
      we wrap the term with @(tsee sint-from-boolean) for this purpsoe,
      obtaining a term that returns a C @('int') instead of an ACL2 boolean."))
   (b* (((expr-gin gin) gin)
-       (wrld (w state))
        (term `(if* ,arg1-term ,arg2-term 'nil))
        (expr (make-expr-binary :op (binop-logand)
                                :arg1 arg1-expr
@@ -1089,22 +1087,22 @@
        (instructions
         `((casesplit ,(atc-contextualize
                        arg1-term
-                       gin.context nil nil nil nil nil nil wrld))
+                       gin.context nil nil nil nil nil nil state))
           (claim ,(atc-contextualize `(test* ,arg1-term)
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term ,arg2-term)
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,hints-then)
           (claim ,(atc-contextualize `(test* (not ,arg1-term))
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term nil)
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,hints-else)))
@@ -1163,7 +1161,6 @@
      and thus suffices to determine the result without the second argument,
      we need some additional rules to resolve certain subgoals that arise."))
   (b* (((expr-gin gin) gin)
-       (wrld (w state))
        (term `(if* ,arg1-term ,arg1-term ,arg2-term))
        (expr (make-expr-binary :op (binop-logor)
                                :arg1 arg1-expr
@@ -1233,22 +1230,22 @@
        (instructions
         `((casesplit ,(atc-contextualize
                        arg1-term
-                       gin.context nil nil nil nil nil nil wrld))
+                       gin.context nil nil nil nil nil nil state))
           (claim ,(atc-contextualize `(test* ,arg1-term)
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term ,arg1-term)
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,hints-then)
           (claim ,(atc-contextualize `(test* (not ,arg1-term))
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term ,arg2-term)
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,hints-else)))
@@ -1556,7 +1553,7 @@
                                  nil
                                  nil
                                  nil
-                                 wrld))
+                                 state))
              (okp-lemma-hints
               `(("Goal"
                  :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
@@ -1921,7 +1918,7 @@
                                           nil
                                           nil
                                           nil
-                                          wrld))
+                                          state))
                       (okp-lemma-hints
                        `(("Goal"
                           :in-theory '(,gin.fn-guard-unnorm
@@ -2057,7 +2054,7 @@
                                           nil
                                           nil
                                           nil
-                                          wrld))
+                                          state))
                       (okp-lemma-hints
                        `(("Goal"
                           :in-theory '(,gin.fn-guard-unnorm

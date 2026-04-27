@@ -1,6 +1,6 @@
 ; Top file for Axe
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -67,6 +67,7 @@
 (include-book "dag-parent-array")
 (include-book "dag-parent-arrayp")
 (include-book "dag-parent-array-with-name")
+(include-book "dag-printing")
 (include-book "dag-size-array")
 (include-book "dag-size-sparse")
 (include-book "dag-size-fast")
@@ -269,6 +270,7 @@
 (include-book "defthm-stp")
 
 ;; Legacy Axe utilities (many of these depend on skip-proofs):
+(include-book "evaluator-support")
 (include-book "evaluator")
 (include-book "instantiate-hyp")
 (include-book "dagify")
@@ -305,3 +307,6 @@
 
 ;; The r1cs-specific Axe tools:
 (include-book "r1cs/top")
+
+;; The ARM-specific Axe tools:
+(include-book "arm/top")

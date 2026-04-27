@@ -1,0 +1,4 @@
+(C::TEST*
+ (1 1 (:TYPE-PRESCRIPTION C::TEST*))
+ )
+(C::TEST*-OF-T)

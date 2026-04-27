@@ -51,7 +51,6 @@
 ;; original form to
 ;; (and (ev A (evf A))
 ;;      (ev B (evf B))).
-
 (defmacro def-ev-theoremp (ev)
   (let* ((falsify (intern-in-package-of-symbol
                    (concatenate 'string (symbol-name ev)
@@ -65,6 +64,14 @@
           `((ev . ,ev)
             (falsify . ,falsify)
             (theoremp . ,theoremp)
+            (theoremp*
+             . ,(intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name theoremp) "*")
+                 ev))
+            (theoremp-implies
+             . ,(intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name theoremp) "-IMPLIES")
+                 ev))
             (disjoin-cons-unless-theoremp
              . ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name theoremp)
@@ -80,6 +87,11 @@
                  (concatenate 'string (symbol-name theoremp)
                               "-CONJOIN-CONS")
                  ev))
+            (conjoin-non-cons
+             . ,(intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name theoremp)
+                              "-CONJOIN-NON-CONS")
+                 ev))
             (conjoin-append
              . ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name theoremp)
@@ -89,6 +101,11 @@
              . ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name theoremp)
                               "-CONJOIN-CLAUSES-CONS")
+                 ev))
+            (conjoin-clauses-non-cons
+             . ,(intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name theoremp)
+                              "-CONJOIN-CLAUSES-NON-CONS")
                  ev))
             (conjoin-clauses-append
              . ,(intern-in-package-of-symbol
@@ -108,14 +125,26 @@
               (defchoose falsify (a) (x)
                 (not (ev x a)))
 
-              (defmacro theoremp (x)
+              (defund theoremp (x)
+                (declare (xargs :guard t))
+                (ev x (falsify x)))
+
+              (defmacro theoremp* (x)
                 `(ev ,x (falsify ,x)))
+
+              (defthm theoremp-implies
+                (implies (theoremp x)
+                         (ev x a))
+                :hints (("goal" :use falsify
+                         :in-theory (enable theoremp))))
 
               (defthm conjoin-cons
                 (iff (theoremp (conjoin (cons a b)))
                      (and (theoremp a)
                           (theoremp (conjoin b))))
-                :hints (("goal" :use
+                :hints (("goal"
+                         :in-theory (e/d (theoremp) (theoremp-implies))
+                         :use
                          ((:instance
                            falsify
                            (x (conjoin (cons a b)))
@@ -133,26 +162,40 @@
                            (x (conjoin b))
                            (a (falsify (conjoin (cons a b)))))))))
 
+              (defthm conjoin-non-cons
+                (implies (not (consp a))
+                         (theoremp (conjoin a)))
+                :hints(("Goal" :in-theory (enable theoremp))))
+
               (defthm conjoin-append
                 (iff (theoremp (conjoin (append a b)))
                      (and (theoremp (conjoin a))
                           (theoremp (conjoin b))))
-                :hints(("Goal" :in-theory (enable append endp car-cdr-elim))))
+                :hints(("Goal" :in-theory (e/d (append endp car-cdr-elim))
+                        :induct t)))
 
               (defthm conjoin-clauses-cons
                 (iff (theoremp
                       (conjoin-clauses (cons cl1 clrest)))
                      (and (theoremp (disjoin cl1))
                           (theoremp (conjoin-clauses clrest))))
-                :hints(("Goal" :in-theory (enable conjoin-clauses disjoin-lst
-                                                  car-cons cdr-cons))))
+                :hints(("Goal" :in-theory (e/d (conjoin-clauses disjoin-lst
+                                                                car-cons cdr-cons)
+                                               (theoremp)))))
+
+              (defthm conjoin-clauses-non-cons
+                (implies (not (consp a))
+                         (theoremp (conjoin-clauses a)))
+                :hints(("Goal" :in-theory (enable theoremp))))
+                  
 
               (defthm conjoin-clauses-append
                 (iff (theoremp
                       (conjoin-clauses (append cls1 cls2)))
                      (and (theoremp (conjoin-clauses cls1))
                           (theoremp (conjoin-clauses cls2))))
-                :hints (("goal" :in-theory (enable append endp car-cdr-elim)
+                :hints (("goal" :in-theory (e/d (append endp car-cdr-elim)
+                                                (theoremp))
                          :induct (append cls1 cls2))))
 
               (defthm disjoin-cons-unless-theoremp

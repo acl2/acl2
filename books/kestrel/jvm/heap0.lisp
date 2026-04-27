@@ -1,7 +1,7 @@
 ; A model of the JVM heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,6 +26,8 @@
 (local (include-book "kestrel/sequences/defforall" :dir :system))
 (include-book "utilities")
 (include-book "utilities2") ; for rules like 2LIST-OF-DELETE
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
 (local (in-theory (disable g-iff-gen)))
 
@@ -46,33 +48,16 @@
          (cdr (strip-caddrs x)))
   :hints (("goal" :in-theory (enable strip-caddrs))))
 
-(defthm strip-cars-of-non-consp
-  (implies (not (consp bindings))
-           (equal (strip-cars bindings)
-                  nil))
-  :hints (("goal" :in-theory (enable strip-cars))))
-
-(defthm strip-cars-of-cons-cons
-  (equal (strip-cars (cons (cons pair value) bindings))
-         (cons pair (strip-cars bindings)))
-  :hints (("goal" :in-theory (enable strip-cars))))
-
-;; Matches the version in books/std/alists/strip-cars.lisp
-(defthm strip-cars-of-cons
-  (equal (strip-cars (cons a x))
-         (cons (car a)
-               (strip-cars x))))
-
-;; Matches the version in books/std/alists/strip-cars.lisp
-(defthm strip-cdrs-of-cons
-  (equal (strip-cdrs (cons a x))
-         (cons (cdr a)
-               (strip-cdrs x))))
-
 ;; Defines all-addressp:
 (acl2::defforall-simple addressp)
 
 (verify-guards acl2::all-addressp)
+
+(defthm addressp-of-nth-when-all-addressp
+  (implies (and (all-addressp ads)
+                (natp n)
+                (< n (len ads)))
+           (addressp (nth n ads))))
 
 ;; Most keys in the heap object are pairs of class names and field-ids.
 (defund jvm::class-name-field-id-pairp (x)

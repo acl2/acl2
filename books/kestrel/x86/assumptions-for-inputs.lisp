@@ -1,7 +1,7 @@
 ; Generating assumptions about inputs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -365,17 +365,15 @@
                       (mv nil nil)))))))))
 
 (local
-  (defthm true-listp-of-mv-nth-0-of-assumptions-and-vars-for-input
-    (implies (true-listp assumptions-acc)
-             (true-listp (mv-nth 0 (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp))))
-    :hints (("Goal" :in-theory (enable assumptions-and-vars-for-input)))))
+ (defthm true-listp-of-mv-nth-0-of-assumptions-and-vars-for-input
+   (true-listp (mv-nth 0 (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp)))
+   :hints (("Goal" :in-theory (enable assumptions-and-vars-for-input)))))
 
 (local
  (defthm pseudo-term-listp-of-mv-nth-0-of-assumptions-and-vars-for-input
    (implies (and (symbolp input-name)
                  ;; (symbolp input-type)
                  (pseudo-termp state-component)
-                 (pseudo-term-listp assumptions-acc)
                  (alistp disjoint-chunk-addresses-and-lens)
                  (nat-listp (strip-cars disjoint-chunk-addresses-and-lens))
                  (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
@@ -385,8 +383,7 @@
 
 (local
   (defthm symbol-listp-of-mv-nth-1-of-assumptions-and-vars-for-input
-    (implies (and (symbol-listp vars-acc)
-                  (symbolp input-name))
+    (implies (symbolp input-name)
              (symbol-listp (mv-nth 1 (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp))))
     :hints (("Goal" :in-theory (enable assumptions-and-vars-for-input)))))
 

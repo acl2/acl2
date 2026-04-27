@@ -908,7 +908,7 @@
     (implies (and (expev-meta-extract-global-facts)
                   (pseudo-term-listp clause)
                   (alistp a)
-                  (expev-theoremp
+                  (expev-theoremp*
                    (conjoin-clauses
                     (clauses-result (just-expand-cp clause hints state)))))
              (expev (disjoin clause) a))
@@ -945,7 +945,7 @@
     (implies (and (expev-meta-extract-global-facts)
                   (pseudo-term-listp clause)
                   (alistp a)
-                  (expev-theoremp
+                  (expev-theoremp*
                    (conjoin-clauses
                     (clauses-result (expand-marked-cp clause hints state)))))
              (expev (disjoin clause) a))
@@ -980,7 +980,7 @@
     (implies (and (expev-meta-extract-global-facts)
                   (pseudo-term-listp clause)
                   (alistp a)
-                  (expev-theoremp
+                  (expev-theoremp*
                    (conjoin-clauses
                     (clauses-result (remove-expand-marks-cp clause hints)))))
              (expev (disjoin clause) a))
@@ -1013,7 +1013,7 @@
   (defthm mark-expands-cp-correct
     (implies (and (pseudo-term-listp clause)
                   (alistp a)
-                  (expev-theoremp
+                  (expev-theoremp*
                    (conjoin-clauses
                     (clauses-result (mark-expands-cp clause hints)))))
              (expev (disjoin clause) a))

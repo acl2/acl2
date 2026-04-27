@@ -223,7 +223,7 @@
 ;;  :hints (("Goal" :in-theory (enable GET-PREFIXES))))
 
 
-;gen the (rxp x86)? the move these
+;gen the (rsp x86)? the move these
 ;todo: won't k1 and k2 get combined if both are constants?
 (defthm not-equal-of-+-and-+-when-separate
   (implies (and (separate :r text-offset-k text-offset :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (separate :r 150 text-offset :r 80 (binary-+ -80 (rsp x86)))

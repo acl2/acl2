@@ -1,6 +1,6 @@
 ; Proofs about filter-formals-and-actuals
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "filter-formals-and-actuals") ; brings in the defintion
+(include-book "filter-formals-and-actuals") ; brings in the definition
 (include-book "no-nils-in-termp")
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")

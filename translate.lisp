@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -965,7 +965,7 @@
 ; We failed to parse the phrase.  Args1 is the same as args (and non-nil, so
 ; there is at least an iteration variable) and we now have to discover where we
 ; failed!  We start by looking at the token right after the variable, i.e., at
-; (nth 1 args), which should be an OF-TYPE, IN, OR, or FROM.  And then we just
+; (nth 1 args), which should be an OF-TYPE, IN, ON, or FROM.  And then we just
 ; keep working through the cases.  But at least we know there are enough tokens
 ; to just look at each expected token with nth.
 
@@ -1038,7 +1038,7 @@
           (mv 3 (nthcdr 3 args) (msg "TO~@0" unusual-var-msg)))
          (t (mv 3
                 (nthcdr 1 args)
-                (msg "OF-TYPE, IN, OR, or FROM~0@"
+                (msg "OF-TYPE, IN, ON, or FROM~0@"
                      unusual-var-msg))))))))))
 
 (defun parse-loop$-vsts (stmt args vsts ans)
@@ -1505,7 +1505,7 @@
            (list (unquote (car arg-exprs))))
           (t (er hard 'actual-stobjs-out
                  "Unable to determine stobjs-out for application of ~x0 to ~
-                  translate arguments ~x1."
+                  translated arguments ~x1."
                  fn arg-exprs))))
    (t
     (let ((stobjs-out (stobjs-out fn wrld)))
@@ -2430,8 +2430,8 @@
 ; Add-event-landmark is called in install-event, which is the standard (only)
 ; way to finish off an ACL2 event.  If you search for calls of install-event
 ; you will find the normal combinations of event types and namex.  There are
-; two other calls of add-event-landmark.  One, in in primordial-world where it
-; is called to create the enter-boot-strap-mode event type landmark with namex
+; two other calls of add-event-landmark.  One, in primordial-world where it is
+; called to create the enter-boot-strap-mode event type landmark with namex
 ; consisting of the primitive functions and known packages.  The other, in
 ; end-prehistoric-world, creates the exit-boot-strap-mode event type landmark
 ; with namex 0.
@@ -2639,7 +2639,7 @@
 
 ; When LD has executed a world-changing form, it stores a "command tuple" as
 ; the new 'global-value of 'command-landmark.  These landmarks divide the world
-; up into "command blocks" and each command block contains one or or event
+; up into "command blocks" and each command block contains one or more event
 ; blocks.  Command blocks are important when the user queries the system about
 ; his current state, wishes to undo, etc.  Commands are enumerated sequentially
 ; from 0 with "absolute command numbers."
@@ -3886,7 +3886,7 @@
 ; term.
 
 ; Initially guard is NIL, meaning we have not yet seen a guard.  There can be
-; be only one (XARGS :GUARD ...) form and this flag is used to confirm that we
+; only one (XARGS :GUARD ...) form and this flag is used to confirm that we
 ; haven't seen a guard yet.  If the user writes (XARGS :GUARD NIL ...) we will
 ; act like he or she wrote (XARGS :GUARD 'NIL ...) to avoid confusion (though a
 ; case could be made that a lambda expression with a nil guard is pretty
@@ -4127,7 +4127,7 @@
 ; one time we also checked that every var is used, but that is not actually an
 ; invariant of well-formed terms, even though it is enforced at translate-
 ; time.  In particular ((lambda (e x) (declare (ignorable e x)) x) a b)
-; translates non-erroneously to ((LAMBDA (E X) X) A B), where E is unusued in
+; translates non-erroneously to ((LAMBDA (E X) X) A B), where E is unused in
 ; the lambda.
 
                 (subsetp-eq used-vars formals)))
@@ -4211,7 +4211,7 @@
 
 (defun syntactically-plausible-lambda-objectsp-within (gflg body)
 
-; Body is a pseudo-termp and we call syntactically-plause-lambda-objectsp on
+; Body is a pseudo-termp and we call syntactically-plausible-lambda-objectp on
 ; every quoted lambda-like object in it and return one of nil (meaning we found
 ; a syntactically illegal quoted lambda-like object), t (meaning there were no
 ; quoted lambda-like objects found), or a list of all the splo-extracts-tuples
@@ -4304,14 +4304,14 @@
 
 ; Essay on the Badge-Table
 
-; The badge-table is a table.  It's :guard is badge-table-guard and the table
-; is initialized in apply.lisp.  The table has only one entry, named
-; :badge-userfn-structure.  (Once upon a time it had another entry but that
-; that was eliminated and we never simplified its structure.)  The
-; :badge-userfn-structure is an alist with entries of the form
-; (fn warrantp badge), where fn is a function symbol, warrantp is t or nil
-; indicating whether there is a warrant for fn, and badge is the apply$-badge
-; record for fn.
+; The badge-table is a table.  Its :guard is badge-table-guard and the table is
+; initialized in apply.lisp.  The table has only one entry, named
+; :badge-userfn-structure.  (Once upon a time it had another entry but that was
+; eliminated and we never simplified its structure.)  The
+; :badge-userfn-structure is an alist with entries of the form (fn warrantp
+; badge), where fn is a function symbol, warrantp is t or nil indicating
+; whether there is a warrant for fn, and badge is the apply$-badge record for
+; fn.
 
 ; Note: As documented in apply-constraints.lisp, there are three categories of
 ; function symbols known to apply$: primitives like CONS and BINARY-+, boot
@@ -4762,7 +4762,7 @@
 ; calls in the body and drop the wrld arguments there as well, the result is
 ; the logical definition of tamep.  So that's a sort of informal inductive
 ; proof that they're equivalent if we could do the same ``inductive'' proof for
-; every ``executatable-'' definition involved.  But badge and executable-badge
+; every ``executable-'' definition involved.  But badge and executable-badge
 ; are very different.  Executable-badge, above, accesses the
 ; badge-userfn-structure of the badge-table in the world, whereas badge calls
 ; badge-userfn which is just constrained to return a badge.  The actual values
@@ -5825,7 +5825,7 @@
 ;                   (xargs :guard (my-fn1 x y)))
 ;          (my-fn3 x y))
 
-; is is an example of a dirty lambda object:
+; is an example of a dirty lambda object:
 
 ;  '(LAMBDA (X Y)
 ;           (DECLARE (TYPE INTEGER X)
@@ -11257,7 +11257,7 @@
 ; they took both a world and a state as input.  The world supplied the
 ; definitions of the functions.  The state was used for nothing but a
 ; termination argument -- but we did slip into raw Lisp when that was
-; thought appropriate.  The code was was (supposed to be) sound when
+; thought appropriate.  The code was (supposed to be) sound when
 ; evaluated on states other than the live state.  This was imagined to
 ; be possible if ground calls of ev-fncall arose in terms being
 ; proved.  The raw lisp counterpart of ev verified that the world in
@@ -11967,10 +11967,25 @@
                                :boot-strap-flg)) ; safe-mode
                   gc-off nil nil)
                  (cond (erp
+
+; A way to get here is for macroexpansion to cause a hard error, as in the
+; following example.
+
+; (defmacro mac (x) (if (atom x) (er hard 'top "Expected cons: ~x0" x) x))
+; (defun foo (x) (mac x))
+
+; The hard error from macroexpansion presumably results in a message that is
+; printed above the message below, unless errors are are inhibited in which
+; case neither is printed.  In the message below, we say "may be found" to
+; suggest where to look for the hard error; but if the variable, expansion,
+; actually contains the real explanation, then we're covered because "may" can
+; mean "might"!
+
                         (er-cmp ctx
-                                "In the attempt to macroexpand the ~
-                                         form ~x0, evaluation of the macro ~
-                                         body caused the error below.~|~%~@1"
+                                "In the attempt to macroexpand the form ~x0, ~
+                                 evaluation of the macro body caused an ~
+                                 error. ~ An explanation may be found ~
+                                 above.~|~%~@1"
                                 x
                                 expansion))
                        (t (value-cmp expansion))))))))))))
@@ -12050,7 +12065,7 @@
 ; The manipulation of non-trivial guards, including both the generation of
 ; guard clauses and the attempt to prove them with Tau, during the top-level
 ; evaluation of forms suggests that lambda objects should always be found in
-; some standard form so that fully translated guards encorporating all TYPE
+; some standard form so that fully translated guards incorporating all TYPE
 ; declarations can be recovered quickly from the object.
 
 ; Another new feature after Version_8.1 is that when verify-guards is called on
@@ -13534,8 +13549,8 @@
 
 ; Let's put some numbers on that.  We first clear the cache by setting its size
 ; in raw Lisp.  The default size is 1000, but we set the size below to 6.
-; There are three lambdas in in the translation above, but each one gets into
-; the cache twice, probably because of the slightly different versions of each
+; There are three lambdas in the translation above, but each one gets into the
+; cache twice, probably because of the slightly different versions of each
 ; lambda being seen, some with the RETURN-LAST markers and some without those
 ; markers.  So 6 is the minimal size to hold every lambda evaluation will see;
 ; increasing the cache size seems unlikely to change anything.
@@ -14359,7 +14374,7 @@
 ; Finally, the guard conjectures generated for a DO loop$ are the normal guard
 ; conditions for the arguments (which thus includes the guard conditions for
 ; the three lambda$s), plus four ``Special Conjectures'' akin to the Special
-; Conjectures generated for for loop$s and discussed in Appendix A.
+; Conjectures generated for FOR loop$s and discussed in Appendix A.
 
 ; * Special Conjecture (d): the initial alist satisfies the guard of do-body
 
@@ -22293,8 +22308,7 @@
                                             flet-alist x ctx wrld
                                             state-vars)
                            (mv erp value-forms bindings
-; Known-dfs is irrelevant for for translation of the LET body when
-; stobjs-out = t.
+; Known-dfs is irrelevant for translation of the LET body when stobjs-out = t.
                                known-dfs-for-body0)))
                         (t (let ((stobjs-out-df?
                                   (compute-stobj-flags-df?-doublets
@@ -26170,7 +26184,7 @@
                         (cadr x)))
 
 ; Because (cadr x) has not yet been translated, we do not really know it is not
-; a stobj!  It could be a macro call that expands to a stobj.'  The error
+; a stobj!  It could be a macro call that expands to a stobj.  The error
 ; message above is just to be helpful.  An accurate check is made below.
 
             (t
@@ -27180,7 +27194,7 @@
 
 ; We could define this recursively, but proofs about logical-termp can involve
 ; program-termp and hence its mutual-recursion nest-mate, program-term-listp.
-; So we here we avoid introducing a second recursion.
+; So here we avoid introducing a second recursion.
 
   (declare (xargs :guard (plist-worldp-with-formals w)))
   (and (term-listp x w)
@@ -28242,7 +28256,7 @@
   (cond ((or (eq x t) (symbol-listp x))
          (f-put-global 'temp-touchable-fns x state))
         (t (prog2$ (er hard 'set-temp-touchable-fns
-                       "The first argument to ~x0 may must be either ~x1 or a ~
+                       "The first argument to ~x0 must be either ~x1 or a ~
                         true list of symbols, unlike:~| ~x2"
                        'set-temp-touchable-fns
                        t
@@ -28260,7 +28274,7 @@
   (cond ((or (eq x t) (symbol-listp x))
          (f-put-global 'temp-touchable-vars x state))
         (t (prog2$ (er hard 'set-temp-touchable-vars
-                       "The first argument to ~x0 may must be either ~x1 or a ~
+                       "The first argument to ~x0 must be either ~x1 or a ~
                         true list of symbols, unlike:~| ~x2"
                        'set-temp-touchable-vars
                        t

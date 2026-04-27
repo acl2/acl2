@@ -38,7 +38,7 @@
 
 (in-package "X86ISA")
 
-(include-book "register-readers-and-writers" :ttags (:undef-flg))
+(include-book "register-readers-and-writers")
 
 ;; ======================================================================
 

@@ -592,8 +592,8 @@
                 (("Goal"
                   :in-theory
                   (enable
-                   abnf::treep-when-tree-resultp-and-not-reserrp
-                   abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+                   abnf::treep-when-result-not-error
+                   abnf::tree-listp-when-result-not-error))))
                (next-token abnf::tree-optionp)
                (rest-input abnf::tree-listp))
   :short "Parse a @('*annotation')."
@@ -1108,8 +1108,8 @@
   (("Goal"
     :in-theory
     (e/d
-     (abnf::treep-when-tree-resultp-and-not-reserrp
-      abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)
+     (abnf::treep-when-result-not-error
+      abnf::tree-listp-when-result-not-error)
      (parse-type
       parse-tuple-type
       parse-*-comma-type)))
@@ -1394,8 +1394,8 @@
              (("Goal"
                :in-theory
                (enable
-                abnf::treep-when-tree-resultp-and-not-reserrp
-                abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+                abnf::treep-when-result-not-error
+                abnf::tree-listp-when-result-not-error))))
             (next-token abnf::tree-optionp)
             (rest-input abnf::tree-listp))
   :short "Parse a @('*( \",\" natural )')."
@@ -2626,8 +2626,8 @@
   :returns-hints
   (("Goal"
     :in-theory
-    (e/d (abnf::treep-when-tree-resultp-and-not-reserrp
-          abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)
+    (e/d (abnf::treep-when-result-not-error
+          abnf::tree-listp-when-result-not-error)
          (parse-expression
           parse-conditional-ternary-expression
           parse-binary-expression
@@ -3855,8 +3855,8 @@
   :returns-hints
   (("Goal"
     :in-theory
-    (e/d (abnf::treep-when-tree-resultp-and-not-reserrp
-          abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)
+    (e/d (abnf::treep-when-result-not-error
+          abnf::tree-listp-when-result-not-error)
          (parse-statement
           parse-*-statement
           parse-block
@@ -4029,8 +4029,8 @@
              (("Goal"
                :in-theory
                (enable
-                abnf::treep-when-tree-resultp-and-not-reserrp
-                abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+                abnf::treep-when-result-not-error
+                abnf::tree-listp-when-result-not-error))))
             (next-token abnf::tree-optionp)
             (rest-input abnf::tree-listp))
   :short "Parse a @('*( \",\" function-parameter )')."
@@ -4257,8 +4257,8 @@
              (("Goal"
                :in-theory
                (enable
-                abnf::treep-when-tree-resultp-and-not-reserrp
-                abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+                abnf::treep-when-result-not-error
+                abnf::tree-listp-when-result-not-error))))
             (next-token abnf::tree-optionp)
             (rest-input abnf::tree-listp))
   :short "Parse a @('*( \",\" struct-component-declaration )')."
@@ -4628,8 +4628,8 @@
              (("Goal"
                :in-theory
                (enable
-                abnf::treep-when-tree-resultp-and-not-reserrp
-                abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+                abnf::treep-when-result-not-error
+                abnf::tree-listp-when-result-not-error))))
             (next-token abnf::tree-optionp)
             (rest-input abnf::tree-listp))
   :short "Parse a @('*program-item')."
@@ -4726,8 +4726,8 @@
              (("Goal"
                :in-theory
                (enable
-                abnf::treep-when-tree-resultp-and-not-reserrp
-                abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+                abnf::treep-when-result-not-error
+                abnf::tree-listp-when-result-not-error))))
             (next-token abnf::tree-optionp)
             (rest-input abnf::tree-listp))
   :short "Parse a @('*import-declaration')."

@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -61,7 +61,7 @@
 ; this list of functions is returned as the third value of ev-fncall+.  The
 ; function push-warrants then processes this list of functions as follows: for
 ; the warrant of each function in that list, either the warrant is known to be
-; true or it is forced (except that if it the warrant is known to be false, the
+; true or it is forced (except that if the warrant is known to be false, the
 ; evaluation is considered to have failed).
 
 ; Note that *aokp* must be true for the apply$-lambda and loop$ shortcuts.  So
@@ -475,8 +475,8 @@
 
 ; (In my previous example I used memb.  Here I use member, the Common Lisp
 ; function.  When member succeeds, it returns the tail of its second arg that
-; starts with its first.  Thus, (member x a) is not necessary equal to (member
-; x b), even when a and b are set-equal.  But they are propositionally
+; starts with its first.  Thus, (member x a) is not necessarily equal to
+; (member x b), even when a and b are set-equal.  But they are propositionally
 ; equivalent, i.e., mutually nil or non-nil.  Iff is just another equivalence
 ; relation.)
 
@@ -1083,7 +1083,7 @@
 ; every input and output and reran it on the proof of the Nqthm package to
 ; collect all io pairs.  Analyzing the io pairs showed that we could reproduce
 ; the behavior of geneqv-lst on that series of proofs with the following code.
-; Note that this does does not look at the property lists nor at the enabled
+; Note that this does not look at the property lists nor at the enabled
 ; structure.  Nor does it do any consing.
 
 ;    (defun geneqv-lst (fn geneqv ens wrld)
@@ -1916,7 +1916,7 @@ its attachment is ignored during proofs"))))
 ; approach has allowed us to continue to use some existing functions, in
 ; particular geneqv-lst.
 
-; Another basic principle is that we deal with the inherently sequentiality of
+; Another basic principle is that we deal with the inherent sequentiality of
 ; rewrite-args, in the sense that unlike ordinary geneqvs, the use of patterned
 ; equivalences must be done one argument at a time.  Consider the following
 ; example.
@@ -2354,7 +2354,7 @@ its attachment is ignored during proofs"))))
 ; Thus, pequivs fail to be used heuristically in some places that ordinary
 ; congruences are used: for example, as in test-3 in community book
 ; books/demos/patterned-congruences.lisp, remove-trivial-equivalences and
-; fertilize-clause doesn't use patterned congruence rules.  If we decide to add
+; fertilize-clause don't use patterned congruence rules.  If we decide to add
 ; such support, then we should think carefully so that we don't introduce
 ; unsoundness.  See the examples in the above book involving congruence rules
 ; triv-equiv-implies-equal-some-consp-1 and
@@ -2363,7 +2363,7 @@ its attachment is ignored during proofs"))))
 ; remove-trivial-equivalences and fertilize-clause, we can imagine that such
 ; dangers exist.  Finally support for pequivs is provided in the function
 ; geneqv-at-subterm-top, used in the proof-builder, but is not provided in the
-; code the warns about missing opportunities for the use of double-rewrite
+; code that warns about missing opportunities for the use of double-rewrite
 ; (e.g., double-rewrite-opportunities).
 
 ; End of Essay on Patterned Congruences and Equivalences
@@ -3160,7 +3160,7 @@ its attachment is ignored during proofs"))))
 
 ; Converts assumptions to the opposite parity on the most recent
 ; assumption.  I.e., if assumptions was created by assuming term true,
-; the after this switch, the assumptions assume term false.
+; then after this switch, the assumptions assume term false.
 
   (cond ((eq (car assumptions) :not) (cdr assumptions))
         (t (cons :not assumptions))))
@@ -4619,7 +4619,7 @@ its attachment is ignored during proofs"))))
 (defun obj-table (term ts ts-ttree obj geneqv wrld ttree)
 
 ; This function is (mv term' ttree'), where term' is equivalent modulo geneqv
-; (see the essay on Equivalence, Refinements and Congruence- based Rewriting)
+; (see the essay on Equivalence, Refinements and Congruence-based Rewriting)
 ; to term and ttree' includes ttree and may include additional stuff.
 ; Depending on ts, the type-set of term (which is supported by the ts-ttree),
 ; we may coerce term to 0, 1, t, or nil.
@@ -5116,7 +5116,7 @@ its attachment is ignored during proofs"))))
 ;                 ((xremove-invisible-fncalls * *) => *))
 
 ; We witness xtermp with rationalp, xterm-order with <= on the rationals,
-; and xremove-invisible-fncalls by the identify function.
+; and xremove-invisible-fncalls by the identity function.
 
 ;    (local (defun xtermp (x) (rationalp x)))
 ;    (local (defun xterm-order (x y)
@@ -7659,7 +7659,7 @@ its attachment is ignored during proofs"))))
 ; and exit (see exit-brr).
 
 ; (By the way, if you're looking at a brr-status and there is a binding for
-; WONP it means you're in brkpt2.  If you're in brkpt2 and the binding of of
+; WONP it means you're in brkpt2.  If you're in brkpt2 and the binding of
 ; FAILURE-REASON is NEAR-MISS then this brkpt2 closes a near-miss-brkpt1 and
 ; otherwise it closes a brkpt1.)
 

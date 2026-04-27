@@ -1,7 +1,7 @@
 ; Finding likely facts to break down a proof (simple version)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -279,8 +279,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv alist unused-nodes) where alist is the node-to-value-alist for the nodes in the set.
-;; Also returns, separately, the list of nodes that are not unused.
+;; Returns (mv alist unused-nodes) where ALIST is the node-to-value-alist for the nodes in the set.
+;; and UNUSED is list of nodes that are not used.
 (defund node-to-value-alist-for-set-simple (nodenums test-case-stobj alist-acc unused-nodes-acc)
   (declare (xargs :guard (and (nat-listp nodenums)
                               (all-< nodenums (node-val-array-length test-case-stobj))
@@ -294,7 +294,7 @@
       (mv alist-acc unused-nodes-acc) ; probably no need to reverse these
     (let* ((nodenum (first nodenums))
            (val (node-val-arrayi nodenum test-case-stobj))
-           (done (node-val-arrayi nodenum test-case-stobj)))
+           (done (done-node-arrayi nodenum test-case-stobj)))
       (mv-let (alist-acc unused-nodes-acc)
         (if (not done)
             (mv alist-acc (cons nodenum unused-nodes-acc))

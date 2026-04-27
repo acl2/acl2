@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ format-strings
-  :parents (abstract-syntax)
+  :parents (definition)
   :short "Leo format strings."
   :long
   (xdoc::topstring

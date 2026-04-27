@@ -34,6 +34,15 @@
 (include-book "std/strings/top" :dir :system)
 (include-book "to-json")
 ; (depends-on "bridge-raw.lsp")
+; (depends-on "bridge-sbcl-raw.lsp")
+
+;; For SBCL, we need quicklisp libraries: bordeaux-threads, usocket, trivial-gray-streams
+;; These are all loaded transitively via hunchentoot. We also need bt-semaphore for
+;; semaphore support (not in bordeaux-threads v0.8.x).
+#+sbcl
+(include-book "quicklisp/hunchentoot" :dir :system)
+#+sbcl
+(include-book "quicklisp/bt-semaphore" :dir :system)
 
 (defxdoc bridge
   :parents (acl2::interfacing-tools)
@@ -43,7 +52,13 @@
 programming languages, which may be much better than Lisp for certain tasks
 like developing graphical user interfaces, to interact with ACL2.  It extends
 ACL2 with a server that can accept connections from client programs and run
-commands on their behalf.  The basic picture is:</p>
+commands on their behalf.</p>
+
+<p>The bridge is supported on both CCL (Clozure Common Lisp) and SBCL (Steel
+Bank Common Lisp).  On SBCL, it uses the bordeaux-threads, usocket, and
+trivial-gray-streams libraries via Quicklisp.</p>
+
+<p>The basic picture is:</p>
 
 @({
    _____________                    _______________________
@@ -223,13 +238,19 @@ Bridge until you have read about @(see security).</p>
  (bridge::start 12345)   ;; Listen on TCP/IP port 12345
 })
 
-<p>Additional keyword options:</p>
+<p>Additional keyword options (CCL only):</p>
 
 <ul>
 <li>@(':stack-size') -- stack size for worker threads (in bytes)</li>
 <li>@(':tstack-size') -- temporary stack size for worker threads (in bytes)</li>
 <li>@(':vstack-size') -- value stack size for worker threads (in bytes)</li>
-</ul>"
+</ul>
+
+<p><b>Note:</b> The stack size parameters are CCL-specific.  On SBCL, these
+parameters are accepted for API compatibility but are ignored; a warning is
+printed if non-default values are supplied.  SBCL thread stack sizes are
+controlled at the SBCL startup level via command-line options like
+@('--control-stack-size') and @('--dynamic-space-size').</p>"
 
   (defun start-fn (socket-name-or-port-number
                    stack-size
@@ -301,15 +322,17 @@ restart a server.</p>"
 (defttag :bridge)
 #+ccl
 (include-raw "bridge-raw.lsp")
-#-ccl
+#+sbcl
+(include-raw "bridge-sbcl-raw.lsp")
+#-(or ccl sbcl)
 (progn!
  (set-raw-mode t)
  (defun run-in-main-thread-raw (irrelevant-variable-for-return-last form)
-   (error "Run-in-main-thread is a CCL utility.~%~It is not supported for ~
-           this host Lisp."))
+   (error "Run-in-main-thread is only supported on CCL and SBCL.~%~
+           It is not supported for this host Lisp."))
  (defun try-to-run-in-main-thread-raw (irrelevant-variable-for-return-last form)
-   (error "NOTE: Try-to-run-in-main-thread is a CCL utility.~%~It is not ~
-           supported for this host Lisp.")))
+   (error "NOTE: Try-to-run-in-main-thread is only supported on CCL and SBCL.~%~
+           It is not supported for this host Lisp.")))
 
 (defsection in-main-thread
   :parents (bridge)
@@ -324,7 +347,8 @@ clients when they issue commands.  A syntax example is:</p>
 
 <p>This is really just a hack that lets you use commands that, for one reason
 or another, must only ever be executed in the \"main\" thread (in CCL parlance,
-the \"initial listener\" thread).  Practical applications include:</p>
+the \"initial listener\" thread; on SBCL, the initial thread).  Practical
+applications include:</p>
 
 <ul>
 

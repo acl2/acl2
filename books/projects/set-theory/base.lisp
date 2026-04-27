@@ -1144,7 +1144,7 @@
 (defthmz in-apply-image
   (implies (in x (domain r))
            (in (apply r x)
-                (image r)))
+               (image r)))
   :props (zfc domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable in-domain-rewrite))))
 

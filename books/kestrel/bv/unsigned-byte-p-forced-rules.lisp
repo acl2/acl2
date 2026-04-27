@@ -1,6 +1,6 @@
 ; BV Library: rules about unsigned-byte-p-forced
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -121,7 +121,7 @@
            (unsigned-byte-p-forced size (bvcat highsize highval lowsize lowval)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
-;will we really be trimming a 1-bit quantitiy down to 0 bits? maybe the trim rule can be simplified and sped up. fixme
+;will we really be trimming a 1-bit quantity down to 0 bits? maybe the trim rule can be simplified and sped up. fixme
 (defthm unsigned-byte-p-forced-of-getbit
   (unsigned-byte-p-forced 1 (getbit n x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))

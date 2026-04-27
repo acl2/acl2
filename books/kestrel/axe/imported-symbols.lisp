@@ -1,7 +1,7 @@
 ; Symbols to import into various Axe packages
 ;
 ; Copyright (C) 2017-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-;; This packages like the "X" package for Axe x86 work and the "R"
+;; This is for packages like the "X" package for Axe x86 work and the "R"
 ;; package for Axe RISC-V work.
 
 ;; In general, we import function/command names, but not theorem names, from
@@ -67,6 +67,7 @@
     dag-size
 
     ensure-rules-known
+    ensure-rules-known-fn
     widen-margins
     unwiden-margins
 
@@ -211,7 +212,6 @@
     darg2
     darg3
     darg4
-    dargs
 
     dag-array ; for calls of axe-syntaxp functions
 
@@ -259,14 +259,18 @@
     wrap-term-around-dag
     make-term-into-dag-basic
     dag-to-term
+    dag2term ; for now
     dag-node-to-term
-    dag-or-quotep-to-term
+    dag-or-constant-to-term
     dag-or-quotep-size
+    dag-or-quotep-size-less-thanp
     dag-or-quotep-fns
     dag-or-quotep-vars
+    dag-is-purep
+    print-as-term-or-dag
 
     remove-assumptions-about
-    *non-stp-assumption-functions*
+;;    *non-stp-assumption-functions*
     equivalent-dagsp2
     print-to-hundredths
     print-dag-nicely
@@ -292,7 +296,7 @@
     lookup
     lookup-safe
 
-    translate-term
+    term-listp
 
     _ ;; used to print non-pure patterns
 
@@ -306,13 +310,9 @@
     axe-quotep
     result-array-stobj
 
-    nat-to-string
-    print-dag-nicely
-    print-dag-nicely-with-base
     print-terms-elided
     make-term-into-dag
     remove-assumptions-about
-    acl2::*non-stp-assumption-functions*
     ;; simplify-terms-using-each-other
     make-cons-nest ; move?
     make-rule-alist
@@ -337,7 +337,6 @@
     doublets-to-alist
     translate-term
     translate-terms
-    myquotep
     variablep
     empty-alist
     empty-acc
@@ -345,12 +344,13 @@
     subset-eq
     submit-event
     strip-cadrs
+    set-difference-eq-fast
 
     ;; formal unit tester common stuff:
     print-test-summary
     any-result-unexpectedp
 
-    _  ; for printing non-pure node patterns
+    reverse-list
 
     make-event-quiet
     print-list
@@ -361,26 +361,55 @@
     get-non-built-in-supporting-fns-list
     *axe-evaluator-functions*
     get-conjuncts-of-terms2
-    parsed-executablep
-    parsed-executable-type
 
     maybe-remove-temp-dir
 
     untranslate$
     untranslate$-list
 
+    ;; could split out these binary related symbols (vs symbols for core axe tool implementation)
     parse-executable
+    parsed-executablep
+    parsed-executable-type
+    parsed-elf-type ; more
+    parsed-elf-symbols
+    parsed-elf-program-header-table
+    parsed-elf-entry-point
     parse-elf-file-bytes ; helpful for tracing ; todo: more
     parsed-elfp
-    parsed-elf-entry-point
     subroutine-address-elf
+    elf-position-independentp
+
+    get-all-mach-o-symbols ; rename parsed-mach-o-symbols?
+
+    get-all-pe-symbols ; rename parsed-pe-symbols?
 
     ensure-target-exists-in-executable
+
     make-flag
     with-supporters
 
     tacticp
     tacticsp
+
+    hitsp
+    combine-hits
+    maybe-print-hits
+    empty-hits
+
+    command-is-redundantp
+    redundancy-table-event
+    lifter-event-names
+    print-missing-rules
+    merge-sort-symbol<
+
+    apply-tactic-prover
+    *error*
+    *valid*
+
+    strings-starting-with
+    add-prefix-to-strings
+    merge-sort-string<
     ))
 
 (defconst *arithmetic-symbols*
@@ -415,7 +444,9 @@
     list-rules
     core-rules-bv
     amazing-rules-bv
-    trim-rules))
+    trim-rules
+    prune-dag-post-rewrite-rules
+    pre-stp-rules))
 
 (defconst *bv-list-symbols*
   '(packbv-little
@@ -518,12 +549,11 @@
     rtl::prec
     rtl::mxcsr-masks
     ;; rtl::set-flag ; conflict with our set-flag
-    rtl::zencode
     rtl::iencode
     rtl::dencode
     rtl::nencode
     rtl::decode
-    rtl::ddecode
+    rtl::ddecode ; todo: more?
     rtl::zencode
     rtl::mxcsr-rc))
 

@@ -98,7 +98,7 @@
         "  return x + y - z;"
         "}")
       (xdoc::p
-        "Assuming this function exists in a translation unit ensemble stored in
+        "Assuming this function exists in a translation ensemble stored in
          the constant @('foo'), we can specialize the argument @('y') with the
          constant @('1') with the following use of @(tsee specialize).")
       (xdoc::codeblock

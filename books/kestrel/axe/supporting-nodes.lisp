@@ -1,7 +1,7 @@
 ; Computing sets of DAG nodes that support DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -85,7 +85,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Set the tag bit for each thing in DARGS that is a nodeum.  DARGS are nodenums
+;Set the tag bit for each thing in DARGS that is a nodenum.  DARGS are nodenums
 ;or quoted constants.
 ;; The "-with-name" suffix indicates that this function takes the tag-array-name as an argument.
 (defund tag-nodenums-with-name (dargs tag-array-name array)

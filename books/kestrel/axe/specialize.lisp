@@ -1,7 +1,7 @@
 ; Specializing functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -303,7 +303,7 @@
                         (new-function-name (pack$ function-name '-specialized))
                         (new-body-dag (fixup-recursive-calls new-body-dag function-name new-function-name slots-to-drop))
 
-                        (new-body-term (dag-to-term new-body-dag))
+                        (new-body-term (dag2term new-body-dag))
 ;do we need to lift ifs over the lambdas?
 ;(new-body-term (dag-to-term-with-lambdas new-body-dag)) ;fixme can this blow up?
 ;(new-body `(dag-val-with-axe-evaluator ',new-body-dag .. ..))                                                          ..
@@ -341,7 +341,7 @@
                                                                         '(,function-name ,new-function-name))))))))
                    (prog2$ (cw "Specializing.  New defun: ~x0~%. Rule: ~x1.~%" defun-event defthm) ;move printing down?
                            (let ((state (submit-events-brief (list defun-event defthm) state)))
-                             (prog2$ (cw "Specialzed ~x0.)~%" (cons function-name args))
+                             (prog2$ (cw "Specialized ~x0.)~%" (cons function-name args))
                                      (mv (erp-nil)
                                          (list new-function-name)
                                          (list `,defthm-name)

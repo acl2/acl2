@@ -1,6 +1,6 @@
 ; Checking that an alist is suitable for attempting to relieve some hyps
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -64,14 +64,14 @@
                   :guard-hints (("Goal" :in-theory (enable SYMBOL-ALISTP)))))
   (bound-vars-suitable-for-hypsp (strip-cars alist) hyps))
 
-(defthm alist-suitable-for-hypsp-when-axe-sytaxp-car
+(defthm alist-suitable-for-hypsp-when-axe-syntaxp-car
   (implies (equal :axe-syntaxp (car (car hyps)))
            (equal (alist-suitable-for-hypsp alist hyps)
                   (and (subsetp-equal (free-vars-in-term (cdr (car hyps))) (strip-cars alist))
                        (alist-suitable-for-hypsp alist (cdr hyps)))))
   :hints (("Goal" :in-theory (enable alist-suitable-for-hypsp))))
 
-(defthm all-vars-in-term-bound-in-alistp-of-cdr-of-car-when-axe-sytaxp
+(defthm all-vars-in-term-bound-in-alistp-of-cdr-of-car-when-axe-syntaxp
   (implies (and (eq :axe-syntaxp (ffn-symb (first hyps)))
                 (alist-suitable-for-hypsp alist hyps)
                 (axe-rule-hyp-listp hyps)

@@ -57,7 +57,7 @@
 
 (defsection structures
   :parents (utils)
-  :short "<b>@('x86')-specific bit structures</b>."
+  :short "x86-specific bit structures."
 
   :long "<p>We define some bit structures using @(see fty::defbitstruct) to
   describe the fields of registers and x86 data structures.</p>" )

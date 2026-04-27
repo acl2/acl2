@@ -1,6 +1,14 @@
-(in-package "R1CS")
+; Utilities for doing proofs about R1CSes
+;
+; Copyright (C) 2021-2026 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
 
-;; utilities for doing proofs about R1CSes
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "R1CS")
 
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system)
@@ -168,7 +176,7 @@
   (make-symbolic-valuation-for-alist-aux (acl2::reverse-list alist) acl2::*nil*))
 
 ;; Makes a nest of calls to filter-and-combine-symbol-alists
-;; Alist may pair r1cs vars (which may be keywords) with their correspinding acl2 vars
+;; Alist may pair r1cs vars (which may be keywords) with their corresponding acl2 vars
 ;; Alist should be sorted by symbol< applied to the cars of its entries.
 (defun make-efficient-symbolic-valuation-for-alist-aux (alist)
   (declare (xargs :guard (symbol-alistp alist)

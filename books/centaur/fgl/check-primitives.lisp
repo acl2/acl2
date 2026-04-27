@@ -58,6 +58,7 @@
    check-booleanp
    check-non-booleanp
    check-equal
+   check-memberp
    integer-length-bound
    ifix
    symbolic-t
@@ -614,4 +615,33 @@
                                (acl2::sub-alistp alist (fgl-object-eval x env)))))))
 
 
+(define check-memberp-rec ((k fgl-object-p)
+                           (x fgl-object-p))
+  :measure (fgl-object-count x)
+  :returns (val booleanp :rule-classes :type-prescription)
+  (fgl-object-case x
+    :g-concrete (fgl-object-case k
+                  :g-concrete
+                  (and (with-guard-checking :none
+                         (ec-call (member-equal k.val x.val)))
+                       t)
+                  :otherwise nil)
+    :g-cons (or (equal (fgl-object-fix k) x.car)
+                (check-memberp-rec k x.cdr))
+    :g-ite (and (check-memberp-rec k x.then)
+                (check-memberp-rec k x.else))
+    ;; FIXME add case for g-map
+    :otherwise nil)
+  ///
+  (defthmd check-memberp-rec-implies
+    (implies (case-split (check-memberp-rec k x))
+             (member-equal (fgl-object-eval k env)
+                           (fgl-object-eval x env)))))
 
+(def-fgl-binder-meta check-memberp-binder
+  (b* ((ans (check-memberp-rec k x)))
+    (mv t (kwote ans) nil nil interp-st state))
+  :formula-check checks-formula-checks
+  :origfn check-memberp :formals (k x)
+  :prepwork ((local (in-theory (enable check-memberp
+                                       check-memberp-rec-implies)))))

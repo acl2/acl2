@@ -26,7 +26,7 @@
     (xdoc::ahref "https://www.rfc-editor.org/info/rfc7230" "RFC 7230")
     " includes a rule @('uri-host') defined by a prose value notation
      that references the rule @('host') from the URI grammar specified in "
-    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3968")
+    (xdoc::ahref "https://www.rfc-editor.org/info/rfc3986" "RFC 3986")
     ". Prior to @(see plugging) the URI grammar rules
      into the HTTP grammar rules,
      the rule @('host') in the URI grammar rules
@@ -58,7 +58,7 @@
                                      (oldname rulenamep)
                                      (newname rulenamep))
     :returns (new-concatenation concatenationp)
-    :short "Rename all the occurrences of a rule name in a conatenation
+    :short "Rename all the occurrences of a rule name in a concatenation
             to a new rule name."
     :long (xdoc::topstring-@def "concatenation-rename-rule")
     (cond ((endp concatenation) nil)

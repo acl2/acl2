@@ -1,6 +1,6 @@
 ; A utility to get the (untranslated) event that introduced a function
 ;
-; Copyright (C) 2015-2024 Kestrel Institute
+; Copyright (C) 2015-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -64,5 +64,5 @@
                                 encapsulate ;todo: handle?
                                 deftheory
                                 defmacro)))
-        (er hard 'my-get-event "Unxpected kind of event for ~x0: ~x1" name event)
+        (er hard 'my-get-event "Unexpected kind of event for ~x0: ~x1" name event)
       event)))

@@ -204,9 +204,9 @@
   (xdoc::topstring
    (xdoc::p
     "This consists of four chunks, in bits 21-30, 20, 12-19, and 31 [ISA:2.2],
-     which, when joined, form the bits @('imm[20:1] of the immediate.
+     which, when joined, form the bits @('imm[20:1]') of the immediate.
      We return those 20 bits,
-     not @('imm[20:0') with @('imm[0]') implicitly 0."))
+     not @('imm[20:0]') with @('imm[0]') implicitly 0."))
   (b* ((imm[10.1] (part-select enc :low 21 :high 30))
        (imm[11] (part-select enc :low 20 :high 20))
        (imm[19.12] (part-select enc :low 12 :high 19))

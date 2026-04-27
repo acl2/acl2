@@ -1,7 +1,7 @@
 ; Types in the JVM
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "kestrel/utilities/forms" :dir :system) ;; for farg1
 (include-book "class-names")
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 
 ;;;
 ;;; Primitive Types (see JVM Spec 2.3)
@@ -84,24 +85,7 @@
            type)
   :rule-classes :forward-chaining)
 
-(defun all-typep (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      t
-      (and (typep (first x))
-           (all-typep (rest x)))))
-
-(defthm all-typep-of-append
-  (equal (all-typep (append x y))
-         (and (all-typep x)
-              (all-typep y)))
-  :hints (("Goal" :in-theory (enable all-typep))))
-
-(defthm typep-of-car
-  (implies (all-typep x)
-           (equal (typep (car x))
-                  (consp x)))
-  :hints (("Goal" :in-theory (disable typep))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;
 ;;; Representation of primitives types in the JVM model
@@ -152,13 +136,6 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable type-slot-count typep))))
 
-(defun count-slots-in-types (types)
-  (declare (xargs :guard (and (true-listp types)
-                              (all-typep types))))
-  (if (endp types)
-      0
-    (+ (type-slot-count (first types))
-       (count-slots-in-types (rest types)))))
 
 (defun get-array-component-type (array-type)
   (declare (xargs :guard (and (typep array-type)
@@ -286,3 +263,39 @@
   (declare (xargs :guard t))
   (or (typep type)
       (eq :void type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun all-typep (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      t
+      (and (typep (first x))
+           (all-typep (rest x)))))
+
+(defthm all-typep-of-append
+  (equal (all-typep (append x y))
+         (and (all-typep x)
+              (all-typep y)))
+  :hints (("Goal" :in-theory (enable all-typep))))
+
+(defthm all-typep-of-reverse-list
+  (equal (all-typep (acl2::reverse-list x))
+         (all-typep x))
+  :hints (("Goal" :in-theory (enable all-typep acl2::reverse-list))))
+
+(defthm typep-of-car
+  (implies (all-typep x)
+           (equal (typep (car x))
+                  (consp x)))
+  :hints (("Goal" :in-theory (disable typep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund count-slots-in-types (types)
+  (declare (xargs :guard (and (true-listp types)
+                              (all-typep types))))
+  (if (endp types)
+      0
+    (+ (type-slot-count (first types))
+       (count-slots-in-types (rest types)))))

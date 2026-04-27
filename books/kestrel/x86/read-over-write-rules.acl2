@@ -11,4 +11,4 @@
 
 (include-book "portcullis")
 
-; cert-flags: ? T :TTAGS :ALL
+; cert-flags: ? T 

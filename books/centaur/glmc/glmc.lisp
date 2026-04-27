@@ -98,7 +98,7 @@
     (implies (and (pseudo-term-listp clause)
                   (alistp a)
                   (glcp-generic-geval-ev-meta-extract-global-facts :state state)
-                  (glcp-generic-geval-ev-theoremp
+                  (glcp-generic-geval-ev-theoremp*
                    (conjoin-clauses
                     (acl2::clauses-result
                      (glmc-side-goals clause config state)))))
@@ -123,7 +123,7 @@
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
                 (glcp-generic-geval-ev-meta-extract-global-facts :state state)
-                (glcp-generic-geval-ev-theoremp
+                (glcp-generic-geval-ev-theoremp*
                  (conjoin-clauses
                   (acl2::clauses-result
                    (glmc-generic clause config interp-st state)))))

@@ -86,6 +86,7 @@
 (defconst *acl2-exports-exclusions*
   '(*UNTROUBLESOME-CHARACTERS*
     ADD-DIVE-INTO-MACRO
+    ALIST-KEYS ; documented in books/std/alists/alist-keys.lisp
     BDD
     BOOK-HASH
     CHECK-SUM
@@ -210,7 +211,6 @@
     VARIABLEP
 
 ; Symbols below should probably be added to *acl2-exports*.
-; When that is done, also remove GET-WORMHOLE-STATUS from *acl2-exports*.
 
   ))
 

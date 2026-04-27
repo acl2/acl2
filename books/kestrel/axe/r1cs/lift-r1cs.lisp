@@ -1,6 +1,6 @@
 ; Lifter for R1CSes (in sparse form)
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -152,7 +152,7 @@
 ;; NOTE: Keep this in sync with lift-zcash-r1cs.
 (acl2::defmacrodoc lift-r1cs (&whole whole-form
                                      name-of-defconst ; name of the defconst to create, will hold the lifted R1CS, in DAG form
-                                     ;; r1cs ;todo: currentlty can't make the r1cs (due to prime tests?)
+                                     ;; r1cs ;todo: currently can't make the r1cs (due to prime tests?)
                                      vars ;; the variables of the R1CS to lift
                                      constraints ;; the constraints of the R1CS to lift
                                      prime ;; the prime of the R1CS to lift

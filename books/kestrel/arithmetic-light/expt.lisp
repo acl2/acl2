@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function expt.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -492,7 +492,8 @@
 (defthmd expt-when-<-of-0
   (implies (and (< r 0)
                 (integerp i)
-                (rationalp i))
+                ;; (rationalp i)
+                )
            (equal (expt r i)
                   (if (evenp i)
                       (expt (- r) i)

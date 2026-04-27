@@ -1,7 +1,7 @@
 ; Tracking parents of nodes in a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -118,8 +118,7 @@
   (implies (and (all-dag-parent-entriesp n1 dag-parent-array-name dag-parent-array)
                 (<= n2 n1)
                 (integerp n1)
-                (integerp n2)
-                (integerp limit))
+                (integerp n2))
            (all-dag-parent-entriesp n2 dag-parent-array-name dag-parent-array))
   :hints (("Goal" :in-theory (enable all-dag-parent-entriesp))))
 

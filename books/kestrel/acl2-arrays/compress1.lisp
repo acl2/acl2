@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function compress1
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -64,12 +64,12 @@
                                        no-duplicatesp
                                        assoc-equal-iff-member-equal-of-strip-cars)))))
 
-;todo: make local?
-(defthm equal-of-assoc-equal-same
-  (implies key
-           (iff (equal key (car (assoc-equal key array)))
-                (assoc-equal key array)))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
+(local
+ (defthm equal-of-assoc-equal-same
+   (implies key
+            (iff (equal key (car (assoc-equal key array)))
+                 (assoc-equal key array)))
+   :hints (("Goal" :in-theory (enable assoc-equal)))))
 
 (defthm header-of-compress1
   (equal (header array-name (compress1 array-name2 array))
@@ -108,7 +108,7 @@
 
 (defthm bounded-integer-alistp-of-compress1
   (implies (and (bounded-integer-alistp array n)
-                (natp n) ;drop?
+                ;; (natp n)
                 )
            (iff (bounded-integer-alistp (compress1 array-name array) n)
                 (header array-name array)                 ;why?

@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation /.
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 (local (include-book "plus-and-minus"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-;; Exported in times-and-divides.lisp
+;; Exported in times-and-divide.lisp
 (local
  (defthm *-of-/-same
    (equal (* x (/ x))
@@ -188,7 +188,7 @@
                                   (low 0)
                                   (x (* (/ y) x))))))
 
-;;comutes the args to * in the lhs
+;;commutes the args to * in the lhs
 (defthm integerp-of-*-of-/-when-<-and-negative-alt
   (implies (and (< y x)
                 (<= x 0)

@@ -1,6 +1,6 @@
 ; Tests for prune-with-contexts
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -35,10 +35,10 @@
        ((when erp)
         (er hard? 'prunes-to "Error pruning dag.")
         nil)
-       (result-term (dag-to-term dag-or-quotep)))
+       (result-term (dag-or-constant-to-term dag-or-quotep)))
     (if (equal result-term expected-result-term)
         t
-      (er hard? 'prunes-to "Term ~x0 did not prune to ~x1.  Instead, as we got ~x2." term expected-result-term result-term))))
+      (er hard? 'prunes-to "Term ~x0 did not prune to ~x1.  Instead, we got ~x2." term expected-result-term result-term))))
 
 (assert-event (prunes-to 'a 'a))
 (assert-event (prunes-to '(cons '1 '2) '(cons '1 '2)))
