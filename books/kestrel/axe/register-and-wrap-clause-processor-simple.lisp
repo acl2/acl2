@@ -1,7 +1,7 @@
 ; A tool to make a clause processor that uses an Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,7 +15,7 @@
 ;; TODO: Rename this book, since the clause processor function itself must already exist.  Should make-prover-simple (optionally) just do this stuff?
 ;; TODO: Rename to be more specific.
 
-;; This machinery requires a TTAG, due to the use of define-trusted-clause-processor.
+;; This machinery requires a TTAG, for define-trusted-clause-processor.
 
 (include-book "kestrel/utilities/pack" :dir :system)
 
