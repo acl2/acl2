@@ -483,7 +483,6 @@
 
 (defthm i-close-to-small-sum
     (implies (and (acl2-numberp x)
-		  (standardp x)
 		  (i-small eps))
 	     (i-close x (+ x eps))))
 
@@ -1077,5 +1076,3 @@
 		  (:instance small-are-limited (x (imagpart x))))
 	    :in-theory nil))
    :rule-classes nil)
-
-

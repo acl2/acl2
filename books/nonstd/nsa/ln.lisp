@@ -827,4 +827,12 @@
                 (equal (acl2-exp x) y))
            (equal (acl2-ln y) x)))
 
+(defthm ln-1
+    (equal (acl2-ln 1) 0)
+  :hints (("Goal"
+           :use ((:instance uniqueness-of-ln
+                            (x 0)
+                            (y 1)))
+           :in-theory (disable uniqueness-of-ln))))
+
 (in-theory (disable acl2-ln (acl2-ln)))

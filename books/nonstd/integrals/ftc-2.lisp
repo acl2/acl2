@@ -79,27 +79,24 @@
 (encapsulate
  nil
 
- (local
-  (defthm limited-riemann-rcdfn-prime-small-partition
-    (implies (and (realp a) (standardp a)
-		  (realp b) (standardp b)
-                  (standardp context)
-		  (inside-interval-p a (rcdfn-domain))
-		  (inside-interval-p b (rcdfn-domain))
-		  (< a b))
-	     (i-limited (riemann-rcdfn-prime context (make-small-partition a b))))
-    :hints (("Goal"
-	     :by (:functional-instance limited-riemann-rcfn-small-partition
-				       (rcfn-domain rcdfn-domain)
-				       (rcfn rcdfn-prime)
-				       (map-rcfn map-rcdfn-prime)
-				       (riemann-rcfn riemann-rcdfn-prime)))
-	    ("Subgoal 2"
-	     :use ((:instance rcdfn-domain-non-trivial))))))
+    (defthm limited-riemann-rcdfn-prime-small-partition
+     (implies (and (realp a) (standardp a)
+		   (realp b) (standardp b)
+                   (standardp context)
+		   (inside-interval-p a (rcdfn-domain))
+		   (inside-interval-p b (rcdfn-domain))
+		   (< a b))
+	      (i-limited (riemann-rcdfn-prime context (make-small-partition a b))))
+     :hints (("Goal"
+	      :by (:functional-instance limited-riemann-rcfn-small-partition
+				        (rcfn-domain rcdfn-domain)
+				        (rcfn rcdfn-prime)
+				        (map-rcfn map-rcdfn-prime)
+				        (riemann-rcfn riemann-rcdfn-prime)))
+	     ("Subgoal 2"
+	      :use ((:instance rcdfn-domain-non-trivial)))))
 
  (local (in-theory (disable riemann-rcdfn-prime)))
-
-
 
  (defun-std strict-int-rcdfn-prime (context a b)
    (if (and (realp a)
