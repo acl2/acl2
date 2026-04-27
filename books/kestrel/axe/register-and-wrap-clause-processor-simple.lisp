@@ -52,10 +52,13 @@
                                      (print-levelp print)
                                      (symbol-listp var-ordering)
                                      (booleanp count-hits)
-                                     ;; todo: rule-classes
-                                     )
+                                     (or (eq :auto rule-classes)
+                                         ;; could make this stricter if we want:
+                                         (keywordp rule-classes)
+                                         (true-listp rule-classes)))
                          :stobjs state))
-         (b* (((when (and rules rule-lists))
+         (b* (;; Create the rule-lists:
+              ((when (and rules rule-lists))
                (er hard? ',defthm-axe-fn-name "Both :rules and :rule-lists were given for ~x0." name))
               (rule-lists (if rules
                               (list (elaborate-rule-items rules state))
@@ -81,7 +84,8 @@
                     nil
                   `(:rule-classes ,rule-classes)))))
 
-       ;; Submit a defthm that uses the clause-processor:
+       ;; Submit a defthm that uses the clause-processor to prove Goal:
+       ;; TODO: Also make a version that uses the clause-processor when stable (passing in all other user hints) -- or just allow hints to be given here?
        (defmacro ,defthm-axe-name (name
                                    term
                                    &key
