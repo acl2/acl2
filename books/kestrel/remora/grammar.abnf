@@ -65,19 +65,19 @@ app-exp         = exp *( ws exp )      ; [SC1]
 
 tapp-exp        = "t-app" ws exp *( ws type-exp )
 
-iapp-exp        = "i-app" ws exp *( ws index )
+iapp-exp        = "i-app" ws exp *( ws ispace )
 
-unbox-exp       = "unbox" ws "(" ws *( index-var ws )  ; [SC4]
+unbox-exp       = "unbox" ws "(" ws *( ispace-var ws )  ; [SC4]
                   identifier ws exp ws ")" ws exp
 
 let-exp         = "let" ws "(" *( ws bind ) ws ")" ws exp
 
-at-app-exp      = "@" ws exp ws type-args ws idx-args *( ws exp )
+at-app-exp      = "@" ws exp ws type-args ws ispace-args *( ws exp )
 
 type-args       = "(" *( ws type-exp ) ws ")"
                 / "_"
 
-idx-args        = "(" *( ws index ) ws ")"
+ispace-args     = "(" *( ws ispace ) ws ")"
                 / "_"
 
 ; -------------------------------------------------------------------------
@@ -89,7 +89,7 @@ atom            = base-val
 
 atom-body       = lambda
                 / type-lambda
-                / index-lambda
+                / ispace-lambda
                 / box-expr
 
 lambda          = ( "fn" / %x03BB ) ws            ; fn or <lambda>
@@ -97,14 +97,14 @@ lambda          = ( "fn" / %x03BB ) ws            ; fn or <lambda>
                   exp
 
 type-lambda     = ( "t-fn" / ( "t" %x03BB ) ) ws  ; t-fn or t<lambda>
-                  "(" *( ws type-param ) ws ")" ws
+                  "(" *( ws type-var ) ws ")" ws
                   exp
 
-index-lambda    = ( "i-fn" / ( "i" %x03BB ) ) ws  ; i-fn or i<lambda>
-                  "(" *( ws index-var ) ws ")" ws
+ispace-lambda   = ( "i-fn" / ( "i" %x03BB ) ) ws  ; i-fn or i<lambda>
+                  "(" *( ws ispace-var ) ws ")" ws
                   exp
 
-box-expr        = "box" ws "(" *( ws index ) ws ")" ws exp ws type-exp
+box-expr        = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type-exp
 
 ; -------------------------------------------------------------------------
 ; Patterns (used in lambda parameters)
@@ -123,7 +123,7 @@ bind-body       = val-bind
                 / tfun-bind
                 / ifun-bind
                 / type-bind
-                / index-bind
+                / ispace-bind
                 / at-fun-bind
 
 val-bind        = "val" ws identifier ws exp
@@ -132,28 +132,28 @@ val-bind        = "val" ws identifier ws exp
 fun-bind        = "fun" ws "(" ws identifier *( ws pat ) [ ws ":" ws type-exp ] ws ")" ws exp
 
 tfun-bind       = "t-fun" ws "(" ws identifier ws
-                  "(" *( ws type-param ) ws ")"
+                  "(" *( ws type-var ) ws ")"
                   [ ws ":" ws type-exp ] ws ")" ws exp
 
 ifun-bind       = "i-fun" ws "(" ws identifier ws
-                  "(" *( ws index-var ) ws ")"
+                  "(" *( ws ispace-var ) ws ")"
                   [ ws ":" ws type-exp ] ws ")" ws exp
 
-type-bind       = "type" ws type-param ws type-exp
+type-bind       = "type" ws type-var ws type-exp
 
-index-bind     = "extent" ws index-var ws index
+ispace-bind     = "extent" ws ispace-var ws ispace
                  ; NOTE: the surface keyword "extent" comes from the
-                 ; Haskell Remora parser. Everywhere else this
-                 ; concept is called "index".
+                 ; Haskell Remora parser. The paper (linked above) uses
+                 ; the word "index".  Now this concept is called "ispace".
 
 at-fun-bind     = "fun" ws "(" ws "@" ws identifier ws
-                  type-params ws idx-params *( ws pat )
+                  type-vars ws ispace-vars *( ws pat )
                   ws ":" ws type-exp ws ")" ws exp
 
-type-params     = "(" *( ws type-param ) ws ")"
+type-vars       = "(" *( ws type-var ) ws ")"
                 / "_"
 
-idx-params      = "(" *( ws index-var ) ws ")"
+ispace-vars     = "(" *( ws ispace-var ) ws ")"
                 / "_"
 
 ; -------------------------------------------------------------------------
@@ -171,7 +171,7 @@ array-type-var  = "*" identifier
 
 base-type       = "Bool" / "Int" / "Float"
 
-bracket-type    = "[" ws type-exp *( ws index ) ws "]"
+bracket-type    = "[" ws type-exp *( ws ispace ) ws "]"
                   ; sugar for (A type shape)
 
 type-exp-paren  = array-type
@@ -186,23 +186,23 @@ arrow-type      = ( "->" / %x2192 ) ws       ; -> or <arrow>
                   "(" *( ws type-exp ) ws ")" ws type-exp
 
 forall-type     = ( "Forall" / %x2200 ) ws   ; Forall or <forall>
-                  "(" *( ws type-param ) ws ")" ws type-exp
+                  "(" *( ws type-var ) ws ")" ws type-exp
 
 pi-type         = ( "Pi" / %x03A0 ) ws        ; Pi or <Pi>
-                  "(" *( ws index-var ) ws ")" ws type-exp
+                  "(" *( ws ispace-var ) ws ")" ws type-exp
 
 sigma-type      = ( "Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
-                  "(" *( ws index-var ) ws ")" ws type-exp
+                  "(" *( ws ispace-var ) ws ")" ws type-exp
 
 ; -------------------------------------------------------------------------
 ; Type parameters
 ; -------------------------------------------------------------------------
 
-type-param      = "&" identifier     ; atom type parameter
+type-var        = "&" identifier     ; atom type parameter
                 / "*" identifier     ; array type parameter
 
 ; -------------------------------------------------------------------------
-; Dimensions, Shapes, Indices
+; Dimensions, Shapes, Index Spaces
 ; -------------------------------------------------------------------------
 
 dim             = "$" identifier     ; dimension variable
@@ -216,7 +216,7 @@ dim-arith       = "+" *( ws dim )    ; addition
 shape           = "@" identifier     ; shape variable
                 / dim                ; a single dimension as a shape
                 / "(" ws shape-paren ws ")"
-                / "[" *( ws index ) ws "]"   ; shape splice sugar
+                / "[" *( ws ispace ) ws "]"   ; shape splice sugar
 
 shape-paren     = "dims" *( ws dim )             ; (dims d1 d2 ...)
                 / "++" *( ws shape )             ; (++ s1 s2 ...)
@@ -224,11 +224,11 @@ shape-paren     = "dims" *( ws dim )             ; (dims d1 d2 ...)
 shape-lit       = "[" *( ws decimal ) ws "]"
                   ; concrete shape literal e.g. [2 3]
 
-index           = dim                ; a dimension
+ispace          = dim                ; a dimension
                 / shape              ; a shape that is not a dimension [SC5]
 
-index-var    = "$" identifier     ; dimension parameter
-             / "@" identifier     ; shape parameter
+ispace-var      = "$" identifier     ; dimension parameter
+                / "@" identifier     ; shape parameter
 
 ; -------------------------------------------------------------------------
 ; Base values (literals)
@@ -471,40 +471,40 @@ HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
 ;   (App appears early), but this works because lId rejects keywords,
 ;   causing App to fail on keyword-headed forms.
 ;
-; [SC4] unbox-exp index-var lookahead (tagged on: unbox-exp)
+; [SC4] unbox-exp ispace-var lookahead (tagged on: unbox-exp)
 ;
 
-;   In the Haskell parser for unbox-exp, each index-var (called
+;   In the Haskell parser for unbox-exp, each ispace-var (called
 ;   extent-param there) is guarded by notFollowedBy (symbol ")"), so
-;   that the last index-var-like token preceding the closing paren is
+;   that the last ispace-var-like token preceding the closing paren is
 ;   left for the mandatory "identifier" to match instead.  ABNF cannot
 ;   express this one-token lookahead; the grammar uses a plain
-;   *( index-var ws ) repetition.
+;   *( ispace-var ws ) repetition.
 ;   For well-formed input the two approaches produce identical parse
 ;   trees.  The difference is visible only in error messages for
 ;   malformed input.
 ;
-; [SC5] shape under index must not be a dim (tagged on: index)
+; [SC5] shape under ispace must not be a dim (tagged on: ispace)
 ;
-;   In the index rule
-;       index = dim / shape
+;   In the ispace rule
+;       ispace = dim / shape
 ;   the second alternative must not match a shape that was produced by
 ;   the "dim" alternative of the shape rule.  That is, when shape is
 ;   chosen, it must actually use one of shape's other alternatives:
 ;   "@" identifier, "(" ws shape-paren ws ")", or the bracketed
-;   "[" *( ws index ) ws "]" form.
+;   "[" *( ws ispace ) ws "]" form.
 ;
 ;   Without this restriction the grammar is ambiguous: every dim is
 ;   also a shape (via shape = dim), so any dim on the right-hand side
-;   of index would admit two parse trees -- once as index's dim
-;   alternative, and once as index's shape alternative descending
+;   of ispace would admit two parse trees -- once as ispace's dim
+;   alternative, and once as ispace's shape alternative descending
 ;   through shape's dim alternative.  A dim reading is also what makes
-;   semantic sense at an index position that names a single size, so
+;   semantic sense at an ispace position that names a single size, so
 ;   parsing that same text as a shape-of-one-dimension would be
 ;   meaningless as well.
 ;
 ;   The Haskell reference implementation avoids the ambiguity by
-;   committing to the dim alternative first in its index parser, so
+;   committing to the dim alternative first in its ispace parser, so
 ;   the shape branch is only tried on inputs that cannot be parsed as
 ;   a dim.
 
