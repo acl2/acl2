@@ -314,7 +314,11 @@
 
 (fty::deffold-reduce free-ispace-vars
   :short "Set of free ispace variables in
-          ispaces, (atom and array) types, typed variables, expressions, atoms,
+          ispaces,
+          (atom and array) types,
+          variables with types,
+          expressions,
+          atoms,
           and lists thereof."
   :types (dims
           shapes
@@ -324,7 +328,7 @@
           atom-type-list
           type
           type-list
-          typed-var
+          var+type
           exprs/atoms)
   :result ispace-var-setp
   :default nil

@@ -404,25 +404,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod typed-var
-  :short "Fixtype of typed variables."
+(fty::defprod var+type
+  :short "Fixtype of variables with types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A typed variable consists of a variable name and an associated array type.
-     The type is an array one because variables are expressions, not atoms."))
+    "These are pairs consisting of a variable name and an associated array type.
+     The type is an array one because variables are expressions, not atoms.
+     These variables are separate from ispace and type variables."))
   ((var string)
    (type array-type))
-  :pred typed-varp)
+  :pred var+type-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist typed-var-list
-  :short "Fixtype of lists of typed variables."
-  :elt-type typed-var
+(fty::deflist var+type-list
+  :short "Fixtype of lists of variables with types."
+  :elt-type var+type
   :true-listp t
   :elementp-of-nil nil
-  :pred typed-var-listp)
+  :pred var+type-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -525,7 +526,7 @@
      (xdoc::p
       "There are
        base values,
-       lambda abstractions of expressions over typed variables,
+       lambda abstractions of expressions over variables with types,
        lambda abstractions of expressions over type variables,
        lambda abstractions of expressions over ispace variables,
        and boxed arrays with given ispaces and type.
@@ -538,7 +539,7 @@
        while [thesis] uses @($e$), same as term abstraction.
        We use the latter, as that seems the intent."))
     (:base ((value base-value)))
-    (:term-abs ((vars typed-var-list)
+    (:term-abs ((vars var+type-list)
                 (body expr)))
     (:type-abs ((params type-var-list)
                 (body expr)))
