@@ -20,7 +20,7 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
-(include-book "kestrel/memory/memory-regions" :dir :system)
+(include-book "memory-regions")
 (include-book "kestrel/lists-light/repeat-def" :dir :system)
 (include-book "parse-mach-o-file") ; todo: reduce?
 (local (include-book "kestrel/bv-lists/byte-listp" :dir :system))

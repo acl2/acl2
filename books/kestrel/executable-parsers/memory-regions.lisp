@@ -1,4 +1,4 @@
-; Representing memory regions and their contents
+; Representing memory regions and their contents and permissions
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
 ; Copyright (C) 2020-2025 Kestrel Institute
@@ -28,7 +28,7 @@
        (acl2::byte-listp (third reg))
        ;; the length must be correct, at least for now:
        (= (first reg) (len (third reg)))
-       ;; the flags:
+       ;; the flags (read, write, and execute):
        (keyword-listp (fourth reg))
        (subsetp-eq (fourth reg) '(:r :w :x))))
 
