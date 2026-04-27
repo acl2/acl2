@@ -539,7 +539,7 @@
        while [thesis] uses @($e$), same as term abstraction.
        We use the latter, as that seems the intent."))
     (:base ((value base-value)))
-    (:term-abs ((vars var+type-list)
+    (:term-abs ((params var+type-list)
                 (body expr)))
     (:type-abs ((params type-var-list)
                 (body expr)))

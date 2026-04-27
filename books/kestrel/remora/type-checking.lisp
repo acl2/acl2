@@ -739,10 +739,10 @@
      :base
      (atom-type-base (base-type-of-base-value atom.value))
      :term-abs
-     (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.vars)))
+     (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.params)))
            (reserr nil))
-          (types (var+type-list->type atom.vars))
-          (typeenv-addition (var+type-list-to-map atom.vars))
+          (types (var+type-list->type atom.params))
+          (typeenv-addition (var+type-list-to-map atom.params))
           (typeenv (omap::update* typeenv-addition
                                   (string-arraytype-map-fix typeenv)))
           ((ok type) (check-expr atom.body typeenv)))
