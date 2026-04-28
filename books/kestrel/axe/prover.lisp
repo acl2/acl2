@@ -167,10 +167,7 @@
                                                             hit-counts tries interpreted-function-alist monitored-symbols
                                                             embedded-dag-depth ;used for the renaming-array-for-merge-embedded-dag
                                                             case-designator work-hard-when-instructedp prover-depth options count state)
-   (declare (xargs
-             :verify-guards nil ;todo (need result-arrayp in the guards?)
-             :stobjs state
-             :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (nat-listp nodenums-to-assume-false-to-walk-down)
                          (all-< nodenums-to-assume-false-to-walk-down dag-len)
                          (axe-treep hyp)
@@ -192,7 +189,9 @@
                          (booleanp work-hard-when-instructedp)
                          (natp prover-depth)
                          (axe-prover-optionsp options))
-             :measure (+ 1 (nfix count)))
+                   :verify-guards nil ;todo (need result-arrayp in the guards?)
+                   :stobjs state
+                   :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (or (endp nodenums-to-assume-false-to-walk-down)
            (zp-fast count))
@@ -263,8 +262,7 @@
                                           monitored-symbols embedded-dag-depth
                                           case-designator work-hard-when-instructedp
                                           prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (pseudo-term-listp hyps)
+   (declare (xargs :guard (and (pseudo-term-listp hyps)
                                (natp hyp-num)
                                (symbol-alistp alist)
                                (symbolp rule-symbol)
@@ -283,6 +281,7 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
@@ -492,8 +491,7 @@
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            nodenums-to-assume-false equiv-alist print hit-counts tries
                                            interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (stored-axe-rule-listp stored-rules)
                                (rule-alistp rule-alist)
                                (bounded-darg-listp args-to-match dag-len)
@@ -510,6 +508,7 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (or (endp stored-rules) ;no rule fired:
@@ -587,8 +586,7 @@
                                                     equiv-alist
                                                     print
                                                     hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (weak-dagp-aux rev-dag)
+   (declare (xargs :guard (and (weak-dagp-aux rev-dag)
                                (if (consp rev-dag)
                                    (renaming-arrayp renaming-array-name renaming-array2 (+ 1 (maxelem (strip-cars rev-dag))))
                                  t)
@@ -608,6 +606,7 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
@@ -682,8 +681,7 @@
                                                           equiv-alist ;don't pass this around?
                                                           print
                                                           hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (axe-treep tree)
+   (declare (xargs :guard (and (axe-treep tree)
                                (symbolp equiv)
                                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (rule-alistp rule-alist)
@@ -700,6 +698,7 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
@@ -1048,8 +1047,7 @@
                                                          equiv-alist print hit-counts tries interpreted-function-alist monitored-symbols
                                                          embedded-dag-depth case-designator work-hard-when-instructedp prover-depth
                                                          options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (axe-tree-listp tree-lst)
+   (declare (xargs :guard (and (axe-tree-listp tree-lst)
                                (symbol-listp equiv-lst)
                                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (rule-alistp rule-alist)
@@ -1066,6 +1064,7 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
@@ -1177,8 +1176,7 @@
                                       nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist
                                       print hit-counts tries monitored-symbols case-designator work-hard-when-instructedp ;none of these should affect soundness
                                       prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (nat-listp worklist)
+   (declare (xargs :guard (and (nat-listp worklist)
                                ;; (symbolp result-array-name)
                                (array1p result-array-name result-array)
                                (all-< worklist (alen1 result-array-name result-array))
@@ -1195,6 +1193,7 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
@@ -1208,6 +1207,7 @@
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print hit-counts tries monitored-symbols
                                            case-designator work-hard-when-instructedp prover-depth options (+ -1 count) state)
+           ;; TTODO: Consider when one of the nodenums-to-assume-false is a call of NOT on this node.  Maybe call maybe-replace-nodenum-using-assumptions-for-axe-prover even in the non-variable case (after we rewrite the args).
            (if (member nodenum nodenums-to-assume-false) ;do we need this special case?  i guess it could help - what about more fancy use of nodenums-to-assume-false here?
                (rewrite-nodes-for-axe-prover
                 (rest worklist)
@@ -1277,10 +1277,9 @@
  ;;returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
 ;fixme can we use a better equiv?
  (defund rewrite-literal-for-axe-prover (nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums-to-assume-false rule-alist interpreted-function-alist
-                                                hit-counts tries monitored-symbols print case-designator work-hard-when-instructedp ;none of these should affect soundness
-                                                prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                                 hit-counts tries monitored-symbols print case-designator work-hard-when-instructedp ;none of these should affect soundness
+                                                 prover-depth options count state)
+   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (natp nodenum)
                                (< nodenum dag-len)
                                (nat-listp nodenums-to-assume-false)
@@ -1294,6 +1293,7 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (b* (((when (zp-fast count))
@@ -1334,8 +1334,7 @@
                                          hit-counts
                                          tries ;a natural number (or nil?)??
                                          prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (nat-listp work-list)
                                ;;(all-< work-list (alen1 result-array-name result-array))
                                (nat-listp done-list)
@@ -1351,6 +1350,7 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
@@ -1411,23 +1411,23 @@
  ;; perhaps this should return info, which the parent can print
  ;; old: this returns TEST-CASES because destructor elimination can change the vars and changes the test cases analogously.
  (defund rewrite-subst-and-elim-with-rule-alist-for-axe-prover (literal-nodenums
-                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                               rule-alist interpreted-function-alist monitored-symbols
-                                                               case-designator print work-hard-when-instructedp ;move print arg?
-                                                               hit-counts tries prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                (nat-listp literal-nodenums)
-                                (all-< literal-nodenums dag-len)
-                                (rule-alistp rule-alist)
-                                (interpreted-function-alistp interpreted-function-alist)
-                                (hit-countsp hit-counts)
-                                (triesp tries)
-                                (symbol-listp monitored-symbols)
-                                (stringp case-designator)
-                                (booleanp work-hard-when-instructedp)
-                                (natp prover-depth)
-                                (axe-prover-optionsp options))
+                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                rule-alist interpreted-function-alist monitored-symbols
+                                                                case-designator print work-hard-when-instructedp ;move print arg?
+                                                                hit-counts tries prover-depth options count state)
+   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                               (nat-listp literal-nodenums)
+                               (all-< literal-nodenums dag-len)
+                               (rule-alistp rule-alist)
+                               (interpreted-function-alistp interpreted-function-alist)
+                               (hit-countsp hit-counts)
+                               (triesp tries)
+                               (symbol-listp monitored-symbols)
+                               (stringp case-designator)
+                               (booleanp work-hard-when-instructedp)
+                               (natp prover-depth)
+                               (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
@@ -1538,12 +1538,11 @@
 
  ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state).
  (defund rewrite-subst-and-elim-with-rule-alists-for-axe-prover (literal-nodenums
-                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                rule-alists ;we use these one at a time
-                                                                interpreted-function-alist monitored-symbols case-designator print work-hard-when-instructedp
-                                                                hit-counts tries prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                 rule-alists ;we use these one at a time
+                                                                 interpreted-function-alist monitored-symbols case-designator print work-hard-when-instructedp
+                                                                 hit-counts tries prover-depth options count state)
+   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (nat-listp literal-nodenums)
                                (all-< literal-nodenums dag-len)
                                (all-rule-alistp rule-alists)
@@ -1555,6 +1554,7 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
@@ -1671,8 +1671,7 @@
                                                      interpreted-function-alist monitored-symbols
                                                      case-designator print
                                                      work-hard-when-instructedp hit-counts tries prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (nat-listp literal-nodenums)
                                (all-< literal-nodenums dag-len)
                                (all-rule-alistp rule-alists)
@@ -1684,15 +1683,17 @@
                                (booleanp work-hard-when-instructedp)
                                (natp prover-depth)
                                (axe-prover-optionsp options))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
        (mv t nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
+     ;; TTODO: Consider what should happen if there are no rule-alists.  We should at least substitute using assumptions.
      (mv-let (erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
        (rewrite-subst-and-elim-with-rule-alists-for-axe-prover literal-nodenums
-                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                   rule-alists interpreted-function-alist monitored-symbols case-designator print work-hard-when-instructedp
-                                                   hit-counts tries prover-depth options (+ -1 count) state)
+                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                               rule-alists interpreted-function-alist monitored-symbols case-designator print work-hard-when-instructedp
+                                                               hit-counts tries prover-depth options (+ -1 count) state)
        ;;combine these return cases?
        (if erp
            (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
@@ -1725,8 +1726,7 @@
                                             print-max-conflicts-goalp
                                             work-hard-when-instructedp hit-counts tries
                                             prover-depth options count state)
-   (declare (xargs :stobjs state
-                   :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (bounded-darg-listp literal-nodenums-or-quoteps dag-len)
                                (all-rule-alistp rule-alists)
                                (interpreted-function-alistp interpreted-function-alist)
@@ -1739,6 +1739,7 @@
                                (axe-prover-optionsp options)
                                (or (natp max-conflicts) (null max-conflicts))
                                (booleanp print-max-conflicts-goalp))
+                   :stobjs state
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
@@ -1935,8 +1936,7 @@
                                   max-conflicts
                                   print-max-conflicts-goalp
                                   options state)
-  (declare (xargs :stobjs state
-                  :guard (and (or (and (pseudo-dagp dag)
+  (declare (xargs :guard (and (or (and (pseudo-dagp dag)
                                        (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))
                               (pseudo-term-listp assumptions)
@@ -1951,6 +1951,7 @@
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
                               (axe-prover-optionsp options))
+                  :stobjs state
                   :verify-guards nil ;todo: first do prove-disjunction-with-axe-prover
                   ))
   (if (quotep dag)
@@ -2125,9 +2126,7 @@
                                        hyps        ;list of terms
                                        defthm-name ;TODO: Should this come first?
                                        max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
-  (declare (xargs :mode :program
-                  :stobjs state
-                  :guard (and (pseudo-termp conc)
+  (declare (xargs :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (symbolp defthm-name)
                               (or (natp max-conflicts) (null max-conflicts))
@@ -2135,7 +2134,9 @@
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
                               (print-levelp print)
-                              (axe-prover-optionsp options))))
+                              (axe-prover-optionsp options))
+                  :mode :program
+                  :stobjs state))
   (mv-let (erp provedp state)
     (prove-theorem-with-axe-prover conc hyps defthm-name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
     (if erp
