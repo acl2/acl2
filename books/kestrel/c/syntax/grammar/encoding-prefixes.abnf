@@ -10,11 +10,13 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains rules for character constants
-; that are specific to the C23 standard [C23:6.4.5.5].
-; Together with the generic rules in character-constants.abnf,
-; they form the rules for character constants for the C23 dialects.
+; This file contains the rule for encoding prefixes [C17:6.4.5/1] [C23:6.4.5.5].
+; In [C17] it is with the rules for string literals,
+; while in [C23] it is with the rules for character constants;
+; but the rule is the same in both cases, so we factor it here.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-character-constant = [ encoding-prefix ] "'" c-char-sequence "'"
+encoding-prefix = %s"u8"
+                / %i"u"
+                / %s"L"
