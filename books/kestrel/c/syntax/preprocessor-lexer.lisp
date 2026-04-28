@@ -1735,11 +1735,11 @@
       If the character immediately following @('u') is @('8'),
       then we need to look at the character after that.
       If there is none, we lex the identifier @('u8').
+      If there is a single quote, and the standard is C23,
+      we attempt to lex a character constant with the appropriate prefix.
       If there is a double quote,
-      then we attempt to lex a string literal with the appropriate prefix,
-      which again is the only possibility,
-      and again we can immediately fail if this fails.
-      If the character after @('u8') is not a double quote,
+      then we attempt to lex a string literal with the appropriate prefix.
+      If the character after @('u8') is not a single or double quote,
       we put back that character and @('8'),
       and we lex @('u...') as an identifier.
       Also, if the character after @('u') was not
@@ -1903,6 +1903,11 @@
               (retok (make-plexeme-ident :ident "u8" :provenance nil)
                      (make-span :start pos :end pos2)
                      ppstate))
+             ((and (utf8-= char3 (char-code #\')) ; u 8 '
+                   (c::standard-case
+                    (c::dialect->std (ienv->dialect (ppstate->ienv ppstate)))
+                    :c23))
+              (plex-character-constant (eprefix-locase-u8) pos ppstate))
              ((utf8-= char3 (char-code #\")) ; u 8 "
               (plex-string-literal (eprefix-locase-u8) pos ppstate))
              (t ; u 8 other
