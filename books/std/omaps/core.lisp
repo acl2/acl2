@@ -1,6 +1,6 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -150,12 +150,12 @@
   ///
 
   (defrule mapp-compound-recognizer
-    (if (omap::mapp map)
+    (if (mapp map)
         (true-listp map)
       (not (equal map nil)))
     :rule-classes :compound-recognizer
     :induct t
-    :enable omap::mapp)
+    :enable mapp)
 
   (defruled setp-when-mapp
     (implies (mapp x)
