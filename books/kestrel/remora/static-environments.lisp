@@ -128,3 +128,37 @@
   (make-senv :ispace-vars nil
              :type-vars nil
              :expr-vars (prim-op-types)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-var+type ((var stringp) (type array-typep) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add a variable with a type to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (b* ((expr-vars (senv->expr-vars senv))
+       (new-expr-vars (omap::update (str::str-fix var)
+                                    (array-type-fix type)
+                                    expr-vars)))
+    (change-senv senv :expr-vars new-expr-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-vars+types ((vars+types var+type-listp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add zero or more variables with types to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This repeatedly calls @(tsee senv-add-var).
+     If the given list of variables with types have duplicate names,
+     the rightmost one prevails.
+     This should be called with lists of distinctly named variables;
+     we may add a guard to that effect."))
+  (b* (((when (endp vars+types)) (senv-fix senv))
+       ((var+type var+type) (car vars+types))
+       (senv (senv-add-var+type var+type.var var+type.type senv)))
+    (senv-add-vars+types (cdr vars+types) senv)))
