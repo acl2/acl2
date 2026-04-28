@@ -24,11 +24,8 @@
 (include-book "utilities/collect-idents")
 (include-book "utilities/fresh-ident")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (tau-system))))
-(set-induction-depth-limit 0)
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -1005,6 +1002,7 @@
 (encapsulate ()
   ;; TODO: something in deffold-map seems dependent on tau
   (local (in-theory (enable (tau-system))))
+  (std::make-define-config :no-function nil)
 
   (fty::deffold-map replace-field-access
     :types #!c$(exprs/decls/stmts
