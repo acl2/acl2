@@ -5649,13 +5649,7 @@
                                        (plist-worldp wrld))
                            :stobjs state
                            :guard-hints (("Goal" :in-theory (enable true-listp-when-nat-listp-rewrite)))))
-           (b* (;; If no rule-alists are given, rewrite with a single set of simple rules.  This makes sure that
-                ;; constants get evaluated, contradictions get found (when making the assumption-array), etc.
-                (rule-alists (if (not rule-alists)
-                                 (prog2$ (and print (cw "NOTE: Using a very simple default rule set.~%"))
-                                         *default-axe-prover-rule-alists*)
-                               rule-alists))
-                ;; Handle any constant disjuncts
+           (b* (;; Handle any constant disjuncts:
                 ((mv provedp literal-nodenums)
                  (handle-constant-disjuncts literal-nodenums-or-quoteps nil))
                 ((when provedp)
@@ -5689,6 +5683,12 @@
                 (hit-counts (initialize-hit-counts count-hits))
                 ;; Decide whether to count and print tries:
                 (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
+                ;; If no rule-alists are given, rewrite with a single set of simple rules.  This makes sure that
+                ;; constants get evaluated, contradictions get found (when making the assumption-array), etc.
+                (rule-alists (if (not rule-alists)
+                                 (prog2$ (and print (cw "NOTE: Using a very simple default rule set.~%"))
+                                         *default-axe-prover-rule-alists*)
+                               rule-alists))
                 ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                      hit-counts tries state)
                  (,prove-or-split-case-name literal-nodenums
