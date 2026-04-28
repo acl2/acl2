@@ -349,3 +349,29 @@
    (atom :ispace-abs
          (set::difference (expr-free-ispace-vars atom.body)
                           (set::mergesort atom.params)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce free-type-vars
+  :short "Set of free type variables in
+          (atom and array) types,
+          variables with types,
+          expressions,
+          atoms,
+          and lists thereof."
+  :types (atom/array-types
+          atom-type-list
+          type
+          type-list
+          var+type
+          exprs/atoms)
+  :result type-var-setp
+  :default nil
+  :combine set::union
+  :override
+  ((atom-type :var (set::insert (type-var-atom atom-type.name) nil))
+   (atom-type :forall (set::difference (array-type-free-type-vars atom-type.type)
+                                       (set::mergesort atom-type.params)))
+   (array-type :var (set::insert (type-var-array array-type.name) nil))
+   (atom :type-abs (set::difference (expr-free-type-vars atom.body)
+                                    (set::mergesort atom.params)))))

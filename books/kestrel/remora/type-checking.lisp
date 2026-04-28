@@ -16,6 +16,7 @@
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
 (include-book "type-equivalence")
+(include-book "static-environments")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/fix" :dir :system))
@@ -58,39 +59,9 @@
    (xdoc::p
     "This type checker is not designed for efficiency
      or to provide informative error messages.
-     It is designed for simplicity.")
-   (xdoc::p
-    "[arxiv], [thesis], and [esop] denote
-     sort environments with @($\\Theta$),
-     kind environments with @($\\Delta$), and
-     type environments with @($\\Gamma$).
-     Our code does not use sort and kind environments;
-     it uses @('typeenv') for type environments,
-     which are maps from strings (for variable names)
-     to the associated types.
-     We plan to use @(tsee senv) instead."))
+     It is designed for simplicity."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define var+type-list-to-map ((vars var+type-listp))
-  :returns (map string-arraytype-mapp)
-  :short "Turn a list of variables with types into a map."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We go through the variables,
-     and put them into the map, with the associated types.
-     If there are duplicate variables, the leftmost ones prevail.
-     We should always call this function on
-     lists of sorte variables without duplilcate names;
-     perhaps we could have and verify a guard for that."))
-  (b* (((when (endp vars)) nil)
-       ((var+type var) (car vars))
-       (map (var+type-list-to-map (cdr vars))))
-    (omap::update var.var var.type map))
-  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -385,14 +356,14 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define check-expr ((expr exprp) (typeenv string-arraytype-mapp))
+  (define check-expr ((expr exprp) (senv senvp))
     :returns (type array-type-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check an expression, returning its array type if successful."
     :long
     (xdoc::topstring
      (xdoc::p
-      "A variable is looked up in the type environment.")
+      "A variable is looked up in the static environment.")
      (xdoc::p
       "For a (non-empty) array, there must be no zero dimension,
        and the number of atoms must match the product of the dimensions.
@@ -404,8 +375,8 @@
        and we return the array type.")
      (xdoc::p
       "For an empty array, there must be a 0 dimension.
-       We form a shape with the dimensions,
-       and we return the array type.")
+       We ensure that the ispace and type variables of the type are in scope.
+       We form a shape with the dimensions, and we return the array type.")
      (xdoc::p
       "A (non-empty) frame is similar to a (non-empty) array,
        but the expressions must have all equivalent array types,
@@ -457,10 +428,13 @@
        which must have an array type of a universal type,
        whose body type is an explicit array type.
        In [arxiv] and [thesis],
-       @($(x\\ k)\\ldots$) corresponds to @'kvars') in our code,
+       @($(x\\ k)\\ldots$) corresponds to @'vars') in our code,
        @($\\tau_u$) corresponds to @('body-atom-type'),
        @($\\iota_u$) corresponds to @('body-type'),
        and @($\\iota_f$) corresponds to @('fun-type').
+       We check that
+       all the free ispace and type variables of the type arguments
+       are in scope.
        We check all the type arguments
        (@($\\tau\\ldots$) in [arxiv] and [thesis]),
        ensuring that their kinds match the ones of
@@ -480,7 +454,9 @@
        @($\\tau_p$) corresponds to @('body-atom-type'),
        @($\\iota_p$) corresponds to @('body-shape'),
        and @($\\iota_f$) corresponds to @('fun-shape').
-       We check all the shape arguments
+       We check that
+       all the free (ispace) variables in the ispace arguments are in scope.
+       We check all the ispace arguments
        (@($\\iota\\ldots$) in [arxiv] and [thesis]),
        ensuring that their sorts match the ones of
        the bound variables in the product type.
@@ -505,9 +481,9 @@
        we rename the bound variables to the ispace variables:
        we associate the resulting type
        to the term variable of the unboxing expression,
-       and we extend the type environment with that association.
+       and we extend the static environment with that association.
        We check the body expression of the unboxing expression
-       in the extended environment;
+       in the extended static environment;
        we must get an explicit array type.
        In [arxiv] and [thesis],
        the latter array has atom type @($\\tau_b$) and ispace @($\\iota_b$),
@@ -518,7 +494,7 @@
     (expr-case
      expr
      :var
-     (b* ((name+type (omap::assoc expr.name (string-arraytype-map-fix typeenv)))
+     (b* ((name+type (omap::assoc expr.name (senv->expr-vars senv)))
           ((unless name+type) (reserr nil)))
        (cdr name+type))
      :array
@@ -526,13 +502,18 @@
           ((unless (= (len expr.atoms)
                       (nat-list-product expr.dims)))
            (reserr nil))
-          ((ok types) (check-atom-list expr.atoms typeenv))
+          ((ok types) (check-atom-list expr.atoms senv))
           ((unless (atom-type-list-all-equivp types)) (reserr nil))
           (type (car types)))
        (make-array-type-array :type type
                               :shape (shape-dims (dim-const-list expr.dims))))
      :array-empty
-     (b* (((unless (member-equal 0 expr.dims)) (reserr nil)))
+     (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+          ((unless (and (set::subset (atom-type-free-ispace-vars expr.type)
+                                     (senv->ispace-vars senv))
+                        (set::subset (atom-type-free-type-vars expr.type)
+                                     (senv->type-vars senv))))
+           (reserr nil)))
        (make-array-type-array :type expr.type
                               :shape (shape-dims (dim-const-list expr.dims))))
      :frame
@@ -540,7 +521,7 @@
           ((unless (= (len expr.exprs)
                       (nat-list-product expr.dims)))
            (reserr nil))
-          ((ok types) (check-expr-list expr.exprs typeenv))
+          ((ok types) (check-expr-list expr.exprs senv))
           ((unless (array-type-list-all-equivp types)) (reserr nil))
           (type (car types))
           ((ok (atomtype+shape array)) (array-type-match-array type)))
@@ -550,13 +531,18 @@
                                    array.shape))))
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+          ((unless (and (set::subset (array-type-free-ispace-vars expr.type)
+                                     (senv->ispace-vars senv))
+                        (set::subset (array-type-free-type-vars expr.type)
+                                     (senv->type-vars senv))))
+           (reserr nil))
           ((ok (atomtype+shape array)) (array-type-match-array expr.type)))
        (make-array-type-array
         :type array.type
         :shape (shape-append (list (shape-dims (dim-const-list expr.dims))
                                    array.shape))))
      :term-app
-     (b* (((ok fun-arr-type) (check-expr expr.fun typeenv))
+     (b* (((ok fun-arr-type) (check-expr expr.fun senv))
           ((ok fun-arr-type+shape) (array-type-match-array fun-arr-type))
           (fun-type (atomtype+shape->type fun-arr-type+shape))
           (fun-shape (atomtype+shape->shape fun-arr-type+shape))
@@ -569,7 +555,7 @@
           ((ok out-type+shape) (array-type-match-array out-type))
           (out-atom-type (atomtype+shape->type out-type+shape))
           (out-shape (atomtype+shape->shape out-type+shape))
-          ((ok arg-types) (check-expr-list expr.args typeenv))
+          ((ok arg-types) (check-expr-list expr.args senv))
           ((ok arg-types+shapes) (array-type-list-match-array arg-types))
           (arg-atom-types (atomtype+shape-list->type arg-types+shapes))
           (arg-shapes (atomtype+shape-list->shape arg-types+shapes))
@@ -581,7 +567,7 @@
         :type out-atom-type
         :shape (shape-append (list principal-shape out-shape))))
      :type-app
-     (b* (((ok fun-arr-type) (check-expr expr.fun typeenv))
+     (b* (((ok fun-arr-type) (check-expr expr.fun senv))
           ((ok fun-arr-type+shape) (array-type-match-array fun-arr-type))
           (fun-type (atomtype+shape->type fun-arr-type+shape))
           (fun-shape (atomtype+shape->shape fun-arr-type+shape))
@@ -591,6 +577,11 @@
           ((ok body-type+shape) (array-type-match-array body-arr-type))
           (body-atom-type (atomtype+shape->type body-type+shape))
           (body-shape (atomtype+shape->shape body-type+shape))
+          ((unless (and (set::subset (type-list-free-ispace-vars expr.args)
+                                     (senv->ispace-vars senv))
+                        (set::subset (type-list-free-type-vars expr.args)
+                                     (senv->type-vars senv))))
+           (reserr nil))
           ((ok (stringatomtypemap+stringarraytypemap type-maps))
            (check-type-params-and-args vars expr.args))
           (body-atom-type-subst
@@ -601,7 +592,7 @@
         :type body-atom-type-subst
         :shape (shape-append (list fun-shape body-shape))))
      :ispace-app
-     (b* (((ok fun-arr-type) (check-expr expr.fun typeenv))
+     (b* (((ok fun-arr-type) (check-expr expr.fun senv))
           ((ok fun-arr-type+shape) (array-type-match-array fun-arr-type))
           (fun-type (atomtype+shape->type fun-arr-type+shape))
           (fun-shape (atomtype+shape->shape fun-arr-type+shape))
@@ -611,6 +602,9 @@
           ((ok body-type+shape) (array-type-match-array body-arr-type))
           (body-atom-type (atomtype+shape->type body-type+shape))
           (body-shape (atomtype+shape->shape body-type+shape))
+          ((unless (set::subset (ispace-list-free-ispace-vars expr.args)
+                                (senv->ispace-vars senv)))
+           (reserr nil))
           ((ok (stringdimmap+stringshapemap ispace-maps))
            (check-ispace-params-and-args vars expr.args))
           (body-atom-type-subst
@@ -626,7 +620,7 @@
      :unbox
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name expr.ispaces)))
            (reserr nil))
-          ((ok target-arr-type) (check-expr expr.target typeenv))
+          ((ok target-arr-type) (check-expr expr.target senv))
           ((ok target-arr-type+shape) (array-type-match-array target-arr-type))
           (sum-type (atomtype+shape->type target-arr-type+shape))
           (sum-shape (atomtype+shape->shape target-arr-type+shape))
@@ -640,20 +634,18 @@
            (array-type-rename-ispace-vars sum-body-type
                                           renaming.1st
                                           renaming.2nd))
-          (typeenv (omap::update expr.var
-                                 sum-body-type-renam
-                                 (string-arraytype-map-fix typeenv)))
-          ((ok arr-type) (check-expr expr.body typeenv))
+          (senv (senv-add-var+type expr.var sum-body-type-renam senv))
+          ((ok arr-type) (check-expr expr.body senv))
           ((ok arr-type+shape) (array-type-match-array arr-type))
           (body-atom-type (atomtype+shape->type arr-type+shape))
           (body-shape (atomtype+shape->shape arr-type+shape)))
        (make-array-type-array :type body-atom-type
-                        :shape (shape-append (list sum-shape body-shape)))))
+                              :shape (shape-append (list sum-shape body-shape)))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define check-expr-list ((exprs expr-listp) (typeenv string-arraytype-mapp))
+  (define check-expr-list ((exprs expr-listp) (senv senvp))
     :returns (types array-type-list-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check a list of expressions,
@@ -663,8 +655,8 @@
      (xdoc::p
       "The types are in the same order as the expressions."))
     (b* (((when (endp exprs)) nil)
-         ((ok type) (check-expr (car exprs) typeenv))
-         ((ok types) (check-expr-list (cdr exprs) typeenv)))
+         ((ok type) (check-expr (car exprs) senv))
+         ((ok types) (check-expr-list (cdr exprs) senv)))
       (cons type types))
     :measure (expr-list-count exprs)
 
@@ -688,7 +680,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define check-atom ((atom atomp) (typeenv string-arraytype-mapp))
+  (define check-atom ((atom atomp) (senv senvp))
     :returns (type atom-type-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check an atom, returning its atom type if successful."
@@ -696,22 +688,23 @@
     (xdoc::topstring
      (xdoc::p
       "The type of a base value
-       is independent from the environment(s),
+       is independent from the static environment(s),
        and determined via separate functions.")
      (xdoc::p
       "For a term abstraction,
        first we check that there are no duplicate bound variable names.
-       We check all the types of the bound variables,
-       which must all have the array kind.
-       We extend the type environment with the bound variables,
-       and we check the body of the abstraction in the extended environment.
+       We check that
+       all the ispace and type variables in the types of the parameters
+       are in scope.
+       We extend the static environment with the bound variables,
+       and we check the body of the abstraction
+       in the extended static environment.
        Its type is the output type of the function type of the abstraction,
        and its input types are the ones of the bound variables.")
      (xdoc::p
       "For a type abstraction,
        first we check that there are no duplicate bound variable names.
-       We extend the kind environment with the bound variables,
-       and we check the body of the abstraction in the extended enviroment.
+       We check the body of the abstraction in the extended enviroment.
        The resulting type is the body of the universal type
        that is the type of the abstraction,
        whose bound variables are the same as the abstraction.")
@@ -724,8 +717,9 @@
        whose bound variables are the same as the abstraction.")
      (xdoc::p
       "For a boxing atom,
-       the type that is part of its syntax must be a sum type
-       and must be successfully checked to have the atom kind.
+       the free (ispace) variables in the ispaces must be in scope,
+       and the type that is part of its syntax must be a sum type.
+       The free ispace and type variables of the type must be in scope.
        We check that the ispaces in the boxing atom have the same sorts
        as the bound variables of the sum type,
        obtaining a dimension substitution and a shape substitution.
@@ -742,24 +736,35 @@
      (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.params)))
            (reserr nil))
           (types (var+type-list->type atom.params))
-          (typeenv-addition (var+type-list-to-map atom.params))
-          (typeenv (omap::update* typeenv-addition
-                                  (string-arraytype-map-fix typeenv)))
-          ((ok type) (check-expr atom.body typeenv)))
+          ((unless (and (set::subset (array-type-list-free-ispace-vars types)
+                                     (senv->ispace-vars senv))
+                        (set::subset (array-type-list-free-type-vars types)
+                                     (senv->type-vars senv))))
+           (reserr nil))
+          (senv (senv-add-vars+types atom.params senv))
+          ((ok type) (check-expr atom.body senv)))
        (make-atom-type-fun :in types :out type))
      :type-abs
      (b* (((unless (no-duplicatesp-equal (type-var-list->name atom.params)))
            (reserr nil))
-          ((ok type) (check-expr atom.body typeenv)))
+          ((ok type) (check-expr atom.body senv)))
        (make-atom-type-forall :params atom.params :type type))
      :ispace-abs
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name atom.params)))
            (reserr nil))
-          ((ok type) (check-expr atom.body typeenv)))
+          ((ok type) (check-expr atom.body senv)))
        (make-atom-type-pi :params atom.params :type type))
      :box
-     (b* (((unless (type-case atom.type :atom)) (reserr nil))
+     (b* (((unless (set::subset (ispace-list-free-ispace-vars atom.ispaces)
+                                (senv->ispace-vars senv)))
+           (reserr nil))
+          ((unless (type-case atom.type :atom)) (reserr nil))
           (box-type (type-atom->type atom.type))
+          ((unless (and (set::subset (atom-type-free-ispace-vars box-type)
+                                     (senv->ispace-vars senv))
+                        (set::subset (atom-type-free-type-vars box-type)
+                                     (senv->type-vars senv))))
+           (reserr nil))
           ((ok vars+type) (atom-type-match-sum box-type))
           (vars (ispacevarlist+arraytype->vars vars+type))
           (body-type (ispacevarlist+arraytype->type vars+type))
@@ -769,14 +774,14 @@
            (array-type-subst-ispace-vars body-type
                                          maps.dim-map
                                          maps.shape-map))
-          ((ok type) (check-expr atom.array typeenv))
+          ((ok type) (check-expr atom.array senv))
           ((unless (array-type-equivp type body-type-subst)) (reserr nil)))
        box-type))
     :measure (atom-count atom))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define check-atom-list ((atoms atom-listp) (typeenv string-arraytype-mapp))
+  (define check-atom-list ((atoms atom-listp) (senv senvp))
     :returns (types atom-type-list-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check a list of atoms, returning their types if successful."
@@ -785,8 +790,8 @@
      (xdoc::p
       "The types are in the same order as the atoms."))
     (b* (((when (endp atoms)) nil)
-         ((ok type) (check-atom (car atoms) typeenv))
-         ((ok types) (check-atom-list (cdr atoms) typeenv)))
+         ((ok type) (check-atom (car atoms) senv))
+         ((ok types) (check-atom-list (cdr atoms) senv)))
       (cons type types))
     :measure (atom-list-count atoms)
 
@@ -819,15 +824,15 @@
              (equal (len x) (len y))))
 
   (defrulel lemma
-    (implies (and (not (reserrp (check-expr-list exprs typeenv)))
+    (implies (and (not (reserrp (check-expr-list exprs senv)))
                   (not (reserrp
                         (array-type-list-match-array
-                         (check-expr-list exprs typeenv))))
+                         (check-expr-list exprs senv))))
                   (not (reserrp (array-type-list-match-array x)))
                   (atom-type-list-equivp
                    (atomtype+shape-list->type
                     (array-type-list-match-array
-                     (check-expr-list exprs typeenv)))
+                     (check-expr-list exprs senv)))
                    (atomtype+shape-list->type
                     (array-type-list-match-array x))))
              (equal (len x)
@@ -835,10 +840,24 @@
     :use ((:instance same-len-when-atom-type-list-equivp
                      (types1 (atomtype+shape-list->type
                               (array-type-list-match-array
-                               (check-expr-list exprs typeenv))))
+                               (check-expr-list exprs senv))))
                      (types2 (atomtype+shape-list->type
                               (array-type-list-match-array x))))))
 
   (verify-guards check-expr)
 
   (fty::deffixequiv-mutual check-exprs/atoms))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-top-expr ((expr exprp))
+  :returns (type array-type-resultp)
+  :short "Check a top-level expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is defined as a `program' in the ABNF grammar.")
+   (xdoc::p
+    "We check it like any other expression,
+     using the initial static environment."))
+  (check-expr expr (init-senv)))
