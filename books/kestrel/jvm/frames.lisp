@@ -56,6 +56,7 @@
        (if (member-equal (nth 0 frame) (strip-cars (method-program (nth 4 frame)))) t nil)))
 
 ;Now includes the class name and method name (and descriptor) of the method being invoked (nice to have this info in the trace and for debugging):
+;; WARNING: Keep args in sync with elide-make-frame-args.
 (defund make-frame (pc     ;; program counter
                     locals ;; the values of the local variables (do some take two slots?)
                     stack ;;operand stack

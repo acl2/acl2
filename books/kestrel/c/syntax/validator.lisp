@@ -25,6 +25,7 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/basic/nfix" :dir :system))
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
@@ -1041,14 +1042,20 @@
      the literal may have type @('wchar_t') or @('char16_t') or @('char32_t').
      Since we do not yet model the values of these type definitions,
      we return an array type with an unknown element type in these cases."))
-  (b* (((reterr) (irr-type))
+  (b* (((reterr) (make-type-array :of (irr-type)))
        ((stringlit strlit) strlit)
        ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
     (retok (make-type-array
             :of (if (or (not strlit.prefix?)
                         (eprefix-case strlit.prefix? :locase-u8))
                     (type-char)
-                  (type-unknown))))))
+                  (type-unknown)))))
+
+  ///
+
+  (defret type-kind-of-valid-stringlit.type
+    (equal (type-kind type)
+           :array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1090,7 +1097,7 @@
      This covers both the case of well-defined wide string literals
      (whose types we do not yet model),
      and the implementation-defined mixed string encoding."))
-  (b* (((reterr) (irr-type))
+  (b* (((reterr) (make-type-array :of (irr-type)))
        ((unless (consp strlits))
         (retmsg$ "There must be at least one string literal."))
        ((erp prefix? conflictp) (valid-stringlit-list-loop strlits ienv))
@@ -1123,7 +1130,13 @@
                          (and first-prefix?
                               rest-prefix?
                               (not (equal first-prefix? rest-prefix?))))))
-       (retok prefix? conflictp)))))
+       (retok prefix? conflictp))))
+
+  ///
+
+  (defret type-kind-of-valid-stringlit-list.type
+    (equal (type-kind type)
+           :array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1638,6 +1651,86 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-simple-assignment ((type-arg1 typep)
+                                 (type-arg2 typep)
+                                 (expr-arg2 exprp)
+                                 (completions type-completions-p)
+                                 (ienv ienvp))
+  :returns (erp booleanp)
+  :short "Validate two types according to the rules of simple assignment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In addition to actual simple assignment expressions,
+     the constraints of simple assignment are also used
+     for certain initializers (see @(tsee valid-initer)).
+     Therefore, we introduce a dedicated function
+     for checking said type constraints.")
+   (xdoc::p
+    "In our currently approximate type system,
+     the requirements in [C17:6.5.16.1/1] reduce
+     to the following simplified cases.")
+   (xdoc::ol
+    (xdoc::li
+     "Both operands have arithmetic types.")
+    (xdoc::li
+     "The left operand has a structure or union type, and the two operand types
+      are compatible.")
+    (xdoc::li
+      "Both operands have compatible pointer types.")
+    (xdoc::li
+     "One operand is a pointer to an object type
+      and the other is a pointer to the @('void') type.
+      As a GCC/Clang extension,
+      we also allow one operand to be a pointer to the @('void') type,
+      and the other to be a pointer to <i>any</i> type
+      (either object or function).
+      We are not aware of explicit GCC documentation of this feature,
+      but a related feature is listed by the standard
+      as a common extension [C17:J.5.7].")
+    (xdoc::li
+     "The left operand is a pointer type
+      and the right operand is a null pointer constant
+      (approximated as anything of an integer type).")
+    (xdoc::li
+     "The left operand has the boolean type and the right operand has the
+      pointer type."))
+   (xdoc::p
+    "We do not perform array-to-pointer or function-to-pointer conversion
+     on the left operand, because the result would not be an lvalue."))
+  (b* (((reterr))
+       ((when (or (type-case type-arg1 :unknown)
+                  (type-case type-arg2 :unknown)))
+        (retok))
+       (type1 type-arg1)
+       (type2 (type-fpconvert (type-apconvert type-arg2))))
+    (if (or (and (type-arithmeticp type1)
+                 (type-arithmeticp type2))
+            (and (or (type-case type1 :struct)
+                     (type-case type1 :union))
+                 (type-compatible-p type1 type2 completions ienv))
+            (and (type-case type1 :pointer)
+                 (or (and (type-case type2 :pointer)
+                          (let ((type-to1 (type-pointer->to type1))
+                                (type-to2 (type-pointer->to type2)))
+                            (or (type-compatible-p
+                                  type-to1 type-to2 completions ienv)
+                                (and (type-case type-to1 :void)
+                                     (or (ienv->gcc/clang ienv)
+                                         (not (type-case type-to2
+                                                         :function))))
+                                (and (type-case type-to2 :void)
+                                     (or (ienv->gcc/clang ienv)
+                                         (not (type-case type-to1
+                                                         :function)))))))
+                     (expr-null-pointer-constp expr-arg2 type2)))
+            (and (type-case type1 :bool)
+                 (type-case type2 :pointer)))
+        (retok)
+      (reterr t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define valid-binary ((expr exprp)
                       (op binopp)
                       (type-arg1 typep)
@@ -1751,37 +1844,7 @@
     "The @('=') simple assignment operator requires
      an lvalue as left operand [C17:6.5.16/2],
      but currently we do not check that.
-     In our currently approximate type system,
-     the requirements in [C17:6.5.16.1/1] reduce
-     to the following simplified cases.")
-   (xdoc::ol
-    (xdoc::li
-     "Both operands have arithmetic types.")
-    (xdoc::li
-     "The left operand has a structure or union type, and the two operand types
-      are compatible.")
-    (xdoc::li
-     "Both operands have compatible pointer types.")
-    (xdoc::li
-     "One operand is a pointer to an object type
-      and the other is a pointer to the @('void') type.
-      As a GCC/Clang extension,
-      we also allow one operand to be a pointer to the @('void') type,
-      and the other to be a pointer to <i>any</i> type
-      (either object or function).
-      We are not aware of explicit GCC documentation of this feature,
-      but a related feature is listed by the standard
-      as a common extension [C17:J.5.7].")
-    (xdoc::li
-     "The left operand is a pointer type
-      and the right operand is a null pointer constant
-      (approximated as anything of an integer type).")
-    (xdoc::li
-     "The left operand has the boolean type and the right operand has the
-      pointer type."))
-   (xdoc::p
-    "We do not perform array-to-pointer or function-to-pointer conversion
-     on the left operand, because the result would not be an lvalue.
+     Type constraints are checked by @(tsee valid-simple-assignment).
      The type of the result is the type of the left operand [C17:6.5.16/3].")
    (xdoc::p
     "The @('*=') and @('/=') operators require arithmetic operands
@@ -1907,34 +1970,10 @@
              (reterr msg)))
          (retok (type-sint))))
       (:asg
-       (b* ((type1 type-arg1)
-            (type2 (type-fpconvert (type-apconvert type-arg2)))
-            ((unless
-                 (or (and (type-arithmeticp type1)
-                          (type-arithmeticp type2))
-                     (and (or (type-case type1 :struct)
-                              (type-case type1 :union))
-                          (type-compatible-p type1 type2 completions ienv))
-                     (and (type-case type1 :pointer)
-                          (or (and (type-case type2 :pointer)
-                                   (let ((type-to1 (type-pointer->to type1))
-                                         (type-to2 (type-pointer->to type2)))
-                                     (or (type-compatible-p
-                                          type-to1 type-to2 completions ienv)
-                                         (and (type-case type-to1 :void)
-                                              (or (ienv->gcc/clang ienv)
-                                                  (not (type-case type-to2
-                                                                  :function))))
-                                         (and (type-case type-to2 :void)
-                                              (or (ienv->gcc/clang ienv)
-                                                  (not
-                                                   (type-case type-to1
-                                                              :function)))))))
-                              (expr-null-pointer-constp
-                               (expr-binary->arg2 expr) type2)))
-                     (and (type-case type1 :bool)
-                          (type-case type2 :pointer))))
-             (reterr msg)))
+       (b* (((erp)
+             (valid-simple-assignment
+               type-arg1 type-arg2 (expr-binary->arg2 expr) completions ienv)
+             :iferr msg))
          (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
        (b* (((unless (and (type-arithmeticp type-arg1)
@@ -2602,7 +2641,7 @@
      with the `unknown type' among them (see @(tsee type)),
      wherever a certain kind of type is required (e.g. an integer type),
      we also need to allow the unknown type,
-     because that could the required kind of type.
+     because that could be the required kind of type.
      Our currently approximate validator must not reject valid programs,
      because it needs to deal with any practical programs we encounter.
      Eventually, when we refine our validator and our model of types
@@ -2664,21 +2703,19 @@
      (xdoc::p
       "To validate a compound literal, first we validate the type name,
        obtaining a type if that validation is successful.
-       Then we validate the initializers with optional designations,
-       passing the type because in general their validation depends on that;
-       however, in our currently approximate type system,
-       all the information we need back from
-       the validation of the initializers with optional designations
-       is the possibly updated validation table.
        The type of the compound literal is the one denoted by the type name.
-       We also need to pass an indication of
+       We also retrieve
        the storage duration (i.e. lifetime) of the object,
        which is either static or automatic,
        based on whether the compound literal occurs
        outside or inside the body of a function [C17:6.5.2.5/5],
        which we can see based on whether
        the number of scopes in the validation table is 1 or not
-       (recall that this number is never 0).")
+       (recall that this number is never 0).
+       We then check all the same constraints and semantic rules
+       as in initializer lists occurring in an initializer
+       [C17:6.5.2.5/2] [C17:6.5.2.5/6].
+       See @(tsee valid-initer) for a description of those checks.")
      (xdoc::p
       "A unary @('&&') expression has type @('void *'),
        according to the GCC documentation.")
@@ -2712,7 +2749,8 @@
        The result has type @('size_t') [C17:7.19],
        whose definition is implementation-dependent,
        and thus for now we return the unknown type."))
-    (b* (((reterr) (irr-expr) (irr-type) nil (irr-valid-table)))
+    (b* (((reterr) (irr-expr) (irr-type) nil (irr-valid-table))
+         ((valid-table table) table))
       (expr-case
        expr
        :ident (b* (((erp type linkage uid) (valid-var expr.ident table))
@@ -2799,33 +2837,163 @@
                          type
                          types-arg
                          table))
-       :complit (b* (((erp new-type type types-type table)
+       :complit (b* (((erp new-type target-type types-type table)
                       (valid-tyname expr.type table ienv))
-                     ((when (type-case type :function))
-                      (retmsg$ "The type of the compound literal ~x0 ~
-                                is a function type."
-                               (expr-fix expr)))
-                     ((when (type-case type :void))
-                      (retmsg$ "The type of the compound literal ~x0 ~
-                                is void."
-                               (expr-fix expr)))
                      (lifetime (if (> (valid-table-num-scopes table) 1)
                                    (lifetime-auto)
-                                 (lifetime-static)))
-                     ((erp new-elems types-elems table)
-                      (valid-desiniter-list
-                       expr.elems type lifetime table ienv)))
-                  (retok (make-expr-complit :type new-type
-                                            :elems new-elems
-                                            :final-comma expr.final-comma)
-                         type
-                         (set::union types-type types-elems)
-                         table))
+                                 (lifetime-static))))
+                  (cond
+                    ((type-case target-type :unknown)
+                     (b* (((erp new-elems types-desiniters table)
+                           (valid-desiniter-list expr.elems
+                                                 (type-unknown)
+                                                 (initer-subobjects-stack-unknown)
+                                                 lifetime
+                                                 table
+                                                 ienv)))
+                       (retok (make-expr-complit :type new-type
+                                                 :elems new-elems
+                                                 :final-comma expr.final-comma)
+                              target-type
+                              (set::union types-type types-desiniters)
+                              table)))
+                    ((type-scalarp target-type)
+                     (b* (((unless (and (consp expr.elems)
+                                        (endp (cdr expr.elems))))
+                           (retmsg$ "The initializer list ~x0 ~
+                                     for the target type ~x1 ~
+                                     is not a singleton."
+                                    expr.elems
+                                    target-type))
+                          ((desiniter desiniter) (car expr.elems))
+                          ((unless (endp desiniter.designors))
+                           (retmsg$ "The initializer list ~x0 ~
+                                     for the target type ~x1 ~
+                                     is a singleton ~
+                                     but it has designators."
+                                    expr.elems
+                                    target-type))
+                          ((unless (initer-case desiniter.initer :single))
+                           (retmsg$ "The initializer list ~x0 ~
+                                     for the target type ~x1 ~
+                                     is a singleton without designators ~
+                                     but the inner initializer ~
+                                     is not a single expression."
+                                    expr.elems
+                                    target-type))
+                          (init-expr (initer-single->expr desiniter.initer))
+                          ((erp new-init-expr init-type types-init-expr table)
+                           (valid-expr init-expr table ienv))
+                          ((erp)
+                           (valid-simple-assignment
+                             target-type init-type init-expr table.completions ienv)
+                           :iferr (msg$ "The compound literal ~x0 ~
+                                         for the target type ~x1 ~
+                                         has type ~x2."
+                                        (expr-fix expr)
+                                        target-type
+                                        init-type))
+                          (new-complit
+                            (make-expr-complit
+                              :type new-type
+                              :elems (list (make-desiniter
+                                             :designors nil
+                                             :initer (initer-single new-init-expr)))
+                              :final-comma expr.final-comma)))
+                       (retok new-complit
+                              target-type
+                              (set::union types-type types-init-expr)
+                              table)))
+                    ((and (type-case target-type :array)
+                          (and (consp expr.elems)
+                               (endp (rest expr.elems))
+                               (endp (desiniter->designors
+                                       (first expr.elems)))
+                               (let ((inner-initer (desiniter->initer
+                                                     (first expr.elems))))
+                                 (initer-case
+                                   inner-initer
+                                   :single (expr-case inner-initer.expr
+                                                      :string)
+                                   :list nil))))
+                     (b* ((str-expr (initer-single->expr
+                                      (desiniter->initer (first expr.elems))))
+                          ((erp str-type)
+                           (valid-stringlit-list
+                             (expr-string->strings str-expr) ienv))
+                          ((unless (and (type-compatible-p
+                                          (type-array->of target-type)
+                                          (type-array->of str-type)
+                                          table.completions
+                                          ienv)
+                                        ;; The element type of the str-type
+                                        ;; array may be unknown, representing
+                                        ;; one of the wide character types we
+                                        ;; are not modeling precisely. However,
+                                        ;; we know that these types must be
+                                        ;; integer types.
+                                        (type-integerp
+                                          (type-array->of target-type))))
+                           (retmsg$ "Cannot initialize type ~x0 ~
+                                     with string literal ~x1 ~
+                                     of type ~x2."
+                                    target-type
+                                    str-expr
+                                    str-type))
+                          (info (make-expr-string-info :type str-type))
+                          (new-complit
+                            (make-expr-complit
+                              :type new-type
+                              :elems
+                              (list
+                                (make-desiniter
+                                  :designors nil
+                                  :initer (initer-single
+                                            (make-expr-string
+                                              :strings (expr-string->strings
+                                                         str-expr)
+                                              :info info))))
+                              :final-comma expr.final-comma)))
+                       (retok new-complit
+                              target-type
+                              types-type
+                              (valid-table-fix table))))
+                    ((or (type-aggregatep target-type)
+                         (type-case target-type :union))
+                     (b* (((erp subobjects-stack)
+                           (initer-context-enter
+                             (initer-context-top target-type)
+                             table.completions))
+                          ((erp new-elems types-desiniters table)
+                           ;; TODO: ... how can this possibly be failing in the
+                           ;; measure conjecture?
+                           ;; Is something rewriting away the obvious
+                           ;; conclusion?
+                           ;; We can deal with it be addressing the
+                           ;; expr-count = 1 hyp.
+                           (valid-desiniter-list expr.elems
+                                                 target-type
+                                                 subobjects-stack
+                                                 lifetime
+                                                 table
+                                                 ienv)))
+                       (retok (make-expr-complit
+                                :type new-type
+                                :elems new-elems
+                                :final-comma expr.final-comma)
+                              target-type
+                              (set::union types-type types-desiniters)
+                              table)))
+                    (t (retmsg$ "The compound literal ~x0 ~
+                                 for the target type ~x1 is disallowed."
+                                (expr-fix expr)
+                                (type-fix target-type)))))
        :unary (b* (((erp new-arg type-arg types-arg table)
                     (valid-expr expr.arg table ienv))
                    ((erp type) (valid-unary expr expr.op type-arg ienv))
                    (info (make-expr-unary-info :type type)))
                 (retok (make-expr-unary :op expr.op
+
                                         :arg new-arg
                                         :info info)
                        type
@@ -2932,7 +3100,7 @@
                         (valid-expr expr.expr table ienv)))
                     (retok (expr-extension new-expr) type types table))
        :otherwise (prog2$ (impossible) (retmsg$ ""))))
-    :measure (expr-count expr))
+    :measure (acl2::two-nats-measure (expr-count expr) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2962,7 +3130,7 @@
              (cons type types)
              (set::union return-types more-return-types)
              table))
-    :measure (expr-list-count exprs)
+    :measure (acl2::two-nats-measure (expr-list-count exprs) 0)
 
     ///
 
@@ -3016,7 +3184,7 @@
        expr?
        :some (valid-expr expr?.val table ienv)
        :none (retok nil nil nil (valid-table-fix table))))
-    :measure (expr-option-count expr?))
+    :measure (acl2::two-nats-measure (expr-option-count expr?) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3042,9 +3210,11 @@
        namely the value of the constant expression."))
     (b* (((reterr) (irr-const-expr) (irr-type) nil (irr-valid-table))
          ((erp new-expr type types table)
-          (valid-expr (const-expr->expr cexpr) table ienv)))
-      (retok (const-expr new-expr) type types table))
-    :measure (const-expr-count cexpr))
+          (valid-expr (const-expr->expr cexpr) table ienv))
+         (val (const-eval-expr new-expr ienv))
+         (info (make-const-expr-info :value val)))
+      (retok (make-const-expr :expr new-expr :info info) type types table))
+    :measure (acl2::two-nats-measure (const-expr-count cexpr) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3071,7 +3241,7 @@
        cexpr?
        :some (valid-const-expr cexpr?.val table ienv)
        :none (retok nil nil nil (valid-table-fix table))))
-    :measure (const-expr-option-count cexpr?))
+    :measure (acl2::two-nats-measure (const-expr-option-count cexpr?) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3114,7 +3284,7 @@
                          expr-type
                          expr-types
                          table))))
-    :measure (genassoc-count genassoc))
+    :measure (acl2::two-nats-measure (genassoc-count genassoc) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3147,7 +3317,7 @@
              (acons tyname-type? expr-type type-alist)
              (set::union types more-types)
              table))
-    :measure (genassoc-list-count genassocs)
+    :measure (acl2::two-nats-measure (genassoc-list-count genassocs) 0)
 
     ///
 
@@ -3190,7 +3360,7 @@
                                                :index new-expr)
                      (set::union types more-types)
                      table))))
-    :measure (member-designor-count memdesign))
+    :measure (acl2::two-nats-measure (member-designor-count memdesign) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3685,7 +3855,7 @@
                              same-table)
                     (reterr msg-bad-preceding))
        :otherwise (prog2$ (impossible) (retmsg$ ""))))
-    :measure (type-spec-count tyspec)
+    :measure (acl2::two-nats-measure (type-spec-count tyspec) 0)
 
     ///
 
@@ -3759,7 +3929,7 @@
                       (type-spec-list-fix tyspecs)
                       nil
                       (valid-table-fix table))))
-    :measure (spec/qual-count specqual)
+    :measure (acl2::two-nats-measure (spec/qual-count specqual) 0)
 
     ///
 
@@ -3833,7 +4003,7 @@
              type
              (set::union types more-types)
              table))
-    :measure (spec/qual-list-count specquals))
+    :measure (acl2::two-nats-measure (spec/qual-list-count specquals) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3883,7 +4053,7 @@
                       (align-spec-fix align) type)))
          (retok (align-spec-alignas-expr new-expr) types table))
        :alignas-ambig (prog2$ (impossible) (retmsg$ ""))))
-    :measure (align-spec-count align))
+    :measure (acl2::two-nats-measure (align-spec-count align) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3973,7 +4143,7 @@
                         (stor-spec-list-fix storspecs)
                         nil
                         (valid-table-fix table))))
-    :measure (decl-spec-count declspec)
+    :measure (acl2::two-nats-measure (decl-spec-count declspec) 0)
 
     ///
 
@@ -4066,7 +4236,7 @@
              storspecs
              (set::union types more-types)
              table))
-    :measure (decl-spec-list-count declspecs)
+    :measure (acl2::two-nats-measure (decl-spec-list-count declspecs) 0)
 
     ///
 
@@ -4081,15 +4251,15 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-initer ((initer initerp)
-                        (target-type typep)
+                        (ctx initer-context-p)
                         (lifetime lifetimep)
                         (table valid-tablep)
-                        (ienv ienvp))
-    :guard (and (initer-unambp initer)
-                (not (type-case target-type :function))
-                (not (type-case target-type :void)))
+                        (ienv ienvp)
+                        (steps natp))
+    :guard (initer-unambp initer)
     :returns (mv (erp maybe-msgp)
                  (new-initer initerp)
+                 (new-ctx initer-context-p)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4097,11 +4267,21 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The target type passed as input is
-       the type of the object being initialized,
-       which must not be a function or void type [C17:6.7.9/3].
-       The lifetime kind passed as input is
+      "The initializer context passed as input provides
+       the necessary type and position information to validate the initializer.
+       It either indicates that we are at the outermost initializer,
+       in which case we have just the target type of the initializer,
+       or we are at some nested initializer,
+       in which case we have a stack of subobject frames.
+       In this case, the target type is
+       the type of the ``current'' subobject.")
+     (xdoc::p
+      "The lifetime kind passed as input is
        the one of the object being initialized.")
+     (xdoc::p
+      "If the target type is unknown, no constraints are checked.
+       If the initializer consists of an initialization list,
+       the list is validated under an unknown initializer context.")
      (xdoc::p
       "If the target type is a scalar,
        the initializer must be either a single expression,
@@ -4111,161 +4291,309 @@
        experiments show that the final comma is allowed.
        The same constraints as in assignments apply here
        [C17:6.7.9/11] [C17:6.5.16.1/1]:
-       see @(tsee valid-binary) for how we currently approximate the checks.
-       We perform array-to-pointer and function-to-pointer conversions
-       on the expression, as pointers may be required.
-       We accept expressions of integer type when expecting a pointer type
-       to approximate conversion of null pointer constants.")
+       see @(tsee valid-simple-assignment)
+       for how we currently approximate the checks.")
      (xdoc::p
-      "If the target type is the structure or union type,
-       the initializer is a single expression,
-       and the object has automatic storage duration,
-       that expression must also have a compatible structure or union type
-       [C17:6.7.9/13].")
+      "We then check a number of cases, each of which is permitted to fail.")
+     (xdoc::ul
+      (xdoc::li
+       "If the initializer is a single string literal expression
+        and the target type is an array, we validate the string literal.
+        If the string literal is
+        a character string literal or a UTF-8 string literal,
+        the element type of the target array type must be a character type
+        [C17:6.7.9/14].
+        Otherwise, the string literal is a wide string literal
+        and the element type of the target array type must be compatible
+        [C17:6.7.9/15].")
+      (xdoc::li
+       "If the initializer is a singleton list without designators,
+        the same rules as above apply [C17:6.7.9/14] [C17:6.7.9/15].
+        However, we also check whether
+        the string literal element type is unknown.
+        In this case, the compatibilty check is not sufficient
+        to establish that this is the proper case
+        (it could be that the target array element type is actually
+        an aggregate, and we should instead recurse).
+        Therefore, if the element type is unknown,
+        we proceed with the unknown initializer context
+        to reflect this uncertainty.")
+      (xdoc::li
+       "If the target type is either a structure or union
+        with automatic storage duration
+        and the initializer is a single expression,
+        the expression may be any compatible structure or union
+        [C17:6.7.9/13]."))
      (xdoc::p
-      "If the target type is an array of characters (of various types),
-       the initializer may be a single string literal,
-       subject to some constraints [C17:6.7.9/14] [C17:6.7.9/15].
-       Because we do not yet model the wide character types,
-       we must allow any kind of string literal with any array target type.")
-     (xdoc::p
-      "If the target type is an aggregate or union type,
-       and the initializer is a brace-enclosed list,
-       then we process the elements of the list,
-       via a separate validation function
-       [C17:6.7.9/16] [C17:6.7.9/17] [C17:6.7.9/18].")
-     (xdoc::p
-      "If none of the case above holds, validation fails."))
-    (b* (((reterr) (irr-initer) nil (irr-valid-table)))
-      (cond
-       ((type-case target-type :unknown)
-        (initer-case
-         initer
-         :single (b* (((erp new-expr & types table)
-                       (valid-expr initer.expr table ienv)))
-                   (retok (initer-single new-expr) types table))
-         :list (b* (((erp new-elems types table)
-                     (valid-desiniter-list
-                      initer.elems (type-unknown) lifetime table ienv)))
-                 (retok (make-initer-list :elems new-elems
-                                          :final-comma initer.final-comma)
-                        types
-                        table))))
-       ((type-scalarp target-type)
-        (b* (((erp expr)
-              (b* (((reterr) (irr-expr)))
-                (initer-case
-                 initer
-                 :single (retok initer.expr)
-                 :list (b* (((unless (and (consp initer.elems)
-                                          (endp (cdr initer.elems))))
-                             (retmsg$ "The initializer list ~x0 ~
-                                       for the target type ~x1 ~
-                                       is not a singleton."
-                                      (initer-fix initer)
-                                      (type-fix target-type)))
-                            ((desiniter desiniter) (car initer.elems))
-                            ((unless (endp desiniter.designors))
-                             (retmsg$ "The initializer list ~x0 ~
-                                       for the target type ~x1 ~
-                                       is a singleton ~
-                                       but it has designators."
-                                      (initer-fix initer)
-                                      (type-fix target-type)))
-                            ((unless (initer-case desiniter.initer :single))
-                             (retmsg$ "The initializer list ~x0 ~
-                                       for the target type ~x1 ~
-                                       is a singleton without designators ~
-                                       but the inner initializer ~
-                                       is not a single expression."
-                                      (initer-fix initer)
-                                      (type-fix target-type))))
-                         (retok (initer-single->expr desiniter.initer))))))
-             ((erp new-expr init-type types table) (valid-expr expr table ienv))
-             (type (type-fpconvert (type-apconvert init-type)))
-             ((unless (or (and (type-arithmeticp target-type)
-                               (or (type-arithmeticp type)
-                                   (type-case type :unknown)))
-                          (and (type-case target-type :bool)
-                               (or (type-case type :pointer)
-                                   (type-case type :unknown)))
-                          (and (type-case target-type :pointer)
-                               (or (and (type-case type :pointer)
-                                        (let ((target-type-to
-                                               (type-pointer->to target-type))
-                                              (type-to (type-pointer->to type)))
-                                          (or (type-compatible-p
-                                               target-type-to
-                                               type-to
-                                               (valid-table->completions table)
-                                               ienv)
-                                              (and (type-case target-type-to
-                                                              :void)
-                                                   (not
-                                                    (type-case type-to
-                                                               :function)))
-                                              (and (type-case type-to :void)
-                                                   (not
-                                                    (type-case target-type-to
-                                                               :function))))))
-                                   (type-case type :unknown)
-                                   (expr-null-pointer-constp expr type)))))
-              (retmsg$ "The initializer ~x0 for the target type ~x1 ~
-                        has type ~x2."
-                       (initer-fix initer)
-                       (type-fix target-type)
-                       init-type))
-             (new-initer
-              (initer-case
-               initer
-               :single (initer-single new-expr)
-               :list (make-initer-list
-                      :elems (list (make-desiniter
-                                    :designors nil
-                                    :initer (initer-single new-expr)))
-                      :final-comma initer.final-comma))))
-          (retok new-initer types table)))
-       ((and (or (type-case target-type :struct)
-                 (type-case target-type :union))
-             (initer-case initer :single)
-             (lifetime-case lifetime :auto))
-        (b* (((erp new-expr type types table)
-              (valid-expr (initer-single->expr initer) table ienv))
-             ((unless (or (type-equiv type target-type)
-                          (type-case type :unknown)))
-              (retmsg$ "The initializer ~x0 for the target type ~x1 ~
-                        of an object in automatic storage has type ~x2.~%"
-                       (initer-fix initer)
-                       (type-fix target-type)
-                       type)))
-          (retok (initer-single new-expr) types table)))
-       ((and (type-case target-type :array)
-             (initer-case initer :single)
-             (expr-case (initer-single->expr initer) :string))
-        (b* (((erp type) (valid-stringlit-list
-                          (expr-string->strings (initer-single->expr initer))
-                          ienv))
-             (info (make-expr-string-info :type type)))
-          (retok (initer-single
-                  (make-expr-string
-                   :strings (expr-string->strings (initer-single->expr initer))
-                   :info info))
-                 nil
-                 (valid-table-fix table))))
-       ((and (or (type-aggregatep target-type)
-                 (type-case target-type :union))
-             (initer-case initer :list))
-        (b* (((erp new-elems types table)
-              (valid-desiniter-list
-               (initer-list->elems initer) target-type lifetime table ienv)))
-          (retok (make-initer-list
-                  :elems new-elems
-                  :final-comma (initer-list->final-comma initer))
-                 types
-                 table)))
-       (t (retmsg$ "The initializer ~x0 for the target type ~x1 is disallowed."
-                   (initer-fix initer) (type-fix target-type)))))
-    :measure (initer-count initer))
+      "If any of the listed cases fails
+       and the target type is an aggregate or union,
+       we expand the subobjects at the head of the stack
+       and recurse [C17:6.7.9/20].
+       This recursion is always expected to terminate, but for the moment,
+       we explicitly limit recursion with a step counter.
+       The reason the recursion should terminate regardless
+       is that the size of the type corresponding to the initializer context
+       decreases at every call.
+       When we expand subobjects at the head of the stack,
+       the new type becomes an immediate sub-type of the old type
+       (a member of the structure or union, or an element of the array).
+       To prove this, we would need to know that the @(tsee type-completions)
+       from the validation table is ``well-formed'',
+       in that there are no circular structures or unions."))
+    (b* (((reterr) (irr-initer) (irr-initer-context) nil (irr-valid-table))
+         ((valid-table table) table)
+         (steps (lnfix steps))
+         ((when (= (the unsigned-byte steps) 0))
+          (retmsg$ "Ran out of steps in valid-initer."))
+         ((when (initer-context-end-p ctx))
+          (retmsg$ "Too many initializers. Unexpected initializer: ~x0"
+                   (irr-initer)))
+         (target-type (initer-context->type ctx))
+         ((when (type-case target-type :unknown))
+          (initer-case
+            initer
+            :single (b* (((erp new-expr & types table)
+                          (valid-expr initer.expr table ienv)))
+                      (retok (initer-single new-expr)
+                             (initer-context-unknown)
+                             types
+                             table))
+            :list (b* (((erp new-elems types table)
+                        (valid-desiniter-list initer.elems
+                                              (type-unknown)
+                                              (initer-subobjects-stack-unknown)
+                                              lifetime
+                                              table
+                                              ienv)))
+                    (retok (make-initer-list :elems new-elems
+                                             :final-comma initer.final-comma)
+                           (initer-context-unknown)
+                           types
+                           table))))
+         ((when (type-scalarp target-type))
+          (b* (((erp expr)
+                (b* (((reterr) (irr-expr)))
+                  (initer-case
+                    initer
+                    :single (retok initer.expr)
+                    :list (b* (((unless (and (consp initer.elems)
+                                             (endp (cdr initer.elems))))
+                                (retmsg$ "The initializer list ~x0 ~
+                                          for the target type ~x1 ~
+                                          is not a singleton."
+                                         (initer-fix initer)
+                                         (type-fix target-type)))
+                               ((desiniter desiniter) (car initer.elems))
+                               ((unless (endp desiniter.designors))
+                                (retmsg$ "The initializer list ~x0 ~
+                                          for the target type ~x1 ~
+                                          is a singleton ~
+                                          but it has designators."
+                                         (initer-fix initer)
+                                         (type-fix target-type)))
+                               ((unless (initer-case desiniter.initer :single))
+                                (retmsg$ "The initializer list ~x0 ~
+                                          for the target type ~x1 ~
+                                          is a singleton without designators ~
+                                          but the inner initializer ~
+                                          is not a single expression."
+                                         (initer-fix initer)
+                                         (type-fix target-type))))
+                            (retok (initer-single->expr desiniter.initer))))))
+               ((erp new-expr init-type types table)
+                (valid-expr expr table ienv))
+               ((erp)
+                (valid-simple-assignment
+                  target-type init-type expr table.completions ienv)
+                :iferr (msg$ "The initializer ~x0 for the target type ~x1 ~
+                              has type ~x2."
+                             (initer-fix initer)
+                             (type-fix target-type)
+                             init-type))
+               (new-initer
+                 (initer-case
+                   initer
+                   :single (initer-single new-expr)
+                   :list (make-initer-list
+                           :elems (list (make-desiniter
+                                          :designors nil
+                                          :initer (initer-single new-expr)))
+                           :final-comma initer.final-comma))))
+            (retok new-initer (initer-context-fix ctx) types table)))
+         ((erp successp new-initer new-ctx return-types new-table)
+          (b* (((reterr)
+                nil (irr-initer) (irr-initer-context) nil (irr-valid-table)))
+            (cond ((and (initer-case initer :single)
+                        (expr-case (initer-single->expr initer) :string)
+                        (type-case target-type :array))
+                   (b* (((erp str-type)
+                         (valid-stringlit-list
+                           (expr-string->strings (initer-single->expr initer))
+                           ienv))
+                        ((unless
+                             (if (type-case (type-array->of str-type) :char)
+                                 (or (type-characterp
+                                       (type-array->of target-type))
+                                     (type-case (type-array->of target-type)
+                                                :unknown))
+                               (type-compatible-p
+                                 (type-array->of target-type)
+                                 (type-array->of str-type)
+                                 table.completions
+                                 ienv)))
+                         (retok nil nil nil nil nil))
+                        (info (make-expr-string-info :type str-type)))
+                     (retok t
+                            (initer-single
+                              (make-expr-string
+                                :strings (expr-string->strings
+                                           (initer-single->expr initer))
+                                :info info))
+                            (initer-context-fix ctx)
+                            nil
+                            (valid-table-fix table))))
+                  ((and (type-case target-type :array)
+                        (initer-case
+                          initer
+                          :list (and (consp initer.elems)
+                                     (endp (rest initer.elems))
+                                     (endp (desiniter->designors
+                                             (first initer.elems)))
+                                     (let ((inner-initer (desiniter->initer
+                                                           (first initer.elems))))
+                                       (initer-case
+                                         inner-initer
+                                         :single (expr-case inner-initer.expr
+                                                            :string)
+                                         :list nil)))
+                          :otherwise nil))
+                   (b* ((str-expr (initer-single->expr
+                                    (desiniter->initer
+                                      (first (initer-list->elems initer)))))
+                        ((erp str-type)
+                         (valid-stringlit-list
+                           (expr-string->strings str-expr) ienv))
+                        (new-ctx
+                          (if (type-case (type-array->of target-type) :unknown)
+                              ;; When element type of the target array is
+                              ;; unknown, we can't know whether the true type
+                              ;; is a character type (in which case this case
+                              ;; applies) or it is an aggregate or union (in
+                              ;; which case we should recurse.) Therefore, we
+                              ;; must fall back to an unknown initializer
+                              ;; context.
+                              (initer-context-unknown)
+                            (initer-context-fix ctx)))
+                        ((unless (and (type-compatible-p
+                                        (type-array->of target-type)
+                                        (type-array->of str-type)
+                                        table.completions
+                                        ienv)
+                                      ;; The element type of the str-type array
+                                      ;; may be unknown, representing one of
+                                      ;; the wide character types we are not
+                                      ;; modeling precisely. However, we know
+                                      ;; that these types must be integer
+                                      ;; types.
+                                      (type-integerp
+                                        (type-array->of target-type))))
+                         (retok nil nil nil nil nil))
+                        (info (make-expr-string-info :type str-type))
+                        (new-initer
+                          (make-initer-list
+                            :elems
+                            (list
+                              (make-desiniter
+                                :designors nil
+                                :initer (initer-single
+                                          (make-expr-string
+                                            :strings (expr-string->strings
+                                                       str-expr)
+                                            :info info))))
+                            :final-comma (initer-list->final-comma initer))))
+                     (retok t new-initer new-ctx nil (valid-table-fix table))))
+                  ((and (or (type-case target-type :struct)
+                            (type-case target-type :union))
+                        (initer-case initer :single)
+                        (lifetime-case lifetime :auto))
+                   (b* (((erp new-expr type types table)
+                         (valid-expr (initer-single->expr initer) table ienv))
+                        ((unless (type-compatible-p
+                                   type target-type table.completions ienv))
+                         (retok nil nil nil nil nil)))
+                     (retok t
+                            (initer-single new-expr)
+                            (initer-context-fix ctx)
+                            types
+                            table)))
+                  ((and (or (type-aggregatep target-type)
+                            (type-case target-type :union))
+                        (initer-case initer :list))
+                   (b* (((erp subobjects-stack)
+                         (initer-context-enter ctx table.completions))
+                        ((erp new-elems types table)
+                         (valid-desiniter-list (initer-list->elems initer)
+                                               target-type
+                                               subobjects-stack
+                                               lifetime
+                                               table
+                                               ienv)))
+                     (retok t
+                            (make-initer-list
+                              :elems new-elems
+                              :final-comma (initer-list->final-comma initer))
+                            (initer-context-fix ctx)
+                            types
+                            table)))
+                  (t (retok nil nil nil nil nil)))))
+         ((when successp)
+          (retok new-initer new-ctx return-types new-table))
+         ((unless (and (or (type-aggregatep target-type)
+                           (type-case target-type :union))
+                       (initer-case initer :single)
+                       (initer-context-case ctx :stack)))
+          (retmsg$ "The initializer ~x0 for the target type ~x1 is disallowed."
+                   (initer-fix initer) (type-fix target-type)))
+         ((erp subobjects-stack)
+          (subobjects-stack-enter (initer-context-stack->stack ctx)
+                                  table.completions)))
+      (valid-initer initer
+                    (initer-context-stack subobjects-stack)
+                    lifetime
+                    table
+                    ienv
+                    (- steps 1)))
+    :measure (acl2::two-nats-measure (initer-count initer) (nfix steps))
+
+    ///
+
+    (local
+     (define induct-valid-initer (ctx table steps)
+       (declare (irrelevant ctx table))
+       (b* (((valid-table table) table)
+            (steps (nfix steps))
+            ((when (equal (nfix steps) 0))
+             nil)
+            ((mv - subobjects-stack)
+             (subobjects-stack-enter (initer-context-stack->stack ctx)
+                                     table.completions)))
+         (induct-valid-initer (initer-context-stack subobjects-stack)
+                              table
+                              (- (nfix steps) 1)))
+       :verify-guards nil
+       :measure (nfix steps)
+       :hints (("Goal" :in-theory (enable nfix)))))
+
+    (defret initer-context-kind-of-valid-initer.new-ctx-when-case-stack
+      (implies (and (initer-context-case ctx :stack)
+                    (not erp))
+               (equal (initer-context-kind new-ctx)
+                      :stack))
+      :fn valid-initer
+      :hints (("Goal" :induct (induct-valid-initer ctx table steps)
+                      :in-theory (e/d (induct-valid-initer)
+                                      (valid-expr valid-initer)))
+              '(:expand ((valid-initer initer ctx lifetime table ienv steps))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4276,11 +4604,7 @@
                                (ienv ienvp))
     :guard (and (initer-option-unambp initer?)
                 (or (not initer?)
-                    lifetime?)
-                (or (not initer?)
-                    (not (type-case target-type :function)))
-                (or (not initer?)
-                    (not (type-case target-type :void))))
+                    lifetime?))
     :returns (mv (erp maybe-msgp)
                  (new-initer? initer-optionp)
                  (return-types type-setp)
@@ -4291,35 +4615,33 @@
     (xdoc::topstring
      (xdoc::p
       "If there is no initializer, validation succeeds.
-       Otherwise, we validate the initializer.")
-     (xdoc::p
-      "The guard on the target type is weakened,
-       compared to @(tsee valid-initer):
-       if there is no initializer, the type can be anything,
-       because the restriction applies only to initializers [C17:6.7.9/3]."))
+       Otherwise, we validate the initializer."))
     (b* (((reterr) nil nil (irr-valid-table)))
       (initer-option-case
        initer?
-       :some (valid-initer initer?.val
-                           target-type
-                           (lifetime-option-fix lifetime?)
-                           table
-                           ienv)
+       :some (b* (((erp new-initer - return-types new-table)
+                   (valid-initer initer?.val
+                                 (initer-context-top target-type)
+                                 (lifetime-option-fix lifetime?)
+                                 table
+                                 ienv
+                                 1024)))
+               (retok new-initer return-types new-table))
        :none (retok nil nil (valid-table-fix table))))
-    :measure (initer-option-count initer?))
+    :measure (acl2::two-nats-measure (initer-option-count initer?) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-desiniter ((desiniter desiniterp)
-                           (target-type typep)
+                           (current-object-type typep)
+                           (subobjects-stack initer-subobjects-stack-p)
                            (lifetime lifetimep)
                            (table valid-tablep)
                            (ienv ienvp))
-    :guard (and (desiniter-unambp desiniter)
-                (not (type-case target-type :function))
-                (not (type-case target-type :void)))
+    :guard (desiniter-unambp desiniter)
     :returns (mv (erp maybe-msgp)
                  (new-desiniter desiniterp)
+                 (new-subobjects-stack initer-subobjects-stack-p)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4327,29 +4649,65 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The target type passed as argument is the type
-       that the list of designators must be applicable to."))
-    (b* (((reterr) (irr-desiniter) nil (irr-valid-table))
+      "The subobjects stack passed as input represents
+       our position in the initializer.
+       It is used to determine the ``current'' subobject
+       when an initializer lacks a designation.")
+     (xdoc::p
+      "When a designation is present,
+       we reset the subobjects stack and validate the designators,
+       using the current object type as the base type
+       to be refined by the designators [C17:6.7.9/18].
+       This returns a new subobjects stack,
+       reflecting the position in the objects described by the designators.
+       If no designation is present, we use the existing subobjects stack
+       [C17:6.7.9/17].")
+     (xdoc::p
+      "After validating the initializer with this subobjects stack,
+       we then advance the stack forward one position
+       and the return the new stack."))
+    (b* (((reterr)
+          (irr-desiniter) (irr-initer-subobjects-stack) nil (irr-valid-table))
          ((desiniter desiniter) desiniter)
-         ((erp new-design initer-type types table)
-          (valid-designor-list desiniter.designors target-type table ienv))
-         ((erp new-init more-types table)
-          (valid-initer desiniter.initer initer-type lifetime table ienv)))
+         ((erp new-design subobjects-stack types table)
+          (if (endp desiniter.designors)
+              (retok desiniter.designors
+                     subobjects-stack
+                     nil
+                     table)
+            (valid-designor-list desiniter.designors
+                                 current-object-type
+                                 (initer-subobjects-stack-known nil)
+                                 table
+                                 ienv)))
+         ((erp new-init ctx more-types table)
+          (valid-initer desiniter.initer
+                        (initer-context-stack subobjects-stack)
+                        lifetime
+                        table
+                        ienv
+                        1024))
+         (new-subobjects-stack (initer-context-stack->stack ctx))
+         (new-subobjects-stack
+           (if (subobjects-stack-end-p new-subobjects-stack)
+               ;; TODO: this case is impossible.
+               new-subobjects-stack
+             (subobjects-stack-advance new-subobjects-stack))))
       (retok (make-desiniter :designors new-design :initer new-init)
+             new-subobjects-stack
              (set::union types more-types)
              table))
-    :measure (desiniter-count desiniter))
+    :measure (acl2::two-nats-measure (desiniter-count desiniter) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-desiniter-list ((desiniters desiniter-listp)
-                                (target-type typep)
+                                (current-object-type typep)
+                                (subobjects-stack initer-subobjects-stack-p)
                                 (lifetime lifetimep)
                                 (table valid-tablep)
                                 (ienv ienvp))
-    :guard (and (desiniter-list-unambp desiniters)
-                (not (type-case target-type :function))
-                (not (type-case target-type :void)))
+    :guard (desiniter-list-unambp desiniters)
     :returns (mv (erp maybe-msgp)
                  (new-desiniters desiniter-listp)
                  (return-types type-setp)
@@ -4360,58 +4718,43 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The target type passed as argument is the type
-       that each list of designators must be applicable to.
-       Currently, we do not support fine-grained type-checking of
-       aggregates or unions with an element/member type
-       which is also an aggregate or union type
-       (this condition is checked precisely for the array type,
-       but conservatively includes all struct and unions types
-       since out approximate types do not yet include member types).
-       In such contexts, when an initializer lacks a designator,
-       the type of the initializer may be
-       either the type of the element/member,
-       or the type of an element/member of that element/member
-       (which member depends on the order of the initializers)
-       [C17:6.7.9/20].
-       For now, we fall back to the unknown type in these cases
-       as opposed to dealing with this complexity."))
+      "The subobjects stack passed as input represents
+       our position in the initializer.
+       We validate the first initializer with an optional designation
+       according to this stack.
+       This returns a new stack used for the next element of the list."))
     (b* (((reterr) nil nil (irr-valid-table))
          ((when (endp desiniters)) (retok nil nil (valid-table-fix table)))
-         (target-type
-          (if (type-case
-               target-type
-               :array (or (type-case target-type.of :array)
-                          (type-case target-type.of :struct)
-                          (type-case target-type.of :union)
-                          (type-case target-type.of :unknown))
-               :struct t
-               :union t
-               :otherwise nil)
-              (type-unknown)
-            target-type))
-         ((erp new-desiniter types table)
-          (valid-desiniter (car desiniters) target-type lifetime table ienv))
+         ((erp new-desiniter subobjects-stack types table)
+          (valid-desiniter (car desiniters)
+                           current-object-type
+                           subobjects-stack
+                           lifetime
+                           table
+                           ienv))
          ((erp new-desiniters more-types table)
-          (valid-desiniter-list
-           (cdr desiniters) target-type lifetime table ienv)))
+          (valid-desiniter-list (cdr desiniters)
+                                current-object-type
+                                subobjects-stack
+                                lifetime
+                                table
+                                ienv)))
       (retok (cons new-desiniter new-desiniters)
              (set::union types more-types)
              table))
-    :measure (desiniter-list-count desiniters))
+    :measure (acl2::two-nats-measure (desiniter-list-count desiniters) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-designor ((designor designorp)
                           (target-type typep)
+                          (subobjects-stack initer-subobjects-stack-p)
                           (table valid-tablep)
                           (ienv ienvp))
-    :guard (and (designor-unambp designor)
-                (not (type-case target-type :function))
-                (not (type-case target-type :void)))
+    :guard (designor-unambp designor)
     :returns (mv (erp maybe-msgp)
                  (new-designor designorp)
-                 (new-target-type typep)
+                 (new-subobjects-stack initer-subobjects-stack-p)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4420,97 +4763,173 @@
     (xdoc::topstring
      (xdoc::p
       "The target type passed as input is
-       the one that the designator must apply to;
-       the target type returned as result is
-       the one that results from applying the designator to it.
-       The target type is the type of the current object [C17:6.7.9/17].
-       A subscript designator requires an array target type,
+       the one that the designator must apply to.
+       By applying the designator to the type,
+       we obtain the remaining subobjects at that point in the object.
+       These subobjects are pushed to the new subobject stack and returned.")
+     (xdoc::p
+      "A subscript designator requires an array target type,
        and must have an integer expression [C17:6.7.9/6];
        the result is the element type of the array type.
        A dotted designator requires a struct or union type [C17:6.7.9/7];
-       the result is the unknown type,
-       because currently we do not have information about the members."))
-    (b* (((reterr) (irr-designor) (irr-type) nil (irr-valid-table)))
+       the result is the type of the member of that name."))
+    (b* (((reterr)
+          (irr-designor) (irr-initer-subobjects-stack) nil (irr-valid-table))
+         ((valid-table table) table))
       (designor-case
        designor
-       :sub (b* (((erp new-index index-type index-types table)
-                  (valid-const-expr designor.index table ienv))
-                 ((erp new-range? range?-type? range?-types table)
-                  (valid-const-expr-option designor.range? table ienv))
-                 ((unless (or (type-integerp index-type)
-                              (type-case index-type :unknown)))
-                  (retmsg$ "The first or only index of the designator ~x0 ~
-                            has type ~x1."
-                           (designor-fix designor)
-                           index-type))
-                 ((unless (or (not range?-type?)
-                              (type-integerp range?-type?)
-                              (type-case range?-type? :unknown)))
-                  (retmsg$ "The second index of the designator ~x0 ~
-                            has type ~x1."
-                           (designor-fix designor)
-                           range?-type?))
-                 ((when (type-case target-type :unknown))
-                  (retok (make-designor-sub :index new-index :range? new-range?)
-                         (type-unknown)
-                         (set::union index-types range?-types)
-                         table))
-                 ((unless (type-case target-type :array))
-                  (retmsg$ "The target type of the designator ~x0 is ~x1."
-                           (designor-fix designor)
-                           (type-fix target-type)))
-                 (element-type (type-array->of target-type))
-                 ((when (or (type-case element-type :function)
-                            (type-case element-type :void)))
-                  (retmsg$ "The result of applying the designator ~x0
-                            to type ~x1 is ~x2."
-                           (designor-fix designor)
-                           (type-fix target-type)
-                           element-type)))
-              (retok (make-designor-sub :index new-index :range? new-range?)
-                     element-type
-                     (set::union index-types range?-types)
-                     table))
-       :dot (b* (((unless (or (type-case target-type :struct)
-                              (type-case target-type :union)
-                              (type-case target-type :unknown)))
-                  (retmsg$ "The target type of the designator ~x0 is ~x1."
-                           (designor-fix designor)
-                           (type-fix target-type))))
-              (retok (designor-dot designor.name)
-                     (type-unknown)
-                     nil
-                     (valid-table-fix table)))))
-    :measure (designor-count designor)
+       :sub
+       (b* (((erp new-index index-type index-types table)
+             (valid-const-expr designor.index table ienv))
+            ((erp new-range? range?-type? range?-types table)
+             (valid-const-expr-option designor.range? table ienv))
+            ((unless (or (type-integerp index-type)
+                         (type-case index-type :unknown)))
+             (retmsg$ "The first or only index of the designator ~x0 ~
+                       has type ~x1."
+                      (designor-fix designor)
+                      index-type))
+            ((unless (or (not range?-type?)
+                         (type-integerp range?-type?)
+                         (type-case range?-type? :unknown)))
+             (retmsg$ "The second index of the designator ~x0 ~
+                       has type ~x1."
+                      (designor-fix designor)
+                      range?-type?))
+            ((when (type-case target-type :unknown))
+             (retok (make-designor-sub :index new-index :range? new-range?)
+                    (initer-subobjects-stack-unknown)
+                    (set::union index-types range?-types)
+                    table))
+            ((unless (type-case target-type :array))
+             (retmsg$ "The target type of the designator ~x0 is ~x1."
+                      (designor-fix designor)
+                      (type-fix target-type)))
+            (element-type (type-array->of target-type))
+            ((unless (const-expr-infop (const-expr->info new-index)))
+             (retmsg$ "Internal error. ~
+                       Constant expression is not annotated: ~x0."
+                      new-index))
+            (index-nat?
+              (value-to-integer
+                (const-expr-info->value (const-expr->info new-index))))
+            ((when (and index-nat? (not (natp index-nat?))))
+             (retmsg$ "The first or only index of the designator ~x0 ~
+                       is negative."))
+            ((unless index-nat?)
+             (retok (make-designor-sub :index new-index :range? new-range?)
+                    (initer-subobjects-stack-unknown)
+                    (set::union index-types range?-types)
+                    table))
+            ((erp range-nat?)
+             (b* (((reterr) nil)
+                  ((when (const-expr-option-case new-range? :none))
+                   (retok nil))
+                  (new-range (const-expr-option-some->val new-range?))
+                  ((unless (const-expr-infop
+                             (const-expr->info new-range)))
+                   (retmsg$ "Internal error. ~
+                             Constant expression is not annotated: ~x0."
+                            new-range))
+                  (range-nat?
+                    (value-to-integer
+                      (const-expr-info->value (const-expr->info new-range))))
+                  ((when (and range-nat? (not (natp range-nat?))))
+                   (retmsg$ "The second index of the designator ~x0 ~
+                             is negative.")))
+               (retok range-nat?)))
+            (new-subobjects-stack
+              (initer-subobjects-stack-case
+                subobjects-stack
+                :unknown (initer-subobjects-stack-fix subobjects-stack)
+                :known (initer-subobjects-stack-known
+                         (cons (make-initer-subobjects-array-index
+                                 :of element-type
+                                 :index index-nat?
+                                 :range? range-nat?)
+                               subobjects-stack.list)))))
+         (retok (make-designor-sub :index new-index :range? new-range?)
+                new-subobjects-stack
+                (set::union index-types range?-types)
+                table))
+       :dot
+       (type-case
+         target-type
+         :struct (b* (((erp members)
+                       (type-struni-tag/members->members
+                         target-type.tag/members target-type.uid table.completions)
+                       :iferr (msg$ "Designator cannot be applied to ~
+                                     incomplete struct type ~x0."
+                                    (type-fix target-type)))
+                      ((erp subobjects-list)
+                       (subobjects-from-members-lookup designor.name t members)
+                       :iferr (msg$ "Struct type ~x0 does not have member ~x1."
+                                    (type-fix target-type)
+                                    (ident->unwrap designor.name)))
+                      (new-subobjects-stack
+                        (initer-subobjects-stack-case
+                          subobjects-stack
+                          :unknown (initer-subobjects-stack-fix subobjects-stack)
+                          :known (initer-subobjects-stack-known
+                                   (append subobjects-list
+                                           subobjects-stack.list)))))
+                   (retok (designor-dot designor.name)
+                          new-subobjects-stack
+                          nil
+                          (valid-table-fix table)))
+         :union (b* (((erp members)
+                      (type-struni-tag/members->members
+                        target-type.tag/members target-type.uid table.completions)
+                      :iferr (msg$ "Designator cannot be applied to ~
+                                    incomplete struct type ~x0."
+                                   (type-fix target-type)))
+                     ((erp subobjects-list)
+                      (subobjects-from-members-lookup designor.name nil members)
+                      :iferr (msg$ "Struct type ~x0 does not have member ~x1."
+                                   (type-fix target-type)
+                                   (ident->unwrap designor.name)))
+                     (new-subobjects-stack
+                       (initer-subobjects-stack-case
+                         subobjects-stack
+                         :unknown (initer-subobjects-stack-fix subobjects-stack)
+                         :known (initer-subobjects-stack-known
+                                  (append subobjects-list
+                                          subobjects-stack.list)))))
+                  (retok (designor-fix designor)
+                         new-subobjects-stack
+                         nil
+                         (valid-table-fix table)))
+         :unknown (retok (designor-fix designor)
+                         (initer-subobjects-stack-unknown)
+                         nil
+                         (valid-table-fix table))
+         :otherwise (retmsg$ "Designator ~x0 cannot be applied to ~
+                              non-member, non-union type ~x1."
+                             (designor-fix designor)
+                             (type-fix target-type)))))
+    :measure (acl2::two-nats-measure (designor-count designor) 0)
 
     ///
 
-    (defret valid-designor.new-target-type-not-function
+    (defret subobjects-stack-end-p-of-valid-designor.new-subobjects-stack
       (implies (not erp)
-               (not (equal (type-kind new-target-type)
-                           :function)))
-      :hints
-      (("Goal" :expand (valid-designor designor target-type table ienv))))
-
-    (defret valid-designor.new-target-type-not-void
-      (implies (not erp)
-               (not (equal (type-kind new-target-type)
-                           :void)))
-      :hints
-      (("Goal" :expand (valid-designor designor target-type table ienv)))))
+               (not (subobjects-stack-end-p new-subobjects-stack)))
+      :hints (("Goal"
+                :in-theory (enable endp)
+                :expand ((valid-designor
+                           designor target-type subobjects-stack table ienv))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-designor-list ((designors designor-listp)
                                (target-type typep)
+                               (subobjects-stack initer-subobjects-stack-p)
                                (table valid-tablep)
                                (ienv ienvp))
-    :guard (and (designor-list-unambp designors)
-                (not (type-case target-type :function))
-                (not (type-case target-type :void)))
+    :guard (designor-list-unambp designors)
     :returns (mv (erp maybe-msgp)
                  (new-designors designor-listp)
-                 (new-target-type typep)
+                 (new-subobjects-stack initer-subobjects-stack-p)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4518,53 +4937,29 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The target type passed as argument is the current type
-       that the designators must be applicable to.
-       The target type returned as result is the type
-       resulting from the application of the designators."))
-    (b* (((reterr) nil (irr-type) nil (irr-valid-table))
+      "The target type passed as input is
+       the one that the designator must apply to.
+       The returned subobjects stack is the new stack
+       with the subobjects obtained by applying each designator
+       pushed to the top, in order."))
+    (b* (((reterr) nil (irr-initer-subobjects-stack) nil (irr-valid-table))
          ((when (endp designors))
-          (type-case
-           target-type
-           :array (if (or (type-case target-type.of :function)
-                          (type-case target-type.of :void))
-                      (retmsg$ "The result of applying
-                                 the empty designator list
-                                 to type ~x0 is ~x1."
-                               (type-fix target-type)
-                               target-type.of)
-                    (retok nil target-type.of nil (valid-table-fix table)))
-           :otherwise (retok nil (type-unknown) nil (valid-table-fix table))))
-         ((erp new-designor target-type types table)
-          (valid-designor (car designors) target-type table ienv))
-         ((when (endp (cdr designors)))
-          (retok (list new-designor) target-type types table))
-         ((erp new-designors target-type more-types table)
-          (valid-designor-list (cdr designors) target-type table ienv))
-         ((unless (mbt (and (not (type-case target-type :function))
-                            (not (type-case target-type :void)))))
-          (prog2$ (impossible) (retmsg$ ""))))
+          (retok nil
+                 (initer-subobjects-stack-fix subobjects-stack)
+                 nil
+                 (valid-table-fix table)))
+         ((erp new-designor subobjects-stack types table)
+          (valid-designor
+            (car designors) target-type subobjects-stack table ienv))
+         (new-target-type (subobjects-stack-peek-type subobjects-stack))
+         ((erp new-designors subobjects-stack more-types table)
+          (valid-designor-list
+            (cdr designors) new-target-type subobjects-stack table ienv)))
       (retok (cons new-designor new-designors)
-             target-type
+             subobjects-stack
              (set::union types more-types)
              table))
-    :measure (designor-list-count designors)
-
-    ///
-
-    (defret valid-designor-list.new-target-type-not-function
-      (implies (not erp)
-               (not (equal (type-kind new-target-type)
-                           :function)))
-      :hints
-      (("Goal" :expand (valid-designor-list designors target-type table ienv))))
-
-    (defret valid-designor-list.new-target-type-not-void
-      (implies (not erp)
-               (not (equal (type-kind new-target-type)
-                           :void)))
-      :hints
-      (("Goal" :expand (valid-designor-list designors target-type table ienv)))))
+    :measure (acl2::two-nats-measure (designor-list-count designors) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4627,7 +5022,7 @@
              ident
              types
              table))
-    :measure (declor-count declor))
+    :measure (acl2::two-nats-measure (declor-count declor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4662,7 +5057,7 @@
        :some (b* (((erp new-declor type ident types table)
                    (valid-declor declor?.val nil type table ienv)))
                (retok new-declor type ident types table))))
-    :measure (declor-option-count declor?))
+    :measure (acl2::two-nats-measure (declor-option-count declor?) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4968,7 +5363,7 @@
                 ident
                 types
                 table))))
-    :measure (dirdeclor-count dirdeclor))
+    :measure (acl2::two-nats-measure (dirdeclor-count dirdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5003,7 +5398,7 @@
              type
              types
              table))
-    :measure (absdeclor-count absdeclor))
+    :measure (acl2::two-nats-measure (absdeclor-count absdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5031,7 +5426,7 @@
        absdeclor?
        :none (retok nil (type-fix type) nil (valid-table-fix table))
        :some (valid-absdeclor absdeclor?.val type table ienv)))
-    :measure (absdeclor-option-count absdeclor?))
+    :measure (acl2::two-nats-measure (absdeclor-option-count absdeclor?) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5179,7 +5574,7 @@
                 table))
        :dummy-base
        (prog2$ (impossible) (retmsg$ ""))))
-    :measure (dirabsdeclor-count dirabsdeclor))
+    :measure (acl2::two-nats-measure (dirabsdeclor-count dirabsdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5207,7 +5602,7 @@
        dirabsdeclor?
        :none (retok nil (type-fix type) nil (valid-table-fix table))
        :some (valid-dirabsdeclor dirabsdeclor?.val type table ienv)))
-    :measure (dirabsdeclor-option-count dirabsdeclor?))
+    :measure (acl2::two-nats-measure (dirabsdeclor-option-count dirabsdeclor?) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5296,7 +5691,7 @@
              type
              (set::union types more-types)
              table))
-    :measure (param-declon-count paramdecl))
+    :measure (acl2::two-nats-measure (param-declon-count paramdecl) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5328,7 +5723,7 @@
              (cons type types)
              (set::union return-types0 return-types1)
              table))
-    :measure (param-declon-list-count paramdecls))
+    :measure (acl2::two-nats-measure (param-declon-list-count paramdecls) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5397,7 +5792,7 @@
               (valid-table-fix table))
        :ambig
        (prog2$ (impossible) (retmsg$ ""))))
-    :measure (param-declor-count paramdeclor)
+    :measure (acl2::two-nats-measure (param-declor-count paramdeclor) 0)
 
     ///
 
@@ -5447,7 +5842,7 @@
              type
              (set::union types more-types)
              table))
-    :measure (tyname-count tyname))
+    :measure (acl2::two-nats-measure (tyname-count tyname) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5491,7 +5886,7 @@
              type-struni-members
              types
              table))
-    :measure (struni-spec-count struni-spec))
+    :measure (acl2::two-nats-measure (struni-spec-count struni-spec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5591,7 +5986,7 @@
               nil
               nil
               (valid-table-fix table))))
-    :measure (struct-declon-count structdeclon)
+    :measure (acl2::two-nats-measure (struct-declon-count structdeclon) 0)
 
     ///
 
@@ -5640,7 +6035,7 @@
              (append type-struni-members more-type-struni-members)
              (set::union types more-types)
              table))
-    :measure (struct-declon-list-count structdeclons))
+    :measure (acl2::two-nats-measure (struct-declon-list-count structdeclons) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5721,7 +6116,7 @@
               :type new-type)
              (set::union types more-types)
              table))
-    :measure (struct-declor-count structdeclor))
+    :measure (acl2::two-nats-measure (struct-declor-count structdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5766,7 +6161,7 @@
              (cons type-struni-member type-struni-members)
              (set::union types more-types)
              table))
-    :measure (struct-declor-list-count structdeclors))
+    :measure (acl2::two-nats-measure (struct-declor-list-count structdeclors) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5807,7 +6202,7 @@
                              :final-comma enumspec.final-comma)
              types
              table))
-    :measure (enum-spec-count enumspec))
+    :measure (acl2::two-nats-measure (enum-spec-count enumspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5848,7 +6243,7 @@
           (retmsg$ "The value of the numerator ~x0 has type ~x1."
                    (enumer-fix enumer) type?)))
       (retok (make-enumer :name enumer.name :value? new-value?) types table))
-    :measure (enumer-count enumer))
+    :measure (acl2::two-nats-measure (enumer-count enumer) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5873,7 +6268,7 @@
          ((erp new-enumers more-types table)
           (valid-enumer-list (cdr enumers) table ienv)))
       (retok (cons new-enumer new-enumers) (set::union types more-types) table))
-    :measure (enumer-list-count enumers))
+    :measure (acl2::two-nats-measure (enumer-list-count enumers) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5906,7 +6301,7 @@
       (retok (make-statassert :test new-test :message statassert.message)
              types
              table))
-    :measure (statassert-count statassert))
+    :measure (acl2::two-nats-measure (statassert-count statassert) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6190,7 +6585,7 @@
              (set::union types more-types)
              table))
     :no-function nil
-    :measure (init-declor-count initdeclor))
+    :measure (acl2::two-nats-measure (init-declor-count initdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6221,7 +6616,7 @@
       (retok (cons new-initdeclor new-initdeclors)
              (set::union types more-types)
              table))
-    :measure (init-declor-list-count initdeclors))
+    :measure (acl2::two-nats-measure (init-declor-list-count initdeclors) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6270,7 +6665,7 @@
        (b* (((erp new-statassert types table)
              (valid-statassert declon.statassert table ienv)))
          (retok (declon-statassert new-statassert) types table))))
-    :measure (declon-count declon))
+    :measure (acl2::two-nats-measure (declon-count declon) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6294,7 +6689,7 @@
          ((erp new-declons more-types table)
           (valid-declon-list (cdr declons) table ienv)))
       (retok (cons new-declon new-declons) (set::union types more-types) table))
-    :measure (declon-list-count declons))
+    :measure (acl2::two-nats-measure (declon-list-count declons) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6342,7 +6737,7 @@
                 table))
        :default
        (retok (label-default) nil (valid-table-fix table))))
-    :measure (label-count label))
+    :measure (acl2::two-nats-measure (label-count label) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6635,7 +7030,7 @@
                 table))
        :asm
        (retok (stmt-asm stmt.stmt) nil nil (valid-table-fix table))))
-    :measure (stmt-count stmt))
+    :measure (acl2::two-nats-measure (stmt-count stmt) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6679,7 +7074,7 @@
              types
              last-expr-type?
              table))
-    :measure (comp-stmt-count cstmt))
+    :measure (acl2::two-nats-measure (comp-stmt-count cstmt) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6726,7 +7121,7 @@
                       last-expr-type?
                       table))
        :ambig (prog2$ (impossible) (retmsg$ ""))))
-    :measure (block-item-count item))
+    :measure (acl2::two-nats-measure (block-item-count item) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6763,13 +7158,23 @@
              (set::union types more-types)
              last-expr-type?
              table))
-    :measure (block-item-list-count items))
+    :measure (acl2::two-nats-measure (block-item-list-count items) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  :ruler-extenders :all
+
   :verify-guards nil ; done below
 
-  :prepwork ((local (in-theory (enable acons))))
+  :prepwork
+  ((local (in-theory (enable acons)))
+
+   ;; Necessary for termination proof.
+   (defrulel expr-count-min-when-complit-linear
+     (implies (expr-case expr :complit)
+              (<= 4 (expr-count expr)))
+     :rule-classes :linear
+     :expand ((expr-count expr))))
 
   ///
 
@@ -7038,9 +7443,13 @@
     ;; These hints only enable VALID-DECL-SPEC-LIST
     ;; in the cases involving that function.
     ;; Without this, the proof seems to hang, or at least take a very long time.
-    :hints (("Goal" :in-theory (disable valid-decl-spec-list))
-            (and (acl2::occur-lst '(acl2::flag-is 'valid-decl-spec-list) clause)
-                 '(:in-theory (enable valid-decl-spec-list))))))
+    :hints
+    (("Goal" :in-theory (disable valid-decl-spec-list))
+     (cond ((acl2::occur-lst '(acl2::flag-is 'valid-decl-spec-list) clause)
+            '(:in-theory (enable valid-decl-spec-list)))
+           ((acl2::occur-lst '(acl2::flag-is 'valid-initer) clause)
+            '(:expand ((valid-initer initer ctx lifetime table ienv steps))))
+           (t nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

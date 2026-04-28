@@ -92,7 +92,7 @@
     (cons (if (and (not (first bools))
                    (let ((arg (first args)))
                      (and (myquotep arg)
-                          (consp (unquote arg)) ; checks for a fairly long list
+                          (consp (unquote arg)) ; checks for a fairly long list ; todo: allow elision-spec to contain a number indicating the max size (not length) item to print
                           (<= 100 (len (unquote arg))))))
               :elided
             (first args))
