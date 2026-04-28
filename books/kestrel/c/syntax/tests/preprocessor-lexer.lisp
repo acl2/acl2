@@ -907,10 +907,10 @@
 (test-lex
  plex-character-constant
  "\\aA'"
- :more-inputs ((cprefix-locase-u) (pos 1 0))
+ :more-inputs ((eprefix-locase-u) (pos 1 0))
  :cond (equal ast
               (plexeme-char
-               (cconst (cprefix-locase-u)
+               (cconst (eprefix-locase-u)
                        (list (c-char-escape (escape-simple (simple-escape-a)))
                              (c-char-char (char-code #\A)))))))
 
@@ -1255,9 +1255,16 @@
 (test-lex-lexeme
  "U'\\n'" ; lexer sees just one \
  :cond (equal ast (plexeme-char
-                   (cconst (cprefix-upcase-u)
+                   (cconst (eprefix-upcase-u)
                            (list (c-char-escape
                                   (escape-simple (simple-escape-n))))))))
+
+(test-lex-lexeme
+ "u8'a'"
+ :cond (equal ast (plexeme-char
+                   (cconst (eprefix-locase-u8)
+                           (list (c-char-char (char-code #\a))))))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 ; string literals
 
@@ -1545,6 +1552,11 @@
 (test-lex-lexeme
  ":: "
  :cond (equal ast (plexeme-punctuator ":")))
+
+(test-lex-lexeme
+ ":: "
+ :cond (equal ast (plexeme-punctuator "::"))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-lex-lexeme
  "; "

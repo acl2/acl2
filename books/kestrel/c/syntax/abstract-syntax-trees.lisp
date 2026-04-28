@@ -839,32 +839,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum cprefix
-  :short "Fixtype of prefixes of character constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the @('L'), @('u'), and @('U') prefixes
-     in @('character-constant') in the ABNF grammar."))
-  (:upcase-l ())
-  (:locase-u ())
-  (:upcase-u ())
-  :pred cprefixp
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption cprefix-option
-  cprefix
-  :short "Fixtype of optional prefixes of character constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Prefixes of character constants are defined in @(tsee cprefix)."))
-  :pred cprefix-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deftagsum c-char
   :short "Fixtype of characters and escape sequences
           usable in character constants."
@@ -904,8 +878,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('character-constant') in the ABNF grammar."))
-  ((prefix? cprefix-option)
+    "This corresponds to @('character-constant') in the ABNF grammar.
+     In C17, the @('u8') prefix is not used."))
+  ((prefix? eprefix-option)
    (cchars c-char-list))
   :pred cconstp
   :layout :fulltree)

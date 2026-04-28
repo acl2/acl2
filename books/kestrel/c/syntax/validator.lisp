@@ -822,7 +822,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-c-char ((cchar c-char-p) (prefix? cprefix-optionp) (ienv ienvp))
+(define valid-c-char ((cchar c-char-p) (prefix? eprefix-optionp) (ienv ienvp))
   :returns (mv (erp maybe-msgp) (code natp))
   :short "Validate a character of a character constant."
   :long
@@ -872,14 +872,14 @@
                   (retmsg$ "The character with code ~x0 ~
                             exceed the maximum ~x1 allowed for ~
                             a character constant with prefix ~x2."
-                           cchar.code max (cprefix-option-fix prefix?)))
+                           cchar.code max (eprefix-option-fix prefix?)))
                  (t (retok cchar.code)))
      :escape (valid-escape cchar.escape max))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-c-char-list ((cchars c-char-listp)
-                           (prefix? cprefix-optionp)
+                           (prefix? eprefix-optionp)
                            (ienv ienvp))
   :returns (mv (erp maybe-msgp) (codes nat-listp))
   :short "Validate a list of characters of a character constant."
