@@ -831,7 +831,7 @@
           (b* (((pok< tree-id) (parse-identifier rest)))
             (mv (abnf::make-tree-nonleaf
                  :rulename? (abnf::rulename "dim")
-                 :branches (list (list tree-dollar tree-id)))
+                 :branches (list (list tree-dollar) (list tree-id)))
                 input)))
          ;; Try decimal
          ((mv tree-dec rest) (parse-decimal input))
@@ -848,7 +848,11 @@
          ((pok< tree-close) (abnf::parse-ichars ")" input)))
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "dim")
-           :branches (list (list tree-open tree-ws1 tree-da tree-ws2 tree-close)))
+           :branches (list (list tree-open)
+                           (list tree-ws1)
+                           (list tree-da)
+                           (list tree-ws2)
+                           (list tree-close)))
           input))
     :measure (two-nats-measure (len input) 1))
 
@@ -887,7 +891,7 @@
          ((mv more-trees input3) (parse-*-ws-dim input2)))
       (mv (cons (abnf::make-tree-nonleaf
                  :rulename? nil
-                 :branches (list (list tree-ws tree-dim)))
+                 :branches (list (list tree-ws) (list tree-dim)))
                 more-trees)
           input3))
     :measure (two-nats-measure (len input) 2))
@@ -940,7 +944,7 @@
                 (mv (reserrf-push tree-id) (nat-list-fix input))))
             (mv (abnf::make-tree-nonleaf
                  :rulename? (abnf::rulename "shape")
-                 :branches (list (list tree-at tree-id)))
+                 :branches (list (list tree-at) (list tree-id)))
                 input2)))
          ;; Try dim
          ((mv tree-dim input1) (parse-dim input))
@@ -966,7 +970,11 @@
                 (mv (reserrf-push tree-close) (nat-list-fix input))))
             (mv (abnf::make-tree-nonleaf
                  :rulename? (abnf::rulename "shape")
-                 :branches (list (list tree-open tree-ws1 tree-sp tree-ws2 tree-close)))
+                 :branches (list (list tree-open)
+                                 (list tree-ws1)
+                                 (list tree-sp)
+                                 (list tree-ws2)
+                                 (list tree-close)))
                 input5)))
          ;; Try "[" ws *( ws ispace ) ws "]"
          ((mv tree-open input1) (abnf::parse-ichars "[" input))
@@ -984,9 +992,11 @@
           (mv (reserrf-push tree-close) (nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "shape")
-           :branches (list (list tree-open tree-ws1)
+           :branches (list (list tree-open)
+                           (list tree-ws1)
                            trees-exts
-                           (list tree-ws2 tree-close)))
+                           (list tree-ws2)
+                           (list tree-close)))
           input5))
     :measure (two-nats-measure (len input) 1))
 
@@ -1053,7 +1063,7 @@
          ((mv more input3) (parse-*-ws-shape input2)))
       (mv (cons (abnf::make-tree-nonleaf
                  :rulename? nil
-                 :branches (list (list tree-ws tree-shape)))
+                 :branches (list (list tree-ws) (list tree-shape)))
                 more)
           input3))
     :measure (two-nats-measure (len input) 4))
@@ -1070,7 +1080,7 @@
          ((mv more input3) (parse-*-ws-ispace input2)))
       (mv (cons (abnf::make-tree-nonleaf
                  :rulename? nil
-                 :branches (list (list tree-ws tree-ext)))
+                 :branches (list (list tree-ws) (list tree-ext)))
                 more)
           input3))
     :measure (two-nats-measure (len input) 3))
