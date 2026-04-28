@@ -225,8 +225,8 @@
                            (array-renam (omap::update*
                                          maps.2nd
                                          (string-string-map-fix array-renam))))
-                        (array-type-renamep type1.type
-                                            type2.type
+                        (array-type-renamep type1.body
+                                            type2.body
                                             dim-renam
                                             shape-renam
                                             atom-renam
@@ -244,8 +244,8 @@
                    (shape-renam (omap::update*
                                  maps.2nd
                                  (string-string-map-fix shape-renam))))
-                (array-type-renamep type1.type
-                                    type2.type
+                (array-type-renamep type1.body
+                                    type2.body
                                     dim-renam
                                     shape-renam
                                     atom-renam
@@ -263,8 +263,8 @@
                          (shape-renam (omap::update*
                                        maps.2nd
                                        (string-string-map-fix shape-renam))))
-                      (array-type-renamep type1.type
-                                          type2.type
+                      (array-type-renamep type1.body
+                                          type2.body
                                           dim-renam
                                           shape-renam
                                           atom-renam

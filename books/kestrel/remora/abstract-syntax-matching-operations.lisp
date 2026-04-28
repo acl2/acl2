@@ -89,7 +89,7 @@
           if successful."
   (if (atom-type-case type :forall)
       (make-typevarlist+arraytype :vars (atom-type-forall->params type)
-                                  :type (atom-type-forall->type type))
+                                  :type (atom-type-forall->body type))
     (reserr nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -101,7 +101,7 @@
           if successful."
   (if (atom-type-case type :pi)
       (make-ispacevarlist+arraytype :vars (atom-type-pi->params type)
-                                    :type (atom-type-pi->type type))
+                                    :type (atom-type-pi->body type))
     (reserr nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,5 +113,5 @@
           if successful."
   (if (atom-type-case type :sigma)
       (make-ispacevarlist+arraytype :vars (atom-type-sigma->params type)
-                                    :type (atom-type-sigma->type type))
+                                    :type (atom-type-sigma->body type))
     (reserr nil)))

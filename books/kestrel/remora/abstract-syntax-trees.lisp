@@ -341,11 +341,11 @@
     (:fun ((in array-type-list)
            (out array-type)))
     (:forall ((params type-var-list)
-              (type array-type)))
+              (body array-type)))
     (:pi ((params ispace-var-list)
-          (type array-type)))
+          (body array-type)))
     (:sigma ((params ispace-var-list)
-             (type array-type)))
+             (body array-type)))
     :pred atom-typep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

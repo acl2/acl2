@@ -748,12 +748,12 @@
      (b* (((unless (no-duplicatesp-equal (type-var-list->name atom.params)))
            (reserr nil))
           ((ok type) (check-expr atom.body senv)))
-       (make-atom-type-forall :params atom.params :type type))
+       (make-atom-type-forall :params atom.params :body type))
      :ispace-abs
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name atom.params)))
            (reserr nil))
           ((ok type) (check-expr atom.body senv)))
-       (make-atom-type-pi :params atom.params :type type))
+       (make-atom-type-pi :params atom.params :body type))
      :box
      (b* (((unless (set::subset (ispace-list-free-ispace-vars atom.ispaces)
                                 (senv->ispace-vars senv)))
