@@ -16,11 +16,16 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "misc/total-order" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "tools/rulesets" :dir :system))
+
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration :induction-depth 10 :tau t :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -166,6 +171,7 @@
   (defruled alistp-when-mapp
     (implies (mapp x)
              (alistp x))
+    :enable alistp
     :rule-classes (:rewrite :forward-chaining)))
 
 ; This breaks the omap abstraction,
@@ -517,7 +523,7 @@
            (cond ((emptyp map) (mv key val))
                  ((<< (mv-nth 0 (head map)) key) (head map))
                  (t (mv key val))))
-    :enable (update head tail))
+    :enable (update head tail mfix mapp emptyp))
 
   (defruled head-key-of-update
     (equal (mv-nth 0 (head (update key val map)))
@@ -1506,7 +1512,8 @@
                     (or (<= (fix c) 0)
                         (and (not (emptyp map))
                              (>= (size (tail map))
-                                 (1- c)))))))
+                                 (1- c))))))
+    :enable fix)
 
   (defruled unfold-gt-size-const
     (implies (syntaxp (quotep c))
@@ -1515,6 +1522,7 @@
                         (and (not (emptyp map))
                              (> (size (tail map))
                                 (1- c))))))
+    :enable fix
     :use lemma
     :prep-lemmas
     ((defrule lemma
@@ -1523,7 +1531,8 @@
                          (> (size (tail map))
                             (1- c))))
                 (> (size map) c))
-       :rule-classes nil)))
+       :rule-classes nil
+       :enable fix)))
 
   (defrule equal-of-omap-size-and-0
     (equal (equal (size map) 0)
@@ -1632,7 +1641,9 @@
      will be in the resulting omap.
      This is consistent with the shadowing of alists."))
   (cond ((endp alist) nil)
-        (t (update (caar alist) (cdar alist) (from-alist (cdr alist))))))
+        (t (update (caar alist) (cdar alist) (from-alist (cdr alist)))))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
