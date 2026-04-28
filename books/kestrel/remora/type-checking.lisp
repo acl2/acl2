@@ -65,26 +65,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var+type-list-to-map ((vars var+type-listp))
-  :returns (map string-arraytype-mapp)
-  :short "Turn a list of variables with types into a map."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We go through the variables,
-     and put them into the map, with the associated types.
-     If there are duplicate variables, the leftmost ones prevail.
-     We should always call this function on
-     lists of sorte variables without duplilcate names;
-     perhaps we could have and verify a guard for that."))
-  (b* (((when (endp vars)) nil)
-       ((var+type var) (car vars))
-       (map (var+type-list-to-map (cdr vars))))
-    (omap::update var.var var.type map))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define base-type-of-base-value ((bval base-valuep))
   :returns (btype base-typep)
   :short "Base type of a base value."
