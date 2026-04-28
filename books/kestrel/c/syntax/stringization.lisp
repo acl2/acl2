@@ -191,6 +191,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stringize-eprefix ((prefix eprefixp))
+  :returns (schars s-char-listp)
+  :short "Stringize an encoding prefix."
+  (eprefix-case prefix
+                :locase-u8 (stringize-achars (list #\u #\8))
+                :locase-u (stringize-achar #\u)
+                :upcase-u (stringize-achar #\U)
+                :upcase-l (stringize-achar #\L)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stringize-eprefix-option ((prefix? eprefix-optionp))
+  :returns (schars s-char-listp)
+  :short "Stringize an optional encoding prefix."
+  (eprefix-option-case prefix?
+                       :some (stringize-eprefix prefix?.val)
+                       :none nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stringize-c-char ((cchar c-char-p))
   :returns (schars s-char-listp)
   :short "Stringize a character or escape sequence in character constants."
@@ -276,26 +296,6 @@
   (cond ((endp schars) nil)
         (t (append (stringize-s-char (car schars))
                    (stringize-s-char-list (cdr schars))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stringize-eprefix ((prefix eprefixp))
-  :returns (schars s-char-listp)
-  :short "Stringize an encoding prefix."
-  (eprefix-case prefix
-                :locase-u8 (stringize-achars (list #\u #\8))
-                :locase-u (stringize-achar #\u)
-                :upcase-u (stringize-achar #\U)
-                :upcase-l (stringize-achar #\L)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stringize-eprefix-option ((prefix? eprefix-optionp))
-  :returns (schars s-char-listp)
-  :short "Stringize an optional encoding prefix."
-  (eprefix-option-case prefix?
-                       :some (stringize-eprefix prefix?.val)
-                       :none nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
