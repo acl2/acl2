@@ -799,6 +799,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum eprefix
+  :short "Fixtype of encoding prefixes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('encoding-prefix') in the ABNF grammar."))
+  (:locase-u8 ())
+  (:locase-u ())
+  (:upcase-u ())
+  (:upcase-l ())
+  :pred eprefixp
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption eprefix-option
+  eprefix
+  :short "Fixtype of optional encoding prefixes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Encoding prefixes are defined in @(tsee eprefix)."))
+  :pred eprefix-optionp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist eprefix-option-list
+  :short "Fixtype of lists of optional encoding prefixes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Optional encoding prefixes are defined in @(tsee eprefix-option)."))
+  :elt-type eprefix-option
+  :true-listp t
+  :elementp-of-nil t
+  :pred eprefix-option-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum cprefix
+  :short "Fixtype of prefixes of character constants."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the @('L'), @('u'), and @('U') prefixes
+     in @('character-constant') in the ABNF grammar."))
+  (:upcase-l ())
+  (:locase-u ())
+  (:upcase-u ())
+  :pred cprefixp
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption cprefix-option
+  cprefix
+  :short "Fixtype of optional prefixes of character constants."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Prefixes of character constants are defined in @(tsee cprefix)."))
+  :pred cprefix-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum c-char
   :short "Fixtype of characters and escape sequences
           usable in character constants."
@@ -830,32 +896,6 @@
   :true-listp t
   :elementp-of-nil nil
   :pred c-char-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum cprefix
-  :short "Fixtype of prefixes of character constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the @('L'), @('u'), and @('U') prefixes
-     in @('character-constant') in the ABNF grammar."))
-  (:upcase-l ())
-  (:locase-u ())
-  (:upcase-u ())
-  :pred cprefixp
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption cprefix-option
-  cprefix
-  :short "Fixtype of optional prefixes of character constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Prefixes of character constants are defined in @(tsee cprefix)."))
-  :pred cprefix-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -937,46 +977,6 @@
              (true-listp x))
     :induct t
     :enable s-char-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum eprefix
-  :short "Fixtype of encoding prefixes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This corresponds to @('encoding-prexif') in the ABNF grammar."))
-  (:locase-u8 ())
-  (:locase-u ())
-  (:upcase-u ())
-  (:upcase-l ())
-  :pred eprefixp
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption eprefix-option
-  eprefix
-  :short "Fixtype of optional encoding prefixes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Encoding prefixes are defined in @(tsee eprefix)."))
-  :pred eprefix-optionp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist eprefix-option-list
-  :short "Fixtype of lists of optional encoding prefixes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Optional encoding prefixes are defined in @(tsee eprefix-option)."))
-  :elt-type eprefix-option
-  :true-listp t
-  :elementp-of-nil t
-  :pred eprefix-option-listp
-  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
