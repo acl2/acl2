@@ -11,7 +11,10 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-derived-fixtypes")
+(include-book "abstract-syntax-structural-operations")
 (include-book "abstract-syntax-constructors")
+
+(local (include-book "std/lists/no-duplicatesp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -148,16 +151,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define senv-add-vars+types ((vars+types var+type-listp) (senv senvp))
+  :guard (no-duplicatesp-equal (var+type-list->var vars+types))
   :returns (new-senv senvp)
   :short "Add zero or more variables with types to the static environment."
   :long
   (xdoc::topstring
    (xdoc::p
     "This repeatedly calls @(tsee senv-add-var).
-     If the given list of variables with types have duplicate names,
-     the rightmost one prevails.
-     This should be called with lists of distinctly named variables;
-     we may add a guard to that effect."))
+     The guard ensures that the order of the list does not matter."))
   (b* (((when (endp vars+types)) (senv-fix senv))
        ((var+type var+type) (car vars+types))
        (senv (senv-add-var+type var+type.var var+type.type senv)))
