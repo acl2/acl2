@@ -1703,11 +1703,11 @@
                        hit-counts tries state)))))))
 
  ;; The main entry point of the Axe Prover's main mutual recursion
- ;; tries to prove the disjunction of LITERAL-NODENUMS-OR-QUOTEPS
- ;; returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state) where result is :proved, :failed, or :timed-out
- ;; Can split into cases and/or call STP (ffixme which should we do first?)
- ;;ffixme this could gather all the failed cases and return corresponding calls to prove-clause for the user to copy and paste to work on manually - currently this stops as soon as one case fails..
- ;;when should we try to separate the vars?  i think destructor elimination can enable separation...
+ ;; Tries to prove the disjunction of LITERAL-NODENUMS-OR-QUOTEPS.
+ ;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state) where result is :proved, :failed, or :timed-out.
+ ;; Can split into cases and/or call STP (TTODO: which should we do first?)
+ ;; TTODO: this could gather all the failed cases and return corresponding calls to prove-clause for the user to copy and paste to work on manually - currently this stops as soon as one case fails..
+ ;; TODO: when should we try to separate the vars?  i think destructor elimination can enable separation...
  ;;upon failure, prints the failed case (sometimes?)
  ;; Does not change any existing DAG nodes if prover-depth > 0 (TODO check that).
  (defund prove-disjunction-with-axe-prover (literal-nodenums-or-quoteps
@@ -1751,6 +1751,15 @@
           ((when provedp)
            (prog2$ (cw "! Proved case ~s0 (one literal was a non-nil constant!)~%" case-designator)
                    (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)))
+          ;; Now extract any additional disjuncts from the literals (todo: combine this with handle-constant-disjuncts?):
+          ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           (get-disjuncts-from-nodes literal-nodenums
+                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                     nil print))
+          ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
+          ((when provedp)
+           (and print (cw "! Proved case ~s0 (one literal had a non-nil constant disjunct!)~%" case-designator))
+           (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
           ;; First try to prove the clause as a single case.  This may do some work even if it doesn't prove the clause.
           ;; Tuple elim (and substitution) may change the set of variables.
           ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
@@ -2140,8 +2149,7 @@
 ;; Returns (mv erp provedp state).  Attempts to prove the clause (a disjunction
 ;; of terms) with the Axe Prover.
 (defun prove-clause-with-axe-prover (clause name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
-  (declare (xargs :stobjs state
-                  :guard (and (pseudo-term-listp clause)
+  (declare (xargs :guard (and (pseudo-term-listp clause)
                               (symbolp name)
                               (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)
@@ -2149,8 +2157,8 @@
                               (interpreted-function-alistp interpreted-function-alist)
                               (print-levelp print)
                               (axe-prover-optionsp options))
-;                  :mode :program ;todo
-                  :verify-guards nil ;todo ;first verify-guards for MAKE-TERMS-INTO-DAG-ARRAY
+                  :stobjs state
+                  :verify-guards nil ;todo ;first verify-guards for prove-disjunction-with-axe-prover
                   ))
   (b* ((- (cw "(Proving clause with Axe prover:~%"))
        ((mv erp literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
