@@ -646,7 +646,14 @@
               (if members?
                   (mv nil (cdr members?))
                 (mv t nil)))
-    :untagged (mv nil tag/members.members)))
+    :untagged (mv nil tag/members.members))
+
+  ///
+  (more-returns
+   (members true-listp
+            :rule-classes :type-prescription
+            :hints (("Goal" :use type-struni-member-listp-of-type-struni-tag/members->members.members
+                            :in-theory (disable type-struni-member-listp-of-type-struni-tag/members->members.members))))))
 
 (define type-struni-tag/members->lookup
   ((tag/members type-struni-tag/members-p)
@@ -2305,6 +2312,54 @@
       :pointer ienv.pointer-bytes
       :function nil
       :unknown nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines contributes-named-members-p/any-named-members-p
+  (define contributes-named-members-p ((member type-struni-member-p))
+    :returns (yes/no booleanp)
+    :short "Recognizes named members and anonymous structs/unions which
+            contribute named members."
+    (b* (((type-struni-member member) member)
+         ((when member.name?)
+          t))
+      (type-case
+        member.type
+        :struct (type-struni-tag/members-case
+                  member.type.tag/members
+                  :tagged nil
+                  :untagged (any-named-members-p member.type.tag/members.members))
+        :union (type-struni-tag/members-case
+                 member.type.tag/members
+                 :tagged nil
+                 :untagged (any-named-members-p member.type.tag/members.members))
+        :otherwise nil))
+    :measure (type-struni-member-count member))
+
+  (define any-named-members-p ((members type-struni-member-listp))
+    :returns (yes/no booleanp)
+    :short "Check whether any members in the list contribute named members."
+    (and (not (endp members))
+         (or (contributes-named-members-p (first members))
+             (any-named-members-p (rest members))))
+    :measure (type-struni-member-list-count members))
+
+  ///
+  (fty::deffixequiv-mutual contributes-named-members-p/any-named-members-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define members-filter-contributers ((members type-struni-member-listp))
+  :returns (new-members type-struni-member-listp)
+  :parents (contributes-named-members-p)
+  :short "Filter out members which do not contribute any named members to the
+          struct/union."
+  (cond ((endp members)
+         nil)
+        ((contributes-named-members-p (first members))
+         (cons (type-struni-member-fix (first members))
+               (members-filter-contributers (rest members))))
+        (t (members-filter-contributers (rest members)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
