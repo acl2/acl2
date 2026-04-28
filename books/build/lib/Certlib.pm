@@ -839,11 +839,6 @@ sub src_deps {
 		    print STDERR "Bad path in (ld \"$srcname\""
 			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
 		}
-		if (! $ldp) {
-		    print STDERR "Warning: LD event in book context in $fname:\n";
-		    print_event(*STDERR, $event);
-		    print STDERR "\n";
-		}
 	    } elsif ($type eq ifdef_define_event) {
 		my (undef, $negate, $var, $localp) = @$event;
 		my $val = $negate ? "" : "1";

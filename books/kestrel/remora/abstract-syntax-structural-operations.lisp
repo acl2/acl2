@@ -49,77 +49,70 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist kind-list-arrayp (x)
-  :guard (kind-listp x)
-  :short "Check if all the kinds in a list are @(':array')."
-  (kind-case x :array))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist kind-list-atomp (x)
-  :guard (kind-listp x)
-  :short "Check if all the kinds in a list are @(':atom')."
-  (kind-case x :atom))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection kinded-var-list->var ((x kinded-var-listp))
+(std::defprojection var+type-list->var ((x var+type-listp))
   :returns (strings string-listp)
-  :short "Lift @(tsee kinded-var->var) to lists."
-  (kinded-var->var x))
+  :short "Lift @(tsee var+type->var) to lists."
+  (var+type->var x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection kinded-var-list->kind ((x kinded-var-listp))
-  :returns (kinds kind-listp)
-  :short "Lift @(tsee kinded-var->kind) to lists."
-  (kinded-var->kind x))
+(std::defprojection var+type-list->type ((x var+type-listp))
+  :returns (types array-type-listp)
+  :short "Lift @(tsee var+type->type) to lists."
+  (var+type->type x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection typed-var-list->var ((x typed-var-listp))
-  :returns (strings string-listp)
-  :short "Lift @(tsee typed-var->var) to lists."
-  (typed-var->var x))
+(std::defprojection atomtype+shape-list->type ((x atomtype+shape-listp))
+  :returns (types atom-type-listp)
+  :short "Lift @(tsee atomtype+shape->type) to lists."
+  (atomtype+shape->type x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection typed-var-list->type ((x typed-var-listp))
-  :returns (types type-listp)
-  :short "Lift @(tsee typed-var->type) to lists."
-  (typed-var->type x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection type+shape-list->type ((x type+shape-listp))
-  :returns (types type-listp)
-  :short "Lift @(tsee type+shape->type) to lists."
-  (type+shape->type x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection type+shape-list->shape ((x type+shape-listp))
+(std::defprojection atomtype+shape-list->shape ((x atomtype+shape-listp))
   :returns (ispaces shape-listp)
-  :short "Lift @(tsee type+shape->shape) to lists."
-  (type+shape->shape x))
+  :short "Lift @(tsee atomtype+shape->shape) to lists."
+  (atomtype+shape->shape x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-param->name ((param ispace-paramp))
+(define ispace-var->name ((var ispace-varp))
   :returns (name stringp)
-  :short "Name of an ispace parameter."
+  :short "Name of an ispace variable."
   :long
   (xdoc::topstring
    (xdoc::p
     "Both summands have a string field,
      which is the name of the variable."))
-  (ispace-param-case param
-                     :dim param.name
-                     :shape param.name))
+  (ispace-var-case var
+                   :dim var.name
+                   :shape var.name))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection ispace-var-list->name ((x ispace-var-listp))
+  :returns (names string-listp)
+  :short "Lift @(tsee ispace-var->name) to lists."
+  (ispace-var->name x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection ispace-param-list->name ((x ispace-param-listp))
+(define type-var->name ((var type-varp))
+  :returns (name stringp)
+  :short "Name of a type variable."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Both summands have a string field,
+     which is the name of the variable."))
+  (type-var-case var
+                 :atom var.name
+                 :array var.name))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type-var-list->name ((x type-var-listp))
   :returns (names string-listp)
-  :short "Lift @(tsee ispace-param->name) to lists."
-  (ispace-param->name x))
+  :short "Lift @(tsee type-var->name) to lists."
+  (type-var->name x))
