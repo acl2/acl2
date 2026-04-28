@@ -548,9 +548,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; this works, because the assumptions are processed using the known-booleans stored in the state
+;; this works (without calling STP), because the assumptions are processed using the known-booleans stored in the state
 (deftest
-  (defthm-axe-basic prover-basic-clause-processor-test-1
+  (defthm-axe-basic new-test-1
     (implies (and (unsigned-byte-p 3 x)
                   (unsigned-byte-p 4 y))
              (equal (unsigned-byte-p 3 x)
