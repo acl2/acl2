@@ -547,10 +547,11 @@
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a constant expression."
     (b* (((gin gin) gin)
+         ((const-expr cexpr) cexpr)
          ((mv new-expr (gout gout-expr))
-          (simpadd0-expr (const-expr->expr cexpr) gin))
+          (simpadd0-expr cexpr.expr gin))
          (gin (gin-update gin gout-expr)))
-      (mv (const-expr new-expr)
+      (mv (make-const-expr :expr new-expr :info cexpr.info)
           (gout-no-thm gin)))
     :measure (const-expr-count cexpr))
 
