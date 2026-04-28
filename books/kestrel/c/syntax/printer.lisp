@@ -1308,41 +1308,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-cprefix ((cprefix cprefixp) (pstate pristatep))
-  :returns (new-pstate pristatep)
-  :short "Print a character constant prefix."
-  (cprefix-case
-   cprefix
-   :upcase-l (print-astring "L" pstate)
-   :locase-u (print-astring "u" pstate)
-   :upcase-u (print-astring "U" pstate))
-  :hooks (:fix)
-
-  ///
-
-  (defret-same-dialect print-cprefix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-cprefix-option ((cprefix? cprefix-optionp) (pstate pristatep))
-  :returns (new-pstate pristatep)
-  :short "Print an optional character constant prefix."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If there is no prefix, we print nothing."))
-  (cprefix-option-case
-   cprefix?
-   :some (print-cprefix cprefix?.val pstate)
-   :none (pristate-fix pstate))
-  :hooks (:fix)
-
-  ///
-
-  (defret-same-dialect print-cprefix-option))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define print-cconst ((cconst cconstp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a character constant."
@@ -1351,7 +1316,7 @@
    (xdoc::p
     "We ensure that there is at least one character or escape sequence."))
   (b* (((cconst cconst) cconst)
-       (pstate (print-cprefix-option cconst.prefix? pstate))
+       (pstate (print-eprefix-option cconst.prefix? pstate))
        (pstate (print-astring "'" pstate))
        ((unless cconst.cchars)
         (raise "Misusage error: ~

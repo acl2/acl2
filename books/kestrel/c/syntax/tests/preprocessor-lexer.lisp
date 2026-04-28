@@ -907,10 +907,10 @@
 (test-lex
  plex-character-constant
  "\\aA'"
- :more-inputs ((cprefix-locase-u) (pos 1 0))
+ :more-inputs ((eprefix-locase-u) (pos 1 0))
  :cond (equal ast
               (plexeme-char
-               (cconst (cprefix-locase-u)
+               (cconst (eprefix-locase-u)
                        (list (c-char-escape (escape-simple (simple-escape-a)))
                              (c-char-char (char-code #\A)))))))
 
@@ -1255,7 +1255,7 @@
 (test-lex-lexeme
  "U'\\n'" ; lexer sees just one \
  :cond (equal ast (plexeme-char
-                   (cconst (cprefix-upcase-u)
+                   (cconst (eprefix-upcase-u)
                            (list (c-char-escape
                                   (escape-simple (simple-escape-n))))))))
 

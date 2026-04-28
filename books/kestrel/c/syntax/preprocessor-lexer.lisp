@@ -1153,7 +1153,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plex-character-constant ((cprefix? cprefix-optionp)
+(define plex-character-constant ((eprefix? eprefix-optionp)
                                  (first-pos positionp)
                                  (ppstate ppstatep))
   :returns (mv erp
@@ -1174,7 +1174,7 @@
         (reterr-msg :where closing-squote-pos
                     :expected "one or more characters and escape sequences"
                     :found "none")))
-    (retok (plexeme-char (cconst cprefix? cchars)) span ppstate))
+    (retok (plexeme-char (cconst eprefix? cchars)) span ppstate))
   :no-function nil
 
   ///
@@ -1744,7 +1744,7 @@
                  (make-span :start pos :end pos)
                  ppstate))
          ((utf8-= char2 (char-code #\')) ; u '
-          (plex-character-constant (cprefix-locase-u) pos ppstate))
+          (plex-character-constant (eprefix-locase-u) pos ppstate))
          ((utf8-= char2 (char-code #\")) ; u "
           (plex-string-literal (eprefix-locase-u) pos ppstate))
          ((utf8-= char2 (char-code #\8)) ; u 8
@@ -1772,7 +1772,7 @@
                  (make-span :start pos :end pos)
                  ppstate))
          ((utf8-= char2 (char-code #\')) ; U '
-          (plex-character-constant (cprefix-upcase-u) pos ppstate))
+          (plex-character-constant (eprefix-upcase-u) pos ppstate))
          ((utf8-= char2 (char-code #\")) ; U "
           (plex-string-literal (eprefix-upcase-u) pos ppstate))
          (t ; U other
@@ -1787,7 +1787,7 @@
                  (make-span :start pos :end pos)
                  ppstate))
          ((utf8-= char2 (char-code #\')) ; L '
-          (plex-character-constant (cprefix-upcase-l) pos ppstate))
+          (plex-character-constant (eprefix-upcase-l) pos ppstate))
          ((utf8-= char2 (char-code #\")) ; L "
           (plex-string-literal (eprefix-upcase-l) pos ppstate))
          (t ; L other

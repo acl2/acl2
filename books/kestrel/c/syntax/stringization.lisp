@@ -240,30 +240,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stringize-cprefix ((prefix cprefixp))
-  :returns (schars s-char-listp)
-  :short "Stringize a prefix of character constants."
-  (stringize-achar (cprefix-case prefix
-                                 :upcase-l #\L
-                                 :locase-u #\u
-                                 :upcase-u #\U)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stringize-cprefix-option ((prefix? cprefix-optionp))
-  :returns (schars s-char-listp)
-  :short "Stringize an optional prefix of character constants."
-  (cprefix-option-case prefix?
-                       :some (stringize-cprefix prefix?.val)
-                       :none nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define stringize-cconst ((cconst cconstp))
   :returns (schars s-char-listp)
   :short "Stringize a character constant."
   (b* (((cconst cconst) cconst))
-    (append (stringize-cprefix-option cconst.prefix?)
+    (append (stringize-eprefix-option cconst.prefix?)
             (stringize-achar #\')
             (stringize-c-char-list cconst.cchars)
             (stringize-achar #\'))))
