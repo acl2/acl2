@@ -157,7 +157,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This repeatedly calls @(tsee senv-add-var).
+    "This repeatedly calls @(tsee senv-add-var+type).
      The guard ensures that the order of the list does not matter."))
   (b* (((when (endp vars+types)) (senv-fix senv))
        ((var+type var+type) (car vars+types))
