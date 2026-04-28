@@ -39,6 +39,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult dim-result
+  :short "Fixtype of dimensions and errors."
+  :ok dim
+  :pred dim-resultp
+  :prepwork ((local (in-theory (enable dim-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult dim-list-result
+  :short "Fixtype of (i) lists of dimensions and (ii) errors."
+  :ok dim-list
+  :pred dim-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult shape-result
   :short "Fixtype of shapes and error."
   :ok shape
@@ -50,6 +65,59 @@
   :short "Fixtype of (i) lists of shapes and (ii) error."
   :ok shape-list
   :pred shape-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-result
+  :short "Fixtype of ispaces and errors."
+  :ok ispace
+  :pred ispace-resultp
+  :prepwork ((local (in-theory (enable ispace-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-list-result
+  :short "Fixtype of (i) lists of ispaces and (ii) errors."
+  :ok ispace-list
+  :pred ispace-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-var-result
+  :short "Fixtype of ispace variables and errors."
+  :ok ispace-var
+  :pred ispace-var-resultp
+  :prepwork ((local (in-theory (enable ispace-var-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-var-list-result
+  :short "Fixtype of (i) lists of ispace variables and (ii) errors."
+  :ok ispace-var-list
+  :pred ispace-var-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult base-type-result
+  :short "Fixtype of base types and errors."
+  :ok base-type
+  :pred base-type-resultp
+  :prepwork ((local (in-theory (enable base-type-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-var-result
+  :short "Fixtype of type variables and errors."
+  :ok type-var
+  :pred type-var-resultp
+  :prepwork ((local (in-theory (enable type-var-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-var-list-result
+  :short "Fixtype of (i) lists of type variables and (ii) errors."
+  :ok type-var-list
+  :pred type-var-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -78,6 +146,29 @@
   :short "Fixtype of (i) lists of array types and (ii) errors."
   :ok array-type-list
   :pred array-type-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-result
+  :short "Fixtype of types and errors."
+  :ok type
+  :pred type-resultp
+  :prepwork ((local (in-theory (enable type-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-list-result
+  :short "Fixtype of (i) lists of types and (ii) errors."
+  :ok type-list
+  :pred type-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult base-value-result
+  :short "Fixtype of base values and errors."
+  :ok base-value
+  :pred base-value-resultp
+  :prepwork ((local (in-theory (enable base-value-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

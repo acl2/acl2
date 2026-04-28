@@ -39,7 +39,10 @@
                     string-string-map
                     string-string-mapp
                     string-string-map-fix
+                    fty::ok
+                    fty::okf
                     fty::patbind-ok
+                    fty::patbind-okf
                     fty::reserr
                     fty::reserrf
                     fty::reserrf-push
