@@ -1145,6 +1145,8 @@
      ;;bvif-trim-constant-arg2
 
      bvuminus-of-bvuminus
+     equal-of-bvuminus-and-constant
+     equal-of-constant-and-bvuminus
 
      bvlt-of-bvif-arg2-safe
      bvlt-of-bvif-arg3-safe
