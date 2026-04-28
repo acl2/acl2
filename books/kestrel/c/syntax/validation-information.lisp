@@ -170,7 +170,9 @@
      "  1,"
      "};")
    (xdoc::p
-    "At the sub-initializer @('1'), the stack, if known, would be:")
+    "At the sub-initializer @('1')
+     (which initializes the subobject represented by designation @('[5].y')),
+     the stack, if known, would be:")
    (xdoc::codeblock
      "(initer-subobjects-stack-known"
      " (list (initer-subobjects-struct"
