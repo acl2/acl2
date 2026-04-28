@@ -49,17 +49,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection typed-var-list->var ((x typed-var-listp))
+(std::defprojection var+type-list->var ((x var+type-listp))
   :returns (strings string-listp)
-  :short "Lift @(tsee typed-var->var) to lists."
-  (typed-var->var x))
+  :short "Lift @(tsee var+type->var) to lists."
+  (var+type->var x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection typed-var-list->type ((x typed-var-listp))
+(std::defprojection var+type-list->type ((x var+type-listp))
   :returns (types array-type-listp)
-  :short "Lift @(tsee typed-var->type) to lists."
-  (typed-var->type x))
+  :short "Lift @(tsee var+type->type) to lists."
+  (var+type->type x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

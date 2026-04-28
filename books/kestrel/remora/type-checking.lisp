@@ -74,9 +74,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define typed-var-list-to-map ((tvars typed-var-listp))
+(define var+type-list-to-map ((vars var+type-listp))
   :returns (map string-arraytype-mapp)
-  :short "Turn a list of typed variables into a map."
+  :short "Turn a list of variables with types into a map."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -86,10 +86,10 @@
      We should always call this function on
      lists of sorte variables without duplilcate names;
      perhaps we could have and verify a guard for that."))
-  (b* (((when (endp tvars)) nil)
-       ((typed-var tvar) (car tvars))
-       (map (typed-var-list-to-map (cdr tvars))))
-    (omap::update tvar.var tvar.type map))
+  (b* (((when (endp vars)) nil)
+       ((var+type var) (car vars))
+       (map (var+type-list-to-map (cdr vars))))
+    (omap::update var.var var.type map))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -739,10 +739,10 @@
      :base
      (atom-type-base (base-type-of-base-value atom.value))
      :term-abs
-     (b* (((unless (no-duplicatesp-equal (typed-var-list->var atom.vars)))
+     (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.params)))
            (reserr nil))
-          (types (typed-var-list->type atom.vars))
-          (typeenv-addition (typed-var-list-to-map atom.vars))
+          (types (var+type-list->type atom.params))
+          (typeenv-addition (var+type-list-to-map atom.params))
           (typeenv (omap::update* typeenv-addition
                                   (string-arraytype-map-fix typeenv)))
           ((ok type) (check-expr atom.body typeenv)))
