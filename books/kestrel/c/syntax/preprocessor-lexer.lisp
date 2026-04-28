@@ -2091,6 +2091,13 @@
           (retok (plexeme-punctuator ":")
                  (make-span :start pos :end pos)
                  ppstate))
+         ((and (utf8-= char2 (char-code #\:)) ; : :
+               (c::standard-case
+                (c::dialect->std (ienv->dialect (ppstate->ienv ppstate)))
+                :c23))
+          (retok (plexeme-punctuator "::")
+                 (make-span :start pos :end pos2)
+                 ppstate))
          ((utf8-= char2 (char-code #\>)) ; : >
           (retok (plexeme-punctuator ":>")
                  (make-span :start pos :end pos2)
