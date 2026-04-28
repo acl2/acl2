@@ -64,7 +64,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dim-term-from-var/const/other (dim)
-  :short "Create a dimension term from
+  :short "Construct a dimension term from
           a string denoting a variable,
           or a natural number denoting a constant,
           or some other term that is left unchanged."
@@ -101,7 +101,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define shape-term-from-var/dim/other (dim/shape)
-  :short "Create a shape term from
+  :short "Construct a shape term from
           a string denoting a dimension or shape variable,
           or a natural number denoting a dimension,
           or a dimension addition term,
@@ -116,8 +116,7 @@
              (#\$ `(shape-dims (list (dim-var ,name))))
              (#\@ `(shape-var ,name)))))
         ((natp dim/shape) `(shape-dims (list (dim-const ,dim/shape))))
-        ((and (consp dim/shape)
-              (eq (car dim/shape) 'dim+))
+        ((and (consp dim/shape) (eq (car dim/shape) 'dim+))
          `(shape-dims (list ,dim/shape)))
         (t dim/shape)))
 
@@ -138,151 +137,165 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tvar (name)
-  :short "Construct a type variable from its name."
+(define atom-type-term-from-var/base/other (type)
+  :short "Construct an atom type term from
+          a string denoting an atom type variable,
+          or a keyword denoting a base type,
+          or some other term that is left unchanged."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is just a slight abbreviation for @(tsee type-var)."))
-  `(type-var ,name))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-var/base/other (type)
-  :short "Coerce a string or keyword
-          to a type variable or base type,
-          leaving other categories of types unchanged."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The base types are identified via certain keywords.")
-   (xdoc::p
-    "This is used to implement type constructors
-     that can take, besides proper types,
-     also strings and keywords,
-     coercing the latter to types."))
-  (cond ((stringp type) `(tvar ,type))
-        ((eq type :bool) '(type-base (base-type-bool)))
-        ((eq type :int) '(type-base (base-type-int)))
-        ((eq type :float) '(type-base (base-type-float)))
+    "The string denoting a variable must start with @('&')."))
+  (cond ((stringp type)
+         (b* (((mv & name) (var-string-split type '(#\&))))
+           `(atom-type-var ,name)))
+        ((eq type :bool) '(atom-type-base (base-type-bool)))
+        ((eq type :int) '(atom-type-base (base-type-int)))
+        ((eq type :float) '(atom-type-base (base-type-float)))
         (t type)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define type-list-var/base/other ((types true-listp))
-  :returns (coerced-types true-listp)
-  :short "Lift @(tsee type-var/base/other) to lists."
+(define atom-type-terms-from-vars/bases/others ((types true-listp))
+  :short "Lift @(tsee atom-type-term-from-var/base/other) to lists."
   (cond ((endp types) nil)
-        (t (cons (type-var/base/other (car types))
-                 (type-list-var/base/other (cdr types))))))
+        (t (cons (atom-type-term-from-var/base/other (car types))
+                 (atom-type-terms-from-vars/bases/others (cdr types))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tarray (type dim/shape)
-  :short "Construct an array type from the inner type and the shape."
+(defmacro+ t[] (type dim/shape)
+  :short "Construct an array type term from the element type and the shape."
   :long
   (xdoc::topstring
    (xdoc::p
     "Strings, natural numbers, and base type keywords
      are auto-coerced to ispaces and types."))
-  `(type-array ,(type-var/base/other type)
-               ,(shape-term-from-var/dim/other dim/shape)))
+  `(array-type-array ,(atom-type-term-from-var/base/other type)
+                     ,(shape-term-from-var/dim/other dim/shape)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define array-type-term-from-var/atom/other (type)
+  :short "Construct an array type term from
+          a string denoting an atom or array type variable,
+          or a keyword denoting a base type,
+          or a function type term,
+          or a universal type term,
+          or a product type term,
+          or a sum type term,
+          or some other term that is left unchanged."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The string denoting a variable must start with @('&') or @('*').")
+   (xdoc::p
+    "An atom type is turned into an array type by adding an empty shape."))
+  (cond ((stringp type)
+         (b* (((mv prefix name) (var-string-split type '(#\& #\*))))
+           (case prefix
+             (#\& `(array-type-array (atom-type-var ,name) (shape)))
+             (#\* `(array-type-var ,name)))))
+        ((eq type :bool) '(array-type-array (atom-type-base (base-type-bool))
+                                            (shape)))
+        ((eq type :int) '(array-type-array (atom-type-base (base-type-int))
+                                           (shape)))
+        ((eq type :float) '(array-type-array (atom-type-base (base-type-float))
+                                             (shape)))
+        ((and (consp type) (eq (car type) 't->))
+         `(array-type-array ,type (shape)))
+        ((and (consp type) (eq (car type) 'tforall))
+         `(array-type-array ,type (shape)))
+        ((and (consp type) (eq (car type) 'tpi))
+         `(array-type-array ,type (shape)))
+        ((and (consp type) (eq (car type) 'tsigma))
+         `(array-type-array ,type (shape)))
+        (t type)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define array-type-terms-from-vars/atoms/others ((types true-listp))
+  :short "Lift @(tsee array-type-term-from-var/atom/other) to lists."
+  (cond ((endp types) nil)
+        (t (cons (array-type-term-from-var/atom/other (car types))
+                 (array-type-terms-from-vars/atoms/others (cdr types))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ t-> (intypes outtype)
-  :short "Construct a function type from the input and output types."
+  :short "Construct a function type term from the input and output types."
   :long
   (xdoc::topstring
    (xdoc::p
     "Strings and base type keywords are auto-coerced to types."))
-  `(type-fun (list ,@(type-list-var/base/other intypes))
-             ,(type-var/base/other outtype)))
+  `(atom-type-fun (list ,@(array-type-terms-from-vars/atoms/others intypes))
+                  ,(array-type-term-from-var/atom/other outtype)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-param-term-from-string ((str stringp))
-  :short "Build an ispace parameter term from a string."
+(define ispace-var-term-from-string ((str stringp))
+  :short "Build an ispace variable term from a string."
   :long
   (xdoc::topstring
    (xdoc::p
     "The string must be a variable name preceded by @('$') or @('@')."))
   (b* (((mv prefix name) (var-string-split str '(#\$ #\@))))
     (case prefix
-      (#\$ `(ispace-param-dim ,name))
-      (#\@ `(ispace-param-shape ,name)))))
+      (#\$ `(ispace-var-dim ,name))
+      (#\@ `(ispace-var-shape ,name)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-param-terms-from-strings ((strs string-listp))
-  :short "Lift @(tsee ispace-param-term-from-string) to lists."
+(define ispace-var-terms-from-strings ((strs string-listp))
+  :short "Lift @(tsee ispace-var-term-from-string) to lists."
   (cond ((endp strs) nil)
-        (t (cons (ispace-param-term-from-string (car strs))
-                 (ispace-param-terms-from-strings (cdr strs))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define bindings-to-kinded-vars ((bindings true-listp))
-  :returns (kinded-vars true-listp)
-  :short "Turn a list of alternating strings and keywords
-          into a list of kinded variables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The strings are the variable names.
-     The keywords designate kinds.
-     The list must have even length,
-     with alternating strings and keywords, starting with a string."))
-  (b* (((when (endp bindings)) nil)
-       (var (car bindings))
-       (kind (case (cadr bindings)
-               (:array '(kind-array))
-               (:atom '(kind-atom))
-               (otherwise (raise "Unknown kind keyword: ~x0."
-                                 (cadr bindings)))))
-       (kvar `(kinded-var ,var ,kind))
-       (kvars (bindings-to-kinded-vars (cddr bindings))))
-    (cons kvar kvars))
-  :no-function nil)
+        (t (cons (ispace-var-term-from-string (car strs))
+                 (ispace-var-terms-from-strings (cdr strs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ tforall (bindings type)
-  :short "Construct a universal type from a list of bindings and a body type."
+(define type-var-term-from-string ((str stringp))
+  :short "Build a type variable term from a string."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The bindings are provided as a parenthesized list of
-     alternating strings and keywords (see @(tsee bindings-to-kinded-vars)).
-     A variable or base type keyword as the body type
-     is auto-coerced to a type."))
-  `(type-forall (list ,@(bindings-to-kinded-vars bindings))
-                ,(type-var/base/other type)))
+    "The string must be a variable name preceded by @('&') or @('*')."))
+  (b* (((mv prefix name) (var-string-split str '(#\& #\*))))
+    (case prefix
+      (#\& `(type-var-atom ,name))
+      (#\* `(type-var-array ,name)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-var-terms-from-strings ((strs string-listp))
+  :short "Lift @(tsee type-var-term-from-string) to lists."
+  (cond ((endp strs) nil)
+        (t (cons (type-var-term-from-string (car strs))
+                 (type-var-terms-from-strings (cdr strs))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ tforall (params type)
+  :short "Construct a universal type from
+          a parenthesized list of variable strings (parameters)
+          and a type term (body)."
+  `(atom-type-forall (list ,@(type-var-terms-from-strings params))
+                     ,(array-type-term-from-var/atom/other type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ tpi (params type)
-  :short "Construct a product type term
-          from a list of parameters and a body type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The parameters are provided as a parenthesized list of variable strings.
-     A variable or base type keyword as the body type
-     is auto-coerced to a type."))
-  `(type-pi (list ,@(ispace-param-terms-from-strings params))
-            ,(type-var/base/other type)))
+  :short "Construct a product type term from
+          a parenthesized list of variable strings (parameters)
+          and a type type (body)."
+  `(atom-type-pi (list ,@(ispace-var-terms-from-strings params))
+                 ,(array-type-term-from-var/atom/other type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ tsigma (params type)
-  :short "Construct a sum type term
-          from a list of parameters and a body type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The parameters are provided as a parenthesized list of variable strings.
-     A variable or base type keyword as the body type
-     is auto-coerced to a type."))
-  `(type-sigma (list ,@(ispace-param-terms-from-strings params))
-               ,(type-var/base/other type)))
+  :short "Construct a sum type term from
+          a parenthesized list of variable strings (parameters)
+          and a type type (body)."
+  `(atom-type-sigma (list ,@(ispace-var-terms-from-strings params))
+                    ,(array-type-term-from-var/atom/other type)))
