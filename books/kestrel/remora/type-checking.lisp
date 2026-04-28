@@ -847,3 +847,17 @@
   (verify-guards check-expr)
 
   (fty::deffixequiv-mutual check-exprs/atoms))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-top-expr ((expr exprp))
+  :returns (type array-type-resultp)
+  :short "Check a top-level expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is defined as a `program' in the ABNF grammar.")
+   (xdoc::p
+    "We check it like any other expression,
+     using the initial static environment."))
+  (check-expr expr (init-senv)))
