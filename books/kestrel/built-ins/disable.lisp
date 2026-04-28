@@ -79,10 +79,16 @@
 ; We also include /=, even though technically it is not a synonym,
 ; but an abbreviation of (NOT (EQUAL ...)),
 ; which we normally want to expose as such.
+; Similarly, we include ATOM even though it is not a "true" synonym,
+; but the negation of a primitive recognizer.
+; Finally, we include NULL, which we might think of as a synonym of (NOT ...),
+; albeit indirectly.
 (defconst *logic-defuns-whitelist-synonyms*
   '(/=
     =
+    atom
     cons-with-hint
+    endp
     eq
     eql
     fast-alist-free
@@ -91,6 +97,7 @@
     hons-equal-lite
     hons-get
     make-fast-alist
+    null
     ))
 
 ;;;;;;;;;;;;;;;;;;;;
