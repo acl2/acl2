@@ -362,7 +362,7 @@
        an atom type for the elements
        and a shape in which the elements are arranged."))
     (:var ((name string)))
-    (:array ((type atom-type)
+    (:array ((elem atom-type)
              (shape shape)))
     :pred array-typep)
 

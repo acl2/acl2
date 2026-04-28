@@ -45,7 +45,7 @@
   :short "Check if an array type is an @(':array') summans,
           returning its elements' atom type and its shape if successful."
   (if (array-type-case type :array)
-      (make-atomtype+shape :type (array-type-array->type type)
+      (make-atomtype+shape :type (array-type-array->elem type)
                            :shape (array-type-array->shape type))
     (reserr nil)))
 

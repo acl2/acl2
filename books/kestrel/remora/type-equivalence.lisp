@@ -312,8 +312,8 @@
            :otherwise nil)
      :array (array-type-case
              type2
-             :array (and (atom-type-renamep type1.type
-                                            type2.type
+             :array (and (atom-type-renamep type1.elem
+                                            type2.elem
                                             dim-renam
                                             shape-renam
                                             atom-renam
