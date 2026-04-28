@@ -375,8 +375,8 @@
        and we return the array type.")
      (xdoc::p
       "For an empty array, there must be a 0 dimension.
-       We form a shape with the dimensions,
-       and we return the array type.")
+       We ensure that the ispace and type variables of the type are in scope.
+       We form a shape with the dimensions, and we return the array type.")
      (xdoc::p
       "A (non-empty) frame is similar to a (non-empty) array,
        but the expressions must have all equivalent array types,
@@ -428,10 +428,13 @@
        which must have an array type of a universal type,
        whose body type is an explicit array type.
        In [arxiv] and [thesis],
-       @($(x\\ k)\\ldots$) corresponds to @'kvars') in our code,
+       @($(x\\ k)\\ldots$) corresponds to @'vars') in our code,
        @($\\tau_u$) corresponds to @('body-atom-type'),
        @($\\iota_u$) corresponds to @('body-type'),
        and @($\\iota_f$) corresponds to @('fun-type').
+       We check that
+       all the free ispace and type variables of the type arguments
+       are in scope.
        We check all the type arguments
        (@($\\tau\\ldots$) in [arxiv] and [thesis]),
        ensuring that their kinds match the ones of
@@ -451,7 +454,9 @@
        @($\\tau_p$) corresponds to @('body-atom-type'),
        @($\\iota_p$) corresponds to @('body-shape'),
        and @($\\iota_f$) corresponds to @('fun-shape').
-       We check all the shape arguments
+       We check that
+       all the free (ispace) variables in the ispace arguments are in scope.
+       We check all the ispace arguments
        (@($\\iota\\ldots$) in [arxiv] and [thesis]),
        ensuring that their sorts match the ones of
        the bound variables in the product type.
@@ -503,7 +508,12 @@
        (make-array-type-array :type type
                               :shape (shape-dims (dim-const-list expr.dims))))
      :array-empty
-     (b* (((unless (member-equal 0 expr.dims)) (reserr nil)))
+     (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+          ((unless (and (set::subset (atom-type-free-ispace-vars expr.type)
+                                     (senv->ispace-vars senv))
+                        (set::subset (atom-type-free-type-vars expr.type)
+                                     (senv->type-vars senv))))
+           (reserr nil)))
        (make-array-type-array :type expr.type
                               :shape (shape-dims (dim-const-list expr.dims))))
      :frame
@@ -521,6 +531,11 @@
                                    array.shape))))
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
+          ((unless (and (set::subset (array-type-free-ispace-vars expr.type)
+                                     (senv->ispace-vars senv))
+                        (set::subset (array-type-free-type-vars expr.type)
+                                     (senv->type-vars senv))))
+           (reserr nil))
           ((ok (atomtype+shape array)) (array-type-match-array expr.type)))
        (make-array-type-array
         :type array.type
@@ -562,6 +577,11 @@
           ((ok body-type+shape) (array-type-match-array body-arr-type))
           (body-atom-type (atomtype+shape->type body-type+shape))
           (body-shape (atomtype+shape->shape body-type+shape))
+          ((unless (and (set::subset (type-list-free-ispace-vars expr.args)
+                                     (senv->ispace-vars senv))
+                        (set::subset (type-list-free-type-vars expr.args)
+                                     (senv->type-vars senv))))
+           (reserr nil))
           ((ok (stringatomtypemap+stringarraytypemap type-maps))
            (check-type-params-and-args vars expr.args))
           (body-atom-type-subst
@@ -582,6 +602,9 @@
           ((ok body-type+shape) (array-type-match-array body-arr-type))
           (body-atom-type (atomtype+shape->type body-type+shape))
           (body-shape (atomtype+shape->shape body-type+shape))
+          ((unless (set::subset (ispace-list-free-ispace-vars expr.args)
+                                (senv->ispace-vars senv)))
+           (reserr nil))
           ((ok (stringdimmap+stringshapemap ispace-maps))
            (check-ispace-params-and-args vars expr.args))
           (body-atom-type-subst
@@ -670,8 +693,9 @@
      (xdoc::p
       "For a term abstraction,
        first we check that there are no duplicate bound variable names.
-       We check all the types of the bound variables,
-       which must all have the array kind.
+       We check that
+       all the ispace and type variables in the types of the parameters
+       are in scope.
        We extend the static environment with the bound variables,
        and we check the body of the abstraction
        in the extended static environment.
@@ -693,8 +717,9 @@
        whose bound variables are the same as the abstraction.")
      (xdoc::p
       "For a boxing atom,
-       the type that is part of its syntax must be a sum type
-       and must be successfully checked to have the atom kind.
+       the free (ispace) variables in the ispaces must be in scope,
+       and the type that is part of its syntax must be a sum type.
+       The free ispace and type variables of the type must be in scope.
        We check that the ispaces in the boxing atom have the same sorts
        as the bound variables of the sum type,
        obtaining a dimension substitution and a shape substitution.
@@ -711,6 +736,11 @@
      (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.params)))
            (reserr nil))
           (types (var+type-list->type atom.params))
+          ((unless (and (set::subset (array-type-list-free-ispace-vars types)
+                                     (senv->ispace-vars senv))
+                        (set::subset (array-type-list-free-type-vars types)
+                                     (senv->type-vars senv))))
+           (reserr nil))
           (senv (senv-add-vars+types atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-atom-type-fun :in types :out type))
@@ -725,8 +755,16 @@
           ((ok type) (check-expr atom.body senv)))
        (make-atom-type-pi :params atom.params :type type))
      :box
-     (b* (((unless (type-case atom.type :atom)) (reserr nil))
+     (b* (((unless (set::subset (ispace-list-free-ispace-vars atom.ispaces)
+                                (senv->ispace-vars senv)))
+           (reserr nil))
+          ((unless (type-case atom.type :atom)) (reserr nil))
           (box-type (type-atom->type atom.type))
+          ((unless (and (set::subset (atom-type-free-ispace-vars box-type)
+                                     (senv->ispace-vars senv))
+                        (set::subset (atom-type-free-type-vars box-type)
+                                     (senv->type-vars senv))))
+           (reserr nil))
           ((ok vars+type) (atom-type-match-sum box-type))
           (vars (ispacevarlist+arraytype->vars vars+type))
           (body-type (ispacevarlist+arraytype->type vars+type))
