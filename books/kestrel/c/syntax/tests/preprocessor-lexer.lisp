@@ -182,12 +182,32 @@
 
 (test-lex
  plex-pp-number
+ "3'4"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-digit (pnumber-digit #\3) t #\4)))
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
+(test-lex
+ plex-pp-number
  ".34"
  :more-inputs (t #\3 (pos 1 2))
  :index 2
  :cond (equal ast
               (plexeme-number
                (pnumber-number-digit (pnumber-dot-digit #\3) nil #\4))))
+
+(test-lex
+ plex-pp-number
+ ".3'4"
+ :more-inputs (t #\3 (pos 1 2))
+ :index 2
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-digit (pnumber-dot-digit #\3) t #\4)))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-lex
  plex-pp-number
@@ -316,12 +336,32 @@
 
 (test-lex
  plex-pp-number
+ "3'a"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit (pnumber-digit #\3) t #\a)))
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
+(test-lex
+ plex-pp-number
  "3a+"
  :more-inputs (nil #\3 (pos 1 1))
  :index 1
  :cond (equal ast
               (plexeme-number
                (pnumber-number-nondigit (pnumber-digit #\3) nil #\a))))
+
+(test-lex
+ plex-pp-number
+ "3'a+"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit (pnumber-digit #\3) t #\a)))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-lex
  plex-pp-number
@@ -351,6 +391,27 @@
                    nil #\b)
                   (sign-minus)))
                 nil #\x))))
+
+(test-lex
+ plex-pp-number
+ "37'abP-.x"
+ :more-inputs (t #\3 (pos 1 1))
+ :index 1
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit
+                (pnumber-number-dot
+                 (pnumber-number-upcase-p-sign
+                  (pnumber-number-nondigit
+                   (pnumber-number-nondigit
+                    (pnumber-number-digit
+                     (pnumber-dot-digit #\3)
+                     nil #\7)
+                    t #\a)
+                   nil #\b)
+                  (sign-minus)))
+                nil #\x)))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
