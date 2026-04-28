@@ -1259,6 +1259,13 @@
                            (list (c-char-escape
                                   (escape-simple (simple-escape-n))))))))
 
+(test-lex-lexeme
+ "u8'a'"
+ :cond (equal ast (plexeme-char
+                   (cconst (eprefix-locase-u8)
+                           (list (c-char-char (char-code #\a))))))
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
 ; string literals
 
 (test-lex-lexeme
@@ -1545,6 +1552,11 @@
 (test-lex-lexeme
  ":: "
  :cond (equal ast (plexeme-punctuator ":")))
+
+(test-lex-lexeme
+ ":: "
+ :cond (equal ast (plexeme-punctuator "::"))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-lex-lexeme
  "; "
