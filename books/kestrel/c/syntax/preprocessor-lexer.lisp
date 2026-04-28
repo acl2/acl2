@@ -1663,7 +1663,7 @@
      an error is returned if lexing fails.")
    (xdoc::p
     "Lexing in the preprocessor is context-dependent
-     [C17:5.1.1.2/1, footnote 7]:
+     [C17:5.1.1.2/1, footnote 7] [C23:5.2.1.2, footnote 4]:
      when expecting a header name,
      a @('\"') or a @('<') are interpreted differently
      (i.e. as starting a header name)
@@ -1675,9 +1675,123 @@
      Thus, this lexing function takes a boolean flag
      indicating whether we are expecting a header name or not.")
    (xdoc::p
-    "This lexing function is similar to @(tsee lex-lexeme),
-     with the necessary differences,
-     including the handling of the context header flag.")
+    "We read the next character.
+     If there is no next character, we return @('nil') for no lexeme,
+     with the span whose start and end positions
+     are both the position just past the end of the file.
+     Otherwise, we do a case analysis on that next character.")
+   (xdoc::ul
+    (xdoc::li
+     "If the next character is white space, we return a white-space lexeme.
+      No other lexeme starts with a white-space character,
+      so this is the only possibility.")
+    (xdoc::li
+     "If the next character is a digit,
+      it must start a preprocessing number;
+      it is the only possibility.")
+    (xdoc::li
+     "If the next character is @('.'),
+      it may start a preprocessing number,
+      or it could be the punctuator @('.'),
+      or it could start the punctuator @('...').
+      So we examine the following characters.
+      If there is none, we have the punctuator @('.').
+      If the following character is a digit,
+      this must start a preprocessing number.
+      If the following character is another @('.'),
+      and there is a further @('.') after it,
+      we have the punctuator @('...').
+      In all other cases, we just have the punctuator @('.'),
+      and we put back the additional character(s) read,
+      since they may be starting a different lexeme.")
+    (xdoc::li
+     "If the next character is a letter,
+      it could start an identifier,
+      but it could also start a character constant or a string literal.
+      Specifically, if the letter is @('u'), @('U'), or @('L'),
+      it could be a prefix of a character constant or string literal.
+      We must try this possibility before trying an identifier,
+      because we always need to lex the longest possible sequence of characters
+      [C17:6.4/4]:
+      if we tried identifiers first,
+      for example
+      we would erroneously lex the character constant @('u\'a\'')
+      as the identifier @('u') followed by
+      the unprefixed character constant @('\'a\'').")
+    (xdoc::li
+     "If the next character is @('u'), and there are no subsequent characters,
+      we lex it as an identifier.
+      If the following character is a single quote,
+      we attempt to lex a character constant with the appropriate prefix;
+      if the following character is a double quote,
+      we attempt to lex a string literal with the appropriate prefix.
+      These are the only two possibilities in these two cases.
+      Strictly speaking,
+      if the lexing of the character constant or string literal fails,
+      we should lex @('u') as an identifier and then continue lexing,
+      but at that point the only possibility would be
+      an unprefixed character constant or string literal,
+      which would fail again; so we can fail sooner without loss.
+      If the character immediately following @('u') is @('8'),
+      then we need to look at the character after that.
+      If there is none, we lex the identifier @('u8').
+      If there is a double quote,
+      then we attempt to lex a string literal with the appropriate prefix,
+      which again is the only possibility,
+      and again we can immediately fail if this fails.
+      If the character after @('u8') is not a double quote,
+      we put back that character and @('8'),
+      and we lex @('u...') as an identifier.
+      Also, if the character after @('u') was not
+      any of the ones mentioned above,
+      we put it back and we lex @('u...') as an identifier.")
+    (xdoc::li
+     "If the next character is @('U') or @('L'),
+      we proceed similarly to the case of @('u'),
+      but things are simpler because there is no @('8') to handle.")
+    (xdoc::li
+     "If the next character is any other letter or an underscore,
+      it must start an identifier.
+      This is the only possibility,
+      since we have already tried
+      a prefixed character constant or string literal.")
+    (xdoc::li
+     "If the next character is a single quote,
+      it must start an unprefixed character constant.")
+    (xdoc::li
+     "If the next character is a double quote,
+      and the @('header?') flag is @('nil'),
+      it must start an unprefixed string literal;
+      if instead the @('header?') flag is @('t'),
+      it must start a header name.")
+    (xdoc::li
+     "If the next character is @('/'),
+      it could start a comment,
+      or the punctuator @('/='),
+      or it could be just the punctuator @('/').
+      We examine the following character.
+      If there is none, we have the punctuator @('/').
+      If the following character is @('*'),
+      it must be a block comment.
+      If the following character is @('/'),
+      it must be a line comment.
+      If the following character is @('='),
+      it must be the punctuator @('/=').
+      If the following character is none of the above,
+      we just have the punctuator @('/').")
+    (xdoc::li
+     "The remaining cases are for punctuators.
+      Some punctuators are prefixes of others,
+      and so we need to first try and lex the longer ones,
+      using code similar to the one for other lexemes explained above.
+      Some punctuators are not prefixes of others,
+      and so they can be immediately decided.")
+    (xdoc::li
+     "If we encounter the @('<') punctuator,
+      and the @('header?') flag is @('nil'),
+      it must be or start a punctuator;
+      if instead the @('header?') flag is @('t'),
+      it must start a header name."))
    (xdoc::p
     "The provenance lists of the identifiers created here is @('nil'),
      because the identifiers are lexed directly from the file,
