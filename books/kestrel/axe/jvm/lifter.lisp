@@ -4851,7 +4851,7 @@
          ))
        ((when erp) (mv erp nil nil nil nil nil nil state))
        (- (and print (progn$ (cw "(state dag after unrolling:~%")
-                             (print-list state-dag)
+                             (print-dag-with-elided-method-info state-dag " ")
                              (cw ")~%"))))
        ;; (- (cw ")~%")) ;matches the open paren printed at the top of this routine?
        )
@@ -4949,9 +4949,15 @@
         ((mv erp exit-dag state)
          (get-exit-dag body-dag loop-pc state-var state))
         ((when erp) (mv erp nil nil nil nil nil nil nil nil nil state))
-        (- (and print (cw "(One rep DAG for loop ~x0:~%~x1)~%" this-loop-number one-rep-dag)))
-        (- (and print (cw "(Exit DAG for loop ~x0:~%~x1)~%" this-loop-number exit-dag)))
-        (- (and print (cw "(Exit test DAG for loop ~x0:~%~x1)~%" this-loop-number termination-test-dag)))
+        (- (and print (cw "(One rep DAG for loop ~x0:~%" this-loop-number)))
+        (- (print-dag-with-elided-method-info one-rep-dag " "))
+        (- (cw ")~%"))
+        (- (and print (cw "(Exit DAG for loop ~x0:~%" this-loop-number )))
+        (- (print-dag-with-elided-method-info exit-dag " "))
+        (- (cw ")~%"))
+        (- (and print (cw "(Exit test DAG for loop ~x0:~%" this-loop-number)))
+        (- (print-dag-with-elided-method-info termination-test-dag " "))
+        (- (cw ")~%"))
         ;; (- (and print (cw "(Options: ~x0)~%" options)))
         (termination-test (dag2term termination-test-dag))
         (continuation-test (negate-term termination-test))
@@ -5115,7 +5121,7 @@
               (- (cw " (Static flag: ~x0)~%" static-flag))
               (- (check-dag-vars (append previous-state-vars other-input-vars) loop-top-state-dag)) ;what is the point of this check?
               (- (and print (progn$ (cw " (Loop top state dag:~%")
-                                    (PRINT-LIST-with-indent loop-top-state-dag "  ")
+                                    (print-dag-with-elided-method-info loop-top-state-dag "  ")
                                     (cw ")~%"))))
               (- (and print (cw " (ifns: ~x0)~%" (strip-cars interpreted-function-alist))))
               (code-hyps (code-hyps loop-pc method-info class-name method-name method-descriptor state-var))
@@ -6089,16 +6095,13 @@
        ;;the run ended because each branch either exited from the stack height, left the code segment, or hit a loop header.
        ;;For each branch that hit a loop header, we need to decompile the loop and splice the result back into the state-dag.
        ;;Then we have to continue running all the branches on which loops were decompiled
-       ;;fixme print the number of branches?
+       ;;todo: print the number of branches?
        (progn$ ;fixme what if there are none of these?
         (cw "(All branches seemed to run without error.)~%")
         (cw "(State DAG after running all branches:~%")
-        (if print (print-list state-dag) (cw ":ELIDED"))
+        (if print (print-dag-with-elided-method-info state-dag "  ") (cw ":ELIDED"))
         (cw ")~%")
         (cw "(Decompiling loop branches~% (segment-call-stack-height: ~x0)~%" segment-call-stack-height)
-        (and print (cw "(state-dag:~%"))
-        (and print (print-list state-dag))
-        (and print (cw "~%)"))
         (mv-let (erp state-dag2 ;details of this?
                  generated-events-acc generated-rules-acc change-flg next-loop-number interpreted-function-alist-alist interpreted-function-alist state)
           (decompile-loop-branches state-dag
@@ -6127,7 +6130,7 @@
                          nil nil nil nil nil state)
                    (progn$ (cw "No nested loops were decompiled (print is ~x0.)~%" print) ;todo: print loop-depth
                            (cw "(state dag:~%")
-                           (if print (print-list state-dag) (cw "elided~%"))
+                           (if print (print-dag-with-elided-method-info state-dag " ") (cw "elided~%"))
                            (cw ")~%")
                            (mv nil
                                state-dag
@@ -6577,7 +6580,7 @@
          state))
        ((when erp) (mv erp nil state))
        (- (and print (progn$ (cw "(Dag before extracting outputs:~%")
-                             (print-list final-state-dag)
+                             (print-dag-with-elided-method-info final-state-dag " ")
                              (cw ")~%"))))
        ;; Extract the term representing the output:
        (return-type (lookup-eq :return-type method-info))
@@ -6616,7 +6619,7 @@
                                    state))
        ((when erp) (mv erp nil state))
        (- (and print (progn$ (cw "(Output DAG:~%")
-                             (print-list output-dag)
+                             (print-dag-with-elided-method-info output-dag " ")
                              (cw ")~%"))))
        (dag-vars (dag-vars-unsorted output-dag)) ; these get sorted below
        ;; TODO: Shouldn't we just add inputs automatically for this new stuff?

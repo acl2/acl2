@@ -742,43 +742,39 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Works for terms or dag-exprs
-(defund elide-make-frame-args (fn args)
-  (declare (xargs :guard t)) ;strengthen?
-  (if (and (eq fn 'jvm::make-frame)
-           (= 6 (len args))
-           ;; for termination:
-           (myquotep (fifth args))
-           (consp (unquote (fifth args)))
-           )
-      (list (first args)
-            (second args)
-            (third args)
-            (fourth args)
-            '':method-info-elided ;; (fifth args)
-            (sixth args))
-    args))
+(defun elide-make-frame-args (args)
+  (declare (xargs :guard (true-listp args)))
+  (list (first args)
+        (second args)
+        (third args)
+        (fourth args)
+        '':method-info-elided ;; (fifth args)
+        (sixth args)))
 
-(defund print-dag-with-elided-method-info-aux (dag first-elementp)
+(defund print-dag-with-elided-method-info-aux (dag first-elementp indent)
   (declare (xargs :guard (and (weak-dagp-aux dag)
-                              (booleanp first-elementp))))
+                              (booleanp first-elementp)
+                              (stringp indent))))
   (if (endp dag)
       nil
     (let* ((entry (first dag))
-           (nodenum (car entry))
-           (expr (cdr entry))
-           (expr (if (or (not (consp expr))
-                         (eq 'quote (ffn-symb expr)))
-                     expr
-                   (let ((fn (ffn-symb expr)))
-                     (cons fn (elide-make-frame-args fn (cdr expr)))))))
-      (progn$ (if (not first-elementp) (cw "~% ") nil)
-              (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
-              (print-dag-with-elided-method-info-aux (rest dag) nil)))))
+           (entry (let ((expr (cdr entry)))
+                    (if (and (consp expr)
+                             (eq 'jvm::make-frame (ffn-symb expr)))
+                        (cons (car entry) ; the nodenum
+                              (cons 'jvm::make-frame (elide-make-frame-args (fargs expr))))
+                      entry))))
+      (progn$ (if first-elementp nil (cw "~% ~s0" indent)) ; indents one space more than the open paren
+              (cw "~F0" entry)
+              (print-dag-with-elided-method-info-aux (rest dag) nil indent)))))
 
-;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
-;; TODO: Generalize to use the elision-spec machinery
-(defund print-dag-with-elided-method-info (dag)
-  (declare (xargs :guard (weak-dagp-aux dag)))
-  (progn$ (cw "(")
-          (print-dag-with-elided-method-info-aux dag t)
-          (cw ")~%")))
+;; Prints the entire dag, including any irrelevant nodes, but elides large method-infos in make-frame calls.
+;; TODO: Generalize to use the elision-spec machinery.
+;; Indent is usually a string consisting of only spaces.
+(defund print-dag-with-elided-method-info (dag indent)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (stringp indent))))
+  (progn$ (cw "~s0(" indent)
+          (print-dag-with-elided-method-info-aux dag t indent)
+          (cw ")") ; recently removed a newline here
+          ))
