@@ -1164,8 +1164,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-character-constant),
-     but it operates on preprocessor states instead of parser states."))
+    "This is called when we expect a character constant,
+     after the opening single quote,
+     and the prefix before that if present,
+     have already been read.
+     So we read zero or more characters and escape sequences,
+     and ensure that there is at least one (according to the grammar).
+     In the process of reading those characters and escape sequences,
+     we read up to the closing single quote (see @(tsee lex-*-c-char)),
+     whose position we use as the ending one of the span we return.
+     The starting position of the span is passed to this function as input."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp cchars closing-squote-pos ppstate) (plex-*-c-char ppstate))
@@ -1205,8 +1213,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-string-literal),
-     but it operates on preprocessor states instead of parser states."))
+    "This is called when we expect a string literal,
+     after the opening double quote,
+     and the prefix before that if present,
+     have already been read.
+     We read zero or more characters and escape sequences.
+     In the process of reading those characters and escape sequences,
+     we read up to the closing double quote (see @(tsee lex-*-s-char)),
+     whose position we use as the ending one of the span we return.
+     The starting position of the span is passed to this function as input."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp schars closing-dquote-pos ppstate) (plex-*-s-char ppstate))
@@ -1239,9 +1254,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-header-name),
-     but it operates on preprocessor states instead of parser states,
-     and it returns a lexeme instead of a header name."))
+    "This is called when we expect a header name.
+     We read the next character, which must be present.
+     Then we read the two kinds of header names,
+     based on whether the next character is greater-than or double quote.
+     If it is neither, lexing fails."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp char first-pos ppstate) (read-pchar ppstate)))
@@ -1300,14 +1317,26 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-block-comment),
-     but it operates on preprocessor states instead of parser states,
-     and it returns the content of the comment as part of the lexeme.")
+    "This is called when we expect a block comment,
+     after we have read the initial @('/*').")
    (xdoc::p
-    "Collecting the content of the comment,
-     i.e. the characters between @('/*') and @('*/') (excluding both),
-     requires some additional code here.
-     Note that @('plex-rest-of-block-comment-after-star') is always called
+    "Following the mutually recursive rules of the grammar,
+     we have two mutually recursive loop functions,
+     which scan through the characters
+     until the end of the comment is reached,
+     or until the end of file is reached
+     (in which case it is an error).
+     In case of success, we return a comment lexeme.
+     The span of the comment is calculated from
+     the first position (of the @('/') in @('/*')),
+     passed to this function,
+     and the last position (of the @('/') in the closing @('*/')),
+     returned by the loop function.")
+   (xdoc::p
+    "We collect the content of the comment,
+     i.e. the characters between @('/*') and @('*/') (excluding both);
+     this content goes into the lexeme.
+     @('plex-rest-of-block-comment-after-star') is always called
      just after a @('*') has been read;
      the addition of that @('*') to the content is deferred
      until it is established that the @('*') is not part of
@@ -1470,15 +1499,21 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-line-comment),
-     but it operates on preprocessor states instead of parser states,
-     and it returns the content of the comment as part of the lexeme.
-     It also excludes the closing new line,
-     leaving it to be lexed separately.")
+    "This is called when we expect a line comment,
+     after reading the initial @('//').")
    (xdoc::p
-    "Collecting the content of the comment,
-     i.e. the characters between @('//') and new line (excluding both),
-     requires some additional code here.")
+    "We read characters in a loop until
+     either we find a new-line character or the end of file.
+     In case of success, we return
+     a lexeme that contains the content of the comment,
+     i.e. the characters between @('//') and new line if present
+     (excluding both).")
+   (xdoc::p
+    "The span is calculated from
+     the position of the first @('/') in the opening @('//'),
+     which is passed to this function,
+     and the position of the closing new-line or end of file,
+     which is returned by the loop function.")
    (xdoc::p
     "When encountering the end of file,
      we succeed and return the line comment,
