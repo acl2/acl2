@@ -627,6 +627,7 @@
        (make-array-type-array
         :elem body-atom-type-subst
         :shape (shape-append (list fun-shape body-shape-subst))))
+     :comb-app (reserr :todo)
      :unbox
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name expr.ispaces)))
            (reserr nil))
@@ -651,8 +652,8 @@
           (body-shape (atomtype+shape->shape arr-type+shape)))
        (make-array-type-array :elem body-atom-type
                               :shape (shape-append (list sum-shape body-shape))))
-     :bracket
-     (reserr :todo))
+     :bracket (reserr :todo)
+     :let (reserr :todo))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -862,14 +863,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-top-expr ((expr exprp))
+(define check-program ((prog progp))
   :returns (type array-type-resultp)
-  :short "Check a top-level expression."
+  :short "Check a program."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is defined as a `program' in the ABNF grammar.")
-   (xdoc::p
-    "We check it like any other expression,
-     using the initial static environment."))
-  (check-expr expr (init-senv)))
+    "We check its expression,
+     using the initial static environment.
+     We return the type if successful."))
+  (check-expr (prog->expr prog) (init-senv)))

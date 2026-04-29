@@ -33,31 +33,36 @@
    (xdoc::p
     "We define fixtypes for abstract syntax trees (ASTs) for typed Remora,
      based on
-     [arxiv] (Figure 1),
      [thesis] (Figure 4.1),
+     [arxiv] (Figure 1),
      [esop] (Figure 6),
      and [impl].
      These ASTs are consistent with the "
     (xdoc::seetopic "grammar" "ABNF grammar of Remora")
-    ".")
+    ", which is derived from [impl].
+     We use the term `ispace' to refer to what [thesis] calls `index';
+     [impl] currently uses the term `extent', but it will use `ispace' soon.
+     The rationale for `ispace' is that it denotes an index space,
+     i.e. a space where indices range;
+     one index over a dimension, zero or more indices over a shape.")
    (xdoc::p
-    "The syntax definitions in [arxiv] and [thesis] are quite aligned,
-     while [esop] has some differences;
-     since [esop] is older, we just consider [arxiv] and [thesis] here.
-     [impl] makes some extensions to [arxiv] and [thesis].
-     The ABNF grammar is derived from [impl].")
+    "These ASTs preserve much of the concrete syntax information,
+     so they include both core and non-core constructs.
+     We plan to define a characterization of core ASTs
+     and a desugaring transformation from all ASTs to core ASTs.
+     The ASTs in [impl] are slightly more abstracted than ours.")
    (xdoc::p
-    "We have started defining the syntax as in [arxiv] and [thesis],
-     but we are in the process of extending it according to [impl].
-     We have started defining just the core syntax, as in [arxiv] and [thesis],
-     but we are in the process of adding non-core constructs as in [impl];
-     we plan to characterize the core subset
-     and to define a desugaring transformation
-     from the full syntax to the core syntax.")
+    "The coverage of our ASTs is almost complete.
+     Still missing are string literals,
+     and multiplications and subtraction of dimensions;
+     we plan to add all of these shortly.
+     We may also need to replace ACL2 rationals (in base values)
+     with a more explicit notion of floating literals.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
-     We may change this if needed."))
+     But we should probably introduce and use
+     a slightly more abstract notion of identifiers."))
   :order-subtopics t
   :default-parent t)
 
@@ -68,13 +73,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Although [arxiv] and [thesis]
-     define ispaces as consisting of dimensions and shapes mixed together,
-     and use sorting rules to ensure ispace well-formedness,
-     we provide separate syntactic definitions of dimensions and shapes,
+    "[thesis] defines ispaces (`indices' there)
+     as consisting of dimensions and shapes ``mixed together'',
+     and uses sorting rules to ensure ispace well-formedness.
+     Instead we provide separate syntactic definitions of dimensions and shapes,
      and avoid sorting rules;
      this is also consistent with [impl].
-     The key point is that [arxiv] and [thesis] have
+     The key point is that [thesis] has
      one form of ispace variables, which may denote dimensions or shapes,
      while our ASTs have two separate formsm, one per sort,
      consistently with the concrete syntax (see ABNF grammar),
@@ -87,6 +92,8 @@
     :short "Fixtype of dimensions."
     :long
     (xdoc::topstring
+     (xdoc::p
+      "This corresponds to @('dim') in the ABNF grammar.")
      (xdoc::p
       "There are
        named variables,
@@ -117,7 +124,7 @@
    (xdoc::p
     "See @(tsee dims) for the reason why
      we define dimensions and shapes separately,
-     as in [impl] but unlike [arxiv] and [thesis]."))
+     as in [impl] but unlike [thesis]."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,14 +134,14 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "This corresponds to @('shape') in the ABNF grammar.")
+     (xdoc::p
       "There are
        named variables,
        dimensions (lifted to be shapes),
        shapes built from zero or more dimensions,
        concatenations of shapes,
        and splicing of dimensions and shapes.")
-     (xdoc::p
-      "The @(':dim') and @(':splice') summands are non-core.")
      (xdoc::p
       "The @(':dim') summand captures the case in which
        a shape is expected
@@ -144,6 +151,7 @@
        it is a convenience construct, not a core construct.
        In contrast, the @(':dims') summand is the core constructor
        for a shape consisting of zero or more dimensions;
+       in [esop] it is written as @($(\\mathtt{S}\\ \\iota\\ldots)$),
        in [arxiv] it is written as @($(\\mathtt{Shp}\\ \\iota\\ldots)$),
        in [thesis] it is written as @($(\\mathtt{shape}\\ \\iota\\ldots)$),
        and in [impl], as defined in the ABNF grammar,
@@ -180,12 +188,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "An ispace (short for `index space') is either a dimension or a shape.
-     The rationale for this terminology is that ispaces
-     (one for dimensions, zero or more for shapes)
-     range over the dimensions and shapes.
-     [arxiv], [thesis], and [esop] use the term `index' for ispace,
-     but [impl] uses the newer term `ispace'."))
+    "This corresponds to @('ispace') in the ABNF grammar."))
   (:dim ((dim dim)))
   (:shape ((shape shape)))
   :pred ispacep)
@@ -199,6 +202,14 @@
   :elementp-of-nil nil
   :pred ispace-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum ispace-list-option
+  :short "Fixtype of optional lists of ispaces."
+  (:some ((val ispace-list)))
+  (:none ())
+  :pred ispace-list-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum ispace-var
@@ -206,13 +217,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('ispace-var') in the ABNF grammar.
-     As in @(tsee dim) and @(tsee shape),
+    "This corresponds to @('ispace-var') in the ABNF grammar.")
+   (xdoc::p
+    "As in @(tsee dim) and @(tsee shape),
      these variables carry their own sort (dimension or shape),
      i.e. they are syntactically distinct.
-     This is different from [arxiv] and [thesis],
+     This is different from [thesis],
      where dimension and shape variables are syntactically the same,
-     and thus they need explcit sorting rules."))
+     and thus explcit sorting rules are needed."))
   (:dim ((name string)))
   (:shape ((name string)))
   :pred ispace-varp)
@@ -241,12 +253,22 @@
     :induct t
     :enable set::mergesort))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum ispace-var-list-option
+  :short "Fixtype of optional lists of ispace variables."
+  (:some ((val ispace-var-list)))
+  (:none ())
+  :pred ispace-var-list-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum base-type
   :short "Fixtype of base types."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('base-type') in the ABNF grammar.")
    (xdoc::p
     "There are types for booleans, integers, and floats."))
   (:bool ())
@@ -261,14 +283,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('type-var') in the ABNF grammar.
-     Similarly to @(tsee ispace-var),
+    "This corresponds to @('type-var') in the ABNF grammar.")
+   (xdoc::p
+    "Similarly to @(tsee ispace-var),
      these variables carry their own kind (atom or array),
      i.e. they are syntactically distinct.
-     This is different from [arxiv] and [thesis],
+     This is different from [thesis],
      where atom type variables and array type variables
      are syntactically the same,
-     and thus they need explicit kinding rules."))
+     and thus explicit kinding rules are needed."))
   (:atom ((name string)))
   (:array ((name string)))
   :pred type-varp)
@@ -297,6 +320,14 @@
     :induct t
     :enable set::mergesort))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum type-var-list-option
+  :short "Fixtype of optional lists of type variables."
+  (:some ((val type-var-list)))
+  (:none ())
+  :pred type-var-list-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes atom/array-types
@@ -304,22 +335,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Analogously to how our definition of ispaces
-     enforces well-sortnedness syntactically,
-     we define types to enforce well-kindedness syntactically as well.
-     We separate atom and array types syntactically,
-     but the two are mutually recursive.
-     As with ishapes, the key point is that
-     type variables are tagged by their kind,
-     namely @('&') for atoms and @('*') for arrays in concrete syntax
-     (see ABNF grammar).")
-   (xdoc::p
-    "In contrast, [arxiv] and [thesis] give a flat definition of types.
-     [impl] has both a flat definition and a partitioned one:
-     the flat one, called `type expressions', is produced by the parser,
-     and it includes source position annotations;
-     the latter is perhaps used for further processing,
-     but we have not investigated that yet."))
+    "These correspond to @('type-exp') in the ABNF grammar.
+     Although we have partitioned types
+     into atom-kinded and array-kinded types here,
+     we plan to define a single sum type for all types,
+     because atom-kinded types can be always auto-lifted
+     to zero-rank (i.e. scalar) array-kinded types.
+     We we still maintain their syntactic separation though,
+     which boils down to tagging variables, as in @(tsee type-var)."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -396,10 +419,24 @@
   :elementp-of-nil nil
   :pred atom-type-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption array-type-option
+  array-type
+  :short "Fixtype of optional array types."
+  :pred array-type-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum type
   :short "Fixtype of types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('type-expr') in the ABNF gramamr,
+     like @(tsee atom-type) and @(tsee array-type), but with an extra layer.
+     However, this extra layer will be eliminated:
+     see discussion in @(tsee atom/array-types)."))
   (:atom ((type atom-type)))
   (:array ((type array-type)))
   :pred typep)
@@ -413,12 +450,22 @@
   :elementp-of-nil nil
   :pred type-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum type-list-option
+  :short "Fixtype of optional lists of types."
+  (:some ((val type-list)))
+  (:none ())
+  :pred type-list-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod var+type
   :short "Fixtype of variables with types."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('pat') in the ABNF grammar.")
    (xdoc::p
     "These are pairs consisting of a variable name and an associated array type.
      The type is an array one because variables are expressions, not atoms.
@@ -443,9 +490,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[arxiv] and [thesis] do not pin down the base values,
+    "This corresponds to @('base-val') in the ABNF grammar.")
+   (xdoc::p
+    "[thesis] does not pin down the base values,
      leaving them abstract,
-     but [impl] currently has booleans, integers, and floats.
+     but [impl] currently has booleans, integers, and floats,
+     as does the ABNF grammar.
      For integers, [impl] use Haskell's @('Int'),
      which consists of fixed-precision integers with at least 30 bits.
      For floats, [impl] uses Haskell's @('Float'),
@@ -453,7 +503,7 @@
      ``desired'' (according to the Haskell documentation)
      to comply with the IEEE standard.
      For now, we use ACL2 arbitrary-precision integers and rationals;
-     we will refine them later."))
+     but we will refine them."))
   (:bool ((value bool)))
   (:int ((value int)))
   (:float ((value acl2::rational)))
@@ -461,16 +511,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes exprs/atoms
-  :short "Fixtypes of expressions, atoms, and lists thereof."
+(fty::deftypes exprs/atoms/binds
+  :short "Fixtypes of expressions, atoms, bindings, and lists thereof."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr
-    :parents (abstract-syntax-trees exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms/binds)
     :short "Fixtype of expressions."
     :long
     (xdoc::topstring
+     (xdoc::p
+      "This corresponds to @('exp') in the ABNF grammar.")
      (xdoc::p
       "There are
        named variables,
@@ -483,8 +535,10 @@
        (called `term applications' in the Remora publications),
        applications of expressions to types,
        applications of expressions to ispaces,
+       combined applications of expressions to types/ispaces/expressions,
        unboxing expressions,
-       and bracketed expressions.
+       bracketed expressions,
+       and @('let') expressions.
        An unboxing expression
        binds zero or more variables to ispaces,
        binds a variable to the boxed expression,
@@ -514,18 +568,24 @@
     (:type-app ((fun expr)
                 (args type-list)))
     (:ispace-app ((fun expr)
-                 (args ispace-list)))
+                  (args ispace-list)))
+    (:comb-app ((fun expr)
+                (targs type-list-option)
+                (iargs ispace-list-option)
+                (args expr-list)))
     (:unbox ((ispaces ispace-var-list)
              (var string)
              (target expr)
              (body expr)))
     (:bracket ((exprs expr-list)))
+    (:let ((binds bind-list)
+           (body expr)))
     :pred exprp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist expr-list
-    :parents (abstract-syntax-trees exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms/binds)
     :short "Fixtype of lists of expressions."
     :elt-type expr
     :true-listp t
@@ -535,10 +595,12 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum atom
-    :parents (abstract-syntax-trees exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms/binds)
     :short "Fixtype of atoms."
     :long
     (xdoc::topstring
+     (xdoc::p
+      "This corresponds to @('atom') in the ABNF grammar.")
      (xdoc::p
       "There are
        base values,
@@ -549,11 +611,7 @@
        Since the type in a boxing construct must be a sum type,
        we could enforce this syntactically,
        but we follow [arxiv], [thesis], and [impl],
-       which all use a generic type.")
-     (xdoc::p
-      "[arxiv] uses @($v$) as the body of type and ispace abstraction,
-       while [thesis] uses @($e$), same as term abstraction.
-       We use the latter, as that seems the intent."))
+       which all use a generic type."))
     (:base ((value base-value)))
     (:term-abs ((params var+type-list)
                 (body expr)))
@@ -569,9 +627,78 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist atom-list
-    :parents (abstract-syntax-trees exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms/binds)
     :short "Fixtype of lists of atoms."
     :elt-type atom
     :true-listp t
     :elementp-of-nil nil
-    :pred atom-listp))
+    :pred atom-listp)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum bind
+    :parents (abstract-syntax-trees exprs/atoms/binds)
+    :short "Fixtype of bindings."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This corresponds to @('bind') in the ABNF grammar.")
+     (xdoc::p
+      "These are used in @('let') expressions.
+       There are
+       ispace bindings,
+       type bindings,
+       value bindings,
+       function bindings,
+       type function bindings
+       ispace function bindings, and
+       combined function bindings."))
+    (:ispace ((var ispace-var)
+              (ispace ispace)))
+    (:type ((var type-var)
+            (type type)))
+    (:val ((var string)
+           (type? array-type-option)
+           (expr expr)))
+    (:fun ((var string)
+           (params var+type-list)
+           (type? array-type-option)
+           (expr expr)))
+    (:tfun ((var string)
+            (params type-var-list)
+            (type? array-type-option)
+            (expr expr)))
+    (:ifun ((var string)
+            (params ispace-var-list)
+            (type? array-type-option)
+            (expr expr)))
+    (:cfun ((var string)
+            (tparams? type-var-list-option)
+            (iparams? ispace-var-list-option)
+            (params var+type-list)
+            (type array-type)
+            (expr expr)))
+    :pred bindp)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist bind-list
+    :parents (abstract-syntax-trees exprs/atoms/binds)
+    :short "Fixtype of lists of atoms."
+    :elt-type bind
+    :true-listp t
+    :elementp-of-nil nil
+    :pred bind-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod prog
+  :short "Fixtypr of programs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('program') in the ABNF grammar.")
+   (xdoc::p
+    "Currently a program is just a (top-level) expression."))
+  ((expr expr))
+  :pred progp)

@@ -22,6 +22,7 @@
                                        check-type
                                        function
                                        functionp
+                                       prog
                                        sort
                                        termp
                                        type
