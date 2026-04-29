@@ -755,7 +755,7 @@
      atom
      :base
      (type-base (base-type-of-base-value atom.value))
-     :term-abs
+     :lambda
      (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.params)))
            (reserr nil))
           (types (var+type-list->type atom.params))
@@ -767,12 +767,12 @@
           (senv (senv-add-vars+types atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-type-fun :in types :out type))
-     :type-abs
+     :tlambda
      (b* (((unless (no-duplicatesp-equal (type-var-list->name atom.params)))
            (reserr nil))
           ((ok type) (check-expr atom.body senv)))
        (make-type-forall :params atom.params :body type))
-     :ispace-abs
+     :ilambda
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name atom.params)))
            (reserr nil))
           ((ok type) (check-expr atom.body senv)))

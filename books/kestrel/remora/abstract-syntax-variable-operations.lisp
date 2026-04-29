@@ -394,7 +394,7 @@
           (bind-list-free-ispace-vars expr.binds)
           (set::difference (expr-free-ispace-vars expr.body)
                            (bind-list-bound-ispace-vars expr.binds))))
-   (atom :ispace-abs
+   (atom :ilambda
          (set::difference (expr-free-ispace-vars atom.body)
                           (set::mergesort atom.params)))))
 
@@ -423,5 +423,5 @@
          (set::union (bind-list-free-type-vars expr.binds)
                      (set::difference (expr-free-type-vars expr.body)
                                       (bind-list-bound-type-vars expr.binds))))
-   (atom :type-abs (set::difference (expr-free-type-vars atom.body)
-                                    (set::mergesort atom.params)))))
+   (atom :tlambda (set::difference (expr-free-type-vars atom.body)
+                                   (set::mergesort atom.params)))))
