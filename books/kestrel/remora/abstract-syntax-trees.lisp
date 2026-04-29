@@ -199,6 +199,14 @@
   :elementp-of-nil nil
   :pred ispace-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum ispace-list-option
+  :short "Fixtype of optional lists of ispaces."
+  (:some ((val ispace-list)))
+  (:none ())
+  :pred ispace-list-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum ispace-var
@@ -436,6 +444,14 @@
   :elementp-of-nil nil
   :pred type-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum type-list-option
+  :short "Fixtype of optional lists of types."
+  (:some ((val type-list)))
+  (:none ())
+  :pred type-list-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod var+type
@@ -506,6 +522,7 @@
        (called `term applications' in the Remora publications),
        applications of expressions to types,
        applications of expressions to ispaces,
+       combined applications of expressions to types/ispaces/expressions,
        unboxing expressions,
        bracketed expressions,
        and @('let') expressions.
@@ -538,7 +555,11 @@
     (:type-app ((fun expr)
                 (args type-list)))
     (:ispace-app ((fun expr)
-                 (args ispace-list)))
+                  (args ispace-list)))
+    (:comb-app ((fun expr)
+                (targs type-list-option)
+                (iargs ispace-list-option)
+                (args expr-list)))
     (:unbox ((ispaces ispace-var-list)
              (var string)
              (target expr)

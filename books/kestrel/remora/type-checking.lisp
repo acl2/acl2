@@ -627,6 +627,7 @@
        (make-array-type-array
         :elem body-atom-type-subst
         :shape (shape-append (list fun-shape body-shape-subst))))
+     :comb-app (reserr :todo)
      :unbox
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name expr.ispaces)))
            (reserr nil))
