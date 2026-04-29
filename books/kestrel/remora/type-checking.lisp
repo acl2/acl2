@@ -31,18 +31,17 @@
  (in-theory
   (enable shapep-when-result-not-error
           shape-listp-when-result-not-error
-          atom-typep-when-result-not-error
-          atom-type-listp-when-result-not-error
-          array-typep-when-result-not-error
-          array-type-listp-when-result-not-error
+          typep-when-result-not-error
+          type-listp-when-result-not-error
           stringstringmap-pairp-when-result-not-error
-          atomtype+shape-p-when-result-not-error
-          atomtype+shape-listp-when-result-not-error
-          arraytypelist+arraytype-p-when-result-not-error
-          ispacevarlist+arraytype-p-when-result-not-error
-          typevarlist+arraytype-p-when-result-not-error
+          type+shape-p-when-result-not-error
+          type+shape-listp-when-result-not-error
+          typelist+type-p-when-result-not-error
+          ispacevarlist+type-p-when-result-not-error
+          typevarlist+type-p-when-result-not-error
           stringdimmap+stringshapemap-p-when-result-not-error
-          stringatomtypemap+stringarraytypemap-p-when-result-not-error)))
+          string-type-mapp-when-result-not-error
+          stringtypemap-pairp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,7 +54,7 @@
     "We define a high-level executable type checker
      that is meant to enforce exactly the inference rules
      that define the static semantics of Remora
-     in [arxiv] and [thesis].")
+     in [thesis] and [arxiv].")
    (xdoc::p
     "This type checker is not designed for efficiency
      or to provide informative error messages.
@@ -65,6 +64,21 @@
      uncovered expressions return a @(':todo') error."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-atomp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type has the atom kind."
+  (type-case type
+             :var (type-var-case type.var :atom)
+             :base t
+             :array nil
+             :bracket nil
+             :fun t
+             :forall t
+             :pi t
+             :sigma t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -295,7 +309,7 @@
 
 (define check-type-params-and-args ((params type-var-listp)
                                     (args type-listp))
-  :returns (maps stringatomtypemap+stringarraytypemap-resultp)
+  :returns (maps stringtypemap-pair-resultp)
   :short "Check whether a list of type parameters
           and a list of type arguments match."
   :long
@@ -305,38 +319,32 @@
      and each parameter must have the same kind as the corresponding argument.
      If the check succeeds, we return two maps,
      one from the names of the atom type parameters
-     to the corresponding atom type arguments,
+     to the corresponding atom-kinded type arguments,
      and one from the names of the array type parameters
-     to the corresponding array type arguments."))
+     to the corresponding array-kinded type arguments."))
   (b* (((when (endp params))
         (if (endp args)
-            (make-stringatomtypemap+stringarraytypemap
-             :atom-map nil
-             :array-map nil)
+            (make-stringtypemap-pair
+             :1st nil
+             :2nd nil)
           (reserr nil)))
        ((when (endp args)) (reserr nil))
-       ((ok (stringatomtypemap+stringarraytypemap maps))
+       ((ok (stringtypemap-pair maps))
         (check-type-params-and-args (cdr params) (cdr args)))
        (param (car params))
-       (arg (car args)))
+       (arg (type-fix (car args))))
     (type-var-case
      param
-     :atom (type-case
-            arg
-            :atom (make-stringatomtypemap+stringarraytypemap
-                   :atom-map (omap::update param.name
-                                           arg.type
-                                           maps.atom-map)
-                   :array-map maps.array-map)
-            :array (reserr nil))
-     :array (type-case
-             arg
-             :atom (reserr nil)
-             :array (make-stringatomtypemap+stringarraytypemap
-                     :atom-map maps.atom-map
-                     :array-map (omap::update param.name
-                                              arg.type
-                                              maps.array-map)))))
+     :atom (if (type-atomp arg)
+               (make-stringtypemap-pair
+                :1st (omap::update param.name arg maps.1st)
+                :2nd maps.2nd)
+             (reserr nil))
+     :array (if (type-atomp arg)
+                (reserr nil)
+              (make-stringtypemap-pair
+               :1st maps.1st
+               :2nd (omap::update param.name arg maps.2nd)))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -360,9 +368,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define check-expr ((expr exprp) (senv senvp))
-    :returns (type array-type-resultp)
+    :returns (type type-resultp)
     :parents (type-checking check-exprs/atoms)
-    :short "Check an expression, returning its array type if successful."
+    :short "Check an expression, returning its type if successful."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -374,13 +382,14 @@
       "For a (non-empty) array, there must be no zero dimension,
        and the number of atoms must match the product of the dimensions.
        We type-check all the atoms,
-       which must have all equivalent atom types.
+       which must have all equivalent types.
        We pick the first type from the list of types (which must be non-empty)
        as the atom type for the array type.
        We form a shape with the dimensions,
        and we return the array type.")
      (xdoc::p
       "For an empty array, there must be a 0 dimension.
+       The type must have atom kind.
        We ensure that the ispace and type variables of the type are in scope.
        We form a shape with the dimensions, and we return the array type.")
      (xdoc::p
@@ -505,126 +514,127 @@
        (cdr name+type))
      :atom
      (b* (((ok type) (check-atom expr.atom senv)))
-       (make-array-type-array :elem type
-                              :shape (shape-dims nil)))
+       (make-type-array :elem type
+                        :shape (shape-dims nil)))
      :array
      (b* (((when (member-equal 0 expr.dims)) (reserr nil))
           ((unless (= (len expr.atoms)
                       (nat-list-product expr.dims)))
            (reserr nil))
           ((ok types) (check-atom-list expr.atoms senv))
-          ((unless (atom-type-list-all-equivp types)) (reserr nil))
+          ((unless (type-list-all-equivp types)) (reserr nil))
           (type (car types)))
-       (make-array-type-array :elem type
-                              :shape (shape-dims (dim-const-list expr.dims))))
+       (make-type-array :elem type
+                        :shape (shape-dims (dim-const-list expr.dims))))
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-          ((unless (and (set::subset (atom-type-free-ispace-vars expr.type)
+          ((unless (type-atomp expr.type)) (reserr nil))
+          ((unless (and (set::subset (type-free-ispace-vars expr.type)
                                      (senv->ispace-vars senv))
-                        (set::subset (atom-type-free-type-vars expr.type)
+                        (set::subset (type-free-type-vars expr.type)
                                      (senv->type-vars senv))))
            (reserr nil)))
-       (make-array-type-array :elem expr.type
-                              :shape (shape-dims (dim-const-list expr.dims))))
+       (make-type-array :elem expr.type
+                        :shape (shape-dims (dim-const-list expr.dims))))
      :frame
      (b* (((when (member-equal 0 expr.dims)) (reserr nil))
           ((unless (= (len expr.exprs)
                       (nat-list-product expr.dims)))
            (reserr nil))
           ((ok types) (check-expr-list expr.exprs senv))
-          ((unless (array-type-list-all-equivp types)) (reserr nil))
+          ((unless (type-list-all-equivp types)) (reserr nil))
           (type (car types))
-          ((ok (atomtype+shape array)) (array-type-match-array type)))
-       (make-array-type-array
+          ((ok (type+shape array)) (type-match-array type)))
+       (make-type-array
         :elem array.type
         :shape (shape-append (list (shape-dims (dim-const-list expr.dims))
                                    array.shape))))
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-          ((unless (and (set::subset (array-type-free-ispace-vars expr.type)
+          ((unless (and (set::subset (type-free-ispace-vars expr.type)
                                      (senv->ispace-vars senv))
-                        (set::subset (array-type-free-type-vars expr.type)
+                        (set::subset (type-free-type-vars expr.type)
                                      (senv->type-vars senv))))
            (reserr nil))
-          ((ok (atomtype+shape array)) (array-type-match-array expr.type)))
-       (make-array-type-array
+          ((ok (type+shape array)) (type-match-array expr.type)))
+       (make-type-array
         :elem array.type
         :shape (shape-append (list (shape-dims (dim-const-list expr.dims))
                                    array.shape))))
      :term-app
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+shape) (array-type-match-array fun-arr-type))
-          (fun-type (atomtype+shape->type fun-arr-type+shape))
-          (fun-shape (atomtype+shape->shape fun-arr-type+shape))
-          ((ok fun-types+type) (atom-type-match-fun fun-type))
-          (in-types (arraytypelist+arraytype->types fun-types+type))
-          (out-type (arraytypelist+arraytype->type fun-types+type))
-          ((ok in-types+shapes) (array-type-list-match-array in-types))
-          (in-atom-types (atomtype+shape-list->type in-types+shapes))
-          (in-shapes (atomtype+shape-list->shape in-types+shapes))
-          ((ok out-type+shape) (array-type-match-array out-type))
-          (out-atom-type (atomtype+shape->type out-type+shape))
-          (out-shape (atomtype+shape->shape out-type+shape))
+          ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
+          (fun-type (type+shape->type fun-arr-type+shape))
+          (fun-shape (type+shape->shape fun-arr-type+shape))
+          ((ok fun-types+type) (type-match-fun fun-type))
+          (in-types (typelist+type->types fun-types+type))
+          (out-type (typelist+type->type fun-types+type))
+          ((ok in-types+shapes) (type-list-match-array in-types))
+          (in-atom-types (type+shape-list->type in-types+shapes))
+          (in-shapes (type+shape-list->shape in-types+shapes))
+          ((ok out-type+shape) (type-match-array out-type))
+          (out-atom-type (type+shape->type out-type+shape))
+          (out-shape (type+shape->shape out-type+shape))
           ((ok arg-types) (check-expr-list expr.args senv))
-          ((ok arg-types+shapes) (array-type-list-match-array arg-types))
-          (arg-atom-types (atomtype+shape-list->type arg-types+shapes))
-          (arg-shapes (atomtype+shape-list->shape arg-types+shapes))
-          ((unless (atom-type-list-equivp arg-atom-types in-atom-types))
+          ((ok arg-types+shapes) (type-list-match-array arg-types))
+          (arg-atom-types (type+shape-list->type arg-types+shapes))
+          (arg-shapes (type+shape-list->shape arg-types+shapes))
+          ((unless (type-list-equivp arg-atom-types in-atom-types))
            (reserr nil))
           ((ok prefix-shapes) (check-shape-suffixes arg-shapes in-shapes))
           ((ok principal-shape) (join-shapes (cons fun-shape prefix-shapes))))
-       (make-array-type-array
+       (make-type-array
         :elem out-atom-type
         :shape (shape-append (list principal-shape out-shape))))
      :type-app
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+shape) (array-type-match-array fun-arr-type))
-          (fun-type (atomtype+shape->type fun-arr-type+shape))
-          (fun-shape (atomtype+shape->shape fun-arr-type+shape))
-          ((ok fun-vars+type) (atom-type-match-forall fun-type))
-          (vars (typevarlist+arraytype->vars fun-vars+type))
-          (body-arr-type (typevarlist+arraytype->type fun-vars+type))
-          ((ok body-type+shape) (array-type-match-array body-arr-type))
-          (body-atom-type (atomtype+shape->type body-type+shape))
-          (body-shape (atomtype+shape->shape body-type+shape))
+          ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
+          (fun-type (type+shape->type fun-arr-type+shape))
+          (fun-shape (type+shape->shape fun-arr-type+shape))
+          ((ok fun-vars+type) (type-match-forall fun-type))
+          (vars (typevarlist+type->vars fun-vars+type))
+          (body-arr-type (typevarlist+type->type fun-vars+type))
+          ((ok body-type+shape) (type-match-array body-arr-type))
+          (body-atom-type (type+shape->type body-type+shape))
+          (body-shape (type+shape->shape body-type+shape))
           ((unless (and (set::subset (type-list-free-ispace-vars expr.args)
                                      (senv->ispace-vars senv))
                         (set::subset (type-list-free-type-vars expr.args)
                                      (senv->type-vars senv))))
            (reserr nil))
-          ((ok (stringatomtypemap+stringarraytypemap type-maps))
+          ((ok (stringtypemap-pair type-maps))
            (check-type-params-and-args vars expr.args))
           (body-atom-type-subst
-           (atom-type-subst-type-vars body-atom-type
-                                      type-maps.atom-map
-                                      type-maps.array-map)))
-       (make-array-type-array
+           (type-subst-type-vars body-atom-type
+                                 type-maps.1st
+                                 type-maps.2nd)))
+       (make-type-array
         :elem body-atom-type-subst
         :shape (shape-append (list fun-shape body-shape))))
      :ispace-app
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
-          ((ok fun-arr-type+shape) (array-type-match-array fun-arr-type))
-          (fun-type (atomtype+shape->type fun-arr-type+shape))
-          (fun-shape (atomtype+shape->shape fun-arr-type+shape))
-          ((ok fun-vars+type) (atom-type-match-product fun-type))
-          (vars (ispacevarlist+arraytype->vars fun-vars+type))
-          (body-arr-type (ispacevarlist+arraytype->type fun-vars+type))
-          ((ok body-type+shape) (array-type-match-array body-arr-type))
-          (body-atom-type (atomtype+shape->type body-type+shape))
-          (body-shape (atomtype+shape->shape body-type+shape))
+          ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
+          (fun-type (type+shape->type fun-arr-type+shape))
+          (fun-shape (type+shape->shape fun-arr-type+shape))
+          ((ok fun-vars+type) (type-match-product fun-type))
+          (vars (ispacevarlist+type->vars fun-vars+type))
+          (body-arr-type (ispacevarlist+type->type fun-vars+type))
+          ((ok body-type+shape) (type-match-array body-arr-type))
+          (body-atom-type (type+shape->type body-type+shape))
+          (body-shape (type+shape->shape body-type+shape))
           ((unless (set::subset (ispace-list-free-ispace-vars expr.args)
                                 (senv->ispace-vars senv)))
            (reserr nil))
           ((ok (stringdimmap+stringshapemap ispace-maps))
            (check-ispace-params-and-args vars expr.args))
           (body-atom-type-subst
-           (atom-type-subst-ispace-vars body-atom-type
-                                        ispace-maps.dim-map
-                                        ispace-maps.shape-map))
+           (type-subst-ispace-vars body-atom-type
+                                   ispace-maps.dim-map
+                                   ispace-maps.shape-map))
           (body-shape-subst (shape-subst-ispace-vars body-shape
                                                      ispace-maps.dim-map
                                                      ispace-maps.shape-map)))
-       (make-array-type-array
+       (make-type-array
         :elem body-atom-type-subst
         :shape (shape-append (list fun-shape body-shape-subst))))
      :comb-app (reserr :todo)
@@ -632,26 +642,26 @@
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name expr.ispaces)))
            (reserr nil))
           ((ok target-arr-type) (check-expr expr.target senv))
-          ((ok target-arr-type+shape) (array-type-match-array target-arr-type))
-          (sum-type (atomtype+shape->type target-arr-type+shape))
-          (sum-shape (atomtype+shape->shape target-arr-type+shape))
-          ((ok sum-vars+type) (atom-type-match-sum sum-type))
-          (sum-vars (ispacevarlist+arraytype->vars sum-vars+type))
-          (sum-body-type (ispacevarlist+arraytype->type sum-vars+type))
+          ((ok target-arr-type+shape) (type-match-array target-arr-type))
+          (sum-type (type+shape->type target-arr-type+shape))
+          (sum-shape (type+shape->shape target-arr-type+shape))
+          ((ok sum-vars+type) (type-match-sum sum-type))
+          (sum-vars (ispacevarlist+type->vars sum-vars+type))
+          (sum-body-type (ispacevarlist+type->type sum-vars+type))
           ((unless (= (len expr.ispaces) (len sum-vars))) (reserr nil))
           ((ok (stringstringmap-pair renaming))
            (check-ispace-var-renaming sum-vars expr.ispaces))
           (sum-body-type-renam
-           (array-type-rename-ispace-vars sum-body-type
-                                          renaming.1st
-                                          renaming.2nd))
+           (type-rename-ispace-vars sum-body-type
+                                    renaming.1st
+                                    renaming.2nd))
           (senv (senv-add-var+type expr.var sum-body-type-renam senv))
           ((ok arr-type) (check-expr expr.body senv))
-          ((ok arr-type+shape) (array-type-match-array arr-type))
-          (body-atom-type (atomtype+shape->type arr-type+shape))
-          (body-shape (atomtype+shape->shape arr-type+shape)))
-       (make-array-type-array :elem body-atom-type
-                              :shape (shape-append (list sum-shape body-shape))))
+          ((ok arr-type+shape) (type-match-array arr-type))
+          (body-atom-type (type+shape->type arr-type+shape))
+          (body-shape (type+shape->shape arr-type+shape)))
+       (make-type-array :elem body-atom-type
+                        :shape (shape-append (list sum-shape body-shape))))
      :bracket (reserr :todo)
      :let (reserr :todo))
     :measure (expr-count expr))
@@ -659,7 +669,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define check-expr-list ((exprs expr-listp) (senv senvp))
-    :returns (types array-type-list-resultp)
+    :returns (types type-list-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check a list of expressions,
             returning their array types if successful."
@@ -694,7 +704,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define check-atom ((atom atomp) (senv senvp))
-    :returns (type atom-type-resultp)
+    :returns (type type-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check an atom, returning its atom type if successful."
     :long
@@ -744,58 +754,58 @@
     (atom-case
      atom
      :base
-     (atom-type-base (base-type-of-base-value atom.value))
+     (type-base (base-type-of-base-value atom.value))
      :term-abs
      (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.params)))
            (reserr nil))
           (types (var+type-list->type atom.params))
-          ((unless (and (set::subset (array-type-list-free-ispace-vars types)
+          ((unless (and (set::subset (type-list-free-ispace-vars types)
                                      (senv->ispace-vars senv))
-                        (set::subset (array-type-list-free-type-vars types)
+                        (set::subset (type-list-free-type-vars types)
                                      (senv->type-vars senv))))
            (reserr nil))
           (senv (senv-add-vars+types atom.params senv))
           ((ok type) (check-expr atom.body senv)))
-       (make-atom-type-fun :in types :out type))
+       (make-type-fun :in types :out type))
      :type-abs
      (b* (((unless (no-duplicatesp-equal (type-var-list->name atom.params)))
            (reserr nil))
           ((ok type) (check-expr atom.body senv)))
-       (make-atom-type-forall :params atom.params :body type))
+       (make-type-forall :params atom.params :body type))
      :ispace-abs
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name atom.params)))
            (reserr nil))
           ((ok type) (check-expr atom.body senv)))
-       (make-atom-type-pi :params atom.params :body type))
+       (make-type-pi :params atom.params :body type))
      :box
      (b* (((unless (set::subset (ispace-list-free-ispace-vars atom.ispaces)
                                 (senv->ispace-vars senv)))
            (reserr nil))
-          ((unless (type-case atom.type :atom)) (reserr nil))
-          (box-type (type-atom->type atom.type))
-          ((unless (and (set::subset (atom-type-free-ispace-vars box-type)
+          ((unless (type-atomp atom.type)) (reserr nil))
+          (box-type atom.type)
+          ((unless (and (set::subset (type-free-ispace-vars box-type)
                                      (senv->ispace-vars senv))
-                        (set::subset (atom-type-free-type-vars box-type)
+                        (set::subset (type-free-type-vars box-type)
                                      (senv->type-vars senv))))
            (reserr nil))
-          ((ok vars+type) (atom-type-match-sum box-type))
-          (vars (ispacevarlist+arraytype->vars vars+type))
-          (body-type (ispacevarlist+arraytype->type vars+type))
+          ((ok vars+type) (type-match-sum box-type))
+          (vars (ispacevarlist+type->vars vars+type))
+          (body-type (ispacevarlist+type->type vars+type))
           ((ok (stringdimmap+stringshapemap maps))
            (check-ispace-params-and-args vars atom.ispaces))
           (body-type-subst
-           (array-type-subst-ispace-vars body-type
-                                         maps.dim-map
-                                         maps.shape-map))
+           (type-subst-ispace-vars body-type
+                                   maps.dim-map
+                                   maps.shape-map))
           ((ok type) (check-expr atom.array senv))
-          ((unless (array-type-equivp type body-type-subst)) (reserr nil)))
+          ((unless (type-equivp type body-type-subst)) (reserr nil)))
        box-type))
     :measure (atom-count atom))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define check-atom-list ((atoms atom-listp) (senv senvp))
-    :returns (types atom-type-list-resultp)
+    :returns (types type-list-resultp)
     :parents (type-checking check-exprs/atoms)
     :short "Check a list of atoms, returning their types if successful."
     :long
@@ -839,23 +849,23 @@
   (defrulel lemma
     (implies (and (not (reserrp (check-expr-list exprs senv)))
                   (not (reserrp
-                        (array-type-list-match-array
+                        (type-list-match-array
                          (check-expr-list exprs senv))))
-                  (not (reserrp (array-type-list-match-array x)))
-                  (atom-type-list-equivp
-                   (atomtype+shape-list->type
-                    (array-type-list-match-array
+                  (not (reserrp (type-list-match-array x)))
+                  (type-list-equivp
+                   (type+shape-list->type
+                    (type-list-match-array
                      (check-expr-list exprs senv)))
-                   (atomtype+shape-list->type
-                    (array-type-list-match-array x))))
+                   (type+shape-list->type
+                    (type-list-match-array x))))
              (equal (len x)
                     (len exprs)))
-    :use ((:instance same-len-when-atom-type-list-equivp
-                     (types1 (atomtype+shape-list->type
-                              (array-type-list-match-array
+    :use ((:instance same-len-when-type-list-equivp
+                     (types1 (type+shape-list->type
+                              (type-list-match-array
                                (check-expr-list exprs senv))))
-                     (types2 (atomtype+shape-list->type
-                              (array-type-list-match-array x))))))
+                     (types2 (type+shape-list->type
+                              (type-list-match-array x))))))
 
   (verify-guards check-expr)
 
@@ -864,7 +874,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-program ((prog progp))
-  :returns (type array-type-resultp)
+  :returns (type type-resultp)
   :short "Check a program."
   :long
   (xdoc::topstring

@@ -57,23 +57,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection var+type-list->type ((x var+type-listp))
-  :returns (types array-type-listp)
+  :returns (types type-listp)
   :short "Lift @(tsee var+type->type) to lists."
   (var+type->type x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection atomtype+shape-list->type ((x atomtype+shape-listp))
-  :returns (types atom-type-listp)
-  :short "Lift @(tsee atomtype+shape->type) to lists."
-  (atomtype+shape->type x))
+(std::defprojection type+shape-list->type ((x type+shape-listp))
+  :returns (types type-listp)
+  :short "Lift @(tsee type+shape->type) to lists."
+  (type+shape->type x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection atomtype+shape-list->shape ((x atomtype+shape-listp))
+(std::defprojection type+shape-list->shape ((x type+shape-listp))
   :returns (ispaces shape-listp)
-  :short "Lift @(tsee atomtype+shape->shape) to lists."
-  (atomtype+shape->shape x))
+  :short "Lift @(tsee type+shape->shape) to lists."
+  (type+shape->shape x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

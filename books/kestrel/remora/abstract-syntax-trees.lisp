@@ -285,7 +285,7 @@
    (xdoc::p
     "This corresponds to @('type-var') in the ABNF grammar.")
    (xdoc::p
-    "Similarly to @(tsee ispace-var),
+    "Similarly to how @(tsee ispace-var) carries sorts,
      these variables carry their own kind (atom or array),
      i.e. they are syntactically distinct.
      This is different from [thesis],
@@ -330,125 +330,81 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes atom/array-types
-  :short "Fixtypes of atom types, array types, and lists of array types."
+(fty::deftypes types
+  :short "Fixtypes of types and lists of types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These correspond to @('type-exp') in the ABNF grammar.
-     Although we have partitioned types
-     into atom-kinded and array-kinded types here,
-     we plan to define a single sum type for all types,
-     because atom-kinded types can be always auto-lifted
-     to zero-rank (i.e. scalar) array-kinded types.
-     We we still maintain their syntactic separation though,
-     which boils down to tagging variables, as in @(tsee type-var)."))
+    "Given that types are partitioned into two kinds
+     similarly to how ispaces are partitioned into two sorts,
+     and given that expressions and atoms are defined separately below,
+     it may seem natural to also partition the definition of types
+     into atom-kinded types and array-kinded types.
+     However, Remora allows atom-kinded types
+     wherever array-kinded types are expected:
+     the atom-kinded type is auto-lifted to a zero-rank array type.
+     There are only two spots in which a type must be atom-kinded,
+     namely the element type of an array or bracket type,
+     and that restriction can be enforced in the static semantics.
+     Also note that ispaces and expressions/atoms
+     have a different recursive structure than types,
+     making those more naturally amenable to a partitioned definition."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum atom-type
-    :parents (abstract-syntax-trees atom/array-types)
-    :short "Fixtype of atom types."
+  (fty::deftagsum type
+    :parents (abstract-syntax-trees types)
+    :short "Fixtype of types."
     :long
     (xdoc::topstring
      (xdoc::p
+      "This corresponds to @('type-exp') in the ABNF grammar.")
+     (xdoc::p
       "There are
-       named variables,
+       variables (of two kinds),
        base types,
+       array types consisting of a type for the elements
+       and a shape in which the elements are arranged,
+       bracket types which are like array types
+       but the zero or more shapes are concatenated
+       (the splicing comes from the fact that
+       dimensions are auto-lifted to shapes as in bracket shapes),
        function types (with zero or more input types and an output type),
        universal types (quantified over kinded variables),
        product types (quantified over ispace parameters),
        and sum types (quantified over ispace parameters)."))
-    (:var ((name string)))
+    (:var ((var type-var)))
     (:base ((type base-type)))
-    (:fun ((in array-type-list)
-           (out array-type)))
-    (:forall ((params type-var-list)
-              (body array-type)))
-    (:pi ((params ispace-var-list)
-          (body array-type)))
-    (:sigma ((params ispace-var-list)
-             (body array-type)))
-    :pred atom-typep)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (fty::deftagsum array-type
-    :parents (abstract-syntax-trees atom/array-types)
-    :short "Fixtype of array types."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "There are:
-       named variables;
-       explicit array types consisting of
-       an atom type for the elements
-       and a shape in which the elements are arranged;
-       and bracket array types consisting of
-       an atom type for the elements
-       and zero or more shapes that are spliced into one.
-       The square bracket construct is analogous to
-       the one in @(tsee shape):
-       as in that fixtype,
-       here we use shapes, which may include auto-lifted dimensions,
-       even though [impl] and the ABNF grammar use ispaces;
-       the two definitions are equivalent."))
-    (:var ((name string)))
-    (:array ((elem atom-type)
+    (:array ((elem type)
              (shape shape)))
-    (:bracket ((elem atom-type)
+    (:bracket ((elem type)
                (shapes shape-list)))
-    :pred array-typep)
+    (:fun ((in type-list)
+           (out type)))
+    (:forall ((params type-var-list)
+              (body type)))
+    (:pi ((params ispace-var-list)
+          (body type)))
+    (:sigma ((params ispace-var-list)
+             (body type)))
+    :pred typep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist array-type-list
-    :parents (abstract-syntax-trees atom/array-types)
-    :short "Fixtype of lists of array types."
-    :elt-type array-type
+  (fty::deflist type-list
+    :parents (abstract-syntax-trees types)
+    :short "Fixtype of lists of types."
+    :elt-type type
     :true-listp t
     :elementp-of-nil nil
-    :pred array-type-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist atom-type-list
-  :short "Fixtype of lists of atom types."
-  :elt-type atom-type
-  :true-listp t
-  :elementp-of-nil nil
-  :pred atom-type-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption array-type-option
-  array-type
-  :short "Fixtype of optional array types."
-  :pred array-type-optionp)
+    :pred type-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum type
-  :short "Fixtype of types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This corresponds to @('type-expr') in the ABNF gramamr,
-     like @(tsee atom-type) and @(tsee array-type), but with an extra layer.
-     However, this extra layer will be eliminated:
-     see discussion in @(tsee atom/array-types)."))
-  (:atom ((type atom-type)))
-  (:array ((type array-type)))
-  :pred typep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist type-list
-  :short "Fixtype of lists of types."
-  :elt-type type
-  :true-listp t
-  :elementp-of-nil nil
-  :pred type-listp)
+(fty::defoption type-option
+  type
+  :short "Fixtype of optional types."
+  :pred type-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -467,11 +423,11 @@
    (xdoc::p
     "This corresponds to @('pat') in the ABNF grammar.")
    (xdoc::p
-    "These are pairs consisting of a variable name and an associated array type.
+    "These are pairs consisting of a variable name and an associated type.
      The type is an array one because variables are expressions, not atoms.
      These variables are separate from ispace and type variables."))
   ((var string)
-   (type array-type))
+   (type type))
   :pred var+type-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -528,9 +484,9 @@
        named variables,
        atoms (auto-lifted to scalars, i.e. arrays of rank 0),
        non-empty arrays with at least one atom,
-       empty arrays with the atom type of the elements,
+       empty arrays with the type of the elements,
        non-empty frames with at least one expression,
-       empty frames with the array type of the cells,
+       empty frames with the type of the cells,
        applications of expressions to expressions
        (called `term applications' in the Remora publications),
        applications of expressions to types,
@@ -558,11 +514,11 @@
     (:array ((dims nat-list)
              (atoms atom-list)))
     (:array-empty ((dims nat-list)
-                   (type atom-type)))
+                   (type type)))
     (:frame ((dims nat-list)
              (exprs expr-list)))
     (:frame-empty ((dims nat-list)
-                   (type array-type)))
+                   (type type)))
     (:term-app ((fun expr)
                 (args expr-list)))
     (:type-app ((fun expr)
@@ -658,25 +614,25 @@
     (:type ((var type-var)
             (type type)))
     (:val ((var string)
-           (type? array-type-option)
+           (type? type-option)
            (expr expr)))
     (:fun ((var string)
            (params var+type-list)
-           (type? array-type-option)
+           (type? type-option)
            (expr expr)))
     (:tfun ((var string)
             (params type-var-list)
-            (type? array-type-option)
+            (type? type-option)
             (expr expr)))
     (:ifun ((var string)
             (params ispace-var-list)
-            (type? array-type-option)
+            (type? type-option)
             (expr expr)))
     (:cfun ((var string)
             (tparams? type-var-list-option)
             (iparams? ispace-var-list-option)
             (params var+type-list)
-            (type array-type)
+            (type type)
             (expr expr)))
     :pred bindp)
 
