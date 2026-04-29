@@ -149,7 +149,7 @@
                                    (string-shape-map-fix shape-subst))))
                 (make-atom-type-pi
                  :params atom-type.params
-                 :type (array-type-subst-ispace-vars atom-type.type
+                 :body (array-type-subst-ispace-vars atom-type.body
                                                      dim-subst
                                                      shape-subst))))
    (atom-type :sigma
@@ -163,7 +163,7 @@
                                    (string-shape-map-fix shape-subst))))
                 (make-atom-type-sigma
                  :params atom-type.params
-                 :type (array-type-subst-ispace-vars atom-type.type
+                 :body (array-type-subst-ispace-vars atom-type.body
                                                      dim-subst
                                                      shape-subst))))))
 
@@ -196,7 +196,7 @@
                                    (string-arraytype-map-fix array-subst))))
                 (make-atom-type-forall
                  :params atom-type.params
-                 :type (array-type-subst-type-vars atom-type.type
+                 :body (array-type-subst-type-vars atom-type.body
                                                    atom-subst
                                                    array-subst))))
    (array-type :var
@@ -253,7 +253,7 @@
                                    (string-string-map-fix shape-renam))))
                 (make-atom-type-pi
                  :params atom-type.params
-                 :type (array-type-rename-ispace-vars atom-type.type
+                 :body (array-type-rename-ispace-vars atom-type.body
                                                       dim-renam
                                                       shape-renam))))
    (atom-type :sigma
@@ -267,7 +267,7 @@
                                    (string-string-map-fix shape-renam))))
                 (make-atom-type-sigma
                  :params atom-type.params
-                 :type (array-type-rename-ispace-vars atom-type.type
+                 :body (array-type-rename-ispace-vars atom-type.body
                                                       dim-renam
                                                       shape-renam))))))
 
@@ -300,7 +300,7 @@
                                    (string-string-map-fix array-renam))))
                 (make-atom-type-forall
                  :params atom-type.params
-                 :type (array-type-rename-type-vars atom-type.type
+                 :body (array-type-rename-type-vars atom-type.body
                                                     atom-renam
                                                     array-renam))))
    (array-type :var
@@ -337,10 +337,10 @@
   ((dim :var (set::insert (ispace-var-dim dim.name) nil))
    (shape :var (set::insert (ispace-var-shape shape.name) nil))
    (atom-type :pi
-              (set::difference (array-type-free-ispace-vars atom-type.type)
+              (set::difference (array-type-free-ispace-vars atom-type.body)
                                (set::mergesort atom-type.params)))
    (atom-type :sigma
-              (set::difference (array-type-free-ispace-vars atom-type.type)
+              (set::difference (array-type-free-ispace-vars atom-type.body)
                                (set::mergesort atom-type.params)))
    (expr :unbox
          (set::union (expr-free-ispace-vars expr.target)
@@ -349,3 +349,29 @@
    (atom :ispace-abs
          (set::difference (expr-free-ispace-vars atom.body)
                           (set::mergesort atom.params)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce free-type-vars
+  :short "Set of free type variables in
+          (atom and array) types,
+          variables with types,
+          expressions,
+          atoms,
+          and lists thereof."
+  :types (atom/array-types
+          atom-type-list
+          type
+          type-list
+          var+type
+          exprs/atoms)
+  :result type-var-setp
+  :default nil
+  :combine set::union
+  :override
+  ((atom-type :var (set::insert (type-var-atom atom-type.name) nil))
+   (atom-type :forall (set::difference (array-type-free-type-vars atom-type.body)
+                                       (set::mergesort atom-type.params)))
+   (array-type :var (set::insert (type-var-array array-type.name) nil))
+   (atom :type-abs (set::difference (expr-free-type-vars atom.body)
+                                    (set::mergesort atom.params)))))

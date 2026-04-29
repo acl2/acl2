@@ -341,11 +341,11 @@
     (:fun ((in array-type-list)
            (out array-type)))
     (:forall ((params type-var-list)
-              (type array-type)))
+              (body array-type)))
     (:pi ((params ispace-var-list)
-          (type array-type)))
+          (body array-type)))
     (:sigma ((params ispace-var-list)
-             (type array-type)))
+             (body array-type)))
     :pred atom-typep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -356,14 +356,25 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "There are
-       named variables
-       and explicit array types consisting of
+      "There are:
+       named variables;
+       explicit array types consisting of
        an atom type for the elements
-       and a shape in which the elements are arranged."))
+       and a shape in which the elements are arranged;
+       and bracket array types consisting of
+       an atom type for the elements
+       and zero or more shapes that are spliced into one.
+       The square bracket construct is analogous to
+       the one in @(tsee shape):
+       as in that fixtype,
+       here we use shapes, which may include auto-lifted dimensions,
+       even though [impl] and the ABNF grammar use ispaces;
+       the two definitions are equivalent."))
     (:var ((name string)))
-    (:array ((type atom-type)
+    (:array ((elem atom-type)
              (shape shape)))
+    (:bracket ((elem atom-type)
+               (shapes shape-list)))
     :pred array-typep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -463,6 +474,7 @@
      (xdoc::p
       "There are
        named variables,
+       atoms (auto-lifted to scalars, i.e. arrays of rank 0),
        non-empty arrays with at least one atom,
        empty arrays with the atom type of the elements,
        non-empty frames with at least one expression,
@@ -471,10 +483,12 @@
        (called `term applications' in the Remora publications),
        applications of expressions to types,
        applications of expressions to ispaces,
-       and unboxing of expressions;
-       the latter binds zero or more variables to ispaces,
+       unboxing expressions,
+       and bracketed expressions.
+       An unboxing expression
+       binds zero or more variables to ispaces,
        binds a variable to the boxed expression,
-       and then returns the body expression.")
+       and returns the body expression.")
      (xdoc::p
       "The non-emptiness of the atom list in @(':array')
        and of the expression list in @(':frame')
@@ -486,6 +500,7 @@
        @($\\mathfrak{a}\\ \\mathfrak{a}\\ldots$) and @($e\\ e\\ldots$),
        while [arxiv] paper does not."))
     (:var ((name string)))
+    (:atom ((atom atom)))
     (:array ((dims nat-list)
              (atoms atom-list)))
     (:array-empty ((dims nat-list)
@@ -504,6 +519,7 @@
              (var string)
              (target expr)
              (body expr)))
+    (:bracket ((exprs expr-list)))
     :pred exprp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

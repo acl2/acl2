@@ -45,7 +45,7 @@
   :short "Check if an array type is an @(':array') summans,
           returning its elements' atom type and its shape if successful."
   (if (array-type-case type :array)
-      (make-atomtype+shape :type (array-type-array->type type)
+      (make-atomtype+shape :type (array-type-array->elem type)
                            :shape (array-type-array->shape type))
     (reserr nil)))
 
@@ -89,7 +89,7 @@
           if successful."
   (if (atom-type-case type :forall)
       (make-typevarlist+arraytype :vars (atom-type-forall->params type)
-                                  :type (atom-type-forall->type type))
+                                  :type (atom-type-forall->body type))
     (reserr nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -101,7 +101,7 @@
           if successful."
   (if (atom-type-case type :pi)
       (make-ispacevarlist+arraytype :vars (atom-type-pi->params type)
-                                    :type (atom-type-pi->type type))
+                                    :type (atom-type-pi->body type))
     (reserr nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,5 +113,5 @@
           if successful."
   (if (atom-type-case type :sigma)
       (make-ispacevarlist+arraytype :vars (atom-type-sigma->params type)
-                                    :type (atom-type-sigma->type type))
+                                    :type (atom-type-sigma->body type))
     (reserr nil)))
