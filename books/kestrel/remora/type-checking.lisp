@@ -561,7 +561,7 @@
         :elem array.type
         :shape (shape-append (list (shape-dims (dim-const-list expr.dims))
                                    array.shape))))
-     :term-app
+     :app
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
           ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
           (fun-type (type+shape->type fun-arr-type+shape))
@@ -586,7 +586,7 @@
        (make-type-array
         :elem out-atom-type
         :shape (shape-append (list principal-shape out-shape))))
-     :type-app
+     :tapp
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
           ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
           (fun-type (type+shape->type fun-arr-type+shape))
@@ -611,7 +611,7 @@
        (make-type-array
         :elem body-atom-type-subst
         :shape (shape-append (list fun-shape body-shape))))
-     :ispace-app
+     :iapp
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
           ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
           (fun-type (type+shape->type fun-arr-type+shape))
@@ -637,7 +637,7 @@
        (make-type-array
         :elem body-atom-type-subst
         :shape (shape-append (list fun-shape body-shape-subst))))
-     :comb-app (reserr :todo)
+     :capp (reserr :todo)
      :unbox
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name expr.ispaces)))
            (reserr nil))
