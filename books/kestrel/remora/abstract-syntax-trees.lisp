@@ -241,6 +241,14 @@
     :induct t
     :enable set::mergesort))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum ispace-var-list-option
+  :short "Fixtype of optional lists of ispace variables."
+  (:some ((val ispace-var-list)))
+  (:none ())
+  :pred ispace-var-list-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum base-type
@@ -296,6 +304,14 @@
              (type-var-setp (set::mergesort x)))
     :induct t
     :enable set::mergesort))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum type-var-list-option
+  :short "Fixtype of optional lists of type variables."
+  (:some ((val type-var-list)))
+  (:none ())
+  :pred type-var-list-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -396,6 +412,13 @@
   :elementp-of-nil nil
   :pred atom-type-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption array-type-option
+  array-type
+  :short "Fixtype of optional array types."
+  :pred array-type-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum type
@@ -461,13 +484,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes exprs/atoms
-  :short "Fixtypes of expressions, atoms, and lists thereof."
+(fty::deftypes exprs/atoms/binds
+  :short "Fixtypes of expressions, atoms, bindings, and lists thereof."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr
-    :parents (abstract-syntax-trees exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms/binds)
     :short "Fixtype of expressions."
     :long
     (xdoc::topstring
@@ -484,7 +507,8 @@
        applications of expressions to types,
        applications of expressions to ispaces,
        unboxing expressions,
-       and bracketed expressions.
+       bracketed expressions,
+       and @('let') expressions.
        An unboxing expression
        binds zero or more variables to ispaces,
        binds a variable to the boxed expression,
@@ -520,12 +544,14 @@
              (target expr)
              (body expr)))
     (:bracket ((exprs expr-list)))
+    (:let ((binds bind-list)
+           (body expr)))
     :pred exprp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist expr-list
-    :parents (abstract-syntax-trees exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms/binds)
     :short "Fixtype of lists of expressions."
     :elt-type expr
     :true-listp t
@@ -535,7 +561,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum atom
-    :parents (abstract-syntax-trees exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms/binds)
     :short "Fixtype of atoms."
     :long
     (xdoc::topstring
@@ -569,9 +595,63 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist atom-list
-    :parents (abstract-syntax-trees exprs/atoms)
+    :parents (abstract-syntax-trees exprs/atoms/binds)
     :short "Fixtype of lists of atoms."
     :elt-type atom
     :true-listp t
     :elementp-of-nil nil
-    :pred atom-listp))
+    :pred atom-listp)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum bind
+    :parents (abstract-syntax-trees exprs/atoms/binds)
+    :short "Fixtype of bindings."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "These are used in @('let') expressions.
+       There are
+       ispace bindings,
+       type bindings,
+       value bindings,
+       function bindings,
+       type function bindings
+       ispace function bindings, and
+       combined function bindings."))
+    (:ispace ((var ispace-var)
+              (ispace ispace)))
+    (:type ((var type-var)
+            (type type)))
+    (:val ((var string)
+           (type? array-type-option)
+           (expr expr)))
+    (:fun ((var string)
+           (params var+type-list)
+           (type? array-type-option)
+           (expr expr)))
+    (:tfun ((var string)
+            (params type-var-list)
+            (type? array-type-option)
+            (expr expr)))
+    (:ifun ((var string)
+            (params ispace-var-list)
+            (type? array-type-option)
+            (expr expr)))
+    (:cfun ((var string)
+            (tparams? type-var-list-option)
+            (iparams? ispace-var-list-option)
+            (params var+type-list)
+            (type array-type)
+            (expr expr)))
+    :pred bindp)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist bind-list
+    :parents (abstract-syntax-trees exprs/atoms/binds)
+    :short "Fixtype of lists of atoms."
+    :elt-type bind
+    :true-listp t
+    :elementp-of-nil nil
+    :pred bind-listp))

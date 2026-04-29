@@ -312,6 +312,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define bind-bound-ispace-vars ((bind bindp))
+  :returns (vars ispace-var-setp)
+  :short "Set of ispace variables bound in a binding."
+  (bind-case
+   bind
+   :ispace (set::insert bind.var nil)
+   :type nil
+   :val nil
+   :fun nil
+   :tfun nil
+   :ifun (set::mergesort bind.params)
+   :cfun (ispace-var-list-option-case
+          bind.iparams?
+          :some (set::mergesort bind.iparams?.val)
+          :none nil)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define bind-list-bound-ispace-vars ((binds bind-listp))
+  :returns (vars ispace-var-setp)
+  :short "Set of ispace variables bound in a list of bindings."
+  (cond ((endp binds) nil)
+        (t (set::union (bind-bound-ispace-vars (car binds))
+                       (bind-list-bound-ispace-vars (cdr binds)))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bind-bound-type-vars ((bind bindp))
+  :returns (vars type-var-setp)
+  :short "Set of type variables bound in a binding."
+  (bind-case
+   bind
+   :ispace nil
+   :type (set::insert bind.var nil)
+   :val nil
+   :fun nil
+   :tfun (set::mergesort bind.params)
+   :ifun nil
+   :cfun (type-var-list-option-case
+          bind.tparams?
+          :some (set::mergesort bind.tparams?.val)
+          :none nil)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define bind-list-bound-type-vars ((binds bind-listp))
+  :returns (vars type-var-setp)
+  :short "Set of type variables bound in a list of bindings."
+  (cond ((endp binds) nil)
+        (t (set::union (bind-bound-type-vars (car binds))
+                       (bind-list-bound-type-vars (cdr binds)))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-reduce free-ispace-vars
   :short "Set of free ispace variables in
           ispaces,
@@ -326,10 +382,12 @@
           ispace-list
           atom/array-types
           atom-type-list
+          array-type-option
           type
           type-list
           var+type
-          exprs/atoms)
+          var+type-list
+          exprs/atoms/binds)
   :result ispace-var-setp
   :default nil
   :combine set::union
@@ -346,6 +404,11 @@
          (set::union (expr-free-ispace-vars expr.target)
                      (set::difference (expr-free-ispace-vars expr.body)
                                       (set::mergesort expr.ispaces))))
+   (expr :let
+         (set::union
+          (bind-list-free-ispace-vars expr.binds)
+          (set::difference (expr-free-ispace-vars expr.body)
+                           (bind-list-bound-ispace-vars expr.binds))))
    (atom :ispace-abs
          (set::difference (expr-free-ispace-vars atom.body)
                           (set::mergesort atom.params)))))
@@ -361,10 +424,12 @@
           and lists thereof."
   :types (atom/array-types
           atom-type-list
+          array-type-option
           type
           type-list
           var+type
-          exprs/atoms)
+          var+type-list
+          exprs/atoms/binds)
   :result type-var-setp
   :default nil
   :combine set::union
@@ -373,5 +438,9 @@
    (atom-type :forall (set::difference (array-type-free-type-vars atom-type.body)
                                        (set::mergesort atom-type.params)))
    (array-type :var (set::insert (type-var-array array-type.name) nil))
+   (expr :let
+         (set::union (bind-list-free-type-vars expr.binds)
+                     (set::difference (expr-free-type-vars expr.body)
+                                      (bind-list-bound-type-vars expr.binds))))
    (atom :type-abs (set::difference (expr-free-type-vars atom.body)
                                     (set::mergesort atom.params)))))

@@ -651,8 +651,8 @@
           (body-shape (atomtype+shape->shape arr-type+shape)))
        (make-array-type-array :elem body-atom-type
                               :shape (shape-append (list sum-shape body-shape))))
-     :bracket
-     (reserr :todo))
+     :bracket (reserr :todo)
+     :let (reserr :todo))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
