@@ -286,20 +286,24 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The two types must be in the same fixtype summand:
-       two variables, or two explicit array types.")
+      "The two types must be
+       two variables,
+       or two explicit array types
+       or two bracket types,
+       or one an explicit array type and the other a bracket array type.
+       Bracket types are syntactic sugar.")
      (xdoc::p
       "In the case of two variables,
        since the renaming contains all the variables in scope,
        we check that the first and second variables
        are associated in the renaming map.")
      (xdoc::p
-      "In the case of two explicit array types,
-       we recursively check the equality modulo renaming of the body types.
+      "In the case of two explicit or bracket array types,
+       we recursively check the equality modulo renaming of the element types.
        For the shapes,
        first we apply the dimension and shape variable renaming
-       to the first shape,
-       and then we check equivalence with the second shape.
+       to the first shape(s),
+       and then we check equivalence with the second shape(s).
        Shape equivalence is defined not modulo renaming,
        so we must apply the renaming prior to checking shape equivalence."))
     (array-type-case
@@ -312,6 +316,7 @@
            :otherwise nil)
      :array (array-type-case
              type2
+             :var nil
              :array (and (atom-type-renamep type1.elem
                                             type2.elem
                                             dim-renam
@@ -323,7 +328,45 @@
                                                          dim-renam
                                                          shape-renam)))
                            (shape-equivp renamed-shape1 type2.shape)))
-             :otherwise nil))
+             :bracket (and (atom-type-renamep type1.elem
+                                              type2.elem
+                                              dim-renam
+                                              shape-renam
+                                              atom-renam
+                                              array-renam)
+                           (b* ((renamed-shape1
+                                 (shape-rename-ispace-vars type1.shape
+                                                           dim-renam
+                                                           shape-renam))
+                                (shape2 (shape-append type2.shapes)))
+                             (shape-equivp renamed-shape1 shape2))))
+     :bracket (array-type-case
+               type2
+               :var nil
+               :array (and (atom-type-renamep type1.elem
+                                              type2.elem
+                                              dim-renam
+                                              shape-renam
+                                              atom-renam
+                                              array-renam)
+                           (b* ((renamed-shapes1
+                                 (shape-list-rename-ispace-vars type1.shapes
+                                                                dim-renam
+                                                                shape-renam))
+                                (shape1 (shape-append renamed-shapes1)))
+                             (shape-equivp shape1 type2.shape)))
+               :bracket (and (atom-type-renamep type1.elem
+                                                type2.elem
+                                                dim-renam
+                                                shape-renam
+                                                atom-renam
+                                                array-renam)
+                             (b* ((renamed-shapes1
+                                   (shape-list-rename-ispace-vars type1.shapes
+                                                                  dim-renam
+                                                                  shape-renam)))
+                               (shape-equivp (shape-append renamed-shapes1)
+                                             (shape-append type2.shapes))))))
     :measure (+ (array-type-count type1) (array-type-count type2)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

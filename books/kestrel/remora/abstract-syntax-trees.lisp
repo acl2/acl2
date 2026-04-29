@@ -356,14 +356,25 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "There are
-       named variables
-       and explicit array types consisting of
+      "There are:
+       named variables;
+       explicit array types consisting of
        an atom type for the elements
-       and a shape in which the elements are arranged."))
+       and a shape in which the elements are arranged;
+       and bracket array types consisting of
+       an atom type for the elements
+       and zero or more shapes that are spliced into one.
+       The square bracket construct is analogous to
+       the one in @(tsee shape):
+       as in that fixtype,
+       here we use shapes, which may include auto-lifted dimensions,
+       even though [impl] and the ABNF grammar use ispaces;
+       the two definitions are equivalent."))
     (:var ((name string)))
     (:array ((elem atom-type)
              (shape shape)))
+    (:bracket ((elem atom-type)
+               (shapes shape-list)))
     :pred array-typep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
