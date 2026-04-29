@@ -557,8 +557,7 @@
                        (equal (bvchop size x) (bvchop size (- k1 k2))))))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases unsigned-byte-p))))
 
-;rename
-(defthm equal-of-bvplus-constant-and-constant
+(defthm equal-of-constant-and-bvplus-of-constant
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)
                               (quotep size)))
@@ -570,9 +569,8 @@
                        (equal (bvchop size (- k1 k2)) (bvchop size x)))))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases unsigned-byte-p))))
 
-;rename
 ;only needed for axe?
-(defthm equal-of-bvplus-constant-and-constant-alt
+(defthm equal-of-bvplus-of-constant-and-constant
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)
                               (quotep size)))
@@ -583,5 +581,5 @@
                   (and (unsigned-byte-p size k1)
                        (equal (bvchop size (- k1 k2))
                               (bvchop size x)))))
-  :hints (("Goal" :use equal-of-bvplus-constant-and-constant
-           :in-theory (disable equal-of-bvplus-constant-and-constant))))
+  :hints (("Goal" :use equal-of-constant-and-bvplus-of-constant
+           :in-theory (disable equal-of-constant-and-bvplus-of-constant))))

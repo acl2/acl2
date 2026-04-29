@@ -5900,8 +5900,8 @@
     acl2::slice-of-bvand-of-constant
     ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
     acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
-    acl2::equal-of-bvplus-constant-and-constant
-    acl2::equal-of-bvplus-constant-and-constant-alt
+    acl2::equal-of-constant-and-bvplus-of-constant
+    acl2::equal-of-bvplus-of-constant-and-constant
     ;; acl2::getbit-of-lognot ; now handled by convert-to-bv machinery
     acl2::bvif-of-if-constants-nil-nonnil
     acl2::bvif-of-if-constants-nonnil-nil
@@ -6291,8 +6291,8 @@
      ;; read-when-program-at-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
-     acl2::equal-of-bvplus-constant-and-constant
-     acl2::equal-of-bvplus-constant-and-constant-alt
+     acl2::equal-of-constant-and-bvplus-of-constant
+     acl2::equal-of-bvplus-of-constant-and-constant
      acl2::mod-of-+-of-constant
      xr-of-if
 

@@ -7906,7 +7906,7 @@
                             (slice 30 2 x))
                       (bvlt 2 (bvchop 2 y)
                             (bvchop 2 x)))))
-  :hints (("Goal" :in-theory (disable EQUAL-OF-BVPLUS-CONSTANT-AND-CONSTANt-ALT
+  :hints (("Goal" :in-theory (disable equal-of-bvplus-of-constant-and-constant
                                       SLICE-BOUND-LEMMA-GEN2
                                       BVLT-OF-SLICE-29-30-2
                                       SLICE-BOUND-LEMMA-GEN
