@@ -54,8 +54,7 @@
    (xdoc::p
     "The coverage of our ASTs is almost complete.
      Still missing are string literals,
-     multiplications and subtraction of dimensions,
-     and programs (i.e. top-level expressions);
+     and multiplications and subtraction of dimensions;
      we plan to add all of these shortly.
      We may also need to replace ACL2 rationals (in base values)
      with a more explicit notion of floating literals.")
@@ -690,3 +689,16 @@
     :true-listp t
     :elementp-of-nil nil
     :pred bind-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod prog
+  :short "Fixtypr of programs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('program') in the ABNF grammar.")
+   (xdoc::p
+    "Currently a program is just a (top-level) expression."))
+  ((expr expr))
+  :pred progp)

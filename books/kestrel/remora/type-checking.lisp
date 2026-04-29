@@ -863,14 +863,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-top-expr ((expr exprp))
+(define check-program ((prog progp))
   :returns (type array-type-resultp)
-  :short "Check a top-level expression."
+  :short "Check a program."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is defined as a `program' in the ABNF grammar.")
-   (xdoc::p
-    "We check it like any other expression,
-     using the initial static environment."))
-  (check-expr expr (init-senv)))
+    "We check its expression,
+     using the initial static environment.
+     We return the type if successful."))
+  (check-expr (prog->expr prog) (init-senv)))
