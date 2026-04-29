@@ -2337,8 +2337,6 @@
     bvlt-of-bvmult-6-5-20-alt
     bvlt-trim-arg1-axe-all ; drop?
     bvlt-trim-arg2-axe-all ; drop?
-    equal-of-constant-and-bvplus-of-constant
-    equal-of-bvplus-of-constant-and-constant
     bvlt-of-bvplus-of-bvcat-of-slice-sha1
     bvlt-of-bvif-same-1
     unsigned-byte-p-of-bvplus-of-1-sha1 ;would it fire with a free var for the 31?
