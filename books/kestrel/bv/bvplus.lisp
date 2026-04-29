@@ -544,19 +544,6 @@
                   (bvplus size (+ k1 k2) x)))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-;; todo: duplicates the below
-(defthm bvplus-equal-constant
-  (implies (and (syntaxp (and (quotep k1)
-                              (quotep k2)
-                              (quotep size)))
-                (integerp k1)
-                (integerp k2)
-                (natp size))
-           (equal (equal (bvplus size k2 x) k1)
-                  (and (unsigned-byte-p size k1)
-                       (equal (bvchop size x) (bvchop size (- k1 k2))))))
-  :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases unsigned-byte-p))))
-
 (defthm equal-of-constant-and-bvplus-of-constant
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)
