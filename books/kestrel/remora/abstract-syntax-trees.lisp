@@ -33,31 +33,30 @@
    (xdoc::p
     "We define fixtypes for abstract syntax trees (ASTs) for typed Remora,
      based on
-     [arxiv] (Figure 1),
      [thesis] (Figure 4.1),
+     [arxiv] (Figure 1),
      [esop] (Figure 6),
      and [impl].
      These ASTs are consistent with the "
     (xdoc::seetopic "grammar" "ABNF grammar of Remora")
-    ".")
+    ", which is derived from [impl].")
    (xdoc::p
-    "The syntax definitions in [arxiv] and [thesis] are quite aligned,
-     while [esop] has some differences;
-     since [esop] is older, we just consider [arxiv] and [thesis] here.
-     [impl] makes some extensions to [arxiv] and [thesis].
-     The ABNF grammar is derived from [impl].")
+    "These ASTs preserve much of the concrete syntax information,
+     so they include both core and non-core constructs.
+     We plan to define a characterization of core ASTs
+     and a desugaring transformation from all ASTs to core ASTs.
+     The ASTs in [impl] are slightly more abstracted than ours.")
    (xdoc::p
-    "We have started defining the syntax as in [arxiv] and [thesis],
-     but we are in the process of extending it according to [impl].
-     We have started defining just the core syntax, as in [arxiv] and [thesis],
-     but we are in the process of adding non-core constructs as in [impl];
-     we plan to characterize the core subset
-     and to define a desugaring transformation
-     from the full syntax to the core syntax.")
+    "The coverage of our ASTs is almost complete.
+     Still missing are string literals,
+     multiplications and subtraction of dimensions,
+     and programs (i.e. top-level expressions);
+     we plan to add all of these shortly.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
-     We may change this if needed."))
+     But we should probably introduce and use
+     a slightly more abstract notion of identifiers."))
   :order-subtopics t
   :default-parent t)
 
