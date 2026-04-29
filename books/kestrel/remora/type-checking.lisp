@@ -59,7 +59,10 @@
    (xdoc::p
     "This type checker is not designed for efficiency
      or to provide informative error messages.
-     It is designed for simplicity."))
+     It is designed for simplicity.")
+   (xdoc::p
+    "Not all expressions are currently covered;
+     uncovered expressions return a @(':todo') error."))
   :order-subtopics t
   :default-parent t)
 
@@ -647,7 +650,9 @@
           (body-atom-type (atomtype+shape->type arr-type+shape))
           (body-shape (atomtype+shape->shape arr-type+shape)))
        (make-array-type-array :elem body-atom-type
-                              :shape (shape-append (list sum-shape body-shape)))))
+                              :shape (shape-append (list sum-shape body-shape))))
+     :bracket
+     (reserr :todo))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

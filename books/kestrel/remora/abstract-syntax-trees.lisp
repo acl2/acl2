@@ -483,10 +483,12 @@
        (called `term applications' in the Remora publications),
        applications of expressions to types,
        applications of expressions to ispaces,
-       and unboxing of expressions;
-       the latter binds zero or more variables to ispaces,
+       unboxing expressions,
+       and bracketed expressions.
+       An unboxing expression
+       binds zero or more variables to ispaces,
        binds a variable to the boxed expression,
-       and then returns the body expression.")
+       and returns the body expression.")
      (xdoc::p
       "The non-emptiness of the atom list in @(':array')
        and of the expression list in @(':frame')
@@ -517,6 +519,7 @@
              (var string)
              (target expr)
              (body expr)))
+    (:bracket ((exprs expr-list)))
     :pred exprp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
