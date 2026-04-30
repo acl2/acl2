@@ -58,7 +58,26 @@
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
      But we should probably introduce and use
-     a slightly more abstract notion of identifiers."))
+     a slightly more abstract notion of identifiers.")
+   (xdoc::p
+    "Note that the strings representing identifiers
+     that derive from potentially-non-ASCII Remora surface syntax
+     are stored in our ASTs as ACL2 strings whose bytes are
+     the @('UTF-8') encoding of the original Unicode code-point sequence.
+     Since ACL2 char codes are 0-255,
+     a non-ASCII code point such as U+03B1 cannot occupy a single character;
+     the @('UTF-8') convention encodes it as two bytes (@('0xCE 0xB1'))
+     within the string.
+     ASCII identifiers are unaffected
+     (each ASCII code point is a single @('UTF-8') byte).
+     The encoding is performed by syntax abstraction by @('abs-nats-to-string'),
+     and is symmetric to the @('UTF-8') decoding
+     performed by @('parse-program-from-bytes').
+     Consumers that need code points back
+     can decode the string with @('acl2::utf8=>ustring').
+     String equality on names is bytewise,
+     which agrees with code-point-sequence equality,
+     given the assumption that the strings are well-formed @('UTF-8')."))
   :order-subtopics t
   :default-parent t)
 
@@ -77,7 +96,7 @@
      this is also consistent with [impl].
      The key point is that [thesis] has
      one form of ispace variables, which may denote dimensions or shapes,
-     while our ASTs have two separate formsm, one per sort,
+     while our ASTs have two separate forms, one per sort,
      consistently with the concrete syntax (see ABNF grammar),
      which uses prefix symbols to explicate the sort of the variable."))
 
@@ -159,7 +178,7 @@
      (xdoc::p
       "The @(':splice') summand represents the square bracket notation.
        Although [impl] and the ABNF grammar use ispaces inside the brackets,
-       since dimensions may be auto-lifted dimensions,
+       since dimensions may be auto-lifted to shapes,
        we can just use shapes, and avoid a mutual recursion with ispaces here.
        This makes it apparent that
        concatenation and splicing are equivalent constructs."))
@@ -223,7 +242,7 @@
      i.e. they are syntactically distinct.
      This is different from [thesis],
      where dimension and shape variables are syntactically the same,
-     and thus explcit sorting rules are needed."))
+     and thus explicit sorting rules are needed."))
   (:dim ((name string)))
   (:shape ((name string)))
   :pred ispace-varp)
@@ -445,7 +464,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are used in numberic literals."))
+    "These are used in numeric literals."))
   (:plus ())
   (:minus ())
   :pred signp)
@@ -468,7 +487,7 @@
    (xdoc::p
     "The boolean flag says whether we have @('E') (@('t')) or @('e') @('nil');
      this is not semantically relevant,
-     but we preserve the conrete syntax information.
+     but we preserve the concrete syntax information.
      An absent sign is semantically equivalent to a positive sign,
      but we preserve the concrete syntax information.
      We require at least one digit, per the ABNF grammar."))
@@ -493,10 +512,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('num-lit') with @('float-lit') in the ABNF grammar.")
+    "This corresponds to @('num-val') with @('float-lit') in the ABNF grammar.")
    (xdoc::p
     "An absent sign is semantically equivalent to a positive sign,
-     but we preserve the conrete syntax information.
+     but we preserve the concrete syntax information.
      There must be always at least a digit in the whole part
      (i.e. the digits before the dot);
      the number cannot start with dot.
@@ -804,7 +823,7 @@
        type bindings,
        value bindings,
        function bindings,
-       type function bindings
+       type function bindings,
        ispace function bindings, and
        combined function bindings."))
     (:ispace ((var ispace-var)
@@ -838,7 +857,7 @@
 
   (fty::deflist bind-list
     :parents (abstract-syntax-trees exprs/atoms/binds)
-    :short "Fixtype of lists of atoms."
+    :short "Fixtype of lists of bindings."
     :elt-type bind
     :true-listp t
     :elementp-of-nil nil
@@ -847,7 +866,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod prog
-  :short "Fixtypr of programs."
+  :short "Fixtype of programs."
   :long
   (xdoc::topstring
    (xdoc::p

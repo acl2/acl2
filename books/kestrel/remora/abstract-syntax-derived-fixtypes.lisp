@@ -55,14 +55,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult shape-result
-  :short "Fixtype of shapes and error."
+  :short "Fixtype of shapes and errors."
   :ok shape
   :pred shape-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult shape-list-result
-  :short "Fixtype of (i) lists of shapes and (ii) error."
+  :short "Fixtype of (i) lists of shapes and (ii) errors."
   :ok shape-list
   :pred shape-list-resultp)
 
@@ -226,7 +226,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist type+shape-list
-  :short "Fixtype lists of pairs consisting of an type and a shape."
+  :short "Fixtype of lists of pairs consisting of a type and a shape."
   :elt-type type+shape
   :true-listp t
   :elementp-of-nil nil
@@ -235,7 +235,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult type+shape-list-result
-  :short "Fixtype of (i) lists of pairs consisting of an type and a shape
+  :short "Fixtype of (i) lists of pairs consisting of a type and a shape
           and (ii) errors."
   :ok type+shape-list
   :pred type+shape-list-resultp)
@@ -244,7 +244,7 @@
 
 (fty::defprod typelist+type
   :short "Fixtype of pairs consisting of
-          a list of types and an type."
+          a list of types and a type."
   ((types type-list)
    (type type))
   :pred typelist+type-p)
@@ -253,7 +253,7 @@
 
 (fty::defresult typelist+type-result
   :short "Fixtype of
-          (i) pairs consisting of a list of types and an type
+          (i) pairs consisting of a list of types and a type
           and (ii) errors."
   :ok typelist+type
   :pred typelist+type-resultp
@@ -263,7 +263,7 @@
 
 (fty::defprod ispacevarlist+type
   :short "Fixtype of pairs consisting of
-          a list of type variables and an type."
+          a list of ispace variables and a type."
   ((vars ispace-var-list)
    (type type))
   :pred ispacevarlist+type-p)
@@ -272,7 +272,7 @@
 
 (fty::defresult ispacevarlist+type-result
   :short "Fixtype of
-          (i) pairs consisting of a list of type variables and an type
+          (i) pairs consisting of a list of ispace variables and a type
           and (ii) errors."
   :ok ispacevarlist+type
   :pred ispacevarlist+type-resultp
@@ -282,7 +282,7 @@
 
 (fty::defprod typevarlist+type
   :short "Fixtype of pairs consisting of
-          a list of type variables and an type."
+          a list of type variables and a type."
   ((vars type-var-list)
    (type type))
   :pred typevarlist+type-p)
@@ -291,7 +291,7 @@
 
 (fty::defresult typevarlist+type-result
   :short "Fixtype of
-          (i) pairs consisting of a list of type variables and an type
+          (i) pairs consisting of a list of type variables and a type
           and (ii) errors."
   :ok typevarlist+type
   :pred typevarlist+type-resultp

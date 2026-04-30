@@ -251,7 +251,7 @@
 (defmacro+ tpi (params type)
   :short "Construct a product type term from
           a parenthesized list of variable strings (parameters)
-          and a type type (body)."
+          and a type term (body)."
   `(type-pi (list ,@(ispace-var-terms-from-strings params))
             ,(type-term-from-var/base/other type)))
 
@@ -260,6 +260,6 @@
 (defmacro+ tsigma (params type)
   :short "Construct a sum type term from
           a parenthesized list of variable strings (parameters)
-          and a type type (body)."
+          and a type term (body)."
   `(type-sigma (list ,@(ispace-var-terms-from-strings params))
                ,(type-term-from-var/base/other type)))

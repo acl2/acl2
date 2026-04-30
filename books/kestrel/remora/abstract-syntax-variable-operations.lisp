@@ -42,7 +42,7 @@
    (xdoc::p
     "Dimensions contain dimension variables,
      but no shape or type or term variables;
-     so they only need one substitusion or renaming map
+     so they only need one substitution or renaming map.
      All the variables in a dimension are free,
      because dimensions have no binders.")
    (xdoc::p
