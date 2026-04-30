@@ -50,7 +50,9 @@
                     base-valuep-when-result-not-error
                     sign-optionp-when-result-not-error
                     dec-digit-char-listp-when-result-not-error
-                    str::dec-digit-char-p)))
+                    str::dec-digit-char-p
+                    char-litp-when-result-not-error
+                    char-lit-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,11 +264,48 @@
     :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; manual ``result'' predicates for fixtypes whose @(tsee fty::defresult)
+;; disjointness proofs are awkward to set up
+;;
+
+(define expo-resultp (x)
+  :returns (yes booleanp)
+  :short "Recognizer for @(tsee expo) values or @(tsee reserrp) errors."
+  (or (expop x) (reserrp x))
+  ///
+  (defrule expo-resultp-when-expop
+    (implies (expop x) (expo-resultp x))
+    :rule-classes (:rewrite :forward-chaining))
+  (defrule expo-resultp-when-reserrp
+    (implies (reserrp x) (expo-resultp x))
+    :rule-classes (:rewrite :forward-chaining))
+  (defrule expop-when-expo-resultp-not-error
+    (implies (and (expo-resultp x) (not (reserrp x)))
+             (expop x))
+    :rule-classes (:rewrite :forward-chaining)))
+
+(define expo-option-resultp (x)
+  :returns (yes booleanp)
+  :short "Recognizer for @(tsee expo-option) values or @(tsee reserrp) errors."
+  (or (expo-optionp x) (reserrp x))
+  ///
+  (defrule expo-option-resultp-when-expo-optionp
+    (implies (expo-optionp x) (expo-option-resultp x))
+    :rule-classes (:rewrite :forward-chaining))
+  (defrule expo-option-resultp-when-reserrp
+    (implies (reserrp x) (expo-option-resultp x))
+    :rule-classes (:rewrite :forward-chaining))
+  (defrule expo-optionp-when-expo-option-resultp-not-error
+    (implies (and (expo-option-resultp x) (not (reserrp x)))
+             (expo-optionp x))
+    :rule-classes (:rewrite :forward-chaining)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-num-val ((tree abnf::treep))
   :returns (val base-value-resultp)
-  :short "Abstract a @('num-val') to a @(tsee base-value).
-          Currently handles only integers; @('float-lit') produces an error."
+  :short "Abstract a @('num-val') to a @(tsee base-value)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -275,14 +314,14 @@
        num-val = [ \"+\" / \"-\" ] ( float-lit / decimal )
      })
      The CST has two tree-lists: an optional sign and a wrapper around
-     either @('float-lit') or @('decimal').  We descend into the second
-     wrapper, attempt @('decimal') first, and emit a not-yet-implemented
-     error if a @('float-lit') is encountered.")
+     either @('float-lit') or @('decimal').")
    (xdoc::p
-    "For the @('decimal') case we build an @(tsee int-lit) that
-     preserves the source-level sign (absent vs.@ explicit @('+') vs.@
-     @('-')) and the decimal digits (including any leading zeros).  The
-     numeric value is recovered later by the static/dynamic semantics."))
+    "We build either an @(tsee int-lit) (for @('decimal')) or a
+     @(tsee float-lit) (for @('float-lit')) that preserves the
+     source-level sign (absent vs.@ explicit @('+') vs.@ @('-'))
+     and the decimal digits (including any leading zeros).  The
+     numeric value is recovered later by the static/dynamic
+     semantics."))
   (b* (((okf (abnf::tree-list-tuple2 sub))
         (abnf::check-tree-nonleaf-2 tree "num-val"))
        ;; First tree-list: optional sign wrapper (single tree).
@@ -296,16 +335,12 @@
        ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
     (cond ((equal rulename? "decimal")
            (b* (((okf digits) (abs-decimal-to-digits inner))
-                ;; abs-decimal-to-digits already ensures consp, but the
-                ;; check below makes int-lit's :require visible to the
-                ;; guard verifier.
                 ((unless (consp digits))
                  (reserrf :empty-decimal-digits-impossible)))
              (make-base-value-int :lit (make-int-lit :sign? sign?
                                                      :digits digits))))
           ((equal rulename? "float-lit")
-           (reserrf (list :float-lit-not-yet-implemented
-                          (abnf::tree-info-for-error inner))))
+           (abs-float-lit-as-base-value inner sign?))
           (t (reserrf (list :unexpected-num-val-body
                             (abnf::tree-info-for-error inner))))))
 
@@ -353,7 +388,100 @@
      (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree "decimal"))
           ((unless (consp trees))
            (reserrf (list :empty-decimal (abnf::tree-info-for-error tree)))))
-       (abs-*-digit-tree-to-char trees)))))
+       (abs-*-digit-tree-to-char trees)))
+
+   (define abs-eE-group-to-upcase ((tree abnf::treep))
+     :returns (upcase acl2::boolean-resultp)
+     :parents nil
+     :short "Abstract a @('( \"e\" / \"E\" )') group wrapper to a boolean
+             (@('t') for upper, @('nil') for lower)."
+     (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree nil))
+          (lower-pass (abnf::check-tree-schars inner "e"))
+          ((unless (reserrp lower-pass)) nil)
+          (upper-pass (abnf::check-tree-schars inner "E"))
+          ((unless (reserrp upper-pass)) t))
+       (reserrf (list :unexpected-eE
+                      (abnf::tree-info-for-error inner)))))
+
+   ;; abs-expo and abs-expo-option use ``raw'' or-types in their :returns
+   ;; clauses, since defresult of these defprods/options is awkward.
+   ;; They are used only by abs-float-lit-as-base-value below.
+   (define abs-expo ((tree abnf::treep))
+     :returns (e expo-resultp)
+     :parents nil
+     :short "Abstract an @('exponent') CST to an @(tsee expo)."
+     (b* (((okf (abnf::tree-list-tuple3 sub))
+           (abnf::check-tree-nonleaf-3 tree "exponent"))
+          ((okf eE-tree) (abnf::check-tree-list-1 sub.1st))
+          ((okf upcase) (abs-eE-group-to-upcase eE-tree))
+          ((okf opt-sign-tree) (abnf::check-tree-list-1 sub.2nd))
+          ((okf sign?) (abs-optional-sign-to-option opt-sign-tree))
+          ((okf digits) (abs-*-digit-tree-to-char sub.3rd))
+          ((unless (consp digits))
+           (reserrf :empty-exponent-digits-impossible)))
+       (make-expo :upcase upcase :sign? sign? :digits digits)))
+
+   (define abs-expo-option ((tree abnf::treep))
+     :returns (e? expo-option-resultp)
+     :parents nil
+     :short "Abstract @('[ exponent ]') to an @(tsee expo-option)."
+     (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
+          ((when (endp treess)) (expo-option-none))
+          ((okf trees) (abnf::check-tree-list-list-1 treess))
+          ((okf inner) (abnf::check-tree-list-1 trees))
+          ((okf e) (abs-expo inner)))
+       (expo-option-some e)))
+
+   ;; Build a base-value :float from a float-lit CST and the outer
+   ;; num-val sign?.  Returning base-value-resultp avoids needing a
+   ;; separate float-lit-result fixtype.
+   ;;
+   ;; float-lit = 1*DIGIT "." 1*DIGIT [ exponent ]   ; alt 1 (4 tree-lists)
+   ;;           / 1*DIGIT exponent                   ; alt 2 (2 tree-lists)
+   ;;
+   ;; exponent = ( "e" / "E" ) [ "+" / "-" ] 1*DIGIT  ; 3 tree-lists
+   (define abs-float-lit-as-base-value ((tree abnf::treep)
+                                        (sign? sign-optionp))
+     :returns (val base-value-resultp)
+     :parents nil
+     :short "Abstract a @('float-lit') CST to a @(tsee base-value) @(':float'),
+             attaching the given outer @('sign?')."
+     (b* (((okf treess) (abnf::check-tree-nonleaf tree "float-lit")))
+       (case (len treess)
+         (4
+          ;; Alt 1: whole "." frac [exp]
+          (b* (((okf (abnf::tree-list-tuple4 sub))
+                (abnf::check-tree-list-list-4 treess))
+               ((okf whole-digits) (abs-*-digit-tree-to-char sub.1st))
+               ((unless (consp whole-digits))
+                (reserrf :empty-whole-digits-impossible))
+               ((okf frac-digits) (abs-*-digit-tree-to-char sub.3rd))
+               ((unless (consp frac-digits))
+                (reserrf :empty-frac-digits-impossible))
+               ((okf opt-exp-tree) (abnf::check-tree-list-1 sub.4th))
+               ((okf expo?)
+                (abs-expo-option opt-exp-tree)))
+            (make-base-value-float
+             :lit (make-float-lit :sign? sign?
+                                  :whole-digits whole-digits
+                                  :frac-digits frac-digits
+                                  :expo? expo?))))
+         (2
+          ;; Alt 2: whole exp
+          (b* (((okf (abnf::tree-list-tuple2 sub))
+                (abnf::check-tree-list-list-2 treess))
+               ((okf whole-digits) (abs-*-digit-tree-to-char sub.1st))
+               ((unless (consp whole-digits))
+                (reserrf :empty-whole-digits-impossible))
+               ((okf exp-tree) (abnf::check-tree-list-1 sub.2nd))
+               ((okf expo) (abs-expo exp-tree)))
+            (make-base-value-float
+             :lit (make-float-lit :sign? sign?
+                                  :whole-digits whole-digits
+                                  :frac-digits nil
+                                  :expo? (expo-option-some expo)))))
+         (otherwise
+          (reserrf (list :float-lit-shape (len treess)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -369,6 +497,57 @@
            (abs-num-val inner))
           (t (reserrf (list :unexpected-base-val-body
                             (abnf::tree-info-for-error inner)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; char-lit and string-lit
+;;
+;; The escape branch (@('\\' escape-char)) is not yet implemented.  When
+;; it lands, dispatch on tree-list count: 1 -> non-escape, 2 -> escape.
+;;
+
+(define abs-char-lit ((tree abnf::treep))
+  :returns (cl char-lit-resultp)
+  :short "Abstract a @('char-lit') to a @(tsee char-lit)
+          (non-escape only; escapes are not yet implemented)."
+  (b* (((okf treess) (abnf::check-tree-nonleaf tree "char-lit")))
+    (case (len treess)
+      (1 (b* (((okf trees) (abnf::check-tree-list-list-1 treess))
+              ((okf inner) (abnf::check-tree-list-1 trees))
+              ((okf leaf) (abnf::check-tree-leafterm inner))
+              ((unless (consp leaf))
+               (reserrf (list :empty-char-lit-leaf
+                              (abnf::tree-info-for-error inner))))
+              ((unless (= (len leaf) 1))
+               (reserrf (list :char-lit-leaf-not-singleton leaf)))
+              (code (car leaf))
+              ((unless (and (natp code)
+                            (or (and (<= 0 code) (<= code #x21))
+                                (and (<= #x23 code) (<= code #x5B))
+                                (and (<= #x5D code) (<= code #xD7FF))
+                                (and (<= #xE000 code) (<= code #x10FFFF)))))
+               (reserrf (list :char-lit-out-of-range code))))
+           (make-char-lit-char :code code)))
+      (2 (reserrf (list :char-lit-escape-not-yet-implemented
+                        (abnf::tree-info-for-error tree))))
+      (otherwise
+       (reserrf (list :char-lit-shape (len treess)))))))
+
+(define abs-*-char-lit ((trees abnf::tree-listp))
+  :returns (chars char-lit-list-resultp)
+  :short "Abstract @('*char-lit') to a list of @(tsee char-lit)s."
+  (b* (((when (endp trees)) nil)
+       ((okf c) (abs-char-lit (car trees)))
+       ((okf rest) (abs-*-char-lit (cdr trees))))
+    (cons c rest)))
+
+(define abs-string-lit-to-chars ((tree abnf::treep))
+  :returns (chars char-lit-list-resultp)
+  :short "Abstract a @('string-lit') CST to a list of @(tsee char-lit)s
+          (the chars between the surrounding @('DQUOTE')s)."
+  (b* (((okf (abnf::tree-list-tuple3 sub))
+        (abnf::check-tree-nonleaf-3 tree "string-lit")))
+    (abs-*-char-lit sub.2nd)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
