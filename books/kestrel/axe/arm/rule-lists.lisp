@@ -81,7 +81,8 @@
 (defund instruction-semantic-functions ()
   (declare (xargs :guard t))
   (append (set-difference-eq (semantic-functions-for-mnemonics)
-                             '(arm::execute-cmp-immediate
+                             '(;; These are replaced below by the -alt rules:
+                               arm::execute-cmp-immediate
                                arm::execute-cmp-register
                                arm::execute-cmp-register-shifted-register
                                arm::execute-cmn-immediate
@@ -101,8 +102,9 @@
             arm::cmp-immediate-argsp
             arm::cmp-register-argsp
             arm::cmp-register-shifted-register-argsp
-            )
-          '(arm::bl-blx-common ; todo: package for the functions
+
+            ;; Additional rules needed for the instruction semantics:
+            arm::bl-blx-common ; todo: add some of these to the A package?
             arm::blx-core
             arm::mov-common
             arm::mov-register-core
@@ -444,10 +446,6 @@
 ;   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
-   ;; bv rules:
-   '(acl2::bitnot-of-bitxor-of-1 ; move to core-rules-bv
-     acl2::bitxor-of-1-and-bitnot ; move to core-rules-bv
-     )
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)

@@ -866,6 +866,9 @@
      equal-of-0-and-bitnot
      equal-of-1-and-bitnot
 
+     bitnot-of-bitxor-of-1
+     bitxor-of-1-and-bitnot
+
      bvand-of-myif-arg1
      bvand-of-myif-arg2
      bvxor-of-myif-1
