@@ -15,9 +15,11 @@
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/nat-natlist-result" :dir :system)
+(include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/string-result" :dir :system)
 (include-book "kestrel/fty/boolean-result" :dir :system)
 (include-book "projects/abnf/tree-utilities" :dir :system)
+(include-book "unicode/utf8-encode" :dir :system)
 
 (local
  (in-theory (enable abnf::treep-when-result-not-error
@@ -27,6 +29,7 @@
                     abnf::tree-list-tuple3p-when-result-not-error
                     abnf::tree-list-tuple5p-when-result-not-error
                     acl2::natp-when-result-not-error
+                    acl2::nat-listp-when-result-not-error
                     acl2::reserrp-when-nat-resultp-not-ok
                     acl2::stringp-when-result-not-error
                     dimp-when-result-not-error
@@ -77,19 +80,39 @@
 
 (define abs-nats-to-string ((nats nat-listp))
   :returns (str acl2::string-resultp)
-  :short "Convert a list of code points to an ACL2 string."
+  :short "Convert a list of Unicode code points to an ACL2 string,
+          UTF-8-encoded."
   :long
   (xdoc::topstring
    (xdoc::p
-    "ACL2 strings are sequences of bytes (code points 0-255).
-     Identifiers in Remora source code are typically ASCII, so this
-     conversion succeeds for the common case.  Code points outside
-     the byte range produce an error result, to be revisited when
-     full Unicode identifier support is added."))
+    "ACL2 strings are sequences of bytes (char codes 0-255), so a
+     single non-ASCII code point such as U+03B1 cannot fit in one
+     character.  Instead we UTF-8-encode the code points back into
+     bytes and pack those bytes into the ACL2 string.  This is
+     symmetric to the bytes-to-code-points decoding done by "
+    (xdoc::seetopic "post-parsing" "@('parse-program-from-bytes')")
+    ".")
+   (xdoc::p
+    "Consequence: for ASCII inputs, the resulting ACL2 string holds
+     one byte per code point (no change from the natural encoding).
+     For non-ASCII inputs, the string holds the UTF-8 byte sequence,
+     so @('(length name)') is the byte count rather than the
+     code-point count.  Two strings produced from the same source
+     identifier compare @(see equal), so this is fine for use as a
+     variable-name representation; consumers that need code points
+     back can decode with @('acl2::utf8=>ustring').")
+   (xdoc::p
+    "The error case @(':invalid-codepoints') is structural &mdash;
+     it occurs only if @('nats') contains values outside the
+     Unicode scalar range (i.e. surrogates U+D800-DFFF, or values
+     above U+10FFFF).  Code-point lists produced by the Remora
+     parser cannot contain such values, because the grammar's
+     terminal ranges already exclude them; the check is purely
+     defensive."))
   (b* ((nats (acl2::nat-list-fix nats)))
-    (if (acl2::unsigned-byte-listp 8 nats)
-        (acl2::nats=>string nats)
-      (reserrf (list :non-byte-codepoint nats))))
+    (if (acl2::ustring? nats)
+        (acl2::nats=>string (acl2::ustring=>utf8 nats))
+      (reserrf (list :invalid-codepoints nats))))
   ///
   (defret stringp-of-abs-nats-to-string
     (implies (not (reserrp str))
@@ -143,6 +166,40 @@
     (implies (not (reserrp nat))
              (natp nat))
     :rule-classes :forward-chaining))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-ws-decimal ((tree abnf::treep))
+  :returns (n acl2::nat-resultp)
+  :short "Abstract a @('( ws decimal )') wrapper to a natural number."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree nil))
+       ((okf decimal-tree) (abnf::check-tree-list-1 sub.2nd)))
+    (abs-decimal decimal-tree)))
+
+(define abs-*-ws-decimal ((trees abnf::tree-listp))
+  :returns (nats acl2::nat-list-resultp)
+  :short "Abstract @('*( ws decimal )') to a list of natural numbers."
+  (b* (((when (endp trees)) nil)
+       ((okf n) (abs-ws-decimal (car trees)))
+       ((okf rest) (abs-*-ws-decimal (cdr trees))))
+    (cons n rest)))
+
+(define abs-shape-lit ((tree abnf::treep))
+  :returns (nats acl2::nat-list-resultp)
+  :short "Abstract a @('shape-lit') to a list of natural numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar is @('shape-lit = \"[\" *( ws decimal ) ws \"]\"').
+     This is the concrete shape literal used inside @('array-exp')
+     and @('frame-exp'); it produces a flat list of dimensions
+     (natural numbers).  Note that this differs from the bracketed
+     shape form in the @('shape') rule, which contains arbitrary
+     ispaces."))
+  (b* (((okf (abnf::tree-list-tuple4 sub))
+        (abnf::check-tree-nonleaf-4 tree "shape-lit")))
+    (abs-*-ws-decimal sub.2nd)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
