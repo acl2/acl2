@@ -157,6 +157,21 @@
   :ok dec-digit-char-list
   :pred dec-digit-char-list-resultp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult char-lit-result
+  :short "Fixtype of character literals and errors."
+  :ok char-lit
+  :pred char-lit-resultp
+  :prepwork ((local (in-theory (enable char-lit-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult char-lit-list-result
+  :short "Fixtype of lists of character literals and errors."
+  :ok char-lit-list
+  :pred char-lit-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap string-dim-map

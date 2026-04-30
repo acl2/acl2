@@ -778,8 +778,8 @@
        ((pok< esc-tree) (parse-escape-char input)))
     (mv (abnf::make-tree-nonleaf
          :rulename? (abnf::rulename "char-lit")
-         :branches (list (list (abnf::tree-leafterm (list #x5C))
-                               esc-tree)))
+         :branches (list (list (abnf::tree-leafterm (list #x5C)))
+                         (list esc-tree)))
         input))
   :hooks (:fix)
   ///
@@ -1934,16 +1934,60 @@
   (define parse-val-bind ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse a @('val-bind')."
-    (b* (((pok< tree-kw) (abnf::parse-ichars "val" input))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The grammar has two alternatives:
+       @({
+         val-bind = \"val\" ws identifier ws exp
+                  / \"val\" ws \"(\" ws identifier ws \":\" ws type-exp ws \")\" ws exp
+       })
+       The untyped form (alt 1) produces 5 tree-lists; the typed form
+       (alt 2) produces 13 tree-lists.  The downstream abstractor
+       dispatches on tree-list count."))
+    (b* (((try tree rest)
+          ;; Alt 1: "val" ws identifier ws exp
+          (b* (((pok< tree-kw) (abnf::parse-ichars "val" input))
+               ((pok tree-ws1) (parse-ws input))
+               ((pok< tree-id) (parse-identifier input))
+               ((pok tree-ws2) (parse-ws input))
+               ((pok< tree-e) (parse-exp input)))
+            (mv (abnf::make-tree-nonleaf
+                 :rulename? (abnf::rulename "val-bind")
+                 :branches (list (list tree-kw)
+                                 (list tree-ws1)
+                                 (list tree-id)
+                                 (list tree-ws2)
+                                 (list tree-e)))
+                input)))
+         ;; Alt 2: "val" ws "(" ws identifier ws ":" ws type-exp ws ")" ws exp
+         ((pok< tree-kw) (abnf::parse-ichars "val" input))
          ((pok tree-ws1) (parse-ws input))
-         ((pok< tree-id) (parse-identifier input))
+         ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
+         ((pok< tree-id) (parse-identifier input))
+         ((pok tree-ws3) (parse-ws input))
+         ((pok< tree-colon) (abnf::parse-ichars ":" input))
+         ((pok tree-ws4) (parse-ws input))
+         ((pok< tree-te) (parse-type-exp input))
+         ((pok tree-ws5) (parse-ws input))
+         ((pok< tree-close) (abnf::parse-ichars ")" input))
+         ((pok tree-ws6) (parse-ws input))
          ((pok< tree-e) (parse-exp input)))
-      (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "val-bind")
+      (mv (abnf::make-tree-nonleaf
+           :rulename? (abnf::rulename "val-bind")
            :branches (list (list tree-kw)
                            (list tree-ws1)
-                           (list tree-id)
+                           (list tree-open)
                            (list tree-ws2)
+                           (list tree-id)
+                           (list tree-ws3)
+                           (list tree-colon)
+                           (list tree-ws4)
+                           (list tree-te)
+                           (list tree-ws5)
+                           (list tree-close)
+                           (list tree-ws6)
                            (list tree-e)))
           input))
     :measure (two-nats-measure (len input) 11))

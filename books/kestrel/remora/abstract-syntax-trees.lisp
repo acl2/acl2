@@ -646,7 +646,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('char-literal') in the ABNF grammar."))
+    "This corresponds to @('char-lit') in the ABNF grammar."))
   (:char ((code nat
                 :reqfix (if (or (and (<= #x0 code) (<= code #x21))
                                 (and (<= #x23 code) (<= code #x5b))
