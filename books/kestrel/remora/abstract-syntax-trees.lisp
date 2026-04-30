@@ -477,9 +477,7 @@
   ((upcase bool)
    (sign? sign-option)
    (digits dec-digit-char-list
-           :reqfix (if (consp digits)
-                       digits
-                     (list #\0))))
+           :reqfix (if (consp digits) digits '(#\0))))
   :require (consp digits)
   :pred expop)
 
@@ -497,9 +495,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('float-lit') in the ABNF grammar,
-     but we also include the preceding optional sign,
-     which the grammar factors across integers and floats.")
+    "This corresponds to @('num-lit') with @('float-lit') in the ABNF grammar.")
    (xdoc::p
     "An absent sign is semantically equivalent to a positive sign,
      but we preserve the conrete syntax information.
@@ -512,13 +508,9 @@
      At least one of the dot and exponent must be present, possibly both."))
   ((sign? sign-option)
    (whole-digits dec-digit-char-list
-                 :reqfix (if (consp whole-digits)
-                             whole-digits
-                           (list #\0)))
+                 :reqfix (if (consp whole-digits) whole-digits '(#\0)))
    (frac-digits dec-digit-char-list
-                :reqfix (if (or (consp frac-digits) expo?)
-                            frac-digits
-                          (list #\0)))
+                :reqfix (if (or (consp frac-digits) expo?) frac-digits '(#\0)))
    (expo? expo-option))
   :require (and (consp whole-digits)
                 (or (consp frac-digits)
@@ -545,13 +537,10 @@
      ``desired'' (according to the Haskell documentation)
      to comply with the IEEE standard.
      We defer those details to the semantics:
-     in this abstract sytnax,
-     we capture integer values as ACL2 arbitrary-precision integers
-     (which abstract non-empty lists of digits optionally preceded by a sign;
-     we only lose information about leading zeros and
-     whether the sign is absent or positive),
-     and we capture float values as their literals,
-     which preserve all their concrete syntax information"))
+     we use ACL2's arbitrary-precision integers and float literal ASTs.
+     The latter preserve all the concrete syntax information;
+     ACL2 integers abstract away leading zero digits
+     and the distinction between an absent sign and a positive sign."))
   (:bool ((value bool)))
   (:int ((value int)))
   (:float ((lit float-lit)))
