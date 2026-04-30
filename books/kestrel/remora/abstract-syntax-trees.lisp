@@ -55,10 +55,6 @@
      and a desugaring transformation from all ASTs to core ASTs.
      The ASTs in [impl] are slightly more abstracted than ours.")
    (xdoc::p
-    "The coverage of our ASTs is almost complete.
-     Still missing are multiplications and subtraction of dimensions;
-     we plan to add them shortly.")
-   (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
      But we should probably introduce and use
@@ -98,11 +94,14 @@
       "There are
        named variables,
        constants (natural numbers),
-       and additions.
-       We also plan to add multiplications and subtractions, as in [impl]."))
+       additions of zero or more dimensions,
+       multiplications of zero or more dimensions,
+       and subtractions of zero or more dimensions."))
     (:var ((name string)))
     (:const ((value nat)))
     (:add ((dims dim-list)))
+    (:mul ((dims dim-list)))
+    (:sub ((dims dim-list)))
     :pred dimp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

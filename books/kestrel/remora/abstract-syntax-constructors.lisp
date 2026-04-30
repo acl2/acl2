@@ -89,8 +89,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ dim+ (&rest dims)
-  :short "Construct an addition dimension term from addend dimensions."
+  :short "Construct an addition dimension term from argument dimensions."
   `(dim-add (list ,@(dim-terms-from-vars/consts/others dims))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ dim* (&rest dims)
+  :short "Construct a multiplication dimension term from argument dimensions."
+  `(dim-mul (list ,@(dim-terms-from-vars/consts/others dims))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ dim- (&rest dims)
+  :short "Construct a subtraction dimension term from argument dimensions."
+  `(dim-sub (list ,@(dim-terms-from-vars/consts/others dims))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

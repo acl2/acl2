@@ -30,6 +30,8 @@
                   '(bool
                     defmacro+
                     defxdoc+
+                    enable*
+                    impossible
                     int
                     lnfix
                     nat
