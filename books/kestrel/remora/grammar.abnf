@@ -32,7 +32,7 @@ program         = ws exp ws
 ; -------------------------------------------------------------------------
 
 exp             = atom               ; atom in expression position
-                                     ; (desugars to Array [] [atom])
+                                     ; (desugars to (array [] atom))
                 / bracket-frame      ; [e1 e2 ... en] frame sugar
                 / identifier         ; variable reference
                 / string-lit         ; "..." string literal

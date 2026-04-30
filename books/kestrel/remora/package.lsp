@@ -49,4 +49,5 @@
                     fty::reserrf-push
                     fty::reserrp
                     std::defret-mutual
+                    str::dec-digit-char-list
                     str::string-list)))
