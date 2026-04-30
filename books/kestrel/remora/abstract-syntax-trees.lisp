@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/fty/dec-digit-char-list" :dir :system)
 (include-book "std/strings/eqv" :dir :system)
 
 (include-book "portcullis")
@@ -441,6 +442,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum sign
+  :short "Fixtype of signs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used in numberic literals."))
+  (:plus ())
+  (:minus ())
+  :pred signp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption sign-option
+  sign
+  :short "Fixtype of optional signs."
+  :pred sign-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expo
+  :short "Fixtype of exponents."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used in float literals.")
+   (xdoc::p
+    "The boolean flag says whether we have @('E') (@('t')) or @('e') @('nil');
+     this is not semantically relevant,
+     but we preserve the conrete syntax information.
+     An absent sign is semantically equivalent to a positive sign,
+     but we preserve the concrete syntax information.
+     We require at least one digit, per the ABNF grammar."))
+  ((upcase bool)
+   (sign? sign-option)
+   (digits str::dec-digit-char-list
+           :reqfix (if (consp digits)
+                       digits
+                     (list #\0))))
+  :require (consp digits)
+  :pred expop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption expo-option
+  expo
+  :short "Fixtype of optional exponents."
+  :pred expo-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod float-lit
+  :short "Fixtype of float literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('float-lit') in the ABNF grammar,
+     but we also include the preceding optional sign,
+     which the grammar factors across integers and floats.")
+   (xdoc::p
+    "An absent sign is semantically equivalent to a positive sign,
+     but we preserve the conrete syntax information.
+     There must be always at least a digit in the whole part
+     (i.e. the digits before the dot);
+     the number cannot start with dot.
+     The list of digits in the fractional part (i.e. after the dot)
+     may be empty, which means that there is no dot:
+     the number cannot end with dot without a digit after that.
+     At least one of the dot and exponent must be present, possibly both."))
+  ((sign? sign-option)
+   (whole-digits str::dec-digit-char-list
+                 :reqfix (if (consp whole-digits)
+                             whole-digits
+                           (list #\0)))
+   (frac-digits str::dec-digit-char-list
+                :reqfix (if (or (consp frac-digits) expo?)
+                            frac-digits
+                          (list #\0)))
+   (expo? expo-option))
+  :require (and (consp whole-digits)
+                (or (consp frac-digits)
+                    (expo-option-case expo? :some)))
+  :pred float-litp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum base-value
   :short "Fixtype of base values."
   :long
@@ -458,11 +544,17 @@
      which consists of single-precision floating-point numbers,
      ``desired'' (according to the Haskell documentation)
      to comply with the IEEE standard.
-     For now, we use ACL2 arbitrary-precision integers and rationals;
-     but we will refine them."))
+     We defer those details to the semantics:
+     in this abstract sytnax,
+     we capture integer values as ACL2 arbitrary-precision integers
+     (which abstract non-empty lists of digits optionally preceded by a sign;
+     we only lose information about leading zeros and
+     whether the sign is absent or positive),
+     and we capture float values as their literals,
+     which preserve all their concrete syntax information"))
   (:bool ((value bool)))
   (:int ((value int)))
-  (:float ((value acl2::rational)))
+  (:float ((lit float-lit)))
   :pred base-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -546,7 +638,8 @@
     :elt-type expr
     :true-listp t
     :elementp-of-nil nil
-    :pred expr-listp)
+    :pred expr-listp
+    :verbosep t) ; TODO: remove
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
