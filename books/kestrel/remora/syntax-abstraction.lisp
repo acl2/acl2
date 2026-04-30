@@ -47,7 +47,10 @@
                     typep-when-result-not-error
                     type-listp-when-result-not-error
                     base-typep-when-result-not-error
-                    base-valuep-when-result-not-error)))
+                    base-valuep-when-result-not-error
+                    sign-optionp-when-result-not-error
+                    dec-digit-char-listp-when-result-not-error
+                    str::dec-digit-char-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,12 +277,17 @@
      The CST has two tree-lists: an optional sign and a wrapper around
      either @('float-lit') or @('decimal').  We descend into the second
      wrapper, attempt @('decimal') first, and emit a not-yet-implemented
-     error if a @('float-lit') is encountered."))
+     error if a @('float-lit') is encountered.")
+   (xdoc::p
+    "For the @('decimal') case we build an @(tsee int-lit) that
+     preserves the source-level sign (absent vs.@ explicit @('+') vs.@
+     @('-')) and the decimal digits (including any leading zeros).  The
+     numeric value is recovered later by the static/dynamic semantics."))
   (b* (((okf (abnf::tree-list-tuple2 sub))
         (abnf::check-tree-nonleaf-2 tree "num-val"))
        ;; First tree-list: optional sign wrapper (single tree).
        ((okf sign-tree) (abnf::check-tree-list-1 sub.1st))
-       ((okf negative-p) (abs-optional-sign sign-tree))
+       ((okf sign?) (abs-optional-sign-to-option sign-tree))
        ;; Second tree-list: the inner decimal-or-float-lit wrapper.
        ((okf body-tree) (abnf::check-tree-list-1 sub.2nd))
        ((okf body-treess) (abnf::check-tree-nonleaf body-tree nil))
@@ -287,9 +295,14 @@
        ((okf inner) (abnf::check-tree-list-1 body-trees))
        ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
     (cond ((equal rulename? "decimal")
-           (b* (((okf nat) (abs-decimal inner))
-                (val (if negative-p (- (ifix nat)) (ifix nat))))
-             (make-base-value-int :value val)))
+           (b* (((okf digits) (abs-decimal-to-digits inner))
+                ;; abs-decimal-to-digits already ensures consp, but the
+                ;; check below makes int-lit's :require visible to the
+                ;; guard verifier.
+                ((unless (consp digits))
+                 (reserrf :empty-decimal-digits-impossible)))
+             (make-base-value-int :lit (make-int-lit :sign? sign?
+                                                     :digits digits))))
           ((equal rulename? "float-lit")
            (reserrf (list :float-lit-not-yet-implemented
                           (abnf::tree-info-for-error inner))))
@@ -297,19 +310,50 @@
                             (abnf::tree-info-for-error inner))))))
 
   :prepwork
-  ((define abs-optional-sign ((tree abnf::treep))
-     :returns (negative-p acl2::boolean-resultp)
+  ((define abs-optional-sign-to-option ((tree abnf::treep))
+     :returns (s? sign-option-resultp)
      :parents nil
-     :short "Abstract @('[ \"+\" / \"-\" ]') to a sign flag."
+     :short "Abstract @('[ \"+\" / \"-\" ]') to a @(tsee sign-option)."
      (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
-          ((when (endp treess)) nil)
+          ((when (endp treess)) (sign-option-none))
           ((okf trees) (abnf::check-tree-list-list-1 treess))
           ((okf inner) (abnf::check-tree-list-1 trees))
           (plus-pass (abnf::check-tree-ichars inner "+"))
-          ((unless (reserrp plus-pass)) nil)
+          ((unless (reserrp plus-pass))
+           (sign-option-some (sign-plus)))
           (minus-pass (abnf::check-tree-ichars inner "-"))
-          ((unless (reserrp minus-pass)) t))
-       (reserrf (list :unexpected-sign (abnf::tree-info-for-error inner)))))))
+          ((unless (reserrp minus-pass))
+           (sign-option-some (sign-minus))))
+       (reserrf (list :unexpected-sign (abnf::tree-info-for-error inner)))))
+
+   (define abs-*-digit-tree-to-char ((trees abnf::tree-listp))
+     :returns (chars dec-digit-char-list-resultp)
+     :parents nil
+     :short "Abstract a list of @('digit') trees to a list of
+             @(see str::dec-digit-char)s, preserving leading zeros."
+     (b* (((when (endp trees)) nil)
+          ((okf inner)
+           (abnf::check-tree-nonleaf-1-1 (car trees) "digit"))
+          ((okf leaf) (abnf::check-tree-leafterm inner))
+          ((unless (consp leaf))
+           (reserrf (list :empty-digit-leaf
+                          (abnf::tree-info-for-error inner))))
+          (nat (car leaf))
+          ((unless (and (<= #x30 nat) (<= nat #x39)))
+           (reserrf (list :digit-out-of-range nat)))
+          (c (code-char nat))
+          ((okf rest) (abs-*-digit-tree-to-char (cdr trees))))
+       (cons c rest)))
+
+   (define abs-decimal-to-digits ((tree abnf::treep))
+     :returns (digits dec-digit-char-list-resultp)
+     :parents nil
+     :short "Abstract a @('decimal') to a list of @(see str::dec-digit-char)s,
+             preserving leading zeros."
+     (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree "decimal"))
+          ((unless (consp trees))
+           (reserrf (list :empty-decimal (abnf::tree-info-for-error tree)))))
+       (abs-*-digit-tree-to-char trees)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

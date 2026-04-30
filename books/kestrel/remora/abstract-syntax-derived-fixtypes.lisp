@@ -142,6 +142,21 @@
   :pred base-value-resultp
   :prepwork ((local (in-theory (enable base-value-kind)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult sign-option-result
+  :short "Fixtype of optional signs and errors."
+  :ok sign-option
+  :pred sign-option-resultp
+  :prepwork ((local (in-theory (enable signp sign-optionp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult dec-digit-char-list-result
+  :short "Fixtype of lists of decimal digit characters and errors."
+  :ok dec-digit-char-list
+  :pred dec-digit-char-list-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap string-dim-map

@@ -507,6 +507,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod int-lit
+  :short "Fixtype of integer literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('num-val') with @('decimal') in the ABNF grammar.")
+   (xdoc::p
+    "An absent sign is semantically equivalent to a positive sign,
+     but we preserve the concrete syntax information.
+     Leading zero digits make no semantic difference,
+     but we preserve the concrete syntax information.
+     There must be at least one digit."))
+  ((sign? sign-option)
+   (digits dec-digit-char-list
+           :reqfix (if (consp digits) digits '(#\0))))
+  :require (consp digits)
+  :pred int-litp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod float-lit
   :short "Fixtype of float literals."
   :long
@@ -675,7 +695,7 @@
      ACL2 integers abstract away leading zero digits
      and the distinction between an absent sign and a positive sign."))
   (:bool ((value bool)))
-  (:int ((value int)))
+  (:int ((lit int-lit)))
   (:float ((lit float-lit)))
   :pred base-valuep)
 
