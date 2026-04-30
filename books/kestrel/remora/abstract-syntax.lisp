@@ -39,4 +39,4 @@
                     abstract-syntax-derived-fixtypes
                     abstract-syntax-structural-operations
                     abstract-syntax-matching-operations
-                    abstract-syntax-variable-operationss))
+                    abstract-syntax-variable-operations))

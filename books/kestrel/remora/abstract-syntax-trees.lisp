@@ -159,7 +159,7 @@
      (xdoc::p
       "The @(':splice') summand represents the square bracket notation.
        Although [impl] and the ABNF grammar use ispaces inside the brackets,
-       since dimensions may be auto-lifted dimensions,
+       since dimensions may be auto-lifted to shapes,
        we can just use shapes, and avoid a mutual recursion with ispaces here.
        This makes it apparent that
        concatenation and splicing are equivalent constructs."))
@@ -838,7 +838,7 @@
 
   (fty::deflist bind-list
     :parents (abstract-syntax-trees exprs/atoms/binds)
-    :short "Fixtype of lists of atoms."
+    :short "Fixtype of lists of bindings."
     :elt-type bind
     :true-listp t
     :elementp-of-nil nil

@@ -451,8 +451,8 @@
        In [arxiv] and [thesis],
        @($(x\\ k)\\ldots$) corresponds to @('vars') in our code,
        @($\\tau_u$) corresponds to @('body-atom-type'),
-       @($\\iota_u$) corresponds to @('body-type'),
-       and @($\\iota_f$) corresponds to @('fun-type').
+       @($\\iota_u$) corresponds to @('body-shape'),
+       and @($\\iota_f$) corresponds to @('fun-shape').
        We check that
        all the free ispace and type variables of the type arguments
        are in scope.
@@ -463,8 +463,8 @@
        We form a substitution from the bound variables to the argument types,
        and we apply it to the body atom type
        to obtain the atom type of the resulting array type,
-       whose type is obtained by concatenating
-       the function type to the body type.")
+       whose shape is obtained by concatenating
+       the function shape to the body shape.")
      (xdoc::p
       "For an ispace application,
        first we check the function expression,

@@ -52,11 +52,11 @@
       and @('atom-type-var') and @('array-type-var') are separate
       non-terminals."))
    (xdoc::p
-    "This corresponds to Fig 5 (sorting rules, &Delta;) and Fig 6
-     (kinding rules, &Theta;) of the [arxiv] paper, but encoded
+    "This corresponds to Fig 5 (sorting rules, &Theta;) and Fig 6
+     (kinding rules, &Delta;) of the [arxiv] paper, but encoded
      structurally so that a downstream type checker can recover
      sort and kind from each variable's syntactic shape &mdash;
-     no separate &Delta;/&Theta; context is needed.  This choice
+     no separate &Theta;/&Delta; context is needed.  This choice
      matches [impl] and differs from [arxiv] and [thesis], which
      use a flat surface syntax and rely on the context machinery
      to assign sorts and kinds."))
