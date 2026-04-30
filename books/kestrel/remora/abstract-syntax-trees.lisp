@@ -58,7 +58,26 @@
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
      But we should probably introduce and use
-     a slightly more abstract notion of identifiers."))
+     a slightly more abstract notion of identifiers.")
+   (xdoc::p
+    "Note that the strings representing identifiers
+     that derive from potentially-non-ASCII Remora surface syntax
+     are stored in our ASTs as ACL2 strings whose bytes are
+     the @('UTF-8') encoding of the original Unicode code-point sequence.
+     Since ACL2 char codes are 0-255,
+     a non-ASCII code point such as U+03B1 cannot occupy a single character;
+     the @('UTF-8') convention encodes it as two bytes (@('0xCE 0xB1'))
+     within the string.
+     ASCII identifiers are unaffected
+     (each ASCII code point is a single @('UTF-8') byte).
+     The encoding is performed by syntax abstraction by @('abs-nats-to-string'),
+     and is symmetric to the @('UTF-8') decoding
+     performed by @('parse-program-from-bytes').
+     Consumers that need code points back
+     can decode the string with @('acl2::utf8=>ustring').
+     String equality on names is bytewise,
+     which agrees with code-point-sequence equality,
+     given the assumption that the strings are well-formed @('UTF-8')."))
   :order-subtopics t
   :default-parent t)
 
