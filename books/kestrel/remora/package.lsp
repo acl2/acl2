@@ -30,6 +30,8 @@
                   '(bool
                     defmacro+
                     defxdoc+
+                    enable*
+                    impossible
                     int
                     lnfix
                     nat
@@ -50,4 +52,6 @@
                     fty::reserrp
                     std::defret-mutual
                     str::dec-digit-char-list
+                    str::hex-digit-char-list
+                    str::oct-digit-char-list
                     str::string-list)))

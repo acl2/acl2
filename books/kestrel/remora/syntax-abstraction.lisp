@@ -15,9 +15,11 @@
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/nat-natlist-result" :dir :system)
+(include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/fty/string-result" :dir :system)
 (include-book "kestrel/fty/boolean-result" :dir :system)
 (include-book "projects/abnf/tree-utilities" :dir :system)
+(include-book "unicode/utf8-encode" :dir :system)
 
 (local
  (in-theory (enable abnf::treep-when-result-not-error
@@ -26,7 +28,10 @@
                     abnf::tree-list-tuple2p-when-result-not-error
                     abnf::tree-list-tuple3p-when-result-not-error
                     abnf::tree-list-tuple5p-when-result-not-error
+                    abnf::tree-list-tuple6p-when-result-not-error
+                    abnf::tree-list-tuple8p-when-result-not-error
                     acl2::natp-when-result-not-error
+                    acl2::nat-listp-when-result-not-error
                     acl2::reserrp-when-nat-resultp-not-ok
                     acl2::stringp-when-result-not-error
                     dimp-when-result-not-error
@@ -36,7 +41,11 @@
                     ispacep-when-result-not-error
                     ispace-listp-when-result-not-error
                     ispace-varp-when-result-not-error
+                    ispace-var-listp-when-result-not-error
                     type-varp-when-result-not-error
+                    type-var-listp-when-result-not-error
+                    typep-when-result-not-error
+                    type-listp-when-result-not-error
                     base-typep-when-result-not-error
                     base-valuep-when-result-not-error)))
 
@@ -77,19 +86,39 @@
 
 (define abs-nats-to-string ((nats nat-listp))
   :returns (str acl2::string-resultp)
-  :short "Convert a list of code points to an ACL2 string."
+  :short "Convert a list of Unicode code points to an ACL2 string,
+          UTF-8-encoded."
   :long
   (xdoc::topstring
    (xdoc::p
-    "ACL2 strings are sequences of bytes (code points 0-255).
-     Identifiers in Remora source code are typically ASCII, so this
-     conversion succeeds for the common case.  Code points outside
-     the byte range produce an error result, to be revisited when
-     full Unicode identifier support is added."))
+    "ACL2 strings are sequences of bytes (char codes 0-255), so a
+     single non-ASCII code point such as U+03B1 cannot fit in one
+     character.  Instead we UTF-8-encode the code points back into
+     bytes and pack those bytes into the ACL2 string.  This is
+     symmetric to the bytes-to-code-points decoding done by "
+    (xdoc::seetopic "post-parsing" "@('parse-program-from-bytes')")
+    ".")
+   (xdoc::p
+    "Consequence: for ASCII inputs, the resulting ACL2 string holds
+     one byte per code point (no change from the natural encoding).
+     For non-ASCII inputs, the string holds the UTF-8 byte sequence,
+     so @('(length name)') is the byte count rather than the
+     code-point count.  Two strings produced from the same source
+     identifier compare @(see equal), so this is fine for use as a
+     variable-name representation; consumers that need code points
+     back can decode with @('acl2::utf8=>ustring').")
+   (xdoc::p
+    "The error case @(':invalid-codepoints') is structural &mdash;
+     it occurs only if @('nats') contains values outside the
+     Unicode scalar range (i.e. surrogates U+D800-DFFF, or values
+     above U+10FFFF).  Code-point lists produced by the Remora
+     parser cannot contain such values, because the grammar's
+     terminal ranges already exclude them; the check is purely
+     defensive."))
   (b* ((nats (acl2::nat-list-fix nats)))
-    (if (acl2::unsigned-byte-listp 8 nats)
-        (acl2::nats=>string nats)
-      (reserrf (list :non-byte-codepoint nats))))
+    (if (acl2::ustring? nats)
+        (acl2::nats=>string (acl2::ustring=>utf8 nats))
+      (reserrf (list :invalid-codepoints nats))))
   ///
   (defret stringp-of-abs-nats-to-string
     (implies (not (reserrp str))
@@ -143,6 +172,40 @@
     (implies (not (reserrp nat))
              (natp nat))
     :rule-classes :forward-chaining))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-ws-decimal ((tree abnf::treep))
+  :returns (n acl2::nat-resultp)
+  :short "Abstract a @('( ws decimal )') wrapper to a natural number."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree nil))
+       ((okf decimal-tree) (abnf::check-tree-list-1 sub.2nd)))
+    (abs-decimal decimal-tree)))
+
+(define abs-*-ws-decimal ((trees abnf::tree-listp))
+  :returns (nats acl2::nat-list-resultp)
+  :short "Abstract @('*( ws decimal )') to a list of natural numbers."
+  (b* (((when (endp trees)) nil)
+       ((okf n) (abs-ws-decimal (car trees)))
+       ((okf rest) (abs-*-ws-decimal (cdr trees))))
+    (cons n rest)))
+
+(define abs-shape-lit ((tree abnf::treep))
+  :returns (nats acl2::nat-list-resultp)
+  :short "Abstract a @('shape-lit') to a list of natural numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar is @('shape-lit = \"[\" *( ws decimal ) ws \"]\"').
+     This is the concrete shape literal used inside @('array-exp')
+     and @('frame-exp'); it produces a flat list of dimensions
+     (natural numbers).  Note that this differs from the bracketed
+     shape form in the @('shape') rule, which contains arbitrary
+     ispaces."))
+  (b* (((okf (abnf::tree-list-tuple4 sub))
+        (abnf::check-tree-nonleaf-4 tree "shape-lit")))
+    (abs-*-ws-decimal sub.2nd)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -554,5 +617,288 @@
   (verify-guards abs-ispace)
 
   (fty::deffixequiv-mutual abs-ispaces))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; type-var / ispace-var list helpers (used by forall/pi/sigma/types)
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-ws-type-var ((tree abnf::treep))
+  :returns (tv type-var-resultp)
+  :short "Abstract a @('( ws type-var )') wrapper to a @(tsee type-var)."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree nil))
+       ((okf tv-tree) (abnf::check-tree-list-1 sub.2nd)))
+    (abs-type-var tv-tree)))
+
+(define abs-*-ws-type-var ((trees abnf::tree-listp))
+  :returns (tvs type-var-list-resultp)
+  :short "Abstract @('*( ws type-var )') to a list of @(tsee type-var)s."
+  (b* (((when (endp trees)) nil)
+       ((okf tv) (abs-ws-type-var (car trees)))
+       ((okf rest) (abs-*-ws-type-var (cdr trees))))
+    (cons tv rest)))
+
+(define abs-ws-ispace-var ((tree abnf::treep))
+  :returns (iv ispace-var-resultp)
+  :short "Abstract a @('( ws ispace-var )') wrapper to an @(tsee ispace-var)."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree nil))
+       ((okf iv-tree) (abnf::check-tree-list-1 sub.2nd)))
+    (abs-ispace-var iv-tree)))
+
+(define abs-*-ws-ispace-var ((trees abnf::tree-listp))
+  :returns (ivs ispace-var-list-resultp)
+  :short "Abstract @('*( ws ispace-var )') to a list of @(tsee ispace-var)s."
+  (b* (((when (endp trees)) nil)
+       ((okf iv) (abs-ws-ispace-var (car trees)))
+       ((okf rest) (abs-*-ws-ispace-var (cdr trees))))
+    (cons iv rest)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; non-recursive type-variable rules
+;;
+;; The grammar has separate rules @('atom-type-var') and @('array-type-var')
+;; that occur as alternatives of @('type-exp').  These are abstracted directly
+;; to a @(tsee type) @(':var') containing a @(tsee type-var) of the matching
+;; kind.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-atom-type-var ((tree abnf::treep))
+  :returns (ty type-resultp)
+  :short "Abstract an @('atom-type-var') to a @(tsee type) @(':var')."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree "atom-type-var"))
+       ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf id-tree) (abnf::check-tree-list-1 sub.2nd))
+       (sigil-pass (abnf::check-tree-ichars sigil-tree "&"))
+       ((when (reserrp sigil-pass))
+        (reserrf (list :atom-type-var-sigil
+                       (abnf::tree-info-for-error sigil-tree))))
+       ((okf name) (abs-identifier id-tree)))
+    (make-type-var :var (make-type-var-atom :name name))))
+
+(define abs-array-type-var ((tree abnf::treep))
+  :returns (ty type-resultp)
+  :short "Abstract an @('array-type-var') to a @(tsee type) @(':var')."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree "array-type-var"))
+       ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf id-tree) (abnf::check-tree-list-1 sub.2nd))
+       (sigil-pass (abnf::check-tree-ichars sigil-tree "*"))
+       ((when (reserrp sigil-pass))
+        (reserrf (list :array-type-var-sigil
+                       (abnf::tree-info-for-error sigil-tree))))
+       ((okf name) (abs-identifier id-tree)))
+    (make-type-var :var (make-type-var-array :name name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; tree-list utility used by the types cluster
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-tree-list-nth ((trees abnf::tree-listp) (n natp))
+  :returns (sub abnf::tree-resultp)
+  :short "Get the @('n')-th tree of a tree-list, returning a @(see reserr)
+          when the index is out of range."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some of the parser's rule constructors group several adjacent
+     concatenation elements into a single tree-list (e.g. @('bracket-type')
+     packs @('[ ws type-exp') into one tree-list, then the @('*( ws ispace )')
+     repetition, then @('ws ]') into a third tree-list).  The downstream
+     abstractor then needs to pull a specific tree out of one of those
+     bundled tree-lists."))
+  (cond ((>= (nfix n) (len trees))
+         (reserrf (list :tree-list-nth-out-of-range n (len trees))))
+        (t (abnf::tree-fix (nth n trees))))
+  ///
+  (defret tree-count-of-check-tree-list-nth
+    (implies (not (reserrp sub))
+             (< (abnf::tree-count sub)
+                (abnf::tree-list-count trees)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; types cluster
+;;
+;; Notes on tree shapes (set by the parser, not predictable from the ABNF
+;; alone): each rule's @(':branches') field bundles concatenation elements
+;; into a list of tree-lists.  Several type rules group multiple consecutive
+;; concatenation elements into a single tree-list (rather than one
+;; tree-list per element).  Specifically:
+;;   type-exp        : 1 tree-list whose length is 1 (non-paren forms) or 5
+;;                     (paren form: open ws body ws close).
+;;   type-exp-paren  : 1 tree-list of length 1 (the inner specific form).
+;;   bracket-type    : 3 tree-lists -- (open ws type-exp), reps, (ws close).
+;;   array-type      : 1 tree-list of length 5 (A ws type-exp ws shape).
+;;   arrow/forall/pi/sigma-type : 3 tree-lists -- (kw ws open ws), reps,
+;;                     (ws close ws type-exp).
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines abs-types
+
+  (define abs-type-exp ((tree abnf::treep))
+    :returns (ty type-resultp)
+    :short "Abstract a @('type-exp') to a @(tsee type)."
+    (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree "type-exp")))
+      (case (len trees)
+        (1 (b* (((okf inner) (abnf::check-tree-list-1 trees))
+                ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
+             (cond ((equal rulename? "atom-type-var")
+                    (abs-atom-type-var inner))
+                   ((equal rulename? "array-type-var")
+                    (abs-array-type-var inner))
+                   ((equal rulename? "base-type")
+                    (b* (((okf bt) (abs-base-type inner)))
+                      (make-type-base :type bt)))
+                   ((equal rulename? "bracket-type")
+                    (abs-bracket-type inner))
+                   (t (reserrf (list :unexpected-type-exp-body
+                                     (abnf::tree-info-for-error inner)))))))
+        (5 (b* (((okf body-tree) (check-tree-list-nth trees 2)))
+             (abs-type-exp-paren body-tree)))
+        (otherwise
+         (reserrf (list :type-exp-shape (len trees))))))
+    :measure (abnf::tree-count tree))
+
+  (define abs-type-exp-paren ((tree abnf::treep))
+    :returns (ty type-resultp)
+    :short "Abstract a @('type-exp-paren') to a @(tsee type)."
+    (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "type-exp-paren"))
+         ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
+      (cond ((equal rulename? "array-type") (abs-array-type inner))
+            ((equal rulename? "arrow-type") (abs-arrow-type inner))
+            ((equal rulename? "forall-type") (abs-forall-type inner))
+            ((equal rulename? "pi-type") (abs-pi-type inner))
+            ((equal rulename? "sigma-type") (abs-sigma-type inner))
+            (t (reserrf (list :unexpected-type-exp-paren-body
+                              (abnf::tree-info-for-error inner))))))
+    :measure (abnf::tree-count tree))
+
+  ;; bracket-type = "[" ws type-exp *( ws ispace ) ws "]"
+  ;; tree-lists: ((open ws te) reps (ws close))
+  (define abs-bracket-type ((tree abnf::treep))
+    :returns (ty type-resultp)
+    :short "Abstract a @('bracket-type') to a @(tsee type) @(':bracket')."
+    (b* (((okf (abnf::tree-list-tuple3 sub))
+          (abnf::check-tree-nonleaf-3 tree "bracket-type"))
+         ((okf te-tree) (check-tree-list-nth sub.1st 2))
+         ((okf elem) (abs-type-exp te-tree))
+         ((okf ispaces) (abs-*-ws-ispace sub.2nd))
+         (shapes (ispaces-to-shapes ispaces)))
+      (make-type-bracket :elem elem :shapes shapes))
+    :measure (abnf::tree-count tree))
+
+  ;; array-type = "A" ws type-exp ws shape
+  ;; tree-lists: ((A ws te ws sh))
+  (define abs-array-type ((tree abnf::treep))
+    :returns (ty type-resultp)
+    :short "Abstract an @('array-type') to a @(tsee type) @(':array')."
+    (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree "array-type"))
+         ((okf te-tree) (check-tree-list-nth trees 2))
+         ((okf shape-tree) (check-tree-list-nth trees 4))
+         ((okf elem) (abs-type-exp te-tree))
+         ((okf shape) (abs-shape shape-tree)))
+      (make-type-array :elem elem :shape shape))
+    :measure (abnf::tree-count tree))
+
+  ;; arrow-type = ( "->" / %x2192 ) ws "(" *( ws type-exp ) ws ")" ws type-exp
+  ;; tree-lists: ((kw ws open ws) reps (ws close ws te))
+  (define abs-arrow-type ((tree abnf::treep))
+    :returns (ty type-resultp)
+    :short "Abstract an @('arrow-type') to a @(tsee type) @(':fun')."
+    (b* (((okf (abnf::tree-list-tuple3 sub))
+          (abnf::check-tree-nonleaf-3 tree "arrow-type"))
+         ((okf in) (abs-*-ws-type-exp sub.2nd))
+         ((okf out-tree) (check-tree-list-nth sub.3rd 3))
+         ((okf out) (abs-type-exp out-tree)))
+      (make-type-fun :in in :out out))
+    :measure (abnf::tree-count tree))
+
+  ;; forall-type = ( "Forall" / %x2200 ) ws "(" *( ws type-var ) ws ")"
+  ;;               ws type-exp
+  ;; tree-lists: ((kw ws open ws) reps (ws close ws te))
+  (define abs-forall-type ((tree abnf::treep))
+    :returns (ty type-resultp)
+    :short "Abstract a @('forall-type') to a @(tsee type) @(':forall')."
+    (b* (((okf (abnf::tree-list-tuple3 sub))
+          (abnf::check-tree-nonleaf-3 tree "forall-type"))
+         ((okf params) (abs-*-ws-type-var sub.2nd))
+         ((okf body-tree) (check-tree-list-nth sub.3rd 3))
+         ((okf body) (abs-type-exp body-tree)))
+      (make-type-forall :params params :body body))
+    :measure (abnf::tree-count tree))
+
+  ;; pi-type = ( "Pi" / %x03A0 ) ws "(" *( ws ispace-var ) ws ")"
+  ;;           ws type-exp
+  ;; tree-lists: ((kw ws open ws) reps (ws close ws te))
+  (define abs-pi-type ((tree abnf::treep))
+    :returns (ty type-resultp)
+    :short "Abstract a @('pi-type') to a @(tsee type) @(':pi')."
+    (b* (((okf (abnf::tree-list-tuple3 sub))
+          (abnf::check-tree-nonleaf-3 tree "pi-type"))
+         ((okf params) (abs-*-ws-ispace-var sub.2nd))
+         ((okf body-tree) (check-tree-list-nth sub.3rd 3))
+         ((okf body) (abs-type-exp body-tree)))
+      (make-type-pi :params params :body body))
+    :measure (abnf::tree-count tree))
+
+  ;; sigma-type = ( "Sigma" / %x03A3 ) ws "(" *( ws ispace-var ) ws ")"
+  ;;              ws type-exp
+  ;; tree-lists: ((kw ws open ws) reps (ws close ws te))
+  (define abs-sigma-type ((tree abnf::treep))
+    :returns (ty type-resultp)
+    :short "Abstract a @('sigma-type') to a @(tsee type) @(':sigma')."
+    (b* (((okf (abnf::tree-list-tuple3 sub))
+          (abnf::check-tree-nonleaf-3 tree "sigma-type"))
+         ((okf params) (abs-*-ws-ispace-var sub.2nd))
+         ((okf body-tree) (check-tree-list-nth sub.3rd 3))
+         ((okf body) (abs-type-exp body-tree)))
+      (make-type-sigma :params params :body body))
+    :measure (abnf::tree-count tree))
+
+  (define abs-ws-type-exp ((tree abnf::treep))
+    :returns (ty type-resultp)
+    :short "Abstract a @('( ws type-exp )') wrapper to a @(tsee type)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Unlike @(tsee abs-ws-dim), @(tsee abs-ws-shape), @(tsee abs-ws-ispace),
+       @(tsee abs-ws-type-var), and @(tsee abs-ws-ispace-var) (which all
+       work on @(':branches (list (list ws) (list X))') wrappers), the
+       wrapper produced by @(tsee parse-*-ws-type-exp) bundles the @('ws')
+       and @('type-exp') trees into a single tree-list:
+       @(':branches (list (list ws te))').
+       Hence the dispatch on a single tree-list of length 2."))
+    (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree nil))
+         ((okf te-tree) (check-tree-list-nth trees 1)))
+      (abs-type-exp te-tree))
+    :measure (abnf::tree-count tree))
+
+  (define abs-*-ws-type-exp ((trees abnf::tree-listp))
+    :returns (tys type-list-resultp)
+    :short "Abstract @('*( ws type-exp )') to a list of @(tsee type)s."
+    (b* (((when (endp trees)) nil)
+         ((okf ty) (abs-ws-type-exp (car trees)))
+         ((okf rest) (abs-*-ws-type-exp (cdr trees))))
+      (cons ty rest))
+    :measure (abnf::tree-list-count trees))
+
+  :ruler-extenders :all
+  :verify-guards nil ; done below
+
+  ///
+
+  (verify-guards abs-type-exp)
+
+  (fty::deffixequiv-mutual abs-types))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -356,7 +356,7 @@ escape-char     = char-escape
 char-escape     = "a" / "b" / "f" / "n" / "r" / "t" / "v"
                 / "\" / DQUOTE / "'"
 
-; ASCII control character names (33 names for %x00-%x20 and %x7F).
+; ASCII control character names (34 names for %x00-%x20 and %x7F).
 ; SOH must be matched before SO (longest-match); all other
 ; alternatives are prefix-free.
 ascii-escape    = "NUL" / "SOH" / "STX" / "ETX" / "EOT" / "ENQ"

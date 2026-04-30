@@ -147,7 +147,10 @@
      lists of variables and single-dimension shapes.
      We check whether the second list is a suffix of the first list.
      If the prefix is a singleton list, we return its element."))
-  (b* ((shape (normalize-shape shape))
+  (b* (((unless (and (shape-addp shape)
+                     (shape-addp suffix)))
+        (reserr nil)) ; not supported
+       (shape (normalize-shape shape))
        (suffix (normalize-shape suffix))
        ((unless (shape-case shape :append))
         (raise "Internal error: normalized shape is ~x0." shape)
@@ -238,6 +241,9 @@
   (b* (((when (endp shapes)) (shape-append nil))
        ((when (endp (cdr shapes))) (shape-fix (car shapes)))
        ((ok cdr-shape) (join-shapes (cdr shapes)))
+       ((unless (and (shape-addp cdr-shape)
+                     (shape-addp (car shapes))))
+        (reserr nil)) ; not supported
        (cdr-shape (normalize-shape cdr-shape))
        (car-shape (normalize-shape (car shapes)))
        ((unless (shape-case cdr-shape :append))
@@ -561,6 +567,7 @@
         :elem array.type
         :shape (shape-append (list (shape-dims (dim-const-list expr.dims))
                                    array.shape))))
+     :string (reserr :todo)
      :app
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
           ((ok fun-arr-type+shape) (type-match-array fun-arr-type))

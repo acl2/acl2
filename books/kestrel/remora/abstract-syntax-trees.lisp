@@ -12,6 +12,8 @@
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
+(include-book "kestrel/fty/hex-digit-char-list" :dir :system)
+(include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/strings/eqv" :dir :system)
 
 (include-book "portcullis")
@@ -53,13 +55,6 @@
      and a desugaring transformation from all ASTs to core ASTs.
      The ASTs in [impl] are slightly more abstracted than ours.")
    (xdoc::p
-    "The coverage of our ASTs is almost complete.
-     Still missing are string literals,
-     and multiplications and subtraction of dimensions;
-     we plan to add all of these shortly.
-     We may also need to replace ACL2 rationals (in base values)
-     with a more explicit notion of floating literals.")
-   (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
      But we should probably introduce and use
@@ -99,11 +94,14 @@
       "There are
        named variables,
        constants (natural numbers),
-       and additions.
-       We also plan to add multiplications and subtractions, as in [impl]."))
+       additions of zero or more dimensions,
+       multiplications of zero or more dimensions,
+       and subtractions of zero or more dimensions."))
     (:var ((name string)))
     (:const ((value nat)))
     (:add ((dims dim-list)))
+    (:mul ((dims dim-list)))
+    (:sub ((dims dim-list)))
     :pred dimp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -519,6 +517,122 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum simple-escape
+  :short "Fixtype of simple escapes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('simple-escape') in the ABNF grammar."))
+  (:a ())
+  (:b ())
+  (:f ())
+  (:n ())
+  (:r ())
+  (:t ())
+  (:v ())
+  (:bslash ())
+  (:dquote ())
+  (:squote ())
+  :pred simple-escapep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum ascii-escape
+  :short "Fixtype of ASCII escapes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('ascii-escape') in the ABNF grammar.")
+   (xdoc::p
+    "We model the sequence from NUL to SP via their codes,
+     and DEL separately."))
+  (:nul-to-sp ((code nat
+                     :reqfix (if (<= code #x20) code 0)))
+   :require (<= code #x20))
+  (:del ())
+  :pred ascii-escapep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod caret-escape
+  :short "Fixtype of caret escapes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('caret-escape') in the ABNF grammar.")
+   (xdoc::p
+    "We model these via their codes."))
+  ((code nat
+         :reqfix (if (<= code #x1f) code 0)))
+  :require (<= code #x1f)
+  :pred caret-escapep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum num-escape
+  :short "Fixtype of numeric escapes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('num-escape') in the ABNF grammar."))
+  (:dec ((digits dec-digit-char-list
+                 :reqfix (if (consp digits) digits '(#\0))))
+   :require (consp digits))
+  (:oct ((digits oct-digit-char-list
+                 :reqfix (if (consp digits) digits '(#\0))))
+   :require (consp digits))
+  (:hex ((digits hex-digit-char-list
+                 :reqfix (if (consp digits) digits '(#\0))))
+   :require (consp digits))
+  :pred num-escapep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum escape
+  :short "Fixtype of escapes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('escape-char') in the ABNF grammar."))
+  (:simple ((escape simple-escape)))
+  (:ascii ((escape ascii-escape)))
+  (:caret ((escape caret-escape)))
+  (:num ((escape num-escape)))
+  :pred escapep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum char-lit
+  :short "Fixtype of character-literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('char-literal') in the ABNF grammar."))
+  (:char ((code nat
+                :reqfix (if (or (and (<= #x0 code) (<= code #x21))
+                                (and (<= #x23 code) (<= code #x5b))
+                                (and (<= #x5d code) (<= code #xd7ff))
+                                (and (<= #xe000 code) (<= code #x10ffff)))
+                            code
+                          0)))
+   :require (or (and (<= #x0 code) (<= code #x21))
+                (and (<= #x23 code) (<= code #x5b))
+                (and (<= #x5d code) (<= code #xd7ff))
+                (and (<= #xe000 code) (<= code #x10ffff))))
+  (:escape ((escape escape)))
+  :pred char-litp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist char-lit-list
+  :short "Fixtype of lists of character literals."
+  :elt-type char-lit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred char-lit-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum base-value
   :short "Fixtype of base values."
   :long
@@ -568,6 +682,7 @@
        empty arrays with the type of the elements,
        non-empty frames with at least one expression,
        empty frames with the type of the cells,
+       string literals,
        applications of expressions to expressions
        (called `term applications' in the Remora publications),
        applications of expressions to types,
@@ -600,6 +715,7 @@
              (exprs expr-list)))
     (:frame-empty ((dims nat-list)
                    (type type)))
+    (:string ((chars char-lit-list)))
     (:app ((fun expr)
            (args expr-list)))
     (:tapp ((fun expr)
