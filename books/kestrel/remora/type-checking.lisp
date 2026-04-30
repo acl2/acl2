@@ -561,6 +561,7 @@
         :elem array.type
         :shape (shape-append (list (shape-dims (dim-const-list expr.dims))
                                    array.shape))))
+     :string (reserr :todo)
      :app
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
           ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
