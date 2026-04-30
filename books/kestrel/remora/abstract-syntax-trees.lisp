@@ -56,11 +56,8 @@
      The ASTs in [impl] are slightly more abstracted than ours.")
    (xdoc::p
     "The coverage of our ASTs is almost complete.
-     Still missing are string literals,
-     and multiplications and subtraction of dimensions;
-     we plan to add all of these shortly.
-     We may also need to replace ACL2 rationals (in base values)
-     with a more explicit notion of floating literals.")
+     Still missing are multiplications and subtraction of dimensions;
+     we plan to add them shortly.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
