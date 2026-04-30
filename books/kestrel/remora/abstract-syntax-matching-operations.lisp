@@ -42,7 +42,7 @@
 
 (define type-match-array ((type typep))
   :returns (type+shape type+shape-resultp)
-  :short "Check if an array type is an @(':array') summans,
+  :short "Check if an array type is an @(':array') summand,
           returning its elements' atom type and its shape if successful."
   (if (type-case type :array)
       (make-type+shape :type (type-array->elem type)

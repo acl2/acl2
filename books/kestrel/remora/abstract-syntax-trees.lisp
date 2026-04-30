@@ -77,7 +77,7 @@
      this is also consistent with [impl].
      The key point is that [thesis] has
      one form of ispace variables, which may denote dimensions or shapes,
-     while our ASTs have two separate formsm, one per sort,
+     while our ASTs have two separate forms, one per sort,
      consistently with the concrete syntax (see ABNF grammar),
      which uses prefix symbols to explicate the sort of the variable."))
 
@@ -223,7 +223,7 @@
      i.e. they are syntactically distinct.
      This is different from [thesis],
      where dimension and shape variables are syntactically the same,
-     and thus explcit sorting rules are needed."))
+     and thus explicit sorting rules are needed."))
   (:dim ((name string)))
   (:shape ((name string)))
   :pred ispace-varp)
@@ -445,7 +445,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are used in numberic literals."))
+    "These are used in numeric literals."))
   (:plus ())
   (:minus ())
   :pred signp)
@@ -468,7 +468,7 @@
    (xdoc::p
     "The boolean flag says whether we have @('E') (@('t')) or @('e') @('nil');
      this is not semantically relevant,
-     but we preserve the conrete syntax information.
+     but we preserve the concrete syntax information.
      An absent sign is semantically equivalent to a positive sign,
      but we preserve the concrete syntax information.
      We require at least one digit, per the ABNF grammar."))
@@ -496,7 +496,7 @@
     "This corresponds to @('num-lit') with @('float-lit') in the ABNF grammar.")
    (xdoc::p
     "An absent sign is semantically equivalent to a positive sign,
-     but we preserve the conrete syntax information.
+     but we preserve the concrete syntax information.
      There must be always at least a digit in the whole part
      (i.e. the digits before the dot);
      the number cannot start with dot.
@@ -804,7 +804,7 @@
        type bindings,
        value bindings,
        function bindings,
-       type function bindings
+       type function bindings,
        ispace function bindings, and
        combined function bindings."))
     (:ispace ((var ispace-var)
@@ -847,7 +847,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod prog
-  :short "Fixtypr of programs."
+  :short "Fixtype of programs."
   :long
   (xdoc::topstring
    (xdoc::p

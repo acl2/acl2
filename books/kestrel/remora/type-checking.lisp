@@ -382,7 +382,7 @@
      (xdoc::p
       "A variable is looked up in the static environment.")
      (xdoc::p
-      "At atom stands for an array of rank 0,
+      "An atom stands for an array of rank 0,
        i.e. with empty shape and the atom as the only element.")
      (xdoc::p
       "For a (non-empty) array, there must be no zero dimension,
@@ -449,7 +449,7 @@
        which must have an array type of a universal type,
        whose body type is an explicit array type.
        In [arxiv] and [thesis],
-       @($(x\\ k)\\ldots$) corresponds to @'vars') in our code,
+       @($(x\\ k)\\ldots$) corresponds to @('vars') in our code,
        @($\\tau_u$) corresponds to @('body-atom-type'),
        @($\\iota_u$) corresponds to @('body-type'),
        and @($\\iota_f$) corresponds to @('fun-type').
@@ -734,7 +734,7 @@
      (xdoc::p
       "For a type abstraction,
        first we check that there are no duplicate bound variable names.
-       We check the body of the abstraction in the extended enviroment.
+       We check the body of the abstraction in the extended environment.
        The resulting type is the body of the universal type
        that is the type of the abstraction,
        whose bound variables are the same as the abstraction.")
