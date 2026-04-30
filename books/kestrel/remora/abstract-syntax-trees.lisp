@@ -493,7 +493,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('num-lit') with @('float-lit') in the ABNF grammar.")
+    "This corresponds to @('num-val') with @('float-lit') in the ABNF grammar.")
    (xdoc::p
     "An absent sign is semantically equivalent to a positive sign,
      but we preserve the concrete syntax information.
