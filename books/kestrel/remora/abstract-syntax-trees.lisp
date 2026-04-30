@@ -476,7 +476,7 @@
      We require at least one digit, per the ABNF grammar."))
   ((upcase bool)
    (sign? sign-option)
-   (digits str::dec-digit-char-list
+   (digits dec-digit-char-list
            :reqfix (if (consp digits)
                        digits
                      (list #\0))))
@@ -511,11 +511,11 @@
      the number cannot end with dot without a digit after that.
      At least one of the dot and exponent must be present, possibly both."))
   ((sign? sign-option)
-   (whole-digits str::dec-digit-char-list
+   (whole-digits dec-digit-char-list
                  :reqfix (if (consp whole-digits)
                              whole-digits
                            (list #\0)))
-   (frac-digits str::dec-digit-char-list
+   (frac-digits dec-digit-char-list
                 :reqfix (if (or (consp frac-digits) expo?)
                             frac-digits
                           (list #\0)))
