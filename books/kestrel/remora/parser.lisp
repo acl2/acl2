@@ -232,8 +232,8 @@
     ;; identifier: *id-continue
     "*id-continue" repetition-*-id-continue
 
-    ;; string-lit: *char-literal
-    "*char-literal" repetition-*-char-literal
+    ;; string-lit: *char-lit
+    "*char-lit" repetition-*-char-lit
 
     ;; ---- Repetitions for ws-separated lists ----
     "*( ws exp )" repetition-*-ws-exp
@@ -745,11 +745,11 @@
 ;; escape-char = char-escape / ascii-escape / caret-escape / num-escape
 (defparse-remora-rulename "escape-char")
 
-;; char-literal has 4 large ranges + escape; hand-written.
+;; char-lit has 4 large ranges + escape; hand-written.
 
-(define char-literal-nonescape-p ((nat natp))
+(define char-lit-nonescape-p ((nat natp))
   :returns (yes/no booleanp)
-  :short "Check if a code point is a non-escape char-literal."
+  :short "Check if a code point is a non-escape char-lit."
   (b* ((nat (nfix nat)))
     (or (and (<= #x00 nat) (<= nat #x21))
         (and (<= #x23 nat) (<= nat #x5B))
@@ -757,42 +757,42 @@
         (and (<= #xE000 nat) (<= nat #x10FFFF))))
   :hooks (:fix))
 
-(define parse-char-literal ((input nat-listp))
+(define parse-char-lit ((input nat-listp))
   :returns (mv (tree abnf::tree-resultp)
                (rest-input nat-listp))
-  :short "Parse a @('char-literal')."
+  :short "Parse a @('char-lit')."
   (b* ((input (nat-list-fix input))
        ((when (endp input))
-        (mv (reserrf "char-literal: end of input") nil))
+        (mv (reserrf "char-lit: end of input") nil))
        (nat (car input))
        ;; Non-escape case: any char except " (%x22) and \ (%x5C)
-       ((when (char-literal-nonescape-p nat))
+       ((when (char-lit-nonescape-p nat))
         (mv (abnf::make-tree-nonleaf
-             :rulename? (abnf::rulename "char-literal")
+             :rulename? (abnf::rulename "char-lit")
              :branches (list (list (abnf::tree-leafterm (list nat)))))
             (cdr input)))
        ;; Escape case: "\" escape-char
        ((unless (eql nat #x5C))
-        (mv (reserrf "char-literal: invalid char") input))
+        (mv (reserrf "char-lit: invalid char") input))
        (input (cdr input))
        ((pok< esc-tree) (parse-escape-char input)))
     (mv (abnf::make-tree-nonleaf
-         :rulename? (abnf::rulename "char-literal")
+         :rulename? (abnf::rulename "char-lit")
          :branches (list (list (abnf::tree-leafterm (list #x5C))
                                esc-tree)))
         input))
   :hooks (:fix)
   ///
-  (defret len-of-parse-char-literal-<=
+  (defret len-of-parse-char-lit-<=
     (<= (len rest-input) (len input))
     :rule-classes :linear)
-  (defret len-of-parse-char-literal-<
+  (defret len-of-parse-char-lit-<
     (implies (not (reserrp tree))
              (< (len rest-input) (len input)))
     :rule-classes :linear))
 
-;; string-lit = DQUOTE *char-literal DQUOTE
-(defparse-remora-*-rulename "char-literal")
+;; string-lit = DQUOTE *char-lit DQUOTE
+(defparse-remora-*-rulename "char-lit")
 (defparse-remora-rulename "string-lit")
 
 ;; ---- Type and ispace parameters ----
