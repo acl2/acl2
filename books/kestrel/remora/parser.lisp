@@ -663,7 +663,7 @@
        ((pok< tree-ctrl) (abnf::parse-range #x40 #x5F input)))
     (mv (abnf::make-tree-nonleaf
          :rulename? (abnf::rulename "caret-escape")
-         :branches (list (list tree-caret tree-ctrl)))
+         :branches (list (list tree-caret) (list tree-ctrl)))
         input))
   :hooks (:fix)
   ///
