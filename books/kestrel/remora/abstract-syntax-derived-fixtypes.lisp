@@ -159,6 +159,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult oct-digit-char-list-result
+  :short "Fixtype of lists of octal digit characters and errors."
+  :ok oct-digit-char-list
+  :pred oct-digit-char-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult hex-digit-char-list-result
+  :short "Fixtype of lists of hexadecimal digit characters and errors."
+  :ok hex-digit-char-list
+  :pred hex-digit-char-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult char-lit-result
   :short "Fixtype of character literals and errors."
   :ok char-lit
@@ -171,6 +185,158 @@
   :short "Fixtype of lists of character literals and errors."
   :ok char-lit-list
   :pred char-lit-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult simple-escape-result
+  :short "Fixtype of simple escapes and errors."
+  :ok simple-escape
+  :pred simple-escape-resultp
+  :prepwork ((local (in-theory (enable simple-escape-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ascii-escape-result
+  :short "Fixtype of ASCII escapes and errors."
+  :ok ascii-escape
+  :pred ascii-escape-resultp
+  :prepwork ((local (in-theory (enable ascii-escape-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult caret-escape-result
+  :short "Fixtype of caret escapes and errors."
+  :ok caret-escape
+  :pred caret-escape-resultp
+  :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult num-escape-result
+  :short "Fixtype of numeric escapes and errors."
+  :ok num-escape
+  :pred num-escape-resultp
+  :prepwork ((local (in-theory (enable num-escape-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult escape-result
+  :short "Fixtype of escapes and errors."
+  :ok escape
+  :pred escape-resultp
+  :prepwork ((local (in-theory (enable escape-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Slice 4-6 result types
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult expr-result
+  :short "Fixtype of expressions and errors."
+  :ok expr
+  :pred expr-resultp
+  :prepwork ((local (in-theory (enable expr-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult expr-list-result
+  :short "Fixtype of lists of expressions and errors."
+  :ok expr-list
+  :pred expr-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult atom-result
+  :short "Fixtype of atoms and errors."
+  :ok atom
+  :pred atom-resultp
+  :prepwork ((local (in-theory (enable atom-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult atom-list-result
+  :short "Fixtype of lists of atoms and errors."
+  :ok atom-list
+  :pred atom-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult bind-result
+  :short "Fixtype of bindings and errors."
+  :ok bind
+  :pred bind-resultp
+  :prepwork ((local (in-theory (enable bind-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult bind-list-result
+  :short "Fixtype of lists of bindings and errors."
+  :ok bind-list
+  :pred bind-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult var+type-result
+  :short "Fixtype of variables-with-types and errors."
+  :ok var+type
+  :pred var+type-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult var+type-list-result
+  :short "Fixtype of lists of variables-with-types and errors."
+  :ok var+type-list
+  :pred var+type-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-option-result
+  :short "Fixtype of optional types and errors."
+  :ok type-option
+  :pred type-option-resultp
+  :prepwork ((local (in-theory (enable typep type-optionp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-list-option-result
+  :short "Fixtype of optional lists of types and errors."
+  :ok type-list-option
+  :pred type-list-option-resultp
+  :prepwork ((local (in-theory (enable type-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-list-option-result
+  :short "Fixtype of optional lists of ispaces and errors."
+  :ok ispace-list-option
+  :pred ispace-list-option-resultp
+  :prepwork ((local (in-theory (enable ispace-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-var-list-option-result
+  :short "Fixtype of optional lists of type variables and errors."
+  :ok type-var-list-option
+  :pred type-var-list-option-resultp
+  :prepwork ((local (in-theory (enable type-var-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-var-list-option-result
+  :short "Fixtype of optional lists of ispace variables and errors."
+  :ok ispace-var-list-option
+  :pred ispace-var-list-option-resultp
+  :prepwork ((local (in-theory (enable ispace-var-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult prog-result
+  :short "Fixtype of programs and errors."
+  :ok prog
+  :pred prog-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

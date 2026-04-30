@@ -159,6 +159,8 @@
 (defparse-from-string type-var    type-var-resultp)
 (defparse-from-string ispace-var  ispace-var-resultp)
 (defparse-from-string type-exp    type-resultp)
+(defparse-from-string char-lit    char-lit-resultp)
+(defparse-from-string string-lit  char-lit-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -173,7 +175,9 @@
                     (base-type-resultp ast)
                     (type-var-resultp ast)
                     (ispace-var-resultp ast)
-                    (type-resultp ast)))
+                    (type-resultp ast)
+                    (char-lit-resultp ast)
+                    (char-lit-list-resultp ast)))
   :hooks nil
   :short "Parse and abstract a Remora source fragment to an AST."
   :long
@@ -181,7 +185,8 @@
    (xdoc::p
     "Dispatches on @('rule-name'), which must be one of
      @('\"ispace\"'), @('\"base-val\"'), @('\"base-type\"'),
-     @('\"type-var\"'), @('\"ispace-var\"'), or @('\"type-exp\"').
+     @('\"type-var\"'), @('\"ispace-var\"'), @('\"type-exp\"'),
+     @('\"char-lit\"'), or @('\"string-lit\"').
      Other rule names produce a @(see reserr).")
    (xdoc::p
     "The result type is a disjunction over the AST result predicates of
@@ -199,6 +204,10 @@
          (parse-to-ast-and-check ispace-var source-code))
         ((equal rule-name "type-exp")
          (parse-to-ast-and-check type-exp   source-code))
+        ((equal rule-name "char-lit")
+         (parse-to-ast-and-check char-lit   source-code))
+        ((equal rule-name "string-lit")
+         (parse-to-ast-and-check string-lit source-code))
         (t (reserrf (cons :unsupported-rule-name rule-name)))))
 
 

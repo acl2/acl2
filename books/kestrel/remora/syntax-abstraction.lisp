@@ -52,7 +52,16 @@
                     dec-digit-char-listp-when-result-not-error
                     str::dec-digit-char-p
                     char-litp-when-result-not-error
-                    char-lit-listp-when-result-not-error)))
+                    char-lit-listp-when-result-not-error
+                    simple-escapep-when-result-not-error
+                    ascii-escapep-when-result-not-error
+                    caret-escapep-when-result-not-error
+                    num-escapep-when-result-not-error
+                    escapep-when-result-not-error
+                    oct-digit-char-listp-when-result-not-error
+                    hex-digit-char-listp-when-result-not-error
+                    str::oct-digit-char-p
+                    str::hex-digit-char-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -500,16 +509,259 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; char-lit and string-lit
+;; Escape sub-abstractors used by the escape branch of abs-char-lit.
+;; (Defined before abs-char-lit because abs-char-lit calls
+;; abs-escape-char.)
 ;;
-;; The escape branch (@('\\' escape-char)) is not yet implemented.  When
-;; it lands, dispatch on tree-list count: 1 -> non-escape, 2 -> escape.
+
+(define abs-simple-escape ((tree abnf::treep))
+  :returns (e simple-escape-resultp)
+  :short "Abstract a @('char-escape') CST to a @(tsee simple-escape)."
+  (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "char-escape"))
+       ((okf leaf) (abnf::check-tree-leafterm inner))
+       ((unless (and (consp leaf) (= (len leaf) 1)))
+        (reserrf (list :char-escape-not-singleton leaf)))
+       (nat (car leaf)))
+    (cond ((eql nat #x61) (make-simple-escape-a))
+          ((eql nat #x62) (make-simple-escape-b))
+          ((eql nat #x66) (make-simple-escape-f))
+          ((eql nat #x6E) (make-simple-escape-n))
+          ((eql nat #x72) (make-simple-escape-r))
+          ((eql nat #x74) (make-simple-escape-t))
+          ((eql nat #x76) (make-simple-escape-v))
+          ((eql nat #x5C) (make-simple-escape-bslash))
+          ((eql nat #x22) (make-simple-escape-dquote))
+          ((eql nat #x27) (make-simple-escape-squote))
+          (t (reserrf (list :unexpected-char-escape nat))))))
+
+(define nat-upcase ((n natp))
+  :returns (m natp)
+  :parents nil
+  :short "Map ASCII lowercase to uppercase; pass others through."
+  (if (and (<= #x61 (lnfix n)) (<= (lnfix n) #x7A))
+      (- (lnfix n) #x20)
+    (lnfix n)))
+
+(define nats-upcase ((nats nat-listp))
+  :returns (upcased nat-listp)
+  :parents nil
+  :short "Apply @(tsee nat-upcase) to each nat in a list."
+  (cond ((endp nats) nil)
+        (t (cons (nat-upcase (car nats))
+                 (nats-upcase (cdr nats))))))
+
+(define abs-ascii-escape ((tree abnf::treep))
+  :returns (e ascii-escape-resultp)
+  :short "Abstract an @('ascii-escape') CST to an @(tsee ascii-escape).
+          Matching is case-insensitive (mirroring the parser)."
+  (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "ascii-escape"))
+       ((okf leaf) (abnf::check-tree-leafterm inner))
+       (upper (nats-upcase leaf)))
+    (cond ((equal upper '(78 85 76))
+           (make-ascii-escape-nul-to-sp :code #x00))   ; NUL
+          ((equal upper '(83 79 72))
+           (make-ascii-escape-nul-to-sp :code #x01))   ; SOH
+          ((equal upper '(83 84 88))
+           (make-ascii-escape-nul-to-sp :code #x02))   ; STX
+          ((equal upper '(69 84 88))
+           (make-ascii-escape-nul-to-sp :code #x03))   ; ETX
+          ((equal upper '(69 79 84))
+           (make-ascii-escape-nul-to-sp :code #x04))   ; EOT
+          ((equal upper '(69 78 81))
+           (make-ascii-escape-nul-to-sp :code #x05))   ; ENQ
+          ((equal upper '(65 67 75))
+           (make-ascii-escape-nul-to-sp :code #x06))   ; ACK
+          ((equal upper '(66 69 76))
+           (make-ascii-escape-nul-to-sp :code #x07))   ; BEL
+          ((equal upper '(66 83))
+           (make-ascii-escape-nul-to-sp :code #x08))   ; BS
+          ((equal upper '(72 84))
+           (make-ascii-escape-nul-to-sp :code #x09))   ; HT
+          ((equal upper '(76 70))
+           (make-ascii-escape-nul-to-sp :code #x0A))   ; LF
+          ((equal upper '(86 84))
+           (make-ascii-escape-nul-to-sp :code #x0B))   ; VT
+          ((equal upper '(70 70))
+           (make-ascii-escape-nul-to-sp :code #x0C))   ; FF
+          ((equal upper '(67 82))
+           (make-ascii-escape-nul-to-sp :code #x0D))   ; CR
+          ((equal upper '(83 79))
+           (make-ascii-escape-nul-to-sp :code #x0E))   ; SO
+          ((equal upper '(83 73))
+           (make-ascii-escape-nul-to-sp :code #x0F))   ; SI
+          ((equal upper '(68 76 69))
+           (make-ascii-escape-nul-to-sp :code #x10))   ; DLE
+          ((equal upper '(68 67 49))
+           (make-ascii-escape-nul-to-sp :code #x11))   ; DC1
+          ((equal upper '(68 67 50))
+           (make-ascii-escape-nul-to-sp :code #x12))   ; DC2
+          ((equal upper '(68 67 51))
+           (make-ascii-escape-nul-to-sp :code #x13))   ; DC3
+          ((equal upper '(68 67 52))
+           (make-ascii-escape-nul-to-sp :code #x14))   ; DC4
+          ((equal upper '(78 65 75))
+           (make-ascii-escape-nul-to-sp :code #x15))   ; NAK
+          ((equal upper '(83 89 78))
+           (make-ascii-escape-nul-to-sp :code #x16))   ; SYN
+          ((equal upper '(69 84 66))
+           (make-ascii-escape-nul-to-sp :code #x17))   ; ETB
+          ((equal upper '(67 65 78))
+           (make-ascii-escape-nul-to-sp :code #x18))   ; CAN
+          ((equal upper '(69 77))
+           (make-ascii-escape-nul-to-sp :code #x19))   ; EM
+          ((equal upper '(83 85 66))
+           (make-ascii-escape-nul-to-sp :code #x1A))   ; SUB
+          ((equal upper '(69 83 67))
+           (make-ascii-escape-nul-to-sp :code #x1B))   ; ESC
+          ((equal upper '(70 83))
+           (make-ascii-escape-nul-to-sp :code #x1C))   ; FS
+          ((equal upper '(71 83))
+           (make-ascii-escape-nul-to-sp :code #x1D))   ; GS
+          ((equal upper '(82 83))
+           (make-ascii-escape-nul-to-sp :code #x1E))   ; RS
+          ((equal upper '(85 83))
+           (make-ascii-escape-nul-to-sp :code #x1F))   ; US
+          ((equal upper '(83 80))
+           (make-ascii-escape-nul-to-sp :code #x20))   ; SP
+          ((equal upper '(68 69 76))
+           (make-ascii-escape-del))                    ; DEL
+          (t (reserrf (list :unknown-ascii-escape leaf))))))
+
+(define abs-caret-escape ((tree abnf::treep))
+  :returns (e caret-escape-resultp)
+  :short "Abstract a @('caret-escape') CST to a @(tsee caret-escape).
+          The control-character code is the input character minus
+          @('#x40')."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree "caret-escape"))
+       ((okf caret-tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf ctrl-tree) (abnf::check-tree-list-1 sub.2nd))
+       ((okf caret-leaf) (abnf::check-tree-leafterm caret-tree))
+       ((unless (and (consp caret-leaf)
+                     (= (len caret-leaf) 1)
+                     (eql (car caret-leaf) #x5E)))
+        (reserrf (list :unexpected-caret caret-leaf)))
+       ((okf ctrl-leaf) (abnf::check-tree-leafterm ctrl-tree))
+       ((unless (and (consp ctrl-leaf) (= (len ctrl-leaf) 1)))
+        (reserrf (list :ctrl-not-singleton ctrl-leaf)))
+       (ctrl-nat (car ctrl-leaf))
+       ((unless (and (natp ctrl-nat)
+                     (<= #x40 ctrl-nat)
+                     (<= ctrl-nat #x5F)))
+        (reserrf (list :ctrl-out-of-range ctrl-nat)))
+       (code (- ctrl-nat #x40))
+       ;; Redundant given the range check above, but makes the
+       ;; caret-escape :require visible to the guard verifier.
+       ((unless (and (natp code) (<= code #x1F)))
+        (reserrf :caret-code-out-of-range-impossible)))
+    (make-caret-escape :code code)))
+
+(define abs-*-octal-leafterm-to-char ((trees abnf::tree-listp))
+  :returns (chars oct-digit-char-list-resultp)
+  :parents nil
+  :short "Abstract a list of bare LEAFTERM trees (each a single octal
+          digit nat in @('#x30..#x37')) to a list of
+          @(tsee str::oct-digit-char)s."
+  (b* (((when (endp trees)) nil)
+       ((okf leaf) (abnf::check-tree-leafterm (car trees)))
+       ((unless (and (consp leaf) (= (len leaf) 1)))
+        (reserrf (list :octal-leaf-not-singleton leaf)))
+       (nat (car leaf))
+       ((unless (and (<= #x30 nat) (<= nat #x37)))
+        (reserrf (list :octal-digit-out-of-range nat)))
+       (c (code-char nat))
+       ((okf rest) (abs-*-octal-leafterm-to-char (cdr trees))))
+    (cons c rest)))
+
+(define abs-*-hexdig-tree-to-char ((trees abnf::tree-listp))
+  :returns (chars hex-digit-char-list-resultp)
+  :parents nil
+  :short "Abstract a list of @('hexdig') trees (each containing a single
+          hex-digit nat) to a list of @(tsee str::hex-digit-char)s."
+  (b* (((when (endp trees)) nil)
+       ((okf inner) (abnf::check-tree-nonleaf-1-1 (car trees) "hexdig"))
+       ((okf leaf) (abnf::check-tree-leafterm inner))
+       ((unless (and (consp leaf) (= (len leaf) 1)))
+        (reserrf (list :hexdig-leaf-not-singleton leaf)))
+       (nat (car leaf))
+       ((unless (or (and (<= #x30 nat) (<= nat #x39))
+                    (and (<= #x41 nat) (<= nat #x46))
+                    (and (<= #x61 nat) (<= nat #x66))))
+        (reserrf (list :hex-digit-out-of-range nat)))
+       (c (code-char nat))
+       ((okf rest) (abs-*-hexdig-tree-to-char (cdr trees))))
+    (cons c rest)))
+
+(define abs-num-escape ((tree abnf::treep))
+  :returns (e num-escape-resultp)
+  :short "Abstract a @('num-escape') CST to a @(tsee num-escape)."
+  (b* (((okf treess) (abnf::check-tree-nonleaf tree "num-escape")))
+    (case (len treess)
+      (1
+       ;; Decimal: 1*DIGIT, with sub.1st a list of `digit' trees.
+       (b* (((okf digits-trees) (abnf::check-tree-list-list-1 treess))
+            ((okf digits) (abs-*-digit-tree-to-char digits-trees))
+            ((unless (consp digits))
+             (reserrf :empty-num-escape-decimal-digits)))
+         (make-num-escape-dec :digits digits)))
+      (2
+       ;; Octal `o' 1*octal-digit or hex `x' 1*HEXDIG.
+       (b* (((okf (abnf::tree-list-tuple2 sub))
+             (abnf::check-tree-list-list-2 treess))
+            ((okf marker-tree) (abnf::check-tree-list-1 sub.1st))
+            ((okf marker-leaf) (abnf::check-tree-leafterm marker-tree))
+            ((unless (and (consp marker-leaf) (= (len marker-leaf) 1)))
+             (reserrf (list :num-escape-marker-not-singleton marker-leaf)))
+            (marker (car marker-leaf)))
+         (cond ((or (eql marker #x6F) (eql marker #x4F))   ; 'o' / 'O'
+                (b* (((okf digits) (abs-*-octal-leafterm-to-char sub.2nd))
+                     ((unless (consp digits))
+                      (reserrf :empty-num-escape-octal-digits)))
+                  (make-num-escape-oct :digits digits)))
+               ((or (eql marker #x78) (eql marker #x58))   ; 'x' / 'X'
+                (b* (((okf digits) (abs-*-hexdig-tree-to-char sub.2nd))
+                     ((unless (consp digits))
+                      (reserrf :empty-num-escape-hex-digits)))
+                  (make-num-escape-hex :digits digits)))
+               (t (reserrf (list :unexpected-num-escape-marker marker))))))
+      (otherwise
+       (reserrf (list :num-escape-shape (len treess)))))))
+
+(define abs-escape-char ((tree abnf::treep))
+  :returns (e escape-resultp)
+  :short "Abstract an @('escape-char') CST to an @(tsee escape)."
+  (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "escape-char"))
+       ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
+    (cond ((equal rulename? "char-escape")
+           (b* (((okf s) (abs-simple-escape inner)))
+             (make-escape-simple :escape s)))
+          ((equal rulename? "ascii-escape")
+           (b* (((okf a) (abs-ascii-escape inner)))
+             (make-escape-ascii :escape a)))
+          ((equal rulename? "caret-escape")
+           (b* (((okf c) (abs-caret-escape inner)))
+             (make-escape-caret :escape c)))
+          ((equal rulename? "num-escape")
+           (b* (((okf n) (abs-num-escape inner)))
+             (make-escape-num :escape n)))
+          (t (reserrf (list :unexpected-escape-char-body
+                            (abnf::tree-info-for-error inner)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; char-lit and string-lit
 ;;
 
 (define abs-char-lit ((tree abnf::treep))
   :returns (cl char-lit-resultp)
-  :short "Abstract a @('char-lit') to a @(tsee char-lit)
-          (non-escape only; escapes are not yet implemented)."
+  :short "Abstract a @('char-lit') to a @(tsee char-lit)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar produces either 1 tree-list (non-escape: a single
+     @(tsee abnf::tree-leafterm) with the character's code point) or
+     2 tree-lists (escape: a leafterm for @('\\') and an
+     @('escape-char') subtree)."))
   (b* (((okf treess) (abnf::check-tree-nonleaf tree "char-lit")))
     (case (len treess)
       (1 (b* (((okf trees) (abnf::check-tree-list-list-1 treess))
@@ -528,8 +780,18 @@
                                 (and (<= #xE000 code) (<= code #x10FFFF)))))
                (reserrf (list :char-lit-out-of-range code))))
            (make-char-lit-char :code code)))
-      (2 (reserrf (list :char-lit-escape-not-yet-implemented
-                        (abnf::tree-info-for-error tree))))
+      (2 (b* (((okf (abnf::tree-list-tuple2 sub))
+              (abnf::check-tree-list-list-2 treess))
+              ((okf bslash-tree) (abnf::check-tree-list-1 sub.1st))
+              ((okf bslash-leaf) (abnf::check-tree-leafterm bslash-tree))
+              ((unless (and (consp bslash-leaf)
+                            (= (len bslash-leaf) 1)
+                            (eql (car bslash-leaf) #x5C)))
+               (reserrf (list :char-lit-escape-missing-backslash
+                              bslash-leaf)))
+              ((okf esc-tree) (abnf::check-tree-list-1 sub.2nd))
+              ((okf e) (abs-escape-char esc-tree)))
+           (make-char-lit-escape :escape e)))
       (otherwise
        (reserrf (list :char-lit-shape (len treess)))))))
 
@@ -541,7 +803,7 @@
        ((okf rest) (abs-*-char-lit (cdr trees))))
     (cons c rest)))
 
-(define abs-string-lit-to-chars ((tree abnf::treep))
+(define abs-string-lit ((tree abnf::treep))
   :returns (chars char-lit-list-resultp)
   :short "Abstract a @('string-lit') CST to a list of @(tsee char-lit)s
           (the chars between the surrounding @('DQUOTE')s)."

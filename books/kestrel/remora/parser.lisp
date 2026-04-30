@@ -548,7 +548,7 @@
 
 ;; char-escape has 10 single-char alternatives; hand-written.
 
-(define char-escapep ((nat natp))
+(define char-escape-codepoint-p ((nat natp))
   :returns (yes/no booleanp)
   :short "Check if a natural number is a char-escape mnemonic code point."
   (b* ((nat (nfix nat)))
@@ -572,7 +572,7 @@
        ((when (endp input))
         (mv (reserrf "char-escape: end of input") nil))
        (nat (car input))
-       ((unless (char-escapep nat))
+       ((unless (char-escape-codepoint-p nat))
         (mv (reserrf "char-escape: not a char-escape") input)))
     (mv (abnf::make-tree-nonleaf
          :rulename? (abnf::rulename "char-escape")
@@ -663,7 +663,7 @@
        ((pok< tree-ctrl) (abnf::parse-range #x40 #x5F input)))
     (mv (abnf::make-tree-nonleaf
          :rulename? (abnf::rulename "caret-escape")
-         :branches (list (list tree-caret tree-ctrl)))
+         :branches (list (list tree-caret) (list tree-ctrl)))
         input))
   :hooks (:fix)
   ///
