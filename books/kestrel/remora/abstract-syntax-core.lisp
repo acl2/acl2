@@ -35,7 +35,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce corep
-  :short "Check if the ASTs are in the core subset."
+  :short "Predicates on ASTs that characterize the core subset."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -87,3 +87,40 @@
    (expr :bracket nil)
    (expr :let nil)
    (bind nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection abstract-syntax-corep-additional-theorems
+  :short "Additional theorems about the core AST predicates."
+
+  (defruled shape-corep-when-var
+    (implies (shape-case shape :var)
+             (shape-corep shape))
+    :enable shape-corep)
+
+  (defruled shape-corep-when-dim
+    (implies (shape-case shape :dim)
+             (shape-corep shape))
+    :enable shape-corep)
+
+  (defruled ispace-corep-when-dim
+    (implies (ispace-case ispace :dim)
+             (ispace-corep ispace))
+    :enable ispace-corep)
+
+  (defruled type-corep-when-var
+    (implies (type-case type :var)
+             (type-corep type))
+    :enable type-corep)
+
+  (defruled type-corep-when-base
+    (implies (type-case type :base)
+             (type-corep type))
+    :enable type-corep)
+
+  (add-to-ruleset abstract-syntax-corep-rules
+                  '(shape-corep-when-var
+                    shape-corep-when-dim
+                    ispace-corep-when-dim
+                    type-corep-when-var
+                    type-corep-when-base)))
