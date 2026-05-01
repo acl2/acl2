@@ -1978,7 +1978,7 @@
                  (reserrf (list :unexpected-atom-body
                                 (abnf::tree-info-for-error inner))))
                 ((okf bv) (abs-base-val inner)))
-             (make-atom-base :value bv)))
+             (make-atom-base :lit bv)))
         (5 (b* (((okf (abnf::tree-list-tuple5 sub))
                  (abnf::check-tree-list-list-5 treess))
                 ((okf body-tree) (abnf::check-tree-list-1 sub.3rd)))
