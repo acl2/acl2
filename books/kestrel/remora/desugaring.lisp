@@ -151,6 +151,27 @@
     :fn var+type-list-desugar
     :hints (("Goal" :induct t :in-theory (enable var+type-list-desugar))))
 
-  ;; TODO: add more when more functions are defined
+  (defret-mutual exprs/atoms/binds-corep-of-exprs/atoms/binds-desugar
+    (defret expr-corep-of-expr-desugar
+      (expr-corep fty::result)
+      :fn expr-desugar)
+    (defret expr-list-corep-of-expr-list-desugar
+      (expr-list-corep fty::result)
+      :fn expr-list-desugar)
+    (defret atom-corep-of-atom-desugar
+      (atom-corep fty::result)
+      :fn atom-desugar)
+    (defret atom-list-corep-of-atom-desugar
+      (atom-list-corep fty::result)
+      :fn atom-list-desugar)
+    :skip-others t
+    :mutual-recursion exprs/atoms/binds-desugar
+    :hints (("Goal" :in-theory (enable expr-desugar
+                                       expr-list-desugar
+                                       atom-desugar
+                                       atom-list-desugar))))
 
-)
+  (defret prog-corep-of-prog-desugar
+    (prog-corep fty::result)
+    :fn prog-desugar
+    :hints (("Goal" :in-theory (enable prog-desugar)))))

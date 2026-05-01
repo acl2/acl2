@@ -67,7 +67,14 @@
 (std::defprojection atom-base-list ((x base-lit-listp))
   :returns (atoms atom-listp)
   :short "Lift @(tsee atom-base) to lists."
-  (atom-base x))
+  (atom-base x)
+
+  ///
+
+  (defrule atom-list-corep-of-atom-base-list
+    (atom-list-corep (atom-base-list lits))
+    :induct t
+    :enable abstract-syntax-corep-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

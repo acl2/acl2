@@ -118,9 +118,21 @@
              (type-corep type))
     :enable type-corep)
 
+  (defruled expr-corep-when-var
+    (implies (expr-case expr :var)
+             (expr-corep expr))
+    :enable expr-corep)
+
+  (defruled atom-corep-when-base
+    (implies (atom-case atom :base)
+             (atom-corep atom))
+    :enable atom-corep)
+
   (add-to-ruleset abstract-syntax-corep-rules
                   '(shape-corep-when-var
                     shape-corep-when-dim
                     ispace-corep-when-dim
                     type-corep-when-var
-                    type-corep-when-base)))
+                    type-corep-when-base
+                    expr-corep-when-var
+                    atom-corep-when-base)))
