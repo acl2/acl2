@@ -1020,6 +1020,7 @@
      bvif-of-getbit-arg3
      bvif-of-getbit-arg4
 
+     bvlt-of-1
      not-bvlt-self
      bvlt-of-ifix-arg2
      bvlt-of-ifix-arg3
@@ -3520,7 +3521,6 @@
              commutativity-2-of-+-when-constant
              rationalp-of--
              rationalp-+
-             bvlt-of-1
              max
              bvchop-of-times-of-/-32
              integerp-of-1-times-1/32

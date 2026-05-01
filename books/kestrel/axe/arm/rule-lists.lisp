@@ -544,7 +544,6 @@
      not-in-region32p-when-disjoint-regions32p-special
      ;; not-in-region32p-when-disjoint-regions32p-one ; looped -- why?
      ;; not-in-region32p-when-disjoint-regions32p-two
-     acl2::bvlt-of-1
      ;acl2::bvlt-of-bvplus-constant-and-constant-gen ; bad?
      bvlt-of-read-and-constant
 
