@@ -155,7 +155,7 @@
      in which case we could use pairs consisting of
      the original identifiers and the indices.")
    (xdoc::p
-    "We ha separate predicates that restrict identifiers to certain forms,
+    "We have separate predicates that restrict identifiers to certain forms,
      used for parsing, printing, transformations, etc.:
      see @(see ascii-identifiers).
      Restrictions are needed to print this abstract syntax
