@@ -66,8 +66,7 @@
     (xdoc::li
      "Bindings,
       because they are only used in let expressions.")))
-  :types (dims
-          shapes
+  :types (shapes
           ispace
           ispace-list
           ispace-list-option
