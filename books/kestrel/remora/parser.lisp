@@ -211,8 +211,8 @@
     ;; float-lit: [ exponent ]
     "[ exponent ]" optional-exponent
 
-    ;; fun-bind, tfun-bind, ifun-bind
-    "[ ws \":\" ws type-exp ]" optional-type-annotation)
+    ;; fun-sig, tfun-sig, ifun-sig: optional return-type annotation
+    "[ ws colon-type ]" optional-type-annotation)
 
   (defparse-remora-repetition-table
 
@@ -1493,9 +1493,8 @@
 (defparse-remora-*-group "( ws type-exp )")
 (defparse-remora-group "( ws ispace )")
 (defparse-remora-*-group "( ws ispace )")
-(defparse-remora-option "[ ws \":\" ws type-exp ]")
-;; *( ispace-var ws ) for unbox-exp will be handled inside the
-;; big defines block (unusual reversed pattern).
+;; *( ispace-var ws ) for unbox-spec is hand-written inside the defines
+;; block (unusual reversed pattern).
 
 (defparse-remora-rulename "type-args")
 (defparse-remora-rulename "ispace-args")
@@ -1503,6 +1502,25 @@
 (defparse-remora-rulename "ispace-vars")
 (defparse-remora-rulename "type-bind")
 (defparse-remora-rulename "ispace-bind")
+
+;; Sub-rules factored out of *-fun-bind / val-bind alt 2 / unbox-exp so
+;; that no rule has more than 10 ABNF concatenation elements (the abnf
+;; library's tree-list-tupleN family stops at N=10).  These sub-rules
+;; carry semantic content (function signatures, typed bindings) and
+;; their inner abstractors keep slice 4-5 cluster member sizes manageable.
+
+(defparse-remora-rulename "colon-type")
+;; The inline option [ ws colon-type ] is used in fun-sig/tfun-sig/ifun-sig
+;; for an optional return-type annotation.  We keep it as an inline option
+;; rather than a rule because rulename auto-generation would attempt to
+;; prove a strict-less-than measure lemma, which fails for nullable rules
+;; (the empty match consumes no input).
+(defparse-remora-option "[ ws colon-type ]")
+(defparse-remora-rulename "fun-sig")
+(defparse-remora-rulename "tfun-sig")
+(defparse-remora-rulename "ifun-sig")
+(defparse-remora-rulename "at-fun-sig")
+(defparse-remora-rulename "val-typed-sig")
 
 ;; Lambda keyword groups (just literals, no recursion).
 (defparse-remora-group "( \"fn\" / %x03BB )")
@@ -1524,6 +1542,8 @@
 ;; 14: atom-body, 13: bind-body, 12: bind
 ;; 11-7: val-bind, fun-bind, tfun-bind, ifun-bind, at-fun-bind
 ;; 6-3: lambda, type-lambda, ispace-lambda, box-expr
+;; 1: unbox-spec
+;; 0: *-ispace-var-ws
 
 (defines parse-expressions
 
@@ -1677,46 +1697,55 @@
           input))
     :measure (two-nats-measure (len input) 21))
 
-  ;; [SC4] The Haskell parser guards each ispace-var (which it calls
-  ;; extent-param) with notFollowedBy ")".  Our parser uses
-  ;; greedy *( ispace-var ws ) without lookahead, which produces the
-  ;; same result for well-formed input.
+  ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp
   (define parse-unbox-exp ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse an @('unbox-exp')."
-    (b* ((orig-input input)
-         ((pok< tree-kw) (abnf::parse-ichars "unbox" input))
+    (b* (((pok< tree-kw) (abnf::parse-ichars "unbox" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ;; *( ispace-var ws )
-         ((pok trees-eps) (parse-*-ispace-var-ws input))
-         ((pok< tree-id) (parse-identifier input))
+         ((pok< tree-spec) (parse-unbox-spec input))
          ((pok tree-ws3) (parse-ws input))
-         ((unless (mbt (< (len input) (len orig-input))))
-          (mv (reserrf :impossible) (nat-list-fix orig-input)))
-         ((pok< tree-e1) (parse-exp input))
-         ((pok tree-ws4) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
-         ((pok tree-ws5) (parse-ws input))
-         ((unless (mbt (< (len input) (len orig-input))))
-          (mv (reserrf :impossible) (nat-list-fix orig-input)))
-         ((pok< tree-e2) (parse-exp input)))
+         ((pok tree-ws4) (parse-ws input))
+         ((pok< tree-e) (parse-exp input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "unbox-exp")
            :branches (list (list tree-kw)
                            (list tree-ws1)
                            (list tree-open)
                            (list tree-ws2)
-                           trees-eps
-                           (list tree-id)
+                           (list tree-spec)
                            (list tree-ws3)
-                           (list tree-e1)
-                           (list tree-ws4)
                            (list tree-close)
-                           (list tree-ws5)
-                           (list tree-e2)))
+                           (list tree-ws4)
+                           (list tree-e)))
           input))
     :measure (two-nats-measure (len input) 20))
+
+  ;; [SC4] The Haskell parser guards each ispace-var (which it calls
+  ;; extent-param) with notFollowedBy ")".  Our parser uses
+  ;; greedy *( ispace-var ws ) without lookahead, which produces the
+  ;; same result for well-formed input.
+  ;;
+  ;; unbox-spec = *( ispace-var ws ) identifier ws exp
+  (define parse-unbox-spec ((input nat-listp))
+    :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
+    :short "Parse an @('unbox-spec')."
+    (b* ((orig-input input)
+         ((pok trees-eps) (parse-*-ispace-var-ws input))
+         ((pok< tree-id) (parse-identifier input))
+         ((pok tree-ws) (parse-ws input))
+         ((unless (mbt (< (len input) (len orig-input))))
+          (mv (reserrf :impossible) (nat-list-fix orig-input)))
+         ((pok< tree-e) (parse-exp input)))
+      (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "unbox-spec")
+           :branches (list trees-eps
+                           (list tree-id)
+                           (list tree-ws)
+                           (list tree-e)))
+          input))
+    :measure (two-nats-measure (len input) 1))
 
   (define parse-let-exp ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
@@ -1940,10 +1969,10 @@
       "The grammar has two alternatives:
        @({
          val-bind = \"val\" ws identifier ws exp
-                  / \"val\" ws \"(\" ws identifier ws \":\" ws type-exp ws \")\" ws exp
+                  / \"val\" ws \"(\" ws val-typed-sig ws \")\" ws exp
        })
        The untyped form (alt 1) produces 5 tree-lists; the typed form
-       (alt 2) produces 13 tree-lists.  The downstream abstractor
+       (alt 2) produces 9 tree-lists.  The downstream abstractor
        dispatches on tree-list count."))
     (b* (((try tree rest)
           ;; Alt 1: "val" ws identifier ws exp
@@ -1960,19 +1989,15 @@
                                  (list tree-ws2)
                                  (list tree-e)))
                 input)))
-         ;; Alt 2: "val" ws "(" ws identifier ws ":" ws type-exp ws ")" ws exp
+         ;; Alt 2: "val" ws "(" ws val-typed-sig ws ")" ws exp
          ((pok< tree-kw) (abnf::parse-ichars "val" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ((pok< tree-id) (parse-identifier input))
+         ((pok< tree-sig) (parse-val-typed-sig input))
          ((pok tree-ws3) (parse-ws input))
-         ((pok< tree-colon) (abnf::parse-ichars ":" input))
-         ((pok tree-ws4) (parse-ws input))
-         ((pok< tree-te) (parse-type-exp input))
-         ((pok tree-ws5) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
-         ((pok tree-ws6) (parse-ws input))
+         ((pok tree-ws4) (parse-ws input))
          ((pok< tree-e) (parse-exp input)))
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "val-bind")
@@ -1980,18 +2005,15 @@
                            (list tree-ws1)
                            (list tree-open)
                            (list tree-ws2)
-                           (list tree-id)
+                           (list tree-sig)
                            (list tree-ws3)
-                           (list tree-colon)
-                           (list tree-ws4)
-                           (list tree-te)
-                           (list tree-ws5)
                            (list tree-close)
-                           (list tree-ws6)
+                           (list tree-ws4)
                            (list tree-e)))
           input))
     :measure (two-nats-measure (len input) 11))
 
+  ;; fun-bind = "fun" ws "(" ws fun-sig ws ")" ws exp
   (define parse-fun-bind ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse a @('fun-bind')."
@@ -1999,9 +2021,7 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ((pok< tree-id) (parse-identifier input))
-         ((mv trees-pats input) (parse-repetition-*-ws-pat input))
-         ((pok tree-opt) (parse-optional-type-annotation input))
+         ((pok< tree-sig) (parse-fun-sig input))
          ((pok tree-ws3) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
          ((pok tree-ws4) (parse-ws input))
@@ -2011,9 +2031,7 @@
                            (list tree-ws1)
                            (list tree-open)
                            (list tree-ws2)
-                           (list tree-id)
-                           trees-pats
-                           (list tree-opt)
+                           (list tree-sig)
                            (list tree-ws3)
                            (list tree-close)
                            (list tree-ws4)
@@ -2021,6 +2039,7 @@
           input))
     :measure (two-nats-measure (len input) 10))
 
+  ;; tfun-bind = "t-fun" ws "(" ws tfun-sig ws ")" ws exp
   (define parse-tfun-bind ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse a @('tfun-bind')."
@@ -2028,36 +2047,25 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ((pok< tree-id) (parse-identifier input))
+         ((pok< tree-sig) (parse-tfun-sig input))
          ((pok tree-ws3) (parse-ws input))
-         ((pok< tree-open2) (abnf::parse-ichars "(" input))
-         ((mv trees-tps input) (parse-repetition-*-ws-type-var input))
-         ((pok tree-ws4) (parse-ws input))
-         ((pok< tree-close2) (abnf::parse-ichars ")" input))
-         ((pok tree-opt) (parse-optional-type-annotation input))
-         ((pok tree-ws5) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
-         ((pok tree-ws6) (parse-ws input))
+         ((pok tree-ws4) (parse-ws input))
          ((pok< tree-e) (parse-exp input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "tfun-bind")
            :branches (list (list tree-kw)
                            (list tree-ws1)
                            (list tree-open)
                            (list tree-ws2)
-                           (list tree-id)
+                           (list tree-sig)
                            (list tree-ws3)
-                           (list tree-open2)
-                           trees-tps
-                           (list tree-ws4)
-                           (list tree-close2)
-                           (list tree-opt)
-                           (list tree-ws5)
                            (list tree-close)
-                           (list tree-ws6)
+                           (list tree-ws4)
                            (list tree-e)))
           input))
     :measure (two-nats-measure (len input) 9))
 
+  ;; ifun-bind = "i-fun" ws "(" ws ifun-sig ws ")" ws exp
   (define parse-ifun-bind ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse an @('ifun-bind')."
@@ -2065,36 +2073,25 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ((pok< tree-id) (parse-identifier input))
+         ((pok< tree-sig) (parse-ifun-sig input))
          ((pok tree-ws3) (parse-ws input))
-         ((pok< tree-open2) (abnf::parse-ichars "(" input))
-         ((mv trees-eps input) (parse-repetition-*-ws-ispace-var input))
-         ((pok tree-ws4) (parse-ws input))
-         ((pok< tree-close2) (abnf::parse-ichars ")" input))
-         ((pok tree-opt) (parse-optional-type-annotation input))
-         ((pok tree-ws5) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
-         ((pok tree-ws6) (parse-ws input))
+         ((pok tree-ws4) (parse-ws input))
          ((pok< tree-e) (parse-exp input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "ifun-bind")
            :branches (list (list tree-kw)
                            (list tree-ws1)
                            (list tree-open)
                            (list tree-ws2)
-                           (list tree-id)
+                           (list tree-sig)
                            (list tree-ws3)
-                           (list tree-open2)
-                           trees-eps
-                           (list tree-ws4)
-                           (list tree-close2)
-                           (list tree-opt)
-                           (list tree-ws5)
                            (list tree-close)
-                           (list tree-ws6)
+                           (list tree-ws4)
                            (list tree-e)))
           input))
     :measure (two-nats-measure (len input) 8))
 
+  ;; at-fun-bind = "fun" ws "(" ws at-fun-sig ws ")" ws exp
   (define parse-at-fun-bind ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp) (rest-input nat-listp))
     :short "Parse an @('at-fun-bind')."
@@ -2102,42 +2099,20 @@
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-open) (abnf::parse-ichars "(" input))
          ((pok tree-ws2) (parse-ws input))
-         ((pok< tree-at) (abnf::parse-ichars "@" input))
+         ((pok< tree-sig) (parse-at-fun-sig input))
          ((pok tree-ws3) (parse-ws input))
-         ((pok< tree-id) (parse-identifier input))
-         ((pok tree-ws4) (parse-ws input))
-         ((pok< tree-tps) (parse-type-vars input))
-         ((pok tree-ws5) (parse-ws input))
-         ((pok< tree-ips) (parse-ispace-vars input))
-         ((mv trees-pats input) (parse-repetition-*-ws-pat input))
-         ((pok tree-ws6) (parse-ws input))
-         ((pok< tree-colon) (abnf::parse-ichars ":" input))
-         ((pok tree-ws7) (parse-ws input))
-         ((pok< tree-te) (parse-type-exp input))
-         ((pok tree-ws8) (parse-ws input))
          ((pok< tree-close) (abnf::parse-ichars ")" input))
-         ((pok tree-ws9) (parse-ws input))
+         ((pok tree-ws4) (parse-ws input))
          ((pok< tree-e) (parse-exp input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "at-fun-bind")
            :branches (list (list tree-kw)
                            (list tree-ws1)
                            (list tree-open)
                            (list tree-ws2)
-                           (list tree-at)
+                           (list tree-sig)
                            (list tree-ws3)
-                           (list tree-id)
-                           (list tree-ws4)
-                           (list tree-tps)
-                           (list tree-ws5)
-                           (list tree-ips)
-                           trees-pats
-                           (list tree-ws6)
-                           (list tree-colon)
-                           (list tree-ws7)
-                           (list tree-te)
-                           (list tree-ws8)
                            (list tree-close)
-                           (list tree-ws9)
+                           (list tree-ws4)
                            (list tree-e)))
           input))
     :measure (two-nats-measure (len input) 7))
@@ -2240,6 +2215,8 @@
                  '(:expand (parse-iapp-exp input)))
                 ((acl2::occur-lst '(acl2::flag-is 'parse-unbox-exp) clause)
                  '(:expand (parse-unbox-exp input)))
+                ((acl2::occur-lst '(acl2::flag-is 'parse-unbox-spec) clause)
+                 '(:expand (parse-unbox-spec input)))
                 ((acl2::occur-lst '(acl2::flag-is 'parse-let-exp) clause)
                  '(:expand (parse-let-exp input)))
                 ((acl2::occur-lst '(acl2::flag-is 'parse-at-app-exp) clause)
@@ -2287,7 +2264,7 @@
          (parse-exp parse-bracket-frame parse-paren-exp
           parse-paren-exp-body parse-app-exp parse-array-exp
           parse-frame-exp parse-tapp-exp parse-iapp-exp
-          parse-unbox-exp parse-let-exp parse-at-app-exp
+          parse-unbox-exp parse-unbox-spec parse-let-exp parse-at-app-exp
           parse-atom parse-atom-body parse-lambda
           parse-type-lambda parse-ispace-lambda parse-box-expr
           parse-bind parse-bind-body parse-val-bind
@@ -2353,6 +2330,11 @@
     (defret len-of-parse-unbox-exp-<
       (implies (not (reserrp tree)) (< (len rest-input) (len input)))
       :rule-classes :linear :fn parse-unbox-exp)
+    (defret len-of-parse-unbox-spec-<=
+      (<= (len rest-input) (len input)) :rule-classes :linear :fn parse-unbox-spec)
+    (defret len-of-parse-unbox-spec-<
+      (implies (not (reserrp tree)) (< (len rest-input) (len input)))
+      :rule-classes :linear :fn parse-unbox-spec)
     (defret len-of-parse-let-exp-<=
       (<= (len rest-input) (len input)) :rule-classes :linear :fn parse-let-exp)
     (defret len-of-parse-let-exp-<
@@ -2448,7 +2430,8 @@
              (disable parse-exp parse-bracket-frame parse-paren-exp
                       parse-paren-exp-body parse-app-exp parse-array-exp
                       parse-frame-exp parse-tapp-exp parse-iapp-exp
-                      parse-unbox-exp parse-let-exp parse-at-app-exp
+                      parse-unbox-exp parse-unbox-spec parse-let-exp
+                      parse-at-app-exp
                       parse-atom parse-atom-body parse-lambda
                       parse-type-lambda parse-ispace-lambda parse-box-expr
                       parse-bind parse-bind-body parse-val-bind
@@ -2475,6 +2458,8 @@
                  '(:expand (parse-iapp-exp input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-unbox-exp) clause)
                  '(:expand (parse-unbox-exp input)))
+            (and (acl2::occur-lst '(acl2::flag-is 'parse-unbox-spec) clause)
+                 '(:expand (parse-unbox-spec input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-let-exp) clause)
                  '(:expand (parse-let-exp input)))
             (and (acl2::occur-lst '(acl2::flag-is 'parse-at-app-exp) clause)
@@ -2522,7 +2507,8 @@
                   (parse-exp parse-bracket-frame parse-paren-exp
                    parse-paren-exp-body parse-app-exp parse-array-exp
                    parse-frame-exp parse-tapp-exp parse-iapp-exp
-                   parse-unbox-exp parse-let-exp parse-at-app-exp
+                   parse-unbox-exp parse-unbox-spec parse-let-exp
+                   parse-at-app-exp
                    parse-atom parse-atom-body parse-lambda
                    parse-type-lambda parse-ispace-lambda parse-box-expr
                    parse-bind parse-bind-body parse-val-bind
