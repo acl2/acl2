@@ -30,9 +30,8 @@
      Here we define mappings from all kinds of character literals
      to their corresponding coded.")
    (xdoc::p
-    "This mapping is used to define "
-    (xdoc::seetopic "abstract-syntax-desugaring" "desugaring")
-    ", but it may be also used to define the dynamic semantics
+    "This mapping is used to define @(see desugaring),
+     but it may be also used to define the dynamic semantics
      (if the latter is defined on the full ASTs, not just the core ones)."))
   :order-subtopics t
   :default-parent t)
