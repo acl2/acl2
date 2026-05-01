@@ -16,6 +16,9 @@
 (include-book "abstract-syntax-structural-operations")
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
+(include-book "abstract-syntax-core")
+(include-book "character-literal-codes")
+(include-book "desugaring")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,4 +42,7 @@
                     abstract-syntax-derived-fixtypes
                     abstract-syntax-structural-operations
                     abstract-syntax-matching-operations
-                    abstract-syntax-variable-operations))
+                    abstract-syntax-variable-operations
+                    abstract-syntax-core
+                    character-literal-codes
+                    desugaring))

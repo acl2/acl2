@@ -136,11 +136,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult base-value-result
-  :short "Fixtype of base values and errors."
-  :ok base-value
-  :pred base-value-resultp
-  :prepwork ((local (in-theory (enable base-value-kind)))))
+(fty::defresult base-lit-result
+  :short "Fixtype of base literals and errors."
+  :ok base-lit
+  :pred base-lit-resultp
+  :prepwork ((local (in-theory (enable base-lit-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,11 +188,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult simple-escape-result
-  :short "Fixtype of simple escapes and errors."
-  :ok simple-escape
-  :pred simple-escape-resultp
-  :prepwork ((local (in-theory (enable simple-escape-kind)))))
+(fty::defresult char-escape-result
+  :short "Fixtype of character escapes and errors."
+  :ok char-escape
+  :pred char-escape-resultp
+  :prepwork ((local (in-theory (enable char-escape-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

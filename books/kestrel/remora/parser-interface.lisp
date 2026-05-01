@@ -14,6 +14,7 @@
 (include-book "syntax-abstraction")
 
 (include-book "kestrel/fty/nat-list-result" :dir :system)
+(include-book "unicode/read-utf8" :dir :system)
 
 (acl2::controlled-configuration :no-function nil)
 
@@ -38,22 +39,36 @@
      corresponding @(see syntax-abstraction) function to lift the CST to an
      AST.")
    (xdoc::p
-    "Eventually the only entry point we expect to expose is
-     @('parse-program-from-string') (which we will probably call
-     @('parse') &mdash; once the program-level AST and
-     its abstractor are in place, all the per-rule entry points below will
-     be obsolete.  Until then, each entry point covers one of the largest
-     pieces the abstractor can currently handle: @('ispace') (the entire
-     dim/shape/ispace cluster), @('base-val'), @('base-type'),
-     @('type-var'), and @('ispace-var').")
+    "The canonical entry points are @(tsee parse-from-string) (string &rarr;
+     AST) and @(tsee parse-from-file) (file &rarr; AST).  The per-rule
+     entries are retained for ongoing development and debugging, since they
+     are useful for testing fragments of source in isolation.
+     The per-rule entries currently cover @('ispace'), @('base-val'),
+     @('base-type'), @('type-var'), @('ispace-var'), @('type-exp'),
+     @('char-lit'), @('string-lit'), @('exp'), @('atom'), and @('bind').")
    (xdoc::p
-    "All entry points require the entire string to be consumed by the parse,
+    "All entry points require the entire input to be consumed by the parse,
      and return a @(see reserr) on any failure (UTF-8 decode, parse, or
      abstraction).  ACL2 strings are sequences of bytes (char-codes 0-255);
      these entry points interpret those bytes as UTF-8 and decode them to
-     Unicode code points before parsing, matching the behavior of "
-    (xdoc::seetopic "post-parsing" "@('parse-program-from-bytes')")
-    "."))
+     Unicode code points before parsing.")
+   (xdoc::p
+    "The per-rule entry points and @(tsee ast-from-fragment) do "
+    (xdoc::b "not")
+    " enforce side condition [SC2] (keyword exclusion from identifiers).
+     A fragment such as @('\"(let)\"') &mdash; which is not a well-formed
+     @('let-exp') &mdash; will parse successfully under @(tsee
+     parse-exp-from-string) as an @('app-exp') applying the identifier
+     @('let') to no arguments, since the parser proper does not consult
+     the keyword list.  Only the program-level entries
+     (@(tsee parse-from-string), @(tsee parse-from-file), and the CST
+     helpers @(tsee parse-program-from-bytes) and
+     @(tsee parse-program-from-codepoints)) run the
+     @(tsee check-tree-no-keyword-identifiers) walk that rejects
+     keyword-named identifiers.  Consumers that need [SC2] enforcement
+     on a fragment must apply it themselves; or, equivalently, route
+     through the program-level entries and treat the fragment as the
+     body of a program."))
   :order-subtopics t
   :default-parent t)
 
@@ -103,9 +118,14 @@
 ;; grammar rule for which both PARSE-<RULE-NAME> and ABS-<RULE-NAME> are
 ;; defined; SOURCE-STRING is an expression of type STRINGP.  At any
 ;; failure the expansion returns a RESERR.
+;;
+;; The literal symbol 'rule-name is used as the package witness for
+;; packn-pos, ensuring the constructed names land in the REMORA package
+;; even when the caller passes a rule symbol whose home package is
+;; COMMON-LISP (e.g. CL::EXP, CL::ATOM).
 (defmacro parse-to-ast-and-check (rule-name source-string)
-  (b* ((parse-fn (acl2::packn-pos (list 'parse- rule-name) rule-name))
-       (abs-fn   (acl2::packn-pos (list 'abs-   rule-name) rule-name)))
+  (b* ((parse-fn (acl2::packn-pos (list 'parse- rule-name) 'rule-name))
+       (abs-fn   (acl2::packn-pos (list 'abs-   rule-name) 'rule-name)))
     `(b* ((codepoints (decode-utf8-string ,source-string))
           ((when (reserrp codepoints)) codepoints)
           ((mv tree rest) (,parse-fn codepoints))
@@ -120,12 +140,17 @@
 ;; RULE-NAME is the rule's symbol (used to find PARSE-<RULE-NAME> and
 ;; ABS-<RULE-NAME>); RESULT-PRED is the result predicate the AST entry
 ;; should advertise (e.g. ISPACE-RESULTP, KINDED-VAR-RESULTP).
+;;
+;; The literal symbol 'rule-name is used as the package witness for
+;; packn-pos, ensuring the constructed names land in the REMORA package
+;; even when the caller passes a rule symbol whose home package is
+;; COMMON-LISP (e.g. CL::EXP, CL::ATOM).
 (defmacro defparse-from-string (rule-name result-pred)
-  (b* ((parse-fn  (acl2::packn-pos (list 'parse- rule-name) rule-name))
+  (b* ((parse-fn  (acl2::packn-pos (list 'parse- rule-name) 'rule-name))
        (cst-fn    (acl2::packn-pos
-                   (list 'parse- rule-name '-from-string-to-cst) rule-name))
+                   (list 'parse- rule-name '-from-string-to-cst) 'rule-name))
        (ast-fn    (acl2::packn-pos
-                   (list 'parse- rule-name '-from-string) rule-name))
+                   (list 'parse- rule-name '-from-string) 'rule-name))
        (rule-str  (acl2::string-downcase (symbol-name rule-name))))
     `(progn
        (define ,cst-fn ((string stringp))
@@ -154,13 +179,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defparse-from-string ispace      ispace-resultp)
-(defparse-from-string base-val    base-value-resultp)
+(defparse-from-string base-val    base-lit-resultp)
 (defparse-from-string base-type   base-type-resultp)
 (defparse-from-string type-var    type-var-resultp)
 (defparse-from-string ispace-var  ispace-var-resultp)
 (defparse-from-string type-exp    type-resultp)
 (defparse-from-string char-lit    char-lit-resultp)
 (defparse-from-string string-lit  char-lit-list-resultp)
+(defparse-from-string exp         expr-resultp)
+(defparse-from-string atom        atom-resultp)
+(defparse-from-string bind        bind-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -171,13 +199,16 @@
 
 (define ast-from-fragment ((rule-name stringp) (source-code stringp))
   :returns (ast (or (ispace-resultp ast)
-                    (base-value-resultp ast)
+                    (base-lit-resultp ast)
                     (base-type-resultp ast)
                     (type-var-resultp ast)
                     (ispace-var-resultp ast)
                     (type-resultp ast)
                     (char-lit-resultp ast)
-                    (char-lit-list-resultp ast)))
+                    (char-lit-list-resultp ast)
+                    (expr-resultp ast)
+                    (atom-resultp ast)
+                    (bind-resultp ast)))
   :hooks nil
   :short "Parse and abstract a Remora source fragment to an AST."
   :long
@@ -186,7 +217,8 @@
     "Dispatches on @('rule-name'), which must be one of
      @('\"ispace\"'), @('\"base-val\"'), @('\"base-type\"'),
      @('\"type-var\"'), @('\"ispace-var\"'), @('\"type-exp\"'),
-     @('\"char-lit\"'), or @('\"string-lit\"').
+     @('\"char-lit\"'), @('\"string-lit\"'), @('\"exp\"'),
+     @('\"atom\"'), or @('\"bind\"').
      Other rule names produce a @(see reserr).")
    (xdoc::p
     "The result type is a disjunction over the AST result predicates of
@@ -208,9 +240,108 @@
          (parse-to-ast-and-check char-lit   source-code))
         ((equal rule-name "string-lit")
          (parse-to-ast-and-check string-lit source-code))
+        ((equal rule-name "exp")
+         (parse-to-ast-and-check exp        source-code))
+        ((equal rule-name "atom")
+         (parse-to-ast-and-check atom       source-code))
+        ((equal rule-name "bind")
+         (parse-to-ast-and-check bind       source-code))
         (t (reserrf (cons :unsupported-rule-name rule-name)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Program-level entry points.
+;;
+;; @(tsee parse-program-from-codepoints) and @(tsee parse-program-from-bytes)
+;; are CST-producing helpers shared by the user-facing AST entries.  Each
+;; bundles the SC2 check from @(see post-parsing) into the parsing pipeline
+;; (parse + [SC2] + input exhaustion).
+;;
+;; @(tsee parse-from-string) and @(tsee parse-from-file) at the bottom of
+;; this section are the canonical user-facing entry points: they return a
+;; @(tsee prog) AST.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This file is incomplete.
-;; When done, there will be top-level parsing functions for Remora
-;; programs and files.
+(define parse-program-from-codepoints ((codepoints nat-listp))
+  :returns (tree abnf::tree-resultp)
+  :hooks nil
+  :short "Parse a Remora program from a list of Unicode code points."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Parses the result as a Remora program, checks that all input is
+     consumed, and checks the extra-grammatical constraint [SC2]
+     (no identifier may match a reserved keyword).  Returns a
+     @(tsee abnf::tree-resultp): a parse tree on success, or an error
+     on failure."))
+  (b* (((mv tree rest) (parse-program codepoints))
+       ((when (reserrp tree)) (reserrf-push tree))
+       ((unless (null rest))
+        (reserrf (cons :remaining-input rest)))
+       (check (check-tree-no-keyword-identifiers tree))
+       ((when (reserrp check)) (reserrf-push check)))
+    tree))
+
+(define parse-program-from-bytes ((bytes nat-listp))
+  :returns (tree abnf::tree-resultp)
+  :hooks nil
+  :short "Parse a Remora program from UTF-8 bytes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Decodes @('bytes') as UTF-8 into Unicode code points,
+     and then composes @(tsee parse-program-from-codepoints).
+     Returns a @(tsee abnf::tree-resultp):
+     a parse tree on success, or an error on failure."))
+  (b* (((unless (acl2::unsigned-byte-listp 8 bytes))
+        (reserrf (cons :invalid-octets bytes)))
+       (codepoints (acl2::utf8=>ustring bytes))
+       ((unless (nat-listp codepoints))
+        (reserrf (cons :invalid-utf-8 bytes))))
+    (parse-program-from-codepoints codepoints)))
+
+(define parse-from-string ((string stringp))
+  :returns (ast prog-resultp)
+  :hooks nil
+  :short "Parse a Remora program from an ACL2 string to a @(tsee prog) AST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Treats @('string') as UTF-8 bytes (ACL2 strings are sequences of
+     bytes with char-codes 0&ndash;255), composes
+     @(tsee parse-program-from-bytes) to obtain a CST, then
+     @(tsee abs-prog) to lift the CST to a @(tsee prog) AST.
+     The full pipeline is UTF-8 decode + ABNF parse +
+     [SC2] keyword check + input exhaustion + CST&rarr;AST abstraction."))
+  (b* (((okf tree) (parse-program-from-bytes (acl2::string=>nats string))))
+    (abs-prog tree)))
+
+(define parse-from-file ((filename stringp) state)
+  :returns (mv (ast prog-resultp) state)
+  :hooks nil
+  :prepwork ((local (in-theory (disable acl2::read-utf8))))
+  :short "Parse a Remora program from a file on disk to a @(tsee prog) AST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reads @('filename') as a UTF-8 file (using @('acl2::read-utf8')),
+     composes @(tsee parse-program-from-codepoints) to obtain a CST,
+     then @(tsee abs-prog) to lift the CST to a @(tsee prog) AST.
+     Relative paths are interpreted relative to the @('cbd').
+     Returns @('(mv prog-resultp state)'): an AST on success, or
+     an error on file-read / UTF-8 decode / parse / [SC2] / input
+     exhaustion / abstraction failure.")
+   (xdoc::p
+    "@('acl2::read-utf8') returns either a @(tsee nat-listp) of
+     code points (success) or an ACL2 string describing the failure.
+     We dispatch on @(tsee nat-listp) to distinguish the cases."))
+  (b* (((mv codepoints state)
+        (acl2::read-utf8 (acl2::str-fix filename) state))
+       ((unless (nat-listp codepoints))
+        (mv (reserrf (cons :file-read-or-utf8-error codepoints))
+            state))
+       (tree (parse-program-from-codepoints codepoints))
+       ((when (reserrp tree))
+        (mv tree state)))
+    (mv (abs-prog tree) state)))

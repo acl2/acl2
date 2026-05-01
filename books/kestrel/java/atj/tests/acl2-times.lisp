@@ -236,7 +236,7 @@
     (cons result results)))
 
 ; Make N * M calls of the ABNF parser on INPUT,
-; printing the time taken by each of the N seequence of M calls
+; printing the time taken by each of the N sequence of M calls
 ; and returning the list of the times for all the calls.
 ; The GCHECK argument provides the guard checking settings.
 (define run-abnf-test ((input nat-listp) (n natp) (m natp) gcheck state)
@@ -258,7 +258,7 @@
     (mv (cons time times) state)))
 
 ; Make N * M calls of the ABNF parser on each element of INPUTS,
-; printing the time taken by each of the N seequence of M calls
+; printing the time taken by each of the N sequence of M calls
 ; and printing minimum, maximum, and average times for each input.
 ; The GRAMMARS argument is just used for printing.
 ; The GCHECK argument provides the guard checking settings.

@@ -82,11 +82,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define base-type-of-base-value ((bval base-valuep))
+(define base-type-of-base-lit ((lit base-litp))
   :returns (btype base-typep)
   :short "Base type of a base value."
-  (base-value-case
-   bval
+  (base-lit-case
+   lit
    :bool (base-type-bool)
    :int (base-type-int)
    :float (base-type-float)))
@@ -761,7 +761,7 @@
     (atom-case
      atom
      :base
-     (type-base (base-type-of-base-value atom.value))
+     (type-base (base-type-of-base-lit atom.lit))
      :lambda
      (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.params)))
            (reserr nil))

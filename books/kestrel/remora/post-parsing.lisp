@@ -11,14 +11,13 @@
 (in-package "REMORA")
 
 (include-book "parser")
-(include-book "unicode/read-utf8" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ post-parsing
   :parents (remora)
-  :short "Post-parsing checks and functions for calling the Remora parser."
+  :short "Post-parsing checks for the Remora parser."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -28,10 +27,10 @@
      on the CST produced by @(tsee parse-program).
      Currently the only such check is [SC2] (keyword exclusion).")
    (xdoc::p
-    "This file also provides the main parser API:
-     @(tsee parse-program-from-string) and @(tsee parse-program-from-bytes),
-     which handle UTF-8 decoding, parsing, input exhaustion,
-     and post-parse normalization in a single call."))
+    "User-facing entry points that bundle this check into a complete
+     parsing pipeline (UTF-8 decode + parse + [SC2] + input exhaustion +
+     CST&rarr;AST abstraction) live in @(see parser-interface) &mdash;
+     see @(tsee parse-from-string) and @(tsee parse-from-file)."))
   :order-subtopics t
   :default-parent t)
 
@@ -137,48 +136,6 @@
   (verify-guards check-tree-no-keyword-identifiers
     :hints (("Goal" :in-theory (enable remora-keyword-p)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; ---- Parser Interface ----
-
-(define parse-program-from-bytes ((bytes nat-listp))
-  :returns (tree abnf::tree-resultp)
-  :short "Parse a Remora program from UTF-8 bytes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Decodes @('bytes') as UTF-8 into Unicode code points,
-     parses the result as a Remora program,
-     checks that all input is consumed,
-     and checks the extra-grammatical constraint [SC2]
-     (no identifier may match a reserved keyword).
-     Returns a @(tsee abnf::tree-resultp):
-     a parse tree on success, or an error on failure."))
-  (b* (((unless (acl2::unsigned-byte-listp 8 bytes))
-        (reserrf (cons :invalid-octets bytes)))
-       (codepoints (acl2::utf8=>ustring bytes))
-       ((unless (nat-listp codepoints))
-        (reserrf (cons :invalid-utf-8 bytes)))
-       ((mv tree rest) (parse-program codepoints))
-       ((when (reserrp tree))
-        (reserrf-push tree))
-       ((unless (null rest))
-        (reserrf (cons :remaining-input rest)))
-       ;; SC2: reject identifiers that match keywords
-       (check (check-tree-no-keyword-identifiers tree))
-       ((when (reserrp check))
-        (reserrf-push check)))
-    tree))
-
-(define parse-program-from-string ((string stringp))
-  :returns (tree abnf::tree-resultp)
-  :short "Parse a Remora program from an ACL2 string."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since ACL2 strings are sequences of characters with codes from 0 to 255,
-     @('string'), when converted to byte codes, is required to be valid UTF-8.")
-   (xdoc::p
-    "Returns a @(tsee abnf::tree-resultp):
-     a parse tree on success, or an error on failure."))
-  (parse-program-from-bytes (acl2::string=>nats string)))
+;; The user-facing entry points that bundle the SC2 check above into a
+;; complete parsing pipeline live in @(see parser-interface) — see
+;; @(tsee parse-from-string) and @(tsee parse-from-file).

@@ -131,7 +131,7 @@
    (xdoc::p
     "Some integer operations have boolean results.")
    (xdoc::p
-    "[JLS14:4.2.2] also lists the prefix and posfix @('++') and @('--') operators,
+    "[JLS14:4.2.2] also lists the prefix and postfix @('++') and @('--') operators,
      but those operate on variables, not just values,
      and therefore must be formalized elsewhere.")
    (xdoc::p
