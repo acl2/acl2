@@ -8012,8 +8012,21 @@
      In all other cases, the resulting list is a singleton,
      i.e. the translation item is disambiguated to a translation item.")
    (xdoc::p
-    "For now we only support external declarations and comments.
-     The latter are always considered valid."))
+    "For external declarations, we use a separate function.")
+   (xdoc::p
+    "@('#include') directives are not supported yet.")
+   (xdoc::p
+    "A @('#define') or @('#undef') directive
+     is considered valid and undergoes no transformation,
+     but it adds an entry (definition or undefinition) to the macro table.
+     Recall that, as a translation item,
+     a @('#define') directive is implicitly always
+     an object-like macro whose replacement list is just the macro name.")
+   (xdoc::p
+    "Conditional directives are not supported yet.")
+   (xdoc::p
+    "Comments are always considered valid,
+     and undergo no transformation."))
   (b* (((reterr) nil (irr-vstate)))
     (trans-item-case
      item
@@ -8022,13 +8035,39 @@
                (retok (list (trans-item-declon new-declon)) vstate))
      :include (reterr
                (msg "Validator does not support #include directives yet."))
-     :define (reterr
-              (msg "Validator does not support #define directives yet."))
-     :undef (reterr
-             (msg "Validator does not support #undef directives yet."))
+     :define (b* ((name (ident->unwrap item.macro))
+                  ((unless (stringp name))
+                   (raise "Internal error: macro name ~x0." name)
+                   (reterr "irrelevant"))
+                  (info (macro-info-object
+                         (list (make-plexeme-ident :ident name
+                                                   :provenance nil))))
+                  (macros (vstate->macros vstate))
+                  ((mv erp new-macros) (macro-define name info macros))
+                  ((unless (maybe-msgp erp))
+                   (raise "Internal error: malformed error ~x0." erp)
+                   (reterr "irrelevant"))
+                  ((when erp) (mv erp nil (irr-vstate)))
+                  (vstate (change-vstate vstate :macros new-macros)))
+               (retok (list (trans-item-fix item)) vstate))
+     :undef (b* ((name (ident->unwrap item.macro))
+                 ((unless (stringp name))
+                  (raise "Internal error: macro name ~x0." name)
+                  (reterr "irrelevant"))
+                 (macros (vstate->macros vstate))
+                 ((mv erp new-macros) (macro-undefine name macros))
+                 ((unless (maybe-msgp erp))
+                  (raise "Internal error: malformed error ~x0." erp)
+                  (reterr "irrelevant"))
+                 ((when erp) (mv erp nil (irr-vstate)))
+                 (vstate (change-vstate vstate :macros new-macros)))
+              (retok (list (trans-item-fix item)) vstate))
      :cond (reterr
             (msg "Validator does not support conditional directives yet."))
      :line-comment (retok (list (trans-item-fix item)) (vstate-fix vstate))))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable plexeme-token/space-p
+                                           plexeme-tokenp)))
   :hooks (:fix)
 
   ///
