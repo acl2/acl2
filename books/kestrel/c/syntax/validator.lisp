@@ -1607,8 +1607,12 @@
                      (expr-null-pointer-constp arg type-arg)))
             (and (type-case type-param :bool)
                  (type-case type-arg :pointer)))
-        (valid-prototype-args
-         (rest types-param) (rest args) (rest types-arg) ellipsis completions ienv)
+        (valid-prototype-args (rest types-param)
+                              (rest args)
+                              (rest types-arg)
+                              ellipsis
+                              completions
+                              ienv)
       (retmsg$ "Argument ~x0 with type ~x1 ~
                 cannot be applied to function parameter with type ~x2."
                arg
@@ -1863,14 +1867,16 @@
      [C17:6.5.3.1/2] [C17:6.5.3.1/3],
      the type of the result must be the type of the operand.
      We do not perform array-to-pointer or function-to-pointer conversions,
-     because those result in pointers, not lvalues as required [C17:6.5.3.1/1].")
+     because those result in pointers,
+     not lvalues as required [C17:6.5.3.1/1].")
    (xdoc::p
     "The @('++') post-increment and @('--') post-decrement operators
      require a real or pointer operand [C17:6.5.2.4/1].
      The type of the result is the same as the operand
      [C17:6.5.2.4/2] [C17:6.5.2.4/3].
      We do not perform array-to-pointer or function-to-pointer conversions,
-     because those result in pointers, not lvalues as required [C17:6.5.2.4/1].")
+     because those result in pointers,
+     not lvalues as required [C17:6.5.2.4/1].")
    (xdoc::p
     "The @('__real__') and @('__imag__') operators (GCC extensions)
      require a complex operand and return a corresponding real operand.
@@ -2402,7 +2408,10 @@
         (retok (type-uaconvert type2 type3 ienv) (vstate-fix vstate)))
        ((when (and (type-case type2 :struct)
                    (type-case type3 :struct)))
-        (b* (((unless (type-compatible-p type2 type3 (vstate->completions vstate) ienv))
+        (b* (((unless (type-compatible-p type2
+                                         type3
+                                         (vstate->completions vstate)
+                                         ienv))
               (retmsg$ "Struct types ~x0 and ~x1 are incompatible."
                        type2
                        type3))
@@ -2411,7 +2420,10 @@
           (retok composite vstate)))
        ((when (and (type-case type2 :union)
                    (type-case type3 :union)))
-        (b* (((unless (type-compatible-p type2 type3 (vstate->completions vstate) ienv))
+        (b* (((unless (type-compatible-p type2
+                                         type3
+                                         (vstate->completions vstate)
+                                         ienv))
               (retmsg$ "Struct types ~x0 and ~x1 are incompatible."
                        type2
                        type3))
@@ -2419,7 +2431,10 @@
               (type-composite-with-vstate type2 type3 vstate)))
           (retok composite vstate)))
        ((when (and (type-case type2 :pointer)
-                   (type-compatible-p type2 type3 (vstate->completions vstate) ienv)))
+                   (type-compatible-p type2
+                                      type3
+                                      (vstate->completions vstate)
+                                      ienv)))
         (b* (((mv composite vstate)
               (type-composite-with-vstate type2 type3 vstate)))
           (retok composite vstate)))
@@ -2637,7 +2652,8 @@
      because in all other cases we are not declaring a @('typedef') name.
      A @('typedef') name (which is an identifier) has no linkage
      [C17:6.2.2/1] [C17:6.2.2/6].
-     Since lifetime (i.e. storage duration) only applies to objects [C17:6.2.4/1],
+     Since lifetime (i.e. storage duration)
+     only applies to objects [C17:6.2.4/1],
      we return @('nil') as lifetime, i.e. no lifetime.")
    (xdoc::p
     "If the storage class specifier sequence is @('extern'),
@@ -2719,8 +2735,9 @@
      for file-scope declarations when GCC/Clang extensions are enabled
      by the implementation environment.
      This allows for the ``global register variables'' extension "
-    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Global-Register-Variables.html"
-                 "[GCCM:6.11.6.1]")
+    (xdoc::ahref
+     "https://gcc.gnu.org/onlinedocs/gcc/Global-Register-Variables.html"
+     "[GCCM:6.11.6.1]")
     ". In this case, the linkage and lifetime are
      the same as if we had no storage class specifiers.")
    (xdoc::p
@@ -3127,11 +3144,12 @@
                   (cond
                    ((type-case target-type :unknown)
                     (b* (((erp new-elems types-desiniters vstate)
-                          (valid-desiniter-list expr.elems
-                                                (type-unknown)
-                                                (initer-subobjects-stack-unknown)
-                                                lifetime
-                                                vstate)))
+                          (valid-desiniter-list
+                           expr.elems
+                           (type-unknown)
+                           (initer-subobjects-stack-unknown)
+                           lifetime
+                           vstate)))
                       (retok (make-expr-complit :type new-type
                                                 :elems new-elems
                                                 :final-comma expr.final-comma)
@@ -3824,8 +3842,9 @@
                                       (make-type-struct
                                        :uid (valid-tag-info->uid info?)
                                        :tunit? (vstate->filepath vstate)
-                                       :tag/members (type-struni-tag/members-tagged
-                                                     tyspec.spec.name?))
+                                       :tag/members
+                                       (type-struni-tag/members-tagged
+                                        tyspec.spec.name?))
                                       nil
                                       types
                                       vstate)
@@ -3923,8 +3942,9 @@
                                      (make-type-union
                                       :uid (valid-tag-info->uid info?)
                                       :tunit? (vstate->filepath vstate)
-                                      :tag/members (type-struni-tag/members-tagged
-                                                    tyspec.spec.name?))
+                                      :tag/members
+                                      (type-struni-tag/members-tagged
+                                       tyspec.spec.name?))
                                      nil
                                      types
                                      vstate)
@@ -4057,8 +4077,9 @@
                                 ((unless (and info? currentp))
                                  (mv nil nil))
                                 (uid (valid-tag-info->uid info?))
-                                (members? (hons-get (valid-tag-info->uid info?)
-                                                    (vstate->completions vstate))))
+                                (members?
+                                 (hons-get (valid-tag-info->uid info?)
+                                           (vstate->completions vstate))))
                              (mv uid (consp members?))))
                           ((when current+completep)
                            (retmsg$ "A type is already defined in this scope ~
@@ -4084,11 +4105,12 @@
                           (type (make-type-struct
                                  :uid uid
                                  :tunit? (vstate->filepath vstate)
-                                 :tag/members (if tyspec.name?
-                                                  (type-struni-tag/members-tagged
-                                                   tyspec.name?)
-                                                (type-struni-tag/members-untagged
-                                                 nil))))
+                                 :tag/members
+                                 (if tyspec.name?
+                                     (type-struni-tag/members-tagged
+                                      tyspec.name?)
+                                   (type-struni-tag/members-untagged
+                                    nil))))
                           (vstate (vstate-change-completions
                                    (hons-acons
                                     uid
@@ -4794,7 +4816,8 @@
                             (type-case target-type :union))
                         (initer-case initer :list))
                    (b* (((erp subobjects-stack)
-                         (initer-context-enter ctx (vstate->completions vstate)))
+                         (initer-context-enter ctx
+                                               (vstate->completions vstate)))
                         ((erp new-elems types vstate)
                          (valid-desiniter-list (initer-list->elems initer)
                                                target-type
@@ -5108,7 +5131,9 @@
         target-type
         :struct (b* (((erp members)
                       (type-struni-tag/members->members
-                       target-type.tag/members target-type.uid (vstate->completions vstate))
+                       target-type.tag/members
+                       target-type.uid
+                       (vstate->completions vstate))
                       :iferr (msg$ "Designator cannot be applied to ~
                                      incomplete struct type ~x0."
                                    (type-fix target-type)))
@@ -5130,7 +5155,9 @@
                          (vstate-fix vstate)))
         :union (b* (((erp members)
                      (type-struni-tag/members->members
-                      target-type.tag/members target-type.uid (vstate->completions vstate))
+                      target-type.tag/members
+                      target-type.uid
+                      (vstate->completions vstate))
                      :iferr (msg$ "Designator cannot be applied to ~
                                     incomplete struct type ~x0."
                                   (type-fix target-type)))
@@ -5585,7 +5612,8 @@
                                :params (make-type-params-old-style
                                         :params (make-list
                                                  (len dirdeclor.names)
-                                                 :initial-element (type-unknown))))
+                                                 :initial-element
+                                                 (type-unknown))))
                               (vstate-push-scope vstate))
                      (retmsg$ "The list of parameter names ~
                                in the function declarator ~x0 ~
@@ -5844,7 +5872,8 @@
        dirabsdeclor?
        :none (retok nil (type-fix type) nil (vstate-fix vstate))
        :some (valid-dirabsdeclor dirabsdeclor?.val type vstate)))
-    :measure (acl2::two-nats-measure (dirabsdeclor-option-count dirabsdeclor?) 0))
+    :measure (acl2::two-nats-measure (dirabsdeclor-option-count dirabsdeclor?)
+                                     0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6183,10 +6212,11 @@
                   :union (type-struni-tag/members-case
                           type.tag/members :untagged)
                   :otherwise nil)
-                 (retok (make-struct-declon-member :extension structdeclon.extension
-                                                   :specquals new-specquals
-                                                   :declors nil
-                                                   :attribs structdeclon.attribs)
+                 (retok (make-struct-declon-member
+                         :extension structdeclon.extension
+                         :specquals new-specquals
+                         :declors nil
+                         :attribs structdeclon.attribs)
                         (ident-list-fix previous)
                         (list (make-type-struni-member
                                :name? nil
@@ -6231,7 +6261,8 @@
       :rule-classes :type-prescription
       :hints
       (("Goal"
-        :in-theory (disable return-type-of-valid-struct-declon.type-struni-members)
+        :in-theory
+        (disable return-type-of-valid-struct-declon.type-struni-members)
         :use return-type-of-valid-struct-declon.type-struni-members))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6270,7 +6301,8 @@
              (append type-struni-members more-type-struni-members)
              (set::union types more-types)
              vstate))
-    :measure (acl2::two-nats-measure (struct-declon-list-count structdeclons) 0))
+    :measure (acl2::two-nats-measure (struct-declon-list-count structdeclons)
+                                     0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6394,7 +6426,8 @@
              (cons type-struni-member type-struni-members)
              (set::union types more-types)
              vstate))
-    :measure (acl2::two-nats-measure (struct-declor-list-count structdeclors) 0))
+    :measure (acl2::two-nats-measure (struct-declor-list-count structdeclors)
+                                     0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6515,7 +6548,8 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We validate the constant expression, which must be integer [C17:6.7.10/3],
+      "We validate the constant expression,
+       which must be integer [C17:6.7.10/3],
        and we validate the string literal(s)."))
     (b* (((reterr) (irr-statassert) nil (irr-vstate))
          (ienv (vstate->ienv vstate))
@@ -6675,7 +6709,9 @@
                           is already declared in the current scope ~
                           with associated information ~x1."
                          ident info?))
-               (vstate (vstate-add-ord ident (valid-ord-info-typedef type) vstate))
+               (vstate (vstate-add-ord ident
+                                       (valid-ord-info-typedef type)
+                                       vstate))
                (anno-info (make-init-declor-info :type type
                                                  :typedefp t
                                                  :uid? nil)))
@@ -6916,7 +6952,9 @@
          ((erp new-declon types vstate) (valid-declon (car declons) vstate))
          ((erp new-declons more-types vstate)
           (valid-declon-list (cdr declons) vstate)))
-      (retok (cons new-declon new-declons) (set::union types more-types) vstate))
+      (retok (cons new-declon new-declons)
+             (set::union types more-types)
+             vstate))
     :measure (acl2::two-nats-measure (declon-list-count declons) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8141,7 +8179,8 @@
                   (new-vstate vstatep))
      :parents nil
      (b* (((reterr) nil (irr-vstate))
-          ((when (omap::emptyp map)) (retok nil (irr-vstate))) ; TODO: check this
+          ((when (omap::emptyp map))
+           (retok nil (irr-vstate))) ; TODO: check this
           (path (omap::head-key map))
           ((mv erp new-tunit vstate)
            (valid-trans-unit
@@ -8160,12 +8199,13 @@
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->string path)
                       erp)))
-          ((erp new-map -) (valid-trans-ensemble-loop (omap::tail map)
-                                                      (vstate->externals vstate)
-                                                      (vstate->completions vstate)
-                                                      (vstate->next-uid vstate)
-                                                      ienv
-                                                      keep-going)))
+          ((erp new-map -)
+           (valid-trans-ensemble-loop (omap::tail map)
+                                      (vstate->externals vstate)
+                                      (vstate->completions vstate)
+                                      (vstate->next-uid vstate)
+                                      ienv
+                                      keep-going)))
        (retok (omap::update path new-tunit new-map)
               vstate))
      :verify-guards :after-returns
