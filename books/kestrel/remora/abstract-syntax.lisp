@@ -18,7 +18,7 @@
 (include-book "abstract-syntax-variable-operations")
 (include-book "abstract-syntax-core")
 (include-book "character-literal-codes")
-(include-book "abstract-syntax-desugaring")
+(include-book "desugaring")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,4 +45,4 @@
                     abstract-syntax-variable-operations
                     abstract-syntax-core
                     character-literal-codes
-                    abstract-syntax-desugaring))
+                    desugaring))

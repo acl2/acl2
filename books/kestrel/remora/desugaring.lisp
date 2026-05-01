@@ -19,7 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ abstract-syntax-desugaring
+(defxdoc+ desugaring
   :parents (abstract-syntax)
   :short "Abstract syntax desugaring."
   :long
