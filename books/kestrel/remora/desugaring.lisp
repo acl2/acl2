@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-core")
 (include-book "abstract-syntax-structural-operations")
+(include-book "character-literal-codes")
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
@@ -33,6 +34,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define char-lit-desugar ((clit char-litp))
+  :returns (ilit int-litp)
+  :short "Desugar a character literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Character literals are only used in string literals,
+     which desugar to array expressions
+     whose atoms are integers that are the codes of the character literals.
+     So here we desugar a character literal to an integer literal:
+     we obtain the code of the character literal
+     and we represent it with the minimum number of digits without sign."))
+  (make-int-lit :sign? nil
+                :digits (str::nat-to-dec-chars (char-lit-code clit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection char-lit-list-desugar ((x char-lit-listp))
+  :returns (ilits int-lit-listp)
+  :short "Lift @(tsee char-lit-desugar)."
+  (char-lit-desugar x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-map desugar
   :short "Desugar ASTs."
   :long
@@ -44,7 +69,11 @@
     "A shape splice is turned into a concatenation.")
    (xdoc::p
     "A bracket type is turned into an array type
-     whose shape is the concatenation of the shapes."))
+     whose shape is the concatenation of the shapes.")
+   (xdoc::p
+    "A string is turned into an arary expression
+     with the length of the string as its single dimension
+     and with the characters, converted to integers, as atoms."))
   :types (shapes
           ispace
           ispace-list
@@ -52,16 +81,25 @@
           types
           var+type
           var+type-list
-          ;; TODO:
-          ;; exprs/atoms/binds
-          ;; prog
-         )
+          exprs/atoms/binds
+          prog)
   :override
   ((shape :dims (shape-append (shape-dim-list shape.dims)))
    (shape :splice (shape-append (shape-list-desugar shape.shapes)))
    (type :bracket (make-type-array :elem (type-desugar type.elem)
                                    :shape (shape-append
-                                           (shape-list-desugar type.shapes))))))
+                                           (shape-list-desugar type.shapes))))
+   (expr :string (make-expr-array
+                  :dims (list (len expr.chars))
+                  :atoms (atom-base-list
+                          (base-lit-int-list
+                           (char-lit-list-desugar expr.chars)))))
+   (expr :capp (prog2$ (hard-error 'desugar "TODO" nil)
+                       (expr-var "irrelevant")))
+   (expr :bracket (prog2$ (hard-error 'desugar "TODO" nil)
+                          (expr-var "irrelevant")))
+   (expr :let (prog2$ (hard-error 'desugar "TODO" nil)
+                      (expr-var "irrelevant")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
