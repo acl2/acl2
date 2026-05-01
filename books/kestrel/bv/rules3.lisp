@@ -83,17 +83,17 @@
 ;bozo drop some hyps
 
 (defthm slice-tighten-top
-  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
-                (<= newsize high) ; prevents loops
-                (force (unsigned-byte-p-forced newsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (<= xsize high) ; prevents loops
+                (force (unsigned-byte-p-forced xsize x))
                 (natp low)
-                (natp newsize)
-;                (integerp newsize)
+                (natp xsize)
+;                (integerp xsize)
                 (natp high))
            (equal (slice high low x)
-                  (slice (+ -1 newsize) low x)))
+                  (slice (+ -1 xsize) low x)))
   :hints (("Goal" :cases ((equal 0 low)
-                          (<= low newsize))
+                          (<= low xsize))
            :in-theory (e/d (slice UNSIGNED-BYTE-P-FORCED) (anti-slice)))))
 
 ;fixme change to go to bvif?
@@ -2312,13 +2312,12 @@
                   (bvplus size (bvuminus size x) y)))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 
-(defthm slice-too-high-is-0-cheap
-  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
-                ;make sure it's not nil:
-                (natp newsize) ;newsize continues to be a bad name for uses like this...
+(defthm slice-too-high-is-0-bind-free
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (natp xsize) ; makes sure it's not nil: -- todo, wouldn't the bind-free fail then?
+                (<= xsize low)
                 (natp low)
-                (<= newsize low)
-                (force (unsigned-byte-p newsize x))) ;use unsigned-byte-p-forced?
+                (force (unsigned-byte-p xsize x))) ;use unsigned-byte-p-forced?
            (equal (slice high low x)
                   0))
   :hints (("Goal" :in-theory (enable slice))))
@@ -2326,31 +2325,31 @@
 ;yikes this doubles the number of occurrences of y...
 
 (defthmd bvor-of-large-and-small
-  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
-                (< newsize n)
-                (force (unsigned-byte-p newsize x))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (< xsize n)
+                (force (unsigned-byte-p xsize x))
                 (natp n)
                 (< 1 n)
-                (natp newsize)
+                (natp xsize)
                 (integerp y) ;bozo
                 (integerp x) ;bozo
-                (< 1 newsize) ;drop?
+                (< 1 xsize) ;drop?
                 )
            (equal (BVOR n x y)
-                  (bvcat (- n newsize)
-                         (slice (+ -1 n) newsize y) newsize
-                         (bvor newsize (bvchop newsize x) (bvchop newsize y)))))
+                  (bvcat (- n xsize)
+                         (slice (+ -1 n) xsize y) xsize
+                         (bvor xsize (bvchop xsize x) (bvchop xsize y)))))
   :hints (("Goal" :in-theory (e/d (SLICE-TOO-HIGH-IS-0) (INTEGERP-FROM-UNSIGNED-BYTE-P-SIZE-PARAM
                                                          NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))))
 
 (defthm bvor-cat-extra-bit-alt
-  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
-                (<= newsize lowsize)
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (<= xsize lowsize)
                 (< lowsize size)
                 (natp size)
                 (natp lowsize)
-                (natp newsize)
-                (force (unsigned-byte-p newsize x))
+                (natp xsize)
+                (force (unsigned-byte-p xsize x))
                 )
            (equal (bvor size (bvcat 1 y lowsize z) x)
                   (bvcat 1 y lowsize (bvor lowsize x z))))

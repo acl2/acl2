@@ -47,7 +47,21 @@
                     typep-when-result-not-error
                     type-listp-when-result-not-error
                     base-typep-when-result-not-error
-                    base-valuep-when-result-not-error)))
+                    base-valuep-when-result-not-error
+                    sign-optionp-when-result-not-error
+                    dec-digit-char-listp-when-result-not-error
+                    str::dec-digit-char-p
+                    char-litp-when-result-not-error
+                    char-lit-listp-when-result-not-error
+                    simple-escapep-when-result-not-error
+                    ascii-escapep-when-result-not-error
+                    caret-escapep-when-result-not-error
+                    num-escapep-when-result-not-error
+                    escapep-when-result-not-error
+                    oct-digit-char-listp-when-result-not-error
+                    hex-digit-char-listp-when-result-not-error
+                    str::oct-digit-char-p
+                    str::hex-digit-char-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,11 +273,48 @@
     :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; manual ``result'' predicates for fixtypes whose @(tsee fty::defresult)
+;; disjointness proofs are awkward to set up
+;;
+
+(define expo-resultp (x)
+  :returns (yes booleanp)
+  :short "Recognizer for @(tsee expo) values or @(tsee reserrp) errors."
+  (or (expop x) (reserrp x))
+  ///
+  (defrule expo-resultp-when-expop
+    (implies (expop x) (expo-resultp x))
+    :rule-classes (:rewrite :forward-chaining))
+  (defrule expo-resultp-when-reserrp
+    (implies (reserrp x) (expo-resultp x))
+    :rule-classes (:rewrite :forward-chaining))
+  (defrule expop-when-expo-resultp-not-error
+    (implies (and (expo-resultp x) (not (reserrp x)))
+             (expop x))
+    :rule-classes (:rewrite :forward-chaining)))
+
+(define expo-option-resultp (x)
+  :returns (yes booleanp)
+  :short "Recognizer for @(tsee expo-option) values or @(tsee reserrp) errors."
+  (or (expo-optionp x) (reserrp x))
+  ///
+  (defrule expo-option-resultp-when-expo-optionp
+    (implies (expo-optionp x) (expo-option-resultp x))
+    :rule-classes (:rewrite :forward-chaining))
+  (defrule expo-option-resultp-when-reserrp
+    (implies (reserrp x) (expo-option-resultp x))
+    :rule-classes (:rewrite :forward-chaining))
+  (defrule expo-optionp-when-expo-option-resultp-not-error
+    (implies (and (expo-option-resultp x) (not (reserrp x)))
+             (expo-optionp x))
+    :rule-classes (:rewrite :forward-chaining)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-num-val ((tree abnf::treep))
   :returns (val base-value-resultp)
-  :short "Abstract a @('num-val') to a @(tsee base-value).
-          Currently handles only integers; @('float-lit') produces an error."
+  :short "Abstract a @('num-val') to a @(tsee base-value)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -272,14 +323,19 @@
        num-val = [ \"+\" / \"-\" ] ( float-lit / decimal )
      })
      The CST has two tree-lists: an optional sign and a wrapper around
-     either @('float-lit') or @('decimal').  We descend into the second
-     wrapper, attempt @('decimal') first, and emit a not-yet-implemented
-     error if a @('float-lit') is encountered."))
+     either @('float-lit') or @('decimal').")
+   (xdoc::p
+    "We build either an @(tsee int-lit) (for @('decimal')) or a
+     @(tsee float-lit) (for @('float-lit')) that preserves the
+     source-level sign (absent vs.@ explicit @('+') vs.@ @('-'))
+     and the decimal digits (including any leading zeros).  The
+     numeric value is recovered later by the static/dynamic
+     semantics."))
   (b* (((okf (abnf::tree-list-tuple2 sub))
         (abnf::check-tree-nonleaf-2 tree "num-val"))
        ;; First tree-list: optional sign wrapper (single tree).
        ((okf sign-tree) (abnf::check-tree-list-1 sub.1st))
-       ((okf negative-p) (abs-optional-sign sign-tree))
+       ((okf sign?) (abs-optional-sign-to-option sign-tree))
        ;; Second tree-list: the inner decimal-or-float-lit wrapper.
        ((okf body-tree) (abnf::check-tree-list-1 sub.2nd))
        ((okf body-treess) (abnf::check-tree-nonleaf body-tree nil))
@@ -287,29 +343,154 @@
        ((okf inner) (abnf::check-tree-list-1 body-trees))
        ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
     (cond ((equal rulename? "decimal")
-           (b* (((okf nat) (abs-decimal inner))
-                (val (if negative-p (- (ifix nat)) (ifix nat))))
-             (make-base-value-int :value val)))
+           (b* (((okf digits) (abs-decimal-to-digits inner))
+                ((unless (consp digits))
+                 (reserrf :empty-decimal-digits-impossible)))
+             (make-base-value-int :lit (make-int-lit :sign? sign?
+                                                     :digits digits))))
           ((equal rulename? "float-lit")
-           (reserrf (list :float-lit-not-yet-implemented
-                          (abnf::tree-info-for-error inner))))
+           (abs-float-lit-as-base-value inner sign?))
           (t (reserrf (list :unexpected-num-val-body
                             (abnf::tree-info-for-error inner))))))
 
   :prepwork
-  ((define abs-optional-sign ((tree abnf::treep))
-     :returns (negative-p acl2::boolean-resultp)
+  ((define abs-optional-sign-to-option ((tree abnf::treep))
+     :returns (s? sign-option-resultp)
      :parents nil
-     :short "Abstract @('[ \"+\" / \"-\" ]') to a sign flag."
+     :short "Abstract @('[ \"+\" / \"-\" ]') to a @(tsee sign-option)."
      (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
-          ((when (endp treess)) nil)
+          ((when (endp treess)) (sign-option-none))
           ((okf trees) (abnf::check-tree-list-list-1 treess))
           ((okf inner) (abnf::check-tree-list-1 trees))
           (plus-pass (abnf::check-tree-ichars inner "+"))
-          ((unless (reserrp plus-pass)) nil)
+          ((unless (reserrp plus-pass))
+           (sign-option-some (sign-plus)))
           (minus-pass (abnf::check-tree-ichars inner "-"))
-          ((unless (reserrp minus-pass)) t))
-       (reserrf (list :unexpected-sign (abnf::tree-info-for-error inner)))))))
+          ((unless (reserrp minus-pass))
+           (sign-option-some (sign-minus))))
+       (reserrf (list :unexpected-sign (abnf::tree-info-for-error inner)))))
+
+   (define abs-*-digit-tree-to-char ((trees abnf::tree-listp))
+     :returns (chars dec-digit-char-list-resultp)
+     :parents nil
+     :short "Abstract a list of @('digit') trees to a list of
+             @(see str::dec-digit-char)s, preserving leading zeros."
+     (b* (((when (endp trees)) nil)
+          ((okf inner)
+           (abnf::check-tree-nonleaf-1-1 (car trees) "digit"))
+          ((okf leaf) (abnf::check-tree-leafterm inner))
+          ((unless (consp leaf))
+           (reserrf (list :empty-digit-leaf
+                          (abnf::tree-info-for-error inner))))
+          (nat (car leaf))
+          ((unless (and (<= #x30 nat) (<= nat #x39)))
+           (reserrf (list :digit-out-of-range nat)))
+          (c (code-char nat))
+          ((okf rest) (abs-*-digit-tree-to-char (cdr trees))))
+       (cons c rest)))
+
+   (define abs-decimal-to-digits ((tree abnf::treep))
+     :returns (digits dec-digit-char-list-resultp)
+     :parents nil
+     :short "Abstract a @('decimal') to a list of @(see str::dec-digit-char)s,
+             preserving leading zeros."
+     (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree "decimal"))
+          ((unless (consp trees))
+           (reserrf (list :empty-decimal (abnf::tree-info-for-error tree)))))
+       (abs-*-digit-tree-to-char trees)))
+
+   (define abs-eE-group-to-upcase ((tree abnf::treep))
+     :returns (upcase acl2::boolean-resultp)
+     :parents nil
+     :short "Abstract a @('( \"e\" / \"E\" )') group wrapper to a boolean
+             (@('t') for upper, @('nil') for lower)."
+     (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree nil))
+          (lower-pass (abnf::check-tree-schars inner "e"))
+          ((unless (reserrp lower-pass)) nil)
+          (upper-pass (abnf::check-tree-schars inner "E"))
+          ((unless (reserrp upper-pass)) t))
+       (reserrf (list :unexpected-eE
+                      (abnf::tree-info-for-error inner)))))
+
+   ;; abs-expo and abs-expo-option use ``raw'' or-types in their :returns
+   ;; clauses, since defresult of these defprods/options is awkward.
+   ;; They are used only by abs-float-lit-as-base-value below.
+   (define abs-expo ((tree abnf::treep))
+     :returns (e expo-resultp)
+     :parents nil
+     :short "Abstract an @('exponent') CST to an @(tsee expo)."
+     (b* (((okf (abnf::tree-list-tuple3 sub))
+           (abnf::check-tree-nonleaf-3 tree "exponent"))
+          ((okf eE-tree) (abnf::check-tree-list-1 sub.1st))
+          ((okf upcase) (abs-eE-group-to-upcase eE-tree))
+          ((okf opt-sign-tree) (abnf::check-tree-list-1 sub.2nd))
+          ((okf sign?) (abs-optional-sign-to-option opt-sign-tree))
+          ((okf digits) (abs-*-digit-tree-to-char sub.3rd))
+          ((unless (consp digits))
+           (reserrf :empty-exponent-digits-impossible)))
+       (make-expo :upcase upcase :sign? sign? :digits digits)))
+
+   (define abs-expo-option ((tree abnf::treep))
+     :returns (e? expo-option-resultp)
+     :parents nil
+     :short "Abstract @('[ exponent ]') to an @(tsee expo-option)."
+     (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
+          ((when (endp treess)) (expo-option-none))
+          ((okf trees) (abnf::check-tree-list-list-1 treess))
+          ((okf inner) (abnf::check-tree-list-1 trees))
+          ((okf e) (abs-expo inner)))
+       (expo-option-some e)))
+
+   ;; Build a base-value :float from a float-lit CST and the outer
+   ;; num-val sign?.  Returning base-value-resultp avoids needing a
+   ;; separate float-lit-result fixtype.
+   ;;
+   ;; float-lit = 1*DIGIT "." 1*DIGIT [ exponent ]   ; alt 1 (4 tree-lists)
+   ;;           / 1*DIGIT exponent                   ; alt 2 (2 tree-lists)
+   ;;
+   ;; exponent = ( "e" / "E" ) [ "+" / "-" ] 1*DIGIT  ; 3 tree-lists
+   (define abs-float-lit-as-base-value ((tree abnf::treep)
+                                        (sign? sign-optionp))
+     :returns (val base-value-resultp)
+     :parents nil
+     :short "Abstract a @('float-lit') CST to a @(tsee base-value) @(':float'),
+             attaching the given outer @('sign?')."
+     (b* (((okf treess) (abnf::check-tree-nonleaf tree "float-lit")))
+       (case (len treess)
+         (4
+          ;; Alt 1: whole "." frac [exp]
+          (b* (((okf (abnf::tree-list-tuple4 sub))
+                (abnf::check-tree-list-list-4 treess))
+               ((okf whole-digits) (abs-*-digit-tree-to-char sub.1st))
+               ((unless (consp whole-digits))
+                (reserrf :empty-whole-digits-impossible))
+               ((okf frac-digits) (abs-*-digit-tree-to-char sub.3rd))
+               ((unless (consp frac-digits))
+                (reserrf :empty-frac-digits-impossible))
+               ((okf opt-exp-tree) (abnf::check-tree-list-1 sub.4th))
+               ((okf expo?)
+                (abs-expo-option opt-exp-tree)))
+            (make-base-value-float
+             :lit (make-float-lit :sign? sign?
+                                  :whole-digits whole-digits
+                                  :frac-digits frac-digits
+                                  :expo? expo?))))
+         (2
+          ;; Alt 2: whole exp
+          (b* (((okf (abnf::tree-list-tuple2 sub))
+                (abnf::check-tree-list-list-2 treess))
+               ((okf whole-digits) (abs-*-digit-tree-to-char sub.1st))
+               ((unless (consp whole-digits))
+                (reserrf :empty-whole-digits-impossible))
+               ((okf exp-tree) (abnf::check-tree-list-1 sub.2nd))
+               ((okf expo) (abs-expo exp-tree)))
+            (make-base-value-float
+             :lit (make-float-lit :sign? sign?
+                                  :whole-digits whole-digits
+                                  :frac-digits nil
+                                  :expo? (expo-option-some expo)))))
+         (otherwise
+          (reserrf (list :float-lit-shape (len treess)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -325,6 +506,310 @@
            (abs-num-val inner))
           (t (reserrf (list :unexpected-base-val-body
                             (abnf::tree-info-for-error inner)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Escape sub-abstractors used by the escape branch of abs-char-lit.
+;; (Defined before abs-char-lit because abs-char-lit calls
+;; abs-escape-char.)
+;;
+
+(define abs-simple-escape ((tree abnf::treep))
+  :returns (e simple-escape-resultp)
+  :short "Abstract a @('char-escape') CST to a @(tsee simple-escape)."
+  (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "char-escape"))
+       ((okf leaf) (abnf::check-tree-leafterm inner))
+       ((unless (and (consp leaf) (= (len leaf) 1)))
+        (reserrf (list :char-escape-not-singleton leaf)))
+       (nat (car leaf)))
+    (cond ((eql nat #x61) (make-simple-escape-a))
+          ((eql nat #x62) (make-simple-escape-b))
+          ((eql nat #x66) (make-simple-escape-f))
+          ((eql nat #x6E) (make-simple-escape-n))
+          ((eql nat #x72) (make-simple-escape-r))
+          ((eql nat #x74) (make-simple-escape-t))
+          ((eql nat #x76) (make-simple-escape-v))
+          ((eql nat #x5C) (make-simple-escape-bslash))
+          ((eql nat #x22) (make-simple-escape-dquote))
+          ((eql nat #x27) (make-simple-escape-squote))
+          (t (reserrf (list :unexpected-char-escape nat))))))
+
+(define nat-upcase ((n natp))
+  :returns (m natp)
+  :parents nil
+  :short "Map ASCII lowercase to uppercase; pass others through."
+  (if (and (<= #x61 (lnfix n)) (<= (lnfix n) #x7A))
+      (- (lnfix n) #x20)
+    (lnfix n)))
+
+(define nats-upcase ((nats nat-listp))
+  :returns (upcased nat-listp)
+  :parents nil
+  :short "Apply @(tsee nat-upcase) to each nat in a list."
+  (cond ((endp nats) nil)
+        (t (cons (nat-upcase (car nats))
+                 (nats-upcase (cdr nats))))))
+
+(define abs-ascii-escape ((tree abnf::treep))
+  :returns (e ascii-escape-resultp)
+  :short "Abstract an @('ascii-escape') CST to an @(tsee ascii-escape).
+          Matching is case-insensitive (mirroring the parser)."
+  (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "ascii-escape"))
+       ((okf leaf) (abnf::check-tree-leafterm inner))
+       (upper (nats-upcase leaf)))
+    (cond ((equal upper '(78 85 76))
+           (make-ascii-escape-nul-to-sp :code #x00))   ; NUL
+          ((equal upper '(83 79 72))
+           (make-ascii-escape-nul-to-sp :code #x01))   ; SOH
+          ((equal upper '(83 84 88))
+           (make-ascii-escape-nul-to-sp :code #x02))   ; STX
+          ((equal upper '(69 84 88))
+           (make-ascii-escape-nul-to-sp :code #x03))   ; ETX
+          ((equal upper '(69 79 84))
+           (make-ascii-escape-nul-to-sp :code #x04))   ; EOT
+          ((equal upper '(69 78 81))
+           (make-ascii-escape-nul-to-sp :code #x05))   ; ENQ
+          ((equal upper '(65 67 75))
+           (make-ascii-escape-nul-to-sp :code #x06))   ; ACK
+          ((equal upper '(66 69 76))
+           (make-ascii-escape-nul-to-sp :code #x07))   ; BEL
+          ((equal upper '(66 83))
+           (make-ascii-escape-nul-to-sp :code #x08))   ; BS
+          ((equal upper '(72 84))
+           (make-ascii-escape-nul-to-sp :code #x09))   ; HT
+          ((equal upper '(76 70))
+           (make-ascii-escape-nul-to-sp :code #x0A))   ; LF
+          ((equal upper '(86 84))
+           (make-ascii-escape-nul-to-sp :code #x0B))   ; VT
+          ((equal upper '(70 70))
+           (make-ascii-escape-nul-to-sp :code #x0C))   ; FF
+          ((equal upper '(67 82))
+           (make-ascii-escape-nul-to-sp :code #x0D))   ; CR
+          ((equal upper '(83 79))
+           (make-ascii-escape-nul-to-sp :code #x0E))   ; SO
+          ((equal upper '(83 73))
+           (make-ascii-escape-nul-to-sp :code #x0F))   ; SI
+          ((equal upper '(68 76 69))
+           (make-ascii-escape-nul-to-sp :code #x10))   ; DLE
+          ((equal upper '(68 67 49))
+           (make-ascii-escape-nul-to-sp :code #x11))   ; DC1
+          ((equal upper '(68 67 50))
+           (make-ascii-escape-nul-to-sp :code #x12))   ; DC2
+          ((equal upper '(68 67 51))
+           (make-ascii-escape-nul-to-sp :code #x13))   ; DC3
+          ((equal upper '(68 67 52))
+           (make-ascii-escape-nul-to-sp :code #x14))   ; DC4
+          ((equal upper '(78 65 75))
+           (make-ascii-escape-nul-to-sp :code #x15))   ; NAK
+          ((equal upper '(83 89 78))
+           (make-ascii-escape-nul-to-sp :code #x16))   ; SYN
+          ((equal upper '(69 84 66))
+           (make-ascii-escape-nul-to-sp :code #x17))   ; ETB
+          ((equal upper '(67 65 78))
+           (make-ascii-escape-nul-to-sp :code #x18))   ; CAN
+          ((equal upper '(69 77))
+           (make-ascii-escape-nul-to-sp :code #x19))   ; EM
+          ((equal upper '(83 85 66))
+           (make-ascii-escape-nul-to-sp :code #x1A))   ; SUB
+          ((equal upper '(69 83 67))
+           (make-ascii-escape-nul-to-sp :code #x1B))   ; ESC
+          ((equal upper '(70 83))
+           (make-ascii-escape-nul-to-sp :code #x1C))   ; FS
+          ((equal upper '(71 83))
+           (make-ascii-escape-nul-to-sp :code #x1D))   ; GS
+          ((equal upper '(82 83))
+           (make-ascii-escape-nul-to-sp :code #x1E))   ; RS
+          ((equal upper '(85 83))
+           (make-ascii-escape-nul-to-sp :code #x1F))   ; US
+          ((equal upper '(83 80))
+           (make-ascii-escape-nul-to-sp :code #x20))   ; SP
+          ((equal upper '(68 69 76))
+           (make-ascii-escape-del))                    ; DEL
+          (t (reserrf (list :unknown-ascii-escape leaf))))))
+
+(define abs-caret-escape ((tree abnf::treep))
+  :returns (e caret-escape-resultp)
+  :short "Abstract a @('caret-escape') CST to a @(tsee caret-escape).
+          The control-character code is the input character minus
+          @('#x40')."
+  (b* (((okf (abnf::tree-list-tuple2 sub))
+        (abnf::check-tree-nonleaf-2 tree "caret-escape"))
+       ((okf caret-tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf ctrl-tree) (abnf::check-tree-list-1 sub.2nd))
+       ((okf caret-leaf) (abnf::check-tree-leafterm caret-tree))
+       ((unless (and (consp caret-leaf)
+                     (= (len caret-leaf) 1)
+                     (eql (car caret-leaf) #x5E)))
+        (reserrf (list :unexpected-caret caret-leaf)))
+       ((okf ctrl-leaf) (abnf::check-tree-leafterm ctrl-tree))
+       ((unless (and (consp ctrl-leaf) (= (len ctrl-leaf) 1)))
+        (reserrf (list :ctrl-not-singleton ctrl-leaf)))
+       (ctrl-nat (car ctrl-leaf))
+       ((unless (and (natp ctrl-nat)
+                     (<= #x40 ctrl-nat)
+                     (<= ctrl-nat #x5F)))
+        (reserrf (list :ctrl-out-of-range ctrl-nat)))
+       (code (- ctrl-nat #x40))
+       ;; Redundant given the range check above, but makes the
+       ;; caret-escape :require visible to the guard verifier.
+       ((unless (and (natp code) (<= code #x1F)))
+        (reserrf :caret-code-out-of-range-impossible)))
+    (make-caret-escape :code code)))
+
+(define abs-*-octal-leafterm-to-char ((trees abnf::tree-listp))
+  :returns (chars oct-digit-char-list-resultp)
+  :parents nil
+  :short "Abstract a list of bare LEAFTERM trees (each a single octal
+          digit nat in @('#x30..#x37')) to a list of
+          @(tsee str::oct-digit-char)s."
+  (b* (((when (endp trees)) nil)
+       ((okf leaf) (abnf::check-tree-leafterm (car trees)))
+       ((unless (and (consp leaf) (= (len leaf) 1)))
+        (reserrf (list :octal-leaf-not-singleton leaf)))
+       (nat (car leaf))
+       ((unless (and (<= #x30 nat) (<= nat #x37)))
+        (reserrf (list :octal-digit-out-of-range nat)))
+       (c (code-char nat))
+       ((okf rest) (abs-*-octal-leafterm-to-char (cdr trees))))
+    (cons c rest)))
+
+(define abs-*-hexdig-tree-to-char ((trees abnf::tree-listp))
+  :returns (chars hex-digit-char-list-resultp)
+  :parents nil
+  :short "Abstract a list of @('hexdig') trees (each containing a single
+          hex-digit nat) to a list of @(tsee str::hex-digit-char)s."
+  (b* (((when (endp trees)) nil)
+       ((okf inner) (abnf::check-tree-nonleaf-1-1 (car trees) "hexdig"))
+       ((okf leaf) (abnf::check-tree-leafterm inner))
+       ((unless (and (consp leaf) (= (len leaf) 1)))
+        (reserrf (list :hexdig-leaf-not-singleton leaf)))
+       (nat (car leaf))
+       ((unless (or (and (<= #x30 nat) (<= nat #x39))
+                    (and (<= #x41 nat) (<= nat #x46))
+                    (and (<= #x61 nat) (<= nat #x66))))
+        (reserrf (list :hex-digit-out-of-range nat)))
+       (c (code-char nat))
+       ((okf rest) (abs-*-hexdig-tree-to-char (cdr trees))))
+    (cons c rest)))
+
+(define abs-num-escape ((tree abnf::treep))
+  :returns (e num-escape-resultp)
+  :short "Abstract a @('num-escape') CST to a @(tsee num-escape)."
+  (b* (((okf treess) (abnf::check-tree-nonleaf tree "num-escape")))
+    (case (len treess)
+      (1
+       ;; Decimal: 1*DIGIT, with sub.1st a list of `digit' trees.
+       (b* (((okf digits-trees) (abnf::check-tree-list-list-1 treess))
+            ((okf digits) (abs-*-digit-tree-to-char digits-trees))
+            ((unless (consp digits))
+             (reserrf :empty-num-escape-decimal-digits)))
+         (make-num-escape-dec :digits digits)))
+      (2
+       ;; Octal `o' 1*octal-digit or hex `x' 1*HEXDIG.
+       (b* (((okf (abnf::tree-list-tuple2 sub))
+             (abnf::check-tree-list-list-2 treess))
+            ((okf marker-tree) (abnf::check-tree-list-1 sub.1st))
+            ((okf marker-leaf) (abnf::check-tree-leafterm marker-tree))
+            ((unless (and (consp marker-leaf) (= (len marker-leaf) 1)))
+             (reserrf (list :num-escape-marker-not-singleton marker-leaf)))
+            (marker (car marker-leaf)))
+         (cond ((or (eql marker #x6F) (eql marker #x4F))   ; 'o' / 'O'
+                (b* (((okf digits) (abs-*-octal-leafterm-to-char sub.2nd))
+                     ((unless (consp digits))
+                      (reserrf :empty-num-escape-octal-digits)))
+                  (make-num-escape-oct :digits digits)))
+               ((or (eql marker #x78) (eql marker #x58))   ; 'x' / 'X'
+                (b* (((okf digits) (abs-*-hexdig-tree-to-char sub.2nd))
+                     ((unless (consp digits))
+                      (reserrf :empty-num-escape-hex-digits)))
+                  (make-num-escape-hex :digits digits)))
+               (t (reserrf (list :unexpected-num-escape-marker marker))))))
+      (otherwise
+       (reserrf (list :num-escape-shape (len treess)))))))
+
+(define abs-escape-char ((tree abnf::treep))
+  :returns (e escape-resultp)
+  :short "Abstract an @('escape-char') CST to an @(tsee escape)."
+  (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "escape-char"))
+       ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
+    (cond ((equal rulename? "char-escape")
+           (b* (((okf s) (abs-simple-escape inner)))
+             (make-escape-simple :escape s)))
+          ((equal rulename? "ascii-escape")
+           (b* (((okf a) (abs-ascii-escape inner)))
+             (make-escape-ascii :escape a)))
+          ((equal rulename? "caret-escape")
+           (b* (((okf c) (abs-caret-escape inner)))
+             (make-escape-caret :escape c)))
+          ((equal rulename? "num-escape")
+           (b* (((okf n) (abs-num-escape inner)))
+             (make-escape-num :escape n)))
+          (t (reserrf (list :unexpected-escape-char-body
+                            (abnf::tree-info-for-error inner)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; char-lit and string-lit
+;;
+
+(define abs-char-lit ((tree abnf::treep))
+  :returns (cl char-lit-resultp)
+  :short "Abstract a @('char-lit') to a @(tsee char-lit)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar produces either 1 tree-list (non-escape: a single
+     @(tsee abnf::tree-leafterm) with the character's code point) or
+     2 tree-lists (escape: a leafterm for @('\\') and an
+     @('escape-char') subtree)."))
+  (b* (((okf treess) (abnf::check-tree-nonleaf tree "char-lit")))
+    (case (len treess)
+      (1 (b* (((okf trees) (abnf::check-tree-list-list-1 treess))
+              ((okf inner) (abnf::check-tree-list-1 trees))
+              ((okf leaf) (abnf::check-tree-leafterm inner))
+              ((unless (consp leaf))
+               (reserrf (list :empty-char-lit-leaf
+                              (abnf::tree-info-for-error inner))))
+              ((unless (= (len leaf) 1))
+               (reserrf (list :char-lit-leaf-not-singleton leaf)))
+              (code (car leaf))
+              ((unless (and (natp code)
+                            (or (and (<= 0 code) (<= code #x21))
+                                (and (<= #x23 code) (<= code #x5B))
+                                (and (<= #x5D code) (<= code #xD7FF))
+                                (and (<= #xE000 code) (<= code #x10FFFF)))))
+               (reserrf (list :char-lit-out-of-range code))))
+           (make-char-lit-char :code code)))
+      (2 (b* (((okf (abnf::tree-list-tuple2 sub))
+              (abnf::check-tree-list-list-2 treess))
+              ((okf bslash-tree) (abnf::check-tree-list-1 sub.1st))
+              ((okf bslash-leaf) (abnf::check-tree-leafterm bslash-tree))
+              ((unless (and (consp bslash-leaf)
+                            (= (len bslash-leaf) 1)
+                            (eql (car bslash-leaf) #x5C)))
+               (reserrf (list :char-lit-escape-missing-backslash
+                              bslash-leaf)))
+              ((okf esc-tree) (abnf::check-tree-list-1 sub.2nd))
+              ((okf e) (abs-escape-char esc-tree)))
+           (make-char-lit-escape :escape e)))
+      (otherwise
+       (reserrf (list :char-lit-shape (len treess)))))))
+
+(define abs-*-char-lit ((trees abnf::tree-listp))
+  :returns (chars char-lit-list-resultp)
+  :short "Abstract @('*char-lit') to a list of @(tsee char-lit)s."
+  (b* (((when (endp trees)) nil)
+       ((okf c) (abs-char-lit (car trees)))
+       ((okf rest) (abs-*-char-lit (cdr trees))))
+    (cons c rest)))
+
+(define abs-string-lit ((tree abnf::treep))
+  :returns (chars char-lit-list-resultp)
+  :short "Abstract a @('string-lit') CST to a list of @(tsee char-lit)s
+          (the chars between the surrounding @('DQUOTE')s)."
+  (b* (((okf (abnf::tree-list-tuple3 sub))
+        (abnf::check-tree-nonleaf-3 tree "string-lit")))
+    (abs-*-char-lit sub.2nd)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -697,49 +1182,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; tree-list utility used by the types cluster
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-tree-list-nth ((trees abnf::tree-listp) (n natp))
-  :returns (sub abnf::tree-resultp)
-  :short "Get the @('n')-th tree of a tree-list, returning a @(see reserr)
-          when the index is out of range."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Some of the parser's rule constructors group several adjacent
-     concatenation elements into a single tree-list (e.g. @('bracket-type')
-     packs @('[ ws type-exp') into one tree-list, then the @('*( ws ispace )')
-     repetition, then @('ws ]') into a third tree-list).  The downstream
-     abstractor then needs to pull a specific tree out of one of those
-     bundled tree-lists."))
-  (cond ((>= (nfix n) (len trees))
-         (reserrf (list :tree-list-nth-out-of-range n (len trees))))
-        (t (abnf::tree-fix (nth n trees))))
-  ///
-  (defret tree-count-of-check-tree-list-nth
-    (implies (not (reserrp sub))
-             (< (abnf::tree-count sub)
-                (abnf::tree-list-count trees)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; types cluster
 ;;
-;; Notes on tree shapes (set by the parser, not predictable from the ABNF
-;; alone): each rule's @(':branches') field bundles concatenation elements
-;; into a list of tree-lists.  Several type rules group multiple consecutive
-;; concatenation elements into a single tree-list (rather than one
-;; tree-list per element).  Specifically:
-;;   type-exp        : 1 tree-list whose length is 1 (non-paren forms) or 5
-;;                     (paren form: open ws body ws close).
-;;   type-exp-paren  : 1 tree-list of length 1 (the inner specific form).
-;;   bracket-type    : 3 tree-lists -- (open ws type-exp), reps, (ws close).
-;;   array-type      : 1 tree-list of length 5 (A ws type-exp ws shape).
-;;   arrow/forall/pi/sigma-type : 3 tree-lists -- (kw ws open ws), reps,
-;;                     (ws close ws type-exp).
+;; Following the standard ABNF-parser convention used in PFCS, Aleo Leo,
+;; etc., each named rule's CST has one tree-list per ABNF concatenation
+;; element.  So @('arrow-type') (8 elements) has 8 tree-lists, etc.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -748,9 +1195,17 @@
   (define abs-type-exp ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract a @('type-exp') to a @(tsee type)."
-    (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree "type-exp")))
-      (case (len trees)
-        (1 (b* (((okf inner) (abnf::check-tree-list-1 trees))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "@('type-exp') has either 1 tree-list (for the non-paren
+       alternatives @('atom-type-var')/@('array-type-var')/@('base-type')/
+       @('bracket-type'), with the inner subtree giving the specific
+       alternative) or 5 tree-lists (for the @('( ws type-exp-paren ws )')
+       alternative)."))
+    (b* (((okf treess) (abnf::check-tree-nonleaf tree "type-exp")))
+      (case (len treess)
+        (1 (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "type-exp"))
                 ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
              (cond ((equal rulename? "atom-type-var")
                     (abs-atom-type-var inner))
@@ -763,10 +1218,12 @@
                     (abs-bracket-type inner))
                    (t (reserrf (list :unexpected-type-exp-body
                                      (abnf::tree-info-for-error inner)))))))
-        (5 (b* (((okf body-tree) (check-tree-list-nth trees 2)))
+        (5 (b* (((okf (abnf::tree-list-tuple5 sub))
+                 (abnf::check-tree-list-list-5 treess))
+                ((okf body-tree) (abnf::check-tree-list-1 sub.3rd)))
              (abs-type-exp-paren body-tree)))
         (otherwise
-         (reserrf (list :type-exp-shape (len trees))))))
+         (reserrf (list :type-exp-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
   (define abs-type-exp-paren ((tree abnf::treep))
@@ -784,83 +1241,78 @@
     :measure (abnf::tree-count tree))
 
   ;; bracket-type = "[" ws type-exp *( ws ispace ) ws "]"
-  ;; tree-lists: ((open ws te) reps (ws close))
   (define abs-bracket-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract a @('bracket-type') to a @(tsee type) @(':bracket')."
-    (b* (((okf (abnf::tree-list-tuple3 sub))
-          (abnf::check-tree-nonleaf-3 tree "bracket-type"))
-         ((okf te-tree) (check-tree-list-nth sub.1st 2))
+    (b* (((okf (abnf::tree-list-tuple6 sub))
+          (abnf::check-tree-nonleaf-6 tree "bracket-type"))
+         ((okf te-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf elem) (abs-type-exp te-tree))
-         ((okf ispaces) (abs-*-ws-ispace sub.2nd))
+         ((okf ispaces) (abs-*-ws-ispace sub.4th))
          (shapes (ispaces-to-shapes ispaces)))
       (make-type-bracket :elem elem :shapes shapes))
     :measure (abnf::tree-count tree))
 
   ;; array-type = "A" ws type-exp ws shape
-  ;; tree-lists: ((A ws te ws sh))
   (define abs-array-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract an @('array-type') to a @(tsee type) @(':array')."
-    (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree "array-type"))
-         ((okf te-tree) (check-tree-list-nth trees 2))
-         ((okf shape-tree) (check-tree-list-nth trees 4))
+    (b* (((okf (abnf::tree-list-tuple5 sub))
+          (abnf::check-tree-nonleaf-5 tree "array-type"))
+         ((okf te-tree) (abnf::check-tree-list-1 sub.3rd))
+         ((okf shape-tree) (abnf::check-tree-list-1 sub.5th))
          ((okf elem) (abs-type-exp te-tree))
          ((okf shape) (abs-shape shape-tree)))
       (make-type-array :elem elem :shape shape))
     :measure (abnf::tree-count tree))
 
   ;; arrow-type = ( "->" / %x2192 ) ws "(" *( ws type-exp ) ws ")" ws type-exp
-  ;; tree-lists: ((kw ws open ws) reps (ws close ws te))
   (define abs-arrow-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract an @('arrow-type') to a @(tsee type) @(':fun')."
-    (b* (((okf (abnf::tree-list-tuple3 sub))
-          (abnf::check-tree-nonleaf-3 tree "arrow-type"))
-         ((okf in) (abs-*-ws-type-exp sub.2nd))
-         ((okf out-tree) (check-tree-list-nth sub.3rd 3))
+    (b* (((okf (abnf::tree-list-tuple8 sub))
+          (abnf::check-tree-nonleaf-8 tree "arrow-type"))
+         ((okf in) (abs-*-ws-type-exp sub.4th))
+         ((okf out-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf out) (abs-type-exp out-tree)))
       (make-type-fun :in in :out out))
     :measure (abnf::tree-count tree))
 
   ;; forall-type = ( "Forall" / %x2200 ) ws "(" *( ws type-var ) ws ")"
   ;;               ws type-exp
-  ;; tree-lists: ((kw ws open ws) reps (ws close ws te))
   (define abs-forall-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract a @('forall-type') to a @(tsee type) @(':forall')."
-    (b* (((okf (abnf::tree-list-tuple3 sub))
-          (abnf::check-tree-nonleaf-3 tree "forall-type"))
-         ((okf params) (abs-*-ws-type-var sub.2nd))
-         ((okf body-tree) (check-tree-list-nth sub.3rd 3))
+    (b* (((okf (abnf::tree-list-tuple8 sub))
+          (abnf::check-tree-nonleaf-8 tree "forall-type"))
+         ((okf params) (abs-*-ws-type-var sub.4th))
+         ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type-exp body-tree)))
       (make-type-forall :params params :body body))
     :measure (abnf::tree-count tree))
 
   ;; pi-type = ( "Pi" / %x03A0 ) ws "(" *( ws ispace-var ) ws ")"
   ;;           ws type-exp
-  ;; tree-lists: ((kw ws open ws) reps (ws close ws te))
   (define abs-pi-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract a @('pi-type') to a @(tsee type) @(':pi')."
-    (b* (((okf (abnf::tree-list-tuple3 sub))
-          (abnf::check-tree-nonleaf-3 tree "pi-type"))
-         ((okf params) (abs-*-ws-ispace-var sub.2nd))
-         ((okf body-tree) (check-tree-list-nth sub.3rd 3))
+    (b* (((okf (abnf::tree-list-tuple8 sub))
+          (abnf::check-tree-nonleaf-8 tree "pi-type"))
+         ((okf params) (abs-*-ws-ispace-var sub.4th))
+         ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type-exp body-tree)))
       (make-type-pi :params params :body body))
     :measure (abnf::tree-count tree))
 
   ;; sigma-type = ( "Sigma" / %x03A3 ) ws "(" *( ws ispace-var ) ws ")"
   ;;              ws type-exp
-  ;; tree-lists: ((kw ws open ws) reps (ws close ws te))
   (define abs-sigma-type ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract a @('sigma-type') to a @(tsee type) @(':sigma')."
-    (b* (((okf (abnf::tree-list-tuple3 sub))
-          (abnf::check-tree-nonleaf-3 tree "sigma-type"))
-         ((okf params) (abs-*-ws-ispace-var sub.2nd))
-         ((okf body-tree) (check-tree-list-nth sub.3rd 3))
+    (b* (((okf (abnf::tree-list-tuple8 sub))
+          (abnf::check-tree-nonleaf-8 tree "sigma-type"))
+         ((okf params) (abs-*-ws-ispace-var sub.4th))
+         ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf body) (abs-type-exp body-tree)))
       (make-type-sigma :params params :body body))
     :measure (abnf::tree-count tree))
@@ -868,18 +1320,9 @@
   (define abs-ws-type-exp ((tree abnf::treep))
     :returns (ty type-resultp)
     :short "Abstract a @('( ws type-exp )') wrapper to a @(tsee type)."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Unlike @(tsee abs-ws-dim), @(tsee abs-ws-shape), @(tsee abs-ws-ispace),
-       @(tsee abs-ws-type-var), and @(tsee abs-ws-ispace-var) (which all
-       work on @(':branches (list (list ws) (list X))') wrappers), the
-       wrapper produced by @(tsee parse-*-ws-type-exp) bundles the @('ws')
-       and @('type-exp') trees into a single tree-list:
-       @(':branches (list (list ws te))').
-       Hence the dispatch on a single tree-list of length 2."))
-    (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree nil))
-         ((okf te-tree) (check-tree-list-nth trees 1)))
+    (b* (((okf (abnf::tree-list-tuple2 sub))
+          (abnf::check-tree-nonleaf-2 tree nil))
+         ((okf te-tree) (abnf::check-tree-list-1 sub.2nd)))
       (abs-type-exp te-tree))
     :measure (abnf::tree-count tree))
 
