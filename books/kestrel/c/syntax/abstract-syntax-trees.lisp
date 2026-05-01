@@ -176,8 +176,7 @@
   :inline t
   ;; TODO: improve proof to avoid these explicit expansions.
   :guard-hints (("Goal" :in-theory (enable ident->unwrap
-                                           identp
-                                           identity)
+                                           identp)
                         :expand ((len x)
                                  (len y)
                                  (len (cdr x))

@@ -3538,8 +3538,7 @@
                                            unsigned-byte-p
                                            integer-range-p
                                            dec-digit-char-p
-                                           natp
-                                           the-check)))
+                                           natp)))
 
   ///
 
