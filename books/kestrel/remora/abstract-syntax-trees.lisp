@@ -672,12 +672,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum base-value
-  :short "Fixtype of base values."
+(fty::deftagsum base-lit
+  :short "Fixtype of base literals."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to @('base-val') in the ABNF grammar.")
+   (xdoc::p
+    "Literals are direct representations of values.
+     These are the literals that directly represent base values,
+     i.e. atom values, as opposed to array values.
+     These atom values are the values of the base types.")
    (xdoc::p
     "[thesis] does not pin down the base values,
      leaving them abstract,
@@ -690,14 +695,14 @@
      ``desired'' (according to the Haskell documentation)
      to comply with the IEEE standard.
      We defer those details to the semantics:
-     we use ACL2's arbitrary-precision integers and float literal ASTs.
-     The latter preserve all the concrete syntax information;
-     ACL2 integers abstract away leading zero digits
-     and the distinction between an absent sign and a positive sign."))
-  (:bool ((value bool)))
+     here we use data structures for literals
+     that are isomorphic to their concrete syntax,
+     namely @(tsee int-lit) and @(tsee float-lit).
+     For booleans, we just use ACL2 booleans."))
+  (:bool ((lit bool)))
   (:int ((lit int-lit)))
   (:float ((lit float-lit)))
-  :pred base-valuep)
+  :pred base-litp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -796,7 +801,7 @@
       "This corresponds to @('atom') in the ABNF grammar.")
      (xdoc::p
       "There are
-       base values,
+       base literals,
        lambda abstractions of expressions over variables with types,
        lambda abstractions of expressions over type variables,
        lambda abstractions of expressions over ispace variables,
@@ -805,7 +810,7 @@
        we could enforce this syntactically,
        but we follow [arxiv], [thesis], and [impl],
        which all use a generic type."))
-    (:base ((value base-value)))
+    (:base ((lit base-lit)))
     (:lambda ((params var+type-list)
               (body expr)))
     (:tlambda ((params type-var-list)

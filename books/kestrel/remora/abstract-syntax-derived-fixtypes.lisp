@@ -136,11 +136,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult base-value-result
-  :short "Fixtype of base values and errors."
-  :ok base-value
-  :pred base-value-resultp
-  :prepwork ((local (in-theory (enable base-value-kind)))))
+(fty::defresult base-lit-result
+  :short "Fixtype of base literals and errors."
+  :ok base-lit
+  :pred base-lit-resultp
+  :prepwork ((local (in-theory (enable base-lit-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

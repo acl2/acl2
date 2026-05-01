@@ -47,7 +47,7 @@
                     typep-when-result-not-error
                     type-listp-when-result-not-error
                     base-typep-when-result-not-error
-                    base-valuep-when-result-not-error
+                    base-litp-when-result-not-error
                     sign-optionp-when-result-not-error
                     dec-digit-char-listp-when-result-not-error
                     str::dec-digit-char-p
@@ -313,8 +313,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-num-val ((tree abnf::treep))
-  :returns (val base-value-resultp)
-  :short "Abstract a @('num-val') to a @(tsee base-value)."
+  :returns (val base-lit-resultp)
+  :short "Abstract a @('num-val') to a @(tsee base-lit)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -346,10 +346,10 @@
            (b* (((okf digits) (abs-decimal-to-digits inner))
                 ((unless (consp digits))
                  (reserrf :empty-decimal-digits-impossible)))
-             (make-base-value-int :lit (make-int-lit :sign? sign?
-                                                     :digits digits))))
+             (make-base-lit-int :lit (make-int-lit :sign? sign?
+                                                   :digits digits))))
           ((equal rulename? "float-lit")
-           (abs-float-lit-as-base-value inner sign?))
+           (abs-float-lit-as-base-lit inner sign?))
           (t (reserrf (list :unexpected-num-val-body
                             (abnf::tree-info-for-error inner))))))
 
@@ -414,7 +414,7 @@
 
    ;; abs-expo and abs-expo-option use ``raw'' or-types in their :returns
    ;; clauses, since defresult of these defprods/options is awkward.
-   ;; They are used only by abs-float-lit-as-base-value below.
+   ;; They are used only by abs-float-lit-as-base-lit below.
    (define abs-expo ((tree abnf::treep))
      :returns (e expo-resultp)
      :parents nil
@@ -441,19 +441,19 @@
           ((okf e) (abs-expo inner)))
        (expo-option-some e)))
 
-   ;; Build a base-value :float from a float-lit CST and the outer
-   ;; num-val sign?.  Returning base-value-resultp avoids needing a
+   ;; Build a base-lit :float from a float-lit CST and the outer
+   ;; num-val sign?.  Returning base-lit-resultp avoids needing a
    ;; separate float-lit-result fixtype.
    ;;
    ;; float-lit = 1*DIGIT "." 1*DIGIT [ exponent ]   ; alt 1 (4 tree-lists)
    ;;           / 1*DIGIT exponent                   ; alt 2 (2 tree-lists)
    ;;
    ;; exponent = ( "e" / "E" ) [ "+" / "-" ] 1*DIGIT  ; 3 tree-lists
-   (define abs-float-lit-as-base-value ((tree abnf::treep)
-                                        (sign? sign-optionp))
-     :returns (val base-value-resultp)
+   (define abs-float-lit-as-base-lit ((tree abnf::treep)
+                                      (sign? sign-optionp))
+     :returns (val base-lit-resultp)
      :parents nil
-     :short "Abstract a @('float-lit') CST to a @(tsee base-value) @(':float'),
+     :short "Abstract a @('float-lit') CST to a @(tsee base-lit) @(':float'),
              attaching the given outer @('sign?')."
      (b* (((okf treess) (abnf::check-tree-nonleaf tree "float-lit")))
        (case (len treess)
@@ -470,7 +470,7 @@
                ((okf opt-exp-tree) (abnf::check-tree-list-1 sub.4th))
                ((okf expo?)
                 (abs-expo-option opt-exp-tree)))
-            (make-base-value-float
+            (make-base-lit-float
              :lit (make-float-lit :sign? sign?
                                   :whole-digits whole-digits
                                   :frac-digits frac-digits
@@ -484,7 +484,7 @@
                 (reserrf :empty-whole-digits-impossible))
                ((okf exp-tree) (abnf::check-tree-list-1 sub.2nd))
                ((okf expo) (abs-expo exp-tree)))
-            (make-base-value-float
+            (make-base-lit-float
              :lit (make-float-lit :sign? sign?
                                   :whole-digits whole-digits
                                   :frac-digits nil
@@ -495,13 +495,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-base-val ((tree abnf::treep))
-  :returns (val base-value-resultp)
-  :short "Abstract a @('base-val') to a @(tsee base-value)."
+  :returns (val base-lit-resultp)
+  :short "Abstract a @('base-val') to a @(tsee base-lit)."
   (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "base-val"))
        ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
     (cond ((equal rulename? "bool-val")
            (b* (((okf b) (abs-bool-val inner)))
-             (make-base-value-bool :value b)))
+             (make-base-lit-bool :lit b)))
           ((equal rulename? "num-val")
            (abs-num-val inner))
           (t (reserrf (list :unexpected-base-val-body
