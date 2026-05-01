@@ -73,7 +73,7 @@
    "Any underscores in a @('hex-numeral') in the grammar
     are just used for separation.
     This function returns the underlying sequence of hexadecimal digits,
-    exluding also the prefix of the @('hex-numeral').")
+    excluding also the prefix of the @('hex-numeral').")
   (b* (((when (endp dus)) nil)
        (du (car dus)))
     (hexdig/uscore-case
@@ -117,7 +117,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A hexadecimal integer literal consist of
+    "A hexadecimal integer literal consists of
      (i) a lowercase or uppercase prefix,
      (ii) a sequence of hexadecimal digits and underscores
      satisfying the constraints in @(tsee hexdig/uscore-list-wfp), and

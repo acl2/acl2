@@ -416,7 +416,7 @@
     which constructs the string value.
     Unlike the fields for other types of quoted constants,
     this one is declared in the class for the package of the symbol
-    (or for a pacakge that imports the symbol).
+    (or for a package that imports the symbol).
     This field cannot be private,
     otherwise the classes for other packages could not access it.")
   (b* ((name (atj-gen-shallow-symbol-field-name symbol))
