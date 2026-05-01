@@ -333,7 +333,7 @@
      an error on file-read / UTF-8 decode / parse / [SC2] / input
      exhaustion / abstraction failure.")
    (xdoc::p
-    "@(tsee acl2::read-utf8) returns either a @(tsee nat-listp) of
+    "@('acl2::read-utf8') returns either a @(tsee nat-listp) of
      code points (success) or an ACL2 string describing the failure.
      We dispatch on @(tsee nat-listp) to distinguish the cases."))
   (b* (((mv codepoints state)
