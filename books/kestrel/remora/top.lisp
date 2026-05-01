@@ -16,6 +16,7 @@
 (include-book "abstract-syntax")
 (include-book "syntax-abstraction")
 (include-book "parser-interface")
+(include-book "parse-directory-files") ; for testing
 (include-book "static-semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -96,4 +97,5 @@
                     abstract-syntax
                     syntax-abstraction
                     parser-interface
+                    parse-directory-utilities
                     static-semantics))
