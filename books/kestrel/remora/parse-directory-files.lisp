@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ parse-directory-files
+(defxdoc+ parse-directory-utilities
   :parents (remora)
   :short "Bulk parser-runner for assurance testing."
   :long

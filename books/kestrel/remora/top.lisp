@@ -97,4 +97,5 @@
                     abstract-syntax
                     syntax-abstraction
                     parser-interface
+                    parse-directory-utilities
                     static-semantics))
