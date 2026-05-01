@@ -188,11 +188,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult simple-escape-result
-  :short "Fixtype of simple escapes and errors."
-  :ok simple-escape
-  :pred simple-escape-resultp
-  :prepwork ((local (in-theory (enable simple-escape-kind)))))
+(fty::defresult char-escape-result
+  :short "Fixtype of character escapes and errors."
+  :ok char-escape
+  :pred char-escape-resultp
+  :prepwork ((local (in-theory (enable char-escape-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

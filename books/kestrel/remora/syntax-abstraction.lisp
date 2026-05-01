@@ -53,7 +53,7 @@
                     str::dec-digit-char-p
                     char-litp-when-result-not-error
                     char-lit-listp-when-result-not-error
-                    simple-escapep-when-result-not-error
+                    char-escapep-when-result-not-error
                     ascii-escapep-when-result-not-error
                     caret-escapep-when-result-not-error
                     num-escapep-when-result-not-error
@@ -514,24 +514,24 @@
 ;; abs-escape-char.)
 ;;
 
-(define abs-simple-escape ((tree abnf::treep))
-  :returns (e simple-escape-resultp)
-  :short "Abstract a @('char-escape') CST to a @(tsee simple-escape)."
+(define abs-char-escape ((tree abnf::treep))
+  :returns (e char-escape-resultp)
+  :short "Abstract a @('char-escape') CST to a @(tsee char-escape)."
   (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "char-escape"))
        ((okf leaf) (abnf::check-tree-leafterm inner))
        ((unless (and (consp leaf) (= (len leaf) 1)))
         (reserrf (list :char-escape-not-singleton leaf)))
        (nat (car leaf)))
-    (cond ((eql nat #x61) (make-simple-escape-a))
-          ((eql nat #x62) (make-simple-escape-b))
-          ((eql nat #x66) (make-simple-escape-f))
-          ((eql nat #x6E) (make-simple-escape-n))
-          ((eql nat #x72) (make-simple-escape-r))
-          ((eql nat #x74) (make-simple-escape-t))
-          ((eql nat #x76) (make-simple-escape-v))
-          ((eql nat #x5C) (make-simple-escape-bslash))
-          ((eql nat #x22) (make-simple-escape-dquote))
-          ((eql nat #x27) (make-simple-escape-squote))
+    (cond ((eql nat #x61) (make-char-escape-a))
+          ((eql nat #x62) (make-char-escape-b))
+          ((eql nat #x66) (make-char-escape-f))
+          ((eql nat #x6E) (make-char-escape-n))
+          ((eql nat #x72) (make-char-escape-r))
+          ((eql nat #x74) (make-char-escape-t))
+          ((eql nat #x76) (make-char-escape-v))
+          ((eql nat #x5C) (make-char-escape-bslash))
+          ((eql nat #x22) (make-char-escape-dquote))
+          ((eql nat #x27) (make-char-escape-squote))
           (t (reserrf (list :unexpected-char-escape nat))))))
 
 (define nat-upcase ((n natp))
@@ -733,8 +733,8 @@
   (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "escape-char"))
        ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
     (cond ((equal rulename? "char-escape")
-           (b* (((okf s) (abs-simple-escape inner)))
-             (make-escape-simple :escape s)))
+           (b* (((okf s) (abs-char-escape inner)))
+             (make-escape-char :escape s)))
           ((equal rulename? "ascii-escape")
            (b* (((okf a) (abs-ascii-escape inner)))
              (make-escape-ascii :escape a)))

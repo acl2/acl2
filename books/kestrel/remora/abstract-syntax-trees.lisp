@@ -556,12 +556,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum simple-escape
-  :short "Fixtype of simple escapes."
+(fty::deftagsum char-escape
+  :short "Fixtype of character escapes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('simple-escape') in the ABNF grammar."))
+    "This corresponds to @('char-escape') in the ABNF grammar."))
   (:a ())
   (:b ())
   (:f ())
@@ -572,7 +572,7 @@
   (:bslash ())
   (:dquote ())
   (:squote ())
-  :pred simple-escapep)
+  :pred char-escapep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -633,7 +633,7 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to @('escape-char') in the ABNF grammar."))
-  (:simple ((escape simple-escape)))
+  (:char ((escape char-escape)))
   (:ascii ((escape ascii-escape)))
   (:caret ((escape caret-escape)))
   (:num ((escape num-escape)))
