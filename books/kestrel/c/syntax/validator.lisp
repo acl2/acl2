@@ -739,7 +739,7 @@
                                            (defstatus valid-defstatusp)
                                            (vstate vstatep))
   :returns (new-vstate vstatep)
-  :short "Wrapper of @(tsee valid-add-ord-objfuns-file-scope."
+  :short "Wrapper of @(tsee valid-add-ord-objfuns-file-scope)."
   (b* ((table (vstate->table vstate))
        (new-table
         (valid-add-ord-objfuns-file-scope idents type linkage defstatus table)))
