@@ -39,10 +39,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable hons-equal hons-get hons-acons)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Library extensions.
 
 (defrulel sfix-when-not-setp-cheap
@@ -2230,7 +2226,6 @@
     :measure (nfix count))
 
   :verify-guards :after-returns
-  :hints (("Goal" :in-theory (enable the-check)))
   ///
 
   (fty::deffixequiv-mutual type/type-list-composite-aux))

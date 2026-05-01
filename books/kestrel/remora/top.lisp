@@ -16,6 +16,7 @@
 (include-book "abstract-syntax")
 (include-book "syntax-abstraction")
 (include-book "parser-interface")
+(include-book "parse-directory-files") ; for testing
 (include-book "static-semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -82,7 +83,11 @@
      and the one we follow in case of discrepancies.
      However, the other sources contain information (e.g. typing rules)
      not directly and explicitly present in [impl],
-     and thus they are still quite important.")
+     and thus they are still quite important.
+     [arxiv] and [thesis] are quite aligned,
+     with the latter being probably slightly more up to date.
+     [esop] has some differences, but it is older.
+     Thus, we generally refer to [thesis], besides [impl].")
    (xdoc::p
     "This ACL2 library is work in progress towards building
      formalizations and tools for Remora."))
@@ -92,4 +97,5 @@
                     abstract-syntax
                     syntax-abstraction
                     parser-interface
+                    parse-directory-utilities
                     static-semantics))

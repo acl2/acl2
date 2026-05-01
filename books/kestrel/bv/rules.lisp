@@ -4209,31 +4209,6 @@
 (theory-invariant (incompatible (:definition bvplus) (:rewrite bvlt-of-plus-arg1)))
 (theory-invariant (incompatible (:definition bvplus) (:rewrite bvlt-of-plus-arg2)))
 
-(defthm equal-of-bvplus-constant-and-constant
-  (implies (and (syntaxp (quotep k1))
-                (syntaxp (quotep k2))
-                (syntaxp (quotep size))
-                (natp size))
-           (equal (equal k1 (bvplus size k2 x))
-                  (and (unsigned-byte-p size k1)
-                       (equal (bvminus size k1 k2) (bvchop size x)))))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p bvlt bvchop-of-sum-cases bvplus bvuminus bvminus
-                                                   bvchop-when-i-is-not-an-integer
-                                                   bvchop-identity)
-                                  (bvminus-becomes-bvplus-of-bvuminus)))))
-
-(defthm equal-of-bvplus-constant-and-constant-alt
-  (implies (and (syntaxp (quotep k1))
-                (syntaxp (quotep k2))
-                (syntaxp (quotep size))
-                (natp size))
-           (equal (equal (bvplus size k2 x) k1)
-                  (and (unsigned-byte-p size k1)
-                       (equal (bvminus size k1 k2)
-                              (bvchop size x)))))
-  :hints (("Goal" :use equal-of-bvplus-constant-and-constant
-           :in-theory (disable equal-of-bvplus-constant-and-constant))))
-
 ;disable?
 (defthm logext-when-non-negative-becomes-bvchop
   (implies (<= 0 (logext size x))

@@ -55,14 +55,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult shape-result
-  :short "Fixtype of shapes and error."
+  :short "Fixtype of shapes and errors."
   :ok shape
   :pred shape-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult shape-list-result
-  :short "Fixtype of (i) lists of shapes and (ii) error."
+  :short "Fixtype of (i) lists of shapes and (ii) errors."
   :ok shape-list
   :pred shape-list-resultp)
 
@@ -121,34 +121,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult atom-type-result
-  :short "Fixtype of atom types and errors."
-  :ok atom-type
-  :pred atom-type-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult atom-type-list-result
-  :short "Fixtype of (i) lists of atom types and (ii) errors."
-  :ok atom-type-list
-  :pred atom-type-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult array-type-result
-  :short "Fixtype of array types and errors."
-  :ok array-type
-  :pred array-type-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult array-type-list-result
-  :short "Fixtype of (i) lists of array types and (ii) errors."
-  :ok array-type-list
-  :pred array-type-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defresult type-result
   :short "Fixtype of types and errors."
   :ok type
@@ -164,11 +136,207 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult base-value-result
-  :short "Fixtype of base values and errors."
-  :ok base-value
-  :pred base-value-resultp
-  :prepwork ((local (in-theory (enable base-value-kind)))))
+(fty::defresult base-lit-result
+  :short "Fixtype of base literals and errors."
+  :ok base-lit
+  :pred base-lit-resultp
+  :prepwork ((local (in-theory (enable base-lit-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult sign-option-result
+  :short "Fixtype of optional signs and errors."
+  :ok sign-option
+  :pred sign-option-resultp
+  :prepwork ((local (in-theory (enable signp sign-optionp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult dec-digit-char-list-result
+  :short "Fixtype of lists of decimal digit characters and errors."
+  :ok dec-digit-char-list
+  :pred dec-digit-char-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult oct-digit-char-list-result
+  :short "Fixtype of lists of octal digit characters and errors."
+  :ok oct-digit-char-list
+  :pred oct-digit-char-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult hex-digit-char-list-result
+  :short "Fixtype of lists of hexadecimal digit characters and errors."
+  :ok hex-digit-char-list
+  :pred hex-digit-char-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult char-lit-result
+  :short "Fixtype of character literals and errors."
+  :ok char-lit
+  :pred char-lit-resultp
+  :prepwork ((local (in-theory (enable char-lit-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult char-lit-list-result
+  :short "Fixtype of lists of character literals and errors."
+  :ok char-lit-list
+  :pred char-lit-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult char-escape-result
+  :short "Fixtype of character escapes and errors."
+  :ok char-escape
+  :pred char-escape-resultp
+  :prepwork ((local (in-theory (enable char-escape-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ascii-escape-result
+  :short "Fixtype of ASCII escapes and errors."
+  :ok ascii-escape
+  :pred ascii-escape-resultp
+  :prepwork ((local (in-theory (enable ascii-escape-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult caret-escape-result
+  :short "Fixtype of caret escapes and errors."
+  :ok caret-escape
+  :pred caret-escape-resultp
+  :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult num-escape-result
+  :short "Fixtype of numeric escapes and errors."
+  :ok num-escape
+  :pred num-escape-resultp
+  :prepwork ((local (in-theory (enable num-escape-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult escape-result
+  :short "Fixtype of escapes and errors."
+  :ok escape
+  :pred escape-resultp
+  :prepwork ((local (in-theory (enable escape-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Slice 4-6 result types
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult expr-result
+  :short "Fixtype of expressions and errors."
+  :ok expr
+  :pred expr-resultp
+  :prepwork ((local (in-theory (enable expr-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult expr-list-result
+  :short "Fixtype of lists of expressions and errors."
+  :ok expr-list
+  :pred expr-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult atom-result
+  :short "Fixtype of atoms and errors."
+  :ok atom
+  :pred atom-resultp
+  :prepwork ((local (in-theory (enable atom-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult atom-list-result
+  :short "Fixtype of lists of atoms and errors."
+  :ok atom-list
+  :pred atom-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult bind-result
+  :short "Fixtype of bindings and errors."
+  :ok bind
+  :pred bind-resultp
+  :prepwork ((local (in-theory (enable bind-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult bind-list-result
+  :short "Fixtype of lists of bindings and errors."
+  :ok bind-list
+  :pred bind-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult var+type-result
+  :short "Fixtype of variables-with-types and errors."
+  :ok var+type
+  :pred var+type-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult var+type-list-result
+  :short "Fixtype of lists of variables-with-types and errors."
+  :ok var+type-list
+  :pred var+type-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-option-result
+  :short "Fixtype of optional types and errors."
+  :ok type-option
+  :pred type-option-resultp
+  :prepwork ((local (in-theory (enable typep type-optionp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-list-option-result
+  :short "Fixtype of optional lists of types and errors."
+  :ok type-list-option
+  :pred type-list-option-resultp
+  :prepwork ((local (in-theory (enable type-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-list-option-result
+  :short "Fixtype of optional lists of ispaces and errors."
+  :ok ispace-list-option
+  :pred ispace-list-option-resultp
+  :prepwork ((local (in-theory (enable ispace-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-var-list-option-result
+  :short "Fixtype of optional lists of type variables and errors."
+  :ok type-var-list-option
+  :pred type-var-list-option-resultp
+  :prepwork ((local (in-theory (enable type-var-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-var-list-option-result
+  :short "Fixtype of optional lists of ispace variables and errors."
+  :ok ispace-var-list-option
+  :pred ispace-var-list-option-resultp
+  :prepwork ((local (in-theory (enable ispace-var-list-option-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult prog-result
+  :short "Fixtype of programs and errors."
+  :ok prog
+  :pred prog-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,21 +356,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap string-atomtype-map
-  :short "Fixtype of maps from strings to atom types."
+(fty::defomap string-type-map
+  :short "Fixtype of maps from strings to types."
   :key-type string
-  :val-type atom-type
-  :pred string-atomtype-mapp)
+  :val-type type
+  :pred string-type-mapp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap string-arraytype-map
-  :short "Fixtype of maps from strings to array types."
-  :key-type string
-  :val-type array-type
-  :pred string-arraytype-mapp)
+(fty::defresult string-type-map-result
+  :short "Fixtype of (i) maps from strings to types and (ii) errors."
+  :ok string-type-map
+  :pred string-type-map-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod stringtypemap-pair
+  :short "Fixtype of pairs consisting of two maps from strings to types."
+  ((1st string-type-map)
+   (2nd string-type-map))
+  :pred stringtypemap-pairp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult stringtypemap-pair-result
+  :short "Fixtype of (i) pairs consisting of two maps from strings to types
+          and (ii) errors."
+  :ok stringtypemap-pair
+  :pred stringtypemap-pair-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod stringstringmap-pair
   :short "Fixtype of pairs consisting of two maps from strings to strings."
@@ -221,92 +405,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod atomtype+shape
-  :short "Fixtype of pairs consisting of an atom type and a shape."
-  ((type atom-type)
+(fty::defprod type+shape
+  :short "Fixtype of pairs consisting of a type and a shape."
+  ((type type)
    (shape shape))
-  :pred atomtype+shape-p)
+  :pred type+shape-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult atomtype+shape-result
-  :short "Fixtype of (i) pairs consisting of an atom type and a shape
+(fty::defresult type+shape-result
+  :short "Fixtype of (i) pairs consisting of a type and a shape
           and (ii) errors."
-  :ok atomtype+shape
-  :pred atomtype+shape-resultp)
+  :ok type+shape
+  :pred type+shape-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist atomtype+shape-list
-  :short "Fixtype lists of pairs consisting of an atom type and a shape."
-  :elt-type atomtype+shape
+(fty::deflist type+shape-list
+  :short "Fixtype of lists of pairs consisting of a type and a shape."
+  :elt-type type+shape
   :true-listp t
   :elementp-of-nil nil
-  :pred atomtype+shape-listp)
+  :pred type+shape-listp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult atomtype+shape-list-result
-  :short "Fixtype of (i) lists of pairs consisting of an atom type and a shape
+(fty::defresult type+shape-list-result
+  :short "Fixtype of (i) lists of pairs consisting of a type and a shape
           and (ii) errors."
-  :ok atomtype+shape-list
-  :pred atomtype+shape-list-resultp)
+  :ok type+shape-list
+  :pred type+shape-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod arraytypelist+arraytype
+(fty::defprod typelist+type
   :short "Fixtype of pairs consisting of
-          a list of array types and an array type."
-  ((types array-type-list)
-   (type array-type))
-  :pred arraytypelist+arraytype-p)
+          a list of types and a type."
+  ((types type-list)
+   (type type))
+  :pred typelist+type-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult arraytypelist+arraytype-result
+(fty::defresult typelist+type-result
   :short "Fixtype of
-          (i) pairs consisting of a list of array types and an array type
+          (i) pairs consisting of a list of types and a type
           and (ii) errors."
-  :ok arraytypelist+arraytype
-  :pred arraytypelist+arraytype-resultp
+  :ok typelist+type
+  :pred typelist+type-resultp
   :prepwork ((local (in-theory (enable strip-cars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod ispacevarlist+arraytype
+(fty::defprod ispacevarlist+type
   :short "Fixtype of pairs consisting of
-          a list of type variables and an array type."
+          a list of ispace variables and a type."
   ((vars ispace-var-list)
-   (type array-type))
-  :pred ispacevarlist+arraytype-p)
+   (type type))
+  :pred ispacevarlist+type-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult ispacevarlist+arraytype-result
+(fty::defresult ispacevarlist+type-result
   :short "Fixtype of
-          (i) pairs consisting of a list of type variables and an array type
+          (i) pairs consisting of a list of ispace variables and a type
           and (ii) errors."
-  :ok ispacevarlist+arraytype
-  :pred ispacevarlist+arraytype-resultp
+  :ok ispacevarlist+type
+  :pred ispacevarlist+type-resultp
   :prepwork ((local (in-theory (enable strip-cars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod typevarlist+arraytype
+(fty::defprod typevarlist+type
   :short "Fixtype of pairs consisting of
-          a list of type variables and an array type."
+          a list of type variables and a type."
   ((vars type-var-list)
-   (type array-type))
-  :pred typevarlist+arraytype-p)
+   (type type))
+  :pred typevarlist+type-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult typevarlist+arraytype-result
+(fty::defresult typevarlist+type-result
   :short "Fixtype of
-          (i) pairs consisting of a list of type variables and an array type
+          (i) pairs consisting of a list of type variables and a type
           and (ii) errors."
-  :ok typevarlist+arraytype
-  :pred typevarlist+arraytype-resultp
+  :ok typevarlist+type
+  :pred typevarlist+type-resultp
   :prepwork ((local (in-theory (enable strip-cars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -329,26 +513,4 @@
           and (ii) errors."
   :ok stringdimmap+stringshapemap
   :pred stringdimmap+stringshapemap-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod stringatomtypemap+stringarraytypemap
-  :short "Fixtype of pairs consisting of
-          a map from strings to atom types
-          and a map from strings to array types."
-  ((atom-map string-atomtype-map)
-   (array-map string-arraytype-map))
-  :pred stringatomtypemap+stringarraytypemap-p)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult stringatomtypemap+stringarraytypemap-result
-  :short "Fixtype of
-          (i) pairs consisting of
-          a map from strings to atom types
-          and a map from strings to array types
-          and (ii) errors."
-  :ok stringatomtypemap+stringarraytypemap
-  :pred stringatomtypemap+stringarraytypemap-resultp
   :prepwork ((local (in-theory (enable strip-cars)))))

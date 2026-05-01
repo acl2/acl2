@@ -2286,7 +2286,6 @@
 
 ;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
-;; todo: should this include core-rules-bv (see below)?
 (defund lifter-rules-common ()
   (declare (xargs :guard t))
   (append (read-over-write-rules-common) ; todo: don't use all these?
@@ -5847,7 +5846,6 @@
     ;;rflagsbits->af-of-myif
     ;;rflagsbits->af-of-if
 
-    ;; acl2::equal-of-constant-and-bvuminus
     ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
     ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
     ;; acl2::bvif-of-myif-arg3 ; introduces bvif
@@ -5900,8 +5898,6 @@
     acl2::slice-of-bvand-of-constant
     ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
     acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
-    acl2::equal-of-bvplus-constant-and-constant
-    acl2::equal-of-bvplus-constant-and-constant-alt
     ;; acl2::getbit-of-lognot ; now handled by convert-to-bv machinery
     acl2::bvif-of-if-constants-nil-nonnil
     acl2::bvif-of-if-constants-nonnil-nil
@@ -6291,8 +6287,6 @@
      ;; read-when-program-at-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
-     acl2::equal-of-bvplus-constant-and-constant
-     acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::mod-of-+-of-constant
      xr-of-if
 

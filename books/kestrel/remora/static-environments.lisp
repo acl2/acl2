@@ -11,7 +11,10 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-derived-fixtypes")
+(include-book "abstract-syntax-structural-operations")
 (include-book "abstract-syntax-constructors")
+
+(local (include-book "std/lists/no-duplicatesp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -30,11 +33,7 @@
      the sort environment @($\\Theta$),
      the kind environment @($\\Delta$), and
      the type environment @($\\Gamma$)
-     in [arxiv], [thesis], and [esop].")
-   (xdoc::p
-    "This is currently not used in the type checker.
-     It is intended for use in the upcoming declarative typing rules.
-     We may also use it in the type checker."))
+     in [arxiv], [thesis], and [esop]."))
   :order-subtopics t
   :default-parent t)
 
@@ -58,17 +57,17 @@
       but since our type variables include their own kind,
       a set suffices, as opposed to a map from variables to kinds.")
     (xdoc::li
-     "A map from the expression variables in scope to their array types.
+     "A map from the expression variables in scope to their types.
       This corresponds to @($\\Gamma$).")))
   ((ispace-vars ispace-var-set)
    (type-vars type-var-set)
-   (expr-vars string-arraytype-map))
+   (expr-vars string-type-map))
   :pred senvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prim-op-types ()
-  :returns (term-vars string-arraytype-mapp)
+  :returns (term-vars string-type-mapp)
   :short "Association of primitive operations to their types."
   :long
   (xdoc::topstring
@@ -128,3 +127,35 @@
   (make-senv :ispace-vars nil
              :type-vars nil
              :expr-vars (prim-op-types)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-var+type ((var stringp) (type typep) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add a variable with a type to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (b* ((expr-vars (senv->expr-vars senv))
+       (new-expr-vars (omap::update (str::str-fix var)
+                                    (type-fix type)
+                                    expr-vars)))
+    (change-senv senv :expr-vars new-expr-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-vars+types ((vars+types var+type-listp) (senv senvp))
+  :guard (no-duplicatesp-equal (var+type-list->var vars+types))
+  :returns (new-senv senvp)
+  :short "Add zero or more variables with types to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This repeatedly calls @(tsee senv-add-var+type).
+     The guard ensures that the order of the list does not matter."))
+  (b* (((when (endp vars+types)) (senv-fix senv))
+       ((var+type var+type) (car vars+types))
+       (senv (senv-add-var+type var+type.var var+type.type senv)))
+    (senv-add-vars+types (cdr vars+types) senv)))

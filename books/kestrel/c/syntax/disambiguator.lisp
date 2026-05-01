@@ -305,7 +305,7 @@
   ((table dimb-table)
    (macros macro-table)
    (file string)
-   (ienv ienvp))
+   (ienv ienv))
   :pred dstatep)
 
 ;;;;;;;;;;;;;;;;;;;;

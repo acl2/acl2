@@ -53,7 +53,7 @@
   (defrule ldm-ident-of-ildm-ident
     (equal (ldm-ident (ildm-ident ident))
            (mv nil (c::ident-fix ident)))
-    :enable (ldm-ident identity)))
+    :enable ldm-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

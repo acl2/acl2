@@ -1153,7 +1153,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plex-character-constant ((cprefix? cprefix-optionp)
+(define plex-character-constant ((eprefix? eprefix-optionp)
                                  (first-pos positionp)
                                  (ppstate ppstatep))
   :returns (mv erp
@@ -1164,8 +1164,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-character-constant),
-     but it operates on preprocessor states instead of parser states."))
+    "This is called when we expect a character constant,
+     after the opening single quote,
+     and the prefix before that if present,
+     have already been read.
+     So we read zero or more characters and escape sequences,
+     and ensure that there is at least one (according to the grammar).
+     In the process of reading those characters and escape sequences,
+     we read up to the closing single quote (see @(tsee lex-*-c-char)),
+     whose position we use as the ending one of the span we return.
+     The starting position of the span is passed to this function as input."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp cchars closing-squote-pos ppstate) (plex-*-c-char ppstate))
@@ -1174,7 +1182,7 @@
         (reterr-msg :where closing-squote-pos
                     :expected "one or more characters and escape sequences"
                     :found "none")))
-    (retok (plexeme-char (cconst cprefix? cchars)) span ppstate))
+    (retok (plexeme-char (cconst eprefix? cchars)) span ppstate))
   :no-function nil
 
   ///
@@ -1205,8 +1213,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-string-literal),
-     but it operates on preprocessor states instead of parser states."))
+    "This is called when we expect a string literal,
+     after the opening double quote,
+     and the prefix before that if present,
+     have already been read.
+     We read zero or more characters and escape sequences.
+     In the process of reading those characters and escape sequences,
+     we read up to the closing double quote (see @(tsee lex-*-s-char)),
+     whose position we use as the ending one of the span we return.
+     The starting position of the span is passed to this function as input."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp schars closing-dquote-pos ppstate) (plex-*-s-char ppstate))
@@ -1239,9 +1254,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-header-name),
-     but it operates on preprocessor states instead of parser states,
-     and it returns a lexeme instead of a header name."))
+    "This is called when we expect a header name.
+     We read the next character, which must be present.
+     Then we read the two kinds of header names,
+     based on whether the next character is greater-than or double quote.
+     If it is neither, lexing fails."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp char first-pos ppstate) (read-pchar ppstate)))
@@ -1300,14 +1317,26 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-block-comment),
-     but it operates on preprocessor states instead of parser states,
-     and it returns the content of the comment as part of the lexeme.")
+    "This is called when we expect a block comment,
+     after we have read the initial @('/*').")
    (xdoc::p
-    "Collecting the content of the comment,
-     i.e. the characters between @('/*') and @('*/') (excluding both),
-     requires some additional code here.
-     Note that @('plex-rest-of-block-comment-after-star') is always called
+    "Following the mutually recursive rules of the grammar,
+     we have two mutually recursive loop functions,
+     which scan through the characters
+     until the end of the comment is reached,
+     or until the end of file is reached
+     (in which case it is an error).
+     In case of success, we return a comment lexeme.
+     The span of the comment is calculated from
+     the first position (of the @('/') in @('/*')),
+     passed to this function,
+     and the last position (of the @('/') in the closing @('*/')),
+     returned by the loop function.")
+   (xdoc::p
+    "We collect the content of the comment,
+     i.e. the characters between @('/*') and @('*/') (excluding both);
+     this content goes into the lexeme.
+     @('plex-rest-of-block-comment-after-star') is always called
      just after a @('*') has been read;
      the addition of that @('*') to the content is deferred
      until it is established that the @('*') is not part of
@@ -1470,15 +1499,21 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the same as @(tsee lex-line-comment),
-     but it operates on preprocessor states instead of parser states,
-     and it returns the content of the comment as part of the lexeme.
-     It also excludes the closing new line,
-     leaving it to be lexed separately.")
+    "This is called when we expect a line comment,
+     after reading the initial @('//').")
    (xdoc::p
-    "Collecting the content of the comment,
-     i.e. the characters between @('//') and new line (excluding both),
-     requires some additional code here.")
+    "We read characters in a loop until
+     either we find a new-line character or the end of file.
+     In case of success, we return
+     a lexeme that contains the content of the comment,
+     i.e. the characters between @('//') and new line if present
+     (excluding both).")
+   (xdoc::p
+    "The span is calculated from
+     the position of the first @('/') in the opening @('//'),
+     which is passed to this function,
+     and the position of the closing new-line or end of file,
+     which is returned by the loop function.")
    (xdoc::p
     "When encountering the end of file,
      we succeed and return the line comment,
@@ -1628,7 +1663,7 @@
      an error is returned if lexing fails.")
    (xdoc::p
     "Lexing in the preprocessor is context-dependent
-     [C17:5.1.1.2/1, footnote 7]:
+     [C17:5.1.1.2/1, footnote 7] [C23:5.2.1.2, footnote 4]:
      when expecting a header name,
      a @('\"') or a @('<') are interpreted differently
      (i.e. as starting a header name)
@@ -1640,9 +1675,123 @@
      Thus, this lexing function takes a boolean flag
      indicating whether we are expecting a header name or not.")
    (xdoc::p
-    "This lexing function is similar to @(tsee lex-lexeme),
-     with the necessary differences,
-     including the handling of the context header flag.")
+    "We read the next character.
+     If there is no next character, we return @('nil') for no lexeme,
+     with the span whose start and end positions
+     are both the position just past the end of the file.
+     Otherwise, we do a case analysis on that next character.")
+   (xdoc::ul
+    (xdoc::li
+     "If the next character is white space, we return a white-space lexeme.
+      No other lexeme starts with a white-space character,
+      so this is the only possibility.")
+    (xdoc::li
+     "If the next character is a digit,
+      it must start a preprocessing number;
+      it is the only possibility.")
+    (xdoc::li
+     "If the next character is @('.'),
+      it may start a preprocessing number,
+      or it could be the punctuator @('.'),
+      or it could start the punctuator @('...').
+      So we examine the following characters.
+      If there is none, we have the punctuator @('.').
+      If the following character is a digit,
+      this must start a preprocessing number.
+      If the following character is another @('.'),
+      and there is a further @('.') after it,
+      we have the punctuator @('...').
+      In all other cases, we just have the punctuator @('.'),
+      and we put back the additional character(s) read,
+      since they may be starting a different lexeme.")
+    (xdoc::li
+     "If the next character is a letter,
+      it could start an identifier,
+      but it could also start a character constant or a string literal.
+      Specifically, if the letter is @('u'), @('U'), or @('L'),
+      it could be a prefix of a character constant or string literal.
+      We must try this possibility before trying an identifier,
+      because we always need to lex the longest possible sequence of characters
+      [C17:6.4/4]:
+      if we tried identifiers first,
+      for example
+      we would erroneously lex the character constant @('u\'a\'')
+      as the identifier @('u') followed by
+      the unprefixed character constant @('\'a\'').")
+    (xdoc::li
+     "If the next character is @('u'), and there are no subsequent characters,
+      we lex it as an identifier.
+      If the following character is a single quote,
+      we attempt to lex a character constant with the appropriate prefix;
+      if the following character is a double quote,
+      we attempt to lex a string literal with the appropriate prefix.
+      These are the only two possibilities in these two cases.
+      Strictly speaking,
+      if the lexing of the character constant or string literal fails,
+      we should lex @('u') as an identifier and then continue lexing,
+      but at that point the only possibility would be
+      an unprefixed character constant or string literal,
+      which would fail again; so we can fail sooner without loss.
+      If the character immediately following @('u') is @('8'),
+      then we need to look at the character after that.
+      If there is none, we lex the identifier @('u8').
+      If there is a single quote, and the standard is C23,
+      we attempt to lex a character constant with the appropriate prefix.
+      If there is a double quote,
+      then we attempt to lex a string literal with the appropriate prefix.
+      If the character after @('u8') is not a single or double quote,
+      we put back that character and @('8'),
+      and we lex @('u...') as an identifier.
+      Also, if the character after @('u') was not
+      any of the ones mentioned above,
+      we put it back and we lex @('u...') as an identifier.")
+    (xdoc::li
+     "If the next character is @('U') or @('L'),
+      we proceed similarly to the case of @('u'),
+      but things are simpler because there is no @('8') to handle.")
+    (xdoc::li
+     "If the next character is any other letter or an underscore,
+      it must start an identifier.
+      This is the only possibility,
+      since we have already tried
+      a prefixed character constant or string literal.")
+    (xdoc::li
+     "If the next character is a single quote,
+      it must start an unprefixed character constant.")
+    (xdoc::li
+     "If the next character is a double quote,
+      and the @('header?') flag is @('nil'),
+      it must start an unprefixed string literal;
+      if instead the @('header?') flag is @('t'),
+      it must start a header name.")
+    (xdoc::li
+     "If the next character is @('/'),
+      it could start a comment,
+      or the punctuator @('/='),
+      or it could be just the punctuator @('/').
+      We examine the following character.
+      If there is none, we have the punctuator @('/').
+      If the following character is @('*'),
+      it must be a block comment.
+      If the following character is @('/'),
+      it must be a line comment.
+      If the following character is @('='),
+      it must be the punctuator @('/=').
+      If the following character is none of the above,
+      we just have the punctuator @('/').")
+    (xdoc::li
+     "The remaining cases are for punctuators.
+      Some punctuators are prefixes of others,
+      and so we need to first try and lex the longer ones,
+      using code similar to the one for other lexemes explained above.
+      Some punctuators are not prefixes of others,
+      and so they can be immediately decided.")
+    (xdoc::li
+     "If we encounter the @('<') punctuator,
+      and the @('header?') flag is @('nil'),
+      it must be or start a punctuator;
+      if instead the @('header?') flag is @('t'),
+      it must start a header name."))
    (xdoc::p
     "The provenance lists of the identifiers created here is @('nil'),
      because the identifiers are lexed directly from the file,
@@ -1744,7 +1893,7 @@
                  (make-span :start pos :end pos)
                  ppstate))
          ((utf8-= char2 (char-code #\')) ; u '
-          (plex-character-constant (cprefix-locase-u) pos ppstate))
+          (plex-character-constant (eprefix-locase-u) pos ppstate))
          ((utf8-= char2 (char-code #\")) ; u "
           (plex-string-literal (eprefix-locase-u) pos ppstate))
          ((utf8-= char2 (char-code #\8)) ; u 8
@@ -1754,6 +1903,11 @@
               (retok (make-plexeme-ident :ident "u8" :provenance nil)
                      (make-span :start pos :end pos2)
                      ppstate))
+             ((and (utf8-= char3 (char-code #\')) ; u 8 '
+                   (c::standard-case
+                    (c::dialect->std (ienv->dialect (ppstate->ienv ppstate)))
+                    :c23))
+              (plex-character-constant (eprefix-locase-u8) pos ppstate))
              ((utf8-= char3 (char-code #\")) ; u 8 "
               (plex-string-literal (eprefix-locase-u8) pos ppstate))
              (t ; u 8 other
@@ -1772,7 +1926,7 @@
                  (make-span :start pos :end pos)
                  ppstate))
          ((utf8-= char2 (char-code #\')) ; U '
-          (plex-character-constant (cprefix-upcase-u) pos ppstate))
+          (plex-character-constant (eprefix-upcase-u) pos ppstate))
          ((utf8-= char2 (char-code #\")) ; U "
           (plex-string-literal (eprefix-upcase-u) pos ppstate))
          (t ; U other
@@ -1787,7 +1941,7 @@
                  (make-span :start pos :end pos)
                  ppstate))
          ((utf8-= char2 (char-code #\')) ; L '
-          (plex-character-constant (cprefix-upcase-l) pos ppstate))
+          (plex-character-constant (eprefix-upcase-l) pos ppstate))
          ((utf8-= char2 (char-code #\")) ; L "
           (plex-string-literal (eprefix-upcase-l) pos ppstate))
          (t ; L other
@@ -1936,6 +2090,13 @@
          ((not char2) ; : EOF
           (retok (plexeme-punctuator ":")
                  (make-span :start pos :end pos)
+                 ppstate))
+         ((and (utf8-= char2 (char-code #\:)) ; : :
+               (c::standard-case
+                (c::dialect->std (ienv->dialect (ppstate->ienv ppstate)))
+                :c23))
+          (retok (plexeme-punctuator "::")
+                 (make-span :start pos :end pos2)
                  ppstate))
          ((utf8-= char2 (char-code #\>)) ; : >
           (retok (plexeme-punctuator ":>")
@@ -2170,8 +2331,7 @@
 
   :guard-hints (("Goal" :in-theory (enable unsigned-byte-p
                                            integer-range-p
-                                           dec-digit-char-p
-                                           the-check)))
+                                           dec-digit-char-p)))
 
   ///
 

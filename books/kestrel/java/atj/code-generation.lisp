@@ -124,7 +124,7 @@
      that prints the name of the test,
      builds the input values (zero or more) of the test,
      builds the output value(s) of the test,
-     calls (the Java representation of) the function on the inupt values,
+     calls (the Java representation of) the function on the input values,
      compares the obtained result value(s) with the output value(s) of the test,
      and prints a message of success or failure.
      It also sets the failures field to true if the test fails.")

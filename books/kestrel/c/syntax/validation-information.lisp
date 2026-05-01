@@ -1609,61 +1609,56 @@
   (defruled iconst-annop-of-iconst
     (equal (iconst-annop (iconst core suffix? info))
            (iconst-infop info))
-    :enable (iconst-annop identity))
+    :enable iconst-annop)
 
   (defruled expr-annop-of-expr-ident
     (equal (expr-annop (expr-ident ident info))
            (var-infop info))
-    :enable (expr-annop identity))
+    :enable expr-annop)
 
   (defruled expr-annop-of-expr-const
     (equal (expr-annop (expr-const const info))
            (and (const-annop const)
                 (expr-const-infop info)))
-    :enable (expr-annop identity))
+    :enable expr-annop)
 
   (defruled expr-annop-of-expr-string
     (equal (expr-annop (expr-string strings info))
            (expr-string-infop info))
-    :enable (expr-annop identity))
+    :enable expr-annop)
 
   (defruled expr-annop-of-expr-arrsub
     (equal (expr-annop (expr-arrsub arg1 arg2 info))
            (and (expr-annop arg1)
                 (expr-annop arg2)
                 (expr-arrsub-infop info)))
-    :expand (expr-annop (expr-arrsub arg1 arg2 info))
-    :enable identity)
+    :expand (expr-annop (expr-arrsub arg1 arg2 info)))
 
   (defruled expr-annop-of-expr-funcall
     (equal (expr-annop (expr-funcall fun args info))
            (and (expr-annop fun)
                 (expr-list-annop args)
                 (expr-funcall-infop info)))
-    :expand (expr-annop (expr-funcall fun args info))
-    :enable identity)
+    :expand (expr-annop (expr-funcall fun args info)))
 
   (defruled expr-annop-of-expr-unary
     (equal (expr-annop (expr-unary op arg info))
            (and (expr-annop arg)
                 (expr-unary-infop info)))
-    :expand (expr-annop (expr-unary op arg info))
-    :enable identity)
+    :expand (expr-annop (expr-unary op arg info)))
 
   (defruled expr-annop-of-expr-binary
     (equal (expr-annop (expr-binary op arg1 arg2 info))
            (and (expr-annop arg1)
                 (expr-annop arg2)
                 (expr-binary-infop info)))
-    :expand (expr-annop (expr-binary op arg1 arg2 info))
-    :enable identity)
+    :expand (expr-annop (expr-binary op arg1 arg2 info)))
 
   (defruled const-expr-annop-of-const-expr
     (equal (const-expr-annop (const-expr expr info))
            (and (expr-annop expr)
                 (const-expr-infop info)))
-    :expand (const-expr-annop (const-expr expr info))
-    :enable identity)
+    :expand (const-expr-annop (const-expr expr info)))
 
   (defruled desiniter-annop-of-desiniter
     (equal (desiniter-annop (desiniter designors initer info))
@@ -1678,23 +1673,20 @@
            (and (spec/qual-list-annop specquals)
                 (absdeclor-option-annop declor?)
                 (tyname-infop info)))
-    :expand (tyname-annop (tyname specquals declor? info))
-    :enable identity)
+    :expand (tyname-annop (tyname specquals declor? info)))
 
   (defruled param-declor-annop-of-param-declor-nonabstract
     (equal (param-declor-annop (param-declor-nonabstract declor info))
            (and (declor-annop declor)
                 (param-declor-nonabstract-infop info)))
-    :expand (param-declor-annop (param-declor-nonabstract declor info))
-    :enable identity)
+    :expand (param-declor-annop (param-declor-nonabstract declor info)))
 
   (defruled init-declor-annop-of-init-declor
     (equal (init-declor-annop (init-declor declor asm? attribs initer? info))
            (and (declor-annop declor)
                 (initer-option-annop initer?)
                 (init-declor-infop info)))
-    :expand (init-declor-annop (init-declor declor asm? attribs initer? info))
-    :enable identity)
+    :expand (init-declor-annop (init-declor declor asm? attribs initer? info)))
 
   (defruled fundef-annop-of-fundef
     (equal (fundef-annop
@@ -1705,15 +1697,13 @@
                 (comp-stmt-annop body)
                 (fundef-infop info)))
     :expand (fundef-annop
-             (fundef extension specs declor asm? attribs declons body info))
-    :enable identity)
+             (fundef extension specs declor asm? attribs declons body info)))
 
   (defruled trans-unit-annop-of-trans-unit
     (equal (trans-unit-annop (trans-unit items info))
            (and (trans-item-list-annop items)
                 (trans-unit-infop info)))
-    :expand (trans-unit-annop (trans-unit items info))
-    :enable identity)
+    :expand (trans-unit-annop (trans-unit items info)))
 
   (defruled trans-ensemble-annop-of-trans-ensemble
     (equal (trans-ensemble-annop
@@ -1721,8 +1711,7 @@
            (and (filepath-trans-unit-map-annop units)
                 (trans-ensemble-infop info)))
     :expand (trans-ensemble-annop
-             (trans-ensemble units resolved-includes info))
-    :enable identity)
+             (trans-ensemble units resolved-includes info)))
 
   ;; theorems about accessors:
 

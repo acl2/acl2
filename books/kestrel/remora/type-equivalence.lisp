@@ -114,9 +114,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atom/array-types-renamep
-  :short "Check if two atom types, array types, or lists of array types
-          are the same modulo renaming."
+(defines types-renamep
+  :short "Check if two types or lists of types are the same modulo renaming."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -136,28 +135,39 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define atom-type-renamep ((type1 atom-typep)
-                             (type2 atom-typep)
-                             (dim-renam string-string-mapp)
-                             (shape-renam string-string-mapp)
-                             (atom-renam string-string-mapp)
-                             (array-renam string-string-mapp))
+  (define type-renamep ((type1 typep)
+                        (type2 typep)
+                        (dim-renam string-string-mapp)
+                        (shape-renam string-string-mapp)
+                        (atom-renam string-string-mapp)
+                        (array-renam string-string-mapp))
     :returns (yes/no booleanp)
-    :parents (type-equivalence atom/array-types-renamep)
-    :short "Check if two atom types are the same modulo renaming."
+    :parents (type-equivalence types-renamep)
+    :short "Check if two types are the same modulo renaming."
     :long
     (xdoc::topstring
      (xdoc::p
-      "The two types must be in the same fixtype summand:
-       two variables, or two base types, etc.")
+      "The two types must be in the same fixtype summand
+       (two variables, or two base types, etc.),
+       except that one may be an array type and the other a bracket type.")
      (xdoc::p
       "In the case of two variables,
-       since the renaming contains all the variables in scope,
+       they must have the same kind (atom or array).
+       Since the renaming contains all the variables in scope,
        we check that the first and second variables
        are associated in the renaming map.")
      (xdoc::p
       "In the case of two base types,
        they must be identical, because they do not contain variables.")
+     (xdoc::p
+      "In the case of two array or bracket types,
+       we recursively check the equality modulo renaming of the element types.
+       For the shapes,
+       first we apply the dimension and shape variable renaming
+       to the first shape(s),
+       and then we check equivalence with the second shape(s).
+       Shape equivalence is defined not modulo renaming,
+       so we must apply the renaming prior to checking shape equivalence.")
      (xdoc::p
       "In the case of two function types,
        we recursively check the equality modulo renaming
@@ -186,34 +196,101 @@
        may hide outer variables.
        We then check that the two body types are equal
        modulo the updated renamings."))
-    (atom-type-case
+    (type-case
      type1
-     :var (atom-type-case
+     :var (type-case
            type2
-           :var (b* ((atom-renam (string-string-map-fix atom-renam)))
-                  (equal (omap::assoc type1.name atom-renam)
-                         (cons type1.name type2.name)))
+           :var (type-var-case
+                 type1.var
+                 :atom (type-var-case
+                        type2.var
+                        :atom (b* ((atom-renam
+                                    (string-string-map-fix atom-renam)))
+                                (equal (omap::assoc type1.var.name atom-renam)
+                                       (cons type1.var.name type2.var.name)))
+                        :array nil)
+                 :array (type-var-case
+                         type2.var
+                         :atom nil
+                         :array (b* ((array-renam
+                                      (string-string-map-fix array-renam)))
+                                  (equal (omap::assoc type1.var.name array-renam)
+                                         (cons type1.var.name
+                                               type2.var.name)))))
            :otherwise nil)
-     :base (atom-type-case
+     :base (type-case
             type2
             :base (equal type1.type type2.type)
             :otherwise nil)
-     :fun (atom-type-case
-           type2
-           :fun (and (array-type-list-renamep type1.in
-                                              type2.in
-                                              dim-renam
-                                              shape-renam
-                                              atom-renam
-                                              array-renam)
-                     (array-type-renamep type1.out
-                                         type2.out
+     :array (type-case
+             type2
+             :array (and (type-renamep type1.elem
+                                       type2.elem
+                                       dim-renam
+                                       shape-renam
+                                       atom-renam
+                                       array-renam)
+                         (b* ((renamed-shape1
+                               (shape-rename-ispace-vars type1.shape
+                                                         dim-renam
+                                                         shape-renam)))
+                           (shape-equivp renamed-shape1 type2.shape)))
+             :bracket (and (type-renamep type1.elem
+                                         type2.elem
                                          dim-renam
                                          shape-renam
                                          atom-renam
-                                         array-renam))
+                                         array-renam)
+                           (b* ((renamed-shape1
+                                 (shape-rename-ispace-vars type1.shape
+                                                           dim-renam
+                                                           shape-renam))
+                                (shape2 (shape-append type2.shapes)))
+                             (shape-equivp renamed-shape1 shape2)))
+             :otherwise nil)
+     :bracket (type-case
+               type2
+               :array (and (type-renamep type1.elem
+                                         type2.elem
+                                         dim-renam
+                                         shape-renam
+                                         atom-renam
+                                         array-renam)
+                           (b* ((renamed-shapes1
+                                 (shape-list-rename-ispace-vars type1.shapes
+                                                                dim-renam
+                                                                shape-renam))
+                                (shape1 (shape-append renamed-shapes1)))
+                             (shape-equivp shape1 type2.shape)))
+               :bracket (and (type-renamep type1.elem
+                                           type2.elem
+                                           dim-renam
+                                           shape-renam
+                                           atom-renam
+                                           array-renam)
+                             (b* ((renamed-shapes1
+                                   (shape-list-rename-ispace-vars type1.shapes
+                                                                  dim-renam
+                                                                  shape-renam)))
+                               (shape-equivp (shape-append renamed-shapes1)
+                                             (shape-append type2.shapes))))
+               :otherwise nil)
+     :fun (type-case
+           type2
+           :fun (and (type-list-renamep type1.in
+                                        type2.in
+                                        dim-renam
+                                        shape-renam
+                                        atom-renam
+                                        array-renam)
+                     (type-renamep type1.out
+                                   type2.out
+                                   dim-renam
+                                   shape-renam
+                                   atom-renam
+                                   array-renam))
            :otherwise nil)
-     :forall (atom-type-case
+     :forall (type-case
               type2
               :forall (b* ((maps (check-type-var-renaming type1.params
                                                           type2.params))
@@ -225,14 +302,14 @@
                            (array-renam (omap::update*
                                          maps.2nd
                                          (string-string-map-fix array-renam))))
-                        (array-type-renamep type1.type
-                                            type2.type
-                                            dim-renam
-                                            shape-renam
-                                            atom-renam
-                                            array-renam))
+                        (type-renamep type1.body
+                                      type2.body
+                                      dim-renam
+                                      shape-renam
+                                      atom-renam
+                                      array-renam))
               :otherwise nil)
-     :pi (atom-type-case
+     :pi (type-case
           type2
           :pi (b* ((maps (check-ispace-var-renaming type1.params
                                                     type2.params))
@@ -244,14 +321,14 @@
                    (shape-renam (omap::update*
                                  maps.2nd
                                  (string-string-map-fix shape-renam))))
-                (array-type-renamep type1.type
-                                    type2.type
-                                    dim-renam
-                                    shape-renam
-                                    atom-renam
-                                    array-renam))
+                (type-renamep type1.body
+                              type2.body
+                              dim-renam
+                              shape-renam
+                              atom-renam
+                              array-renam))
           :otherwise nil)
-     :sigma (atom-type-case
+     :sigma (type-case
              type2
              :sigma (b* ((maps (check-ispace-var-renaming type1.params
                                                           type2.params))
@@ -263,107 +340,53 @@
                          (shape-renam (omap::update*
                                        maps.2nd
                                        (string-string-map-fix shape-renam))))
-                      (array-type-renamep type1.type
-                                          type2.type
-                                          dim-renam
-                                          shape-renam
-                                          atom-renam
-                                          array-renam))
+                      (type-renamep type1.body
+                                    type2.body
+                                    dim-renam
+                                    shape-renam
+                                    atom-renam
+                                    array-renam))
              :otherwise nil))
-    :measure (+ (atom-type-count type1) (atom-type-count type2)))
+    :measure (+ (type-count type1) (type-count type2)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define array-type-renamep ((type1 array-typep)
-                              (type2 array-typep)
-                              (dim-renam string-string-mapp)
-                              (shape-renam string-string-mapp)
-                              (atom-renam string-string-mapp)
-                              (array-renam string-string-mapp))
+  (define type-list-renamep ((types1 type-listp)
+                             (types2 type-listp)
+                             (dim-renam string-string-mapp)
+                             (shape-renam string-string-mapp)
+                             (atom-renam string-string-mapp)
+                             (array-renam string-string-mapp))
     :returns (yes/no booleanp)
-    :parents (type-equivalence atom/array-types-renamep)
-    :short "Check if two array types are the same modulo renaming."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "The two types must be in the same fixtype summand:
-       two variables, or two explicit array types.")
-     (xdoc::p
-      "In the case of two variables,
-       since the renaming contains all the variables in scope,
-       we check that the first and second variables
-       are associated in the renaming map.")
-     (xdoc::p
-      "In the case of two explicit array types,
-       we recursively check the equality modulo renaming of the body types.
-       For the shapes,
-       first we apply the dimension and shape variable renaming
-       to the first shape,
-       and then we check equivalence with the second shape.
-       Shape equivalence is defined not modulo renaming,
-       so we must apply the renaming prior to checking shape equivalence."))
-    (array-type-case
-     type1
-     :var (array-type-case
-           type2
-           :var (b* ((array-renam (string-string-map-fix array-renam)))
-                  (equal (omap::assoc type1.name array-renam)
-                         (cons type1.name type2.name)))
-           :otherwise nil)
-     :array (array-type-case
-             type2
-             :array (and (atom-type-renamep type1.type
-                                            type2.type
-                                            dim-renam
-                                            shape-renam
-                                            atom-renam
-                                            array-renam)
-                         (b* ((renamed-shape1
-                               (shape-rename-ispace-vars type1.shape
-                                                         dim-renam
-                                                         shape-renam)))
-                           (shape-equivp renamed-shape1 type2.shape)))
-             :otherwise nil))
-    :measure (+ (array-type-count type1) (array-type-count type2)))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define array-type-list-renamep ((types1 array-type-listp)
-                                   (types2 array-type-listp)
-                                   (dim-renam string-string-mapp)
-                                   (shape-renam string-string-mapp)
-                                   (atom-renam string-string-mapp)
-                                   (array-renam string-string-mapp))
-    :returns (yes/no booleanp)
-    :parents (type-equivalence atom/array-types-renamep)
-    :short "Check if two lists of array types are the same modulo renaming."
+    :parents (type-equivalence types-renamep)
+    :short "Check if two lists of types are the same modulo renaming."
     (or (and (endp types1)
              (endp types2))
         (and (consp types1)
              (consp types2)
-             (array-type-renamep (car types1)
-                                 (car types2)
-                                 dim-renam
-                                 shape-renam
-                                 atom-renam
-                                 array-renam)
-             (array-type-list-renamep (cdr types1)
-                                      (cdr types2)
-                                      dim-renam
-                                      shape-renam
-                                      atom-renam
-                                      array-renam)))
-    :measure (+ (array-type-list-count types1) (array-type-list-count types2))
+             (type-renamep (car types1)
+                           (car types2)
+                           dim-renam
+                           shape-renam
+                           atom-renam
+                           array-renam)
+             (type-list-renamep (cdr types1)
+                                (cdr types2)
+                                dim-renam
+                                shape-renam
+                                atom-renam
+                                array-renam)))
+    :measure (+ (type-list-count types1) (type-list-count types2))
 
     ///
 
-    (defrule same-len-when-array-type-list-renamep
-      (implies (array-type-list-renamep types1
-                                        types2
-                                        dim-renam
-                                        shape-renam
-                                        atom-renam
-                                        array-renam)
+    (defrule same-len-when-type-list-renamep
+      (implies (type-list-renamep types1
+                                  types2
+                                  dim-renam
+                                  shape-renam
+                                  atom-renam
+                                  array-renam)
                (equal (len types1) (len types2)))
       :rule-classes :forward-chaining
       :hints (("Goal"
@@ -374,109 +397,45 @@
 
   ///
 
-  (fty::deffixequiv-mutual atom/array-types-renamep))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atom-type-list-renamep ((types1 atom-type-listp)
-                                (types2 atom-type-listp)
-                                (dim-renam string-string-mapp)
-                                (shape-renam string-string-mapp)
-                                (atom-renam string-string-mapp)
-                                (array-renam string-string-mapp))
-  :returns (yes/no booleanp)
-  :short "Check if two lists of atom types are the same modulo renaming."
-  (or (and (endp types1)
-           (endp types2))
-      (and (consp types1)
-           (consp types2)
-           (atom-type-renamep (car types1)
-                              (car types2)
-                              dim-renam
-                              shape-renam
-                              atom-renam
-                              array-renam)
-           (atom-type-list-renamep (cdr types1)
-                                   (cdr types2)
-                                   dim-renam
-                                   shape-renam
-                                   atom-renam
-                                   array-renam)))
-
-  ///
-
-  (defrule same-len-when-atom-type-list-renamep
-    (implies (atom-type-list-renamep types1
-                                     types2
-                                     dim-renam
-                                     shape-renam
-                                     atom-renam
-                                     array-renam)
-             (equal (len types1) (len types2)))
-    :rule-classes :forward-chaining
-    :hints (("Goal"
-             :induct (acl2::cdr-cdr-induct types1 types2)
-             :in-theory (enable acl2::atom)))))
+  (fty::deffixequiv-mutual types-renamep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atom-type-equivp ((type1 atom-typep) (type2 atom-typep))
+(define type-equivp ((type1 typep) (type2 typep))
   :returns (yes/no booleanp)
-  :short "Check if two atom types are equivalent."
+  :short "Check if two types are equivalent."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the case when they are equal modulo no renamings."))
-  (atom-type-renamep type1 type2 nil nil nil nil))
+  (type-renamep type1 type2 nil nil nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define atom-type-list-equivp ((types1 atom-type-listp)
-                               (types2 atom-type-listp))
+(define type-list-equivp ((types1 type-listp)
+                          (types2 type-listp))
   :returns (yes/no booleanp)
-  :short "Check if two lists of atom types are equivalent."
+  :short "Check if two lists of types are equivalent."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the case when they are equal modulo no renamings."))
-  (atom-type-list-renamep types1 types2 nil nil nil nil)
+  (type-list-renamep types1 types2 nil nil nil nil)
 
   ///
 
-  (defrule same-len-when-atom-type-list-equivp
-    (implies (atom-type-list-equivp types1 types2)
+  (defrule same-len-when-type-list-equivp
+    (implies (type-list-equivp types1 types2)
              (equal (len types1) (len types2)))
     :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define array-type-equivp ((type1 array-typep) (type2 array-typep))
+(define type-list-all-equivp ((types type-listp))
   :returns (yes/no booleanp)
-  :short "Check if two array types are equivalent."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the case when they are equal modulo no renamings."))
-  (array-type-renamep type1 type2 nil nil nil nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atom-type-list-all-equivp ((types atom-type-listp))
-  :returns (yes/no booleanp)
-  :short "Check if all the atom types in a list are equivalent."
+  :short "Check if all the types in a list are equivalent."
   (or (endp types)
       (endp (cdr types))
-      (and (atom-type-equivp (car types) (cadr types))
-           (atom-type-list-all-equivp (cdr types))))
-  :prepwork ((local (in-theory (enable atom-type-list-fix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define array-type-list-all-equivp ((types array-type-listp))
-  :returns (yes/no booleanp)
-  :short "Check if all the array types in a list are equivalent."
-  (or (endp types)
-      (endp (cdr types))
-      (and (array-type-equivp (car types) (cadr types))
-           (array-type-list-all-equivp (cdr types))))
-  :prepwork ((local (in-theory (enable array-type-list-fix)))))
+      (and (type-equivp (car types) (cadr types))
+           (type-list-all-equivp (cdr types))))
+  :prepwork ((local (in-theory (enable type-list-fix)))))
