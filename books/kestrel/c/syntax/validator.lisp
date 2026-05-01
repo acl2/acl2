@@ -8000,20 +8000,26 @@
 (define valid-trans-item ((item trans-itemp) (vstate vstatep))
   :guard (trans-item-unambp item)
   :returns (mv (erp maybe-msgp)
-               (new-item trans-itemp)
+               (new-items trans-item-listp)
                (new-vstate vstatep))
   :short "Validate a translation item."
   :long
   (xdoc::topstring
    (xdoc::p
+    "This function returns a list of translation items,
+     to accommodate the case in which a @('#include') translation item
+     must be expanded in place, which results in a list.
+     In all other cases, the resulting list is a singleton,
+     i.e. the translation item is disambiguated to a translation item.")
+   (xdoc::p
     "For now we only support external declarations and comments.
      The latter are always considered valid."))
-  (b* (((reterr) (irr-trans-item) (irr-vstate)))
+  (b* (((reterr) nil (irr-vstate)))
     (trans-item-case
      item
      :declon (b* (((erp new-declon vstate)
                    (valid-ext-declon item.declon vstate)))
-               (retok (trans-item-declon new-declon) vstate))
+               (retok (list (trans-item-declon new-declon)) vstate))
      :include (reterr
                (msg "Validator does not support #include directives yet."))
      :define (reterr
@@ -8022,14 +8028,17 @@
              (msg "Validator does not support #undef directives yet."))
      :cond (reterr
             (msg "Validator does not support conditional directives yet."))
-     :line-comment (retok (trans-item-fix item) (vstate-fix vstate))))
+     :line-comment (retok (list (trans-item-fix item)) (vstate-fix vstate))))
   :hooks (:fix)
 
   ///
 
-  (defret trans-item-unambp-of-valid-trans-item
+  (more-returns
+   (new-items true-listp :rule-classes (:rewrite :type-prescription)))
+
+  (defret trans-item-list-unambp-of-valid-trans-item
     (implies (not erp)
-             (trans-item-unambp new-item))
+             (trans-item-list-unambp new-items))
     :hyp (trans-item-unambp item)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8047,9 +8056,9 @@
     "We validate them in order, threading the validation table through."))
   (b* (((reterr) nil (irr-vstate))
        ((when (endp items)) (retok nil (vstate-fix vstate)))
-       ((erp new-item vstate) (valid-trans-item (car items) vstate))
-       ((erp new-items vstate) (valid-trans-item-list (cdr items) vstate)))
-    (retok (cons new-item new-items) vstate))
+       ((erp car-new-items vstate) (valid-trans-item (car items) vstate))
+       ((erp cdr-new-items vstate) (valid-trans-item-list (cdr items) vstate)))
+    (retok (append car-new-items cdr-new-items) vstate))
 
   ///
 
