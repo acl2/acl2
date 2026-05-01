@@ -55,6 +55,20 @@
     :induct t
     :enable abstract-syntax-corep-rules))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection base-lit-int-list ((x int-lit-listp))
+  :returns (lits base-lit-listp)
+  :short "Lift @(tsee base-lit-int) to lists."
+  (base-lit-int x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection atom-base-list ((x base-lit-listp))
+  :returns (atoms atom-listp)
+  :short "Lift @(tsee atom-base) to lists."
+  (atom-base x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection var+type-list->var ((x var+type-listp))
