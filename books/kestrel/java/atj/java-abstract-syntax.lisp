@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -323,7 +323,7 @@
      or an array initializer that is a sequence of expressions.
      The type field is the primitive or class/interface element type,
      not the array type, which is implicitly the one
-     whose element type if the one in the type field.")
+     whose element type is the one in the type field.")
    (xdoc::p
     "In an array access expression,
      we allow any expression as the first one.")
@@ -507,10 +507,10 @@
    (xdoc::p
     "We only capture @('for') statements
      with single initialization and update expressions,
-     and whose bodies are block.
+     and whose bodies are blocks.
      (The latter is not a significant limitation.)")
    (xdoc::p
-    "We only capture @('do') statements whose bodies are block.
+    "We only capture @('do') statements whose bodies are blocks.
      (This is not a significant limitation.)")
    (xdoc::p
     "We only capture @('continue') and @('break') statements
@@ -582,7 +582,7 @@
 (define jblock-expr ((expr jexprp))
   :returns (block jblockp)
   :short "Build a block consisting of a single Java expression
-          (as an expression statement."
+          (as an expression statement)."
   (list (jstatem-expr expr)))
 
 (define jblock-method ((name stringp) (args jexpr-listp))
@@ -653,7 +653,7 @@
 
 (define jblock-for ((init jexprp) (test jexprp) (update jexprp) (body jblockp))
   :returns (block jblockp)
-  :short "Bulid a block consisting of a single Java @('for') statement."
+  :short "Build a block consisting of a single Java @('for') statement."
   (list (jstatem-for init test update body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -789,7 +789,7 @@
   :short "Java class initializer [JLS14:8.6] [JLS14:8.7]."
   :long
   (xdoc::topstring-p
-   "This captures both static and instance intializers.")
+   "This captures both static and instance initializers.")
   ((static? bool)
    (code jblock))
   :pred jcinitializerp)

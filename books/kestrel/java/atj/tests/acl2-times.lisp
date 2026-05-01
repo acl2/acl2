@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -133,7 +133,7 @@
     (mv (cons time times) state)))
 
 ; Make N * M calls of the factorial function on each element of INPUTS,
-; printing the time taken by each of the N sequences of M calls call
+; printing the time taken by each of the N sequences of M calls
 ; and printing minimum, maximum, and average times for each input.
 ; The GCHECK argument provides the guard checking settings.
 (define run-fact-tests ((inputs nat-listp) (n natp) (m natp) gcheck state)
@@ -195,7 +195,7 @@
     (mv (cons time times) state)))
 
 ; Make N calls of the Fibonacci function on each element of INPUTS,
-; printing the time taken by each of the N sequences of M calls call
+; printing the time taken by each of the N sequences of M calls
 ; and printing minimum, maximum, and average times for each input.
 ; The GCHECK argument provides the guard checking settings.
 (define run-fib-tests ((inputs nat-listp) (n natp) (m natp) gcheck state)

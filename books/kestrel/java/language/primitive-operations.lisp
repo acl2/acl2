@@ -501,7 +501,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-long-ushiftr
-  :short "Unsigned right shift of an @('long') by an @('long')
+  :short "Unsigned right shift of a @('long') by a @('long')
           [JLS14:4.2.2] [JLS14:15.19]."
   :long
   (xdoc::topstring
@@ -558,7 +558,7 @@
      all the unary and binary operations on floating-point values
      that are not conversions (those are formalized separately).")
    (xdoc::p
-    "[JLS14:4.2.4] also lists the prefix and posfix @('++') and @('--') operators,
+    "[JLS14:4.2.4] also lists the prefix and postfix @('++') and @('--') operators,
      but those operate on variables, not just values,
      and therefore must be formalized elsewhere.")
    (xdoc::p
@@ -721,7 +721,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-great
-  :short "Greater-than-or-equal-to comparison @('>') on @('double')s
+  :short "Greater-than comparison @('>') on @('double')s
           [JLS14:4.2.4] [JLS14:15.20.1]."
   :operation (double-great-abs x y))
 
