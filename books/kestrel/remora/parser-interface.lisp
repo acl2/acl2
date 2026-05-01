@@ -179,7 +179,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defparse-from-string ispace      ispace-resultp)
-(defparse-from-string base-val    base-value-resultp)
+(defparse-from-string base-val    base-lit-resultp)
 (defparse-from-string base-type   base-type-resultp)
 (defparse-from-string type-var    type-var-resultp)
 (defparse-from-string ispace-var  ispace-var-resultp)
@@ -199,7 +199,7 @@
 
 (define ast-from-fragment ((rule-name stringp) (source-code stringp))
   :returns (ast (or (ispace-resultp ast)
-                    (base-value-resultp ast)
+                    (base-lit-resultp ast)
                     (base-type-resultp ast)
                     (type-var-resultp ast)
                     (ispace-var-resultp ast)
