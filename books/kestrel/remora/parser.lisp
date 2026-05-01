@@ -2537,7 +2537,9 @@
        ((when (reserrp tree-ws2))
         (mv (reserrf-push tree-ws2) (nat-list-fix input))))
     (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "program")
-         :branches (list (list tree-ws1 tree-e tree-ws2)))
+         :branches (list (list tree-ws1)
+                         (list tree-e)
+                         (list tree-ws2)))
         input3))
   :hooks (:fix)
   ///
