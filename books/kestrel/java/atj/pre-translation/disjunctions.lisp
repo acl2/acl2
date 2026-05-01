@@ -33,7 +33,7 @@
     "Note that this pre-translation step
      turns @('(if a a b)') into @('(or a b)')
      even when the original untranslated term was @('(if a a b)').
-     But this is harmelss, as the two untranslated terms are equivalent,
+     But this is harmless, as the two untranslated terms are equivalent,
      at least functionally (assuming that @('a') has no side effects)."))
   :order-subtopics t
   :default-parent t)

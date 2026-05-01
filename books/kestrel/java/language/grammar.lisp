@@ -107,7 +107,7 @@
      We also use ABNF comments for the prose notations in [JLS25],
      which, as explained above, we express as non-prose notations in ABNF.
      We also use ABNF comments to separate the files into sections,
-     and to reference the parts of [JLS25] where the the rules appear.")
+     and to reference the parts of [JLS25] where the rules appear.")
    (xdoc::p
     "The ABNF notation is documented in "
     (xdoc::a :href "https://www.rfc-editor.org/info/rfc5234" "RFC 5234")

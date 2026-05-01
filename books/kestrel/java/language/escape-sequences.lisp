@@ -25,7 +25,7 @@
      formalized " (xdoc::seetopic "unicode-escapes" "here") ".")
    (xdoc::p
     "There are eight escape sequences each of which
-     consist of a backslash followed by another character (e.g. @('\\b')),
+     consists of a backslash followed by another character (e.g. @('\\b')),
      and 256 octal escape sequences.
      Here we formalize them at a slightly more abstract level
      than their concrete syntactic representation in the grammar.

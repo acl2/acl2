@@ -537,7 +537,7 @@
      called by the @('build()') method.")
    (xdoc::p
     "We remove any natively implemented function from @('fns-to-translate')
-     before calling the code that translated the Java function.
+     before calling the code that translates the function to Java.
      This is because we only build representations of the ACL2 functions
      to be executed by AIJ's interpreter;
      the natively implemented functions are executed ``directly''."))

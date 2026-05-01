@@ -102,7 +102,7 @@
     (xdoc::li
      "If the starting digit is 0,
       then it must be the only digit
-      (which implies that there cannot be any underscores.")))
+      (which implies that there cannot be any underscores).")))
   (and (consp dus)
        (decdig/uscore-case (car dus) :digit)
        (decdig/uscore-case (car (last dus)) :digit)

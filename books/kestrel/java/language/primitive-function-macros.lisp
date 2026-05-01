@@ -30,7 +30,7 @@
      they use primitive value destructors (e.g. @(tsee int-value->int))
      to obtain the ``core'' values to operate upon with existing ACL2 functions;
      they use existing ACL2 functions to generate the ``core'' result;
-     they uses primitive value constructors (e.g. @(tsee int-value))
+     they use primitive value constructors (e.g. @(tsee int-value))
      to return the result primitive value.")
    (xdoc::p
     "The only ``interesting'' part is how the core result
@@ -169,7 +169,7 @@
      If this argument is @('t'),
      the guard of the generated function requires the right operand
      to be different from the zero value of the respective type.
-     This is used to define the integer division and reminder operations;
+     This is used to define the integer division and remainder operations;
      it is @('nil') by default.")
    (xdoc::p
     "This macro also takes an optional argument saying whether

@@ -130,7 +130,7 @@
     "Currently ATJ's ACL2-to-Java translation does not generate nested loops,
      and none of ATJ's post-translation steps generates nested loops.
      However, making this post-translation step more general
-     require only little additional effort."))
+     would require only little additional effort."))
 
   (define atj-remove-continue-in-jstatem ((statem jstatemp))
     :returns (new-statem jstatemp :hyp :guard)

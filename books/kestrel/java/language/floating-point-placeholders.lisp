@@ -292,7 +292,7 @@
   (xdoc::topstring
    (xdoc::p
     "All our abstract operations and conversions
-     are weakly constraned ACL2 functions
+     are weakly constrained ACL2 functions
      that unconditionally return results of the appropriate types.
      The macros capture this boilerplate structure.")
    (xdoc::p

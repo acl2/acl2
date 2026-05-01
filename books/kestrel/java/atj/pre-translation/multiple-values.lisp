@@ -73,7 +73,7 @@
      this code is called on the body of a function
      that must be translated to Java.
      In this top-level call,
-     we pass as second argument the number of result of the function,
+     we pass as second argument the number of results of the function,
      which is known: see @(tsee atj-restore-mv-calls-in-body).
      As we descend into the term, this number may change.
      When we try to restore @(tsee mv) calls in a term,

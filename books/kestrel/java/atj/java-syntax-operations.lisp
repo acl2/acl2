@@ -20,7 +20,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These operartions, like the "
+    "These operations, like the "
     (xdoc::seetopic "atj-java-abstract-syntax" "abstract syntax of Java")
     ", are more general than ATJ and will be eventually moved
      to a new library for manipulating Java code.
@@ -141,7 +141,7 @@
   :short "Method names in a statement or block."
   :long
   (xdoc::topstring-p
-   "We return all the methods names in expressions.")
+   "We return all the method names in expressions.")
 
   (define jstatem-methods ((statem jstatemp))
     :returns (methods string-listp)

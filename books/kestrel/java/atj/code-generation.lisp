@@ -454,7 +454,7 @@
    (xdoc::p
     "The compilation unit imports all the AIJ public classes,
      since it needs to reference (at least some of) them.
-     It also imports @('BigInteger'), used to build certain ACL2 value.
+     It also imports @('BigInteger'), used to build certain ACL2 values.
      It also imports @('Arrays'), whose @('equals()') method
      is used to compare array results.
      However, if the @(':no-aij-types') input is @('t'),

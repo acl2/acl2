@@ -46,7 +46,7 @@
      (xdoc::codeblock
       "a = <array-write-method>(a, i, x);")
      (xdoc::p
-      "into assignment expressions statements of the form")
+      "into assignment expression statements of the form")
      (xdoc::codeblock
       "a[i] = x;")
      (xdoc::p

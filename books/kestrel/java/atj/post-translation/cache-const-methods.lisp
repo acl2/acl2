@@ -42,7 +42,7 @@
     "We achieve this optimization
      (it generally is an optimization, but see above for a discussion)
      as a post-translation step that operates as follows.
-     For a nullary method whose body cosists of
+     For a nullary method whose body consists of
      just a return statement whose expression has no method calls,
      we add a static final field initialized with the return expression,
      and we replace the return expression in the method

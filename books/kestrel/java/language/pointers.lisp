@@ -71,7 +71,7 @@
      to hold over an infinite number of values,
      by simultaneously introducing a constrained function
      that, given any list as input, returns a pointer that is not in the list.
-     The list may include non-ponters, which are ignored.")
+     The list may include non-pointers, which are ignored.")
    (xdoc::p
     "This new-pointer function implies the infinity of pointers because
      starting from the empty list @('nil')

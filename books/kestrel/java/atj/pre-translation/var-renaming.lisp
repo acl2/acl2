@@ -79,7 +79,7 @@
                (new-indices symbol-pos-alistp
                             :hyp (and (symbol-pos-alistp indices)
                                       (symbolp var))))
-  :short "Rename a formal parameters of
+  :short "Rename a formal parameter of
           a defined function or lambda expression."
   :long
   (xdoc::topstring
@@ -108,7 +108,7 @@
      in the same Java method.
      We use numeric indices, one for each variable name,
      which is appended (as explained below) to the Java variable name
-     to make it unique within the Java mehtod.")
+     to make it unique within the Java method.")
    (xdoc::p
     "Another need for disambiguation arises because of package prefixes.
      An ACL2 variable is a symbol,

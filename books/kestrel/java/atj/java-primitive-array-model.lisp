@@ -399,7 +399,7 @@
                 :guard (< (len list) (expt 2 31))
                 :returns (array ,type-arrayp)
                 :short ,(str::cat "Convert an ACL2 list of " acl2type-doc
-                                  " to a Java @('boolean') array.")
+                                  " to a Java " type-doc " array.")
                 (,type-array (,type-array-from-list-aux list))
                 :prepwork
                 ((define ,type-array-from-list-aux ((list ,acl2type-listp))

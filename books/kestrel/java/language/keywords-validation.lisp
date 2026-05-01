@@ -33,7 +33,7 @@
      define reserved and contextual keywords
      `directly', i.e. without reference to the grammar.
      Here we introduce alternative predicates based on the grammar,
-     and we show the equivalent to
+     and we show them equivalent to
      @(tsee reserved-keywordp) and @(tsee contextual-keywordp)."))
   :order-subtopics t
   :default-parent t)

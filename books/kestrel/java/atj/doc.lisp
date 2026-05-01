@@ -54,7 +54,7 @@
 
    (xdoc::p
     "This manual page provides reference documentation for ATJ.
-     A separate tutorial in being written, as noted above.
+     A separate tutorial is being written, as noted above.
      See the files under @('kestrel/java/atj/tests/')
      for examples of use of ATJ.")
 
@@ -207,7 +207,7 @@
      ATJ stops with an error.
      If a function is encountered that has raw Lisp code
      and is not in the whitelist
-     (except for the treament of @(tsee return-last) explained above),
+     (except for the treatment of @(tsee return-last) explained above),
      ATJ stops with an error.")
 
    (xdoc::p
@@ -314,10 +314,10 @@
        i.e. the call results from the translation of @(tsee mbe).
        Even though Java code is generated
        for one of the second and third arguments but not for the other one
-       (based on the @(':guars') input; see below),
+       (based on the @(':guards') input; see below),
        the restrictions on called functions,
        and in particular the absence of side effects,
-       are enforced on all the argument of the call.")
+       are enforced on all the arguments of the call.")
      (xdoc::li
       "The first argument of @(tsee return-last) is @('\'acl2::progn'),
        i.e. the call results from the translation of
@@ -327,7 +327,7 @@
        but not for the previous one(s),
        the restrictions on called functions,
        and in particular the absence of side effects,
-       are enforced on all the argument of the call."))
+       are enforced on all the arguments of the call."))
     (xdoc::p
      "If the @(':deep') input is @('nil') and the @(':guards') input is @('t'),
       then none of the @('fni') may be
@@ -511,7 +511,7 @@
       If this input is @('nil'),
       the generated Java class is called @('Acl2Code').")
     (xdoc::p
-     "Unless @(':no-aij-type') is @('t'),
+     "Unless @(':no-aij-types') is @('t'),
       an additional auxiliary class is generated,
       whose name is obtained by appending @('Environment')
       at the end of the name of the main class.
@@ -551,7 +551,7 @@
       without regard to whether they may contain
       additional files and directories
       (however, it is recommended that the subdirectories do not contain
-      any such additional files and directories.")
+      any such additional files and directories).")
     (xdoc::p
      "One file per class is generated:
       one file if
@@ -649,8 +649,8 @@
        (xdoc::li
         "If the type is @(':jshort[]'),
          then @('in') must be a term
-         @('(java::short-array-new-init <short>)')
-         where @('<short>') is the translation of
+         @('(java::short-array-new-init <shorts>)')
+         where @('<shorts>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::short-value <short>)')
          as in the case above in which the type is @(':jshort').")
@@ -859,7 +859,7 @@
      for each test @('(namej termj)')
      specified via the @(':tests') input (see above).
      The code for each test prints @('namej'),
-     evaluates the call @('(fn qc1 1c2 ...)') (which @('termj') translates to)
+     evaluates the call @('(fn qc1 qc2 ...)') (which @('termj') translates to)
      in AIJ (via the @('call') public method described above),
      compares the resulting value with the one that ACL2 returns
      (which is calculated when ATJ is run),
@@ -898,7 +898,7 @@
      @('kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar').
      The files @('compile.sh') and @('run.sh')
      under @('kestrel/java/atj/tests/')
-     contains examples of command to compile and run the code.
+     contains examples of commands to compile and run the code.
      See "
     (xdoc::seetopic "aij" "the AIJ documentation")
     " for instructions on how to generate the @('.jar') file.

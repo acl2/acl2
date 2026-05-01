@@ -162,7 +162,7 @@
      that appear directly quoted in the term.
      That is, for each sub-term of the form @('(quote <value>)'),
      we return @('<value>').
-     This excludes value that occur (only) inside other quoted values,
+     This excludes values that occur (only) inside other quoted values,
      e.g. @('(quote (<value> . ...))').")
    (xdoc::p
     "The record that stores the collected constants

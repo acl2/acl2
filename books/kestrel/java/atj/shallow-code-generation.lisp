@@ -366,7 +366,7 @@
    (xdoc::codeblock
     "private static <type>[] <name>(Acl2Value list) {"
     "    int length = 0;"
-    "    Acl2Value saveList = list;"
+    "    Acl2Value savedList = list;"
     "    while (list instanceof Acl2Cons) {"
     "        ++length;"
     "        list = ((Acl2ConsPair) list).getCdr();"
@@ -546,7 +546,7 @@
    (xdoc::p
     "Note that we generate an expression name for @('array.length'),
      because grammatically this is not a field access expression in Java:
-     it cannot be generated from the nonterminal @('field-acces');
+     it cannot be generated from the nonterminal @('field-access');
      it can be generated from the nonterminal @('expression-name')."))
   (b* ((method-name (atj-convert-expr-from-jprimarr-method-name type))
        (jtype (atj-type-to-jitype (atj-type-jprim type)))
@@ -669,7 +669,7 @@
    (xdoc::p
     "To convert between the @(':acl2') types,
      if the source type is a subtype of or the same type as the destination type
-     (which can be checked via @(tsee atj-type-<=),
+     (which can be checked via @(tsee atj-type-<=)),
      we leave the expression unchanged,
      unless @(':guards') is @('t') and
      either (i) the source type is @(':aboolean')
@@ -912,7 +912,7 @@
    (xdoc::p
     "where @('[m]'), @('[m1]'), ..., @('[mn]') are new/old markings,
      and where @('mv') may not be the symbol `@('mv')' but some other symbol.
-     Because of the pre-translation steps that removes unused variables,
+     Because of the pre-translation steps that remove unused variables,
      the formals and arguments of the inner lambda
      may be fewer than the elements of @('types');
      i.e. some @(tsee mv-nth) indices may be skipped.")
@@ -1618,7 +1618,7 @@
      turns (annotated) terms @('(if a b nil)') into @('(and a b)').
      Here we recognize, and treat specially, these @(tsee and) calls.")
    (xdoc::p
-    "If both operands have type @(':aboolean') and @('<right-block') is empty,
+    "If both operands have type @(':aboolean') and @('<right-block>') is empty,
      we generate the block @('<left-block>')
      and the non-strict expression @('<left-expr> && <right-expr>'):
      in other words,
@@ -2042,7 +2042,7 @@
     "Note that if the array expression is an expression name,
      we generate an expression name as the resulting expression,
      because grammatically this is not a field access expression in Java:
-     it cannot be generated from the nonterminal @('field-acces');
+     it cannot be generated from the nonterminal @('field-access');
      it can be generated from the nonterminal @('expression-name')."))
   (b* ((expr (if (jexpr-case array-expr :name)
                  (jexpr-name (str::cat (jexpr-name->get array-expr)
@@ -2184,7 +2184,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is called only if @(':guards') is @('t').
-     This is called after translating the argment to Java.
+     This is called after translating the argument to Java.
      The resulting block and expression are passed as parameters here.")
    (xdoc::p
     "We convert the argument to the appropriate Java primitive array type."))
@@ -2215,7 +2215,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is called only if @(':guards') is @('t').
-     This is called after translating the argment to Java.
+     This is called after translating the argument to Java.
      The resulting block and expression are passed as parameters here.")
    (xdoc::p
     "We convert the argument to the appropriate Java primitive array type."))
@@ -3085,7 +3085,7 @@
      should be based not only on whether @(':guards') is @('t') or @('nil'),
      but also whether the corresponding functions (@(tsee characterp) etc.)
      are recorded to have return types @(':aboolean') and @(':acharacter')
-     (via @(tsee atj-main-function-type) or not.
+     (via @(tsee atj-main-function-type) or not).
      By including, in this file, the file @('\"types-for-natives.lisp\"'),
      we ensure that the second condition is always true.
      Thus, the choice can be simplified by just looking at @(':guards').
@@ -4630,7 +4630,7 @@
     "The class contains the static initializer,
      the initialization method,
      the classes that contain methods for the ACL2 functions,
-     the @(tsee mv) classes, and the fields for quoted constants, and
+     the @(tsee mv) classes, the fields for quoted constants, and
      the methods to convert between lists and primitive arrays.")
    (xdoc::p
     "It is critical that the static initializer

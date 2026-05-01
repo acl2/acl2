@@ -125,7 +125,7 @@
    (xdoc::p
     "This converts each ACL2 character in the string
      to a Unicode character whose value is the code of the character.
-     In at last some of the Lisps on which ACL2 runs,
+     In at least some of the Lisps on which ACL2 runs,
      strings may include non-ASCII Unicode characters,
      but ACL2's view of these strings is that of
      the sequence of ACL2 characters whose codes are

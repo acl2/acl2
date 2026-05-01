@@ -36,7 +36,7 @@
    (xdoc::p
     "Both @('src') and @('dst') above identify non-empty lists of ATJ types.
      This is because an ACL2 term may return multiple values (see @(tsee mv)):
-     each list consists of two or more ATJ types when he ACL2 term does;
+     each list consists of two or more ATJ types when the ACL2 term does;
      otherwise, it consists of one ATJ type only.
      The two lists (for @('src') and @('dst')) will always have the same length,
      because ACL2 prevents treating
@@ -235,7 +235,7 @@
     "As mentioned in @(see atj-pre-translation-type-annotation),
      each ACL2 term is wrapped with a function named @('[src>dst]'),
      where @('src') identifies the ATJ types of the term
-     and @('dst') identifies an ATJ types
+     and @('dst') identifies ATJ types
      to which the term must be converted to.")
    (xdoc::p
     "These function names are all in the @('\"JAVA\"') package.
@@ -244,7 +244,7 @@
      manipulated by the ATJ code generation functions.
      However, in order to prove that the type annotation process
      preserves the ACL2 meaning of terms,
-     these functions will need to exist and be defined as identify functions,
+     these functions will need to exist and be defined as identity functions,
      which can be easily done with a macro when that becomes important."))
   (intern$ (str::cat "["
                      (atj-types-id src-types)
@@ -299,7 +299,7 @@
   (xdoc::topstring
    (xdoc::p
     "Not all @('[src>dst]') wrappers are allowed during type annotation.
-     These wrappers server to generate Java code
+     These wrappers serve to generate Java code
      to convert from the source to the destination types.
      This conversion is ``automatic'' in the sense that
      there is no corresponding conversion function
@@ -628,7 +628,7 @@
                                 (types atj-type-listp))
   :guard (int= (len vars) (len types))
   :returns (new-vars symbol-listp)
-  :short "Annotate each of a list of ACL2 variable
+  :short "Annotate each of a list of ACL2 variables
           with a corresponding singleton list of types."
   (cond ((endp vars) nil)
         (t (cons (atj-type-annotate-var (car vars) (list (car types)))
@@ -757,7 +757,7 @@
      ACL2 should ensure that the test of an @(tsee if) is single-valued,
      but we defensively check for that.
      In all cases, the @(tsee if) is wrapped with
-     the identify conversion function for the overall type(s),
+     the identity conversion function for the overall type(s),
      for uniformity and to readily indicate the type
      of the Java local variable to generate.")
    (xdoc::p
@@ -1527,7 +1527,7 @@
      The @('indices') result is the ordered list of @(tsee mv-nth) indices
      actually present; these are 0-based.
      The @('body-term') result is @('([...>reqinf] body-term)'),
-     i.e. the wrapped body of the inner lambda expression.."))
+     i.e. the wrapped body of the inner lambda expression."))
   (b* (((mv outer-lambda-call reqinf reqinf2) (atj-type-unwrap-term term))
        ((unless (equal reqinf reqinf2)) (mv nil nil nil nil nil nil))
        ((mv okp mv-var wrapped-inner-lambda-call mv-term)

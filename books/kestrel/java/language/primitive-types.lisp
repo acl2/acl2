@@ -156,7 +156,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is denoted (for all types) @($<1$) in [JLS14].")
+    "This is denoted (for all types) @($<$) in [JLS14].")
    (xdoc::p
     "It is the transitive closure of
      the direct subtype relation @(tsee primitive-type-<1)."))
