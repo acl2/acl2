@@ -11,12 +11,13 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-core")
 (include-book "abstract-syntax-constructors")
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "abstract-syntax-structural-operations")
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
-(include-book "abstract-syntax-core")
+(include-book "abstract-syntax-desugaring")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,9 +37,10 @@
      or we might define alternative abstract syntax for those,
      with suitable mappings."))
   :order-subtopics (abstract-syntax-trees
+                    abstract-syntax-core
                     abstract-syntax-constructors
                     abstract-syntax-derived-fixtypes
                     abstract-syntax-structural-operations
                     abstract-syntax-matching-operations
                     abstract-syntax-variable-operations
-                    abstract-syntax-core))
+                    abstract-syntax-desugaring))
