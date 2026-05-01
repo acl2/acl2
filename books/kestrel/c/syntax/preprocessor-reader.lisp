@@ -563,7 +563,7 @@
                        (utf8-= byte 12) ; FF
                        (and (utf8-<= 32 byte) (utf8-<= byte 126))))
               (ucharp byte))
-     :enable (ucharp the-check))
+     :enable ucharp)
 
    (defrulel returns-lemma2 ; 2-byte UTF-8
      (implies (and (bytep byte)
@@ -588,7 +588,7 @@
                 (implies (not (and (utf8-<= #xd800 char)
                                    (utf8-<= char #xdfff)))
                          (ucharp char))))
-     :enable (ucharp the-check)
+     :enable ucharp
      :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
    (defrulel returns-lemma4 ; 4-byte UTF-8

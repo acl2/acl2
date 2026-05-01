@@ -2331,8 +2331,7 @@
 
   :guard-hints (("Goal" :in-theory (enable unsigned-byte-p
                                            integer-range-p
-                                           dec-digit-char-p
-                                           the-check)))
+                                           dec-digit-char-p)))
 
   ///
 
