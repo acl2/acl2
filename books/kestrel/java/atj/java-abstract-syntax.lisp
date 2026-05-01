@@ -58,7 +58,7 @@
       which only generates ASCII Java code.")
     (xdoc::li
      "We use ACL2 strings to capture
-      Java identifiers and dot-separated sequenced thereof.
+      Java identifiers and dot-separated sequences thereof.
       On one hand, this is more restrictive
       because of the 8-bit vs. 16-bit character issue;
       on the other hand, it is more permissive
@@ -329,7 +329,7 @@
      we allow any expression as the first one.")
    (xdoc::p
     "We only capture class instance creation expressions
-     that consist of @('new'), a class name, and contructor arguments.")
+     that consist of @('new'), a class name, and constructor arguments.")
    (xdoc::p
     "In a field access expression,
      we allow any expression as the first one.")
@@ -349,7 +349,7 @@
      provides the intended grouping of the nested expressions.
      However, having explicit parenthesized expressions in the abstract syntax
      provides more flexibility,
-     e.g. to capture parentheses that would not be needed for corectness
+     e.g. to capture parentheses that would not be needed for correctness
      but could perhaps improve clarity and readability.")
    (xdoc::p
     "The abstract syntax allows any type, not just reference types,
