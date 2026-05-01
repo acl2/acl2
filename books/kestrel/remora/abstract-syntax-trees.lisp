@@ -525,6 +525,15 @@
   :require (consp digits)
   :pred int-litp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist int-lit-list
+  :short "Fixtype of lists of integer literals."
+  :elt-type int-lit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred int-lit-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod float-lit
@@ -703,6 +712,15 @@
   (:int ((lit int-lit)))
   (:float ((lit float-lit)))
   :pred base-litp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist base-lit-list
+  :short "Fixtype of lists of base literals."
+  :elt-type base-lit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred base-lit-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
