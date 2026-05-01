@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "abstract-syntax-core")
 (include-book "abstract-syntax-derived-fixtypes")
 
 (include-book "defsort/duplicated-members" :dir :system)
@@ -45,7 +46,14 @@
 (std::defprojection shape-dim-list ((x dim-listp))
   :returns (shapes shape-listp)
   :short "Lift @(tsee shape-dim) to lists."
-  (shape-dim x))
+  (shape-dim x)
+
+  ///
+
+  (defrule shape-list-corep-of-shape-dim-list
+    (shape-list-corep (shape-dim-list dims))
+    :induct t
+    :enable abstract-syntax-corep-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
