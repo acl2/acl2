@@ -19,6 +19,7 @@
 (include-book "type-specifier-lists")
 (include-book "storage-specifier-lists")
 (include-book "validation-information")
+(include-book "translation-unit-comparison")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -84,7 +85,12 @@
      where @('<fixtype>') is the name of
      the fixtype of the abstract syntax construct,
      and where @('valid') is best read as an abbreviation of `validate'
-     rather than as the adjective `valid'."))
+     rather than as the adjective `valid'.")
+   (xdoc::p
+    "We are extending our validator
+     to try and preserve @('#include') directives when possible,
+     as in our @(see preprocessor) and @(see disambiguator).
+     The approach should be the same as in the disambiguator."))
   :order-subtopics t
   :default-parent t)
 
@@ -530,13 +536,10 @@
   (xdoc::topstring
    (xdoc::p
     "This consists of
-     a (mutable) validation table
-     and an immutable implementation environment.")
-   (xdoc::p
-    "It is analogous to @(tsee dstate),
-     and we plan to extend it in order to extend validation
-     to preserve preprocessing constructs when possible,
-     analogously to the disambiguator.")
+     a (mutable) validation table,
+     a (mutable) macro table,
+     and an immutable implementation environment.
+     It is analogous to @(tsee dstate).")
    (xdoc::p
     "Currently validation tables are defined in @(see validation-information),
      and are used to annotate certain ASTs.
@@ -545,6 +548,7 @@
      incorporating instead validation tables into validator states.
      But we start with this simpler wrapping of validation tables for now."))
   ((table valid-table)
+   (macros macro-table)
    (ienv ienv))
   :pred vstatep)
 
@@ -553,7 +557,7 @@
 (defirrelevant irr-vstate
   :short "An irrelevant validator state."
   :type vstatep
-  :body (vstate (irr-valid-table) (irr-ienv)))
+  :body (vstate (irr-valid-table) (irr-macro-table) (irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -570,6 +574,7 @@
    (xdoc::p
     "This contains one empty scope (the initial file scope)."))
   (make-vstate :table (init-valid-table filepath externals completions next-uid)
+               :macros (macro-init (ienv->dialect ienv))
                :ienv ienv)
   :inline t)
 
