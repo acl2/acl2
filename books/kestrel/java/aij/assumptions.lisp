@@ -35,7 +35,7 @@
    (xdoc::ul
     (xdoc::li
      "The ACL2 symbols for which AIJ has final static fields
-      have the pacakge names used to construct them in the Java code.
+      have the package names used to construct them in the Java code.
       AIJ constructs these symbols
       via the private constructor, not via the public builder,
       because the construction happens before defining packages:

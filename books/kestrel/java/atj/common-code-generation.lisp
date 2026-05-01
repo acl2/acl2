@@ -79,7 +79,7 @@
      via a Java character array with an initializer
      consisting of the codes of the ACL2 string.")
    (xdoc::p
-    "If the ACL2 string consists of only pritable ASCII characters
+    "If the ACL2 string consists of only printable ASCII characters
      (i.e. space and visible ASCII characters),
      we turn it into a Java string literal.
      Otherwise, we turn it into a Java array creation expression

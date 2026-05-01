@@ -73,7 +73,7 @@
    "Any underscores in a @('binary-numeral') in the grammar
     are just used for separation.
     This function returns the underlying sequence of binary digits,
-    exluding also the prefix of the @('binary-numeral').")
+    excluding also the prefix of the @('binary-numeral').")
   (b* (((when (endp dus)) nil)
        (du (car dus)))
     (bindig/uscore-case
@@ -117,7 +117,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A binary integer literal consist of
+    "A binary integer literal consists of
      (i) a lowercase or uppercase prefix,
      (ii) a sequence of binary digits and underscores
      satisfying the constraints in @(tsee bindig/uscore-list-wfp), and
