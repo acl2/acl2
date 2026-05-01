@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,7 +25,7 @@
      formalized " (xdoc::seetopic "unicode-escapes" "here") ".")
    (xdoc::p
     "There are eight escape sequences each of which
-     consist of a backslash followed by another character (e.g. @('\\b')),
+     consists of a backslash followed by another character (e.g. @('\\b')),
      and 256 octal escape sequences.
      Here we formalize them at a slightly more abstract level
      than their concrete syntactic representation in the grammar.

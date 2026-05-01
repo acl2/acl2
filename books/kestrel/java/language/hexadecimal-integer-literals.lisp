@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,7 +121,7 @@
      (i) a lowercase or uppercase prefix,
      (ii) a sequence of hexadecimal digits and underscores
      satisfying the constraints in @(tsee hexdig/uscore-list-wfp), and
-     (iii) an optional integer type suffix,")
+     (iii) an optional integer type suffix.")
    (xdoc::p
     "The set of values of this fixtype should be isomorphic to
      the set of strings (or parse trees) defined by
