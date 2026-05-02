@@ -27,7 +27,8 @@
                                        termp
                                        type
                                        typep))
-                  '(bool
+                  '(all-equalp
+                    bool
                     defmacro+
                     defxdoc+
                     enable*
