@@ -73,7 +73,10 @@
    (xdoc::p
     "A string is turned into an arary expression
      with the length of the string as its single dimension
-     and with the characters, converted to integers, as atoms."))
+     and with the characters, converted to integers, as atoms.")
+   (xdoc::p
+    "A combined application is turned into its constituent applications,
+     also based on whether type and ispace arguments are present or not."))
   :types (shapes
           ispace
           ispace-list
@@ -94,8 +97,26 @@
                   :atoms (atom-base-list
                           (base-lit-int-list
                            (char-lit-list-desugar expr.chars)))))
-   (expr :capp (prog2$ (hard-error 'desugar "TODO" nil)
-                       (expr-var "irrelevant")))
+   (expr :capp (b* ((fun (expr-desugar expr.fun))
+                    (fun-targs
+                     (type-list-option-case
+                      expr.targs
+                      :some (make-expr-tapp
+                             :fun fun
+                             :args (type-list-desugar expr.targs.val))
+                      :none fun))
+                    (fun-targs-iargs
+                     (ispace-list-option-case
+                      expr.iargs
+                      :some (make-expr-iapp
+                             :fun fun-targs
+                             :args (ispace-list-desugar expr.iargs.val))
+                      :none fun-targs))
+                    (fun-targs-iargs-args
+                     (make-expr-app
+                      :fun fun-targs-iargs
+                      :args (expr-list-desugar expr.args))))
+                 fun-targs-iargs-args))
    (expr :bracket (prog2$ (hard-error 'desugar "TODO" nil)
                           (expr-var "irrelevant")))
    (expr :let (prog2$ (hard-error 'desugar "TODO" nil)
