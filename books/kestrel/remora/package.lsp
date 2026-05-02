@@ -37,6 +37,7 @@
                     nat
                     nat-list
                     nat-list-fix
+                    nat-list-listp
                     prefixp
                     string-setp
                     string-string-map
