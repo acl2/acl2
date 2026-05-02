@@ -805,8 +805,7 @@
     :elt-type expr
     :true-listp t
     :elementp-of-nil nil
-    :pred expr-listp
-    :verbosep t) ; TODO: remove
+    :pred expr-listp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
