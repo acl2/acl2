@@ -28,7 +28,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a desugaring transformation from all ASTs to the core ASTs."))
+    "We define a desugaring transformation from all ASTs to the core ASTs.")
+   (xdoc::p
+    "In [impl], this is mostly done during parsing,
+     on the fly as ASTs as constructed.
+     There are two intentional differences
+     with our formalization of desugaring:")
+   (xdoc::ul
+    (xdoc::li
+     "[impl] also flattens frame expressions,
+      but we formalize that as a separate transformation on ASTs.")
+    (xdoc::li
+     "[impl] does not desugar @('let') expressions, but we do.
+      Presumably [impl] aims at striking a balance between
+      simplifying ASTs and not losing too much information,
+      which is why it preserves @('let') expressions.
+      Our ASTs preserve even more concrete syntax information,
+      and we normally operate on full ASTs;
+      our desugaring transformation is mainly for validation purposes,
+      so we do not need to balance simplification with preservation.")))
   :order-subtopics t
   :default-parent t)
 
@@ -76,7 +94,11 @@
      and with the characters, converted to integers, as atoms.")
    (xdoc::p
     "A combined application is turned into its constituent applications,
-     also based on whether type and ispace arguments are present or not."))
+     also based on whether type and ispace arguments are present or not.")
+   (xdoc::p
+    "A bracket expression is turned into a frame expression
+     with a single dimension that is the number of sub-expressions,
+     and the sub-expressions as arguments."))
   :types (shapes
           ispace
           ispace-list
@@ -117,8 +139,9 @@
                       :fun fun-targs-iargs
                       :args (expr-list-desugar expr.args))))
                  fun-targs-iargs-args))
-   (expr :bracket (prog2$ (hard-error 'desugar "TODO" nil)
-                          (expr-var "irrelevant")))
+   (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
+                    (make-expr-frame :dims (list (len exprs))
+                                     :exprs exprs)))
    (expr :let (prog2$ (hard-error 'desugar "TODO" nil)
                       (expr-var "irrelevant")))))
 
