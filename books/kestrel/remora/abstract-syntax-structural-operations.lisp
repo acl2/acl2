@@ -14,6 +14,7 @@
 (include-book "abstract-syntax-derived-fixtypes")
 
 (include-book "defsort/duplicated-members" :dir :system)
+(include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 
 (local (include-book "std/typed-lists/string-listp" :dir :system))
@@ -33,6 +34,22 @@
      At least some of these could be generated from the fixtype definitions."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-list-case-array (x)
+  :short "Check if all the expressions in a list
+          are in the @(':array') summand."
+  :guard (expr-listp x)
+  (expr-case x :array))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-list-case-frame (x)
+  :short "Check if all the expressions in a list
+          are in the @(':frame') summand."
+  :guard (expr-listp x)
+  (expr-case x :frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,6 +94,38 @@
     :enable abstract-syntax-corep-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expr-array-list->dims ((x expr-listp))
+  :guard (expr-list-case-array x)
+  :returns (dimss nat-list-listp)
+  :short "Lift @(tsee expr-array->dims) to lists."
+  (expr-array->dims x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expr-array-list->atoms ((x expr-listp))
+  :guard (expr-list-case-array x)
+  :returns (atomss atom-list-listp)
+  :short "Lift @(tsee expr-array->atoms) to lists."
+  (expr-array->atoms x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expr-frame-list->dims ((x expr-listp))
+  :guard (expr-list-case-frame x)
+  :returns (dimss nat-list-listp)
+  :short "Lift @(tsee expr-frame->dims) to lists."
+  (expr-frame->dims x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expr-frame-list->exprs ((x expr-listp))
+  :guard (expr-list-case-frame x)
+  :returns (exprss expr-list-listp)
+  :short "Lift @(tsee expr-array->exprs) to lists."
+  (expr-frame->exprs x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection var+type-list->var ((x var+type-listp))
   :returns (strings string-listp)
@@ -145,3 +194,19 @@
   :returns (names string-listp)
   :short "Lift @(tsee type-var->name) to lists."
   (type-var->name x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-append-all ((exprss expr-list-listp))
+  :returns (exprs expr-listp)
+  (cond ((endp exprss) nil)
+        (t (append (expr-list-fix (car exprss))
+                   (expr-append-all (cdr exprss))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom-append-all ((atomss atom-list-listp))
+  :returns (atoms atom-listp)
+  (cond ((endp atomss) nil)
+        (t (append (atom-list-fix (car atomss))
+                   (atom-append-all (cdr atomss))))))
