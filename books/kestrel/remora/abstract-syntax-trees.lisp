@@ -906,6 +906,24 @@
     :elementp-of-nil nil
     :pred bind-listp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist expr-list-list
+  :short "Fixtype of lists of lists of expressions."
+  :elt-type expr-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred expr-list-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist atom-list-list
+  :short "Fixtype of lists of lists of atoms."
+  :elt-type atom-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred atom-list-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod prog
