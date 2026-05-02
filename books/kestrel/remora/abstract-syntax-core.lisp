@@ -61,11 +61,11 @@
      "Bracket expressions,
       because they are expressible as array expressions.")
     (xdoc::li
-     "Let expressions,
+     "@('let') expressions,
       because they are expressible as applications of lambdas.")
     (xdoc::li
      "Bindings,
-      because they are only used in let expressions.")))
+      because they are only used in @('let') expressions.")))
   :types (shapes
           ispace
           ispace-list
