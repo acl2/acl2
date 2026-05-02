@@ -28,7 +28,7 @@
     "We characterize the subset of the ASTs
      that form the core of the language.
      This is mostly based on [thesis],
-     but some choices are discussed in the documentation."))
+     but some choices are discussed in the documentation below."))
   :order-subtopics t
   :default-parent t)
 
@@ -59,18 +59,57 @@
       because they are expressible as simpler applications.")
     (xdoc::li
      "Bracket expressions,
-      because they are expressible as array expressions.")
-    (xdoc::li
-     "@('let') expressions,
-      because they are expressible as applications of lambdas.")
-    (xdoc::li
-     "Bindings,
-      because they are only used in @('let') expressions.")))
+      because they are expressible as array expressions."))
+   (xdoc::p
+    "Perhaps surprisingly, we do not exclude @('let') expressions,
+     although it seems that they should be reducible to
+     applications of lambda abstractions.
+     Abstractly, @($\\mathbf{let}\\ x = a\\ \\mathbf{in}\\ b$)
+     is equivalent to @($(\\lambda x.\\ b)\\ a$).
+     However, if we attempt to perform that transformation
+     on Remora's @('let') expressions,
+     we run into the issue that,
+     for the function bindings @(':fun'), @(':tfun'), and @(':ifun'),
+     the result type is optional (see @(tsee bind)).
+     This means that, if we attempt to turn those bindings
+     into associations of lambda expressions to expression variables,
+     we may not know the type of those expression variables,
+     which is required in the outer lambda expression
+     that we are trying to generate by desugaring.")
+   (xdoc::p
+    "For example, given")
+   (xdoc::codeblock
+    "(let ((fun (f (x Int)) <f-body>)) <let-body>)")
+   (xdoc::p
+    "which omits the optional result type of @('f'),
+     first we need to turn the binding into a value one
+     (because lambda expressions do not have ``nested'' functions")
+   (xdoc::codeblock
+    "(let ((val f (fn ((x Int)) <f-body>))) <let-body>)")
+   (xdoc::p
+    "and then we can attempt to produce the application")
+   (xdoc::codeblock
+    "((fn ((f ?)) <let-body>) (fn ((x Int)) <f-body>))")
+   (xdoc::p
+    "but, as signified by the @('?'), which is a required type,
+     we do not know which function type to use:
+     we have its (only) input type @('Int'), but not its output type.
+     This can be known via type checking,
+     but the desugaring transformation is just a syntactic one.")
+   (xdoc::p
+    "We could at least exclude the combined function bindings from the core
+     (i.e. the @(':cfun') summand of @(tsee bind)),
+     but we defer this whole issue for now.
+     The Remora syntax is likely to evolve
+     towards requiring fewer type annotations,
+     e.g. in lambda expressions,
+     which could resolve the issue described above."))
   :types (shapes
           ispace
           ispace-list
           ispace-list-option
           types
+          type-option
           var+type
           var+type-list
           exprs/atoms/binds
@@ -84,9 +123,7 @@
    (type :bracket nil)
    (expr :string nil)
    (expr :capp nil)
-   (expr :bracket nil)
-   (expr :let nil)
-   (bind nil)))
+   (expr :bracket nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

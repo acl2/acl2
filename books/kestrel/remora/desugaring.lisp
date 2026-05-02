@@ -32,21 +32,8 @@
    (xdoc::p
     "In [impl], this is mostly done during parsing,
      on the fly as ASTs as constructed.
-     There are two intentional differences
-     with our formalization of desugaring:")
-   (xdoc::ul
-    (xdoc::li
-     "[impl] also flattens frame expressions,
-      but we formalize that as a separate transformation on ASTs.")
-    (xdoc::li
-     "[impl] does not desugar @('let') expressions, but we do.
-      Presumably [impl] aims at striking a balance between
-      simplifying ASTs and not losing too much information,
-      which is why it preserves @('let') expressions.
-      Our ASTs preserve even more concrete syntax information,
-      and we normally operate on full ASTs;
-      our desugaring transformation is mainly for validation purposes,
-      so we do not need to balance simplification with preservation.")))
+     While [impl] also flattens frame expressions at the same time,
+     we formalize that as a separate transformation on ASTs."))
   :order-subtopics t
   :default-parent t)
 
@@ -104,6 +91,7 @@
           ispace-list
           ispace-list-option
           types
+          type-option
           var+type
           var+type-list
           exprs/atoms/binds
@@ -141,9 +129,7 @@
                  fun-targs-iargs-args))
    (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
                     (make-expr-frame :dims (list (len exprs))
-                                     :exprs exprs)))
-   (expr :let (prog2$ (hard-error 'desugar "TODO" nil)
-                      (expr-var "irrelevant")))))
+                                     :exprs exprs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -185,6 +171,11 @@
     :mutual-recursion types-desugar
     :hints (("Goal" :in-theory (enable type-desugar type-list-desugar))))
 
+  (defret type-option-corep-of-type-option-desugar
+    (type-option-corep fty::result)
+    :fn type-option-desugar
+    :hints (("Goal" :in-theory (enable type-option-desugar))))
+
   (defret var+type-corep-of-var+type-desugar
     (var+type-corep fty::result)
     :fn var+type-desugar
@@ -208,12 +199,19 @@
     (defret atom-list-corep-of-atom-desugar
       (atom-list-corep fty::result)
       :fn atom-list-desugar)
-    :skip-others t
+    (defret bind-corep-of-bind-desugar
+      (bind-corep fty::result)
+      :fn bind-desugar)
+    (defret bind-list-corep-of-bind-list-desugar
+      (bind-list-corep fty::result)
+      :fn bind-list-desugar)
     :mutual-recursion exprs/atoms/binds-desugar
     :hints (("Goal" :in-theory (enable expr-desugar
                                        expr-list-desugar
                                        atom-desugar
-                                       atom-list-desugar))))
+                                       atom-list-desugar
+                                       bind-desugar
+                                       bind-list-desugar))))
 
   (defret prog-corep-of-prog-desugar
     (prog-corep fty::result)
