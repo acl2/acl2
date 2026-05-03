@@ -51,16 +51,6 @@
 
 (in-theory (disable (:e make-into-array-with-len))) ;blew up
 
-(defthm dimensions-of-make-into-array-with-len
-  (equal (dimensions name1 (make-into-array-with-len name2 alist len))
-         (list len))
-  :hints (("Goal" :in-theory (enable make-into-array-with-len))))
-
-(defthm alen1-of-make-into-array-with-len
-  (equal (alen1 name1 (make-into-array-with-len name2 alist len))
-         len)
-  :hints (("Goal" :in-theory (enable make-into-array-with-len))))
-
 (defthm array1p-of-make-into-array-with-len
   (implies (and (symbolp name)
                 (bounded-integer-alistp alist len)
@@ -73,6 +63,16 @@
   (equal (default name1 (make-into-array-with-len name2 alist len))
          nil)
   :hints (("Goal" :in-theory (enable array1p compress1 make-into-array-with-len))))
+
+(defthm dimensions-of-make-into-array-with-len
+  (equal (dimensions name1 (make-into-array-with-len name2 alist len))
+         (list len))
+  :hints (("Goal" :in-theory (enable make-into-array-with-len))))
+
+(defthm alen1-of-make-into-array-with-len
+  (equal (alen1 name1 (make-into-array-with-len name2 alist len))
+         len)
+  :hints (("Goal" :in-theory (enable make-into-array-with-len))))
 
 (defthm aref1-of-make-into-array-with-len
   (implies (and (bounded-natp-alistp alist len)

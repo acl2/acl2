@@ -52,6 +52,11 @@
               (symbolp name)))
   :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
 
+(defthm default-of-make-empty-array-with-default
+  (equal (default name (make-empty-array-with-default name len default))
+         default)
+  :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
+
 (defthm dimensions-of-make-empty-array-with-default
   (equal (dimensions name (make-empty-array-with-default name len default))
          (list len))
@@ -60,11 +65,6 @@
 (defthm alen1-of-make-empty-array-with-default
   (equal (alen1 name (make-empty-array-with-default name len default))
          len)
-  :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
-
-(defthm default-of-make-empty-array-with-default
-  (equal (default name (make-empty-array-with-default name len default))
-         default)
   :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
 
 (defthm aref1-of-make-empty-array-with-default
@@ -94,6 +94,12 @@
               (symbolp name)))
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
+;; but see make-empty-array-with-default
+(defthm default-of-make-empty-array
+  (equal (default name (make-empty-array name len))
+         nil)
+  :hints (("Goal" :in-theory (enable make-empty-array))))
+
 (defthm dimensions-of-make-empty-array
   (equal (dimensions name (make-empty-array name len))
          (list len))
@@ -102,12 +108,6 @@
 (defthm alen1-of-make-empty-array
   (equal (alen1 name (make-empty-array name len))
          len)
-  :hints (("Goal" :in-theory (enable make-empty-array))))
-
-;; but see make-empty-array-with-default
-(defthm default-of-make-empty-array
-  (equal (default name (make-empty-array name len))
-         nil)
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 (defthm aref1-of-make-empty-array
