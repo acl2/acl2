@@ -21,21 +21,21 @@
 (include-book "alen1")
 (local (include-book "array1p"))
 (local (include-book "compress1"))
-(local (include-book "header"))
+;; (local (include-book "header"))
 
-;; Make an array where every element is the default.
+;; Makes a new 1-dimensional array where every element is the default.
 ;; TODO: Rename this, since "empty" here doesn't mean an array of length 0 but rather that the alist is empty.
 ;according to array1p, the maximum-length field of an array can be at most (array-maximum-length-bound)
 ;and the length (first dimension) must be strictly smaller than the :maximum-length (why strictly?)
-;; Note that array1p disallows arrays of size 0 (why?), so this function does also.
-(defund make-empty-array-with-default (name size default)
+;; Note that array1p disallows arrays of len 0 (why?), so this function does also.
+(defund make-empty-array-with-default (name len default)
   (declare (type symbol name)
-           (type (integer 1 1152921504606846974) size)
+           (type (integer 1 1152921504606846974) len) ; at most *max-1d-array-length*
            (xargs :guard-hints (("Goal" :in-theory (enable array1p)))))
   (compress1 name
-             (acons :header (list :dimensions (list size)
-                                  ;;array1p requires the :maximum-length to be at most *MAXIMUM-POSITIVE-32-BIT-INTEGER*
-                                  :maximum-length (min (* 2 size) *max-array-maximum-length* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
+             (acons :header (list :dimensions (list len)
+                                  ;;array1p requires the :maximum-length to be at most (array-maximum-length-bound)
+                                  :maximum-length (min (* 2 len) *max-array-maximum-length* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
                                                        )
                                   :default default
                                   ;; no :order given here means the order is effectively <
@@ -55,42 +55,35 @@
 (defthm dimensions-of-make-empty-array-with-default
   (equal (dimensions array-name (make-empty-array-with-default array-name len default))
          (list len))
-  :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
+  :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
 
 (defthm alen1-of-make-empty-array-with-default
   (equal (alen1 array-name (make-empty-array-with-default array-name len default))
          len)
-  :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
+  :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
 
 (defthm default-of-make-empty-array-with-default
-  (equal (default array-name (make-empty-array-with-default array-name size default))
+  (equal (default array-name (make-empty-array-with-default array-name len default))
          default)
   :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
 
 (defthm aref1-of-make-empty-array-with-default
-  (implies (and ;(symbolp array-name)
-                (natp index) ;gen?
-;                (< index len) ;we get nil if the index is out of bounds
+  (implies (and (natp index) ;gen?
+                ;; (< index len) ;we get the default if the index is out of bounds
                 (posp len)
-                (<= len *max-1d-array-length*)
-                )
+                (<= len *max-1d-array-length*))
            (equal (aref1 array-name (make-empty-array-with-default array-name2 len default) index)
                   default))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :do-not-induct t
-           :in-theory (enable array1p ;compress1
-                              array-order
-                              make-empty-array-with-default
-                              aref1))))
+  :hints (("Goal" :in-theory (enable array1p make-empty-array-with-default))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Make an array with SIZE elements (and name NAME), where every index has the value nil.
-(defund make-empty-array (name size)
+;; Make an array with LEN elements (and name NAME), where every index has the value nil.
+(defund make-empty-array (name len)
   (declare (type symbol name)
-           (type (integer 1 1152921504606846974) size)
-           (xargs :guard-hints (("Goal" :in-theory (enable array1p len)))))
-  (make-empty-array-with-default name size nil))
+           (type (integer 1 1152921504606846974) len) ; at most *max-1d-array-length*
+           )
+  (make-empty-array-with-default name len nil))
 
 (in-theory (disable (:e make-empty-array))) ;; Avoid exposing a constant involving a :header
 
@@ -111,23 +104,17 @@
          len)
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
+;; but see make-empty-array-with-default
 (defthm default-of-make-empty-array
-  (equal (default array-name (make-empty-array array-name size))
+  (equal (default array-name (make-empty-array array-name len))
          nil)
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 (defthm aref1-of-make-empty-array
-  (implies (and ;(symbolp array-name)
-                (natp index) ;gen?
-;                (< index len) ;we get nil if the index is out of bounds
+  (implies (and (natp index) ;gen?
+                ;; (< index len) ;we get nil if the index is out of bounds
                 (posp len)
-                (<= len *max-1d-array-length*)
-                )
+                (<= len *max-1d-array-length*))
            (equal (aref1 array-name (make-empty-array array-name2 len) index)
                   nil))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :do-not-induct t
-           :in-theory (enable array1p ;compress1
-                              array-order
-                              make-empty-array
-                              aref1))))
+  :hints (("Goal" :in-theory (enable make-empty-array))))
