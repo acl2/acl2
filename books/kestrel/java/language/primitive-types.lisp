@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -156,7 +156,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is denoted (for all types) @($<1$) in [JLS14].")
+    "This is denoted (for all types) @($<$) in [JLS14].")
    (xdoc::p
     "It is the transitive closure of
      the direct subtype relation @(tsee primitive-type-<1)."))
