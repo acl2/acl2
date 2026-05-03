@@ -43,8 +43,8 @@
   :returns (remora-files string-listp)
   :short "Filter a list of file names to those ending in @('.remora')."
   (cond ((endp files) nil)
-        ((str::strsuffixp ".remora" (acl2::str-fix (car files)))
-         (cons (acl2::str-fix (car files))
+        ((str::strsuffixp ".remora" (str-fix (car files)))
+         (cons (str-fix (car files))
                (keep-remora-files (cdr files))))
         (t (keep-remora-files (cdr files)))))
 
@@ -72,7 +72,7 @@
      @('(filename . reserr)')."))
   (b* (((when (endp files))
         (mv (lnfix n-pass) (lnfix n-fail) (rev errors) state))
-       (file (acl2::str-fix (car files)))
+       (file (str-fix (car files)))
        (path (oslib::catpath directory file))
        ((mv ast state) (parse-from-file path state))
        ((when (reserrp ast))
