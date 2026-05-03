@@ -12,9 +12,11 @@
 
 (include-book "abstract-syntax-structural-operations")
 
+(local (include-book "std/typed-lists/nat-listp" :dir :system))
+
 (acl2::controlled-configuration)
 
-(local (include-book "std/typed-lists/nat-listp" :dir :system))
+(local (in-theory (enable* abstract-syntax-corep-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -165,6 +167,26 @@
                                     true-list-listp-when-expr-list-listp
                                     true-list-listp-when-atom-list-listp)))
 
+  :flag-local nil
+
   ///
 
   (fty::deffixequiv-mutual flatten-frames-in-exprs))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection corep-of-flatten-frames
+  :short "Frame flattening core ASTs yields core ASTs."
+
+  (defret-mutual corep-of-flatten-frames
+    (defret expr-corep-of-flatten-frame-in-expr
+      (expr-corep flat-expr)
+      :hyp (expr-corep expr)
+      :fn flatten-frames-in-expr)
+    (defret expr-list-corep-of-flatten-frames-in-expr-list
+      (expr-list-corep flat-exprs)
+      :hyp (expr-list-corep exprs)
+      :fn flatten-frames-in-expr-list)
+    :mutual-recursion flatten-frames-in-exprs
+    :hints (("Goal" :in-theory (enable flatten-frames-in-expr
+                                       flatten-frames-in-expr-list)))))
