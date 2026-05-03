@@ -23,17 +23,15 @@
 (local (include-book "dimensions"))
 (local (include-book "compress1"))
 
-;; Makes the ALIST, whose keys must be naturals, into an array named
-;; NAME, which will have length LEN.  LEN must exceed the largest key in
-;; ALIST.  If LEN is greater than one more than the largest key, the resulting array will
-;; contain some slack space (empty slots) for the array to grow.
+;; Makes the ALIST, whose keys must all be naturals less than LEN, into an
+;; array named NAME, which will have length LEN.  If LEN is greater than one
+;; more than the largest key, the resulting array will contain some slack space
+;; (empty slots) for the array to grow.
 ;rename make-into-array-with-slack?
-;todo: add an option to reuse an existing array if large enough?
-;todo: adapt this to use max-key like the one above?
 ;todo: take the default value as an option
 (defund make-into-array-with-len (name alist len)
-  (declare (type (integer 1 1152921504606846974) len)
-           (type symbol name)
+  (declare (type symbol name)
+           (type (integer 1 1152921504606846974) len)
            (xargs :guard (and (true-listp alist)
                               (bounded-natp-alistp alist len) ;todo: change this to imply true-listp
                               )

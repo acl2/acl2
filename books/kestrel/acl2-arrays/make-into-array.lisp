@@ -21,7 +21,8 @@
 
 ;Consider adding an option to reuse an existing array if large enough (well, compress1 now does that internally)?
 ; The length of the resulting array is one more than the max key in the alist, unless the alist is empty, in which case the length is 1.
-; TODO: Add an option for slack space
+; TODO: Add an option for slack space (well, see make-into-array-with-len).
+;; NOTE: If the len is known, calling make-into-array-with-len will be faster, since that avoids the call to max-key.
 (defund make-into-array (name alist)
   (declare (xargs :guard (and (true-listp alist)
                               (bounded-natp-alistp alist *max-1d-array-length*))
