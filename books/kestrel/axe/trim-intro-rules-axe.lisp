@@ -131,36 +131,28 @@
 
 (defthmd bvcat-trim-arg2-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe highsize highval :non-arithmetic dag-array))
-                (natp highsize)
-                ;; (natp lowsize)
-                )
+                (natp highsize))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize (trim highsize highval) lowsize lowval)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvcat-trim-arg4-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe lowsize lowval :non-arithmetic dag-array))
-                ;; (natp highsize)
-                (natp lowsize)
-                )
+                (natp lowsize))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize highval lowsize (trim lowsize lowval))))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvcat-trim-arg2-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe highsize highval :all dag-array))
-                (natp highsize)
-                ;; (natp lowsize)
-                )
+                (natp highsize))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize (trim highsize highval) lowsize lowval)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvcat-trim-arg4-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe lowsize lowval :all dag-array))
-                ;; (natp highsize)
-                (natp lowsize)
-                )
+                (natp lowsize))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize highval lowsize (trim lowsize lowval))))
   :hints (("Goal" :in-theory (enable trim))))
