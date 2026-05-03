@@ -983,7 +983,7 @@
                                                  (merge-embedded-dag-into-dag-for-axe-prover
                                                   (reverse embedded-dag)
                                                   renaming-array-for-merge-embedded-dag-name
-                                                  (make-empty-array renaming-array-for-merge-embedded-dag-name embedded-dag-len) ;associates nodenums in the embedded dag with the nodenums (or quoteps) they rewrote to in the main dag
+                                                  (new-array1 renaming-array-for-merge-embedded-dag-name embedded-dag-len) ;associates nodenums in the embedded dag with the nodenums (or quoteps) they rewrote to in the main dag
                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                   (pairlis$ dag-vars var-nodenums-or-quoteps)
                                                   rule-alist
@@ -1305,7 +1305,7 @@
          ;;fixme would it make sense to memoize in this (moot if we call the new rewriter)?:
          (rewrite-nodes-for-axe-prover (list nodenum)
                                        result-array-name
-                                       (make-empty-array result-array-name dag-len) ;fixme dag-len here is overkill? use (+ 1 nodenum)?
+                                       (new-array1 result-array-name dag-len) ;fixme dag-len here is overkill? use (+ 1 nodenum)?
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        nodenums-to-assume-false
                                        rule-alist
@@ -1978,7 +1978,7 @@
             ;;these is at least one context node:
             (add-array-nodes-to-dag 0 max-context-nodenum context-array-name context-array context-array-len
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                    (make-empty-array 'renaming-array (+ 1 max-context-nodenum)))))
+                                    (new-array1 'renaming-array (+ 1 max-context-nodenum)))))
          ((when erp) (mv erp :failed state))
          ;;Fix up the context to use the new node numbers:
          (context (if no-context-nodesp context (fixup-non-false-context context 'renaming-array renaming-array)))

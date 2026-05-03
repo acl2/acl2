@@ -1,7 +1,7 @@
 ; Computing the size of a DAG (if it was a term)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -111,7 +111,7 @@
                                                dag-array-name
                                                dag-array
                                                size-array-name
-                                               (make-empty-array size-array-name dag-len)))
+                                               (new-array1 size-array-name dag-len)))
 
 (defthm array1p-of-make-size-array-for-dag-array-with-name
   (implies (and (posp dag-len)

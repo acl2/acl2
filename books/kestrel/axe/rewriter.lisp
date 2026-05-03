@@ -707,7 +707,7 @@
                               (merge-embedded-dag-into-dag
                                (reverse embedded-dag)
                                renaming-array-for-merge-embedded-dag-name
-                               (make-empty-array renaming-array-for-merge-embedded-dag-name embedded-dag-len)
+                               (new-array1 renaming-array-for-merge-embedded-dag-name embedded-dag-len)
                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                (pairlis$ embedded-dag-vars var-nodenums-or-quoteps)
                                rewriter-rule-alist
@@ -1289,12 +1289,12 @@
        ;; Preload the external contexts into the dag-array (node numbers remain the same, so we can reuse the 3 dag indices):
        (max-external-context-nodenum (+ -1 external-context-array-len))
        (initial-array-size (+ original-dag-len external-context-array-len slack-amount))
-       (dag-array (make-empty-array 'dag-array initial-array-size))
+       (dag-array (new-array1 'dag-array initial-array-size))
        ;; Copy the context nodes into the newly created dag-array:
        (dag-array (copy-array-vals max-external-context-nodenum external-context-array-name external-context-array 'dag-array dag-array)) ;make a version that also updates the aux data structures? maybe add-array-nodes-to-dag? for speed, make sure we take advantage of the fact that there are no dups in the context-array?
        (dag-len external-context-array-len)
        ;; Also copy the aux data structures for the context nodes:
-       (dag-parent-array (make-empty-array 'dag-parent-array initial-array-size))
+       (dag-parent-array (new-array1 'dag-parent-array initial-array-size))
        (dag-parent-array (copy-array-vals max-external-context-nodenum external-context-parent-array-name external-context-parent-array 'dag-parent-array dag-parent-array))
        (dag-constant-alist external-context-dag-constant-alist) ;inline?
        (dag-variable-alist (make-fast-alist external-context-dag-variable-alist)) ; to avoid stealing the hash-table of external-context-dag-variable-alist, which is a fast alist
@@ -1309,7 +1309,7 @@
        ((mv erp dag-array & & & & renaming-array hit-counts tries limits state) ;use the ignored values?!
         (add-simplified-dag-to-dag-array (reverse dag) ;;we'll simplify nodes from the bottom-up
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                         (make-empty-array 'renaming-array original-dag-len)
+                                         (new-array1 'renaming-array original-dag-len)
                                          rewriter-rule-alist
                                          refined-assumption-alist ;mentions nodenums in external-context-array; those nodes have the same numbers in dag-array
                                          equality-assumption-alist
@@ -1369,7 +1369,7 @@
              ;; Add nodes that support the external context:
              (dag-len-without-assumption-nodes dag-len)
              ;; will map external-context nodes to nodes in dag-array:
-             (renaming-array (make-empty-array 'renaming-array (max 1 (+ 1 max-external-context-nodenum)))) ; avoids 0-length array
+             (renaming-array (new-array1 'renaming-array (max 1 (+ 1 max-external-context-nodenum)))) ; avoids 0-length array
              ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
               (add-array-nodes-to-dag 0 max-external-context-nodenum
                                       external-context-array-name external-context-array external-context-array-len
@@ -1389,7 +1389,7 @@
              ((mv erp dag-array & & & & renaming-array hit-counts tries limits state) ;use the ignored things ?!
               (add-simplified-dag-to-dag-array (reverse dag)
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                               (make-empty-array 'renaming-array dag-len-without-assumption-nodes) ;reuse this? does the default value need to be in every slot?
+                                               (new-array1 'renaming-array dag-len-without-assumption-nodes) ;reuse this? does the default value need to be in every slot?
                                                rewriter-rule-alist
                                                refined-assumption-alist ; now mentions nodenums in dag-array
                                                equality-assumption-alist ; pairs of terms, so no nodenums to fix up (todo: optimize the representation?)
@@ -1774,7 +1774,7 @@
          ;; copy context-array to new-context-array (fixme abstract out the array copying pattern)
          (new-context-array-name 'context-array-for-simplify-with-rule-sets) ;will there ever be several of these nested?
          (new-context-array-len (if context context-array-len 0))
-         (new-context-array (make-empty-array new-context-array-name (max 1 (+ new-context-array-len slack-amount)))) ;the max is new
+         (new-context-array (new-array1 new-context-array-name (max 1 (+ new-context-array-len slack-amount)))) ;the max is new
          (new-context-array (if (and context ;skip the test and just pass -1 to copy-array-vals?
                                      ;;(not (eql 0 context-array-len)) ;do we need this?
                                      )

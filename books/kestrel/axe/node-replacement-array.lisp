@@ -1048,7 +1048,7 @@
                               (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (symbol-listp known-booleans))))
   (let ((alist (term-replacement-alist-for-assumptions assumptions known-booleans nil))
-        (node-replacement-array (make-empty-array 'node-replacement-array 1))
+        (node-replacement-array (new-array1 'node-replacement-array 1))
         (node-replacement-count 0))
     (update-node-replacement-array-and-extend-dag-for-alist alist
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist

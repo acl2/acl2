@@ -6692,7 +6692,7 @@
 ;; (defund fns-that-support-node (nodenum dag-array-name dag-array)
 ;;   (declare (xargs :guard (and (natp nodenum)
 ;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
-;;   (let* ((fns-array (make-empty-array 'fns-array (+ 1 nodenum)))
+;;   (let* ((fns-array (new-array1 'fns-array (+ 1 nodenum)))
 ;;          ;;this makes the fns-array for all nodes.  could just do it for supporters, but that might be slower if most nodes are supporters
 ;;          (fns-array (make-fns-array-for-nodes 0 nodenum dag-array-name dag-array fns-array)))
 ;;     (aref1 'fns-array fns-array nodenum)))
@@ -7514,7 +7514,7 @@
                   :stobjs state))
   (non-tagged-supporters-with-rec-fns-to-handle-aux (list nodenum) miter-array-name miter-array tag-array-name tag-array
                                                     'done-array-name
-                                                    (make-empty-array 'done-array-name (+ 1 nodenum))
+                                                    (new-array1 'done-array-name (+ 1 nodenum))
                                                     nil
                                                     state))
 
@@ -7600,7 +7600,7 @@
     (let* ((test-case (first test-cases))
            (result-array (eval-dag-with-axe-evaluator (list nodenum) dag-array-name dag-array test-case
                                                        'result-array-for-choosing-a-miter-splitter
-                                                       (make-empty-array 'result-array-for-choosing-a-miter-splitter (+ 1 nodenum)) ;computed values are wrapped in cons
+                                                       (new-array1 'result-array-for-choosing-a-miter-splitter (+ 1 nodenum)) ;computed values are wrapped in cons
                                                        interpreted-function-alist
                                                        0 ;array-depth
                                                        ))
@@ -8010,7 +8010,7 @@
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               (var-type-alistp var-type-alist))))
-  (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (make-empty-array 'done-array-temp (+ 1 nodenum)) var-type-alist))
+  (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (new-array1 'done-array-temp (+ 1 nodenum)) var-type-alist))
 
 ;; Checks whether smaller-nodenum and larger-nodenum and all of their supporters are pure.
 ;; May be faster than doing the 2 checks separately.
@@ -8020,7 +8020,7 @@
                               (< smaller-nodenum larger-nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 larger-nodenum))
                               (var-type-alistp var-type-alist))))
-  (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (+ 1 larger-nodenum) (make-empty-array 'done-array-temp (+ 1 larger-nodenum)) var-type-alist))
+  (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (+ 1 larger-nodenum) (new-array1 'done-array-temp (+ 1 larger-nodenum)) var-type-alist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12037,7 +12037,7 @@
                                              ))
                  ((when erp) (mv erp miter-array miter-len))
                  ;;rebuild all the nodes above nodenum:
-                 (renaming-array (make-empty-array 'renaming-array original-miter-len))
+                 (renaming-array (new-array1 'renaming-array original-miter-len))
                  (renaming-array (aset1-safe 'renaming-array renaming-array nodenum nodenum-or-quotep))
                  ((mv erp miter-array & & & & ;; miter-len miter-parent-array miter-constant-alist miter-variable-alist
                       renaming-array)
@@ -12140,7 +12140,7 @@
        ;; ;;                                        (get-context-assumptions-for-nodenum nodenum miter-array miter-len)))
 
        ;; ;;ffixme eventually pass the miter-array to the rewriter (but don't overwrite any existing nodes), but for now the rewriter can only work on an array named 'dag-array
-       ;; (dag-array (make-empty-array 'dag-array miter-len ;(+ 1 nodenum) using this caused a problem in make-dag-indices (in simplify-tree-and-add-to-dag-wrapper??) ffffixme
+       ;; (dag-array (new-array1 'dag-array miter-len ;(+ 1 nodenum) using this caused a problem in make-dag-indices (in simplify-tree-and-add-to-dag-wrapper??) ffffixme
        ;;                              ))
        ;; (dag-array (copy-array-vals nodenum miter-array-name miter-array 'dag-array dag-array)) ;fixme only copy the supporting values?  we basically already computed the supporters when we did the purity check
        ;; ((mv erp miter-nodenum-or-quotep dag-array
@@ -14678,7 +14678,7 @@
         ;;fixme should we do this outside this function? might be expensive!
         ;;ffixme eventually pass the miter-array to the rewriter?? (be careful not to override existing nodes), but for now it has the wrong name
         ;;(dag-len (+ 1 original-nodenum2)) ;only include nodes 0...original-nodenum2
-        ;;(dag-array (make-empty-array 'dag-array dag-len)) ;give it some extra space to grow?
+        ;;(dag-array (new-array1 'dag-array dag-len)) ;give it some extra space to grow?
         ;;(dag-array (copy-array-vals original-nodenum2 miter-array-name miter-array 'dag-array dag-array))
         ;;(dag-lst (dag-array-to-dag-lst2 miter-array-name miter-array original-nodenum2)) ;drop this conversion?
         ;;add the equality:
@@ -16094,7 +16094,7 @@
          (mv :false-test-case :dit-nothing miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state))
         (sweep-array-name 'sweep-array) ;ffixme use a different name, according to the miter depth?
         ;; Set up the tags that are used to choose which node or node pair to handle next:
-        (sweep-array (make-empty-array sweep-array-name miter-len))
+        (sweep-array (new-array1 sweep-array-name miter-len))
         ;;mark all nodes that are probably constants:
         ;;the tags are the constant values themselves (quoted)
         (sweep-array (prog2$ (and print (eq :verbose print) (cw "Identifying and tagging probably-constant nodes...~%"))
@@ -18846,7 +18846,7 @@
 ;not quite sure what to do here, so i'm trying this:
 ;FIXME think this through! look for a node set with at least one ready node and where the other node would be ready except it depends on the first node (node sets are just pairs now, right?)
 ;; (defun find-nodenum-to-replace-when-no-safe-sets (len sweep-array dag-array-name dag-array)
-;;   (let* ((size-array (make-empty-array 'size-array len))
+;;   (let* ((size-array (new-array1 'size-array len))
 ;;          (size-array (add-node-sizes-to-size-array 0 len dag-array-name dag-array size-array))
 ;;          ;;bozo on the big number below
 ;;          (nodenum (get-nodenum-for-minimum-replacement-set 0 len 100000000000000000000000000 'error-didnt-find-any-nodenums-to-replace sweep-array size-array)))
@@ -19334,7 +19334,7 @@
 ;;   (declare (xargs :mode :program
 ;;                   :stobjs state))
 ;;   (let* ((dag-len (+ 1 max-nodenum)) ;length of the relevant portion of the dag
-;;          (dag-array (make-empty-array 'dag-array (+ 100 dag-len))) ;gives it a little space to grow
+;;          (dag-array (new-array1 'dag-array (+ 100 dag-len))) ;gives it a little space to grow
 ;;          (dag-array (copy-array-vals max-nodenum miter-array-name miter-array 'dag-array dag-array)) ;could copy only supporting nodes but that would change the numbering..
 ;;          (negated-assumptions (cons-onto-all 'not (enlist-all assumptions))) ;make a negate-all? see negate-terms
 ;; ;using the runes from the table here is new:
@@ -19431,11 +19431,11 @@
 ;;              (+ -1 dag-len)
 ;;              dag-array
 ;;              ;; var-type-alist
-;;              (aset1 'needed-for-node1-tag-array (make-empty-array 'needed-for-node1-tag-array dag-len) nodenum1 t)
-;;              (aset1 'needed-for-node2-tag-array (make-empty-array 'needed-for-node2-tag-array dag-len) nodenum2 t)
-;;              ;; (make-empty-array 'replacement-tag-array dag-len)
+;;              (aset1 'needed-for-node1-tag-array (new-array1 'needed-for-node1-tag-array dag-len) nodenum1 t)
+;;              (aset1 'needed-for-node2-tag-array (new-array1 'needed-for-node2-tag-array dag-len) nodenum2 t)
+;;              ;; (new-array1 'replacement-tag-array dag-len)
 ;;              ;; we will translate the top node (the equality we just put in temporarily)
-;;              (aset1 'translation-tag-array (make-empty-array 'translation-tag-array dag-len) (+ -1 dag-len) t)
+;;              (aset1 'translation-tag-array (new-array1 'translation-tag-array dag-len) (+ -1 dag-len) t)
 
 ;;              0 ;we don't count the top node, since it doesn't have a set of parens, which is really what we're counting here...
 ;;              )
@@ -19525,7 +19525,7 @@
 ;;                                     dag-array
 ;;                                     var-signature-alist
 ;;                                     test-case-count
-;;                                     (make-empty-array 'signature-array dag-len)
+;;                                     (new-array1 'signature-array dag-len)
 ;;                                     )
 ;;               rand)))
 
@@ -19724,7 +19724,7 @@
 ;;           (make-children-alist-aux (cdr dag) (aset1 'children-array acc nodenum (keep-non-quoteps (fargs expr)))))))))
 
 ;; (defun make-children-alist (dag)
-;;   (make-children-alist-aux dag (make-empty-array 'children-array (len dag))))
+;;   (make-children-alist-aux dag (new-array1 'children-array (len dag))))
 
 ;; (defun all-safe (nodenums tag-alist)
 ;;   (if (endp nodenums)

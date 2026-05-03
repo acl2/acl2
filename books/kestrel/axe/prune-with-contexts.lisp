@@ -1,6 +1,6 @@
 ; A utility to remove unreachable if-branches using contexts
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,18 +34,18 @@
              (dargp tp)
            (dargp ep))))
 
-;; (defthm wf-dagp-of-make-empty-array-and-make-dag-parent-array-with-name2-of-make-empty-array
+;; (defthm wf-dagp-of-new-array1-and-make-dag-parent-array-with-name2-of-new-array1
 ;;   (implies (and (posp size)
 ;;                 (<= size *max-1d-array-length*))
 ;;            (wf-dagp 'dag-array
-;;                     (make-empty-array 'dag-array size)
+;;                     (new-array1 'dag-array size)
 ;;                     '0
 ;;                     'dag-parent-array
 ;;                     ;; or rewrite this call (note the 0):
 ;;                     (make-dag-parent-array-with-name2
 ;;                      '0
 ;;                      'dag-array
-;;                      (make-empty-array 'dag-array size)
+;;                      (new-array1 'dag-array size)
 ;;                      'dag-parent-array)
 ;;                     'nil
 ;;                     'nil))
@@ -272,9 +272,9 @@
 ;;                   :guard-hints (("Goal" :in-theory (enable wf-dagp len-when-pseudo-dagp)))))
 ;;   (b* ((old-dag-len (+ 1 (top-nodenum-of-dag dag)))
 ;;        (old-dag-array (make-into-array-with-len 'old-dag-array dag old-dag-len)) ; no slack needed since this won't grow
-;;        (renaming-array (make-empty-array 'renaming-array old-dag-len)) ;will rename nodes in old dag to nodes in the new dag
+;;        (renaming-array (new-array1 'renaming-array old-dag-len)) ;will rename nodes in old dag to nodes in the new dag
 ;;        ;;todo: make a util for making an empty dag and its aux structures
-;;        (dag-array (make-empty-array 'dag-array old-dag-len)) ;todo: leave some slack space?
+;;        (dag-array (new-array1 'dag-array old-dag-len)) ;todo: leave some slack space?
 ;;        (dag-len 0)
 ;;        ;; make aux structures for new dag:
 ;;        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
@@ -311,9 +311,9 @@
        ;; ((when ...) ; could check here whether there is any context information to use
        ;;  (and print (cw ")~%"))
        ;;  (mv (erp-nil) dag limits state))
-       (renaming-array (make-empty-array 'renaming-array old-dag-len)) ;will rename nodes in old dag to nodes in the new dag
+       (renaming-array (new-array1 'renaming-array old-dag-len)) ;will rename nodes in old dag to nodes in the new dag
        ;;todo: make a util for making an empty dag and its aux structures
-       (dag-array (make-empty-array 'dag-array old-dag-len)) ;todo: leave some slack space?
+       (dag-array (new-array1 'dag-array old-dag-len)) ;todo: leave some slack space?
        (dag-len 0)
        ;; make aux structures for new dag:
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)

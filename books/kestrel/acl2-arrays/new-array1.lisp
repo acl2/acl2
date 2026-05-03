@@ -28,7 +28,7 @@
 ;according to array1p, the maximum-length field of an array can be at most (array-maximum-length-bound)
 ;and the length (first dimension) must be strictly smaller than the :maximum-length (why strictly?)
 ;; Note that array1p disallows arrays of len 0 (why?), so this function does also.
-(defund make-empty-array-with-default (name len default)
+(defund new-array1-with-default (name len default)
   (declare (type symbol name)
            (type (integer 1 1152921504606846974) len) ; at most *max-1d-array-length*
            (xargs :guard-hints (("Goal" :in-theory (enable array1p)))))
@@ -43,78 +43,78 @@
                                   )
                     nil)))
 
-(in-theory (disable (:e make-empty-array-with-default))) ;; Avoid making arrays during proofs (might be huge)
+(in-theory (disable (:e new-array1-with-default))) ;; Avoid making arrays during proofs (might be huge)
 
-(defthm array1p-of-make-empty-array-with-default
-  (equal (array1p name (make-empty-array-with-default name len default))
+(defthm array1p-of-new-array1-with-default
+  (equal (array1p name (new-array1-with-default name len default))
          (and (posp len)
               (<= len *max-1d-array-length*)
               (symbolp name)))
-  :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
+  :hints (("Goal" :in-theory (enable new-array1-with-default array1p-rewrite))))
 
-(defthm default-of-make-empty-array-with-default
-  (equal (default name1 (make-empty-array-with-default name2 len default))
+(defthm default-of-new-array1-with-default
+  (equal (default name1 (new-array1-with-default name2 len default))
          default)
-  :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
+  :hints (("Goal" :in-theory (enable new-array1-with-default))))
 
-(defthm dimensions-of-make-empty-array-with-default
-  (equal (dimensions name1 (make-empty-array-with-default name2 len default))
+(defthm dimensions-of-new-array1-with-default
+  (equal (dimensions name1 (new-array1-with-default name2 len default))
          (list len))
-  :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
+  :hints (("Goal" :in-theory (enable new-array1-with-default))))
 
-(defthm alen1-of-make-empty-array-with-default
-  (equal (alen1 name1 (make-empty-array-with-default name2 len default))
+(defthm alen1-of-new-array1-with-default
+  (equal (alen1 name1 (new-array1-with-default name2 len default))
          len)
-  :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
+  :hints (("Goal" :in-theory (enable new-array1-with-default))))
 
-(defthm aref1-of-make-empty-array-with-default
+(defthm aref1-of-new-array1-with-default
   (implies (and (natp index) ;gen?
                 ;; (< index len) ;we get the default if the index is out of bounds
                 (posp len)
                 (<= len *max-1d-array-length*))
-           (equal (aref1 name1 (make-empty-array-with-default name2 len default) index)
+           (equal (aref1 name1 (new-array1-with-default name2 len default) index)
                   default))
-  :hints (("Goal" :in-theory (enable array1p make-empty-array-with-default))))
+  :hints (("Goal" :in-theory (enable array1p new-array1-with-default))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Make an array with LEN elements (and name NAME), where every index has the value nil.
-(defund make-empty-array (name len)
+(defund new-array1 (name len)
   (declare (type symbol name)
            (type (integer 1 1152921504606846974) len) ; at most *max-1d-array-length*
            )
-  (make-empty-array-with-default name len nil))
+  (new-array1-with-default name len nil))
 
-(in-theory (disable (:e make-empty-array))) ;; Avoid exposing a constant involving a :header
+(in-theory (disable (:e new-array1))) ;; Avoid exposing a constant involving a :header
 
-(defthm array1p-of-make-empty-array
-  (equal (array1p name (make-empty-array name len))
+(defthm array1p-of-new-array1
+  (equal (array1p name (new-array1 name len))
          (and (posp len)
               (<= len *max-1d-array-length*)
               (symbolp name)))
-  :hints (("Goal" :in-theory (enable make-empty-array))))
+  :hints (("Goal" :in-theory (enable new-array1))))
 
-;; but see make-empty-array-with-default
-(defthm default-of-make-empty-array
-  (equal (default name1 (make-empty-array name2 len))
+;; but see new-array1-with-default
+(defthm default-of-new-array1
+  (equal (default name1 (new-array1 name2 len))
          nil)
-  :hints (("Goal" :in-theory (enable make-empty-array))))
+  :hints (("Goal" :in-theory (enable new-array1))))
 
-(defthm dimensions-of-make-empty-array
-  (equal (dimensions name1 (make-empty-array name2 len))
+(defthm dimensions-of-new-array1
+  (equal (dimensions name1 (new-array1 name2 len))
          (list len))
-  :hints (("Goal" :in-theory (enable make-empty-array))))
+  :hints (("Goal" :in-theory (enable new-array1))))
 
-(defthm alen1-of-make-empty-array
-  (equal (alen1 name1 (make-empty-array name2 len))
+(defthm alen1-of-new-array1
+  (equal (alen1 name1 (new-array1 name2 len))
          len)
-  :hints (("Goal" :in-theory (enable make-empty-array))))
+  :hints (("Goal" :in-theory (enable new-array1))))
 
-(defthm aref1-of-make-empty-array
+(defthm aref1-of-new-array1
   (implies (and (natp index) ;gen?
                 ;; (< index len) ;we get nil if the index is out of bounds
                 (posp len)
                 (<= len *max-1d-array-length*))
-           (equal (aref1 name1 (make-empty-array name2 len) index)
+           (equal (aref1 name1 (new-array1 name2 len) index)
                   nil))
-  :hints (("Goal" :in-theory (enable make-empty-array))))
+  :hints (("Goal" :in-theory (enable new-array1))))

@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "make-into-array-with-len")
-(include-book "make-empty-array")
+(include-book "new-array1")
 (local (include-book "array1p"))
 (local (include-book "default"))
 (local (include-book "dimensions"))
@@ -77,5 +77,5 @@
 
 (defthm make-into-array-of-nil
   (equal (make-into-array name nil)
-         (make-empty-array name 1))
-  :hints (("Goal" :in-theory (enable make-into-array MAKE-INTO-ARRAY-WITH-LEN MAKE-EMPTY-ARRAY MAKE-EMPTY-ARRAY-WITH-DEFAULT))))
+         (new-array1 name 1))
+  :hints (("Goal" :in-theory (enable make-into-array MAKE-INTO-ARRAY-WITH-LEN NEW-ARRAY1 NEW-ARRAY1-WITH-DEFAULT))))

@@ -1,7 +1,7 @@
 ; Tests of the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -447,7 +447,7 @@
        (eval-array-name (pack$ 'eval-array-
                                array-depth '-for-dag-val))
        (eval-array
-        (make-empty-array eval-array-name (+ 1 top-nodenum))))
+        (new-array1 eval-array-name (+ 1 top-nodenum))))
       (car (aref1 eval-array-name
                   (eval-dag-with-axe-evaluator
                    (list top-nodenum)

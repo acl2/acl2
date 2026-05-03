@@ -926,7 +926,7 @@
          ((mv erp equality-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
           (if equality-pairs
               (populate-equality-array equality-pairs
-                                       (make-empty-array 'equality-array dag-len) ;fixme is dag-len overkill?
+                                       (new-array1 'equality-array dag-len) ;fixme is dag-len overkill?
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             ;;there are no equalities:
             (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))

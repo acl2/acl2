@@ -1911,12 +1911,12 @@
                            (dag-exprp-of-aref1-when-pseudo-dag-arrayp
                             bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp)))))
 
-(defthm pseudo-dag-arrayp-of-make-empty-array
+(defthm pseudo-dag-arrayp-of-new-array1
   (implies (and (symbolp dag-array-name)
                 (posp size)
                 (<= size *max-1d-array-length*))
            (pseudo-dag-arrayp dag-array-name
-                              (make-empty-array dag-array-name size)
+                              (new-array1 dag-array-name size)
                               0))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 

@@ -28,7 +28,7 @@
 (include-book "aref1-list")
 (include-book "aset1-list")
 (include-book "array-to-alist")
-(include-book "make-empty-array")
+(include-book "new-array1")
 (include-book "make-into-array-with-len")
 (include-book "make-into-array")
 (include-book "acl2-arrays")

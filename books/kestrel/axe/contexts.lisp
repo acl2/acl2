@@ -1015,7 +1015,7 @@
                               (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len))
                   :guard-hints (("Goal" :in-theory (enable dag-parent-arrayp)))))
   (let* (;; All nodes initially have a context of "true" but all contexts except that of the top node get overwritten as we go:
-         (context-array (make-empty-array-with-default 'context-array dag-len (true-context)))
+         (context-array (new-array1-with-default 'context-array dag-len (true-context)))
          (top-nodenum (+ -1 dag-len))
          ;; (context-array (aset1 'context-array context-array top-nodenum (true-context))) ;top node has no context
          (context-array (make-full-context-array-aux (+ -1 top-nodenum) ; skip the top node

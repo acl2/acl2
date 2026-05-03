@@ -501,7 +501,7 @@
 ;; (defun make-context-indicator-list-array-helper (dag-array-name dag-array dag-len dag-parent-array tag-array2)
 ;;   (let* ((top-nodenum (+ -1 dag-len)) ;sure to be the top nodenum?
 ;;          (predicate-nodenums (get-tested-predicate-nodenums top-nodenum dag-array-name dag-array nil tag-array2))
-;;          (context-indicator-list-array (make-empty-array 'context-indicator-list-array dag-len))
+;;          (context-indicator-list-array (new-array1 'context-indicator-list-array dag-len))
 ;;          (context-indicator-list-array (aset1-safe 'context-indicator-list-array
 ;;                                               context-indicator-list-array
 ;;                                               top-nodenum
@@ -573,7 +573,7 @@
 ;; (defun make-context-array (dag-lst dag-len array-name tag-array2)
 ;;   (mv-let (predicate-nodenums context-indicator-list-array)
 ;;           (make-context-indicator-lists dag-lst dag-len tag-array2)
-;;           (make-context-array-aux (+ -1 dag-len) context-indicator-list-array (make-empty-array array-name dag-len) predicate-nodenums array-name)))
+;;           (make-context-array-aux (+ -1 dag-len) context-indicator-list-array (new-array1 array-name dag-len) predicate-nodenums array-name)))
 
 ;(skip- proofs (verify-guards make-context-array))
 
@@ -581,7 +581,7 @@
 ;; (defun make-context-array-from-array (dag-array-name dag-array dag-len tag-array2)
 ;;   (mv-let (predicate-nodenums context-indicator-list-array)
 ;;           (make-context-indicator-list-array dag-array-name dag-array dag-len tag-array2)
-;;           (make-context-array-aux (+ -1 dag-len) context-indicator-list-array (make-empty-array 'context-array dag-len) predicate-nodenums 'context-array)))
+;;           (make-context-array-aux (+ -1 dag-len) context-indicator-list-array (new-array1 'context-array dag-len) predicate-nodenums 'context-array)))
 
 ;; (skip- proofs (verify-guards make-context-array-from-array))
 
@@ -685,14 +685,14 @@
 ;; ;bozo printing may be slow
 ;; (defun var-dependency-alist (dag)
 ;;   (let* ((dag-array (make-into-array 'dag-array dag))
-;;          (acc-array (make-empty-array 'acc-array (len dag)))
+;;          (acc-array (new-array1 'acc-array (len dag)))
 ;;          (len (len dag)))
 ;;     ;bozo wrong?
 ;;     (array-to-alist 'acc-array (var-dependency-alist-aux 0 len dag-array acc-array) (len dag))))
 
 ;; (defun var-dependencies-for-node (nodenum dag)
 ;;   (let* ((dag-array (make-into-array 'dag-array dag))
-;;          (acc-array (make-empty-array 'acc-array (len dag))))
+;;          (acc-array (new-array1 'acc-array (len dag))))
 ;;     (aref1 'acc-array (var-dependency-alist-aux 0 (+ 1 nodenum) dag-array acc-array) nodenum)))
 
 ;; ;for each var, makes an expression looking it up in the alist and pairs the var with the nodenum of that expression
@@ -949,7 +949,7 @@
 ;;       t
 ;;     (let* ((max-nodenum (max nodenum-or-quotep nodenum2))
 ;;            (node-count (+ 1 max-nodenum))
-;;            (node-size-array (make-empty-array 'node-size-array node-count))
+;;            (node-size-array (new-array1 'node-size-array node-count))
 ;;            (node-size-array (build-size-array-for-nodes (list nodenum-or-quotep nodenum2) 'dag-array dag-array 'node-size-array node-size-array))
 ;; ;;           (node-size-array (compute-dag-array-size-aux 0 node-count 'dag-array dag-array 'node-size-array node-size-array)))
 ;;            (size1 (aref1 'node-size-array node-size-array nodenum-or-quotep))
@@ -968,7 +968,7 @@
 ;; ;fffixme computing this over and over might be very expensive - better to precompute the sizes?
 ;; (defun simpler-dag-termp2 (nodenum term dag-array)
 ;;   (let* ((node-count (+ 1 nodenum))
-;;          (node-size-array (make-empty-array 'node-size-array node-count))
+;;          (node-size-array (new-array1 'node-size-array node-count))
 ;;          (node-size-array (compute-dag-array-size-aux 0 node-count 'dag-array dag-array 'node-size-array node-size-array))
 ;;          (size (aref1 'node-size-array node-size-array nodenum))
 ;;          (term-size (

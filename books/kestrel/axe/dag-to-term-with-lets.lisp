@@ -225,7 +225,7 @@
   (declare (xargs :guard (and (posp dag-len)
                               (<= dag-len *max-1d-array-length*)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len))))
-  (make-supporters-array-aux 0 (+ -1 dag-len) dag-array-name dag-array (make-empty-array 'supporters-array dag-len)))
+  (make-supporters-array-aux 0 (+ -1 dag-len) dag-array-name dag-array (new-array1 'supporters-array dag-len)))
 
 (defthm alen1-of-make-supporters-array
   (implies (and (posp dag-len)
@@ -234,13 +234,13 @@
                   dag-len))
   :hints (("Goal" :in-theory (enable make-supporters-array))))
 
-(defthm supporters-arrayp-aux-of-make-empty-array
+(defthm supporters-arrayp-aux-of-new-array1
   (implies (and (natp n)
                 (<= n dag-len)
                 (posp dag-len)
                 (<= dag-len *max-1d-array-length*))
            (supporters-arrayp-aux 'supporters-array
-                                  (make-empty-array 'supporters-array dag-len)
+                                  (new-array1 'supporters-array dag-len)
                                   n))
   :hints (("Goal" :in-theory (enable supporters-arrayp-aux))))
 
@@ -511,8 +511,8 @@
   (declare (xargs :guard (and (posp dag-len)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len))))
   (let ((parent-array (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array 'parent-array-temp))
-        (term-array (make-empty-array 'term-array dag-len))
-        (binding-array (make-empty-array 'binding-array dag-len))
+        (term-array (new-array1 'term-array dag-len))
+        (binding-array (new-array1 'binding-array dag-len))
         (supporters-array (make-supporters-array dag-len dag-array-name dag-array)))
     (dag-array-to-term-with-lets-aux 0 (+ -1 dag-len) dag-array-name dag-array parent-array term-array binding-array supporters-array)))
 

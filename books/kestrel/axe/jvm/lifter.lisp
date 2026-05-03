@@ -834,7 +834,7 @@
          ((mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
           (merge-nodes-into-dag-array (reverse dag) ;fixme what about embedded dags?
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                      (make-empty-array 'renaming-array (len dag))))
+                                      (new-array1 'renaming-array (len dag))))
          ((when erp) (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
          (renamed-node (aref1 'renaming-array renaming-array top-nodenum))
          )
@@ -872,7 +872,7 @@
       (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len)
         (let* ((top-nodenum (top-nodenum dag))
-               (translation-array (make-empty-array 'translation-array dag-len)))
+               (translation-array (new-array1 'translation-array dag-len)))
           ;;populate translation-array with entries for the subdags that will be replaced:
           (mv-let (erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (process-replacement-alist replacement-alist dag-len translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1137,7 +1137,7 @@
 
 (defun make-dag-var-array (dag-lst)
   (make-dag-var-array-aux (reverse dag-lst)
-                          (make-empty-array 'dag-var-array (len dag-lst))))
+                          (new-array1 'dag-var-array (len dag-lst))))
 
 ;; i think we should never choose a node that is not a destructor...
 ;think about calls of other generated functions.
