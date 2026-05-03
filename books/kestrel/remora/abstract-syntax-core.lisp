@@ -113,6 +113,8 @@
           var+type
           var+type-list
           exprs/atoms/binds
+          expr-list-list
+          atom-list-list
           prog)
   :result booleanp
   :default t
