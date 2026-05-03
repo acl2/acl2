@@ -107,7 +107,16 @@
   :guard (expr-list-case-array x)
   :returns (atomss atom-list-listp)
   :short "Lift @(tsee expr-array->atoms) to lists."
-  (expr-array->atoms x))
+  (expr-array->atoms x)
+
+  ///
+
+  (defrule atom-list-list-corep-of-expr-array-list->atoms
+    (implies (and (expr-list-corep exprs)
+                  (expr-list-case-array exprs))
+             (atom-list-list-corep (expr-array-list->atoms exprs)))
+    :induct t
+    :enable abstract-syntax-corep-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,7 +132,16 @@
   :guard (expr-list-case-frame x)
   :returns (exprss expr-list-listp)
   :short "Lift @(tsee expr-array->exprs) to lists."
-  (expr-frame->exprs x))
+  (expr-frame->exprs x)
+
+  ///
+
+  (defrule expr-list-list-corep-of-expr-frame-list->exprs
+    (implies (and (expr-list-corep exprs)
+                  (expr-list-case-frame exprs))
+             (expr-list-list-corep (expr-frame-list->exprs exprs)))
+    :induct t
+    :enable abstract-syntax-corep-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -201,7 +219,15 @@
   :returns (exprs expr-listp)
   (cond ((endp exprss) nil)
         (t (append (expr-list-fix (car exprss))
-                   (expr-append-all (cdr exprss))))))
+                   (expr-append-all (cdr exprss)))))
+
+  ///
+
+  (defrule expr-list-corep-of-expr-append-all
+    (equal (expr-list-corep (expr-append-all exprss))
+           (expr-list-list-corep exprss))
+    :induct t
+    :enable abstract-syntax-corep-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -209,4 +235,12 @@
   :returns (atoms atom-listp)
   (cond ((endp atomss) nil)
         (t (append (atom-list-fix (car atomss))
-                   (atom-append-all (cdr atomss))))))
+                   (atom-append-all (cdr atomss)))))
+
+  ///
+
+  (defrule atom-list-corep-of-atom-append-all
+    (equal (atom-list-corep (atom-append-all atomss))
+           (atom-list-list-corep atomss))
+    :induct t
+    :enable abstract-syntax-corep-rules))
