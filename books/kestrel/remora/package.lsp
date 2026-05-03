@@ -39,7 +39,10 @@
                     nat-list
                     nat-list-fix
                     nat-list-listp
+                    nats=>string
                     prefixp
+                    str-fix
+                    string=>nats
                     string-setp
                     string-string-map
                     string-string-mapp
@@ -53,6 +56,7 @@
                     fty::reserrf-push
                     fty::reserrp
                     std::defret-mutual
+                    std::defval
                     str::dec-digit-char-list
                     str::hex-digit-char-list
                     str::oct-digit-char-list
