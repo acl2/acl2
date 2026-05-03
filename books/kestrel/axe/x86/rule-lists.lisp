@@ -1263,7 +1263,6 @@
     ;;            acl2::bvplus-of-logxor-arg1                     ; introduce bvxor
     ;;            acl2::bvxor-of-logxor-arg2                      ; introduce bvxor
 
-    acl2::loghead-becomes-bvchop
     ;;acl2::bvchop-of-lognot-becomes-bvnot ; now handled by convert-to-bv machinery
     ;;acl2::bvchop-of-logand-becomes-bvand ; now handled by convert-to-bv machinery
     ;;acl2::bvchop-of-logior-becomes-bvor

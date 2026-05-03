@@ -566,7 +566,8 @@
     logbitp-to-getbit-equal-1 ;rename
 
     bitp-becomes-unsigned-byte-p ; since our rules use unsigned-byte-p
-    ))
+
+    loghead-becomes-bvchop))
 
 ;; TODO: Consider also the analogous rules about getbit?
 (defun bv-function-of-bvchop-rules ()
