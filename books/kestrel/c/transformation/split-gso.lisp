@@ -24,16 +24,17 @@
 (include-book "utilities/collect-idents")
 (include-book "utilities/fresh-ident")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (tau-system))))
-(set-induction-depth-limit 0)
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/system/w" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (enable* c$::abstract-syntax-annop-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,24 +214,17 @@
 (define struct-declor-list-get-ident
   ((structdeclors struct-declor-listp))
   :returns (mv (er? maybe-msgp)
-               (ident identp))
+               (ident? ident-optionp))
   (b* (((reterr) (c$::irr-ident))
        ((when (endp structdeclors))
-        (retmsg$ "Syntax error: there should be at least one struct declarator
-                  in the struct declaration."))
+        (retok nil))
        ((unless (endp (rest structdeclors)))
         (retmsg$ "Multiple struct declarators in a single struct declaration
                   are unsupported: ~x0"
                  structdeclors))
-       ((struct-declor structdeclor) (first structdeclors))
-       ((when structdeclor.expr?)
-        (retmsg$ "Bit-field struct declarator is unsupported: ~x0"
-                 structdeclor.expr?))
-       ((unless structdeclor.declor?)
-        (retmsg$ "Syntax error: a non-bit-field struct declarator must have
-                  a declarator: ~x0"
-                 structdeclor)))
-    (retok (declor->ident structdeclor.declor?))))
+       ((struct-declor structdeclor) (first structdeclors)))
+    (retok (and structdeclor.declor?
+                (declor->ident structdeclor.declor?)))))
 
 (define struct-declon-member-in-listp
   ((names ident-listp)
@@ -243,9 +237,11 @@
       struct-declon
       ;; TODO: properly handle struct declarations with multiple declarators
       ;;   instead of returning error.
-      :member (b* (((erp ident)
-                    (struct-declor-list-get-ident struct-declon.declors)))
-                (retok (and (member-equal ident names) t)))
+      :member (b* (((erp ident?)
+                    (struct-declor-list-get-ident struct-declon.declors))
+                   ((unless ident?)
+                    (retok nil)))
+                (retok (and (member-equal ident? names) t)))
       :statassert (retmsg$ "Static assertion structure declaration unsupported:
                             ~x0"
                            struct-declon.statassert)
@@ -581,52 +577,108 @@
 
 ;; split global struct object
 
-(define match-designors
-  ((split-members ident-listp)
-   (designors designor-listp))
+(define make-desiniter-explicit
+  ((desiniter desiniterp))
   :returns (mv (er? maybe-msgp)
-               (match booleanp
-                      :rule-classes :type-prescription))
-  (b* (((reterr) nil)
-       ((when (endp designors))
-        (retmsg$ "Initializer elements without designations are unsupported."))
-       ((unless (endp (rest designors)))
-        (retmsg$ "Initializer element with mutiple designations is unsupported:
-                  ~x0"
-                 designors))
-       (designor (first designors)))
-    (designor-case
-      designor
-      ;; :sub case should be ill-typed, since this function should only be
-      ;; called on objects with struct types (not array types).
-      :sub (retmsg$ "Array index initializer element is unsupported: ~x0"
-                    designor)
-      :dot (retok (and (member-equal designor.name split-members) t)))))
+               (desiniter$ desiniterp))
+  :short "Add an explicit designation to an initializer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the initializer does not have a designator,
+     the annotation is checked.
+     If a designator is present in the annotation, we use that.
+     Otherwise, this function fails.")
+   (xdoc::p
+    "We may consider adding a guard of @('(desiniter-annop desiniter)')
+     at some point in the future.
+     Currently, we do not have a proof that the necessary annotations
+     are present after the first pass of the transformation."))
+  (b* (((reterr) (c$::irr-desiniter))
+       ((desiniter desiniter) desiniter)
+       ((unless (endp desiniter.designors))
+        (retok (desiniter-fix desiniter)))
+       ((unless (desiniter-annop desiniter))
+        (retmsg$ "Cannot infer designation from initializer: ~x0"
+                 (desiniter-fix desiniter)))
+       ((c$::desiniter-info info) desiniter.info)
+       ((when (endp info.designors))
+        (retmsg$ "Cannot infer designation from initializer: ~x0"
+                 (desiniter-fix desiniter))))
+    (retok (c$::change-desiniter
+             desiniter
+             :designors info.designors)))
+  ///
 
-(define split-desiniter-list
-  ((split-members ident-listp)
-   (desiniters desiniter-listp))
+  (defret desiniter->designors-of-make-desiniter-explicit.desiniter$-type-prescription
+    (implies (not er?)
+             (consp (c$::desiniter->designors desiniter$)))
+    :rule-classes :type-prescription))
+
+(define explicit-desiniter-listp
+  ((desiniters desiniter-listp))
+  :returns (yes/no booleanp)
+  :short "Recognizer of lists of initializers with required designations."
+  (or (endp desiniters)
+      (and (not (endp (c$::desiniter->designors (first desiniters))))
+           (explicit-desiniter-listp (rest desiniters)))))
+
+(define make-desiniters-explicit
+  ((desiniters desiniter-listp))
   :returns (mv (er? maybe-msgp)
-               (desiniter-list1 desiniter-listp)
-               (desiniter-list2 desiniter-listp))
-  (b* (((reterr) nil nil)
+               (desiniters$ desiniter-listp))
+  (b* (((reterr) nil)
        ((when (endp desiniters))
-        (retok nil nil))
-       ((erp desiniters1 desiniters2)
-        (split-desiniter-list split-members (rest desiniters)))
-       ((desiniter desiniter) (desiniter-fix (first desiniters)))
-       ((erp match)
-        (match-designors split-members desiniter.designors)))
-    (if match
-        (retok desiniters1 (cons desiniter desiniters2))
-      (retok (cons desiniter desiniters1) desiniters2)))
+        (retok nil))
+       ((erp first) (make-desiniter-explicit (first desiniters)))
+       ((erp rest) (make-desiniters-explicit (rest desiniters))))
+    (retok (cons first rest)))
   ///
 
   (more-returns
-   (desiniter-list1 true-listp :rule-classes :type-prescription)
-   (desiniter-list2 true-listp :rule-classes :type-prescription)))
+   (desiniters$ explicit-desiniter-listp
+                :hints (("Goal" :induct t
+                                :in-theory (enable explicit-desiniter-listp))))))
 
-(define split-struct-initer
+(define designors-is-dot-any-ident
+  ((designors designor-listp)
+   (split-members ident-listp))
+  :guard (not (endp designors))
+  (and (endp (rest designors))
+       (let ((designor (first designors)))
+         (designor-case
+           designor
+           :sub nil
+           :dot (and (member-equal designor.name
+                                   (c$::ident-list-fix split-members))
+                     t)))))
+
+(define split-explicit-desiniters
+  ((split-members ident-listp)
+   (desiniters desiniter-listp))
+  :guard (explicit-desiniter-listp desiniters)
+  :returns (mv (desiniters1 desiniter-listp)
+               (desiniters2 desiniter-listp))
+  (b* (((when (endp desiniters))
+        (mv nil nil))
+       ((desiniter first-desiniter) (first desiniters))
+       (rightp (designors-is-dot-any-ident
+                first-desiniter.designors split-members))
+       ((mv rest-desiniters1 rest-desiniters2)
+        (split-explicit-desiniters split-members (rest desiniters))))
+    (if rightp
+        (mv rest-desiniters1
+            (cons (desiniter-fix first-desiniter) rest-desiniters2))
+      (mv (cons (desiniter-fix first-desiniter) rest-desiniters1)
+          rest-desiniters2)))
+  :guard-hints (("Goal" :in-theory (enable explicit-desiniter-listp)))
+  ///
+
+  (more-returns
+   (desiniters1 true-listp :rule-classes :type-prescription)
+   (desiniters2 true-listp :rule-classes :type-prescription)))
+
+(define split-struct-global-initer
   ((split-members ident-listp)
    (initer initerp))
   :returns (mv (er? maybe-msgp)
@@ -635,11 +687,15 @@
   (b* (((reterr) nil nil))
     (initer-case
       initer
-      :single (retmsg$ "Assignment expression initializers are unsupported:
-                        ~x0"
-                       initer.expr)
-      :list (b* (((erp elems1 elems2)
-                  (split-desiniter-list split-members initer.elems))
+      :single (retmsg$ "Internal error: non-brace-enclosed initializer ~
+                        is illegal for a file-scope ~
+                        struct initializer declarators:
+                        ~x0."
+                       (initer-fix initer))
+      :list (b* (((erp explicit-elems)
+                  (make-desiniters-explicit initer.elems))
+                 ((mv elems1 elems2)
+                  (split-explicit-desiniters split-members explicit-elems))
                  (elems1 (desiniter-list-fix elems1))
                  (elems2 (desiniter-list-fix elems2)))
               (retok (if (endp elems1)
@@ -688,18 +744,14 @@
      :array-star nil
      :function-params nil
      :function-names nil)
-    :measure (dirdeclor-count dirdeclor))
+    :measure (dirdeclor-count dirdeclor)))
 
-  :hints (("Goal" :in-theory (enable o< o-finp))))
-
-(define split-struct-init-declor
+(define split-struct-global-init-declor
   ((target identp)
    (split-members ident-listp)
    (initdeclor init-declorp))
   :returns (mv (er? maybe-msgp)
-               ;; TODO: is the generated type-prescription reasonable?
-               (match booleanp
-                      :rule-classes :type-prescription)
+               (match booleanp :rule-classes :type-prescription)
                (initer-option1 initer-optionp)
                (initer-option2 initer-optionp))
   (b* (((reterr) nil nil nil)
@@ -709,10 +761,10 @@
        ((unless initdeclor.initer?)
         (retok t nil nil))
        ((erp initer-option1 initer-option2)
-        (split-struct-initer split-members initdeclor.initer?)))
+        (split-struct-global-initer split-members initdeclor.initer?)))
     (retok t initer-option1 initer-option2)))
 
-(define split-struct-init-declors
+(define split-struct-global-init-declors
   ((target identp)
    (split-members ident-listp)
    (initdeclors init-declor-listp))
@@ -729,9 +781,9 @@
        ((unless (endp (rest initdeclors)))
         (retmsg$ "Multiple initializer declarators are not supported: ~x0"
                  initdeclors)))
-    (split-struct-init-declor target
-                              split-members
-                              (first initdeclors))))
+    (split-struct-global-init-declor target
+                                     split-members
+                                     (first initdeclors))))
 
 (define has-extern-p ((specs decl-spec-listp))
   (and (not (endp specs))
@@ -752,8 +804,7 @@
    (split-members ident-listp)
    (declon declonp))
   :returns (mv (er? maybe-msgp)
-               (found booleanp
-                      :rule-classes :type-prescription)
+               (found booleanp :rule-classes :type-prescription)
                (declons declon-listp))
   (b* (((reterr) nil nil))
     (declon-case
@@ -766,8 +817,10 @@
            ((erp match initer-option1 initer-option2)
             (type-spec-case
               type-spec?
-              :struct (split-struct-init-declors original split-members declon.declors)
-              :typedef (split-struct-init-declors original split-members declon.declors)
+              :struct (split-struct-global-init-declors
+                        original split-members declon.declors)
+              :typedef (split-struct-global-init-declors
+                         original split-members declon.declors)
               :otherwise (mv nil nil nil nil)))
            ((unless match)
             (retok nil (list (declon-fix declon))))
@@ -866,8 +919,7 @@
    (split-members ident-listp)
    (item trans-itemp))
   :returns (mv (er? maybe-msgp)
-               (found booleanp
-                      :rule-classes :type-prescription)
+               (found booleanp :rule-classes :type-prescription)
                (items trans-item-listp))
   (b* (((reterr) nil nil))
     (trans-item-case
@@ -1005,6 +1057,7 @@
 (encapsulate ()
   ;; TODO: something in deffold-map seems dependent on tau
   (local (in-theory (enable (tau-system))))
+  (std::make-define-config :no-function nil)
 
   (fty::deffold-map replace-field-access
     :types #!c$(exprs/decls/stmts
