@@ -18,12 +18,10 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "maximum-length"))
 (local (include-book "array1p"))
-(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "header"))
 (local (include-book "default"))
 (local (include-book "dimensions"))
 (local (include-book "compress1"))
-(local (include-book "acl2-arrays")) ; todo: reduce, for aref1-of-compress1
 
 ;; Makes the ALIST, whose keys must be naturals, into an array named
 ;; NAME, which will have length LEN.  LEN must exceed the largest key in
