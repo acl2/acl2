@@ -269,16 +269,19 @@
   :hints (("Goal" :in-theory (enable myif))))
 
 ;rewrite
+;move
 (defthm oddp-of-double
   (implies (integerp x)
            (not (oddp (* 2 x))))
   :hints (("Goal" :in-theory (enable oddp))))
 
+;move
 (defthm logbitp-0-of-times-2
   (implies (integerp x)
            (not (LOGBITP 0 (* 2 X))))
   :hints (("Goal" :in-theory (e/d (LOGBITP oddp) (LOGBITP-TO-GETBIT-EQUAL-1)))))
 
+;move
 (defthm logbitp-of-double
   (implies (and (natp n)
                 (integerp x))
@@ -286,13 +289,6 @@
                   (if (equal 0 n)
                       nil
                     (logbitp (+ -1 n) x))))
-  :hints (("Goal" :in-theory (e/d (logbitp) (LOGBITP-TO-GETBIT-EQUAL-1)))))
-
-(defthm logbitp-when-i-is-negative
-  (implies (and (< i 0)
-                (integerp i))
-           (equal (LOGBITP i j)
-                  (LOGBITP 0 j)))
   :hints (("Goal" :in-theory (e/d (logbitp) (LOGBITP-TO-GETBIT-EQUAL-1)))))
 
 (defthm logext-of-logapp
@@ -304,6 +300,7 @@
                   (logapp 1 0 (logext (+ -1 k) x))))
   :hints (("Goal" :in-theory (enable logapp))))
 
+;move
 (defthm oddp-of-times-expt
   (implies (and (natp m)
                 (integerp x))
@@ -313,6 +310,7 @@
                     nil)))
   :hints (("Goal" :in-theory (enable oddp))))
 
+;move
 (defthm logbitp-of-shift
   (implies (and (natp n)
                 (natp m)
@@ -1026,6 +1024,7 @@
 ;; (defun pow2p (x)
 ;;   (equal x (expt 2 (+ -1 (integer-length x)))))
 
+;move
 (DEFTHM LOGBITP-OF-SHIFT-constant-version
   (IMPLIES (AND (syntaxp (quotep k))
                 (power-of-2p k)
