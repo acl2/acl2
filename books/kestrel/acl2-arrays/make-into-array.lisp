@@ -46,19 +46,19 @@
   :hints (("Goal" :in-theory (e/d (array1p compress1 make-into-array) (normalize-array1p-name)))))
 
 (defthm default-of-make-into-array
-  (equal (default name (make-into-array name alist))
+  (equal (default name1 (make-into-array name2 alist))
          nil)
   :hints (("Goal" :in-theory (enable make-into-array))))
 
 (defthm dimensions-of-make-into-array
-  (equal (dimensions name (make-into-array name alist))
+  (equal (dimensions name1 (make-into-array name2 alist))
          (if (consp alist)
              (list (+ 1 (max-key alist 0)))
            (list 1)))
   :hints (("Goal" :in-theory (enable make-into-array))))
 
 (defthm alen1-of-make-into-array
-  (equal (alen1 name (make-into-array name alist))
+  (equal (alen1 name1 (make-into-array name2 alist))
          (if (consp alist)
              (+ 1 (max-key alist 0))
            1))
@@ -68,10 +68,10 @@
   (implies (and (bounded-natp-alistp alist *max-1d-array-length*)
                 (true-listp alist)
                 alist
-                (symbolp name)
+                (symbolp name1)
                 (natp index)
                 (<= index (max-key alist 0)))
-           (equal (aref1 name (make-into-array name alist) index)
+           (equal (aref1 name1 (make-into-array name2 alist) index)
                   (cdr (assoc-equal index alist))))
   :hints (("Goal" :in-theory (enable make-into-array))))
 
