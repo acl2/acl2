@@ -17,6 +17,7 @@
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
 (include-book "abstract-syntax-core")
+(include-book "abstract-syntax-well-formed")
 (include-book "character-literal-codes")
 (include-book "desugaring")
 
@@ -44,5 +45,6 @@
                     abstract-syntax-matching-operations
                     abstract-syntax-variable-operations
                     abstract-syntax-core
+                    abstract-syntax-well-formed
                     character-literal-codes
                     desugaring))
