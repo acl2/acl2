@@ -11,7 +11,9 @@
 (in-package "REMORA")
 
 (include-book "parser")
-(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
+;; Pulls in *remora-keywords-as-natlists* and remora-keyword-p, which
+;; are consulted by check-tree-no-keyword-identifiers below.
+(include-book "identifier-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,48 +43,10 @@
 ;; The ABNF grammar's "identifier" rule accepts any id-start *id-continue
 ;; sequence, including reserved keywords.  This post-parse check walks the
 ;; CST and rejects any identifier node whose text matches a keyword.
-;; See grammar.abnf [SC2] for details.
-
-;; The keyword list as nat-lists (code point sequences).
-;; Single-char Unicode keywords use their code point directly.
-
-(defconst *remora-keywords-as-natlists*
-  (list (acl2::string=>nats "array")
-        (acl2::string=>nats "frame")
-        (acl2::string=>nats "t-app")
-        (acl2::string=>nats "i-app")
-        (acl2::string=>nats "unbox")
-        (acl2::string=>nats "box")
-        (acl2::string=>nats "dims")
-        (acl2::string=>nats "fn")
-        (list #x03BB)            ; lambda
-        (acl2::string=>nats "t-fn")
-        (list (char-code #\t) #x03BB)  ; t + lambda
-        (acl2::string=>nats "i-fn")
-        (list (char-code #\i) #x03BB)  ; i + lambda
-        (acl2::string=>nats "A")
-        (acl2::string=>nats "->")
-        (list #x2192)            ; rightwards arrow
-        (acl2::string=>nats "Forall")
-        (list #x2200)            ; for all
-        (acl2::string=>nats "Pi")
-        (list #x03A0)            ; Greek capital letter Pi
-        (acl2::string=>nats "Sigma")
-        (list #x03A3)            ; Greek capital letter Sigma
-        (acl2::string=>nats "let")
-        (acl2::string=>nats "type")
-        (acl2::string=>nats "extent")
-        (acl2::string=>nats "fun")
-        (acl2::string=>nats "t-fun")
-        (acl2::string=>nats "i-fun")
-        (acl2::string=>nats "val")))
-
-(define remora-keyword-p (nats)
-  :returns (yes/no booleanp)
-  :short "Check if a list of code points matches a Remora keyword."
-  (if (member-equal nats *remora-keywords-as-natlists*) t nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; See grammar.abnf [SC2] for details.  The keyword list itself
+;; (*remora-keywords-as-natlists*) and the membership predicate
+;; (remora-keyword-p) live in identifier-syntax.lisp (xdoc topic
+;; identifier-syntax).
 
 ;; Walking the CST to check for keyword identifiers.
 ;; Uses abnf::tree->string to collect leaf terminals from a subtree.
@@ -137,5 +101,5 @@
     :hints (("Goal" :in-theory (enable remora-keyword-p)))))
 
 ;; The user-facing entry points that bundle the SC2 check above into a
-;; complete parsing pipeline live in @(see parser-interface) — see
-;; @(tsee parse-from-string) and @(tsee parse-from-file).
+;; complete parsing pipeline live in parser-interface.lisp (xdoc topic
+;; parser-interface) -- see parse-from-string and parse-from-file.

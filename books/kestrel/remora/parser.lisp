@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "grammar")
+(include-book "identifier-syntax")
 
 (include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
 
@@ -406,24 +407,12 @@
 
 ;; ---- Identifiers ----
 
-;; non-ascii, id-start, id-continue all have 9-13 range alternatives;
-;; hand-written to avoid combinatorial proof blowup.
-
-(define non-asciip ((nat natp))
-  :returns (yes/no booleanp)
-  :short "Check if a natural number is a non-ASCII non-whitespace non-surrogate
-          code point."
-  (b* ((nat (nfix nat)))
-    (or (and (<= #x80 nat) (<= nat #x9F))
-        (and (<= #xA1 nat) (<= nat #x167F))
-        (and (<= #x1681 nat) (<= nat #x1FFF))
-        (and (<= #x200B nat) (<= nat #x2027))
-        (and (<= #x202A nat) (<= nat #x202E))
-        (and (<= #x2030 nat) (<= nat #x205E))
-        (and (<= #x2060 nat) (<= nat #x2FFF))
-        (and (<= #x3001 nat) (<= nat #xD7FF))
-        (and (<= #xE000 nat) (<= nat #x10FFFF))))
-  :hooks (:fix))
+;; non-ascii, id-start, id-continue have their predicates factored
+;; into identifier-syntax.lisp (xdoc topic identifier-syntax); the
+;; per-character parsers below consult those predicates.  Hand-written
+;; rather than auto-generated because each rule has 9-13 range
+;; alternatives, which cause combinatorial proof blowup when generated
+;; by ABNF tooling.
 
 (define parse-non-ascii ((input nat-listp))
   :returns (mv (tree abnf::tree-resultp)
@@ -449,25 +438,6 @@
              (< (len rest-input) (len input)))
     :rule-classes :linear))
 
-(define id-startp ((nat natp))
-  :returns (yes/no booleanp)
-  :short "Check if a natural number is a valid identifier start code point."
-  (b* ((nat (nfix nat)))
-    (or (and (<= #x00 nat) (<= nat #x08))
-        (and (<= #x0E nat) (<= nat #x1F))
-        (eql nat #x21)
-        (and (<= #x24 nat) (<= nat #x26))
-        (and (<= #x2A nat) (<= nat #x2B))
-        (and (<= #x2D nat) (<= nat #x2F))
-        (eql nat #x3A)
-        (and (<= #x3C nat) (<= nat #x3F))
-        (and (<= #x41 nat) (<= nat #x5A))
-        (and (<= #x5E nat) (<= nat #x5F))
-        (and (<= #x61 nat) (<= nat #x7A))
-        (and (<= #x7E nat) (<= nat #x7F))
-        (non-asciip nat)))
-  :hooks (:fix))
-
 (define parse-id-start ((input nat-listp))
   :returns (mv (tree abnf::tree-resultp)
                (rest-input nat-listp))
@@ -491,25 +461,6 @@
     (implies (not (reserrp tree))
              (< (len rest-input) (len input)))
     :rule-classes :linear))
-
-(define id-continuep ((nat natp))
-  :returns (yes/no booleanp)
-  :short "Check if a natural number is a valid identifier continuation
-          code point."
-  (b* ((nat (nfix nat)))
-    (or (and (<= #x00 nat) (<= nat #x08))
-        (and (<= #x0E nat) (<= nat #x1F))
-        (eql nat #x21)
-        (and (<= #x24 nat) (<= nat #x26))
-        (and (<= #x2A nat) (<= nat #x2B))
-        (and (<= #x2D nat) (<= nat #x3A))   ; includes digits and :
-        (and (<= #x3C nat) (<= nat #x3F))
-        (and (<= #x41 nat) (<= nat #x5A))
-        (and (<= #x5E nat) (<= nat #x5F))
-        (and (<= #x61 nat) (<= nat #x7A))
-        (and (<= #x7E nat) (<= nat #x7F))
-        (non-asciip nat)))
-  :hooks (:fix))
 
 (define parse-id-continue ((input nat-listp))
   :returns (mv (tree abnf::tree-resultp)

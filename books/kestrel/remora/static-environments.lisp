@@ -77,35 +77,35 @@
      These variables are implicitly in scope,
      and thus part of the initial static environment."))
   (b* ((add/sub/mul/div-type
-        (t[] (t-> (:int :int) :int) (shape)))
+        (t[] (t-> (:int :int) :int) (shp)))
        (append-type
         (t[] (tforall ("&t")
                       (tpi ("$n" "$m" "@s")
-                           (t-> ((t[] "&t" (shape++ (shape "$m")
+                           (t-> ((t[] "&t" (shape++ (shp "$m")
                                                     "@s"))
-                                 (t[] "&t" (shape++ (shape "$n")
+                                 (t[] "&t" (shape++ (shp "$n")
                                                     "@s")))
-                                (t[] "&t" (shape++ (shape (dim+ "$m"
+                                (t[] "&t" (shape++ (shp (dim+ "$m"
                                                                 "$n"))
                                                    "@s")))))
-             (shape)))
+             (shp)))
        (reduce-type
         (t[] (tforall ("&t")
                       (tpi ("@s" "$d")
                            (t-> ((t[] (t-> ((t[] "&t" "@s")
                                             (t[] "&t" "@s"))
                                            (t[] "&t" "@s"))
-                                      (shape))
-                                 (t[] "&t" (shape++ (shape (dim+ 1
+                                      (shp))
+                                 (t[] "&t" (shape++ (shp (dim+ 1
                                                                  "$d"))
                                                     "@s")))
                                 (t[] "&t" "@s"))))
-             (shape)))
+             (shp)))
        (iota-type
         (t[] (tpi ("$d")
-                  (t-> ((t[] :int (shape "$d")))
+                  (t-> ((t[] :int (shp "$d")))
                        (tsigma ("@s") (t[] :int "@s"))))
-             (shape))))
+             (shp))))
     (omap::from-alist
      (list (cons "add" add/sub/mul/div-type)
            (cons "sub" add/sub/mul/div-type)
