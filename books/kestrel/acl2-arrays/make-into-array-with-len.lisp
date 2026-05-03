@@ -54,12 +54,12 @@
 (in-theory (disable (:e make-into-array-with-len))) ;blew up
 
 (defthm dimensions-of-make-into-array-with-len
-  (equal (dimensions array-name (make-into-array-with-len array-name alist len))
+  (equal (dimensions array-name1 (make-into-array-with-len array-name2 alist len))
          (list len))
   :hints (("Goal" :in-theory (enable make-into-array-with-len))))
 
 (defthm alen1-of-make-into-array-with-len
-  (equal (alen1 array-name (make-into-array-with-len array-name alist len))
+  (equal (alen1 array-name1 (make-into-array-with-len array-name2 alist len))
          len)
   :hints (("Goal" :in-theory (enable make-into-array-with-len))))
 
@@ -72,7 +72,7 @@
   :hints (("Goal" :in-theory (enable make-into-array-with-len array1p-rewrite))))
 
 (defthm default-of-make-into-array-with-len
-  (equal (default array-name (make-into-array-with-len array-name alist len))
+  (equal (default array-name1 (make-into-array-with-len array-name2 alist len))
          nil)
   :hints (("Goal" :in-theory (enable array1p compress1 make-into-array-with-len))))
 
@@ -80,21 +80,12 @@
   (implies (and (bounded-natp-alistp alist len)
                 (true-listp alist)
                 alist
-                (symbolp array-name)
+                (symbolp array-name1)
                 (natp index)
                 (< index len)
                 (integerp len)
                 (<= len *max-1d-array-length*) ; todo: drop?
                 )
-           (equal (aref1 array-name (make-into-array-with-len array-name alist len) index)
+           (equal (aref1 array-name1 (make-into-array-with-len array-name2 alist len) index)
                   (cdr (assoc-equal index alist))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :do-not-induct t
-           :expand (AREF1 ARRAY-NAME ALIST INDEX)
-           :in-theory (e/d ( ;array1p ;compress1
-                            ARRAY-ORDER
-                            make-into-array-with-len
-                            ;;aref1
-                            array1p-of-cons-header
-                            ) (aref1 array1p
-                               )))))
+  :hints (("Goal" :in-theory (enable make-into-array-with-len aref1))))
