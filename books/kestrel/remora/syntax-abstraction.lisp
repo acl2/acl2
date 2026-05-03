@@ -148,7 +148,7 @@
      defensive."))
   (b* ((nats (acl2::nat-list-fix nats)))
     (if (acl2::ustring? nats)
-        (acl2::nats=>string (acl2::ustring=>utf8 nats))
+        (nats=>string (acl2::ustring=>utf8 nats))
       (reserrf (list :invalid-codepoints nats))))
   ///
   (defret stringp-of-abs-nats-to-string
@@ -291,7 +291,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; manual ``result'' predicates for fixtypes whose @(tsee fty::defresult)
+;; manual "result" predicates for fixtypes whose fty::defresult
 ;; disjointness proofs are awkward to set up
 ;;
 
@@ -1162,10 +1162,9 @@
 ;;
 ;; non-recursive type-variable rules
 ;;
-;; The grammar has separate rules @('atom-type-var') and @('array-type-var')
-;; that occur as alternatives of @('type-exp').  These are abstracted directly
-;; to a @(tsee type) @(':var') containing a @(tsee type-var) of the matching
-;; kind.
+;; The grammar has separate rules atom-type-var and array-type-var that
+;; occur as alternatives of type-exp.  These are abstracted directly to
+;; a type :var containing a type-var of the matching kind.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1203,7 +1202,7 @@
 ;;
 ;; Following the standard ABNF-parser convention used in PFCS, Aleo Leo,
 ;; etc., each named rule's CST has one tree-list per ABNF concatenation
-;; element.  So @('arrow-type') (8 elements) has 8 tree-lists, etc.
+;; element.  So arrow-type (8 elements) has 8 tree-lists, etc.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1728,10 +1727,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; unbox-spec-info: like the *-sig-info defprods, but holding the components
-;; of an @('unbox-spec') CST.  Has an @(tsee expr) field, so it must come
-;; after the AST's @('exprs/atoms/binds') deftypes (which is in
-;; @('abstract-syntax-trees.lisp'), already included).
+;; unbox-spec-info: like the *-sig-info defprods, but holding the
+;; components of an unbox-spec CST.  Has an expr field, so it must come
+;; after the AST's exprs/atoms/binds deftypes (which is in
+;; abstract-syntax-trees.lisp, already included).
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
