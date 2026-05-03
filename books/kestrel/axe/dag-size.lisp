@@ -172,7 +172,7 @@
                               )
                   :guard-hints (("Goal" :in-theory (enable pseudo-dagp)))))
   (let* ((dag-array-name 'dag-array-for-size-computation)
-         (dag-array (make-into-array dag-array-name dag)) ;todo: avoid making this array?
+         (dag-array (make-dag-into-array dag-array-name dag 0)) ;todo: avoid making this array?
          )
     (dag-array-size dag-array-name dag-array (len dag))))
 

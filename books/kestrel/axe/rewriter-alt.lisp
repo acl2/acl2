@@ -905,7 +905,8 @@
   (if (quotep dag-lst-or-quotep)
       (mv (erp-nil) dag-lst-or-quotep state)
     (b* ((assumptions (get-conjuncts-list assumptions))
-         (dag-array (make-into-array 'dag-array dag-lst-or-quotep))
+         ((mv erp dag-array) (make-dag-into-array2 'dag-array dag-lst-or-quotep 0)) ; todo: use nonzero slack?
+         ((when erp) (mv erp nil state))
          (top-nodenum (top-nodenum dag-lst-or-quotep))
          (dag-len (+ 1 top-nodenum))
          ;;make aux. data structures:

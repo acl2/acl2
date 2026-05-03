@@ -1962,7 +1962,7 @@
     (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
 ;          (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
          ;; Load the DAG nodes into an array:
-         (dag-array (make-into-array 'dag-array dag))
+         (dag-array (make-dag-into-array 'dag-array dag 0)) ; todo: use nonzero slack?
          (top-nodenum (top-nodenum dag))
          (dag-len (+ 1 top-nodenum))
          ;; make auxiliary dag data structures:

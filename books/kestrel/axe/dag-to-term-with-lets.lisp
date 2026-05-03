@@ -526,7 +526,7 @@
       dag
     (let* ((dag (drop-non-supporters dag)) ;prevents crashes if there are unreferenced nodes -- drop this?
            (dag-array-name 'dag-array-temp))
-      (dag-array-to-term-with-lets (len dag) dag-array-name (make-into-array dag-array-name dag)))))
+      (dag-array-to-term-with-lets (len dag) dag-array-name (make-dag-into-array dag-array-name dag 0)))))
 
 ;; Example: (dag-to-term-with-lets (dagify-term '(+ (bar (baz x)) (foo (bar (baz x))))))
 ;; Example: (dag-to-term-with-lets (dagify-term! '(f (g (h (foo y x '3 (bar z))) (h (foo y x '3 (bar z)))))))
