@@ -131,7 +131,7 @@
 (std::defprojection expr-frame-list->exprs ((x expr-listp))
   :guard (expr-list-case-frame x)
   :returns (exprss expr-list-listp)
-  :short "Lift @(tsee expr-array->exprs) to lists."
+  :short "Lift @(tsee expr-frame->exprs) to lists."
   (expr-frame->exprs x)
 
   ///
