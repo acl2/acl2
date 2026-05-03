@@ -326,3 +326,73 @@
     :hyp (prog-corep prog)
     :fn prog-desugar
     :hints (("Goal" :in-theory (enable prog-desugar)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection desugar-idempotent
+  :short "Desugaring is idempotent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a simple consequence of
+     @(tsee corep-of-desugar) and @(tsee desugar-when-corep)."))
+
+  (defrule shape-desugar-idempotent
+    (equal (shape-desugar (shape-desugar shape))
+           (shape-desugar shape)))
+
+  (defrule shape-list-desugar-idempotent
+    (equal (shape-list-desugar (shape-list-desugar shapes))
+           (shape-list-desugar shapes)))
+
+  (defrule ispace-desugar-idempotent
+    (equal (ispace-desugar (ispace-desugar ispace))
+           (ispace-desugar ispace)))
+
+  (defrule ispace-list-desugar-idempotent
+    (equal (ispace-list-desugar (ispace-list-desugar ispaces))
+           (ispace-list-desugar ispaces)))
+
+  (defrule ispace-list-option-desugar-idempotent
+    (equal (ispace-list-option-desugar (ispace-list-option-desugar ispaces?))
+           (ispace-list-option-desugar ispaces?)))
+
+  (defrule type-desugar-idempotent
+    (equal (type-desugar (type-desugar type))
+           (type-desugar type)))
+
+  (defrule type-list-desugar-idempotent
+    (equal (type-list-desugar (type-list-desugar types))
+           (type-list-desugar types)))
+
+  (defrule type-option-desugar-idempotent
+    (equal (type-option-desugar (type-option-desugar type?))
+           (type-option-desugar type?)))
+
+  (defrule var+type-desugar-idempotent
+    (equal (var+type-desugar (var+type-desugar var+type))
+           (var+type-desugar var+type)))
+
+  (defrule var+type-list-desugar-idempotent
+    (equal (var+type-list-desugar (var+type-list-desugar var+types))
+           (var+type-list-desugar var+types)))
+
+  (defrule expr-desugar-idempotent
+    (equal (expr-desugar (expr-desugar expr))
+           (expr-desugar expr)))
+
+  (defrule expr-list-desugar-idempotent
+    (equal (expr-list-desugar (expr-list-desugar exprs))
+           (expr-list-desugar exprs)))
+
+  (defrule atom-desugar-idempotent
+    (equal (atom-desugar (atom-desugar atom))
+           (atom-desugar atom)))
+
+  (defrule atom-list-desugar-idempotent
+    (equal (atom-list-desugar (atom-list-desugar atoms))
+           (atom-list-desugar atoms)))
+
+  (defrule prog-desugar-idempotent
+    (equal (prog-desugar (prog-desugar prog))
+           (prog-desugar prog))))
