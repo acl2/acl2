@@ -217,3 +217,112 @@
     (prog-corep fty::result)
     :fn prog-desugar
     :hints (("Goal" :in-theory (enable prog-desugar)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection desugar-when-corep
+  :short "Desugaring does nothing on core ASTs."
+
+  (defret-mutual shapes-desugar-when-shapes-corep
+    (defret shape-desugar-when-shape-corep
+      (equal fty::result (shape-fix shape))
+      :hyp (shape-corep shape)
+      :fn shape-desugar)
+    (defret shape-list-desugar-when-shape-list-corep
+      (equal fty::result (shape-list-fix shape-list))
+      :hyp (shape-list-corep shape-list)
+      :fn shape-list-desugar)
+    :mutual-recursion shapes-desugar
+    :hints
+    (("Goal" :in-theory (enable shape-desugar shape-list-desugar shape-corep))))
+
+  (defret ispace-desugar-when-ispace-corep
+    (equal fty::result (ispace-fix ispace))
+    :hyp (ispace-corep ispace)
+    :fn ispace-desugar
+    :hints (("Goal" :in-theory (enable ispace-desugar))))
+
+  (defret ispace-list-desugar-when-ispace-list-corep
+    (equal fty::result (ispace-list-fix ispace-list))
+    :hyp (ispace-list-corep ispace-list)
+    :fn ispace-list-desugar
+    :hints (("Goal" :induct t :in-theory (enable ispace-list-desugar))))
+
+  (defret ispace-list-option-desugar-when-ispace-list-option-corep
+    (equal fty::result (ispace-list-option-fix ispace-list-option))
+    :hyp (ispace-list-option-corep ispace-list-option)
+    :fn ispace-list-option-desugar
+    :hints (("Goal" :in-theory (enable ispace-list-option-desugar))))
+
+  (defret-mutual types-desugar-when-types-corep
+    (defret type-desugar-when-type-corep
+      (equal fty::result (type-fix type))
+      :hyp (type-corep type)
+      :fn type-desugar)
+    (defret type-list-desugar-when-type-list-corep
+      (equal fty::result (type-list-fix type-list))
+      :hyp (type-list-corep type-list)
+      :fn type-list-desugar)
+    :mutual-recursion types-desugar
+    :hints
+    (("Goal" :in-theory (enable type-desugar type-list-desugar type-corep))))
+
+  (defret type-option-desugar-when-type-option-corep
+    (equal fty::result (type-option-fix type-option))
+    :hyp (type-option-corep type-option)
+    :fn type-option-desugar
+    :hints (("Goal" :in-theory (enable type-option-desugar
+                                       type-option-some->val
+                                       type-option-fix))))
+
+  (defret var+type-desugar-when-var+type-corep
+    (equal fty::result (var+type-fix var+type))
+    :hyp (var+type-corep var+type)
+    :fn var+type-desugar
+    :hints (("Goal" :in-theory (enable var+type-desugar))))
+
+  (defret var+type-list-desugar-when-var+type-list-corep
+    (equal fty::result (var+type-list-fix var+type-list))
+    :hyp (var+type-list-corep var+type-list)
+    :fn var+type-list-desugar
+    :hints (("Goal" :induct t :in-theory (enable var+type-list-desugar))))
+
+  (defret-mutual exprs/atoms/binds-desugar-when-exprs/atoms/binds-corep
+    (defret expr-desugar-when-expr-corep
+      (equal fty::result (expr-fix expr))
+      :hyp (expr-corep expr)
+      :fn expr-desugar)
+    (defret expr-list-desugar-when-expr-list-corep
+      (equal fty::result (expr-list-fix expr-list))
+      :hyp (expr-list-corep expr-list)
+      :fn expr-list-desugar)
+    (defret atom-desugar-when-atom-corep
+      (equal fty::result (atom-fix atom))
+      :hyp (atom-corep atom)
+      :fn atom-desugar)
+    (defret atom-desugar-when-atom-list-corep
+      (equal fty::result (atom-list-fix atom-list))
+      :hyp (atom-list-corep atom-list)
+      :fn atom-list-desugar)
+    (defret bind-desugar-when-bind-corep
+      (equal fty::result (bind-fix bind))
+      :hyp (bind-corep bind)
+      :fn bind-desugar)
+    (defret bind-list-desugar-when-bind-list-corep
+      (equal fty::result (bind-list-fix bind-list))
+      :hyp (bind-list-corep bind-list)
+      :fn bind-list-desugar)
+    :mutual-recursion exprs/atoms/binds-desugar
+    :hints (("Goal" :in-theory (enable expr-desugar
+                                       expr-list-desugar
+                                       atom-desugar
+                                       atom-list-desugar
+                                       bind-desugar
+                                       bind-list-desugar
+                                       expr-corep))))
+
+  (defret prog-desugar-when-prog-corep
+    (equal fty::result (prog-fix prog))
+    :hyp (prog-corep prog)
+    :fn prog-desugar
+    :hints (("Goal" :in-theory (enable prog-desugar)))))
