@@ -106,8 +106,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ shape (&rest dims)
-  :short "Construct a shape term from component dimensions."
+(defmacro shape (&rest dims)
+  ;; :short "Construct a shape term from component dimensions."
   `(shape-dims (list ,@(dim-terms-from-vars/consts/others dims))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
