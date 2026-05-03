@@ -19,6 +19,7 @@
 (include-book "abstract-syntax-core")
 (include-book "character-literal-codes")
 (include-book "desugaring")
+(include-book "frame-flattening")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,4 +46,5 @@
                     abstract-syntax-variable-operations
                     abstract-syntax-core
                     character-literal-codes
-                    desugaring))
+                    desugaring
+                    frame-flattening))
