@@ -80,7 +80,7 @@
 ;;   books/unicode/utf8-decode.lisp
 ;; or in a new file in
 ;;   books/kestrel/unicode-light/
-;; but since it uses define and acl2::string=>nats and acl2::nat-list-resultp
+;; but since it uses define and string=>nats and acl2::nat-list-resultp
 ;; probably it would be better to put it in a new file like
 ;;   books/kestrel/utilities/strings/strings-unicodes.lisp
 
@@ -98,7 +98,7 @@
    (xdoc::p
     "This mirrors the bytes-to-code-points step in @(tsee
      parse-program-from-bytes)."))
-  (b* ((bytes (acl2::string=>nats (acl2::str-fix string)))
+  (b* ((bytes (string=>nats (str-fix string)))
        ((unless (acl2::unsigned-byte-listp 8 bytes))
         (reserrf (cons :invalid-octets bytes)))
        (codepoints (acl2::utf8=>ustring bytes))
@@ -252,14 +252,14 @@
 ;;
 ;; Program-level entry points.
 ;;
-;; @(tsee parse-program-from-codepoints) and @(tsee parse-program-from-bytes)
-;; are CST-producing helpers shared by the user-facing AST entries.  Each
-;; bundles the SC2 check from @(see post-parsing) into the parsing pipeline
-;; (parse + [SC2] + input exhaustion).
+;; parse-program-from-codepoints and parse-program-from-bytes are
+;; CST-producing helpers shared by the user-facing AST entries.  Each
+;; bundles the SC2 check from post-parsing.lisp (xdoc topic
+;; post-parsing) into the parsing pipeline (parse + [SC2] + input
+;; exhaustion).
 ;;
-;; @(tsee parse-from-string) and @(tsee parse-from-file) at the bottom of
-;; this section are the canonical user-facing entry points: they return a
-;; @(tsee prog) AST.
+;; parse-from-string and parse-from-file at the bottom of this section
+;; are the canonical user-facing entry points: they return a prog AST.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -314,7 +314,7 @@
      @(tsee abs-prog) to lift the CST to a @(tsee prog) AST.
      The full pipeline is UTF-8 decode + ABNF parse +
      [SC2] keyword check + input exhaustion + CST&rarr;AST abstraction."))
-  (b* (((okf tree) (parse-program-from-bytes (acl2::string=>nats string))))
+  (b* (((okf tree) (parse-program-from-bytes (string=>nats string))))
     (abs-prog tree)))
 
 (define parse-from-file ((filename stringp) state)
@@ -337,7 +337,7 @@
      code points (success) or an ACL2 string describing the failure.
      We dispatch on @(tsee nat-listp) to distinguish the cases."))
   (b* (((mv codepoints state)
-        (acl2::read-utf8 (acl2::str-fix filename) state))
+        (acl2::read-utf8 (str-fix filename) state))
        ((unless (nat-listp codepoints))
         (mv (reserrf (cons :file-read-or-utf8-error codepoints))
             state))
