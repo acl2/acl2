@@ -106,8 +106,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro shape (&rest dims)
-  ;; :short "Construct a shape term from component dimensions."
+(defmacro+ shp (&rest dims)
+  :short "Construct a shape term from component dimensions."
   `(shape-dims (list ,@(dim-terms-from-vars/consts/others dims))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -201,9 +201,9 @@
    (xdoc::p
     "The string denoting a variable must start with @('&') or @('*')."))
   (cond ((stringp type) `(type-var ,(type-var-term-from-string type)))
-        ((eq type :bool) '(type-array (type-base (base-type-bool)) (shape)))
-        ((eq type :int) '(type-array (type-base (base-type-int)) (shape)))
-        ((eq type :float) '(type-array (type-base (base-type-float)) (shape)))
+        ((eq type :bool) '(type-array (type-base (base-type-bool)) (shp)))
+        ((eq type :int) '(type-array (type-base (base-type-int)) (shp)))
+        ((eq type :float) '(type-array (type-base (base-type-float)) (shp)))
         (t type)))
 
 ;;;;;;;;;;;;;;;;;;;;
