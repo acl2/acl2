@@ -912,7 +912,15 @@
   :elt-type expr-list
   :true-listp t
   :elementp-of-nil t
-  :pred expr-list-listp)
+  :pred expr-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-expr-list-listp
+    (implies (expr-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable expr-list-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -921,7 +929,15 @@
   :elt-type atom-list
   :true-listp t
   :elementp-of-nil t
-  :pred atom-list-listp)
+  :pred atom-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-atom-list-listp
+    (implies (atom-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable atom-list-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
