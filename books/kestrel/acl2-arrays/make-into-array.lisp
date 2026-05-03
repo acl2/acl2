@@ -21,22 +21,22 @@
 ;Consider adding an option to reuse an existing array if large enough (well, compress1 now does that internally)?
 ; The length of the resulting array is one more than the max key in the alist, unless the alist is empty, in which case the length is 1.
 ; TODO: Add an option for slack space
-(defund make-into-array (array-name alist)
+(defund make-into-array (name alist)
   (declare (xargs :guard (and (true-listp alist)
                               (bounded-natp-alistp alist *max-1d-array-length*))
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite))))
-           (type symbol array-name))
+           (type symbol name))
   (let* ((len (if (consp alist)
                   ;; normal case:
                   (+ 1 (max-key alist 0)) ;todo: could save this max if we know it's decreasing (like a dag)
                 ;; compress1 must be given a dimension of at least 1
                 1)))
-    (make-into-array-with-len array-name alist len)))
+    (make-into-array-with-len name alist len)))
 
 (in-theory (disable (:e make-into-array))) ;might blow up
 
 (defthm default-of-make-into-array
-  (equal (default array-name (make-into-array array-name alist))
+  (equal (default name (make-into-array name alist))
          nil)
   :hints (("Goal" :in-theory (enable make-into-array))))
 
@@ -44,9 +44,9 @@
   (implies (and (bounded-natp-alistp alist *max-1d-array-length*)
                 (true-listp alist)
                 ;alist
-                (symbolp array-name)
+                (symbolp name)
                 )
-           (equal (array1p array-name (make-into-array array-name alist))
+           (equal (array1p name (make-into-array name alist))
                   t))
   :hints (("Goal" :in-theory (e/d (array1p compress1 make-into-array) (normalize-array1p-name)))))
 
@@ -54,10 +54,10 @@
   (implies (and (bounded-natp-alistp alist *max-1d-array-length*)
                 (true-listp alist)
                 alist
-                (symbolp array-name)
+                (symbolp name)
                 (natp index)
                 (<= index (max-key alist 0)))
-           (equal (aref1 array-name (make-into-array array-name alist) index)
+           (equal (aref1 name (make-into-array name alist) index)
                   (cdr (assoc-equal index alist))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :do-not-induct t
@@ -67,20 +67,20 @@
                               aref1))))
 
 (defthm dimensions-of-make-into-array
-  (equal (dimensions array-name (make-into-array array-name alist))
+  (equal (dimensions name (make-into-array name alist))
          (if (consp alist)
              (list (+ 1 (max-key alist 0)))
            (list 1)))
   :hints (("Goal" :in-theory (enable make-into-array))))
 
 (defthm alen1-of-make-into-array
-  (equal (alen1 array-name (make-into-array array-name alist))
+  (equal (alen1 name (make-into-array name alist))
          (if (consp alist)
              (+ 1 (max-key alist 0))
            1))
   :hints (("Goal" :in-theory (enable make-into-array))))
 
 (defthm make-into-array-of-nil
-  (equal (make-into-array array-name nil)
-         (make-empty-array array-name 1))
+  (equal (make-into-array name nil)
+         (make-empty-array name 1))
   :hints (("Goal" :in-theory (enable make-into-array MAKE-INTO-ARRAY-WITH-LEN MAKE-EMPTY-ARRAY MAKE-EMPTY-ARRAY-WITH-DEFAULT))))

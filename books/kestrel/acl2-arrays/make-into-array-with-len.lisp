@@ -26,21 +26,21 @@
 (local (include-book "acl2-arrays")) ; todo: reduce, for aref1-of-compress1
 
 ;; Makes the ALIST, whose keys must be naturals, into an array named
-;; ARRAY-NAME, which will have length LEN.  LEN must exceed the largest key in
+;; NAME, which will have length LEN.  LEN must exceed the largest key in
 ;; ALIST.  If LEN is greater than one more than the largest key, the resulting array will
 ;; contain some slack space (empty slots) for the array to grow.
 ;rename make-into-array-with-slack?
 ;todo: add an option to reuse an existing array if large enough?
 ;todo: adapt this to use max-key like the one above?
 ;todo: take the default value as an option
-(defund make-into-array-with-len (array-name alist len)
+(defund make-into-array-with-len (name alist len)
   (declare (type (integer 1 1152921504606846974) len)
-           (type symbol array-name)
+           (type symbol name)
            (xargs :guard (and (true-listp alist)
                               (bounded-natp-alistp alist len) ;todo: change this to imply true-listp
                               )
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))))
-  (compress1 array-name
+  (compress1 name
              (acons :header
                     (list :dimensions (list len)
                           ;; TODO: Can we do something better here?:
@@ -48,31 +48,31 @@
                                                *max-array-maximum-length* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
                                                )
                           :default nil ; fixme?
-                          :name array-name)
+                          :name name)
                     alist)))
 
 (in-theory (disable (:e make-into-array-with-len))) ;blew up
 
 (defthm dimensions-of-make-into-array-with-len
-  (equal (dimensions array-name1 (make-into-array-with-len array-name2 alist len))
+  (equal (dimensions name1 (make-into-array-with-len name2 alist len))
          (list len))
   :hints (("Goal" :in-theory (enable make-into-array-with-len))))
 
 (defthm alen1-of-make-into-array-with-len
-  (equal (alen1 array-name1 (make-into-array-with-len array-name2 alist len))
+  (equal (alen1 name1 (make-into-array-with-len name2 alist len))
          len)
   :hints (("Goal" :in-theory (enable make-into-array-with-len))))
 
 (defthm array1p-of-make-into-array-with-len
-  (implies (and (symbolp array-name)
+  (implies (and (symbolp name)
                 (bounded-integer-alistp alist len)
                 (posp len)
                 (<= len *max-1d-array-length*))
-           (array1p array-name (make-into-array-with-len array-name alist len)))
+           (array1p name (make-into-array-with-len name alist len)))
   :hints (("Goal" :in-theory (enable make-into-array-with-len array1p-rewrite))))
 
 (defthm default-of-make-into-array-with-len
-  (equal (default array-name1 (make-into-array-with-len array-name2 alist len))
+  (equal (default name1 (make-into-array-with-len name2 alist len))
          nil)
   :hints (("Goal" :in-theory (enable array1p compress1 make-into-array-with-len))))
 
@@ -80,12 +80,12 @@
   (implies (and (bounded-natp-alistp alist len)
                 (true-listp alist)
                 alist
-                (symbolp array-name1)
+                (symbolp name1)
                 (natp index)
                 (< index len)
                 (integerp len)
                 (<= len *max-1d-array-length*) ; todo: drop?
                 )
-           (equal (aref1 array-name1 (make-into-array-with-len array-name2 alist len) index)
+           (equal (aref1 name1 (make-into-array-with-len name2 alist len) index)
                   (cdr (assoc-equal index alist))))
   :hints (("Goal" :in-theory (enable make-into-array-with-len aref1))))

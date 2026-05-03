@@ -46,24 +46,24 @@
 (in-theory (disable (:e make-empty-array-with-default))) ;; Avoid making arrays during proofs (might be huge)
 
 (defthm array1p-of-make-empty-array-with-default
-  (equal (array1p array-name (make-empty-array-with-default array-name len default))
+  (equal (array1p name (make-empty-array-with-default name len default))
          (and (posp len)
               (<= len *max-1d-array-length*)
-              (symbolp array-name)))
+              (symbolp name)))
   :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
 
 (defthm dimensions-of-make-empty-array-with-default
-  (equal (dimensions array-name (make-empty-array-with-default array-name len default))
+  (equal (dimensions name (make-empty-array-with-default name len default))
          (list len))
   :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
 
 (defthm alen1-of-make-empty-array-with-default
-  (equal (alen1 array-name (make-empty-array-with-default array-name len default))
+  (equal (alen1 name (make-empty-array-with-default name len default))
          len)
   :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
 
 (defthm default-of-make-empty-array-with-default
-  (equal (default array-name (make-empty-array-with-default array-name len default))
+  (equal (default name (make-empty-array-with-default name len default))
          default)
   :hints (("Goal" :in-theory (enable make-empty-array-with-default))))
 
@@ -72,7 +72,7 @@
                 ;; (< index len) ;we get the default if the index is out of bounds
                 (posp len)
                 (<= len *max-1d-array-length*))
-           (equal (aref1 array-name (make-empty-array-with-default array-name2 len default) index)
+           (equal (aref1 name (make-empty-array-with-default name2 len default) index)
                   default))
   :hints (("Goal" :in-theory (enable array1p make-empty-array-with-default))))
 
@@ -88,25 +88,25 @@
 (in-theory (disable (:e make-empty-array))) ;; Avoid exposing a constant involving a :header
 
 (defthm array1p-of-make-empty-array
-  (equal (array1p array-name (make-empty-array array-name len))
+  (equal (array1p name (make-empty-array name len))
          (and (posp len)
               (<= len *max-1d-array-length*)
-              (symbolp array-name)))
+              (symbolp name)))
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 (defthm dimensions-of-make-empty-array
-  (equal (dimensions array-name (make-empty-array array-name len))
+  (equal (dimensions name (make-empty-array name len))
          (list len))
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 (defthm alen1-of-make-empty-array
-  (equal (alen1 array-name (make-empty-array array-name len))
+  (equal (alen1 name (make-empty-array name len))
          len)
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 ;; but see make-empty-array-with-default
 (defthm default-of-make-empty-array
-  (equal (default array-name (make-empty-array array-name len))
+  (equal (default name (make-empty-array name len))
          nil)
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
@@ -115,6 +115,6 @@
                 ;; (< index len) ;we get nil if the index is out of bounds
                 (posp len)
                 (<= len *max-1d-array-length*))
-           (equal (aref1 array-name (make-empty-array array-name2 len) index)
+           (equal (aref1 name (make-empty-array name2 len) index)
                   nil))
   :hints (("Goal" :in-theory (enable make-empty-array))))
