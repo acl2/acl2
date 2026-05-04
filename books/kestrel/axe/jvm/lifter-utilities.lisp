@@ -1,4 +1,4 @@
-; Utilities supporting the lifter(s)
+; Utilities supporting the JVM lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2026 Kestrel Institute
@@ -15,6 +15,7 @@
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "../make-axe-rules") ; for make-axe-rules-from-theorem
 (include-book "../priorities")
+(include-book "../dags")
 ;(include-book "../jvm/heap0")
 (include-book "kestrel/jvm/jvm" :dir :system) ;for JVM::CALL-STACK-SIZE
 (include-book "kestrel/jvm/method-designator-strings" :dir :system)
@@ -737,3 +738,43 @@
     jvm::no-locked-object
     jvm::empty-operand-stack
     ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Works for terms or dag-exprs
+(defun elide-make-frame-args (args)
+  (declare (xargs :guard (true-listp args)))
+  (list (first args)
+        (second args)
+        (third args)
+        (fourth args)
+        '':method-info-elided ;; (fifth args)
+        (sixth args)))
+
+(defund print-dag-with-elided-method-info-aux (dag first-elementp indent)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (booleanp first-elementp)
+                              (stringp indent))))
+  (if (endp dag)
+      nil
+    (let* ((entry (first dag))
+           (entry (let ((expr (cdr entry)))
+                    (if (and (consp expr)
+                             (eq 'jvm::make-frame (ffn-symb expr)))
+                        (cons (car entry) ; the nodenum
+                              (cons 'jvm::make-frame (elide-make-frame-args (fargs expr))))
+                      entry))))
+      (progn$ (if first-elementp nil (cw "~% ~s0" indent)) ; indents one space more than the open paren
+              (cw "~F0" entry)
+              (print-dag-with-elided-method-info-aux (rest dag) nil indent)))))
+
+;; Prints the entire dag, including any irrelevant nodes, but elides large method-infos in make-frame calls.
+;; TODO: Generalize to use the elision-spec machinery.
+;; Indent is usually a string consisting of only spaces.
+(defund print-dag-with-elided-method-info (dag indent)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (stringp indent))))
+  (progn$ (cw "~s0(" indent)
+          (print-dag-with-elided-method-info-aux dag t indent)
+          (cw ")") ; recently removed a newline here
+          ))

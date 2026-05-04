@@ -124,7 +124,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Consider stopping if the error field of the state is set.
+;; Should we stop if the error field of the state is set?  Probably not, since the
+;; run did not in fact finish but we may be able to prove things about the error state.
 ;; It would be nice to support the :stobjs arm below, but it is
 ;; not very important, because a defpun is already non-executable.
 (defpun run-until-return-or-reach-pc-aux (call-stack-height stop-pcs arm)
@@ -132,7 +133,7 @@
   (if (or (< call-stack-height 0)
           (memberp (reg *pc* arm) ; (pc arm)
                    stop-pcs))
-      arm ; stop since we've returned from the function being lifted
+      arm ; stop since we've returned from the function being lifted or reached a stop-pc
     ;; Step the state and also update our tracked version of the call-stack-height:
     (run-until-return-or-reach-pc-aux (update-call-stack-height call-stack-height arm) stop-pcs (step arm))))
 
@@ -169,7 +170,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Run until we return from the current function.
+;; Run until we return from the current function or hit one of the STOP-PCS.
 (defund run-until-return-or-reach-pc (stop-pcs arm)
   ;; (declare (xargs :stobjs arm))
   (run-until-return-or-reach-pc-aux

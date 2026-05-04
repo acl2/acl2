@@ -203,7 +203,7 @@
 (defirrelevant irr-const-expr
   :short "An irrelevant constant expression."
   :type const-exprp
-  :body (const-expr (irr-expr)))
+  :body (make-const-expr :expr (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

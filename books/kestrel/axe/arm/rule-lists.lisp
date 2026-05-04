@@ -519,8 +519,6 @@
      arm::subregion32p-of-1-arg1     ;; trying
      arm::disjoint-regions32p-of-1-and-1 ; trying
 
-     acl2::equal-of-bvplus-constant-and-constant-alt
-     acl2::equal-of-bvplus-constant-and-constant
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1

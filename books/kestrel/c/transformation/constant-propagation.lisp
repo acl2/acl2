@@ -876,7 +876,7 @@
                  (new-env envp))
     (b* (((mv expr - env)
           (const-prop-expr (const-expr->expr cexpr) env)))
-      (mv (const-expr expr) env))
+      (mv (make-const-expr :expr expr) env))
     :measure (const-expr-count cexpr))
 
   (define const-prop-const-expr-option

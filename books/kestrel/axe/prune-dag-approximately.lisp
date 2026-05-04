@@ -414,7 +414,8 @@
        ;; Generate the (approximate) contexts:
        (context-array (make-full-context-array-for-dag dag))
        ;; Make the dag into an array and make the 3 indices:
-       (dag-array (make-into-array 'dag-array dag))
+       ((mv erp dag-array) (make-dag-into-array2 'dag-array dag 0)) ; todo: use nonzero slack?
+       ((when erp) (mv erp dag state))
        (original-dag-len (+ 1 (top-nodenum-of-dag dag)))
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices 'dag-array dag-array 'dag-parent-array original-dag-len))

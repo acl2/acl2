@@ -265,8 +265,9 @@
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
     :returns (result const-exprp)
-    (const-expr (expr-subst-free (const-expr->expr const-expr)
-                                 subst bound-vars))
+    (make-const-expr :expr (expr-subst-free (const-expr->expr const-expr)
+                                            subst bound-vars)
+                     :info (const-expr->info const-expr))
     :measure (const-expr-count const-expr))
 
   (define const-expr-option-subst-free
@@ -575,7 +576,8 @@
      (designor-list-subst-free (c$::desiniter->designors desiniter)
                                subst bound-vars)
      (initer-subst-free (c$::desiniter->initer desiniter)
-                        subst bound-vars))
+                        subst bound-vars)
+     nil)
     :measure (desiniter-count desiniter))
 
   (define desiniter-list-subst-free

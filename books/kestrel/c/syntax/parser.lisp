@@ -4244,7 +4244,7 @@
        but the check that that is the case is done elsewhere."))
     (b* (((reterr) (irr-const-expr) (irr-span) parstate)
          ((erp expr span parstate) (parse-conditional-expression parstate)))
-      (retok (const-expr expr) span parstate))
+      (retok (make-const-expr :expr expr) span parstate))
     :measure (two-nats-measure (parsize parstate) 17))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5815,7 +5815,8 @@
        expr/tyname
        ;; If we parsed an expression,
        ;; we return an @('_Alignas') with an expression.
-       :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.expr))
+       :expr (retok (align-spec-alignas-expr
+                      (make-const-expr :expr expr/tyname.expr))
                     (span-join first-span last-span)
                     parstate)
        ;; If we parsed a type name,

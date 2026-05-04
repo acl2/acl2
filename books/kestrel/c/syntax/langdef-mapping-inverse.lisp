@@ -53,7 +53,7 @@
   (defrule ldm-ident-of-ildm-ident
     (equal (ldm-ident (ildm-ident ident))
            (mv nil (c::ident-fix ident)))
-    :enable (ldm-ident identity)))
+    :enable ldm-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -754,7 +754,7 @@
    label
    :name (make-label-name :name (ildm-ident label.get)
                           :attribs nil)
-   :cas (make-label-casexpr :expr (const-expr (ildm-expr label.get))
+   :cas (make-label-casexpr :expr (make-const-expr :expr (ildm-expr label.get))
                             :range? nil)
    :default (label-default)))
 

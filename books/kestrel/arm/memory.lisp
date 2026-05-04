@@ -101,6 +101,11 @@
                   :stobjs arm))
   (bvchop 8 (ifix (memoryi (bvchop 32 addr) arm))))
 
+(defthm natp-of-read-byte-type
+  (natp (read-byte addr arm))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable read-byte))))
+
 (defthm read-byte-when-not-integerp
   (implies (not (integerp addr))
            (equal (read-byte addr arm)
@@ -239,12 +244,6 @@
 ;; (defthm unsigned-byte-p-8-of-read-byte
 ;;   (unsigned-byte-p 8 (read-byte addr arm))
 ;;   :hints (("Goal" :in-theory (enable read-byte))))
-
-;move up
-(defthm integerp-of-read-byte-type
-  (integerp (read-byte addr arm))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable read-byte))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

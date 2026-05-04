@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,7 +75,7 @@
      or it is not.
      In the second sub-case,
      the original sequence of Unicode characters is not a valid Java program;
-     none of the (non-Unicode) escape sequences [JSL:3.10.6]
+     none of the (non-Unicode) escape sequences [JLS:3.10.6]
      has @('u') following the backslash.
      In the first sub-case,
      we have a possible Unicode escape according to the grammar,
@@ -94,7 +94,7 @@
    (xdoc::p
     "The parser always succeeds,
      even if there is an eligible backslash
-     followed by one of more @('u') letters
+     followed by one or more @('u') letters
      but with the last @('u') not followed by four hexadecimal digits
      (in which case, as noted above, the processing of Unicode escapes fails).
      In this case, the parser just leaves the characters as they are,
@@ -277,7 +277,7 @@
    (xdoc::p
     "This is true when
      there is a valid Unicode escape at @('pos'),
-     i.e. if there is an eligible backslah at @('pos')
+     i.e. if there is an eligible backslash at @('pos')
      followed by one or more `u' letters
      that are followed by four hexadecimal digits."))
   (and (uniescape-candidate-p pos unicodes)
@@ -351,7 +351,7 @@
      which turns, via rewriting, the length of the string of @('trees')
      into the sum of the lengths of the strings of
      the prefix (the @(tsee take)) and suffix (the @(tsee nthcdr)).
-     Then the type prescription rule aboout the string of the suffix
+     Then the type prescription rule about the string of the suffix
      tells us that the second addend is non-zero,
      and therefore the first addend (the length of the prefix)
      must be less than the total length."))
@@ -430,7 +430,7 @@
      such that the string at the leaves of the output trees
      is the input Unicode character list
      (this is the constraint expressed by the grammar alone),
-     and such that some additional constrains are satisfied.
+     and such that some additional constraints are satisfied.
      This predicates expresses one such additional constraint, namely that
      if the (only) subtree of any parsed tree is a @('unicode-escape') tree
      (i.e. if a Unicode escape is parsed),
@@ -511,7 +511,7 @@
      which does not involve the output anyhow.
      This check in the top-level function
      that formalizes Unicode escape processing,
-     of which he parser is a component.")
+     of which the parser is a component.")
    (xdoc::p
     "Here we express the constraints of the output with respect to the input.
      The string at the leaves of the trees must be the input string:
@@ -525,11 +525,11 @@
       then there is a Unicode escape in the input
       (where it suffices to say that
       there is an even number of preceding backslashes,
-      as explained in @(tsee even-backslashes-tree-constraints-p).")
+      as explained in @(tsee even-backslashes-tree-constraints-p)).")
     (xdoc::li
      "Sufficient condition:
       if there is a Unicode escape in the input,
-      there must be a corresponding Unicode escapa tree."))
+      there must be a corresponding Unicode escape tree."))
    (xdoc::p
     "These constraints should uniquely characterize the output
      for every possible input,
@@ -576,12 +576,12 @@
     "This parser is declaratively defined in terms of
      the witness of @(tsee uniescape-parse-p).
      If the list of Unicode characters has a corresponding list of parse trees
-     (i.e. such that the input/output constraints are satisified),
+     (i.e. such that the input/output constraints are satisfied),
      they are returned;
      otherwise the parser fails.
      This parser should never fail, but this remains to be proved formally.")
    (xdoc::p
-    "Generally a parser returns a single parse trees,
+    "Generally a parser returns a single parse tree,
      but Java's first lexical translation step
      must take place before any further parsing.
      Therefore, it is appropriate for this parser to return
@@ -803,7 +803,7 @@
    (xdoc::p
     "We parse the Unicode characters into trees,
      and then we abstract the trees into Unicode characters.
-     We also check that there no invalid Unicode escape candidates,
+     We also check that there are no invalid Unicode escape candidates,
      returning an error if there are any.")
    (xdoc::p
     "We propagate any errors from the parser,

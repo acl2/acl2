@@ -1063,7 +1063,7 @@
                               ;; (booleanp keep-test-casesp)
                               (print-levelp print))))
   (let* ((dag-array-name 'probable-facts-array)
-         (dag-array (make-into-array dag-array-name dag))
+         (dag-array (make-dag-into-array dag-array-name dag 0))
          (dag-len (len dag)))
     (with-local-stobjs
       (test-case-stobj rand)

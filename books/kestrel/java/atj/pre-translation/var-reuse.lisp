@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,7 +72,7 @@
      The lambda-bound variables are marked as either `new' or `old':
      the first marking means that
      the variable must be a new Java local variable
-     that is declared and initilized;
+     that is declared and initialized;
      the second marking means that
      the variable can be an old Java local variable
      that is destructively assigned.
@@ -283,7 +283,7 @@
     "The parameter @('vars-in-scope') consists of the variables in scope
      at the point where the term under consideration occurs.
      At the top level (see @(tsee atj-mark-formals+body)),
-     it is intialized with the (unmarked) formal parameters
+     it is initialized with the (unmarked) formal parameters
      of the ACL2 function whose formal parameters and body are being marked:
      indeed, the formal parameters of a function are in scope for the body.
      As we descend into subterms, when we encounter a lambda expression,

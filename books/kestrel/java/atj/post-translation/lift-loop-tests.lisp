@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,7 +47,7 @@
     "}"
     "return <expr>;")
    (xdoc::p
-    "Simillarly, if the method body has the form")
+    "Similarly, if the method body has the form")
    (xdoc::codeblock
     "while (true) {"
     "    if (<test>) {"
@@ -110,7 +110,7 @@
     ". If it does, we return its components, i.e.
      the test expression, the return expression,
      and the block that will become the body of the new loop
-     (i.e. the `then' or `else' branch that is not a @('return').
+     (i.e. the `then' or `else' branch that is not a @('return')).
      The returned test expression is the one that will become
      the test of the new loop:
      thus, it is either the same as the @('if')

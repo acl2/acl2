@@ -1,6 +1,6 @@
 ; Tools for defining predicates that recognize arrays of typed values
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ; Copyright (C) 2019-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,13 +14,13 @@
 ;; A utility to define typed ACL2 arrays, where the type is expressed as a
 ;; predicate over the value and its index.
 
-;; TODO: Consider what to do when the array's default value does / doesn't satisfy the pred (for all indices, if the index is mentioned?). Would like a theorem about make-empty-array.
+;; TODO: Consider what to do when the array's default value does / doesn't satisfy the pred (for all indices, if the index is mentioned?). Would like a theorem about new-array1.
 
 ;; TODO: Consider allowing the supplied pred to be a symbol that names a unary
 ;; predicate to be applied to the value.
 
 (include-book "expandable-arrays")
-(include-book "make-empty-array")
+(include-book "new-array1")
 (include-book "kestrel/utilities/pack" :dir :system) ; reduce?
 
 (defthm not-<-of-if-of-<-same
@@ -197,13 +197,13 @@
                    :rule-classes nil))
 
                 ;; only works if the default works for all indices (see above)
-                (defthm ,(pack$ aux-fn '-of-make-empty-array-with-default)
+                (defthm ,(pack$ aux-fn '-of-new-array1-with-default)
                   (implies (and (< index len)
                                 (natp index)
                                 (posp len)
                                 (<= len *max-1d-array-length*)
                                 (symbolp array-name))
-                           (,aux-fn array-name (make-empty-array-with-default array-name len ,default) index ,@extra-vars))
+                           (,aux-fn array-name (new-array1-with-default array-name len ,default) index ,@extra-vars))
                   :hints (("Goal" :in-theory (enable ,aux-fn))))))
 
        ;;
@@ -310,40 +310,40 @@
                   :in-theory (disable ,(pack$ fn '-of-aset1-at-end)))))
 
        ,@(and default-satisfies-predp
-              `((defthm ,(pack$ fn '-of-make-empty-array-with-default)
+              `((defthm ,(pack$ fn '-of-new-array1-with-default)
                   (implies (symbolp array-name)
-                           (equal (,fn array-name (make-empty-array-with-default array-name len ,default) len ,@extra-vars)
+                           (equal (,fn array-name (new-array1-with-default array-name len ,default) len ,@extra-vars)
                                   (and (posp len)
                                        (<= len *max-1d-array-length*))))
                   :hints (("Goal" :in-theory (enable ,fn))))))
 
        ,@(and default-satisfies-predp
               (equal default nil)
-              `((defthm ,(pack$ fn '-of-make-empty-array)
+              `((defthm ,(pack$ fn '-of-new-array1)
                   (implies (symbolp array-name)
-                           (equal (,fn array-name (make-empty-array array-name len) len ,@extra-vars)
+                           (equal (,fn array-name (new-array1 array-name len) len ,@extra-vars)
                                   (and (posp len)
                                        (<= len *max-1d-array-length*))))
-                  :hints (("Goal" :in-theory (enable make-empty-array))))))
+                  :hints (("Goal" :in-theory (enable new-array1))))))
 
        ;; true even if the default does not satisfy the pred, because the 0
        ;; means no elements are checked
-       (defthm ,(pack$ fn '-of-make-empty-array-with-default-and-0)
+       (defthm ,(pack$ fn '-of-new-array1-with-default-and-0)
          (implies (and (posp len)
                        (symbolp array-name)
                        (<= len 2147483646))
-                  (,fn array-name (make-empty-array-with-default array-name len ,default) 0 ,@extra-vars))
-         :hints (("Goal" :in-theory (enable ,fn make-empty-array))))
+                  (,fn array-name (new-array1-with-default array-name len ,default) 0 ,@extra-vars))
+         :hints (("Goal" :in-theory (enable ,fn new-array1))))
 
-       ,@(and (equal default nil) ;since make-empty-array puts uses 0 for the default and fn checks the default
+       ,@(and (equal default nil) ;since new-array1 puts uses 0 for the default and fn checks the default
               ;; true even if the default does not satisfy the pred, because the 0
               ;; means no elements are checked
-              `((defthm ,(pack$ fn '-of-make-empty-array-and-0)
+              `((defthm ,(pack$ fn '-of-new-array1-and-0)
                   (implies (and (posp len)
                                 (symbolp array-name)
                                 (<= len *max-1d-array-length*))
-                           (,fn array-name (make-empty-array array-name len) 0 ,@extra-vars))
-                  :hints (("Goal" :in-theory (enable ,fn make-empty-array)))))))))
+                           (,fn array-name (new-array1 array-name len) 0 ,@extra-vars))
+                  :hints (("Goal" :in-theory (enable ,fn new-array1)))))))))
 
 ;; pred should be an expression over at most the vars INDEX and VAL and the EXTRA-VARS
 ;; default-satisfies-predp indicates whether the value DEFAULT satisfies PRED.
@@ -391,13 +391,13 @@
                            (< x ep)))))
 
                 ;; only works if the default works for all indices (see above)
-                (defthm ,(pack$ aux-fn '-of-make-empty-array-with-default)
+                (defthm ,(pack$ aux-fn '-of-new-array1-with-default)
                   (implies (and (< index len)
                                 (natp index)
                                 (posp len)
                                 (<= len *max-1d-array-length*)
                                 (symbolp array-name))
-                           (,aux-fn array-name (make-empty-array-with-default array-name len ,default) index ,@extra-vars))
+                           (,aux-fn array-name (new-array1-with-default array-name len ,default) index ,@extra-vars))
                   :hints (("Goal" :in-theory (enable ,aux-fn))))
 
                 (defthm ,(pack$ aux-fn '-beyond-length) ; rename?
@@ -533,9 +533,9 @@
        ;;   :hints (("Goal" :in-theory (enable ,aux-fn ,fn))))
 
        ,@(and default-satisfies-predp ;todo: think
-              `((defthm ,(pack$ fn '-of-make-empty-array-with-default)
+              `((defthm ,(pack$ fn '-of-new-array1-with-default)
                   (implies (symbolp array-name)
-                           (equal (,fn array-name (make-empty-array-with-default array-name len ,default) ,@extra-vars)
+                           (equal (,fn array-name (new-array1-with-default array-name len ,default) ,@extra-vars)
                                   (and (posp len)
                                        (<= len *max-1d-array-length*))))
                   :hints (("Goal" :in-theory (enable ,fn))))
@@ -559,24 +559,24 @@
 
        ,@(and default-satisfies-predp ;todo: think
               (equal default nil)
-              `((defthm ,(pack$ fn '-of-make-empty-array)
+              `((defthm ,(pack$ fn '-of-new-array1)
                   (implies (symbolp array-name)
-                           (equal (,fn array-name (make-empty-array array-name len) ,@extra-vars)
+                           (equal (,fn array-name (new-array1 array-name len) ,@extra-vars)
                                   (and (posp len)
                                        (<= len *max-1d-array-length*))))
-                  :hints (("Goal" :in-theory (enable make-empty-array))))))
+                  :hints (("Goal" :in-theory (enable new-array1))))))
 
        ;; ;; true even if the default does not satisfy the pred, because the 0
        ;; ;; means no elements are checked
-       ;; (defthm ,(pack$ fn '-of-make-empty-array-and-0)
+       ;; (defthm ,(pack$ fn '-of-new-array1-and-0)
        ;;   (implies (and (posp len)
        ;;                 (symbolp array-name)
        ;;                 (<= len *max-1d-array-length*))
        ;;            (,fn array-name
-       ;;                 (make-empty-array array-name len)
+       ;;                 (new-array1 array-name len)
        ;;                 0
        ;;                 ,@extra-vars))
-       ;;   :hints (("Goal" :in-theory (enable ,fn make-empty-array))))
+       ;;   :hints (("Goal" :in-theory (enable ,fn new-array1))))
        )))
 
 ;; PRED should be an expression over at most the vars INDEX and VAL and the

@@ -1,7 +1,7 @@
 ; DAG size tools dealing only with relevant nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -329,10 +329,10 @@
                               (all-< nodenums dag-len)
                               (consp nodenums) ;since we call maxelem
                               (symbolp size-array-name-to-use))))
-  (b* ((worklist-array (make-empty-array 'worklist-array
+  (b* ((worklist-array (new-array1 'worklist-array
                                          dag-len ;; todo: use this instead: (+ 1 max-nodenum) but change the guard of size-array-for-nodes-aux first.
                                          ))
-       (size-array (make-empty-array size-array-name-to-use
+       (size-array (new-array1 size-array-name-to-use
                                      dag-len ;; todo: use this instead: (+ 1 max-nodenum) but change the guard of size-array-for-nodes-aux first.
                                      )))
     (size-array-for-nodes-aux nodenums ;initial worklist must be sorted
@@ -383,7 +383,7 @@
 ;;                               (consp nodenums) ;since we call maxelem
 ;;                               (symbolp size-array-name-to-use))))
 ;;   (b* ((max-nodenum (maxelem nodenums))
-;;        (size-array (make-empty-array size-array-name-to-use
+;;        (size-array (new-array1 size-array-name-to-use
 ;;                                      (alen1 dag-array-name dag-array) ;; todo: use this instead: (+ 1 max-nodenum) but change the guard of size-array-for-nodes-aux first.
 ;;                                      ))
 ;;        (termination-bound (* 10 (+ 1 (if (consp nodenums) max-nodenum 1))) ;todo: think about this bound

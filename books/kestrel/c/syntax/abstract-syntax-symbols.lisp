@@ -119,7 +119,9 @@
     const-exprp
     const-expr-count
     const-expr
+    make-const-expr
     const-expr->expr
+    const-expr->info
 
     const-expr-optionp
     const-expr-option-fix

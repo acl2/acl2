@@ -155,7 +155,7 @@
      in which case we could use pairs consisting of
      the original identifiers and the indices.")
    (xdoc::p
-    "We ha separate predicates that restrict identifiers to certain forms,
+    "We have separate predicates that restrict identifiers to certain forms,
      used for parsing, printing, transformations, etc.:
      see @(see ascii-identifiers).
      Restrictions are needed to print this abstract syntax
@@ -176,8 +176,7 @@
   :inline t
   ;; TODO: improve proof to avoid these explicit expansions.
   :guard-hints (("Goal" :in-theory (enable ident->unwrap
-                                           identp
-                                           identity)
+                                           identp)
                         :expand ((len x)
                                  (len y)
                                  (len (cdr x))
@@ -187,10 +186,6 @@
 
 (fty::deflist ident-list
   :short "Fixtype of lists of identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Identifiers are defined in @(tsee ident)."))
   :elt-type ident
   :true-listp t
   :elementp-of-nil nil
@@ -220,10 +215,6 @@
 
 (fty::deflist ident-list-list
   :short "Fixtype of lists of lists of identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Identifiers are defined in @(tsee ident)."))
   :elt-type ident-list
   :true-listp t
   :elementp-of-nil t
@@ -233,10 +224,6 @@
 
 (fty::defset ident-set
   :short "Fixtype of sets of identifiers."
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "Identifiers are defined in @(tsee ident)."))
   :elt-type ident
   :elementp-of-nil nil
   :pred ident-setp)
@@ -246,20 +233,12 @@
 (fty::defoption ident-option
   ident
   :short "Fixtype of optional identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Identifiers are defined in @(tsee ident)."))
   :pred ident-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset ident-option-set
   :short "Fixtype of sets of optional identifiers."
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "Identifiers are defined in @(tsee ident)."))
   :elt-type ident-option
   :elementp-of-nil t
   :pred ident-option-setp)
@@ -327,10 +306,6 @@
 (fty::defoption isuffix-option
   isuffix
   :short "Fixtype of optional integer suffixes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Integer suffixes are defined in @(tsee isuffix)."))
   :pred isuffix-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -426,10 +401,6 @@
 (fty::defoption iconst-option
   iconst
   :short "Fixtype of optional integer constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Integer constants are defined in @(tsee iconst)."))
   :pred iconst-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -468,10 +439,6 @@
 (fty::defoption fsuffix-option
   fsuffix
   :short "Fixtype of optional floating suffixes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Floating suffixes are defined in @(tsee fsuffix)."))
   :pred fsuffix-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -494,10 +461,6 @@
 (fty::defoption sign-option
   sign
   :short "Fixtype of optional signs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Signs are defined in @(tsee sign)."))
   :pred sign-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -550,10 +513,6 @@
 (fty::defoption dexpo-option
   dexpo
   :short "Fixtype of optional decimal exponents."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Decimal exponents are defined in @(tsee dexpo)."))
   :pred dexpo-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -799,6 +758,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum eprefix
+  :short "Fixtype of encoding prefixes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to @('encoding-prefix') in the ABNF grammar."))
+  (:locase-u8 ())
+  (:locase-u ())
+  (:upcase-u ())
+  (:upcase-l ())
+  :pred eprefixp
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption eprefix-option
+  eprefix
+  :short "Fixtype of optional encoding prefixes."
+  :pred eprefix-optionp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist eprefix-option-list
+  :short "Fixtype of lists of optional encoding prefixes."
+  :elt-type eprefix-option
+  :true-listp t
+  :elementp-of-nil t
+  :pred eprefix-option-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum c-char
   :short "Fixtype of characters and escape sequences
           usable in character constants."
@@ -821,41 +812,10 @@
 (fty::deflist c-char-list
   :short "Fixtype of lists of characters and escape sequences
           usable in character constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Characters and escape sequences usable in character constants
-     are defined in @(tsee c-char)."))
   :elt-type c-char
   :true-listp t
   :elementp-of-nil nil
   :pred c-char-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum cprefix
-  :short "Fixtype of prefixes of character constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the @('L'), @('u'), and @('U') prefixes
-     in @('character-constant') in the ABNF grammar."))
-  (:upcase-l ())
-  (:locase-u ())
-  (:upcase-u ())
-  :pred cprefixp
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption cprefix-option
-  cprefix
-  :short "Fixtype of optional prefixes of character constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Prefixes of character constants are defined in @(tsee cprefix)."))
-  :pred cprefix-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -864,8 +824,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to @('character-constant') in the ABNF grammar."))
-  ((prefix? cprefix-option)
+    "This corresponds to @('character-constant') in the ABNF grammar.
+     In C17, the @('u8') prefix is not used."))
+  ((prefix? eprefix-option)
    (cchars c-char-list))
   :pred cconstp
   :layout :fulltree)
@@ -890,10 +851,6 @@
 (fty::defoption const-option
   const
   :short "Fixtype of optional constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Constans are defined in @(tsee const)."))
   :pred const-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -920,11 +877,6 @@
 (fty::deflist s-char-list
   :short "Fixtype of lists of characters and escape sequences
           usable in string literals."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Characters and escape sequences usable in string literals
-     are defined in @(tsee s-char)."))
   :elt-type s-char
   :true-listp t
   :elementp-of-nil nil
@@ -937,46 +889,6 @@
              (true-listp x))
     :induct t
     :enable s-char-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum eprefix
-  :short "Fixtype of encoding prefixes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This corresponds to @('encoding-prexif') in the ABNF grammar."))
-  (:locase-u8 ())
-  (:locase-u ())
-  (:upcase-u ())
-  (:upcase-l ())
-  :pred eprefixp
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption eprefix-option
-  eprefix
-  :short "Fixtype of optional encoding prefixes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Encoding prefixes are defined in @(tsee eprefix)."))
-  :pred eprefix-optionp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist eprefix-option-list
-  :short "Fixtype of lists of optional encoding prefixes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Optional encoding prefixes are defined in @(tsee eprefix-option)."))
-  :elt-type eprefix-option
-  :true-listp t
-  :elementp-of-nil t
-  :pred eprefix-option-listp
-  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1002,10 +914,6 @@
 
 (fty::deflist stringlit-list
   :short "Fixtype of lists of string literals."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "String literals are defined in @(tsee stringlit)."))
   :elt-type stringlit
   :true-listp t
   :elementp-of-nil nil
@@ -1035,11 +943,6 @@
 (fty::deflist h-char-list
   :short "Fixtype of lists of characters usable in
           header names between angle brackets."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Characters usable in header names between angle brackets
-     are defined in @(tsee h-char)."))
   :elt-type h-char
   :true-listp t
   :elementp-of-nil nil
@@ -1076,11 +979,6 @@
 (fty::deflist q-char-list
   :short "Fixtype of lists of characters usable in
           header names between double quotes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Characters usable in header names between double quotes
-     are defined in @(tsee q-char)."))
   :elt-type q-char
   :true-listp t
   :elementp-of-nil nil
@@ -1290,10 +1188,6 @@
 
 (fty::deflist inc/dec-op-list
   :short "Fixtype of lists of increment and decrement operators."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Increment and decrement operators are defined in @(tsee inc/dec-op)."))
   :elt-type inc/dec-op
   :true-listp t
   :elementp-of-nil nil
@@ -1333,10 +1227,6 @@
 
 (fty::deflist stor-spec-list
   :short "Fixtype of lists of storage class specifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Storage class specifiers are defined in @(tsee stor-spec)."))
   :elt-type stor-spec
   :true-listp t
   :elementp-of-nil nil
@@ -1449,10 +1339,6 @@
 (fty::defoption asm-name-spec-option
   asm-name-spec
   :short "Fixtype of optional assembler name specifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Assembler name specifiers are defined in @(tsee asm-name-spec)."))
   :pred asm-name-spec-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1473,10 +1359,6 @@
 
 (fty::deflist asm-qual-list
   :short "Fixtype of lists of assembler qualifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Assembler qualifiers are defined in @(tsee asm-qual)."))
   :elt-type asm-qual
   :true-listp t
   :elementp-of-nil nil
@@ -1498,10 +1380,6 @@
 
 (fty::deflist asm-clobber-list
   :short "Fixtype of lists of assembler clobbers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Assembler clobbers are defined in @(tsee asm-clobber)."))
   :elt-type asm-clobber
   :true-listp t
   :elementp-of-nil t
@@ -1952,10 +1830,6 @@
   (fty::deflist expr-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of expressions."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Expressions are defined in @(tsee expr)."))
     :elt-type expr
     :true-listp t
     :elementp-of-nil nil
@@ -1968,10 +1842,6 @@
     expr
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of optional expressions."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Expressions are defined in @(tsee expr)."))
     :pred expr-optionp
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -1988,7 +1858,8 @@
        it does not actually constrain the expression to be constant,
        but it may be useful to mark expressions to be constant,
        with separate predicates that enforce that."))
-    ((expr expr))
+    ((expr expr)
+     (info any))
     :pred const-exprp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
@@ -1999,10 +1870,6 @@
     const-expr
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of optional constant expressions."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Constant expressions are defined in @(tsee const-expr)."))
     :pred const-expr-optionp
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -2030,8 +1897,6 @@
     :short "Fixtype of lists of generic associations."
     :long
     (xdoc::topstring
-     (xdoc::p
-      "Generic associations are defined in @(tsee genassoc).")
      (xdoc::p
       "This fixtype corresponds to @('generic-assoc-list')
      in the ABNF grammar."))
@@ -2201,9 +2066,6 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The fixtype of type specifiers and type qualifiers
-       is defined in @(tsee spec/qual).")
-     (xdoc::p
       "This fixtype corresponds to @('specifier-qualifier-list')."))
     :elt-type spec/qual
     :true-listp t
@@ -2276,8 +2138,6 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The fixtype of declaration specifiers is defined in @(tsee decl-spec).")
-     (xdoc::p
       "This fixtype corresponds to @('declaration-specifiers')
        in the ABNF grammar."))
     :elt-type decl-spec
@@ -2302,11 +2162,6 @@
   (fty::deflist typequal/attribspec-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of type qualifiers and attribute specifiers."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Type qualifiers and attribute specifiers are defined in
-       @(tsee typequal/attribspec)."))
     :elt-type typequal/attribspec
     :true-listp t
     :elementp-of-nil nil
@@ -2319,11 +2174,6 @@
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of lists of
             type qualifiers and attribute specifiers."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Lists of type qualifiers and attribute specifiers are defined in
-       @(tsee typequal/attribspec-list)."))
     :elt-type typequal/attribspec-list
     :true-listp t
     :elementp-of-nil t
@@ -2357,10 +2207,6 @@
     initer
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of optional initializers."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Initializers are defined in @(tsee initer)."))
     :pred initer-optionp
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -2380,7 +2226,8 @@
        while a non-empty list captures the designation,
        which has a non-empty list of designators."))
     ((designors designor-list)
-     (initer initer))
+     (initer initer)
+     (info any))
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :pred desiniterp
     :layout :fulltree
@@ -2393,8 +2240,6 @@
     :short "Fixtype of lists of initializers with optional designations."
     :long
     (xdoc::topstring
-     (xdoc::p
-      "Initializers with designations are defined in @(tsee desiniter).")
      (xdoc::p
       "This fixtype corresponds to @('initializer-list')
        in the ABNF grammar."))
@@ -2427,10 +2272,6 @@
   (fty::deflist designor-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of designators."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Designators are defined in @(tsee designor)."))
     :elt-type designor
     :true-listp t
     :elementp-of-nil nil
@@ -2467,10 +2308,6 @@
     declor
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of optional declarators."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Declarators are defined in @(tsee declor)."))
     :pred declor-optionp
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -2563,10 +2400,6 @@
     absdeclor
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of optional abstract declarators."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Abstract declarators are defined in @(tsee absdeclor)."))
     :pred absdeclor-optionp
     :measure (two-nats-measure (acl2-count x) 3))
 
@@ -2612,10 +2445,6 @@
     dirabsdeclor
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of optional direct abstract declarators."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Direct abstract declarators are defined in @(tsee dirabsdeclor)."))
     :pred dirabsdeclor-optionp
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -2649,8 +2478,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Parameter declarations are defined in @(tsee param-declon).
-       This fixtype corresponds to @('parameter-list')
+      "This fixtype corresponds to @('parameter-list')
        in the ABNF grammar."))
     :elt-type param-declon
     :true-listp t
@@ -2787,8 +2615,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Structure declarations are defined in @(tsee struct-declon).
-       This fixtype corresponds to @('struct-declaration-list')
+      "This fixtype corresponds to @('struct-declaration-list')
        in the ABNF grammar."))
     :elt-type struct-declon
     :true-listp t
@@ -2826,8 +2653,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Structure declarators are defined in @(tsee struct-declor).
-       This fixtype corresponds to @('struct-declarator-list')
+      "This fixtype corresponds to @('struct-declarator-list')
        in the ABNF grammar."))
     :elt-type struct-declor
     :true-listp t
@@ -2878,8 +2704,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Enumerators are defined in @(tsee enumer).
-       This fixtype corresponds to @('enumerator-list')
+      "This fixtype corresponds to @('enumerator-list')
        in the ABNF grammar."))
     :elt-type enumer
     :true-listp t
@@ -2960,10 +2785,6 @@
   (fty::deflist attrib-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of GCC attributes."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "GCC attributes are defined in @(tsee attrib)."))
     :elt-type attrib
     :true-listp t
     :elementp-of-nil nil
@@ -2999,10 +2820,6 @@
   (fty::deflist attrib-spec-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of GCC attribute specifiers."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "GCC attribute specifiers are defined in @(tsee attrib-spec)."))
     :elt-type attrib-spec
     :true-listp t
     :elementp-of-nil nil
@@ -3044,8 +2861,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Initializer declarators are defined in @(tsee init-declor).
-       This fixtype corresponds to @('init-declarator-list')
+      "This fixtype corresponds to @('init-declarator-list')
        in the ABNF grammar."))
     :elt-type init-declor
     :true-listp t
@@ -3083,8 +2899,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Declarations are defined in @(tsee declon).
-       This fixtype corresponds to @('declaration-list') in the ABNF grammar,
+      "This fixtype corresponds to @('declaration-list') in the ABNF grammar,
        which is under external definitions."))
     :elt-type declon
     :true-listp t
@@ -3145,10 +2960,6 @@
   (fty::deflist asm-output-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of assembler output operands."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Assembler output operands are defined in @(tsee asm-output)."))
     :elt-type asm-output
     :true-listp t
     :elementp-of-nil nil
@@ -3176,10 +2987,6 @@
   (fty::deflist asm-input-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of assembler input operands."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Assembler input operands are defined in @(tsee asm-input)."))
     :elt-type asm-input
     :true-listp t
     :elementp-of-nil nil
@@ -3361,8 +3168,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Block items are defined in @(tsee block-item).
-       This fixtype corresponds to @('block-item-list')
+      "This fixtype corresponds to @('block-item-list')
        in the ABNF grammar."))
     :elt-type block-item
     :true-listp t
@@ -3505,20 +3311,12 @@
 (fty::defoption type-spec-option
   type-spec
   :short "Fixtype of optional type specifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Type specifiers are defined in @(tsee type-spec)."))
   :pred type-spec-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist type-spec-list
   :short "Fixtype of lists of type specifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Type specifiers are defined in @(tsee type-spec)."))
   :elt-type type-spec
   :true-listp t
   :elementp-of-nil nil
@@ -3555,13 +3353,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption init-declor-option
-  init-declor
-  :short "Fixtype of optional initializer declarators."
+(fty::defoption designor-option
+  designor
+  :short "Fixtype of optional designators."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Initializer declarators are defined in @(tsee init-declor)."))
+    "Designators are defined in @(tsee designor)."))
+  :pred designor-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption init-declor-option
+  init-declor
+  :short "Fixtype of optional initializer declarators."
   :pred init-declor-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3569,10 +3374,6 @@
 (fty::defoption declon-option
   declon
   :short "Fixtype of optional declarations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Declarations are defined in @(tsee declon)."))
   :pred declon-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3699,10 +3500,6 @@
 (fty::defoption fundef-option
   fundef
   :short "Fixtype of optional function definitions."
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "Function definitions are defined in @(tsee fundef)."))
   :pred fundef-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3734,8 +3531,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "External declarations are defined in @(tsee ext-declon).
-     This fixtype corresponds to @('external-declaration-list')
+    "This fixtype corresponds to @('external-declaration-list')
      in the ABNF grammar."))
   :elt-type ext-declon
   :true-listp t

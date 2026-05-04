@@ -13,7 +13,6 @@
 ;; This is for 32-bit only
 
 (include-book "portcullis")
-(include-book "kestrel/memory/memory-regions" :dir :system)
 (include-book "kestrel/executable-parsers/elf-tools" :dir :system)
 (include-book "kestrel/arm/pseudocode" :dir :system) ; for *InstrSet_ARM*
 ;(include-book "read-and-write")

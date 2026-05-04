@@ -106,15 +106,15 @@
            (alistp (compress1 array-name array)))
   :hints (("Goal" :in-theory (enable compress1))))
 
+;; Note that bounded-integer-alistp allows :header entries but does not ensure there is one.
 (defthm bounded-integer-alistp-of-compress1
   (implies (and (bounded-integer-alistp array n)
                 ;; (natp n)
                 )
            (iff (bounded-integer-alistp (compress1 array-name array) n)
-                (header array-name array)                 ;why?
+                (header array-name array) ; since compress1 conses on the header
                 ))
-  :hints (("Goal" :in-theory (enable compress1 ;bounded-integer-alistp
-                                     ))))
+  :hints (("Goal" :in-theory (enable compress1))))
 
 (defthm array1p-of-compress1
   (implies (array1p array-name l)

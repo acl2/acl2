@@ -905,7 +905,8 @@
   (if (quotep dag-lst-or-quotep)
       (mv (erp-nil) dag-lst-or-quotep state)
     (b* ((assumptions (get-conjuncts-list assumptions))
-         (dag-array (make-into-array 'dag-array dag-lst-or-quotep))
+         ((mv erp dag-array) (make-dag-into-array2 'dag-array dag-lst-or-quotep 0)) ; todo: use nonzero slack?
+         ((when erp) (mv erp nil state))
          (top-nodenum (top-nodenum dag-lst-or-quotep))
          (dag-len (+ 1 top-nodenum))
          ;;make aux. data structures:
@@ -926,7 +927,7 @@
          ((mv erp equality-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
           (if equality-pairs
               (populate-equality-array equality-pairs
-                                       (make-empty-array 'equality-array dag-len) ;fixme is dag-len overkill?
+                                       (new-array1 'equality-array dag-len) ;fixme is dag-len overkill?
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             ;;there are no equalities:
             (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))

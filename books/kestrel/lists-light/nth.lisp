@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nth.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -99,7 +99,7 @@
          (car lst))
   :hints (("Goal" :in-theory (enable nth))))
 
-(theory-invariant (incompatible (:rewrite car-becomes-nth-of-0) (:rewrite nth-o-0 )))
+(theory-invariant (incompatible (:rewrite car-becomes-nth-of-0) (:rewrite nth-of-0)))
 
 ;; There is also a copy of this in books/centaur/misc/defapply.lisp
 (defthm nth-of-cdr

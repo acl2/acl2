@@ -1,6 +1,6 @@
 ; Tools for processing the alists that represent parsed ELF files.
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 ;(include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
-(include-book "kestrel/memory/memory-regions" :dir :system)
+(include-book "memory-regions")
 (include-book "kestrel/lists-light/repeat-def" :dir :system)
 (local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 (local (include-book "kestrel/bv-lists/byte-listp2" :dir :system))

@@ -21,10 +21,6 @@
 string-literal =
     [ encoding-prefix ] double-quote [ s-char-sequence ] double-quote
 
-encoding-prefix = %s"u8"
-                / %i"u"
-                / %s"L"
-
 s-char-sequence = s-char
                 / s-char-sequence s-char
 

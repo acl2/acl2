@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +162,7 @@
      that appear directly quoted in the term.
      That is, for each sub-term of the form @('(quote <value>)'),
      we return @('<value>').
-     This excludes value that occur (only) inside other quoted values,
+     This excludes values that occur (only) inside other quoted values,
      e.g. @('(quote (<value> . ...))').")
    (xdoc::p
     "The record that stores the collected constants
@@ -416,7 +416,7 @@
     which constructs the string value.
     Unlike the fields for other types of quoted constants,
     this one is declared in the class for the package of the symbol
-    (or for a pacakge that imports the symbol).
+    (or for a package that imports the symbol).
     This field cannot be private,
     otherwise the classes for other packages could not access it.")
   (b* ((name (atj-gen-shallow-symbol-field-name symbol))

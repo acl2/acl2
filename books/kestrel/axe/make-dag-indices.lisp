@@ -1,7 +1,7 @@
 ; Making the 3 indices of a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -138,7 +138,7 @@
 (defund make-dag-indices (dag-array-name dag-array dag-parent-array-name dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp dag-parent-array-name))))
-  (let* ((dag-parent-array (make-empty-array dag-parent-array-name (alen1 dag-array-name dag-array))))
+  (let* ((dag-parent-array (new-array1 dag-parent-array-name (alen1 dag-array-name dag-array))))
     (make-dag-indices-aux 0
                           dag-len
                           dag-array-name dag-array

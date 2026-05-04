@@ -24,7 +24,7 @@
 (include-book "compress1") ; make local?
 (include-book "compress11") ; make local?
 (include-book "maximum-length") ; make local?
-(include-book "make-empty-array")
+(include-book "new-array1") ; drop?
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))

@@ -1171,7 +1171,7 @@
 ;;                               (interpreted-function-alistp interpreted-function-alist)
 ;;                               (booleanp keep-test-casesp))))
 ;;   (let* ((miter-array-name 'probable-facts-array)
-;;          (miter-array (make-into-array miter-array-name dag))
+;;          (miter-array (alist-to-array1 miter-array-name dag))
 ;;          (miter-len (len dag)))
 ;;     (find-probable-facts miter-array-name
 ;;                          miter-array

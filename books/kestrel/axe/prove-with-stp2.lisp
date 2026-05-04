@@ -251,7 +251,7 @@
                               (or (null max-conflicts) (natp max-conflicts))
                               (symbolp proof-name))
                   :stobjs state))
-  (b* ((needed-for-node1-tag-array (make-empty-array 'needed-for-node1-tag-array (+ 1 nodenum))) ; todo: rename the array
+  (b* ((needed-for-node1-tag-array (new-array1 'needed-for-node1-tag-array (+ 1 nodenum))) ; todo: rename the array
        (needed-for-node1-tag-array (aset1 'needed-for-node1-tag-array needed-for-node1-tag-array nodenum t))
        ;; Choose which nodes to translate (no cutting):
        ((mv erp nodenums-to-translate cut-nodenum-type-alist)
@@ -947,9 +947,9 @@
   (b* ((- (and print (cw " (Cutting at shared nodes...")))
        ;; (num-nodes-to-consider (+ 1 larger-nodenum))
        ;;both of these arrays must have length at least (+ 1 larger-nodenum), since nodes up to larger-nodenum will be looked up?  could skip the array access for nodenums larger that smaller-nodenum (they obviously can't support it)
-       ;; (needed-for-smaller-nodenum-tag-array (make-empty-array 'needed-for-node1-tag-array num-nodes-to-consider)) ;ffixme rename these arrays (but have to do it everywhere!)
+       ;; (needed-for-smaller-nodenum-tag-array (new-array1 'needed-for-node1-tag-array num-nodes-to-consider)) ;ffixme rename these arrays (but have to do it everywhere!)
        ;; (needed-for-smaller-nodenum-tag-array (aset1 'needed-for-node1-tag-array needed-for-smaller-nodenum-tag-array smaller-nodenum t))
-       ;; (needed-for-larger-nodenum-tag-array (make-empty-array 'needed-for-node2-tag-array num-nodes-to-consider))
+       ;; (needed-for-larger-nodenum-tag-array (new-array1 'needed-for-node2-tag-array num-nodes-to-consider))
        ;; (needed-for-larger-nodenum-tag-array (aset1 'needed-for-node2-tag-array needed-for-larger-nodenum-tag-array larger-nodenum t))
        ;; Use our heuristic to cut the proof (nodes above the cut are marked for translation, nodes at the cut get entries made in cut-nodenum-type-alist):
        ((mv erp
@@ -1289,7 +1289,7 @@
       (prog2$ (cw "!! We failed to find a cut depth at which STP can prove the goal !!~%")
               (mv nil state))
     (b* (;; todo: drop this supporters-tag-array because the depth-array already tracks supporters (but consider what happens with cutting at bvmult and bvif nodes)
-         (supporters-tag-array (make-empty-array 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate-up-to-depth use a worklist?
+         (supporters-tag-array (new-array1 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate-up-to-depth use a worklist?
          ;;mark the two nodes as supporters:
          (supporters-tag-array (aset1 'supporters-tag-array supporters-tag-array larger-nodenum t))
          (supporters-tag-array (aset1 'supporters-tag-array supporters-tag-array smaller-nodenum t))

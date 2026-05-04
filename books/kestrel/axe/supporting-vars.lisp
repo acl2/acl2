@@ -74,7 +74,7 @@
       nil
     (let* ((max-nodenum (maxelem nodenums))
            (max-steps (* 10 (+ 1 max-nodenum))) ;todo
-           (done-array (make-empty-array 'done-array (+ 1 max-nodenum))))
+           (done-array (new-array1 'done-array (+ 1 max-nodenum))))
       (vars-that-support-dag-nodes-aux max-steps nodenums dag-array-name dag-array dag-len done-array nil))))
 
 (defthm true-listp-of-vars-that-support-dag-nodes

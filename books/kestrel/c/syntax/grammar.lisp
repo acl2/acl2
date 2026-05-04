@@ -47,6 +47,7 @@
 ; (depends-on "grammar/floating-constants-c17-gcc.abnf")
 ; (depends-on "grammar/floating-constants-c23-gcc.abnf")
 ; (depends-on "grammar/enumeration-constants.abnf")
+; (depends-on "grammar/encoding-prefixes.abnf")
 ; (depends-on "grammar/character-constants.abnf")
 ; (depends-on "grammar/character-constants-c17.abnf")
 ; (depends-on "grammar/character-constants-c23.abnf")
@@ -278,6 +279,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar encoding-prefixes "encoding prefixes")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defgrammar character-constants
   "character constants that are common to all the C dialects")
 
@@ -407,6 +412,10 @@
                    (if dialect.gcc
                        *grammar-floating-constants-c23-gcc*
                      *grammar-floating-constants-c23-nogcc*)))
+     ;; enumeration constants:
+     *grammar-enumeration-constants*
+     ;; encoding prefixes:
+     *grammar-encoding-prefixes*
      ;; character-constants:
      *grammar-character-constants*
      (c::standard-case dialect.std
@@ -415,8 +424,6 @@
      (if (or dialect.gcc dialect.clang)
          *grammar-simple-escapes-ext*
        *grammar-simple-escapes-std*)
-     ;; enumeration constants:
-     *grammar-enumeration-constants*
      ;; constants:
      (c::standard-case dialect.std
                        :c17 *grammar-constants-c17*

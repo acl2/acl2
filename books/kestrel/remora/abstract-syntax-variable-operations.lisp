@@ -42,7 +42,7 @@
    (xdoc::p
     "Dimensions contain dimension variables,
      but no shape or type or term variables;
-     so they only need one substitusion or renaming map
+     so they only need one substitution or renaming map.
      All the variables in a dimension are free,
      because dimensions have no binders.")
    (xdoc::p
@@ -74,17 +74,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vars-of-ispace-params ((params ispace-param-listp))
-  :returns (mv (dim-vars string-setp) (shape-vars string-setp))
-  :short "Extract the sets of dimension and shape variables
-          from a list of ispace parameters."
-  (b* (((when (endp params)) (mv nil nil))
-       ((mv dim-vars shape-vars) (vars-of-ispace-params (cdr params)))
-       (param (car params)))
-    (ispace-param-case
+(define dim/shape-names-of-ispace-vars ((vars ispace-var-listp))
+  :returns (mv (dim-names string-setp) (shape-names string-setp))
+  :short "Extract the sets of dimension and shape variable names
+          from a list of ispace variables."
+  (b* (((when (endp vars)) (mv nil nil))
+       ((mv dim-vars shape-vars) (dim/shape-names-of-ispace-vars (cdr vars)))
+       (param (car vars)))
+    (ispace-var-case
      param
      :dim (mv (set::insert param.name dim-vars) shape-vars)
      :shape (mv dim-vars (set::insert param.name shape-vars))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom/array-names-of-type-vars ((vars type-var-listp))
+  :returns (mv (atom-names string-setp) (array-names string-setp))
+  :short "Extract the sets of atom and array type variable names
+          from a list of type variables."
+  (b* (((when (endp vars)) (mv nil nil))
+       ((mv atom-vars array-vars) (atom/array-names-of-type-vars (cdr vars)))
+       (var (car vars)))
+    (type-var-case
+     var
+     :atom (mv (set::insert var.name atom-vars) array-vars)
+     :array (mv atom-vars (set::insert var.name array-vars))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -105,7 +120,10 @@
 (fty::deffold-map subst-ispace-vars
   :short "Substitute (free) ispace (i.e. dimension and shape) variables
           in shapes, ispaces, types, and lists thereof."
-  :types (shapes ispace ispace-list types)
+  :types (shapes
+          ispace
+          ispace-list
+          types)
   :extra-args ((dim-subst string-dim-mapp)
                (shape-subst string-shape-mapp))
   :override
@@ -117,50 +135,69 @@
    (shape :dim (shape-dim (dim-subst-dim-vars shape.dim dim-subst)))
    (shape :dims (shape-dims (dim-list-subst-dim-vars shape.dims dim-subst)))
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
-   (type :pi
-         (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-ispace-params type.params))
-              (dim-subst
-               (omap::delete* bound-dim-vars
-                              (string-dim-map-fix dim-subst)))
-              (shape-subst
-               (omap::delete* bound-shape-vars
-                              (string-shape-map-fix shape-subst))))
-           (make-type-pi
-            :params type.params
-            :type (type-subst-ispace-vars type.type dim-subst shape-subst))))
-   (type :sigma
-         (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-ispace-params type.params))
-              (dim-subst
-               (omap::delete* bound-dim-vars
-                              (string-dim-map-fix dim-subst)))
-              (shape-subst
-               (omap::delete* bound-shape-vars
-                              (string-shape-map-fix shape-subst))))
-           (make-type-sigma
-            :params type.params
-            :type (type-subst-ispace-vars type.type dim-subst shape-subst))))))
+   (type :pi (b* (((mv bound-dim-vars bound-shape-vars)
+                   (dim/shape-names-of-ispace-vars type.params))
+                  (dim-subst
+                   (omap::delete* bound-dim-vars
+                                  (string-dim-map-fix dim-subst)))
+                  (shape-subst
+                   (omap::delete* bound-shape-vars
+                                  (string-shape-map-fix shape-subst))))
+               (make-type-pi
+                :params type.params
+                :body (type-subst-ispace-vars type.body
+                                              dim-subst
+                                              shape-subst))))
+   (type :sigma (b* (((mv bound-dim-vars bound-shape-vars)
+                      (dim/shape-names-of-ispace-vars type.params))
+                     (dim-subst
+                      (omap::delete* bound-dim-vars
+                                     (string-dim-map-fix dim-subst)))
+                     (shape-subst
+                      (omap::delete* bound-shape-vars
+                                     (string-shape-map-fix shape-subst))))
+                  (make-type-sigma
+                   :params type.params
+                   :body (type-subst-ispace-vars type.body
+                                                 dim-subst
+                                                 shape-subst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map subst-type-vars
-  :short "Substitute (free) type variables in types and lists of types."
+  :short "Substitute (free) (atom-kind and array-kind) type variables
+          in types and lists of types."
   :types (types)
-  :extra-args ((subst string-type-mapp))
+  :extra-args ((atom-subst string-type-mapp)
+               (array-subst string-type-mapp))
   :override
-  ((type :var (b* ((subst (string-type-map-fix subst))
-                   (var+type (omap::assoc type.name subst)))
-                (if var+type
-                    (cdr var+type)
-                  (type-var type.name))))
-   (type :forall (b* ((bound-vars
-                       (set::mergesort (kinded-var-list->var type.vars)))
-                      (subst (omap::delete* bound-vars
-                                            (string-type-map-fix subst))))
-                   (make-type-forall
-                    :vars type.vars
-                    :type (type-subst-type-vars type.type subst))))))
+  ((type :var
+         (type-var-case
+          type.var
+          :atom (b* ((atom-subst (string-type-map-fix atom-subst))
+                     (var+type (omap::assoc type.var.name atom-subst)))
+                  (if var+type
+                      (cdr var+type)
+                    (type-var (type-var-atom type.var.name))))
+          :array (b* ((array-subst (string-type-map-fix array-subst))
+                      (var+type (omap::assoc type.var.name array-subst)))
+                   (if var+type
+                       (cdr var+type)
+                     (type-var (type-var-array type.var.name))))))
+   (type :forall
+         (b* (((mv bound-atom-vars bound-array-vars)
+               (atom/array-names-of-type-vars type.params))
+              (atom-subst
+               (omap::delete* bound-atom-vars
+                              (string-type-map-fix atom-subst)))
+              (array-subst
+               (omap::delete* bound-array-vars
+                              (string-type-map-fix array-subst))))
+           (make-type-forall
+            :params type.params
+            :body (type-subst-type-vars type.body
+                                        atom-subst
+                                        array-subst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,7 +217,10 @@
 (fty::deffold-map rename-ispace-vars
   :short "Rename (free) ispace (i.e. dimension and shape) variables
           in shapes, ispaces, types, and lists thereof."
-  :types (shapes ispace ispace-list types)
+  :types (shapes
+          ispace
+          ispace-list
+          types)
   :extra-args ((dim-renam string-string-mapp)
                (shape-renam string-string-mapp))
   :override
@@ -194,7 +234,7 @@
    (ispace :dim (ispace-dim (dim-rename-dim-vars ispace.dim dim-renam)))
    (type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-ispace-params type.params))
+               (dim/shape-names-of-ispace-vars type.params))
               (dim-renam
                (omap::delete* bound-dim-vars
                               (string-string-map-fix dim-renam)))
@@ -203,10 +243,12 @@
                               (string-string-map-fix shape-renam))))
            (make-type-pi
             :params type.params
-            :type (type-rename-ispace-vars type.type dim-renam shape-renam))))
+            :body (type-rename-ispace-vars type.body
+                                           dim-renam
+                                           shape-renam))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (vars-of-ispace-params type.params))
+               (dim/shape-names-of-ispace-vars type.params))
               (dim-renam
                (omap::delete* bound-dim-vars
                               (string-string-map-fix dim-renam)))
@@ -215,47 +257,171 @@
                               (string-string-map-fix shape-renam))))
            (make-type-sigma
             :params type.params
-            :type (type-rename-ispace-vars type.type dim-renam shape-renam))))))
+            :body (type-rename-ispace-vars type.body
+                                           dim-renam
+                                           shape-renam))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-type-vars
-  :short "Rename (free) type variables in types and lists of types."
+  :short "Rename (free) (atom-kind and array-kind) type variables
+          in types and lists of types."
   :types (types)
-  :extra-args ((renam string-string-mapp))
+  :extra-args ((atom-renam string-string-mapp)
+               (array-renam string-string-mapp))
   :override
-  ((type :var (b* ((renam (string-string-map-fix renam))
-                   (var+name (omap::assoc type.name renam)))
-                (if var+name
-                    (type-var (cdr var+name))
-                  (type-var type.name))))
-   (type :forall (b* ((bound-vars
-                       (set::mergesort (kinded-var-list->var type.vars)))
-                      (renam (omap::delete* bound-vars
-                                            (string-string-map-fix renam))))
-                   (make-type-forall
-                    :vars type.vars
-                    :type (type-rename-type-vars type.type renam))))))
+  ((type :var
+         (type-var-case
+          type.var
+          :atom (b* ((atom-renam (string-string-map-fix atom-renam))
+                     (var+name (omap::assoc type.var.name atom-renam)))
+                  (if var+name
+                      (type-var (type-var-atom (cdr var+name)))
+                    (type-var (type-var-atom type.var.name))))
+          :array (b* ((array-renam (string-string-map-fix array-renam))
+                      (var+name (omap::assoc type.var.name array-renam)))
+                   (if var+name
+                       (type-var (type-var-array (cdr var+name)))
+                     (type-var (type-var-array type.var.name))))))
+   (type :forall
+         (b* (((mv bound-atom-vars bound-array-vars)
+               (atom/array-names-of-type-vars type.params))
+              (atom-renam
+               (omap::delete* bound-atom-vars
+                              (string-string-map-fix atom-renam)))
+              (array-renam
+               (omap::delete* bound-array-vars
+                              (string-string-map-fix array-renam))))
+           (make-type-forall
+            :params type.params
+            :body (type-rename-type-vars type.body
+                                         atom-renam
+                                         array-renam))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bind-bound-ispace-vars ((bind bindp))
+  :returns (vars ispace-var-setp)
+  :short "Set of ispace variables bound in a binding."
+  (bind-case
+   bind
+   :ispace (set::insert bind.var nil)
+   :type nil
+   :val nil
+   :fun nil
+   :tfun nil
+   :ifun (set::mergesort bind.params)
+   :cfun (ispace-var-list-option-case
+          bind.iparams?
+          :some (set::mergesort bind.iparams?.val)
+          :none nil)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define bind-list-bound-ispace-vars ((binds bind-listp))
+  :returns (vars ispace-var-setp)
+  :short "Set of ispace variables bound in a list of bindings."
+  (cond ((endp binds) nil)
+        (t (set::union (bind-bound-ispace-vars (car binds))
+                       (bind-list-bound-ispace-vars (cdr binds)))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bind-bound-type-vars ((bind bindp))
+  :returns (vars type-var-setp)
+  :short "Set of type variables bound in a binding."
+  (bind-case
+   bind
+   :ispace nil
+   :type (set::insert bind.var nil)
+   :val nil
+   :fun nil
+   :tfun (set::mergesort bind.params)
+   :ifun nil
+   :cfun (type-var-list-option-case
+          bind.tparams?
+          :some (set::mergesort bind.tparams?.val)
+          :none nil)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define bind-list-bound-type-vars ((binds bind-listp))
+  :returns (vars type-var-setp)
+  :short "Set of type variables bound in a list of bindings."
+  (cond ((endp binds) nil)
+        (t (set::union (bind-bound-type-vars (car binds))
+                       (bind-list-bound-type-vars (cdr binds)))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce free-ispace-vars
   :short "Set of free ispace variables in
-          ispaces, types, typed variables, expressions, atoms,
+          ispaces,
+          types,
+          variables with types,
+          expressions,
+          atoms,
+          bindings,
           and lists thereof."
-  :types (dims shapes ispace ispace-list types typed-var exprs/atoms)
-  :result ispace-param-setp
+  :types (dims
+          shapes
+          ispace
+          ispace-list
+          types
+          var+type
+          var+type-list
+          exprs/atoms/binds)
+  :result ispace-var-setp
   :default nil
   :combine set::union
   :override
-  ((dim :var (set::insert (ispace-param-dim dim.name) nil))
-   (shape :var (set::insert (ispace-param-shape shape.name) nil))
-   (type :pi (set::difference (type-free-ispace-vars type.type)
-                              (set::mergesort type.params)))
-   (type :sigma (set::difference (type-free-ispace-vars type.type)
-                                 (set::mergesort type.params)))
-   (expr :unbox (set::union (expr-free-ispace-vars expr.target)
-                            (set::difference (expr-free-ispace-vars expr.body)
-                                             (set::mergesort expr.ispaces))))
-   (atom :ispace-abs (set::difference (expr-free-ispace-vars atom.body)
-                                      (set::mergesort atom.params)))))
+  ((dim :var (set::insert (ispace-var-dim dim.name) nil))
+   (shape :var (set::insert (ispace-var-shape shape.name) nil))
+   (type :pi
+         (set::difference (type-free-ispace-vars type.body)
+                          (set::mergesort type.params)))
+   (type :sigma
+         (set::difference (type-free-ispace-vars type.body)
+                          (set::mergesort type.params)))
+   (expr :unbox
+         (set::union (expr-free-ispace-vars expr.target)
+                     (set::difference (expr-free-ispace-vars expr.body)
+                                      (set::mergesort expr.ispaces))))
+   (expr :let
+         (set::union
+          (bind-list-free-ispace-vars expr.binds)
+          (set::difference (expr-free-ispace-vars expr.body)
+                           (bind-list-bound-ispace-vars expr.binds))))
+   (atom :ilambda
+         (set::difference (expr-free-ispace-vars atom.body)
+                          (set::mergesort atom.params)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce free-type-vars
+  :short "Set of free type variables in
+          types,
+          variables with types,
+          expressions,
+          atoms,
+          bindings,
+          and lists thereof."
+  :types (types
+          var+type
+          var+type-list
+          exprs/atoms/binds)
+  :result type-var-setp
+  :default nil
+  :combine set::union
+  :override
+  ((type :var (set::insert type.var nil))
+   (type :forall (set::difference (type-free-type-vars type.body)
+                                  (set::mergesort type.params)))
+   (expr :let
+         (set::union (bind-list-free-type-vars expr.binds)
+                     (set::difference (expr-free-type-vars expr.body)
+                                      (bind-list-bound-type-vars expr.binds))))
+   (atom :tlambda (set::difference (expr-free-type-vars atom.body)
+                                   (set::mergesort atom.params)))))

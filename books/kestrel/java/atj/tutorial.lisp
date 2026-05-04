@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -86,7 +86,7 @@
   (xdoc::p
    "This tutorial page provides motivation for ATJ,
     and more in general for code generators for ACL2,
-    especially in light of ACL2's code ability to run as Common Lisp code.
+    especially in light of ACL2 code's ability to run as Common Lisp code.
     This tutorial page may be skipped at first reading,
     especially if the reader is already motivated
     to generate Java code from ACL2.")
@@ -409,7 +409,7 @@
    " Java classes.
     These simplified UML diagrams are briefly described
     in this tutorial page.
-    It may be skipped if the reader is already familiary with UML.")
+    It may be skipped if the reader is already familiar with UML.")
 
   (atj-tutorial-section "Diagram Notation")
 
@@ -1364,7 +1364,7 @@
     invokes @('stringp()') on its argument:
     this selects, in constant time (via Java's dynamic dispatch),
     either the default implementation or the overriding one,
-    based on the run-time type type of the argument @('Acl2Value').")
+    based on the run-time type of the argument @('Acl2Value').")
 
   (xdoc::p
    "As another example, to implement @(tsee char-code),
@@ -1644,7 +1644,7 @@
    "(java::atj fact :deep t :guards nil :java-class \"Fact\")")
   (xdoc::p
    "generates files @('Fact.java') and @('FactEnvironment.java')
-    that is the same as before but with @('Fact') and @('FactEnvironment')
+    that are the same as before but with @('Fact') and @('FactEnvironment')
     as the name of the classes.")
 
   (xdoc::p
@@ -1701,7 +1701,7 @@
     For example, if @(':java-package') is @('\"mypkg\"'),
     @(':output-dir') can be set to @('\"mypkg\"') as well.
     As another example, if @(':java-package') is @('\"my.new.pkg\"'),
-    @(':output-dir') can be set to @('\"my/new/pkg\"\'),
+    @(':output-dir') can be set to @('\"my/new/pkg\"'),
     assuming a Unix-like operating system
     with forward slashes that separate file path elements.
     As already noted above, all these directories must exist;
@@ -1734,7 +1734,7 @@
   (atj-tutorial-section "Verbose Screen Output")
 
   (xdoc::p
-   "When @(':verbose') if @('t'), which must be supplied explicitly,
+   "When @(':verbose') is @('t'), which must be supplied explicitly,
     ATJ prints, before the short completion messages mentioned above,
     also additional information about its internal progress.
     This may be useful to understand better what ATJ is doing,
@@ -1883,7 +1883,7 @@
     Starting from @('f1'), @('f2'), etc.,
     ATJ finds all the functions called by these directly or indirectly,
     using a worklist algorithm.
-    When a natively implemnented function is encountered,
+    When a natively implemented function is encountered,
     its called functions are not further explored.
     Recursive functions, also mutually recursive ones,
     are handled appropriately (i.e. they do not cause a circular search).")
@@ -2183,7 +2183,7 @@
     the @(':exec') part does nothing,
     while the @(':logic') part may perform expensive computations,
     e.g. fix every element of a long list.
-    As another examples, @(tsee mbt)s are really @(tsee mbe)s
+    As another example, @(tsee mbt)s are really @(tsee mbe)s
     that do nothing in the @(':exec') part
     but may perform expensive tests in the @(':logic') part.
     Thus, if the assumption of guard satisfaction can be supported,
@@ -2346,7 +2346,7 @@
     a proper path to the AIJ jar file
     (see "
    (xdoc::seetopic "aij" "the documentation of AIJ")
-   " for instructions on how to obtain that jar file.")
+   " for instructions on how to obtain that jar file).")
 
   (xdoc::p
    "After compiling, the code can be run, without argument, via")
@@ -2502,7 +2502,7 @@
     ATJ generates, in essence, a Java method for each ACL2 function.
     The method takes the same inputs and returns the same outputs
     as the corresponding ACL2 function
-    (`same' in the sense of the Java representations of such inputs and ouputs);
+    (`same' in the sense of the Java representations of such inputs and outputs);
     it calculates the outputs from the inputs
     by mimicking the computation steps performed by the ACL2 function.
     This is best clarified through an example.")
@@ -2612,7 +2612,7 @@
     with the unnormalized body of @(tsee not) should be apparent.
     This method is in the @('COMMON_LISP') class because
     the @(tsee symbol-package-name) of the (function) symbol @(tsee not)
-    is @('\"COMMON_LISP\"').")
+    is @('\"COMMON-LISP\"').")
 
   (xdoc::p
    "Note that the function @('acl2::fact') is translated

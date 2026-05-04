@@ -2457,7 +2457,7 @@
 ;; (defun prove-with-stp-quick (dag-lst var-type-alist max-conflicts state)
 ;;   (declare (xargs
 ;;                   :stobjs state))
-;;   (let* ((dag-array (make-into-array 'dag-array dag-lst))
+;;   (let* ((dag-array (alist-to-array1 'dag-array dag-lst))
 ;;          (dag-len (len dag-lst)))
 ;;     (prove-equality-with-stp (+ -1 dag-len) ;top node of the dag (we prove it equals true)
 ;;                              *t*

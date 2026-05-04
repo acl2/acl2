@@ -1,6 +1,6 @@
 ; An experiment verifying a rewriter-like tool
 ;
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,6 +34,7 @@
 ;; with the right-hand-side of the equality.  Note that the match must be
 ;; exact; we don't do any unification of TERM with the left-hand-side.  We also
 ;; don't rewrite any subterms of TERM.
+;; todo: add guard?
 (defun apply-rule-to-term (term mfc state)
   (declare (xargs :stobjs state)
            (ignore mfc) ; always passed in to extended metafunctions

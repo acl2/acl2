@@ -35,9 +35,9 @@
   (b* (((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (merge-term-into-dag-array-basic term
                                          nil ;initial var-replacement-alist
-                                         (make-empty-array dag-array-name 1000) ;todo: why 1000?
+                                         (new-array1 dag-array-name 1000) ;todo: why 1000?
                                          0 ;initial dag-len
-                                         (make-empty-array dag-parent-array-name 1000)
+                                         (new-array1 dag-parent-array-name 1000)
                                          nil  ;empty dag-constant-alist
                                          (empty-dag-variable-alist)
                                          dag-array-name dag-parent-array-name
@@ -146,9 +146,9 @@
                               (interpreted-function-alistp interpreted-function-alist))))
   (merge-terms-into-dag-array-basic terms
                                     nil ;initial var-replacement-alist
-                                    (make-empty-array dag-array-name 1000) ;fixme why 1000?
+                                    (new-array1 dag-array-name 1000) ;fixme why 1000?
                                     0 ;initial dag-len
-                                    (make-empty-array dag-parent-array-name 1000)
+                                    (new-array1 dag-parent-array-name 1000)
                                     nil  ;empty dag-constant-alist
                                     (empty-dag-variable-alist)
                                     dag-array-name dag-parent-array-name

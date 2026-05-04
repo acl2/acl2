@@ -27176,7 +27176,7 @@ Restrictions
 
   The following code is intended to give an idea for how one might
   define the ``guts'' of a trusted clause-processor in raw Lisp.  The
-  idea is to stub out functions, such as [30m[47macl2-my-prove below[0m[0m, that
+  idea is to stub out functions, such as [30m[47macl2-my-prove[0m[0m below, that
   you want to define in raw Lisp; and then, load a raw Lisp file to
   overwrite any such function with the real code.  But then we make
   any such overwritten function untouchable.  (This last step is
@@ -56745,35 +56745,29 @@ Frequent Contributors
   "Designate theory for some rewriting done for non-linear arithmetic
 
   We assume familiarity with [theories]; in particular, see [in-theory]
-  for the normal way to set the current theory.  Here, we discuss an
-  analogous event that pertains only to non-linear arithmetic (see
-  [non-linear-arithmetic]).
+  for the normal way to set the current theory.  Here, we discuss a
+  more primitive but analogous event that pertains only to non-linear
+  arithmetic (see [non-linear-arithmetic]).
 
     Example:
-    (in-arithmetic-theory '(lemma1 lemma2))
+    (in-arithmetic-theory '(lemma1 lemma2 (:rewrite lemma3 . 2)))
 
     General Form:
-    (in-arithmetic-theory term)
+    (in-arithmetic-theory '(e1 ... en))
 
-  where [30m[47mterm[0m[0m is a term that when evaluated will produce a theory (see
-  [theories]).  Except for the variable [30m[47m[world][0m[0m, [30m[47mterm[0m[0m must contain no
-  free variables.  [30m[47mTerm[0m[0m is evaluated with the variable [30m[47m[world][0m[0m bound
-  to the current [world] to obtain a theory and the corresponding
-  runic theory (see [theories]) is then used by non-linear arithmetic
-  (see [non-linear-arithmetic]).
+  where each [30m[47mei[0m[0m is a ``runic designator'' as defined formally in
+  [theories].  The non-linear arithmetic theory is obtained by
+  expanding each runic designator into a set of runes and unioning
+  those sets together.
 
-  Warning: If [30m[47mterm[0m[0m involves macros such as [30m[47m[enable][0m[0m and [30m[47m[disable][0m[0m you
-  will probably not get what you expect!  Those macros are defined
-  relative to the [30m[47m[current-theory][0m[0m.  But in this context you might
-  wish they were defined in terms of the
-  ``[30m[47mCURRENT-ARITHMETIC-THEORY[0m[0m'' which is not actually a defined
-  function.  We do not anticipate that users will repeatedly modify
-  the arithmetic theory.  We expect [30m[47mterm[0m[0m most often to be a constant
-  list of runes and so have not provided ``arithmetic theory
-  manipulation functions'' analogous to [30m[47m[current-theory][0m[0m and
-  [30m[47m[enable][0m[0m.
-
-  See [non-linear-arithmetic].")
+  Warning: The theory set by [30m[47min-arithmetic-theory[0m[0m is used only when
+  inequalities are combined according to the heuristics described in
+  [non-linear-arithmetic].  We do not anticipate that users will
+  repeatedly modify the arithmetic theory and thus have not provided
+  more sophisticated tools for constructing it.  So, for example, you
+  cannot construct it with the usual [theory-functions] or by
+  reference to previously named theories.  Instead, you must
+  explicitly list the runic designators constituting the theory.")
  (IN-PACKAGE
   (PACKAGES ACL2-BUILT-INS)
   "Select current package

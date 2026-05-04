@@ -1,7 +1,7 @@
 ; A tool to unroll Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -80,69 +80,72 @@
                      (er hard? 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above).")))
       t)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Works for terms or dag-exprs
-(defund elide-make-frame-args (fn args)
-  (declare (xargs :guard t)) ;strengthen?
+(defund maybe-elide-make-frame-args (fn args)
+  (declare (xargs :guard (true-listp args)))
   (if (and (eq fn 'jvm::make-frame)
            (= 6 (len args))
            ;; for termination:
            (myquotep (fifth args))
            (consp (unquote (fifth args)))
            )
-      (list (first args)
-            (second args)
-            (third args)
-            (fourth args)
-            '':method-info-elided ;; (fifth args)
-            (sixth args))
+      (elide-make-frame-args args)
     args))
 
-(defthm pseudo-term-listp-of-elide-make-frame-args
-  (implies (pseudo-term-listp args)
-           (pseudo-term-listp (elide-make-frame-args fn args)))
-  :hints (("Goal" :in-theory (enable elide-make-frame-args))))
+(local
+  (defthm pseudo-term-listp-of-maybe-elide-make-frame-args
+    (implies (pseudo-term-listp args)
+             (pseudo-term-listp (maybe-elide-make-frame-args fn args)))
+    :hints (("Goal" :in-theory (enable maybe-elide-make-frame-args)))))
 
-(defthm len-of-elide-make-frame-args
-  (equal (len (elide-make-frame-args fn args))
-         (len args))
-  :hints (("Goal" :in-theory (enable elide-make-frame-args))))
+(local
+  (defthm len-of-maybe-elide-make-frame-args
+    (equal (len (maybe-elide-make-frame-args fn args))
+           (len args))
+    :hints (("Goal" :in-theory (enable maybe-elide-make-frame-args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
  (defun elide-method-info-in-term (term)
-   (declare (xargs :guard t  ; or require pseudo-termp, but that might take time to check?
-                   :hints (("Goal" :in-theory (enable elide-make-frame-args)))))
+   (declare (xargs :guard (pseudo-termp term)
+                   :hints (("Goal" :in-theory (enable maybe-elide-make-frame-args)))))
    (if (or (not (consp term)) ; var
            (eq 'quote (ffn-symb term)))
        term
      (let* ((fn (ffn-symb term))
-            (args (elide-make-frame-args fn (fargs term)))
+            (args (maybe-elide-make-frame-args fn (fargs term)))
             (new-args (elide-method-info-in-terms args)))
        (cons fn new-args))))
  (defun elide-method-info-in-terms (terms)
-   (declare (xargs :guard t)) ; or require pseudo-term-listp, but that might take time to check?
+   (declare (xargs :guard (pseudo-term-listp terms)))
    (if (not (consp terms))
        nil
      (cons (elide-method-info-in-term (first terms))
            (elide-method-info-in-terms (rest terms))))))
 
-(local (make-flag elide-method-info-in-term :hints (("Goal" :in-theory (enable elide-make-frame-args)))))
+(local (make-flag elide-method-info-in-term :hints (("Goal" :in-theory (enable maybe-elide-make-frame-args)))))
 
-(defthm-flag-elide-method-info-in-term)
+(local (defthm-flag-elide-method-info-in-term))
 
-(defthm len-of-elide-method-info-in-terms
-  (equal (len (elide-method-info-in-terms terms))
-         (len terms))
-  :hints (("Goal" :in-theory (enable (:i len)))))
+(local
+  (defthm len-of-elide-method-info-in-terms
+    (equal (len (elide-method-info-in-terms terms))
+           (len terms))
+    :hints (("Goal" :in-theory (enable (:i len))))))
 
-(defthm-flag-elide-method-info-in-term
-  (defthm pseudo-termp-of-elide-method-info-in-term
-    (implies (pseudo-termp term)
-             (pseudo-termp (elide-method-info-in-term term)))
-    :flag elide-method-info-in-term)
-  (defthm pseudo-term-listp-of-elide-method-info-in-terms
-    (implies (pseudo-term-listp terms)
-             (pseudo-term-listp (elide-method-info-in-terms terms)))
-    :flag elide-method-info-in-terms))
+(local
+  (defthm-flag-elide-method-info-in-term
+    (defthm pseudo-termp-of-elide-method-info-in-term
+      (implies (pseudo-termp term)
+               (pseudo-termp (elide-method-info-in-term term)))
+      :flag elide-method-info-in-term)
+    (defthm pseudo-term-listp-of-elide-method-info-in-terms
+      (implies (pseudo-term-listp terms)
+               (pseudo-term-listp (elide-method-info-in-terms terms)))
+      :flag elide-method-info-in-terms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +165,7 @@
 ;;                      (eq 'quote (ffn-symb expr)))
 ;;                  expr
 ;;                  (let ((fn (ffn-symb expr)))
-;;                    (cons fn (elide-make-frame-args fn (cdr expr))))))
+;;                    (cons fn (maybe-elide-make-frame-args fn (cdr expr))))))
 ;;       (progn$ (if (not first-elementp) (cw "~% ") nil)
 ;;               (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
 ;;               (print-dag-array-with-elided-method-info-aux (+ -1 nodenum)
@@ -178,30 +181,6 @@
 ;;   (progn$ (cw "(")
 ;;           (print-dag-array-with-elided-method-info-aux nodenum dag-array-name dag-array t)
 ;;           (cw ")~%")))
-
-(defund print-dag-with-elided-method-info-aux (dag first-elementp)
-  (declare (xargs :guard (and (weak-dagp-aux dag)
-                              (booleanp first-elementp))))
-  (if (endp dag)
-      nil
-    (let* ((entry (first dag))
-           (nodenum (car entry))
-           (expr (cdr entry))
-           (expr (if (or (not (consp expr))
-                         (eq 'quote (ffn-symb expr)))
-                     expr
-                   (let ((fn (ffn-symb expr)))
-                     (cons fn (elide-make-frame-args fn (cdr expr)))))))
-      (progn$ (if (not first-elementp) (cw "~% ") nil)
-              (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
-              (print-dag-with-elided-method-info-aux (rest dag) nil)))))
-
-;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
-(defund print-dag-with-elided-method-info (dag)
-  (declare (xargs :guard (weak-dagp-aux dag)))
-  (progn$ (cw "(")
-          (print-dag-with-elided-method-info-aux dag t)
-          (cw ")~%")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -307,14 +286,17 @@
                                                    (reduce-print-level print)
                                                    rules-to-monitor
                                                    *no-warn-ground-functions-jvm*
-                                                   '(program-at) ; fns-to-elide
-                                                   ))
+                                                   ;; fns-to-elide:
+                                                   '(program-at
+                                                     ;; jvm::make-frame ; todo uncomment but just elide the method-info part?
+                                                     )))
          ((when erp) (mv erp dag hits state))
          (hits (combine-hits hits hits-this-time))
          ((when (quotep dag-or-quotep))
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
           (mv (erp-nil) dag-or-quotep hits state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
+         (dag-before-pruning dag) ; remember this for comparison below
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
          ((mv erp dag-or-quotep state)
           (maybe-prune-dag-approximately prune-approx dag assumptions *no-warn-ground-functions-jvm* print
@@ -341,11 +323,37 @@
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
           (mv (erp-nil) dag-or-quotep hits state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
-         (dag-fns (dag-fns dag)) ; optimize to not create the whole list
+         (dag-fns (dag-fns dag)) ; todo: optimize to not create the whole list
          (run-completedp (not (acl2::contains-anyp-eq *incomplete-run-fns* dag-fns))))
       (if run-completedp
-          (prog2$ (cw "Note: The run has completed.~%")
-                  (mv (erp-nil) dag hits state))
+          (if (equal dag dag-before-pruning)
+              ;; Pruning did nothing, so we don't need to simplify again:
+              (prog2$ (cw "Note: The run has completed.~%")
+                      (mv (erp-nil) dag hits state))
+            ;; Pruning did something, so we might be able to simplify more (e.g., if a myif branch got pruned away and now a remaining myif can become a bvif):
+            ;; We could make this final simplification optional.
+            (b* ((- (cw "Note: The run has completed. Doing final simplification.~%"))
+                 ((mv erp dag-or-quotep
+                      & ;limits
+                      hits-this-time)
+                  (acl2::simplify-dag-with-rule-alists-jvm dag
+                                                           assumptions
+                                                           rule-alists ; todo exclude the symbolic execution rules since the run is done?
+                                                           nil ; interpreted-function-alist
+                                                           (acl2::known-booleans (w state))
+                                                           normalize-xors
+                                                           limits
+                                                           (empty-hits)
+                                                           memoizep
+                                                           count-hits
+                                                           (reduce-print-level print)
+                                                           rules-to-monitor
+                                                           *no-warn-ground-functions-jvm*
+                                                           '(program-at) ; fns-to-elide
+                                                           ))
+                 ((when erp) (mv erp dag hits state))
+                 (hits (combine-hits hits hits-this-time)))
+              (mv (erp-nil) dag-or-quotep hits state)))
         (if nil ;todo: (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (todo: update this for JVM)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag hits state))
@@ -368,7 +376,7 @@
                                      (cw "~X01" (untranslate$ (elide-method-info-in-term (dag2term dag)) nil state) nil)
                                      (cw ")~%"))
                            (progn$ (cw "(DAG after ~x0 steps:~%" total-steps)
-                                   (print-dag-with-elided-method-info dag)
+                                   (print-dag-with-elided-method-info dag "") ; todo: use the indent?
                                    (cw ")")))))))
             (repeatedly-run dag
                             (- steps-left steps-for-this-iteration)

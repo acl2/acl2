@@ -32,7 +32,7 @@ program         = ws exp ws
 ; -------------------------------------------------------------------------
 
 exp             = atom               ; atom in expression position
-                                     ; (desugars to Array [] [atom])
+                                     ; (desugars to (array [] atom))
                 / bracket-frame      ; [e1 e2 ... en] frame sugar
                 / identifier         ; variable reference
                 / string-lit         ; "..." string literal
@@ -42,7 +42,7 @@ bracket-frame   = "[" ws exp *( ws exp ) ws "]"
                   ; desugars to (frame [n] e1 ... en)
                   ; nested frames are flattened
 
-string-lit      = DQUOTE *char-literal DQUOTE
+string-lit      = DQUOTE *char-lit DQUOTE
                   ; desugars to (array [n] c1 ... cn) with char codes
 
 paren-exp       = "(" ws paren-exp-body ws ")"
@@ -67,8 +67,11 @@ tapp-exp        = "t-app" ws exp *( ws type-exp )
 
 iapp-exp        = "i-app" ws exp *( ws ispace )
 
-unbox-exp       = "unbox" ws "(" ws *( ispace-var ws )  ; [SC4]
-                  identifier ws exp ws ")" ws exp
+unbox-exp       = "unbox" ws "(" ws unbox-spec ws ")" ws exp
+
+unbox-spec      = *( ispace-var ws ) identifier ws exp   ; [SC4]
+                  ; binders for the unboxed ispaces and value, plus the
+                  ; expression that yields the box being unboxed.
 
 let-exp         = "let" ws "(" *( ws bind ) ws ")" ws exp
 
@@ -127,17 +130,29 @@ bind-body       = val-bind
                 / at-fun-bind
 
 val-bind        = "val" ws identifier ws exp
-                / "val" ws "(" ws identifier ws ":" ws type-exp ws ")" ws exp
+                / "val" ws "(" ws val-typed-sig ws ")" ws exp
 
-fun-bind        = "fun" ws "(" ws identifier *( ws pat ) [ ws ":" ws type-exp ] ws ")" ws exp
+val-typed-sig   = identifier ws colon-type
+                  ; inner of typed val-bind: "(" ws val-typed-sig ws ")"
 
-tfun-bind       = "t-fun" ws "(" ws identifier ws
-                  "(" *( ws type-var ) ws ")"
-                  [ ws ":" ws type-exp ] ws ")" ws exp
+fun-bind        = "fun" ws "(" ws fun-sig ws ")" ws exp
 
-ifun-bind       = "i-fun" ws "(" ws identifier ws
-                  "(" *( ws ispace-var ) ws ")"
-                  [ ws ":" ws type-exp ] ws ")" ws exp
+fun-sig         = identifier *( ws pat ) [ ws colon-type ]
+                  ; inner of fun-bind: name, parameters, optional return type
+
+tfun-bind       = "t-fun" ws "(" ws tfun-sig ws ")" ws exp
+
+tfun-sig        = identifier ws "(" *( ws type-var ) ws ")"
+                  [ ws colon-type ]
+                  ; inner of tfun-bind: name, type parameters, optional
+                  ; return type
+
+ifun-bind       = "i-fun" ws "(" ws ifun-sig ws ")" ws exp
+
+ifun-sig        = identifier ws "(" *( ws ispace-var ) ws ")"
+                  [ ws colon-type ]
+                  ; inner of ifun-bind: name, ispace parameters, optional
+                  ; return type
 
 type-bind       = "type" ws type-var ws type-exp
 
@@ -146,15 +161,23 @@ ispace-bind     = "extent" ws ispace-var ws ispace
                  ; Haskell Remora parser. The paper (linked above) uses
                  ; the word "index".  Now this concept is called "ispace".
 
-at-fun-bind     = "fun" ws "(" ws "@" ws identifier ws
-                  type-vars ws ispace-vars *( ws pat )
-                  ws ":" ws type-exp ws ")" ws exp
+at-fun-bind     = "fun" ws "(" ws at-fun-sig ws ")" ws exp
+
+at-fun-sig      = "@" ws identifier ws type-vars ws ispace-vars
+                  *( ws pat ) ws colon-type
+                  ; inner of at-fun-bind: name, type/ispace parameter
+                  ; lists, value parameters, mandatory return type
 
 type-vars       = "(" *( ws type-var ) ws ")"
                 / "_"
 
 ispace-vars     = "(" *( ws ispace-var ) ws ")"
                 / "_"
+
+colon-type      = ":" ws type-exp
+                  ; reusable form for type ascriptions; the inline option
+                  ; [ ws colon-type ] used in fun-sig/tfun-sig/ifun-sig
+                  ; expresses an absent-or-present return-type annotation
 
 ; -------------------------------------------------------------------------
 ; Types (source-level type expressions)
@@ -337,15 +360,15 @@ exponent        = ( "e" / "E" ) [ "+" / "-" ] 1*DIGIT
 ; a string gap separator in Haskell).  Our escape-char rule reflects
 ; what readLitChar (and L.charLiteral) actually accepts.
 
-char-literal    = %x00-21             ; any char below "
-                / %x23-5B             ; between " and \
-                / %x5D-D7FF           ; between \ and surrogate range
-                / %xE000-10FFFF       ; above surrogates
-                  ; The Haskell Report restricts literal characters in strings
-                  ; to graphic characters and space, but readLitChar accepts
-                  ; any non-backslash character.  The ranges above reflect the
-                  ; actual behavior.
-                / "\" escape-char
+char-lit    = %x00-21             ; any char below "
+            / %x23-5B             ; between " and \
+            / %x5D-D7FF           ; between \ and surrogate range
+            / %xE000-10FFFF       ; above surrogates
+              ; The Haskell Report restricts literal characters in strings
+              ; to graphic characters and space, but readLitChar accepts
+              ; any non-backslash character.  The ranges above reflect the
+              ; actual behavior.
+            / "\" escape-char
 
 escape-char     = char-escape
                 / ascii-escape
@@ -356,7 +379,7 @@ escape-char     = char-escape
 char-escape     = "a" / "b" / "f" / "n" / "r" / "t" / "v"
                 / "\" / DQUOTE / "'"
 
-; ASCII control character names (33 names for %x00-%x20 and %x7F).
+; ASCII control character names (34 names for %x00-%x20 and %x7F).
 ; SOH must be matched before SO (longest-match); all other
 ; alternatives are prefix-free.
 ascii-escape    = "NUL" / "SOH" / "STX" / "ETX" / "EOT" / "ENQ"
@@ -471,15 +494,14 @@ HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
 ;   (App appears early), but this works because lId rejects keywords,
 ;   causing App to fail on keyword-headed forms.
 ;
-; [SC4] unbox-exp ispace-var lookahead (tagged on: unbox-exp)
+; [SC4] unbox-spec ispace-var lookahead (tagged on: unbox-spec)
 ;
-
 ;   In the Haskell parser for unbox-exp, each ispace-var (called
 ;   extent-param there) is guarded by notFollowedBy (symbol ")"), so
 ;   that the last ispace-var-like token preceding the closing paren is
 ;   left for the mandatory "identifier" to match instead.  ABNF cannot
 ;   express this one-token lookahead; the grammar uses a plain
-;   *( ispace-var ws ) repetition.
+;   *( ispace-var ws ) repetition (now factored into the unbox-spec rule).
 ;   For well-formed input the two approaches produce identical parse
 ;   trees.  The difference is visible only in error messages for
 ;   malformed input.

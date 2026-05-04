@@ -763,7 +763,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-character-constant ((cprefix? cprefix-optionp)
+(define lex-character-constant ((prefix? eprefix-optionp)
                                 (first-pos positionp)
                                 (parstate parstatep))
   :returns (mv erp
@@ -791,7 +791,7 @@
         (reterr-msg :where closing-squote-pos
                     :expected "one or more characters and escape sequences"
                     :found "none")))
-    (retok (lexeme-token (token-const (const-char (cconst cprefix? cchars))))
+    (retok (lexeme-token (token-const (const-char (cconst prefix? cchars))))
            span
            parstate))
 
@@ -3024,7 +3024,7 @@
                  (make-span :start first-pos :end first-pos)
                  parstate))
          ((utf8-= char2 (char-code #\')) ; u '
-          (lex-character-constant (cprefix-locase-u) first-pos parstate))
+          (lex-character-constant (eprefix-locase-u) first-pos parstate))
          ((utf8-= char2 (char-code #\")) ; u "
           (lex-string-literal (eprefix-locase-u) first-pos parstate))
          ((utf8-= char2 (char-code #\8)) ; u 8
@@ -3052,7 +3052,7 @@
                  (make-span :start first-pos :end first-pos)
                  parstate))
          ((utf8-= char2 (char-code #\')) ; U '
-          (lex-character-constant (cprefix-upcase-u) first-pos parstate))
+          (lex-character-constant (eprefix-upcase-u) first-pos parstate))
          ((utf8-= char2 (char-code #\")) ; U "
           (lex-string-literal (eprefix-upcase-u) first-pos parstate))
          (t ; U other
@@ -3067,7 +3067,7 @@
                  (make-span :start first-pos :end first-pos)
                  parstate))
          ((utf8-= char2 (char-code #\')) ; L '
-          (lex-character-constant (cprefix-upcase-l) first-pos parstate))
+          (lex-character-constant (eprefix-upcase-l) first-pos parstate))
          ((utf8-= char2 (char-code #\")) ; L "
           (lex-string-literal (eprefix-upcase-l) first-pos parstate))
          (t ; L other
@@ -3538,8 +3538,7 @@
                                            unsigned-byte-p
                                            integer-range-p
                                            dec-digit-char-p
-                                           natp
-                                           the-check)))
+                                           natp)))
 
   ///
 

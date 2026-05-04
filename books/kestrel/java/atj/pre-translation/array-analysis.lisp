@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,7 +104,7 @@
     "Another complication of this array analysis,
      which does not happen with stobjs,
      is that some functions may create new arrays (directly or indirectly).
-     These are arrays are not passed as inputs, but returned as outputs afresh.
+     These arrays are not passed as inputs, but returned as outputs afresh.
      As such, they do not correspond to any inputs, so there is no name mapping.
      This is why
      @(tsee atj-main-function-type) and @(tsee atj-other-function-type)
@@ -245,7 +245,7 @@
      the former are the concatenations of the singleton lists
      inferred for each of the arguments,
      while the latter are lists that apply to the whole term.
-     The array analysis fails if two of arguments have the same array name:
+     The array analysis fails if two of the arguments have the same array name:
      this situation means that the same array is aliased (in Java)
      and possibly subjected to different modifications through the aliases.
      We pass a flag to @('atj-analyze-arrays-in-term') indicating whether
@@ -258,7 +258,7 @@
      if @('f') returns an array and @('g') takes an array of the same type,
      we disallow calls @('(g ... (f ...) ...)').
      Instead, one must assign each array returned by a named function
-     to some variable, and only pass such variables to names functions.
+     to some variable, and only pass such variables to named functions.
      In the example of @('f') and @('g') just above,
      one must have @('(let (... (a (f ...)) ...) (g ... a ...))')
      for code generation to proceed.
@@ -303,8 +303,8 @@
      and that @('f') has two array formal parameters @('x') and @('y').
      Suppose that the array names inferred
      for the corresponding actual arguments are @('a') and @('b').
-     Then we construct first the alist @('((x . a) (y. b))'),
-     and then we go through the output arrays of $('f'),
+     Then we construct first the alist @('((x . a) (y . b))'),
+     and then we go through the output arrays of @('f'),
      which may include @('x') and @('y') (not necessarily in that order),
      and for each element of the list we generate
      @('a') if the element is @('x'),
@@ -318,7 +318,7 @@
      the results corresponding to @('x') and @('y') may then be @('nil'),
      which indicates arrays that have been
      newly created, possibly modified, and not given names yet
-     (names are given then they are bound to variables).")
+     (names are given when they are bound to variables).")
    (xdoc::p
     "If the term being analyzed is a call of a lambda expression
      (but not of the @(tsee mv-let) form, which is explained below),

@@ -22,27 +22,42 @@
                                        check-type
                                        function
                                        functionp
+                                       prog
                                        sort
                                        termp
                                        type
                                        typep))
-                  '(bool
+                  '(all-equalp
+                    bool
                     defmacro+
                     defxdoc+
+                    enable*
+                    impossible
                     int
                     lnfix
                     nat
                     nat-list
                     nat-list-fix
+                    nat-list-listp
+                    nats=>string
                     prefixp
+                    str-fix
+                    string=>nats
                     string-setp
                     string-string-map
                     string-string-mapp
                     string-string-map-fix
+                    fty::ok
+                    fty::okf
                     fty::patbind-ok
+                    fty::patbind-okf
                     fty::reserr
                     fty::reserrf
                     fty::reserrf-push
                     fty::reserrp
                     std::defret-mutual
+                    std::defval
+                    str::dec-digit-char-list
+                    str::hex-digit-char-list
+                    str::oct-digit-char-list
                     str::string-list)))

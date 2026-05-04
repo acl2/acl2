@@ -524,7 +524,7 @@
                               (nat-listp literals)
                               (all-< literals dag-len)
                               (symbol-listp known-booleans))))
-  (b* ((assumption-array (make-empty-array 'assumption-array dag-len))
+  (b* ((assumption-array (new-array1 'assumption-array dag-len))
        ((mv provedp literals assumption-array redundancy-presentp)
         (make-assumption-array-aux literals nil assumption-array nil dag-array dag-len known-booleans print))
        ((when provedp)

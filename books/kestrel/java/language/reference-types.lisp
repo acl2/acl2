@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,7 +41,7 @@
     (xdoc::seetopic "primitive-types" "formalization of primitive types")
     ", in our formalization of reference types it seems more practical
      to define the `reference types' as the ones without annotations
-     (not even the ones in the rules for @('unann-reference-type') etc.,
+     (not even the ones in the rules for @('unann-reference-type') etc.),
      and have a separate notion for `annotated reference types'.
      This is just nomenclature, the substance does not change.")
    (xdoc::p
@@ -98,10 +98,10 @@
        However, in our formalization, it seems more convenient
        to just define one syntactic entity for both, called `class type'.
        This is not unlike other uses, in [JLS14] and [JVMS14],
-       of `class' in an attributive role to means `class or interface':
+       of `class' in an attributive role to mean `class or interface':
        examples are `class loader' and `class file'.
        We may revisit this choice in the future,
-       if we found it actually more convenient to make a distinction
+       if we find it actually more convenient to make a distinction
        between classes and interfaces at the syntactic level.")
      (xdoc::p
       "There are three kinds of class types.
@@ -118,7 +118,7 @@
       "Since the three summands of this fixtype have two fields in common,
        an alternative formalization approach is
        to define a class type as a product of those two fields
-       plus a qualified that is nothing (for simple names)
+       plus a qualifier that is nothing (for simple names)
        or a package name or a class type;
        that is, to factor the common fields.
        We may do that in the future, if it turns out to be more convenient."))

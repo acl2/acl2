@@ -1,7 +1,7 @@
 ; The inverse of the function GROUP
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -53,6 +53,7 @@
          (ungroup n x))
   :hints (("Goal" :in-theory (enable ungroup))))
 
+;; can't be local
 (defun ungroup-induct (x n m)
   (declare (xargs :measure (nfix n)))
   (if (or (zp n)

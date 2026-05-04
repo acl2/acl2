@@ -305,7 +305,7 @@
   ((table dimb-table)
    (macros macro-table)
    (file string)
-   (ienv ienvp))
+   (ienv ienv))
   :pred dstatep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1742,7 +1742,7 @@
     :short "Disambiguate a constant expression."
     (b* (((reterr) (irr-const-expr) (irr-dstate))
          ((erp new-expr dstate) (dimb-expr (const-expr->expr cexpr) dstate)))
-      (retok (const-expr new-expr) dstate))
+      (retok (make-const-expr :expr new-expr) dstate))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2022,7 +2022,8 @@
              (dimb-amb-expr/tyname alignspec.expr/type nil dstate)))
          (expr/tyname-case
           expr/tyname
-          :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.expr))
+          :expr (retok (align-spec-alignas-expr
+                         (make-const-expr :expr expr/tyname.expr))
                        dstate)
           :tyname (retok (align-spec-alignas-type expr/tyname.tyname)
                          dstate)))))
@@ -3985,7 +3986,7 @@
      (xdoc::p
       "A @('#define') or @('#undef') directive is considered unambiguous,
        but it adds an entry (definition or undefinition) to the macro table.
-       Recall that, as a translation items,
+       Recall that, as a translation item,
        a @('#define') directive is implicitly always
        an object-like macro whose replacement list is just the macro name.")
      (xdoc::p

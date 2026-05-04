@@ -4618,11 +4618,11 @@ and @(tsee include-book)"
 ;   :short "Count the number of keys in association list"
 ;   :long "<p>@('(Alist-keys al)') returns the sorted list of keys in an
 ;  association list.  The sorting function is @(tsee merge-sort-lexorder).</p>
-; 
+;
 ;  <p>@('Alist-keys') has a guard of @('t').  This function is called in the body
 ;  of function, @('<h>-keys') where @('<h>') is a hash-table field of a @(see
 ;  stobj).  See @(see defstobj).</p>
-; 
+;
 ;  @(def alist-keys)")
 
 (defxdoc alist-keys-subsetp
@@ -23873,7 +23873,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
 
  <p>The following code is intended to give an idea for how one might define the
  ``guts'' of a trusted clause-processor in raw Lisp.  The idea is to stub out
- functions, such as @('acl2-my-prove below'), that you want to define in raw
+ functions, such as @('acl2-my-prove') below, that you want to define in raw
  Lisp; and then, load a raw Lisp file to overwrite any such function with the
  real code.  But then we make any such overwritten function untouchable.  (This
  last step is important because otherwise, one can prove @('nil') using a
@@ -53153,35 +53153,29 @@ tables in the current Hons Space."
   :short "Designate theory for some rewriting done for non-linear arithmetic"
   :long "<p>We assume familiarity with @(see theories); in particular, see
  @(see in-theory) for the normal way to set the current theory.  Here, we
- discuss an analogous event that pertains only to non-linear arithmetic
- (see @(see non-linear-arithmetic)).</p>
+ discuss a more primitive but analogous event that pertains only to non-linear
+ arithmetic (see @(see non-linear-arithmetic)).</p>
 
  @({
   Example:
-  (in-arithmetic-theory '(lemma1 lemma2))
+  (in-arithmetic-theory '(lemma1 lemma2 (:rewrite lemma3 . 2)))
 
   General Form:
-  (in-arithmetic-theory term)
+  (in-arithmetic-theory '(e1 ... en))
  })
 
- <p>where @('term') is a term that when evaluated will produce a theory (see
- @(see theories)).  Except for the variable @(tsee world), @('term') must
- contain no free variables.  @('Term') is evaluated with the variable @(tsee
- world) bound to the current @(see world) to obtain a theory and the
- corresponding runic theory (see @(see theories)) is then used by non-linear
- arithmetic (see @(see non-linear-arithmetic)).</p>
+ <p>where each @('ei') is a ``runic designator'' as defined formally in @(see
+ theories).  The non-linear arithmetic theory is obtained by expanding each
+ runic designator into a set of runes and unioning those sets together.</p>
 
- <p>Warning: If @('term') involves macros such as @(tsee ENABLE) and @(tsee
- DISABLE) you will probably not get what you expect!  Those macros are defined
- relative to the @(tsee CURRENT-THEORY).  But in this context you might wish
- they were defined in terms of the ``@('CURRENT-ARITHMETIC-THEORY')'' which is
- not actually a defined function.  We do not anticipate that users will
- repeatedly modify the arithmetic theory.  We expect @('term') most often to be
- a constant list of runes and so have not provided ``arithmetic theory
- manipulation functions'' analogous to @(tsee CURRENT-THEORY) and @(tsee
- ENABLE).</p>
-
- <p>See @(see non-linear-arithmetic).</p>")
+ <p>Warning: The theory set by @('in-arithmetic-theory') is used only when
+ inequalities are combined according to the heuristics described in @(see
+ non-linear-arithmetic).  We do not anticipate that users will repeatedly
+ modify the arithmetic theory and thus have not provided more sophisticated
+ tools for constructing it.  So, for example, you cannot construct it with the
+ usual @(see theory-functions) or by reference to previously named theories.
+ Instead, you must explicitly list the runic designators constituting the
+ theory.</p>")
 
 (defxdoc in-package
   :parents (packages acl2-built-ins)
