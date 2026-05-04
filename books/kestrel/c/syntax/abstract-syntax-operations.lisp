@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-irrelevants")
 (include-book "abstract-syntax-structurals")
+(include-book "implementation-environments")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -44,6 +45,47 @@
     :oct const.value
     :hex (str::hex-digit-chars-value const.digits))
   :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nat-to-iconst ((n natp) (ienv ienvp))
+  :returns (iconst? iconst-optionp)
+  :short "Create an integer constant from a natural number."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A ``length'' suffix is added to the constant if
+     the number is not otherwise be representable.
+     An ``unsigned'' suffix is added only if
+     the number cannot be represented as a @('signed long long').")
+   (xdoc::p
+    "If the number is not representable by an integer type,
+     @('nil') is returned instead."))
+  (b* ((n (lnfix n))
+       ((ienv ienv) ienv)
+       (core (if (= (the unsigned-byte n) 0)
+                 (make-dec/oct/hex-const-oct :leading-zeros 1 :value 0)
+               (dec/oct/hex-const-dec n)))
+       ((mv too-big-p suffix?)
+        (cond ((signed-byte-p n ienv.int-bytes)
+               (mv nil nil))
+              ((signed-byte-p n ienv.long-bytes)
+               (mv nil (isuffix-l (lsuffix-locase-l))))
+              ((signed-byte-p n ienv.llong-bytes)
+               (mv nil (isuffix-l (lsuffix-locase-ll))))
+              ((unsigned-byte-p n ienv.llong-bytes)
+               (mv nil
+                   (make-isuffix-ul :unsigned (usuffix-locase-u)
+                                    :length (lsuffix-locase-ll))))
+              (t (mv t nil)))))
+    (if too-big-p
+        nil
+      (make-iconst :core core :suffix? suffix?)))
+
+  ///
+  (defrule iconstp-of-nat-to-iconst-undef-iff
+    (iff (iconstp (nat-to-iconst n ienv))
+         (nat-to-iconst n ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

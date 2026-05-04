@@ -924,7 +924,8 @@
           (simpadd0-initer desiniter.initer gin))
          (gin (gin-update gin gout-initer)))
       (mv (make-desiniter :designors new-designors
-                          :initer new-initer)
+                          :initer new-initer
+                          :info desiniter.info)
           (gout-no-thm gin)))
     :measure (desiniter-count desiniter))
 

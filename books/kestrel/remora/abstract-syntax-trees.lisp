@@ -525,6 +525,15 @@
   :require (consp digits)
   :pred int-litp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist int-lit-list
+  :short "Fixtype of lists of integer literals."
+  :elt-type int-lit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred int-lit-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod float-lit
@@ -704,6 +713,15 @@
   (:float ((lit float-lit)))
   :pred base-litp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist base-lit-list
+  :short "Fixtype of lists of base literals."
+  :elt-type base-lit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred base-lit-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes exprs/atoms/binds
@@ -787,8 +805,7 @@
     :elt-type expr
     :true-listp t
     :elementp-of-nil nil
-    :pred expr-listp
-    :verbosep t) ; TODO: remove
+    :pred expr-listp)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -887,6 +904,40 @@
     :true-listp t
     :elementp-of-nil nil
     :pred bind-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist expr-list-list
+  :short "Fixtype of lists of lists of expressions."
+  :elt-type expr-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred expr-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-expr-list-listp
+    (implies (expr-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable expr-list-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist atom-list-list
+  :short "Fixtype of lists of lists of atoms."
+  :elt-type atom-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred atom-list-listp
+
+  ///
+
+  (defruled true-list-listp-when-atom-list-listp
+    (implies (atom-list-listp x)
+             (true-list-listp x))
+    :induct t
+    :enable atom-list-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

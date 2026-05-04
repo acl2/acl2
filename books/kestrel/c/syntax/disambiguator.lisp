@@ -3986,7 +3986,7 @@
      (xdoc::p
       "A @('#define') or @('#undef') directive is considered unambiguous,
        but it adds an entry (definition or undefinition) to the macro table.
-       Recall that, as a translation items,
+       Recall that, as a translation item,
        a @('#define') directive is implicitly always
        an object-like macro whose replacement list is just the macro name.")
      (xdoc::p
