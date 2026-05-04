@@ -1318,7 +1318,8 @@
     acl2::logbit-becomes-getbit
     acl2::b-and-becomes-bitand
     acl2::b-ior-becomes-bitor
-    acl2::b-xor-becomes-bitxor))
+    acl2::b-xor-becomes-bitxor
+    acl2::b-not-becomes-bitnot))
 
 ;; See also bitops-to-bv-rules.
 ;; todo: add more constant openers
