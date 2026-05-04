@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -233,7 +233,7 @@
      We generate an output type theorem for each,
      counting down from @('nresults - 1') to 0.")
    (xdoc::p
-    "The output types are reversed (as suggested by the @('rev-') prefix,
+    "The output types are reversed (as suggested by the @('rev-') prefix),
      so that they ``match'' the counting down mentioned just above."))
   (if (zp nresults)
       nil
@@ -558,7 +558,7 @@
      This may or may not be found
      (and in the latter case automatic conversions are inserted
      to the primary input types of the function),
-     but if one exists, it must be unque to avoid an ambiguity.
+     but if one exists, it must be unique to avoid an ambiguity.
      The closure property ensures this.")
    (xdoc::p
     "Besides the closure property just explained,
@@ -653,7 +653,7 @@
      while the secondary output types are proved
      with additional type hypotheses,
      it does not make sense that the secondary output types
-     is wider than, or unrelated to, the primary output types;
+     are wider than, or unrelated to, the primary output types;
      this situation probably signals the misstatement of some types
      to either @(tsee atj-main-function-type)
      or @(tsee atj-other-function-type).")

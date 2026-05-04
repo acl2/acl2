@@ -581,6 +581,7 @@
   ((desiniter desiniterp))
   :returns (mv (er? maybe-msgp)
                (desiniter$ desiniterp))
+  :parents (split-gso-implementation)
   :short "Add an explicit designation to an initializer."
   :long
   (xdoc::topstring
@@ -618,6 +619,7 @@
 (define explicit-desiniter-listp
   ((desiniters desiniter-listp))
   :returns (yes/no booleanp)
+  :parents (split-gso-implementation)
   :short "Recognizer of lists of initializers with required designations."
   (or (endp desiniters)
       (and (not (endp (c$::desiniter->designors (first desiniters))))

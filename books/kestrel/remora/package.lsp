@@ -27,7 +27,8 @@
                                        termp
                                        type
                                        typep))
-                  '(bool
+                  '(all-equalp
+                    bool
                     defmacro+
                     defxdoc+
                     enable*
@@ -37,6 +38,7 @@
                     nat
                     nat-list
                     nat-list-fix
+                    nat-list-listp
                     nats=>string
                     prefixp
                     str-fix
