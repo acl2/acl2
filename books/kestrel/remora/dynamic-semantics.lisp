@@ -10,13 +10,11 @@
 
 (in-package "REMORA")
 
-(include-book "xdoc/constructors" :dir :system)
-
-(include-book "portcullis")
+(include-book "values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc dynamic-semantics
+(defxdoc+ dynamic-semantics
   :parents (remora)
   :short "Dynamic semantics of Remora."
   :long
@@ -25,4 +23,5 @@
     "The static semantics of Remora is defined via inference rules,
      in the Remora publications [thesis] [arxiv] [esop].
      We plan to formalize those inference rules as directly as possible,
-     but we will start by providing an executable interpreter.")))
+     but we will start by providing an executable interpreter."))
+  :order-subtopics (values))
