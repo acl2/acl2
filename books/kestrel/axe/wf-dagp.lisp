@@ -1,7 +1,7 @@
 ; A recognizer for a well-formed DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -67,38 +67,38 @@
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
 ;; An empty dag is well-formed.
-;; maybe drop if we switch to using empty-dag-array or empty-dag-array-with-name instead of make-empty-array.
-(defthm wf-dagp-of-make-empty-array
+;; maybe drop if we switch to using empty-dag-array or empty-dag-array-with-name instead of new-array1.
+(defthm wf-dagp-of-new-array1
   (implies (and (symbolp dag-array-name)
                 (symbolp dag-parent-array-name)
                 (posp size)
                 (<= size *max-1d-array-length*))
            (wf-dagp dag-array-name
-                    (make-empty-array dag-array-name size)
+                    (new-array1 dag-array-name size)
                     0
                     dag-parent-array-name
-                    (make-empty-array dag-parent-array-name size)
+                    (new-array1 dag-parent-array-name size)
                     nil
                     (empty-dag-variable-alist)))
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
 ;drop?
-(defthmd wf-dagp-of-make-into-array-etc
+(defthmd wf-dagp-of-alist-to-array1-etc
   (implies (and (pseudo-dagp dag)
                 (<= (LEN DAG) *max-1d-array-length*))
            (WF-DAGP 'DAG-ARRAY
-                    (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                    (ALIST-TO-ARRAY1 'DAG-ARRAY DAG)
                     (LEN DAG)
                     'DAG-PARENT-ARRAY
                     (MAKE-MINIMAL-DAG-PARENT-ARRAY-WITH-NAME (LEN DAG)
                                                              'DAG-ARRAY
-                                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                                             (ALIST-TO-ARRAY1 'DAG-ARRAY DAG)
                                                              'DAG-PARENT-ARRAY)
                     (MAKE-DAG-CONSTANT-ALIST 'DAG-ARRAY
-                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                             (ALIST-TO-ARRAY1 'DAG-ARRAY DAG)
                                              (LEN DAG))
                     (MAKE-DAG-VARIABLE-ALIST 'DAG-ARRAY
-                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                             (ALIST-TO-ARRAY1 'DAG-ARRAY DAG)
                                              (LEN DAG))))
   :hints (("Goal" :in-theory (enable wf-dagp
                                      CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP))))

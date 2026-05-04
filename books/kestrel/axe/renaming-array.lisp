@@ -137,11 +137,11 @@
                   (consp (aref1 renaming-array-name renaming-array nodenum))))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
 
-(defthm renaming-arrayp-aux-of-make-empty-array
+(defthm renaming-arrayp-aux-of-new-array1
   (implies (and (posp size)
                 (symbolp array-name)
                 (<= size *max-1d-array-length*))
-           (renaming-arrayp-aux array-name (make-empty-array array-name size) -1))
+           (renaming-arrayp-aux array-name (new-array1 array-name size) -1))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
 
 ;; enabling dargp-rules may avoid the need for these:
