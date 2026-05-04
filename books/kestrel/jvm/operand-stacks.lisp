@@ -131,6 +131,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns a list of the top n items on the stack (topmost element first):
+;; todo: require the stack to have at least n items
 (defund topn-operands (n stack)
   (declare (xargs :guard (and (natp n) (operand-stackp stack))))
   (if (zp n)
@@ -154,12 +155,14 @@
 ;fixme when the number of frames to pop is a constant, we could use a macro instead of this (saving the time of using the popn opener and base rules..)
 ;todo: handle longs/doubles better here, if we can.  see pop-items-off-stack.
 (defund popn-operands (n stack)
-  (declare (type (integer 0 *) n)
-           (xargs :guard (and (operand-stackp stack) (<= n (operand-stack-size stack)))
-                  :guard-hints (("Goal" :in-theory (enable operand-stackp pop-operand operand-stack-size)))))
+  (declare (xargs :guard (and (natp n)
+                              (operand-stackp stack)
+                              (<= n (operand-stack-size stack)))
+                  :split-types t)
+           (type (integer 0 *) n))
   (if (zp n)
       stack
-      (popn-operands (- n 1) (pop-operand stack))))
+    (popn-operands (- n 1) (pop-operand stack))))
 
 (defthm popn-operands-base
   (implies (zp n)
