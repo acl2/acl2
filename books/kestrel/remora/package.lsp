@@ -26,7 +26,9 @@
                                        sort
                                        termp
                                        type
-                                       typep))
+                                       typep
+                                       value
+                                       values))
                   '(all-equalp
                     bool
                     defmacro+
