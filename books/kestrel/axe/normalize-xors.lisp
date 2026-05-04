@@ -880,7 +880,7 @@
 ;;          (dag-len (len dag-lst))
 ;;          (top-nodenum (top-nodenum dag-lst))
 ;;          (dag-array-name 'simplify-bitxors-array)
-;;          (dag-array (make-into-array dag-array-name dag-lst)) ;could pass in the len? ;add slack space?
+;;          (dag-array (alist-to-array1 dag-array-name dag-lst)) ;could pass in the len? ;add slack space?
 ;;          (dag-parent-array-name 'simplify-bitxors-parent-array))
 ;;     (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
 ;;             (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)
@@ -1487,7 +1487,7 @@
 ;(normalize-xors '((2 bvxor '32 0 1) (1 . x) (0 . y)) t)
 
 ;;   (let* ((dag-len (len dag))
-;;          (dag-array (make-into-array 'dag-array dag))
+;;          (dag-array (alist-to-array1 'dag-array dag))
 ;;          (parent-array (make-dag-parent-array-with-name 0 dag-len dag-array (new-array1 'parent-array dag-len)))
 ;;          (translation-array (new-array1 'translation-array dag-len)))
 ;;     (prog2$ (cw "Simplifying bitxors...~%" nil)
@@ -1648,7 +1648,7 @@
 
 ;; (defun bit-blast-vars (dag var-width-alist)
 ;;   (let* ((dag-len (len dag))
-;;          (dag-array (make-into-array 'dag-array dag))
+;;          (dag-array (alist-to-array1 'dag-array dag))
 ;;       (translation-array (new-array1 'translation-array dag-len))
 ;;       )
 ;;     (bit-blast-vars-aux 0 dag-len dag-array var-width-alist nil translation-array)))
@@ -1707,7 +1707,7 @@
 ;; ;this one doesn't change any node numbering, just renames vars
 ;; (defun rename-vars (dag renaming-alist)
 ;;   (let* ((dag-len (len dag))
-;;          (dag-array (make-into-array 'dag-array dag))
+;;          (dag-array (alist-to-array1 'dag-array dag))
 ;;       )
 ;;     (rename-vars-aux 0 dag-len dag-array renaming-alist nil)))
 

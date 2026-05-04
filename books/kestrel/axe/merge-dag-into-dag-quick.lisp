@@ -80,7 +80,7 @@
            (max-nodes-needed (+ dag1-len dag2-len)) ;fixme allow some slack space?
            (new-size (min *max-1d-array-length* max-nodes-needed))
            ;; make dag2 into an array:
-           (dag-array (make-into-array-with-len 'dag-array dag2 new-size))
+           (dag-array (alist-to-array1-with-len 'dag-array dag2 new-size))
            ;; make aux structures for dag2:
            ((mv dag-parent-array dag-constant-alist dag-variable-alist)
             (make-dag-indices 'dag-array dag-array 'dag-parent-array dag2-len))

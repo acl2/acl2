@@ -83,22 +83,22 @@
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
 ;drop?
-(defthmd wf-dagp-of-make-into-array-etc
+(defthmd wf-dagp-of-alist-to-array1-etc
   (implies (and (pseudo-dagp dag)
                 (<= (LEN DAG) *max-1d-array-length*))
            (WF-DAGP 'DAG-ARRAY
-                    (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                    (ALIST-TO-ARRAY1 'DAG-ARRAY DAG)
                     (LEN DAG)
                     'DAG-PARENT-ARRAY
                     (MAKE-MINIMAL-DAG-PARENT-ARRAY-WITH-NAME (LEN DAG)
                                                              'DAG-ARRAY
-                                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                                             (ALIST-TO-ARRAY1 'DAG-ARRAY DAG)
                                                              'DAG-PARENT-ARRAY)
                     (MAKE-DAG-CONSTANT-ALIST 'DAG-ARRAY
-                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                             (ALIST-TO-ARRAY1 'DAG-ARRAY DAG)
                                              (LEN DAG))
                     (MAKE-DAG-VARIABLE-ALIST 'DAG-ARRAY
-                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                             (ALIST-TO-ARRAY1 'DAG-ARRAY DAG)
                                              (LEN DAG))))
   :hints (("Goal" :in-theory (enable wf-dagp
                                      CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP))))

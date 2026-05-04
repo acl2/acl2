@@ -18,7 +18,7 @@
 (include-book "dags") ;for pseudo-dagp
 (include-book "kestrel/acl2-arrays/constants" :dir :system) ; for *max-1d-array-length*
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
-(include-book "kestrel/acl2-arrays/make-into-array" :dir :system)
+(include-book "kestrel/acl2-arrays/alist-to-array1" :dir :system)
 (include-book "kestrel/acl2-arrays/array-to-alist" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "rational-lists"))
@@ -1981,24 +1981,24 @@
                               pseudo-dag-arrayp-aux
                               ))))
 
-(defthm pseudo-dag-arrayp-aux-of-make-into-array
+(defthm pseudo-dag-arrayp-aux-of-alist-to-array1
   (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
                 (< top-nodenum *max-1d-array-length*)
                 (natp top-nodenum)
                 (symbolp array-name))
            (pseudo-dag-arrayp-aux array-name
-                                (make-into-array array-name dag-lst)
+                                (alist-to-array1 array-name dag-lst)
                                 (car (car dag-lst))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :do-not-induct t
            :expand ((:free (a) (array1p array-name (cons a dag-lst))))
            :in-theory (enable PSEUDO-DAGP
                               pseudo-dag-arrayp-aux
-                              make-into-array
-                              make-into-array-with-len
+                              alist-to-array1
+                              alist-to-array1-with-len
                               array1p))))
 
-(defthm pseudo-dag-arrayp-aux-of-make-into-array-with-len
+(defthm pseudo-dag-arrayp-aux-of-alist-to-array1-with-len
   (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
 ;                (< top-nodenum *max-1d-array-length*)
                 (natp top-nodenum)
@@ -2006,11 +2006,11 @@
                 (natp len)
                 (<= len *max-1d-array-length*)
                 (symbolp array-name))
-           (pseudo-dag-arrayp-aux array-name (make-into-array-with-len array-name dag-lst len) top-nodenum))
+           (pseudo-dag-arrayp-aux array-name (alist-to-array1-with-len array-name dag-lst len) top-nodenum))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :do-not-induct t
            :in-theory (enable pseudo-dagp
-                              make-into-array-with-len
+                              alist-to-array1-with-len
                               pseudo-dag-arrayp-aux
                               array1p-rewrite))))
 
@@ -2022,16 +2022,16 @@
            (bounded-integer-alistp dag-lst len))
   :hints (("Goal" :in-theory (enable bounded-integer-alistp pseudo-dagp-aux))))
 
-(defthm pseudo-dag-arrayp-of-make-into-array-with-len
+(defthm pseudo-dag-arrayp-of-alist-to-array1-with-len
   (implies (and (pseudo-dagp dag-lst)
                 (<= len *max-1d-array-length*)
                 (integerp len)
                 (<= (len dag-lst) len)
                 (symbolp array-name))
-           (pseudo-dag-arrayp array-name (make-into-array-with-len array-name dag-lst len) (len dag-lst)))
+           (pseudo-dag-arrayp array-name (alist-to-array1-with-len array-name dag-lst len) (len dag-lst)))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp PSEUDO-DAGP))))
 
-(defthm pseudo-dag-arrayp-of-make-into-array-with-len-gen
+(defthm pseudo-dag-arrayp-of-alist-to-array1-with-len-gen
   (implies (and (pseudo-dagp dag-lst)
                 (<= dag-len (len dag-lst))
                 (natp dag-len)
@@ -2039,30 +2039,30 @@
                 (integerp len)
                 (<= (len dag-lst) len)
                 (symbolp array-name))
-           (pseudo-dag-arrayp array-name (make-into-array-with-len array-name dag-lst len) dag-len))
-  :hints (("Goal" :use pseudo-dag-arrayp-of-make-into-array-with-len
-           :in-theory (disable pseudo-dag-arrayp-of-make-into-array-with-len))))
+           (pseudo-dag-arrayp array-name (alist-to-array1-with-len array-name dag-lst len) dag-len))
+  :hints (("Goal" :use pseudo-dag-arrayp-of-alist-to-array1-with-len
+           :in-theory (disable pseudo-dag-arrayp-of-alist-to-array1-with-len))))
 
 ;drop?
-(defthm pseudo-dag-arrayp-of-make-into-array
+(defthm pseudo-dag-arrayp-of-alist-to-array1
   (implies (and (pseudo-dagp dag-lst)
                 (<= (len dag-lst) *max-1d-array-length*)
                 (symbolp array-name))
-           (pseudo-dag-arrayp array-name (make-into-array array-name dag-lst) (len dag-lst)))
+           (pseudo-dag-arrayp array-name (alist-to-array1 array-name dag-lst) (len dag-lst)))
   :hints (("Goal" :in-theory (e/d (pseudo-dag-arrayp pseudo-dagp)
                                   (consp-from-len-cheap ;else we lose the consp fact
                                    )))))
 
 ;drop?
-(defthm pseudo-dag-arrayp-of-make-into-array-gen
+(defthm pseudo-dag-arrayp-of-alist-to-array1-gen
   (implies (and (pseudo-dagp dag-lst)
                 (<= dag-len (len dag-lst))
                 (natp dag-len)
                 (<= (len dag-lst) *max-1d-array-length*)
                 (symbolp array-name))
-           (pseudo-dag-arrayp array-name (make-into-array array-name dag-lst) dag-len))
-  :hints (("Goal" :use pseudo-dag-arrayp-of-make-into-array
-           :in-theory (disable pseudo-dag-arrayp-of-make-into-array))))
+           (pseudo-dag-arrayp array-name (alist-to-array1 array-name dag-lst) dag-len))
+  :hints (("Goal" :use pseudo-dag-arrayp-of-alist-to-array1
+           :in-theory (disable pseudo-dag-arrayp-of-alist-to-array1))))
 
 ;; normalize to consp
 (defthm symbolp-of-aref1-when-pseudo-dag-arrayp
@@ -2240,7 +2240,7 @@
 
 ;; Convert DAG into an array named DAG-ARRAY-NAME, leaving SLACK-AMOUNT of
 ;; unused nodes if possible.  Has a guard that ensures the DAG isn't too big.
-;; TODO: Use this more instead of make-into-array? But see make-dag-into-array2 !
+;; TODO: Use this more instead of alist-to-array1? But see make-dag-into-array2 !
 (defund make-dag-into-array (dag-array-name dag slack-amount)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (symbolp dag-array-name)
@@ -2257,7 +2257,7 @@
            (type symbol dag-array-name))
   (let* ((dag-len (+ 1 (top-nodenum-of-dag dag))) ;no need to search for the max key, since we know it's the top node
          (length-with-slack (array-len-with-slack dag-len slack-amount)))
-    (make-into-array-with-len dag-array-name dag length-with-slack)))
+    (alist-to-array1-with-len dag-array-name dag length-with-slack)))
 
 (defthm alen1-of-make-dag-into-array
   (implies (pseudo-dagp dag)
@@ -2275,8 +2275,8 @@
                 (natp slack-amount))
            (pseudo-dag-arrayp dag-array-name (make-dag-into-array dag-array-name dag slack-amount) dag-len))
   :hints (("Goal" :in-theory (e/d (make-dag-into-array car-of-car-when-pseudo-dagp-cheap ARRAY-LEN-WITH-SLACK)
-                                  (pseudo-dag-arrayp-of-make-into-array-with-len-gen))
-           :use (:instance pseudo-dag-arrayp-of-make-into-array-with-len-gen
+                                  (pseudo-dag-arrayp-of-alist-to-array1-with-len-gen))
+           :use (:instance pseudo-dag-arrayp-of-alist-to-array1-with-len-gen
                            (dag-len dag-len)
                            (len (min *max-1d-array-length*
                                      (+ (len dag) slack-amount)))
@@ -2289,7 +2289,7 @@
 
 ;; Convert DAG into an array named DAG-ARRAY-NAME, leaving SLACK-AMOUNT of
 ;; unused nodes if possible.  Returns an error if the DAG is too big.
-;; TODO: Use this more instead of make-into-array and make-dag-into-array.
+;; TODO: Use this more instead of alist-to-array1 and make-dag-into-array.
 ;; Similar to make-dag-into-array.
 ;; Returns (mv erp dag-array).
 (defund make-dag-into-array2 (dag-array-name dag slack-amount)
@@ -2307,7 +2307,7 @@
         (mv :dag-too-big nil)
       (let* ((length-with-slack (array-len-with-slack dag-len slack-amount)))
         (mv (erp-nil)
-            (make-into-array-with-len dag-array-name dag length-with-slack))))))
+            (alist-to-array1-with-len dag-array-name dag length-with-slack))))))
 
 (defthm alen1-of-mv-nth-1-of-make-dag-into-array2
   (implies (and (pseudo-dagp dag)
@@ -2459,7 +2459,7 @@
       (ind (+ 1 n) len))))
 
 (local
-  (defthmd dag-and-array-agreep-aux-of-make-into-array-with-len-helper
+  (defthmd dag-and-array-agreep-aux-of-alist-to-array1-with-len-helper
     (implies (and (pseudo-dagp dag)
                   (<= (len dag) initial-array-size)
                   (<= initial-array-size 1152921504606846974)
@@ -2469,7 +2469,7 @@
                   (natp dag-len)
                   (natp n)
                   (<= n (len dag)))
-             (dag-and-array-agreep-aux (nthcdr n dag) dag-array-name (make-into-array-with-len dag-array-name dag initial-array-size) dag-len))
+             (dag-and-array-agreep-aux (nthcdr n dag) dag-array-name (alist-to-array1-with-len dag-array-name dag initial-array-size) dag-len))
     :hints (("Goal" :do-not '(generalize eliminate-destructors)
              :induct (ind n (len dag))
              :in-theory (e/d (dag-and-array-agreep-aux
@@ -2486,7 +2486,7 @@
                               ))))))
 
 (local
-  (defthm dag-and-array-agreep-aux-of-make-into-array-with-len
+  (defthm dag-and-array-agreep-aux-of-alist-to-array1-with-len
     (implies (and (pseudo-dagp dag)
                   (<= (len dag) initial-array-size)
                   (<= initial-array-size 1152921504606846974)
@@ -2494,8 +2494,8 @@
                   (symbolp dag-array-name)
                   (<= (len dag) dag-len)
                   (natp dag-len))
-             (dag-and-array-agreep-aux dag dag-array-name (make-into-array-with-len dag-array-name dag initial-array-size) dag-len))
-    :hints (("Goal" :use (:instance dag-and-array-agreep-aux-of-make-into-array-with-len-helper
+             (dag-and-array-agreep-aux dag dag-array-name (alist-to-array1-with-len dag-array-name dag initial-array-size) dag-len))
+    :hints (("Goal" :use (:instance dag-and-array-agreep-aux-of-alist-to-array1-with-len-helper
                                     (n 0))
              :in-theory (enable car-of-car-when-pseudo-dagp)))))
 
@@ -2507,7 +2507,7 @@
                               (<= (len dag) dag-len))))
   (dag-and-array-agreep-aux dag dag-array-name dag-array dag-len))
 
-(defthm dag-and-array-agreep-of-make-into-array-with-len
+(defthm dag-and-array-agreep-of-alist-to-array1-with-len
   (implies (and (pseudo-dagp dag)
                 (<= (len dag) initial-array-size)
                 (<= initial-array-size 1152921504606846974)
@@ -2515,7 +2515,7 @@
                 (symbolp dag-array-name)
                 (<= (len dag) dag-len)
                 (natp dag-len))
-           (dag-and-array-agreep dag dag-array-name (make-into-array-with-len dag-array-name dag initial-array-size) dag-len))
+           (dag-and-array-agreep dag dag-array-name (alist-to-array1-with-len dag-array-name dag initial-array-size) dag-len))
   :hints (("Goal" :in-theory (enable dag-and-array-agreep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

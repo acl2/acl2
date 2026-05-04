@@ -393,7 +393,7 @@
 ;; (defun get-disjuncts-of-term (term)
 ;;   (let* ((dag-lst (dagify-term term))
 ;;          (dag-len (len dag-lst))
-;;          (dag-array (MAKE-INTO-ARRAY 'dag-array dag-lst)))
+;;          (dag-array (ALIST-TO-ARRAY1 'dag-array dag-lst)))
 ;;     (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
 ;;             (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len)
 ;;             (mv-let (disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)

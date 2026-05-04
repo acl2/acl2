@@ -455,8 +455,8 @@
                                                                      options (+ -1 count) state))
                                  ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
                                  ;;restore the dag:
-                                 ;;(dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (make-into-array-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
-                                 ;;(dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (make-into-array-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
+                                 ;;(dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (alist-to-array1-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
+                                 ;;(dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (alist-to-array1-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
                                  ;;(dag-len saved-dag-len)
                                  ;;(dag-constant-alist saved-dag-constant-alist)
                                  ;;(dag-variable-alist saved-dag-variable-alist)
@@ -1877,8 +1877,8 @@
                  ;;In case 2 we assume nodenum is nil (false), i.e., we try to prove (or nodenum C):
                  (b* ((- (cw "Proved ~s0)~%" case-1-designator)) ;end of case1
                       ;;restore the dag:
-                      ;; (dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (make-into-array-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
-                      ;; (dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (make-into-array-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
+                      ;; (dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (alist-to-array1-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
+                      ;; (dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (alist-to-array1-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
                       ;; (dag-constant-alist saved-dag-constant-alist)
                       ;; (dag-variable-alist saved-dag-variable-alist)
                       ;;(dag-len saved-dag-len)

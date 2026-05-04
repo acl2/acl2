@@ -501,7 +501,7 @@
                (unquote dag)
              (let* ((top-nodenum (top-nodenum-of-dag dag))
                     (dag-array-name (pack$ 'dag-array- array-depth '-for-dag-val))
-                    (dag-array (make-into-array dag-array-name dag)) ; todo: call make-dag-into-array?
+                    (dag-array (alist-to-array1 dag-array-name dag)) ; todo: call make-dag-into-array?
                     (eval-array-name (pack$ 'eval-array- array-depth '-for-dag-val))
                     (eval-array (new-array1 eval-array-name (+ 1 top-nodenum))))
                (car ;strip off the cons

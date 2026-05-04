@@ -271,7 +271,7 @@
 ;;                               (context-arrayp 'context-array context-array (+ 1 (top-nodenum-of-dag dag))))
 ;;                   :guard-hints (("Goal" :in-theory (enable wf-dagp len-when-pseudo-dagp)))))
 ;;   (b* ((old-dag-len (+ 1 (top-nodenum-of-dag dag)))
-;;        (old-dag-array (make-into-array-with-len 'old-dag-array dag old-dag-len)) ; no slack needed since this won't grow
+;;        (old-dag-array (alist-to-array1-with-len 'old-dag-array dag old-dag-len)) ; no slack needed since this won't grow
 ;;        (renaming-array (new-array1 'renaming-array old-dag-len)) ;will rename nodes in old dag to nodes in the new dag
 ;;        ;;todo: make a util for making an empty dag and its aux structures
 ;;        (dag-array (new-array1 'dag-array old-dag-len)) ;todo: leave some slack space?
@@ -301,7 +301,7 @@
                   :guard-hints (("Goal" :in-theory (enable ;wf-dagp len-when-pseudo-dagp top-nodenum-of-dag
                                                     )))))
   (b* ((old-dag-len (+ 1 (top-nodenum-of-dag dag)))
-       (old-dag-array (make-into-array-with-len 'old-dag-array dag old-dag-len)) ; no slack needed since this won't grow
+       (old-dag-array (alist-to-array1-with-len 'old-dag-array dag old-dag-len)) ; no slack needed since this won't grow
        (old-dag-parent-array  ; only used once below, then further below another array gets the name 'dag-parent-array
         (make-dag-parent-array-with-name2 old-dag-len 'old-dag-array old-dag-array 'dag-parent-array) ; note the old-dag-parent-array has name 'dag-parent-array (todo: generalize make-full-context-array-with-parents below?)
         )

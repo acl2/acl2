@@ -1415,7 +1415,7 @@
         (mv :dag-too-big 0 dag))
        (dag-array-name 'dag-array-for-merge-tree-into-dag)
        (dag-parent-array-name 'dag-parent-array-for-merge-tree-into-dag)
-       (dag-array (make-into-array dag-array-name dag)))
+       (dag-array (alist-to-array1 dag-array-name dag)))
     (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
       (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)
       (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1653,7 +1653,7 @@
               (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array top-nodenum nil)))
           (b* ( ;; make the subdag into a dag array:
                (dag-len (+ 1 (top-nodenum subdag-for-var)))
-               (dag-array (make-into-array-with-len 'dag-array subdag-for-var (+ dag-len 1 (top-nodenum main-dag))))
+               (dag-array (alist-to-array1-with-len 'dag-array subdag-for-var (+ dag-len 1 (top-nodenum main-dag))))
                ((mv dag-parent-array dag-constant-alist dag-variable-alist)
                 (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
                ;; initially empty (the var gets renamed by the alist):

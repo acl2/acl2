@@ -16313,7 +16313,7 @@
                                                  analyzed-function-table monitored-symbols rand state))))
                          (b* ( ;;fixme - make sure something changed, or this can loop! huh?
                               (miter-len (len dag-lst-or-quotep))
-                              (miter-array (make-into-array miter-array-name dag-lst-or-quotep))
+                              (miter-array (alist-to-array1 miter-array-name dag-lst-or-quotep))
                               (- (and print (cw "Miter DAG after sweep ~x0 (depth ~x1):~%" sweep-num miter-depth)))
                               ;;fixme do we now print the dag before and after each sweep?  is that a waste?
                               (state (if (print-level-at-least-tp print)
@@ -16475,7 +16475,7 @@
       (if (not rec-fn-nodenums)
           (prog2$ (cw "No more loop fns to handle.)~%")
                   (mv nil dag-lst interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state))
-        (let* ((dag-array (make-into-array dag-array-name dag-lst)) ;call a -with-len version?
+        (let* ((dag-array (alist-to-array1 dag-array-name dag-lst)) ;call a -with-len version?
                (dag-len (len dag-lst)) ;rename miter-len
                ;;fixme just print the dag-lst? or have miter and merge print before presimp and then print after each presimp sweep that changes something?
                (state (if (print-level-at-least-tp print)
@@ -16554,7 +16554,7 @@
                                             (progn$
 ;fixme separate out the loop functions here:
                                              (cw "(Fns after pre-simplification sweep ~x0: ~x1)~%" sweep-count (dag-fns dag-lst)) ;fixme do better in the not printing case?
-                                             (let* ( ;;(dag-array (make-into-array dag-array-name dag-lst))
+                                             (let* ( ;;(dag-array (alist-to-array1 dag-array-name dag-lst))
                                                     ;;(dag-len (len dag-lst))
 ;(state (if print (print-dag-array-to-temp-file dag-array-name dag-array dag-len
 ;                                          (concatenate 'string (symbol-name proof-name) "-DAG-AFTER-PS-SWEEP-" (nat-to-string sweep-count)) state)
@@ -16741,7 +16741,7 @@
          ;; Not a constant;
          (b* ((dag dag-or-quotep)
               (miter-array-name (pack$ 'miter-array- miter-depth))
-              (miter-array (make-into-array miter-array-name dag)) ;call a -with-len version?
+              (miter-array (alist-to-array1 miter-array-name dag)) ;call a -with-len version?
               (miter-len (len dag))
               (- (progn$ (cw "(Proving goal ~x0 (depth ~x1, len ~x2):~%" miter-name miter-depth miter-len) ;name the miters according to their cases...
                          (cw "(Using ~x0 test cases)~%" (len test-cases))
@@ -16812,7 +16812,7 @@
                   ;;(- (cw "(Assumptions:~%~x0)~%" assumptions))
                   (- (cw ")~%"))
                   (miter-len (len miter-dag))
-                  (miter-array (make-into-array miter-array-name miter-dag)) ;gross to convert here?
+                  (miter-array (alist-to-array1 miter-array-name miter-dag)) ;gross to convert here?
                   (nodenum-to-split-on (find-a-node-to-split-miter-on
                                         miter-array-name miter-len miter-array
                                         test-cases interpreted-function-alist)) ; ffixme think about heuristics!

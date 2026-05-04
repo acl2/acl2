@@ -867,7 +867,7 @@
       (mv (erp-nil) dag)
     ;;dag is a dag-lst:
     (let* ((dag-len (len dag))
-           (dag-array (make-into-array 'dag-array dag)) ;okay to reuse the name?
+           (dag-array (alist-to-array1 'dag-array dag)) ;okay to reuse the name?
            )
       (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len)
@@ -4313,7 +4313,7 @@
 
 (defun get-terms-from-node-contexts (nodenums dag-lst)
   (let* ((dag-len (len dag-lst))
-         (dag-array (make-into-array 'dag-array dag-lst))
+         (dag-array (alist-to-array1 'dag-array dag-lst))
          (context-array (make-full-context-array 'dag-array dag-array dag-len))
          (terms (get-terms-from-node-contexts-aux nodenums 'context-array context-array dag-lst))
          )

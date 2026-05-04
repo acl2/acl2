@@ -27,9 +27,9 @@
 ;; array named NAME, which will have length LEN.  If LEN is greater than one
 ;; more than the largest key, the resulting array will contain some slack space
 ;; (empty slots) for the array to grow.
-;rename make-into-array-with-slack?
+;rename alist-to-array1-with-slack?
 ;todo: take the default value as an option
-(defund make-into-array-with-len (name alist len)
+(defund alist-to-array1-with-len (name alist len)
   (declare (type symbol name)
            (type (integer 1 1152921504606846974) len)
            (xargs :guard (and (true-listp alist)
@@ -47,32 +47,32 @@
                           :name name)
                     alist)))
 
-(in-theory (disable (:e make-into-array-with-len))) ;blew up
+(in-theory (disable (:e alist-to-array1-with-len))) ;blew up
 
-(defthm array1p-of-make-into-array-with-len
+(defthm array1p-of-alist-to-array1-with-len
   (implies (and (symbolp name)
                 (bounded-integer-alistp alist len)
                 (posp len)
                 (<= len *max-1d-array-length*))
-           (array1p name (make-into-array-with-len name alist len)))
-  :hints (("Goal" :in-theory (enable make-into-array-with-len array1p-rewrite))))
+           (array1p name (alist-to-array1-with-len name alist len)))
+  :hints (("Goal" :in-theory (enable alist-to-array1-with-len array1p-rewrite))))
 
-(defthm default-of-make-into-array-with-len
-  (equal (default name1 (make-into-array-with-len name2 alist len))
+(defthm default-of-alist-to-array1-with-len
+  (equal (default name1 (alist-to-array1-with-len name2 alist len))
          nil)
-  :hints (("Goal" :in-theory (enable array1p compress1 make-into-array-with-len))))
+  :hints (("Goal" :in-theory (enable array1p compress1 alist-to-array1-with-len))))
 
-(defthm dimensions-of-make-into-array-with-len
-  (equal (dimensions name1 (make-into-array-with-len name2 alist len))
+(defthm dimensions-of-alist-to-array1-with-len
+  (equal (dimensions name1 (alist-to-array1-with-len name2 alist len))
          (list len))
-  :hints (("Goal" :in-theory (enable make-into-array-with-len))))
+  :hints (("Goal" :in-theory (enable alist-to-array1-with-len))))
 
-(defthm alen1-of-make-into-array-with-len
-  (equal (alen1 name1 (make-into-array-with-len name2 alist len))
+(defthm alen1-of-alist-to-array1-with-len
+  (equal (alen1 name1 (alist-to-array1-with-len name2 alist len))
          len)
-  :hints (("Goal" :in-theory (enable make-into-array-with-len))))
+  :hints (("Goal" :in-theory (enable alist-to-array1-with-len))))
 
-(defthm aref1-of-make-into-array-with-len
+(defthm aref1-of-alist-to-array1-with-len
   (implies (and (bounded-natp-alistp alist len)
                 (true-listp alist)
                 alist
@@ -82,6 +82,6 @@
                 (integerp len)
                 (<= len *max-1d-array-length*) ; todo: drop?
                 )
-           (equal (aref1 name1 (make-into-array-with-len name2 alist len) index)
+           (equal (aref1 name1 (alist-to-array1-with-len name2 alist len) index)
                   (cdr (assoc-equal index alist))))
-  :hints (("Goal" :in-theory (enable make-into-array-with-len aref1))))
+  :hints (("Goal" :in-theory (enable alist-to-array1-with-len aref1))))

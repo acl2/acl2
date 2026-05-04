@@ -531,7 +531,7 @@
 ;; ;smashes array 'dag-array-for-make-context-indicator-list - also the parent array?  what else?
 ;; (defun make-context-indicator-lists (dag-lst dag-len tag-array2)
 ;;   (let* ((dag-array-name 'dag-array-for-make-context-indicator-lists)
-;;          (dag-array (make-into-array dag-array-name dag-lst)))
+;;          (dag-array (alist-to-array1 dag-array-name dag-lst)))
 ;;     (make-context-indicator-list-array dag-array-name dag-array dag-len tag-array2)))
 
 ;(skip- proofs (verify-guards make-context-indicator-lists))
@@ -684,14 +684,14 @@
 
 ;; ;bozo printing may be slow
 ;; (defun var-dependency-alist (dag)
-;;   (let* ((dag-array (make-into-array 'dag-array dag))
+;;   (let* ((dag-array (alist-to-array1 'dag-array dag))
 ;;          (acc-array (new-array1 'acc-array (len dag)))
 ;;          (len (len dag)))
 ;;     ;bozo wrong?
 ;;     (array-to-alist 'acc-array (var-dependency-alist-aux 0 len dag-array acc-array) (len dag))))
 
 ;; (defun var-dependencies-for-node (nodenum dag)
-;;   (let* ((dag-array (make-into-array 'dag-array dag))
+;;   (let* ((dag-array (alist-to-array1 'dag-array dag))
 ;;          (acc-array (new-array1 'acc-array (len dag))))
 ;;     (aref1 'acc-array (var-dependency-alist-aux 0 (+ 1 nodenum) dag-array acc-array) nodenum)))
 

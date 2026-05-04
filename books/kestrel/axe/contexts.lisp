@@ -1069,7 +1069,7 @@
                               (<= (len dag) *max-1d-array-length*))
                   :guard-hints (("Goal" :in-theory (enable len-when-pseudo-dagp)))))
   (let* ((dag-array-name 'temp-dag-array)
-         (dag-array (make-into-array 'temp-dag-array dag)))
+         (dag-array (alist-to-array1 'temp-dag-array dag)))
     (make-full-context-array dag-array-name dag-array (+ 1 (top-nodenum-of-dag dag)))))
 
 ;; TODO: Improve to match better
@@ -1208,7 +1208,7 @@
 ;;                   :guard-hints (("Goal" :in-theory (e/d (pseudo-dagp) (pseudo-dag-arrayp))))))
 ;;   (prog2$ (cw "(Computing contexts:~%")
 ;;           (let* ((dag-len (len dag-lst))
-;;                  (dag-array (make-into-array 'dag-array dag-lst))
+;;                  (dag-array (alist-to-array1 'dag-array dag-lst))
 ;;                  (context-array (make-full-context-array 'dag-array dag-array dag-len)))
 ;;             (prog2$ (cw ")~%")
 ;;                     (print-array 'context-array context-array dag-len)))))

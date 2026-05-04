@@ -1354,7 +1354,7 @@
              ;;Load all the nodes into the dag-array (todo: could only include nodes that support internal contexts):
              ;; todo: should we start by pre-loading the context array into the dag-array, like we do above?  that might make it harder to figure out what contexts to use?
              ;; It's important that this not change the node numbering, since the internal contexts refer to these nodes:
-             (dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
+             (dag-array (alist-to-array1-with-len 'dag-array dag initial-array-size))
              ;; Make the auxiliary data structures for the DAG:
              ((mv dag-parent-array dag-constant-alist dag-variable-alist)
               (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
