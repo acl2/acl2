@@ -20,6 +20,7 @@
 (include-book "abstract-syntax-well-formed")
 (include-book "character-literal-codes")
 (include-book "desugaring")
+(include-book "frame-flattening")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,4 +48,5 @@
                     abstract-syntax-core
                     abstract-syntax-well-formed
                     character-literal-codes
-                    desugaring))
+                    desugaring
+                    frame-flattening))

@@ -618,6 +618,99 @@
 
   (verify-guards subobjects-from-members-lookup))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-to-designor ((subobjects initer-subobjects-p)
+                                (ienv ienvp))
+  :returns (desingor? designor-optionp)
+  :parents (initer-subobjects)
+  :short "Create a designator from an initializer subobjects fixtype object."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This conversion is largely straightforward.
+     However, it does require creating an integer constant AST node
+     from a natural number.
+     This is the reason we need the implementation environment
+     (to check whether the number will fit).")
+   (xdoc::p
+    "A return value of @('nil') indicates a failure to convert.
+     This occurs when a natural number
+     cannot be converted into an integer constant
+     due to its size."))
+  (initer-subobjects-case
+    subobjects
+    :array-index (b* ((index-iconst?
+                       (nat-to-iconst subobjects.index ienv))
+                      ((unless index-iconst?)
+                       nil)
+                      ((mv to-iconst-failedp range-iconst?)
+                       (b* (((unless subobjects.range?)
+                             (mv nil nil))
+                            (range-cexpr?
+                             (nat-to-iconst subobjects.range? ienv)))
+                         (mv (not range-cexpr?) range-cexpr?)))
+                      ((when to-iconst-failedp)
+                       nil)
+                      (index-cexpr
+                       (make-const-expr
+                         :expr (make-expr-const
+                                 :const (const-int index-iconst?))))
+                      (range-cexpr?
+                       (and range-iconst?
+                            (make-const-expr
+                              :expr (make-expr-const
+                                      :const (const-int range-iconst?))))))
+                   (make-designor-sub
+                     :index index-cexpr
+                     :range? range-cexpr?))
+    :struct (b* (((type-struni-member member) (first subobjects.members))
+                 ((unless member.name?)
+                  nil))
+              (make-designor-dot :name member.name?))
+    :union (b* (((type-struni-member member) subobjects.first-member)
+                ((unless member.name?)
+                 nil))
+             (make-designor-dot :name member.name?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-list-to-designors ((list initer-subobjects-listp)
+                                      (ienv ienvp)
+                                      (acc designor-listp))
+  :guard (not (endp list))
+  :returns (designors designor-listp)
+  :parents (initer-subobjects-list)
+  :short "Create a designator list from a list of initializer subobjects."
+  :long
+  (xdoc::topstring-p
+   "A return value of @('nil') indicates a failure to convert.")
+  (b* (((unless (mbt (not (endp list))))
+        nil)
+       (designor? (subobjects-to-designor (first list) ienv))
+       ((unless designor?)
+        nil)
+       (acc (cons designor? (designor-list-fix acc))))
+    (if (endp (rest list))
+        acc
+      (subobjects-list-to-designors (rest list) ienv acc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-stack-to-designors ((stack initer-subobjects-stack-p)
+                                       (ienv ienvp))
+  :guard (not (subobjects-stack-end-p stack))
+  :returns (designors designor-listp)
+  :parents (initer-subobjects-stack)
+  :short "Create a designator list from a stack of initializer subobjects."
+  :long
+  (xdoc::topstring-p
+   "A return value of @('nil') indicates a failure to convert.")
+  (initer-subobjects-stack-case
+    stack
+    :unknown nil
+    :known (subobjects-list-to-designors stack.list ienv nil)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-null-pointer-constp ((expr exprp) (type typep))
@@ -1226,6 +1319,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod desiniter-info
+  :short "Fixtype of validation information for initializers with optional
+          designations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to initializers with optional designations,
+     i.e. the @(tsee desiniter) fixtype.
+     The information for a initializers with optional designations consists of
+     an optional designation.
+     When a designation is not present in the syntax,
+     the validator may add a designation here
+     corresponding to the implicitly initialized subobject."))
+  ((designors designor-list))
+  :pred desiniter-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod param-declor-nonabstract-info
   :short "Fixtype of validation information for
           non-abstract parameter declarators."
@@ -1424,6 +1536,9 @@
                                      (expr-fix expr)))
      (const-expr (and (expr-annop (const-expr->expr const-expr))
                       (const-expr-infop (const-expr->info const-expr))))
+     (desiniter (and (designor-list-annop (desiniter->designors desiniter))
+                     (initer-annop (desiniter->initer desiniter))
+                     (desiniter-infop (desiniter->info desiniter))))
      (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
                                      (type-spec-fix type-spec)))
      (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
@@ -1544,6 +1659,14 @@
            (and (expr-annop expr)
                 (const-expr-infop info)))
     :expand (const-expr-annop (const-expr expr info)))
+
+  (defruled desiniter-annop-of-desiniter
+    (equal (desiniter-annop (desiniter designors initer info))
+           (and (designor-list-annop designors)
+                (initer-annop initer)
+                (desiniter-infop info)))
+    :expand (desiniter-annop (desiniter designors initer info))
+    :enable identity)
 
   (defruled tyname-annop-of-tyname
     (equal (tyname-annop (tyname specquals declor? info))
@@ -1697,6 +1820,21 @@
              (const-expr-infop (const-expr->info const-expr)))
     :enable const-expr-annop)
 
+  (defruled designor-list-annop-of-desiniter->designors
+    (implies (desiniter-annop desiniter)
+             (designor-list-annop (desiniter->designors desiniter)))
+    :enable desiniter-annop)
+
+  (defruled initer-annop-of-desiniter->initer
+    (implies (desiniter-annop desiniter)
+             (initer-annop (desiniter->initer desiniter)))
+    :enable desiniter-annop)
+
+  (defruled desiniter-infop-of-desiniter->info
+    (implies (desiniter-annop desiniter)
+             (desiniter-infop (desiniter->info desiniter)))
+    :enable desiniter-annop)
+
   (defruled declor-annop-of-init-declor->declor
     (implies (init-declor-annop init-declor)
              (declor-annop (init-declor->declor init-declor)))
@@ -1807,6 +1945,7 @@
      expr-annop-of-expr-unary
      expr-annop-of-expr-binary
      const-expr-annop-of-const-expr
+     desiniter-annop-of-desiniter
      tyname-annop-of-tyname
      param-declor-annop-of-param-declor-nonabstract
      param-declor-nonabstract-infop-of-param-declor-nonabstract->info
@@ -1832,6 +1971,9 @@
      expr-binary-infop-of-expr-binary->info
      expr-annop-of-const-expr->expr
      const-expr-infop-of-const-expr->info
+     designor-list-annop-of-desiniter->designors
+     initer-annop-of-desiniter->initer
+     desiniter-infop-of-desiniter->info
      declor-annop-of-init-declor->declor
      initer-option-annop-of-init-declor->initer?
      init-declor-infop-of-init-declor->info

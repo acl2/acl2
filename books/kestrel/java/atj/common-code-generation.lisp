@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -353,7 +353,7 @@
   (xdoc::topstring
    (xdoc::p
     "In the shallow embedding with guards,
-     we translate ACL2 Strings to Java string expression.
+     we translate ACL2 strings to Java string expressions.
      This is because, in the shallow embedding with guards,
      ACL2 strings are represented as Java strings.")
    (xdoc::p
@@ -814,7 +814,7 @@
      After all the assignments, we generate a method call
      to add the ACL2 package definition with the calculated import list.")
    (xdoc::p
-    "We set the @('deep$') and @('guards$') flag to @('t') and @('nil')
+    "We set the @('deep$') and @('guards$') flags to @('t') and @('nil')
      when we call @(tsee atj-gen-symbol),
      so that we generate @('Acl2Symbol')s for ACL2 booleans."))
   (b* (((run-when verbose$)
@@ -1039,7 +1039,7 @@
    (xdoc::p
     "Note that we generate an expression name for @('args.length'),
      because grammatically this is not a field access expression in Java:
-     it cannot be generated from the nonterminal @('field-acces');
+     it cannot be generated from the nonterminal @('field-access');
      it can be generated from the nonterminal @('expression-name')."))
   (b* ((method-param (make-jparam :final? nil
                                   :type (jtype-array (jtype-class "String"))
@@ -1120,7 +1120,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use @(tsee atj-gen-value) for @('a') test values;
+    "We use @(tsee atj-gen-value) for @(':acl2') test values;
      this is why this function has the @('jvar-value-...') arguments
      and returns the @('new-jvar-value-index') result.")
    (xdoc::p

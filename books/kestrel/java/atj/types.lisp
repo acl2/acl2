@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -125,7 +125,7 @@
      the argument of the method corresponding to @('f').")
    (xdoc::p
     "However, due to well-known closure properties,
-     @(tsee binary-+), like @(tsee binary-+) and @(tsee unary--),
+     @(tsee binary-+), like @(tsee binary-*) and @(tsee unary--),
      maps @(tsee rationalp) inputs to @(tsee rationalp) outputs,
      and @(tsee integerp) inputs to @(tsee integerp) outputs.
      This means that we could generate three overloaded methods
@@ -668,7 +668,7 @@
      The monotonicity theorem validates that the partial order
      satisfies the necessary condition described above.")
    (xdoc::p
-    "While @(tsee atj-type-to-pred) is order-presering (i.e. monotonic),
+    "While @(tsee atj-type-to-pred) is order-preserving (i.e. monotonic),
      it is not order-reflecting (and thus not an order embedding):
      if @('(atj-type-to-pred x)') is included in @('(atj-type-to-pred y)'),
      @('(atj-type-<= x y)') does not necessarily hold.
@@ -920,7 +920,7 @@
      that have more than one element that is strictly smaller.")
    (xdoc::p
     "To validate this definition of least upper bound,
-     we prove that the this operation indeed returns an upper bound
+     we prove that this operation indeed returns an upper bound
      that is less than or equal to any other upper bound,
      i.e. that it returns the least upper bound.")
    (xdoc::p
@@ -1157,10 +1157,10 @@
     "We define this operation by three cases:
      the first two are obvious,
      and the third one suffices because no element of the semilattice
-     has more than one elements that are strictly larger.")
+     has more than one element that is strictly larger.")
    (xdoc::p
     "To validate this definition of greatest lower bound,
-     we prove that the this operation indeed returns a lower bound
+     we prove that this operation indeed returns a lower bound
      that is greater than or equal to any other lower bound,
      i.e. that it returns the greatest lower bound.")
    (xdoc::p

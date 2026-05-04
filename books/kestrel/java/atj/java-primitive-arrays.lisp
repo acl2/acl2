@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -164,7 +164,7 @@
 
 (define atj-jprimarr-read-fn-p (fn)
   :returns (yes/no booleanp)
-  :short "Recognizer the ACL2 function symbols that model
+  :short "Recognize the ACL2 function symbols that model
           the reading of components from Java primitive arrays."
   (and (member-eq fn *atj-jprimarr-read-fns*) t))
 
@@ -172,7 +172,7 @@
 
 (define atj-jprimarr-length-fn-p (fn)
   :returns (yes/no booleanp)
-  :short "Recognizer the ACL2 function symbols that model
+  :short "Recognize the ACL2 function symbols that model
           the retrieval of lengths of Java primitive arrays."
   (and (member-eq fn *atj-jprimarr-length-fns*) t))
 
@@ -180,15 +180,15 @@
 
 (define atj-jprimarr-write-fn-p (fn)
   :returns (yes/no booleanp)
-  :short "Recognizer the ACL2 function symbols that model
-          the writing of components from Java primitive arrays."
+  :short "Recognize the ACL2 function symbols that model
+          the writing of components of Java primitive arrays."
   (and (member-eq fn *atj-jprimarr-write-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-jprimarr-new-len-fn-p (fn)
   :returns (yes/no booleanp)
-  :short "Recognizer the ACL2 function symbols that model
+  :short "Recognize the ACL2 function symbols that model
           the creation of Java primitive arrays from lengths."
   (and (member-eq fn *atj-jprimarr-new-len-fns*) t))
 
@@ -196,7 +196,7 @@
 
 (define atj-jprimarr-new-init-fn-p (fn)
   :returns (yes/no booleanp)
-  :short "Recognizer the ACL2 function symbols that model
+  :short "Recognize the ACL2 function symbols that model
           the creation of Java primitive arrays from components."
   (and (member-eq fn *atj-jprimarr-new-init-fns*) t))
 
@@ -204,7 +204,7 @@
 
 (define atj-jprimarr-conv-tolist-fn-p (fn)
   :returns (yes/no booleanp)
-  :short "Recognizer the ACL2 function symbols that model
+  :short "Recognize the ACL2 function symbols that model
           the conversions from Java primitive arrays to ACL2 lists."
   (and (member-eq fn *atj-jprimarr-conv-tolist-fns*) t))
 
@@ -212,7 +212,7 @@
 
 (define atj-jprimarr-conv-fromlist-fn-p (fn)
   :returns (yes/no booleanp)
-  :short "Recognizer the ACL2 function symbols that model
+  :short "Recognize the ACL2 function symbols that model
           the conversions to Java primitive arrays from ACL2 lists."
   (and (member-eq fn *atj-jprimarr-conv-fromlist-fns*) t))
 
