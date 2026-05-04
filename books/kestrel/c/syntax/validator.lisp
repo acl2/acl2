@@ -4949,7 +4949,14 @@
        and the return the new stack."))
     (b* (((reterr)
           (irr-desiniter) (irr-initer-subobjects-stack) nil (irr-vstate))
+         ((vstate vstate) vstate)
          ((desiniter desiniter) desiniter)
+         (info
+          (desiniter-info
+            (if (and (endp desiniter.designors)
+                     (not (subobjects-stack-end-p subobjects-stack)))
+                (subobjects-stack-to-designors subobjects-stack vstate.ienv)
+              nil)))
          ((erp new-design subobjects-stack types vstate)
           (if (endp desiniter.designors)
               (retok desiniter.designors
@@ -4972,7 +4979,7 @@
               ;; TODO: this case is impossible.
               new-subobjects-stack
             (subobjects-stack-advance new-subobjects-stack))))
-      (retok (make-desiniter :designors new-design :initer new-init)
+      (retok (make-desiniter :designors new-design :initer new-init :info info)
              new-subobjects-stack
              (set::union types more-types)
              vstate))
@@ -8190,7 +8197,7 @@
    (xdoc::p
     "We validate each translation unit.
      As mentioned in @(tsee valid-trans-unit),
-     we annotate the translation unit with the finval validation table.
+     we annotate the translation unit with the final validation table.
      For now we do no make any use of the returned table,
      but in the future we should use it to validate
      the externally linked identifiers across
@@ -8247,13 +8254,14 @@
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->string path)
                       erp)))
-          ((erp new-map -)
-           (valid-trans-ensemble-loop (omap::tail map)
-                                      (vstate->externals vstate)
-                                      (vstate->completions vstate)
-                                      (vstate->next-uid vstate)
-                                      ienv
-                                      keep-going)))
+          ((vstate vstate) vstate)
+          ((valid-table table) vstate.table)
+          ((erp new-map -) (valid-trans-ensemble-loop (omap::tail map)
+                                                      table.externals
+                                                      table.completions
+                                                      table.next-uid
+                                                      ienv
+                                                      keep-going)))
        (retok (omap::update path new-tunit new-map)
               vstate))
      :verify-guards :after-returns
