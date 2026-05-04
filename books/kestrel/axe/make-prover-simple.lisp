@@ -289,7 +289,7 @@
     (:FORWARD-CHAINING axe-tree-listp-forward-to-true-listp)
     (:forward-chaining bounded-axe-tree-listp-forward-to-axe-tree-listp)
     (:FORWARD-CHAINING BOUNDED-DAG-CONSTANT-ALISTP-FORWARD-TO-DAG-CONSTANT-ALISTP)
-    (:FORWARD-CHAINING BOUNDED-DAG-PARENT-ARRAYP-FORWARD-TO-BOUNDED-DAG-PARENT-ARRAYP)
+    (:FORWARD-CHAINING BOUNDED-DAG-PARENT-ARRAYP-FORWARD-TO-DAG-PARENT-ARRAYP)
     (:FORWARD-CHAINING BOUNDED-DAG-VARIABLE-ALISTP-FORWARD-TO-DAG-VARIABLE-ALISTP)
     (:FORWARD-CHAINING BOUNDED-INTEGER-ALISTP-FORWARD-TO-EQLABLE-ALISTP)
     (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
@@ -2561,7 +2561,7 @@
                                 ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-no-free-vars-name)
                                 ,@*make-prover-simple-rules*
                                 alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep
-                                alist-suitable-for-hypsp-when-axe-sytaxp-car
+                                alist-suitable-for-hypsp-when-axe-syntaxp-car
                                 alist-suitable-for-hypsp-of-append-and-cdr-when-axe-bind-free
                                 alist-suitable-for-hypsp-of-append-and-cdr-when-free-vars
                                 alist-suitable-for-hypsp-after-matching
@@ -3096,7 +3096,7 @@
                                  ,(pack$ try-to-apply-rules-name '-return-type-corollary)
                                  ,(pack$ try-to-apply-rules-name '-return-type-corollary-linear)
                                  alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep
-                                 alist-suitable-for-hypsp-when-axe-sytaxp-car
+                                 alist-suitable-for-hypsp-when-axe-syntaxp-car
                                  alist-suitable-for-hypsp-of-append-and-cdr-when-axe-bind-free
                                  alist-suitable-for-hypsp-of-append-and-cdr-when-free-vars
                                  alist-suitable-for-hypsp-after-matching
@@ -3598,7 +3598,7 @@
                           ;; ;; expect the raw Lisp array previously allocated in
                           ;; ;; ,rewrite-clause-name to be reused each time, since it will
                           ;; ;; always be big enough:
-                          ;; (result-array (make-empty-array result-array-name (+ 1 nodenum) ;dag-len
+                          ;; (result-array (new-array1 result-array-name (+ 1 nodenum) ;dag-len
                           ;;                                 ))
                           (result-alist nil) ; will become a fast-alist when we do the first hons-acons
                           ;; Rewrite this literal:
@@ -4048,7 +4048,7 @@
                 ;; (result-array-name (pack$ 'result-array- prover-depth))
                 ;; Ensure there is a maximal size raw Lisp array under the hood, for use when rewriting each literal.  I hope the compiler
                 ;; doesn't optimize this away:
-                ;; (- (make-empty-array result-array-name dag-len))
+                ;; (- (new-array1 result-array-name dag-len))
                 ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)
                  (,rewrite-literals-name literal-nodenums
                                          nil ;initial done-list
@@ -5314,8 +5314,8 @@
                                          hit-counts tries state))
                            (b* ((- (and print (cw "Proved true case ~s0.)~%" case-1-designator))) ;end of case1
                                 ;;restore the dag:
-                                ;; (dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (make-into-array-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
-                                ;; (dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (make-into-array-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
+                                ;; (dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (alist-to-array1-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
+                                ;; (dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (alist-to-array1-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
                                 ;; (dag-constant-alist saved-dag-constant-alist)
                                 ;; (dag-variable-alist saved-dag-variable-alist)
                                 ;;(dag-len saved-dag-len)
@@ -5649,13 +5649,7 @@
                                        (plist-worldp wrld))
                            :stobjs state
                            :guard-hints (("Goal" :in-theory (enable true-listp-when-nat-listp-rewrite)))))
-           (b* (;; If no rule-alists are given, rewrite with a single set of simple rules.  This makes sure that
-                ;; constants get evaluated, contradictions get found (when making the assumption-array), etc.
-                (rule-alists (if (not rule-alists)
-                                 (prog2$ (and print (cw "NOTE: Using a very simple default rule set.~%"))
-                                         *default-axe-prover-rule-alists*)
-                               rule-alists))
-                ;; Handle any constant disjuncts
+           (b* (;; Handle any constant disjuncts:
                 ((mv provedp literal-nodenums)
                  (handle-constant-disjuncts literal-nodenums-or-quoteps nil))
                 ((when provedp)
@@ -5689,6 +5683,12 @@
                 (hit-counts (initialize-hit-counts count-hits))
                 ;; Decide whether to count and print tries:
                 (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
+                ;; If no rule-alists are given, rewrite with a single set of simple rules.  This makes sure that
+                ;; constants get evaluated, contradictions get found (when making the assumption-array), etc.
+                (rule-alists (if (not rule-alists)
+                                 (prog2$ (and print (cw "NOTE: Using a very simple default rule set.~%"))
+                                         *default-axe-prover-rule-alists*)
+                               rule-alists))
                 ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                      hit-counts tries state)
                  (,prove-or-split-case-name literal-nodenums
@@ -5763,7 +5763,7 @@
          ;;                  (mv (erp-nil) :failed)))
          ;;            (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
          ;; ;          (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
-         ;;                 (dag-array (make-into-array 'dag-array dag))
+         ;;                 (dag-array (alist-to-array1 'dag-array dag))
          ;;                 (top-nodenum (top-nodenum-of-dag dag))
          ;;                 (dag-len (+ 1 top-nodenum))
          ;;                 (negated-assumptions (negate-terms assumptions))
@@ -5780,7 +5780,7 @@
          ;;                    ;;these is at least one context node:
          ;;                    (add-array-nodes-to-dag 0 max-context-nodenum context-array-name context-array context-array-len
          ;;                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-         ;;                                            (make-empty-array 'renaming-array (+ 1 max-context-nodenum)))))
+         ;;                                            (new-array1 'renaming-array (+ 1 max-context-nodenum)))))
          ;;                 ((when erp) (mv erp :failed))
          ;;                 ;;Fix up the context to use the new node numbers:
          ;;                 (context (if no-context-nodesp context (fixup-context context 'renaming-array renaming-array))))
@@ -6110,7 +6110,7 @@
          (defund ,clause-processor-name (clause hint state)
            (declare (xargs :guard (pseudo-term-listp clause)
                            :stobjs state))
-           (b* (;; Check the the hint:
+           (b* (;; Check the hint:
                 ((when (not (alistp hint)))
                  (er hard? ',clause-processor-name "Unexpected hint (not an alist): ~x0." hint)
                  (mv :bad-hint (list clause) state))

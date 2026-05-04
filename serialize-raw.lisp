@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -456,7 +456,7 @@
 
 (defmacro ser-decode-nat-body (shift)
 
-; See SER-NAT-DECODE; this is accounting for different fixnum sizes across Lisps
+; See SER-DECODE-NAT; this is accounting for different fixnum sizes across Lisps
 ; by unrolling the loop with a recursive macro.  SHIFT is a constant that is
 ; being incremented by 7 on each "iteration".  An invariant that is important to
 ; the fixnum optimizations is that VALUE is always less than 2^SHIFT.
@@ -1001,7 +1001,7 @@
 ; Essay on How We Handle Equal-but-not-eq Strings
 ;
 ; A subtle change in V3 is that we no longer make any effort to avoid
-; redundantly encoding EQUAL-but-not-EQ or strings.
+; redundantly encoding EQUAL-but-not-EQ strings.
 ;
 ; When I first developed serialize, I wanted to use it to save the models of
 ; our processor.  My Verilog translator produced objects with lots of strings,

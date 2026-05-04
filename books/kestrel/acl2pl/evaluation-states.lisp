@@ -128,9 +128,9 @@
      the absence of such errors.
      This will be formalized as
      the static semantics of the ACL2 programming language.
-     However, as is common in programing language research,
-     we define the dynamic semantics of the ACL2 programing language
-     without assumng any static well-formedness,
+     However, as is common in programming language research,
+     we define the dynamic semantics of the ACL2 programming language
+     without assuming any static well-formedness,
      and therefore we must allow for the occurrence of errors,
      which lead to error states.
      This is captured by the @(':error') summand of this fixtype.

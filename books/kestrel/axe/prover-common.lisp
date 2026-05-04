@@ -1,7 +1,7 @@
 ; Supporting utilities for the Axe Prover(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -473,7 +473,7 @@
 ;; ;each context-indicator is one of the following 4 things:
 ;; ;(t) means the predicate is known to be true for the node (all paths from the root to the node pass through the "then branch" of an ITE with the predicate as the if-test)
 ;; ;(nil) means the predicate is known to be false for the node (all paths from the root to the node pass through the "else branch" of an ITE with the predicate as the if-test)
-;; ;() means we don't know anything about that prediate on the node
+;; ;() means we don't know anything about that predicate on the node
 ;; ;(t nil) is possible and means that the node is "unreachable" from the root (all paths pass through both an else branch and a then branch and the node's value is irrelevant, so we can rewrite it any way we want??) --ffixme what if it's reachable along other paths? <- huh?
 ;; (defun make-context-indicator-list-array-aux (nodenum dag-array-name dag-array dag-parent-array context-indicator-list-array predicate-nodenums)
 ;;   (declare (xargs :measure (nfix (+ 1 nodenum))
@@ -501,7 +501,7 @@
 ;; (defun make-context-indicator-list-array-helper (dag-array-name dag-array dag-len dag-parent-array tag-array2)
 ;;   (let* ((top-nodenum (+ -1 dag-len)) ;sure to be the top nodenum?
 ;;          (predicate-nodenums (get-tested-predicate-nodenums top-nodenum dag-array-name dag-array nil tag-array2))
-;;          (context-indicator-list-array (make-empty-array 'context-indicator-list-array dag-len))
+;;          (context-indicator-list-array (new-array1 'context-indicator-list-array dag-len))
 ;;          (context-indicator-list-array (aset1-safe 'context-indicator-list-array
 ;;                                               context-indicator-list-array
 ;;                                               top-nodenum
@@ -531,7 +531,7 @@
 ;; ;smashes array 'dag-array-for-make-context-indicator-list - also the parent array?  what else?
 ;; (defun make-context-indicator-lists (dag-lst dag-len tag-array2)
 ;;   (let* ((dag-array-name 'dag-array-for-make-context-indicator-lists)
-;;          (dag-array (make-into-array dag-array-name dag-lst)))
+;;          (dag-array (alist-to-array1 dag-array-name dag-lst)))
 ;;     (make-context-indicator-list-array dag-array-name dag-array dag-len tag-array2)))
 
 ;(skip- proofs (verify-guards make-context-indicator-lists))
@@ -573,7 +573,7 @@
 ;; (defun make-context-array (dag-lst dag-len array-name tag-array2)
 ;;   (mv-let (predicate-nodenums context-indicator-list-array)
 ;;           (make-context-indicator-lists dag-lst dag-len tag-array2)
-;;           (make-context-array-aux (+ -1 dag-len) context-indicator-list-array (make-empty-array array-name dag-len) predicate-nodenums array-name)))
+;;           (make-context-array-aux (+ -1 dag-len) context-indicator-list-array (new-array1 array-name dag-len) predicate-nodenums array-name)))
 
 ;(skip- proofs (verify-guards make-context-array))
 
@@ -581,7 +581,7 @@
 ;; (defun make-context-array-from-array (dag-array-name dag-array dag-len tag-array2)
 ;;   (mv-let (predicate-nodenums context-indicator-list-array)
 ;;           (make-context-indicator-list-array dag-array-name dag-array dag-len tag-array2)
-;;           (make-context-array-aux (+ -1 dag-len) context-indicator-list-array (make-empty-array 'context-array dag-len) predicate-nodenums 'context-array)))
+;;           (make-context-array-aux (+ -1 dag-len) context-indicator-list-array (new-array1 'context-array dag-len) predicate-nodenums 'context-array)))
 
 ;; (skip- proofs (verify-guards make-context-array-from-array))
 
@@ -684,15 +684,15 @@
 
 ;; ;bozo printing may be slow
 ;; (defun var-dependency-alist (dag)
-;;   (let* ((dag-array (make-into-array 'dag-array dag))
-;;          (acc-array (make-empty-array 'acc-array (len dag)))
+;;   (let* ((dag-array (alist-to-array1 'dag-array dag))
+;;          (acc-array (new-array1 'acc-array (len dag)))
 ;;          (len (len dag)))
 ;;     ;bozo wrong?
 ;;     (array-to-alist 'acc-array (var-dependency-alist-aux 0 len dag-array acc-array) (len dag))))
 
 ;; (defun var-dependencies-for-node (nodenum dag)
-;;   (let* ((dag-array (make-into-array 'dag-array dag))
-;;          (acc-array (make-empty-array 'acc-array (len dag))))
+;;   (let* ((dag-array (alist-to-array1 'dag-array dag))
+;;          (acc-array (new-array1 'acc-array (len dag))))
 ;;     (aref1 'acc-array (var-dependency-alist-aux 0 (+ 1 nodenum) dag-array acc-array) nodenum)))
 
 ;; ;for each var, makes an expression looking it up in the alist and pairs the var with the nodenum of that expression
@@ -949,7 +949,7 @@
 ;;       t
 ;;     (let* ((max-nodenum (max nodenum-or-quotep nodenum2))
 ;;            (node-count (+ 1 max-nodenum))
-;;            (node-size-array (make-empty-array 'node-size-array node-count))
+;;            (node-size-array (new-array1 'node-size-array node-count))
 ;;            (node-size-array (build-size-array-for-nodes (list nodenum-or-quotep nodenum2) 'dag-array dag-array 'node-size-array node-size-array))
 ;; ;;           (node-size-array (compute-dag-array-size-aux 0 node-count 'dag-array dag-array 'node-size-array node-size-array)))
 ;;            (size1 (aref1 'node-size-array node-size-array nodenum-or-quotep))
@@ -968,7 +968,7 @@
 ;; ;fffixme computing this over and over might be very expensive - better to precompute the sizes?
 ;; (defun simpler-dag-termp2 (nodenum term dag-array)
 ;;   (let* ((node-count (+ 1 nodenum))
-;;          (node-size-array (make-empty-array 'node-size-array node-count))
+;;          (node-size-array (new-array1 'node-size-array node-count))
 ;;          (node-size-array (compute-dag-array-size-aux 0 node-count 'dag-array dag-array 'node-size-array node-size-array))
 ;;          (size (aref1 'node-size-array node-size-array nodenum))
 ;;          (term-size (
@@ -1346,14 +1346,14 @@
 ;; the second smallest, then substitute that into the third smallest, and so
 ;; on.  Doing so means that only a little bit of structure needs to be rebuilt
 ;; each time.  A bad ordering would substitute the biggest/highest term (in
-;; terms of where it will appear in the resuls) that can be substituted, then
+;; terms of where it will appear in the result) that can be substituted, then
 ;; put the second biggest into that (on the bottom), etc.  With such an
 ;; ordering, more and more structure gets rebuilt each time.
 
 
 
 
-;; ;fixme change this to do less consing in the usual case of an objectcive of ?
+;; ;fixme change this to do less consing in the usual case of an objective of ?
 
 ;; ;fixme think about get-result vs. get-result-expandable
 ;; ;returns a nodenum-or-quotep, or nil

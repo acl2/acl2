@@ -26,7 +26,7 @@
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read-rules" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system) ; for rules mentioned below
 (include-book "kestrel/utilities/myif-def" :dir :system) ; do not remove (since this book knows about myif)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
@@ -414,7 +414,8 @@
        ;; Generate the (approximate) contexts:
        (context-array (make-full-context-array-for-dag dag))
        ;; Make the dag into an array and make the 3 indices:
-       (dag-array (make-into-array 'dag-array dag))
+       ((mv erp dag-array) (make-dag-into-array2 'dag-array dag 0)) ; todo: use nonzero slack?
+       ((when erp) (mv erp dag state))
        (original-dag-len (+ 1 (top-nodenum-of-dag dag)))
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices 'dag-array dag-array 'dag-parent-array original-dag-len))

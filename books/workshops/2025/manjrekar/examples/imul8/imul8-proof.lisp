@@ -26,6 +26,11 @@
 (include-book "../../ctv-cp")
 (include-book "projects/rac/lisp/alt-const-fns-gen" :dir :system)
 
+; Matt K. mod: Avoid ACL2(p) error during proof of compress-lemma due to:
+; "Clause-processors that return one or more stobjs are not officially
+; supported when waterfall parallelism is enabled."
+(set-waterfall-parallelism nil)
+
 ;;; Correctness of the compress function:
 (local
  (compress::def-ctv-thmd compress-lemma

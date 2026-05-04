@@ -1,6 +1,6 @@
 ; Trim-based rules to convert functions to BV functions
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,8 +13,8 @@
 (include-book "bv-syntax") ; for convertible-to-bvp
 (include-book "trim")
 (include-book "bvand-def")
-(include-book "bvor")
-(include-book "bvxor")
+(include-book "bvor-def")
+(include-book "bvxor-def")
 (include-book "bvplus")
 (include-book "bvminus-def")
 (include-book "bvnot")
@@ -31,6 +31,7 @@
 (include-book "bitxor")
 (include-book "trim-elim-rules-non-bv") ; to get rid of the TRIMs introduced by these rules
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "bvcat"))
 (local (include-book "slice"))
 (local (include-book "getbit"))
@@ -216,7 +217,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bitnot-convert-arg2-to-bv
+(defthmd bitnot-convert-arg1-to-bv
   (implies (syntaxp (convertible-to-bvp x))
            (equal (bitnot x)
                   (bitnot (trim 1 x))))
@@ -266,7 +267,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvsx-convert-arg3-to-bv
+(defthmd bvsx-convert-arg3-to-bv
   (implies (syntaxp (convertible-to-bvp x))
            (equal (bvsx new-size old-size x)
                   (bvsx new-size old-size (trim old-size x))))

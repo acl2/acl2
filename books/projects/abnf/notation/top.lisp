@@ -26,7 +26,7 @@
 
 (defxdoc+ notation
   :parents (abnf)
-  :short "A fornalization of the ABNF notation."
+  :short "A formalization of the ABNF notation."
   :long
   (xdoc::topstring
    (xdoc::p

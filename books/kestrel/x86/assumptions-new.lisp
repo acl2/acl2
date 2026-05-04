@@ -388,7 +388,7 @@
       (er hard? 'make-standard-assumptions64-new "Offset too big.") ; todo: make this a proper error (once the target handling stuff is factored out)
     (let ((target-address-term (if position-independentp
                                    ;; Position-independent, so the target is the base-address-var plus the target-offset:
-                                   ;; We posulate that there exists some canonical base var wrt which  the executable is loaded.
+                                   ;; We postulate that there exists some canonical base var wrt which  the executable is loaded.
                                    ;; When making assumptions for the regions, we will check that it is possible for them all to be canonical
                                    (if (= 0 target-offset)
                                        base-address-var ; avoids adding 0
@@ -564,7 +564,7 @@
                                       (append assumptions-for-region acc)))))
 
 (local
-  (defthm true-list-of-mv-nth-1-of-assumptions-for-memory-regions
+  (defthm true-listp-of-mv-nth-1-of-assumptions-for-memory-regions
     (implies (true-listp acc)
              (true-listp (mv-nth 1 (assumptions-for-memory-regions regions base-address-var state-var stack-slots-needed existing-stack-slots position-independentp assume-bytes acc))))
     :hints (("Goal" :in-theory (enable assumptions-for-memory-regions)))))
@@ -668,7 +668,7 @@
                 input-assumptions)
         input-assumption-vars)))
 
-(defthm true-list-of-mv-nth-1-of-assumptions-elf64-new
+(defthm true-listp-of-mv-nth-1-of-assumptions-elf64-new
   (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-elf)))
   :hints (("Goal" :in-theory (enable assumptions-elf64-new))))
 
@@ -771,7 +771,7 @@
                 input-assumptions)
         input-assumption-vars)))
 
-(defthm true-list-of-mv-nth-1-of-assumptions-macho64-new
+(defthm true-listp-of-mv-nth-1-of-assumptions-macho64-new
   (true-listp (mv-nth 1 (assumptions-macho64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-macho)))
   :hints (("Goal" :in-theory (enable assumptions-macho64-new))))
 
@@ -889,7 +889,7 @@
                 input-assumptions)
         input-assumption-vars)))
 
-(defthm true-list-of-mv-nth-1-of-assumptions-pe64-new
+(defthm true-listp-of-mv-nth-1-of-assumptions-pe64-new
   (true-listp (mv-nth 1 (assumptions-pe64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-pe)))
   :hints (("Goal" :in-theory (enable assumptions-pe64-new))))
 

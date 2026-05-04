@@ -1,7 +1,7 @@
 ; A function to test whether a list is a prefix of another
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -104,7 +104,7 @@
 
 (defthm prefixp-when-len-0
   (implies (and (equal free (len x))
-                (EQUAl 0 free) ;poor man's backchain limit
+                (equal 0 free) ;poor man's backchain limit
 ;                (true-listp y)
                 )
            (equal (prefixp y x)

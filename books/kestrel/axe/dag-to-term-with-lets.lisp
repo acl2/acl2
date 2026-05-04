@@ -171,8 +171,7 @@
   (implies (and (consp (aref1 dag-array-name dag-array 0))
                 (not (equal (car (aref1 dag-array-name dag-array 0))
                             'quote))
-                (pseudo-dag-arrayp-aux dag-array-name dag-array 0)
-                (natp n))
+                (pseudo-dag-arrayp-aux dag-array-name dag-array 0))
            (all-myquotep (dargs (aref1 dag-array-name dag-array 0))))
   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array 0))
            :in-theory (enable bounded-dag-exprp))))
@@ -226,7 +225,7 @@
   (declare (xargs :guard (and (posp dag-len)
                               (<= dag-len *max-1d-array-length*)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len))))
-  (make-supporters-array-aux 0 (+ -1 dag-len) dag-array-name dag-array (make-empty-array 'supporters-array dag-len)))
+  (make-supporters-array-aux 0 (+ -1 dag-len) dag-array-name dag-array (new-array1 'supporters-array dag-len)))
 
 (defthm alen1-of-make-supporters-array
   (implies (and (posp dag-len)
@@ -235,14 +234,13 @@
                   dag-len))
   :hints (("Goal" :in-theory (enable make-supporters-array))))
 
-(defthm supporters-arrayp-aux-of-make-empty-array
+(defthm supporters-arrayp-aux-of-new-array1
   (implies (and (natp n)
                 (<= n dag-len)
-                (natp dag-len)
                 (posp dag-len)
                 (<= dag-len *max-1d-array-length*))
            (supporters-arrayp-aux 'supporters-array
-                                  (make-empty-array 'supporters-array dag-len)
+                                  (new-array1 'supporters-array dag-len)
                                   n))
   :hints (("Goal" :in-theory (enable supporters-arrayp-aux))))
 
@@ -513,8 +511,8 @@
   (declare (xargs :guard (and (posp dag-len)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len))))
   (let ((parent-array (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array 'parent-array-temp))
-        (term-array (make-empty-array 'term-array dag-len))
-        (binding-array (make-empty-array 'binding-array dag-len))
+        (term-array (new-array1 'term-array dag-len))
+        (binding-array (new-array1 'binding-array dag-len))
         (supporters-array (make-supporters-array dag-len dag-array-name dag-array)))
     (dag-array-to-term-with-lets-aux 0 (+ -1 dag-len) dag-array-name dag-array parent-array term-array binding-array supporters-array)))
 
@@ -528,7 +526,7 @@
       dag
     (let* ((dag (drop-non-supporters dag)) ;prevents crashes if there are unreferenced nodes -- drop this?
            (dag-array-name 'dag-array-temp))
-      (dag-array-to-term-with-lets (len dag) dag-array-name (make-into-array dag-array-name dag)))))
+      (dag-array-to-term-with-lets (len dag) dag-array-name (make-dag-into-array dag-array-name dag 0)))))
 
 ;; Example: (dag-to-term-with-lets (dagify-term '(+ (bar (baz x)) (foo (bar (baz x))))))
 ;; Example: (dag-to-term-with-lets (dagify-term! '(f (g (h (foo y x '3 (bar z))) (h (foo y x '3 (bar z)))))))

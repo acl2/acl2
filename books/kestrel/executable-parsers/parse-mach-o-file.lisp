@@ -1,7 +1,7 @@
 ; A parser for Mach-O executables
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/typed-lists-light/map-code-char" :dir :system)
 (include-book "kestrel/bv/defs-bitwise" :dir :system) ;for bvor
+(local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 
 ;; See also
 ;; projects/x86isa/tools/execution/exec-loaders/mach-o/mach-o-reader.lisp

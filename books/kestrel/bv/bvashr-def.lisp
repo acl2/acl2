@@ -1,7 +1,7 @@
-; Cherry-pick the definitions of the BV functions
+; The definition of bvashr
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,7 @@
 
 ;; NOTE: Currently, the shift amount must be less than the width.
 ;perhaps this should be called xshr (for sign-extending shift), but jvm has a function or macro with that name already (get rid of it first!)
-;; TODO: it might be more elegant to change the behavior with large shift amounts to avoid alsways getting 0; consider: (bvashr 32 -1 32).
+;; TODO: it might be more elegant to change the behavior with large shift amounts to avoid always getting 0; consider: (bvashr 32 -1 32).
 (defund bvashr (width x shift-amount)
   (declare (xargs :guard (and (integerp width)
                               (integerp x)

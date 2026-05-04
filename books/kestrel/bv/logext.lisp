@@ -805,8 +805,7 @@
 ;bozo gen!
 (defthm logext-equal-0-rewrite-32
   (equal (equal 0 (logext 32 x))
-         (equal 0 (bvchop 32 x)))
-  :hints (("Goal" :in-theory (enable))))
+         (equal 0 (bvchop 32 x))))
 
 ;gen
 (defthm logext-when-equal-of-getbit
@@ -844,3 +843,20 @@
                   (logext size (+ x y))))
   :hints (("Goal" :use (:instance logext-of-+-of-bvchop-arg1 (x y) (y x))
                   :in-theory (disable logext-of-+-of-bvchop-arg1))))
+
+;; Disabled by default since this is pretty aggressive and splits into cases.
+(defthmd logext-of-plus
+  (implies (and (integerp x)
+                (posp size)
+                (integerp y))
+           (equal (logext size (+ x y))
+                  (if (>= (+ (logext size x) (logext size y))
+                          (expt 2 (+ -1 size)))
+                      (- (+ (logext size x) (logext size y))
+                         (expt 2 size))
+                    (if (< (+ (logext size x) (logext size y))
+                           (- (expt 2 (+ -1 size))))
+                        (+ (+ (logext size x) (logext size y))
+                           (expt 2 size))
+                      (+ (logext size x) (logext size y))))))
+  :hints (("Goal" :in-theory (enable logext-cases getbit-of-+-new bvchop-of-sum-cases))))

@@ -41,6 +41,7 @@
 (local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/bv/leftrotate-rules" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -130,7 +131,7 @@
   :hints (("Goal" :do-not '(preprocess) :in-theory (enable bvcat UNSIGNED-BYTE-P-FORCED))))
 
 ;or should we bring heavier terms to the front to increase sharing?
-;ffixme these differe from what simplify-bitxors does in terms of the order of terms?!
+;ffixme these differ from what simplify-bitxors does in terms of the order of terms?!
 (defthmd bitxor-commutative-axe
   (implies (axe-syntaxp (should-commute-axe-argsp 'bitxor x y dag-array))
            (equal (bitxor x y)
@@ -194,9 +195,9 @@
   :hints (("Goal" :in-theory (enable bvand))))
 
 (defthmd bvand-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-axe-argsp 'bvand y x dag-array))
-           (equal (bvand size y (bvand size x z))
-                  (bvand size x (bvand size y z))))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'bvand x y dag-array))
+           (equal (bvand size x (bvand size y z))
+                  (bvand size y (bvand size x z))))
   :hints (("Goal" :use (:instance bvand-commutative-2)
            :in-theory (disable bvand-commutative-2))))
 
@@ -209,9 +210,9 @@
   :hints (("Goal" :in-theory (enable bvor))))
 
 (defthmd bvor-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-axe-argsp 'bvor y x dag-array))
-           (equal (bvor size y (bvor size x z))
-                  (bvor size x (bvor size y z))))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'bvor x y dag-array))
+           (equal (bvor size x (bvor size y z))
+                  (bvor size y (bvor size x z))))
   :hints (("Goal" :use (:instance bvor-commutative-2)
            :in-theory (disable bvor-commutative-2))))
 
@@ -1944,7 +1945,6 @@
                 (< n size)
                 (integerp n)
                 (integerp size)
-                (integerp xsize)
                 (unsigned-byte-p-forced ysize y))
            (equal (getbit n (bvor size x y))
                   (getbit n x)))

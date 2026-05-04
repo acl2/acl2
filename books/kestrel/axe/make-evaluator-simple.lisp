@@ -1,7 +1,7 @@
 ; A tool to make an evaluator for a set of functions.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -355,7 +355,7 @@
                                                     )
                                                   interpreted-function-alist
                                                   count))
-                         ;; not an if, so evalate all arguments and then apply the function (which may be a lambda):
+                         ;; not an if, so evaluate all arguments and then apply the function (which may be a lambda):
                          (b* (((mv erp args)
                                (,eval-list-function-name alist (fargs form) interpreted-function-alist count))
                               ((when erp) (mv erp nil)))

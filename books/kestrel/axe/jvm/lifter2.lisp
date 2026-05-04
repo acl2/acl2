@@ -33,7 +33,7 @@
 (skip-proofs
  (defthm run-until-exit-segment-or-hit-loop-header-lemma-for-invoke
    (implies (and (<= sh (stack-height s)) ;todo: prevent loops
-                 (member-equal (jvm::op-code (jvm::current-inst (th) s)) *invoke-opcodes*)
+                 (member-equal (jvm::instruction-opcode (jvm::current-inst (th) s)) *invoke-opcodes*)
                  (natp sh)
                  )
             (equal (run-until-exit-segment-or-hit-loop-header sh segment-pcs loop-headers (jvm::step (th) s))
@@ -139,7 +139,7 @@
        ((when (not method-info))
         (prog2$ (cw "ERROR: Couldn't find info for method ~x0 with descriptor ~x1 in class ~x2" method-name method-descriptor method-class)
                 (mv t nil state)))
-       (code (lookup-eq :program method-info))
+       (code (jvm::method-program method-info))
        ((when (not code))
         (prog2$ (cw "ERROR: Couldn't find code for method ~x0 with descriptor ~x1 in class ~x2" method-name method-descriptor method-class)
                 (mv t nil state)))

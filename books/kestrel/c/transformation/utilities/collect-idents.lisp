@@ -31,7 +31,7 @@
   (xdoc::topstring
     (xdoc::p
       "This returns all identifiers within a C AST. Eventually, we may wish
-       to extend this utility to only collect the identifiers occuring in
+       to extend this utility to only collect the identifiers occurring in
        particular scopes or name spaces.")
     (xdoc::p
       "This utility is intended to operate on unambiguous ASTs. It may or may
@@ -53,9 +53,12 @@
           c$::fundef-option
           c$::ext-declon
           c$::ext-declon-list
-          transunit
-          c$::filepath-transunit-map
-          transunit-ensemble)
+          c$::hash-if/elif-expr
+          c$::hash-if/ifdef/ifndef
+          c$::trans-items
+          trans-unit
+          c$::filepath-trans-unit-map
+          trans-ensemble)
   :result ident-setp
   :default nil
   :combine union

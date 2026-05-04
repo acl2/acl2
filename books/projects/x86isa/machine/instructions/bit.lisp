@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2018, Kestrel Technology, LLC
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; Copyright (C) May - August 2023, Regents of the University of Texas
 ; Copyright (C) August 2023 - May 2024, Yahya Sohail
 ; Copyright (C) May 2024 - August 2024, Intel Corporation
@@ -40,38 +40,59 @@
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 ; Contributing Author(s):
-; Alessandro Coglio   <coglio@kestrel.edu>
+; Alessandro Coglio   <www.alessandrocoglio.info>
 ; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
 
 ;; ======================================================================
 
-(include-book "../decoding-and-spec-utils"
-          :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+
+;; ======================================================================
+
+(local
+ (defthm dumb-signed-byte-p-guard-lemma
+   (implies (not (mv-nth 0
+                         (x86-effective-addr
+                          proc-mode p4 temp-rip rex-byte
+                          r/m mod sib num-imm-bytes x86)))
+            (signed-byte-p 48
+                           (mv-nth 2
+                                   (x86-effective-addr
+                                    proc-mode p4 temp-rip rex-byte
+                                    r/m mod sib num-imm-bytes x86))))))
 
 ;; ======================================================================
 ;; INSTRUCTION: BT
 ;; ======================================================================
 
 (def-inst x86-bt-0F-A3
-  ;; TO-DO: Speed this up!
-
-  ;; 0F A3: BT r/m16/32/64, r16/32/64
-
-  ;; If the bitBase is a register operand, the bitOffset can be in the
-  ;; range 0 to [15, 31, 63] depending on the mode and register size.
-  ;; If the bitBase is a memory address and bitOffset is a register
-  ;; operand, the bitOffset can be:
-
-  ;; Operand Size   Register bitOffset
-  ;;      2          -2^15 to 2^15-1
-  ;;      4          -2^31 to 2^31-1
-  ;;      8          -2^63 to 2^63-1
 
   :parents (two-byte-opcodes)
+
+  :short "Bit test, with offset in register."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "        0F A3 /r    BT r/m16, r16"
+    "        0F A3 /r    BT r/m32, r32"
+    "REX.W + 0F A3 /r    BT r/m64, r64")
+   (xdoc::p
+    "If the bitBase is a register operand, the bitOffset can be in the
+     range 0 to [15, 31, 63] depending on the mode and register size.
+     If the bitBase is a memory address and bitOffset is a register
+     operand, the bitOffset can be:")
+   (xdoc::codeblock
+    "Operand Size   Register bitOffset"
+    "     2          -2^15 to 2^15-1"
+    "     4          -2^31 to 2^31-1"
+    "     8          -2^63 to 2^63-1")
+   (xdoc::p
+    "See Table 3-2 of Intel manual Volume 2 (Feb 2026)."))
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -80,18 +101,6 @@
 
   :prepwork
   ((local
-    (defthm dumb-signed-byte-p-guard-lemma
-      (implies (not (mv-nth 0
-                            (x86-effective-addr
-                             proc-mode p4 temp-rip rex-byte
-                             r/m mod sib num-imm-bytes x86)))
-               (signed-byte-p 48
-                              (mv-nth 2
-                                      (x86-effective-addr
-                                       proc-mode p4 temp-rip rex-byte
-                                       r/m mod sib num-imm-bytes x86))))))
-
-   (local
     (in-theory (e/d ()
                     (acl2::mod-minus
                      signed-byte-p
@@ -104,10 +113,10 @@
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* ((p2 (prefixes->seg prefixes))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes->adr prefixes)))
-
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? (alignment-checking-enabled-p x86))
 
        ((the (integer 1 8) operand-size)
         (select-operand-size
@@ -163,7 +172,6 @@
                (bitOffset-int-abs (abs bitOffset-int))
                (bitNumber (mod bitOffset-int-abs 8))
                (byte-addr (+ addr (floor bitOffset-int 8)))
-               (inst-ac? (alignment-checking-enabled-p x86))
                ((mv flg byte x86)
                 (if (signed-byte-p 64 byte-addr)
                     (rme-size-opt proc-mode 1 byte-addr seg-reg :r inst-ac? x86
@@ -177,7 +185,7 @@
        ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
        (x86
         (let* ((x86 (!flgi :cf
-                           (the (unsigned-byte 1) (acl2::logbit bitOffset bitBase))
+                           (the (unsigned-byte 1) (logbit bitOffset bitBase))
                            x86))
                (x86 (!flgi-undefined :pf x86))
                (x86 (!flgi-undefined :af x86))
@@ -187,39 +195,38 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
+;; ======================================================================
+;; INSTRUCTION: BTS
+;; ======================================================================
 
-(def-inst x86-bt-0F-AB
-  ;; 0F AB /r: BTS r/m16, r16
-  ;; 0F AB /r: BTS r/m32, r32
-  ;; REX.W + 0F AB /r: BTS r/m64, r64
+(def-inst x86-bts-0F-AB
 
   :parents (two-byte-opcodes)
+
+  :short "Bit test and set, with offset in register."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "        0F AB /r: BTS r/m16, r16"
+    "        0F AB /r: BTS r/m32, r32"
+    "REX.W + 0F AB /r: BTS r/m64, r64")
+   (xdoc::p
+    "See @(tsee x86-bt-0F-A3) for a description of bitOffset."))
 
   :returns (x86 x86p :hyp (x86p x86))
 
   :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
                                         (bitops::part-install-width-low))))
 
-  :modr/m t
-
   :prepwork
   ((local
-    (defthm dumb-signed-byte-p-guard-lemma
-        (implies (not (mv-nth 0
-                              (x86-effective-addr
-                               proc-mode p4 temp-rip rex-byte
-                               r/m mod sib num-imm-bytes x86)))
-                 (signed-byte-p 48
-                                (mv-nth 2
-                                        (x86-effective-addr
-                                         proc-mode p4 temp-rip rex-byte
-                                         r/m mod sib num-imm-bytes x86))))))
-
-   (local
     (in-theory (e/d ()
                     (acl2::mod-minus
                      signed-byte-p
                      unsigned-byte-p)))))
+
+  :modr/m t
 
   :body
 
@@ -227,9 +234,9 @@
 
   (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
-       (inst-ac? (alignment-checking-enabled-p x86))
-
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? (alignment-checking-enabled-p x86))
 
        ((the (integer 1 8) operand-size)
         (select-operand-size
@@ -261,6 +268,7 @@
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
         (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
@@ -296,12 +304,10 @@
 
        ;; Update the x86 state:
        ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
-       ;; If reg is 5, we need to set the selected bit
-       ;; If reg is 6, we need to clear the selected bit
        (x86
         (let* ((x86 (!flgi :cf
                            (the (unsigned-byte 1)
-                                (acl2::logbit bitOffset bitBase))
+                                (logbit bitOffset bitBase))
                            x86))
                (x86 (!flgi-undefined :pf x86))
                (x86 (!flgi-undefined :af x86))
@@ -325,250 +331,388 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
+;; ======================================================================
+;; INSTRUCTION: BTR
+;; ======================================================================
+
 (def-inst x86-btr-0F-B3
 
-          ;; 0F B3/r: BTR r/m16, r16
-          ;; 0F B3/r: BTR r/m32, r32
-          ;; REX.W + 0F B3/r: BTR r/m64, r64
+  :parents (two-byte-opcodes)
 
-          ;; This implementation is a lot like BTS (x86-bt-0F-AB)
+  :short "Bit test and reset, with offset in register."
 
-          :parents (two-byte-opcodes)
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "        0F B3 /r: BTR r/m16, r16"
+    "        0F B3 /r: BTR r/m32, r32"
+    "REX.W + 0F B3 /r: BTR r/m64, r64")
+   (xdoc::p
+    "See @(tsee x86-bt-0F-A3) for a description of bitOffset."))
 
-          :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86))
 
-          :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
-                                                ())))
+  :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
+                                        ())))
 
-          ;; This is copied from x86-bt-0F-AB
-          ;; It probably should be done only in one place and reused
-          :prepwork
-          ((local
-             (defthm dumb-signed-byte-p-guard-lemma
-                     (implies (not (mv-nth 0
-                                           (x86-effective-addr
-                                             proc-mode p4 temp-rip rex-byte
-                                             r/m mod sib num-imm-bytes x86)))
-                              (signed-byte-p 48
-                                             (mv-nth 2
-                                                     (x86-effective-addr
-                                                       proc-mode p4 temp-rip rex-byte
-                                                       r/m mod sib num-imm-bytes x86))))))
+  :prepwork
+  ((local
+    (in-theory (e/d ()
+                    (acl2::mod-minus
+                     signed-byte-p
+                     unsigned-byte-p)))))
 
-           (local
-             (in-theory (e/d ()
-                             (acl2::mod-minus
-                               signed-byte-p
-                               unsigned-byte-p)))))
+  :modr/m t
 
-          :modr/m t
+  :body
 
-          :body
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-          (b* (((the (integer 1 8) operand-size)
-                (select-operand-size
-                  proc-mode nil rex-byte nil prefixes nil nil nil x86))
+       (inst-ac? (alignment-checking-enabled-p x86))
 
-               (p2 (prefixes->seg prefixes))
-               (p4? (equal #.*addr-size-override*
-                           (prefixes->adr prefixes)))
-               (inst-ac? (alignment-checking-enabled-p x86))
+       ((the (integer 1 8) operand-size)
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
-               (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       (bitOffset (rgfi-size operand-size
+                             (reg-index reg rex-byte *r*)
+                             rex-byte
+                             x86))
 
-               (bitOffset (rgfi-size operand-size (reg-index reg rex-byte *r*) rex-byte x86))
+       ((mv flg0
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
+        (if (equal mod #b11)
+            (mv nil 0 0 x86)
+          (let ((p4? (equal #.*addr-size-override*
+                            (prefixes->adr prefixes))))
+            (x86-effective-addr proc-mode p4?
+                                temp-rip
+                                rex-byte
+                                r/m
+                                mod
+                                sib
+                                0 ;; No immediate operand
+                                x86))))
+       ((when flg0) (!!ms-fresh :x86-effective-addr-error flg0))
 
-               ((mv flg0
-                    (the (signed-byte 64) addr)
-                    (the (unsigned-byte 3) increment-RIP-by)
-                    x86)
-                (if (equal mod #b11)
-                  (mv nil 0 0 x86)
-                  (let ((p4? (equal #.*addr-size-override*
-                                    (prefixes->adr prefixes))))
-                    (x86-effective-addr proc-mode p4?
-                                        temp-rip
-                                        rex-byte
-                                        r/m
-                                        mod
-                                        sib
-                                        0 ;; No immediate operand
-                                        x86))))
-               ((when flg0) (!!ms-fresh :x86-effective-addr-error flg0))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
-               ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-                (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-               ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-               (badlength? (check-instruction-length start-rip temp-rip 0))
-               ((when badlength?)
-                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+       ((mv flg2 bitOffset bitBase ?byte-addr x86)
+        (if (equal mod #b11)
+            ;; bitBase is a register operand.
+            (mv nil
+                (mod bitOffset (ash operand-size 3))
+                (rgfi-size operand-size
+                           (reg-index r/m rex-byte #.*b*)
+                           rex-byte
+                           x86)
+                nil
+                x86)
+          ;; bitBase is a memory operand.
+          (b* ((bitOffset-int (case operand-size
+                                (1 (n08-to-i08 bitOffset))
+                                (2 (n16-to-i16 bitOffset))
+                                (4 (n32-to-i32 bitOffset))
+                                (t (n64-to-i64 bitOffset))))
+               (bitOffset-int-abs (abs bitOffset-int))
+               (bitNumber (mod bitOffset-int-abs 8))
+               (byte-addr (+ addr (floor bitOffset-int 8)))
+               ((mv flg byte x86)
+                (if (signed-byte-p 64 byte-addr)
+                    (rme-size-opt proc-mode 1 byte-addr seg-reg :r inst-ac? x86
+                                  :check-canonicity t)
+                  (mv (cons 'effective-address-error byte-addr) 0 x86))))
+            (mv flg bitNumber byte byte-addr x86))))
+       ((when flg2)
+        (!!ms-fresh :rme-size-error flg2))
 
-               ((mv flg2 bitOffset bitBase ?byte-addr x86)
-                (if (equal mod #b11)
-                  ;; bitBase is a register operand.
-                  (mv nil
-                      (mod bitOffset (ash operand-size 3))
-                      (rgfi-size operand-size
-                                 (reg-index r/m rex-byte #.*b*)
-                                 rex-byte
-                                 x86)
-                      nil
-                      x86)
-                  ;; bitBase is a memory operand.
-                  (b* ((bitOffset-int (case operand-size
-                                        (1 (n08-to-i08 bitOffset))
-                                        (2 (n16-to-i16 bitOffset))
-                                        (4 (n32-to-i32 bitOffset))
-                                        (t (n64-to-i64 bitOffset))))
-                       (bitOffset-int-abs (abs bitOffset-int))
-                       (bitNumber (mod bitOffset-int-abs 8))
-                       (byte-addr (+ addr (floor bitOffset-int 8)))
-                       ((mv flg byte x86)
-                        (if (signed-byte-p 64 byte-addr)
-                          (rme-size-opt proc-mode 1 byte-addr seg-reg :r inst-ac? x86
-                                        :check-canonicity t)
-                          (mv (cons 'effective-address-error byte-addr) 0 x86))))
-                      (mv flg bitNumber byte byte-addr x86))))
-               ((when flg2)
-                (!!ms-fresh :rme-size-error flg2))
+       ;; Update the x86 state:
+       ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
+       (x86
+        (let* ((x86 (!flgi :cf
+                           (the (unsigned-byte 1)
+                                (logbit bitOffset bitBase))
+                           x86))
+               (x86 (!flgi-undefined :pf x86))
+               (x86 (!flgi-undefined :af x86))
+               (x86 (!flgi-undefined :sf x86))
+               (x86 (!flgi-undefined :of x86)))
+          x86))
+       (val (bitops::part-install 0 bitBase :width 1 :low bitOffset))
+       ((mv flg x86)
+        (if (equal mod #b11)
+            ;; bitBase is a register operand
+            (let ((x86 (!rgfi-size operand-size
+                                   (reg-index r/m rex-byte #.*b*)
+                                   val
+                                   rex-byte
+                                   x86)))
+              (mv nil x86))
+          ;; bitBase refers to the byte read from the memory.
+          (wme-size
+           proc-mode 1 byte-addr seg-reg (loghead 8 val) inst-ac? x86)))
+       ((when flg) (!!ms-fresh :wme-size flg))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
 
-               ;; Update the x86 state:
-               ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
-               ;; If reg is 5, we need to set the selected bit
-               ;; If reg is 6, we need to clear the selected bit
-               (x86
-                 (let* ((x86 (!flgi :cf
-                                    (the (unsigned-byte 1)
-                                         (acl2::logbit bitOffset bitBase))
-                                    x86))
-                        (x86 (!flgi-undefined :pf x86))
-                        (x86 (!flgi-undefined :af x86))
-                        (x86 (!flgi-undefined :sf x86))
-                        (x86 (!flgi-undefined :of x86)))
-                   x86))
-               (val (bitops::part-install 0 bitBase :width 1 :low bitOffset))
-               ((mv flg x86)
-                (if (equal mod #b11)
-                  ;; bitBase is a register operand
-                  (let ((x86 (!rgfi-size operand-size
-                                         (reg-index r/m rex-byte #.*b*)
-                                         val
-                                         rex-byte
-                                         x86)))
-                    (mv nil x86))
-                  ;; bitBase refers to the byte read from the memory.
-                  (wme-size
-                    proc-mode 1 byte-addr seg-reg (loghead 8 val) inst-ac? x86)))
-               ((when flg) (!!ms-fresh :wme-size flg))
-               (x86 (write-*ip proc-mode temp-rip x86)))
-              x86))
+;; ======================================================================
+;; INSTRUCTION: BTC
+;; ======================================================================
 
-(def-inst x86-bt-0F-BA
+(def-inst x86-btc-0F-BB
 
-          ;; 0F BA/4: BT r/m16/32/64, imm8
-          ;; 0F BA/5: BTS r/m16/32/64, imm8
-          ;; 0F BA/6: BTR r/m16/32/64, imm8
-          ;; 0F BA/7: BTC r/m16/32/64, imm8
+  :parents (two-byte-opcodes)
 
-          ;; If the bitBase is a register, the BitOffset can be in the range 0
-          ;; to [15, 31, 63] depending on the mode and register size.  If the
-          ;; bitBase is a memory address and bitOffset is an immediate operand,
-          ;; then also the bitOffset can be in the range 0 to [15, 31, 63].
+  :short "Bit test and complement, with offset in register."
 
-          :parents (two-byte-opcodes)
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "        0F BB /r: BTC r/m16, r16"
+    "        0F BB /r: BTC r/m32, r32"
+    "REX.W + 0F BB /r: BTC r/m64, r64")
+   (xdoc::p
+    "See @(tsee x86-bt-0F-A3) for a description of bitOffset."))
 
-          :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86))
 
-          :guard-hints (("Goal" :in-theory (e/d* (add-to-*ip-is-i48p-rewrite-rule) (signed-byte-p unsigned-byte-p))))
+  :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
+                                        (bitops::part-install-width-low))))
 
-          :modr/m t
+  :prepwork
+  ((local
+    (in-theory (e/d ()
+                    (acl2::mod-minus
+                     signed-byte-p
+                     unsigned-byte-p)))))
 
-          :body
+  :modr/m t
 
-          ;; Note: opcode is the second byte of the two-byte opcode.
+  :body
 
-          (b* (((the (integer 1 8) operand-size)
-                (select-operand-size
-                  proc-mode nil rex-byte nil prefixes nil nil nil x86))
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-               (log2-operand-size (case operand-size
-                                    (1 0)
-                                    (2 1)
-                                    (4 2)
-                                    (8 3)))
+       (inst-ac? (alignment-checking-enabled-p x86))
 
-               (p2 (prefixes->seg prefixes))
-               (p4? (equal #.*addr-size-override*
-                           (prefixes->adr prefixes)))
+       ((the (integer 1 8) operand-size)
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
-               (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       (bitOffset (rgfi-size operand-size
+                             (reg-index reg rex-byte *r*)
+                             rex-byte
+                             x86))
 
-               (inst-ac? t)
-               ((mv flg0
-                    bitBase
-                    (the (unsigned-byte 3) increment-RIP-by)
-                    (the (signed-byte 64) addr)
-                    x86)
-                (x86-operand-from-modr/m-and-sib-bytes
-                  proc-mode #.*gpr-access* operand-size inst-ac?
-                  nil ;; Not a memory pointer operand
-                  seg-reg p4? temp-rip rex-byte r/m mod sib
-                  1 ;; One-byte immediate data
-                  x86))
-               ((when flg0)
-                (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+       ((mv flg0
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
+        (if (equal mod #b11)
+            (mv nil 0 0 x86)
+          (let ((p4? (equal #.*addr-size-override*
+                            (prefixes->adr prefixes))))
+            (x86-effective-addr proc-mode p4?
+                                temp-rip
+                                rex-byte
+                                r/m
+                                mod
+                                sib
+                                0 ;; No immediate operand
+                                x86))))
+       ((when flg0) (!!ms-fresh :x86-effective-addr-error flg0))
 
-               ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-                (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-               ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
-               ((mv flg1 (the (unsigned-byte 8) bitOffset) x86)
-                (rme08 proc-mode temp-rip #.*cs* :x x86))
-               ((when flg1) (!!ms-fresh :rme-size-error flg1))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-               ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-                (add-to-*ip proc-mode temp-rip 1 x86))
-               ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+       ((mv flg2 bitOffset bitBase ?byte-addr x86)
+        (if (equal mod #b11)
+            ;; bitBase is a register operand.
+            (mv nil
+                (mod bitOffset (ash operand-size 3))
+                (rgfi-size operand-size
+                           (reg-index r/m rex-byte #.*b*)
+                           rex-byte
+                           x86)
+                nil
+                x86)
+          ;; bitBase is a memory operand.
+          (b* ((bitOffset-int (case operand-size
+                                (1 (n08-to-i08 bitOffset))
+                                (2 (n16-to-i16 bitOffset))
+                                (4 (n32-to-i32 bitOffset))
+                                (t (n64-to-i64 bitOffset))))
+               (bitOffset-int-abs (abs bitOffset-int))
+               (bitNumber (mod bitOffset-int-abs 8))
+               (byte-addr (+ addr (floor bitOffset-int 8)))
+               ((mv flg byte x86)
+                (if (signed-byte-p 64 byte-addr)
+                    (rme-size-opt proc-mode 1 byte-addr seg-reg :r inst-ac? x86
+                                  :check-canonicity t)
+                  (mv (cons 'effective-address-error byte-addr) 0 x86))))
+            (mv flg bitNumber byte byte-addr x86))))
+       ((when flg2)
+        (!!ms-fresh :rme-size-error flg2))
 
-               (badlength? (check-instruction-length start-rip temp-rip 0))
-               ((when badlength?)
-                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+       ;; Update the x86 state:
+       ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
+       (x86
+        (let* ((x86 (!flgi :cf
+                           (the (unsigned-byte 1)
+                                (logbit bitOffset bitBase))
+                           x86))
+               (x86 (!flgi-undefined :pf x86))
+               (x86 (!flgi-undefined :af x86))
+               (x86 (!flgi-undefined :sf x86))
+               (x86 (!flgi-undefined :of x86)))
+          x86))
+       (val (bitops::part-install (b-not (logbit bitOffset bitBase))
+                                  bitBase
+                                  :width 1
+                                  :low bitOffset))
+       ((mv flg x86)
+        (if (equal mod #b11)
+            ;; bitBase is a register operand
+            (let ((x86 (!rgfi-size operand-size
+                                   (reg-index r/m rex-byte #.*b*)
+                                   val
+                                   rex-byte
+                                   x86)))
+              (mv nil x86))
+          ;; bitBase refers to the byte read from the memory.
+          (wme-size
+           proc-mode 1 byte-addr seg-reg (loghead 8 val) inst-ac? x86)))
+       ((when flg) (!!ms-fresh :wme-size flg))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
 
-               ((the (integer 0 64) bitOffset)
-                (loghead (+ log2-operand-size 3)
-                         bitOffset))
+;; ======================================================================
+;; INSTRUCTIONS: BT, BTS, BTR, BTC with immediate operand
+;; ======================================================================
 
-               ;; Update the x86 state:
-               ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
-               ;; If reg is 5, we need to set the selected bit
-               ;; If reg is 6, we need to clear the selected bit
-               (x86
-                 (let* ((x86 (!flgi :cf
-                                    (the (unsigned-byte 1)
-                                         (acl2::logbit bitOffset bitBase))
-                                    x86))
-                        (x86 (!flgi-undefined :pf x86))
-                        (x86 (!flgi-undefined :af x86))
-                        (x86 (!flgi-undefined :sf x86))
-                        (x86 (!flgi-undefined :of x86)))
-                   x86))
-               ((mv flg x86)
-                (if (member reg '(5 6 7))
-                  ;; If BTR/BTS/BTC, we need to clear/set/complement the tested bit
-                  (x86-operand-to-reg/mem
-                    proc-mode operand-size inst-ac? nil
-                    (install-bit bitOffset
-                                 (case reg
-                                   (5 1)
-                                   (6 0)
-                                   (7 (b-not (logbit bitOffset bitBase))))
-                                 bitBase)
-                    seg-reg addr rex-byte r/m mod x86)
-                  (mv nil x86)))
-               ((when flg) (!!ms-fresh :x86-operand-to-reg/mem flg))
-               (x86 (write-*ip proc-mode temp-rip x86)))
-              x86))
+(def-inst x86-bt/bts/btr/btc-0F-BA
+
+  ;; 0F BA/4: BT r/m16/32/64, imm8
+  ;; 0F BA/5: BTS r/m16/32/64, imm8
+  ;; 0F BA/6: BTR r/m16/32/64, imm8
+  ;; 0F BA/7: BTC r/m16/32/64, imm8
+
+  ;; If the bitBase is a register, the BitOffset can be in the range 0
+  ;; to [15, 31, 63] depending on the mode and register size.  If the
+  ;; bitBase is a memory address and bitOffset is an immediate operand,
+  ;; then also the bitOffset can be in the range 0 to [15, 31, 63].
+
+  :parents (two-byte-opcodes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :guard-hints (("Goal" :in-theory (e/d* (add-to-*ip-is-i48p-rewrite-rule) (signed-byte-p unsigned-byte-p))))
+
+  :modr/m t
+
+  :body
+
+  ;; Note: opcode is the second byte of the two-byte opcode.
+
+  (b* (((the (integer 1 8) operand-size)
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
+
+       (log2-operand-size (case operand-size
+                            (1 0)
+                            (2 1)
+                            (4 2)
+                            (8 3)))
+
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? t)
+       ((mv flg0
+            bitBase
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         1 ;; One-byte immediate data
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       ((mv flg1 (the (unsigned-byte 8) bitOffset) x86)
+        (rme08 proc-mode temp-rip #.*cs* :x x86))
+       ((when flg1) (!!ms-fresh :rme-size-error flg1))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip 1 x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ((the (integer 0 64) bitOffset)
+        (loghead (+ log2-operand-size 3)
+                 bitOffset))
+
+       ;; Update the x86 state:
+       ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
+       (x86
+        (let* ((x86 (!flgi :cf
+                           (the (unsigned-byte 1)
+                                (logbit bitOffset bitBase))
+                           x86))
+               (x86 (!flgi-undefined :pf x86))
+               (x86 (!flgi-undefined :af x86))
+               (x86 (!flgi-undefined :sf x86))
+               (x86 (!flgi-undefined :of x86)))
+          x86))
+       ((mv flg x86)
+        (if (member reg '(5 6 7))
+            ;; If BTR/BTS/BTC, we need to clear/set/complement the tested bit
+            (x86-operand-to-reg/mem
+             proc-mode operand-size inst-ac? nil
+             (install-bit bitOffset
+                          (case reg
+                            (5 1)
+                            (6 0)
+                            (7 (b-not (logbit bitOffset bitBase))))
+                          bitBase)
+             seg-reg addr rex-byte r/m mod x86)
+          (mv nil x86)))
+       ((when flg) (!!ms-fresh :x86-operand-to-reg/mem flg))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;; ======================================================================
+;; INSTRUCTION: BSR
+;; ======================================================================
 
 ;; Helper for the bsr instruction
 (define bsr ((n natp))
@@ -612,76 +756,80 @@
                    (unsigned-byte-p n (bsr x)))))
 
 (def-inst x86-bsr
-          ;; 0F BD/r: BSR r16. r/m16
-          ;; 0F BD/r: BSR r32. r/m32
-          ;; 0F BD/r: BSR r64. r/m64
+  ;; 0F BD/r: BSR r16. r/m16
+  ;; 0F BD/r: BSR r32. r/m32
+  ;; 0F BD/r: BSR r64. r/m64
 
-          ;; Note some odd behavior: According to Intel's manual,
-          ;; if the source operand is 0, the destination operand is undefined.
-          ;; AMD on the other hand states that it will be unchanged. I use the
-          ;; latter behavior. See also the comment at the end of BSF.
+  ;; Note some odd behavior: According to Intel's manual,
+  ;; if the source operand is 0, the destination operand is undefined.
+  ;; AMD on the other hand states that it will be unchanged. I use the
+  ;; latter behavior. See also the comment at the end of BSF.
 
-          :parents (two-byte-opcodes)
+  :parents (two-byte-opcodes)
 
-          :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86))
 
-          :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
-          :modr/m t
+  :modr/m t
 
-          :body
+  :body
 
-          ;; Note: opcode is the second byte of the two-byte opcode.
+  ;; Note: opcode is the second byte of the two-byte opcode.
 
-          (b* (((the (integer 1 8) operand-size)
-                (select-operand-size
-                  proc-mode nil rex-byte nil prefixes nil nil nil x86))
+  (b* (((the (integer 1 8) operand-size)
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
-               (p2 (prefixes->seg prefixes))
-               (p4? (equal #.*addr-size-override*
-                           (prefixes->adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
 
-               (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-               (inst-ac? t)
-               ((mv flg0
-                    source
-                    (the (unsigned-byte 3) increment-RIP-by)
-                    (the (signed-byte 64) addr)
-                    x86)
-                (x86-operand-from-modr/m-and-sib-bytes
-                  proc-mode #.*gpr-access* operand-size inst-ac?
-                  nil ;; Not a memory pointer operand
-                  seg-reg p4? temp-rip rex-byte r/m mod sib
-                  0 ;; No immediate data
-                  x86))
-               ((when flg0)
-                (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+       (inst-ac? t)
+       ((mv flg0
+            source
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate data
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-               ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-                (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-               ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
-               (badlength? (check-instruction-length start-rip temp-rip 0))
-               ((when badlength?)
-                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-               ;; Update the x86 state:
-               ;; ZF affected. CF, PF, AF, SF, and OF undefined.
-               (x86 (if (equal source 0)
-                      x86
-                      (!rgfi-size operand-size (reg-index reg rex-byte *r*)
-                                  (bsr source) rex-byte x86)))
-               (x86
-                 (let* ((x86 (!flgi :zf (if (equal source 0) 1 0) x86))
-                        (x86 (!flgi-undefined :cf x86))
-                        (x86 (!flgi-undefined :pf x86))
-                        (x86 (!flgi-undefined :af x86))
-                        (x86 (!flgi-undefined :sf x86))
-                        (x86 (!flgi-undefined :of x86)))
-                   x86))
-               (x86 (write-*ip proc-mode temp-rip x86)))
-              x86))
+       ;; Update the x86 state:
+       ;; ZF affected. CF, PF, AF, SF, and OF undefined.
+       (x86 (if (equal source 0)
+                x86
+              (!rgfi-size operand-size (reg-index reg rex-byte *r*)
+                          (bsr source) rex-byte x86)))
+       (x86
+        (let* ((x86 (!flgi :zf (if (equal source 0) 1 0) x86))
+               (x86 (!flgi-undefined :cf x86))
+               (x86 (!flgi-undefined :pf x86))
+               (x86 (!flgi-undefined :af x86))
+               (x86 (!flgi-undefined :sf x86))
+               (x86 (!flgi-undefined :of x86)))
+          x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;; ======================================================================
+;; INSTRUCTION: TZCNT
+;; ======================================================================
 
 ;; Helper for the tzcnt instruction
 (define tzcnt ((bits natp)
@@ -710,72 +858,76 @@
           :rule-classes :linear))
 
 (def-inst x86-tzcnt
-          ;; F3 0F BC/r: TZCNT r16. r/m16
-          ;; F3 0F BC/r: TZCNT r32. r/m32
-          ;; F3 REX.W 0F BC/r: TZCNT r64. r/m64
+  ;; F3 0F BC/r: TZCNT r16. r/m16
+  ;; F3 0F BC/r: TZCNT r32. r/m32
+  ;; F3 REX.W 0F BC/r: TZCNT r64. r/m64
 
-          ;; Note: see also POPCNT (largely a copy of this definition)
-          :parents (two-byte-opcodes)
+  ;; Note: see also POPCNT (largely a copy of this definition)
+  :parents (two-byte-opcodes)
 
-          :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86))
 
-          :guard-hints (("Goal" :in-theory (e/d () ())))
+  :guard-hints (("Goal" :in-theory (e/d () ())))
 
-          :modr/m t
+  :modr/m t
 
-          :body
+  :body
 
-          ;; Note: opcode is the second byte of the two-byte opcode.
+  ;; Note: opcode is the second byte of the two-byte opcode.
 
-          (b* (((the (integer 1 8) operand-size)
-                (select-operand-size
-                  proc-mode nil rex-byte nil prefixes nil nil nil x86))
+  (b* (((the (integer 1 8) operand-size)
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
-               (p2 (prefixes->seg prefixes))
-               (p4? (equal #.*addr-size-override*
-                           (prefixes->adr prefixes)))
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
 
-               (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-               (inst-ac? t)
-               ((mv flg0
-                    source
-                    (the (unsigned-byte 3) increment-RIP-by)
-                    (the (signed-byte 64) addr)
-                    x86)
-                (x86-operand-from-modr/m-and-sib-bytes
-                  proc-mode #.*gpr-access* operand-size inst-ac?
-                  nil ;; Not a memory pointer operand
-                  seg-reg p4? temp-rip rex-byte r/m mod sib
-                  0 ;; No immediate data
-                  x86))
-               ((when flg0)
-                (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+       (inst-ac? t)
+       ((mv flg0
+            source
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate data
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-               ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-                (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-               ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
-               (badlength? (check-instruction-length start-rip temp-rip 0))
-               ((when badlength?)
-                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-               (result (tzcnt (ash operand-size 3) 0 source))
+       (result (tzcnt (ash operand-size 3) 0 source))
 
-               ;; Update the x86 state:
-               ;; ZF affected. CF, PF, AF, SF, and OF undefined.
-               (x86 (!rgfi-size operand-size (reg-index reg rex-byte *r*)
-                                result rex-byte x86))
-               (x86
-                 (let* ((x86 (!flgi :zf (if (equal result 0) 1 0) x86))
-                        (x86 (!flgi :cf (if (equal source 0) 1 0) x86))
-                        (x86 (!flgi-undefined :pf x86))
-                        (x86 (!flgi-undefined :af x86))
-                        (x86 (!flgi-undefined :sf x86))
-                        (x86 (!flgi-undefined :of x86)))
-                   x86))
-               (x86 (write-*ip proc-mode temp-rip x86)))
-              x86))
+       ;; Update the x86 state:
+       ;; ZF affected. CF, PF, AF, SF, and OF undefined.
+       (x86 (!rgfi-size operand-size (reg-index reg rex-byte *r*)
+                        result rex-byte x86))
+       (x86
+        (let* ((x86 (!flgi :zf (if (equal result 0) 1 0) x86))
+               (x86 (!flgi :cf (if (equal source 0) 1 0) x86))
+               (x86 (!flgi-undefined :pf x86))
+               (x86 (!flgi-undefined :af x86))
+               (x86 (!flgi-undefined :sf x86))
+               (x86 (!flgi-undefined :of x86)))
+          x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;; ======================================================================
+;; INSTRUCTION: BSWAP
+;; ======================================================================
 
 (defmacro bswap (n src)
   (if (equal n 0)
@@ -822,7 +974,8 @@
     x86))
 
 ;; ======================================================================
-
+;; INSTRUCTION: BLSI
+;; ======================================================================
 
 (local (in-theory (disable bitops::ash-1-removal
                            signed-byte-p
@@ -840,7 +993,6 @@
                   (<= (* 8 operand-size) w))
              (unsigned-byte-p w (blsi operand-size src-val)))
     :hints(("Goal" :in-theory (enable bitops::ash-is-expt-*-x)))))
-
 
 (def-inst x86-blsi
   ;; VEX.LZ.0F38.W0 F3 /3:  BLSI r32, r/m32
@@ -907,9 +1059,9 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-
 ;; ======================================================================
-
+;; INSTRUCTION: POPCNT
+;; ======================================================================
 
 (local (defthm logcount-bound-when-unsigned-byte-p
          (implies (unsigned-byte-p n x)

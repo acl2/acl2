@@ -1,7 +1,7 @@
-; Utilities supporting the lifter(s)
+; Utilities supporting the JVM lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,6 +15,7 @@
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "../make-axe-rules") ; for make-axe-rules-from-theorem
 (include-book "../priorities")
+(include-book "../dags")
 ;(include-book "../jvm/heap0")
 (include-book "kestrel/jvm/jvm" :dir :system) ;for JVM::CALL-STACK-SIZE
 (include-book "kestrel/jvm/method-designator-strings" :dir :system)
@@ -201,7 +202,7 @@
 
 ; A dummy function that has special meaning when used in invariants (it gets
 ; replaced by a term representing the field of the given object with the given
-; class-name-field-name pair in the headp of the over-arching state).
+; class-name-field-name pair in the heap of the over-arching state).
 (defstub field (address pair) t)
 
 ;; ; A dummy function that has special meaning when used in invariants (it gets
@@ -437,7 +438,7 @@
                             (mv (erp-nil) (first param-names))
                           (if local-variable-table
                               (let ((name-and-type
-                                     (lookup-in-local-variable-table slot 0 ;PC 0 means the start of the method
+                                     (jvm::lookup-in-local-variable-table slot 0 ;PC 0 means the start of the method
                                                                      local-variable-table)))
                                 (if (not name-and-type)
                                     (prog2$ (er hard? 'make-param-slot-to-name-alist-aux "No binding found in the local var table for param ~x0." slot)
@@ -457,7 +458,7 @@
                                                      param-names
                                                    (rest param-names)))))
       (if (member-eq name (strip-cdrs res))
-          ;; Can happen if two param names differe only in case:
+          ;; Can happen if two param names differ only in case:
           (er hard? 'make-param-slot-to-name-alist-aux "Parameter name clash on ~x0." name)
         (acons slot name res)))))
 
@@ -659,6 +660,7 @@
                                                      param-slot-to-name-alist array-length-alist th state-var)))))
 
 
+;only used by compositional lifters
 (defun make-poised-assumptions (staticp method-class method-name method-descriptor parameter-types state-var)
   (let* ((specialp (equal "<init>" method-name) ;;todo: what about super calls that use invokespecial? always make 2 theorems, one for invokespecial and one for invokevirtual
                    )
@@ -675,7 +677,12 @@
                            ;; what's the normal form here?
                            (jvm::method-program (jvm::method-info (jvm::thread-top-frame (th) ,state-var))))
              '(,invoke-opcode
-               ,method-class ,method-name ,method-descriptor ,parameter-types ,@interface-args)))))
+               ,method-class ,method-name ,method-descriptor ,parameter-types ,@interface-args))
+      ,@(if (not staticp)
+            `((addressp (jvm::top-operand ,(jvm::pop-items-off-stack  ; todo: test this with a non-empty list of params!  may need to unroll this (now or when assumptions are simplified)
+                                            parameter-types
+                                            '(jvm::stack (jvm::thread-top-frame (th) s0))))))
+          nil))))
 
 (defforall-simple method-designator-stringp)
 (verify-guards all-method-designator-stringp)
@@ -714,7 +721,7 @@
                               (jvm::jvm-statep s))
                   :verify-guards nil))
   (let ((jvm::inst (jvm::current-inst jvm::th s)))
-    (jvm::do-inst (jvm::op-code jvm::inst)
+    (jvm::do-inst (jvm::instruction-opcode jvm::inst)
                   jvm::inst jvm::th s)))
 
 (defthmd step-always-open-correct
@@ -731,3 +738,43 @@
     jvm::no-locked-object
     jvm::empty-operand-stack
     ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Works for terms or dag-exprs
+(defun elide-make-frame-args (args)
+  (declare (xargs :guard (true-listp args)))
+  (list (first args)
+        (second args)
+        (third args)
+        (fourth args)
+        '':method-info-elided ;; (fifth args)
+        (sixth args)))
+
+(defund print-dag-with-elided-method-info-aux (dag first-elementp indent)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (booleanp first-elementp)
+                              (stringp indent))))
+  (if (endp dag)
+      nil
+    (let* ((entry (first dag))
+           (entry (let ((expr (cdr entry)))
+                    (if (and (consp expr)
+                             (eq 'jvm::make-frame (ffn-symb expr)))
+                        (cons (car entry) ; the nodenum
+                              (cons 'jvm::make-frame (elide-make-frame-args (fargs expr))))
+                      entry))))
+      (progn$ (if first-elementp nil (cw "~% ~s0" indent)) ; indents one space more than the open paren
+              (cw "~F0" entry)
+              (print-dag-with-elided-method-info-aux (rest dag) nil indent)))))
+
+;; Prints the entire dag, including any irrelevant nodes, but elides large method-infos in make-frame calls.
+;; TODO: Generalize to use the elision-spec machinery.
+;; Indent is usually a string consisting of only spaces.
+(defund print-dag-with-elided-method-info (dag indent)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (stringp indent))))
+  (progn$ (cw "~s0(" indent)
+          (print-dag-with-elided-method-info-aux dag t indent)
+          (cw ")") ; recently removed a newline here
+          ))

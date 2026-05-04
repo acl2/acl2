@@ -1,7 +1,7 @@
 ; Support for the Axe Prover tuple elimination
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -97,8 +97,7 @@
                (subsetp-equal y z))
            (subsetp-equal (intersection-equal x y) z)))
 
-;rename
-(defthm acl2-number-of-lookup-equal-when-all-natp-of-strip-cdrs
+(defthm acl2-numberp-of-lookup-equal-when-all-natp-of-strip-cdrs
   (implies (all-natp (strip-cdrs acc))
            (iff (acl2-numberp (lookup-equal var acc))
                 (member-equal var (strip-cars acc))))
@@ -245,7 +244,7 @@
            (max-literal-nodenum (maxelem literal-nodenums))
            )
       (if (nodenum-only-appears-in literal-nodenums dag-array dag-len nodenum '(nth true-listp len)
-                                   (make-empty-array 'done-array (+ 1 max-literal-nodenum))
+                                   (new-array1 'done-array (+ 1 max-literal-nodenum))
                                    ) ;fffixme make sure the nths are always of constants..
           var
         (var-okay-to-elim (rest vars) dag-array dag-len dag-variable-alist literal-nodenums)))))

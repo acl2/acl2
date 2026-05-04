@@ -19,6 +19,7 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -38,40 +39,6 @@
     " to return an error if the concatenation is not well-defined."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define concatenate-idents ((ident1 identp) (ident2 identp))
-  :returns (ident identp)
-  :short "Concatenate two identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is always well-defined,
-     because the characters that can start an identifer
-     are a subset of the characters that can continue it:
-     thus, the second identifier forms
-     an acceptable extension of the first one.")
-   (xdoc::p
-    "Currently our preprocessor produces identifiers
-     that consist of (wrapped) ACL2 strings.
-     So we unwrap, concatenate, and re-wrap.")
-   (xdoc::p
-    "The type @(tsee ident) does not enforce ACL2 strings,
-     so we need to double-check this here,
-     and we throw a hard error if the check fails (which should not happen).
-     We should strengthen the guard at some point."))
-  (b* ((string1 (ident->unwrap ident1))
-       (string2 (ident->unwrap ident2))
-       ((unless (stringp string1))
-        (raise "Internal error: non-string identifier ~x0." string1)
-        (irr-ident))
-       ((unless (stringp string2))
-        (raise "Internal error: non-string identifier ~x0." string2)
-        (irr-ident))
-       (string (str::cat string1 string2)))
-    (ident string))
-  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,14 +67,19 @@
      decomposing it and re-adding its components to the first number."))
   (pnumber-case
    number2
-   :digit (make-pnumber-number-digit :number number1 :digit number2.digit)
+   :digit (make-pnumber-number-digit :number number1
+                                     :squotep nil
+                                     :digit number2.digit)
    :dot-digit (make-pnumber-number-digit :number (pnumber-number-dot number1)
+                                         :squotep nil
                                          :digit number2.digit)
    :number-digit (make-pnumber-number-digit
                   :number (concatenate-pnumbers number1 number2.number)
+                  :squotep nil
                   :digit number2.digit)
    :number-nondigit (make-pnumber-number-nondigit
                      :number (concatenate-pnumbers number1 number2.number)
+                     :squotep nil
                      :nondigit number2.nondigit)
    :number-locase-e-sign (make-pnumber-number-locase-e-sign
                           :number (concatenate-pnumbers number1 number2.number)
@@ -130,7 +102,7 @@
 
 (define concatenate-punctuators ((punct1 stringp)
                                  (punct2 stringp)
-                                 (version c::versionp))
+                                 (dialect c::dialectp))
   :returns (mv erp (punct stringp))
   :short "Concatenate two punctuators."
   :long
@@ -143,11 +115,11 @@
      we concanate the strings and see whether the result is a punctuator,
      returning an error if it is not.")
    (xdoc::p
-    "This function is parameterized over the C version,
+    "This function is parameterized over the C dialect,
      which affects the valid punctuators."))
   (b* (((reterr) "")
        (punct (str::cat punct1 punct2)))
-    (if (member-equal punct (c::punctuators-for version))
+    (if (member-equal punct (c::punctuators-for dialect))
         (retok punct)
       (reterr (msg "The concatenation of the punctuators ~s0 and ~s1 ~
                     yields the non-punctuator ~s2."
@@ -155,8 +127,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define concatenate-ident-pnumber ((ident identp) (number pnumberp))
-  :returns (mv erp (ident1 identp))
+(define concatenate-ident-pnumber ((ident stringp) (number pnumberp))
+  :returns (mv erp (ident1 stringp))
   :short "Concatenate an identifier and a preprocessing number,
           in that order."
   :long
@@ -174,28 +146,29 @@
      returning an error if any of those characters
      would be dots or signs.
      The characters are accumulated in reverse,
-     which fits with the recursion on the preprocessing number."))
-  (b* (((reterr) (irr-ident))
-       (ident-string (ident->unwrap ident))
-       ((unless (stringp ident-string))
-        (raise "Internal error: non-string identifier ~x0." ident-string)
-        (reterr t))
+     which fits with the recursion on the preprocessing number.
+     The identifier is passed to the auxiliary function
+     just for the purpose of error messages.")
+   (xdoc::p
+    "Identifiers are represented as strings in the preprocessor;
+     see @(tsee plexeme)."))
+  (b* (((reterr) "")
        ((erp rev-number-chars) (concatenate-ident-pnumber-aux ident number))
        (number-string (str::implode (rev rev-number-chars))))
-    (retok (ident (str::cat ident-string number-string))))
+    (retok (str::cat ident number-string)))
   :no-function nil
 
   :prepwork
-  ((define concatenate-ident-pnumber-aux ((ident identp) (number pnumberp))
+  ((define concatenate-ident-pnumber-aux ((ident stringp) (number pnumberp))
      :returns (mv erp (rev-chars character-listp))
      :parents nil
      (b* (((reterr) nil))
        (pnumber-case
         number
         :digit (retok (list number.digit))
-        :dot-digit (reterr (msg "Cannot concatenate an identiifer ~x0 ~
+        :dot-digit (reterr (msg "Cannot concatenate an identifier ~x0 ~
                                  and a preprocessing number with dots ~x1."
-                                (ident-fix ident) (pnumber-fix number)))
+                                (str-fix ident) (pnumber-fix number)))
         :number-digit (b* (((erp rev-chars)
                             (concatenate-ident-pnumber-aux ident
                                                            number.number)))
@@ -206,28 +179,28 @@
                            (retok (cons number.nondigit rev-chars)))
         :number-locase-e-sign (reterr
                                (msg "Cannot concatenate an identifier ~x0 ~
-                                     and a prrprocessing number with signs ~x1."
-                                    (ident-fix ident) (pnumber-fix number)))
+                                     and a preprocessing number with signs ~x1."
+                                    (str-fix ident) (pnumber-fix number)))
         :number-upcase-e-sign (reterr
                                (msg "Cannot concatenate an identifier ~x0 ~
-                                     and a prrprocessing number with signs ~x1."
-                                    (ident-fix ident) (pnumber-fix number)))
+                                     and a preprocessing number with signs ~x1."
+                                    (str-fix ident) (pnumber-fix number)))
         :number-locase-p-sign (reterr
                                (msg "Cannot concatenate an identifier ~x0 ~
-                                     and a prrprocessing number with signs ~x1."
-                                    (ident-fix ident) (pnumber-fix number)))
+                                     and a preprocessing number with signs ~x1."
+                                    (str-fix ident) (pnumber-fix number)))
         :number-upcase-p-sign (reterr
                                (msg "Cannot concatenate an identifier ~x0 ~
-                                     and a prrprocessing number with signs ~x1."
-                                    (ident-fix ident) (pnumber-fix number)))
-        :number-dot (reterr (msg "Cannot concatenate an identiifer ~x0 ~
+                                     and a preprocessing number with signs ~x1."
+                                    (str-fix ident) (pnumber-fix number)))
+        :number-dot (reterr (msg "Cannot concatenate an identifier ~x0 ~
                                   and a preprocessing number with dots ~x1."
-                                 (ident-fix ident) (pnumber-fix number)))))
+                                 (str-fix ident) (pnumber-fix number)))))
      :measure (pnumber-count number))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define concatenate-pnumber-ident ((number pnumberp) (ident identp))
+(define concatenate-pnumber-ident ((number pnumberp) (ident stringp))
   :returns (number1 pnumberp)
   :short "Concatenate a preprocessing number and an identifier,
           in that order."
@@ -235,19 +208,18 @@
   (xdoc::topstring
    (xdoc::p
     "This is always well-defined,
-     because all the characters that can appear in identifers
+     because all the characters that can appear in identifiers
      can also appear, in a non-starting position, in preprocessing numbers.
      The result is a preprocessing number.")
    (xdoc::p
     "The auxiliary recursive function adds the identifier's characters
      to the preprocessing number in reverse,
      which fits better with the recursive structure of
-     the ASTs for preprocessing numbers."))
-  (b* ((string (ident->unwrap ident))
-       ((unless (stringp string))
-        (raise "Internal error: non-string identifier ~x0." string)
-        (irr-pnumber))
-       (chars (str::explode string))
+     the ASTs for preprocessing numbers.")
+   (xdoc::p
+    "Identifiers are represented as strings in the preprocessor;
+     see @(tsee plexeme)."))
+  (b* ((chars (str::explode ident))
        (rev-chars (rev chars)))
     (concatenate-pnumber-ident-aux number rev-chars))
   :no-function nil
@@ -261,9 +233,15 @@
           (char (char-fix (car rev-chars)))
           (number (concatenate-pnumber-ident-aux number (cdr rev-chars))))
        (cond ((str::letter/uscore-char-p char)
-              (make-pnumber-number-nondigit :number number :nondigit char))
+              (make-pnumber-number-nondigit
+               :number number
+               :squotep nil
+               :nondigit char))
              ((str::dec-digit-char-p char)
-              (make-pnumber-number-digit :number number :digit char))
+              (make-pnumber-number-digit
+               :number number
+               :squotep nil
+               :digit char))
              (t (prog2$
                  (raise "Internal error: character ~x0 in identifier." char)
                  (irr-pnumber)))))
@@ -274,7 +252,7 @@
 
 (define concatenate-tokens ((token1 plexemep)
                             (token2 plexemep)
-                            (version c::versionp))
+                            (dialect c::dialectp))
   :guard (and (plexeme-tokenp token1)
               (plexeme-tokenp token2))
   :returns (mv erp (token plexemep))
@@ -288,19 +266,29 @@
      two punctuators (under conditions),
      an identifier with a preprocessing number (under conditions),
      and a preprocessing number with an identifier.
-     All other combinations do not yield tokens."))
+     All other combinations do not yield tokens.")
+   (xdoc::p
+    "When concatenating two identifiers,
+     we union the provenance lists,
+     because the resulting identifier comes from both identifiers.
+     When concatenating an identifier with a number,
+     the resulting identifier has the same provenance as
+     the identifier to which the number is added."))
   (b* (((reterr) (irr-plexeme)))
     (plexeme-case
      token1
      :ident (plexeme-case
              token2
-             :ident (retok (plexeme-ident
-                            (concatenate-idents token1.ident
-                                                token2.ident)))
+             :ident (retok (make-plexeme-ident
+                            :ident (str::cat token1.ident token2.ident)
+                            :provenance (append token1.provenance
+                                                token2.provenance)))
              :number (b* (((erp ident)
                            (concatenate-ident-pnumber token1.ident
                                                       token2.number)))
-                       (retok (plexeme-ident ident)))
+                       (retok (make-plexeme-ident
+                               :ident ident
+                               :provenance token1.provenance)))
              :otherwise (reterr (msg "Cannot concatenate ~x0 and ~x1."
                                      (plexeme-fix token1)
                                      (plexeme-fix token2))))
@@ -321,7 +309,7 @@
                                     (concatenate-punctuators
                                      token1.punctuator
                                      token2.punctuator
-                                     version)))
+                                     dialect)))
                                 (retok (plexeme-punctuator punctuator)))
                   :otherwise (reterr (msg "Cannot concatenate ~x0 and ~x1."
                                           (plexeme-fix token1)
@@ -341,7 +329,7 @@
 
 (define concatenate-tokens/placemarkers ((token1? plexeme-optionp)
                                          (token2? plexeme-optionp)
-                                         (version c::versionp))
+                                         (dialect c::dialectp))
   :guard (and (or (not token1?) (plexeme-tokenp token1?))
               (or (not token2?) (plexeme-tokenp token2?)))
   :returns (mv erp (token? plexeme-optionp))
@@ -364,7 +352,7 @@
      token1?
      :some (plexeme-option-case
             token2?
-            :some (concatenate-tokens token1?.val token2?.val version)
+            :some (concatenate-tokens token1?.val token2?.val dialect)
             :none (retok (plexeme-option-fix token1?)))
      :none (retok (plexeme-option-fix token2?))))
   :guard-hints (("Goal" :in-theory (enable plexeme-option-some->val)))

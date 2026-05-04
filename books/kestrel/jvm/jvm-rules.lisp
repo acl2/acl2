@@ -1,7 +1,7 @@
 ; Various rules about the jvm model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,6 +31,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/memberp2" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ;for USB-PLUS-FROM-BOUNDS
 
 ;move
@@ -338,7 +339,7 @@
                 )
            (NOT (EQUAL ad (NEW-AD (RKEYS heap))))))
 
-(in-theory (disable set-field-of-get-field-same-eric-2)) ;todo: enabled just below
+(in-theory (disable set-field-of-get-field-same-eric-2)) ;todo: enabled just below, and then re-enabled below that!
 
 
 ;i don't know why the cars are getting introduced...
@@ -1007,6 +1008,7 @@
                                ))))
 
 
+;rename
 ;better than the other rule...
 (defthm length-field-when-array-ref-listp
   (implies (and (ARRAY-REF-LISTP ads (LIST NUMCOLS) type HEAP)
@@ -1018,7 +1020,7 @@
                                (LIST NUMCOLS)
                                TYPE HEAP)
            :in-theory (enable ;array-ref-listp
-                       ))))
+                       array-length))))
 
 ;todo: what is this all about?
 ;gen the type
@@ -1263,7 +1265,8 @@
   (implies (and (<= 2147483648 k)
                 (array-refp ref (cons dim nil) type heap))
            (< (array-length ref heap) k))
-  :hints (("Goal" :expand ((array-refp ref (cons dim nil) type heap)))))
+  :hints (("Goal" :expand ((array-refp ref (cons dim nil) type heap))
+                  :in-theory (enable array-length))))
 
 ;bozo whether we want this seems to depend on whether we are in the conclusion
 ;could add linear rules instead..
@@ -1281,7 +1284,7 @@
            (equal (< (array-length ref heap) 2147483647)
                   (not (equal (array-length ref heap) 2147483647))))
   :hints (("Goal" :expand ((array-refp ref (cons dim nil) type heap))
-           :in-theory (enable ;array-refp
+           :in-theory (enable array-length ;array-refp
                        ))))
 
 ;bozo flesh out this set, or don't explicitly store the length?
@@ -1291,7 +1294,7 @@
                 (array-refp ref (cons dim nil) type heap))
            (not (< k (array-length ref heap))))
   :hints (("Goal" :expand (array-refp ref (cons dim nil) type heap)
-           :in-theory (enable ;array-refp
+           :in-theory (enable array-length ;array-refp
                        ))))
 
 (defthm len-of-get-fields-contents-impossible-value
@@ -1381,14 +1384,14 @@
   (implies (array-refp ref (cons dim dims) type heap)
            (signed-byte-p 32 (+ -1 dim)))
   :hints (("Goal" :expand (array-refp ref (cons dim dims) type heap)
-           :in-theory (enable ;array-refp
+           :in-theory (enable array-length ;array-refp
                        ))))
 
 (defthm sbp-of-arraylen-minus-1
   (implies (array-refp ref (cons dim dims) type heap)
            (signed-byte-p 32 (+ -1 (array-length ref heap))))
   :hints (("Goal" :expand (array-refp ref (cons dim dims) type heap)
-           :in-theory (enable ;array-refp
+           :in-theory (enable array-length ;array-refp
                        ))))
 
 (defthm array-refp-fw-to-len
@@ -1401,7 +1404,8 @@
   (implies (array-refp ref (list dim) type heap)
            (equal dim (array-length ref heap)))
   :rule-classes (:forward-chaining)
-  :hints (("Goal" :expand ((array-refp ref (list dim) type heap)))))
+  :hints (("Goal" :expand ((array-refp ref (list dim) type heap))
+                  :in-theory (enable array-length))))
 
 
 ;; ;BOZO only for bytes!
@@ -1612,7 +1616,7 @@
                                   HEAP))
                   (cadr dims)))
   :hints (("Goal" :use (:instance get-dim2-when-array-refp (dim1 (car dims)) (dim2 (cadr dims)))
-           :in-theory (disable get-dim2-when-array-refp))))
+           :in-theory (e/d (array-length) (get-dim2-when-array-refp)))))
 
 (defthm array-row-of-set-field-irrel2
   (implies (not (equal pair (array-contents-pair)))

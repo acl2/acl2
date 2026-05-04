@@ -152,7 +152,7 @@
      we implicitly check it when the generated theorem is submitted.")
    (xdoc::p
     "The bindings are reversed before being put into the formula,
-     because they are @(tsee cons)ed as go through the @(':let')s."))
+     because they are @(tsee cons)ed as we go through the @(':let')s."))
   (b* (((unless (tuplep 1 assume-args))
         (er-soft+ ctx t (list nil nil)
                   "Malformed :ASSUME arguments ~x0." assume-args))
@@ -209,7 +209,7 @@
     "A @(':let') command takes exactly one argument,
      which must be a list of a variable symbol and a term.
      The variable symbol must not be already bound.
-     We do no check he term here:
+     We do not check the term here:
      we implicitly check it when the bound variable is used."))
   (b* (((unless (tuplep 1 let-args))
         (er-soft+ ctx t nil
@@ -269,7 +269,7 @@
   (xdoc::topstring
    (xdoc::p
     "The bindings are reversed before being put into the formula,
-     because they are @(tsee cons)ed as go through the @(':let')s."))
+     because they are @(tsee cons)ed as we go through the @(':let')s."))
   (b* (((mv okp derive-id derive-fact derive-from derive-hints-etc)
         (case-match derive-args
           (((id fact)) (mv t id fact nil nil))

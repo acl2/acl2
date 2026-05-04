@@ -1,7 +1,7 @@
 ; A library for reasoning about ACL2 arrays (aref1, aset1, etc.)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -24,7 +24,7 @@
 (include-book "compress1") ; make local?
 (include-book "compress11") ; make local?
 (include-book "maximum-length") ; make local?
-(include-book "make-empty-array")
+(include-book "new-array1") ; drop?
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -217,7 +217,7 @@
                 ;; (< index1 (alen1 array-name array))
                 (natp index2)
                 (< index2 (alen1 array-name array)))
-           (equal (aref1 array-name (aset1 array-name array index1 val) index2)
+           (equal (aref1 array-name (aset1 array-name2 array index1 val) index2)
                   (aref1 array-name array index2)))
   :hints (("Goal" :in-theory (e/d (aref1
                                    array1p-rewrite
@@ -238,7 +238,7 @@
                 (< index1 (alen1 array-name array))
                 (natp index2)
                 (< index2 (alen1 array-name array)))
-           (equal (aref1 array-name (aset1 array-name array index1 val) index2)
+           (equal (aref1 array-name (aset1 array-name2 array index1 val) index2)
                   (if (equal index1 index2)
                       val
                     (aref1 array-name array index2)))))

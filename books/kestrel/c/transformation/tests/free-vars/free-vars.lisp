@@ -30,26 +30,36 @@
                (mv nil (c$::irr-fundef))))
    :otherwise (mv nil (c$::irr-fundef))))
 
-(define ext-declon-list-find-fundef
+(define trans-item-find-fundef
   ((ident identp)
-   (extdecls ext-declon-listp))
+   (item trans-itemp))
+  :returns (mv (found booleanp)
+               (fundef fundefp))
+  (trans-item-case
+   item
+   :declon (ext-declon-find-fundef ident item.declon)
+   :otherwise (mv nil (c$::irr-fundef))))
+
+(define trans-item-list-find-fundef
+  ((ident identp)
+   (items trans-item-listp))
   :returns (mv (erp booleanp)
                (fundef fundefp))
   (b* (((reterr) (c$::irr-fundef))
-       ((when (endp extdecls))
+       ((when (endp items))
         (reterr t))
-       ((mv found fundef) (ext-declon-find-fundef ident (first extdecls)))
+       ((mv found fundef) (trans-item-find-fundef ident (first items)))
        ((when found)
         (retok fundef)))
-    (ext-declon-list-find-fundef ident (rest extdecls))))
+    (trans-item-list-find-fundef ident (rest items))))
 
-(define transunit-find-fundef
+(define trans-unit-find-fundef
   ((ident identp)
-   (transunit transunitp))
+   (trans-unit trans-unitp))
   :returns (mv (erp booleanp)
                (fundef fundefp))
-  (b* (((transunit transunit) transunit))
-    (ext-declon-list-find-fundef ident transunit.declons)))
+  (b* (((trans-unit trans-unit) trans-unit))
+    (trans-item-list-find-fundef ident trans-unit.items)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,12 +73,15 @@
 
 (defmacro test-free-vars (input &key fun vars)
   `(assert-event
-    (b* (((mv erp1 ast) (c$::parse-file (filepath "test")
+    (b* ((dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+         (ienv (c$::change-ienv (c$::ienv-default) :dialect dialect))
+         ((mv erp1 ast) (c$::parse-file (filepath "test")
                                         (acl2::string=>nats ,input)
-                                        (c::version-c17+gcc)
+                                        dialect
                                         t))
-         ((mv erp2 ast) (c$::dimb-transunit ast t))
-         ((mv erp3 fundef) (transunit-find-fundef (c$::ident ,fun) ast))
+         (dstate (c$::init-dstate "" ienv))
+         ((mv erp2 ast & &) (c$::dimb-trans-unit ast dstate nil nil nil 1000))
+         ((mv erp3 fundef) (trans-unit-find-fundef (c$::ident ,fun) ast))
          (free-vars (free-vars-fundef fundef nil))
          (expected (mergesort (ident-map (list ,@vars)))))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))

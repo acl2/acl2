@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -307,7 +307,7 @@ with ordinary ACL2 builds on the same set of books."))))
    (t
 
 ; The absolute value of most-positive-fixnum or of most-negative-fixnum is too
-; sall for ACL2.
+; small for ACL2.
 
     (error "This Lisp implementation is not a suitable host for ACL2:
 the values of most-negative-fixnum and most-positive-fixnum are
@@ -440,7 +440,7 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
       (x arguments)
       (setq result (concatenate 'string result " " x)))
     #-unix
-    (excl::run-shell-commad result)
+    (excl::run-shell-command result)
     #+unix
 
 ; In Allegro CL in Unix, we can avoid spawning a new shell by calling
@@ -929,9 +929,8 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
 ;   (1) Replace the value below by t when making a release, then to nil after a
 ;       release.
 
-;   (2) More generally, see UT CS file
-;       /projects/acl2/devel-misc/release.cmds
-;       for release instructions.
+;   (2) More generally, see the release instructions stored in the repository:
+;       https://github.com/acl2/maintenance
 
   nil)
 
@@ -1683,7 +1682,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; We pass options "-init -" and "-siteinit -" to inhibit loading init and patch
 ; files because we assume that whatever such files were to be loaded, were in
 ; fact loaded at the time the original Lispworks executable was saved.  Of
-; course, individual users who doesn't like this decision and know better could
+; course, individual users who don't like this decision and know better could
 ; always edit this script file, i.e., lw-exec-file, in the same spirit as
 ; changing the underlying Lisp implementation before building ACL2 (again,
 ; presumably based on knowledge of the host Lisp implementation).

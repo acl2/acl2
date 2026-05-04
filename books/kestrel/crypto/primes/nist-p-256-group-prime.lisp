@@ -13,7 +13,7 @@
 ;; See also the file nist-p-256-base-prime.lisp
 
 ;; References for NIST P-256 / secp256r1:
-;; * Standards for Efficient Cryptograpy
+;; * Standards for Efficient Cryptography
 ;;   SEC 2: Recommended Elliptic Curve Domain Parameters
 ;;   https://www.secg.org/sec2-v2.pdf (Section 2.4.2, p.9)
 ;; * Standard curve database

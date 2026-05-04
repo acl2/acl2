@@ -1,6 +1,6 @@
 ; Proofs about serialize-lambdas-in-term
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -222,7 +222,6 @@
 (defthm no-duplicate-lambda-formals-in-termsp-of-strip-cdrs-of-serialize-bindings
   (implies (and (no-duplicate-lambda-formals-in-termsp (strip-cdrs bindings))
                 (pseudo-term-listp (strip-cdrs bindings))
-                (no-duplicate-lambda-formals-in-termsp (strip-cdrs bindings))
                 (symbol-alistp bindings))
            (no-duplicate-lambda-formals-in-termsp (strip-cdrs (serialize-bindings bindings names-to-avoid))))
   :hints (("Goal" :in-theory (enable serialize-bindings))))

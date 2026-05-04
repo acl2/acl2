@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -29,7 +29,7 @@
 
 (in-package "ACL2")
 
-; For readability we use #+sb-thread" instead of #+(and sbcl sbl-thread).  We
+; For readability we use #+sb-thread instead of #+(and sbcl sb-thread).  We
 ; therefore make the following check to ensure that these two readtime
 ; conditionals are equivalent.
 
@@ -94,7 +94,7 @@
 ; achieves two things: (1) The code is there if we decide we want to use it
 ; again later (maybe after reading on the SBCL email lists that a bug with
 ; these atomic operations was fixed) and (2) We will have an on-going record of
-; the code that causes us to observe this bug (note that ACL2  4.2 also
+; the code that causes us to observe this bug (note that ACL2_4.2 also
 ; contains the implementation that uses atomic operations).  Maybe someone will
 ; be able to tell us what we are doing wrong.
 
@@ -224,7 +224,7 @@
 
   (null x))
 
-; Make-lock and with-lock were originally defined in this file, but has been
+; Make-lock and with-lock were originally defined in this file, but have been
 ; moved to acl2-fns.lisp to help support multi-threading in memoize-raw.lisp.
 
 (defmacro reset-lock (bound-symbol)
@@ -1075,7 +1075,7 @@
 
 ; We could increase the following coefficient from 4 and further guarantee that
 ; consumers have parallelism work to process, but this would come at the
-; expense of backlogging the *work-queue".  We prefer simply to avoid the
+; expense of backlogging the *work-queue*.  We prefer simply to avoid the
 ; otherwise parallelized computations in favor of their serial equivalents.
 
   (* 4 *core-count*))

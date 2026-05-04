@@ -101,7 +101,8 @@
     (implies (and (urw-ev-meta-extract-global-facts)
                   (equal wrld (w state)))
              (urw-ev-good-rewrite-rulesp (fgetprop fn 'acl2::lemmas nil wrld)))
-    :hints(("Goal" :in-theory (e/d (urw-ev-good-rewrite-rulesp-by-badguy)
+    :hints(("Goal" :in-theory (e/d (urw-ev-good-rewrite-rulesp-by-badguy
+                                    urw-ev-theoremp)
                                    (urw-ev-good-rewrite-rulesp
                                     urw-ev-good-rewrite-rulesp-badguy
                                     acl2::rewrite-rule-term
@@ -251,10 +252,11 @@
                   (urw-ev-theoremp (acl2::rewrite-rule-term rule)))
              (equal (iff-p-fix iff-p (urw-ev ans (urw-ev-alist alist a)))
                     (iff-p-fix iff-p (urw-ev (pseudo-term-fncall fn args) a))))
-    :hints(("Goal" :in-theory (enable urw-ev-of-fncall-args
+    :hints(("Goal" :in-theory (e/d (urw-ev-of-fncall-args
                                       rewrite-rule-term-alt-def
                                       iff-p-fix)
-            :use ((:instance urw-ev-falsify
+                                   (urw-ev-theoremp-implies))
+            :use ((:instance urw-ev-theoremp-implies
                    (x (acl2::rewrite-rule-term rule))
                    (a (urw-ev-alist
                        (mv-nth 1 (acl2::simple-one-way-unify-lst

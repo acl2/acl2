@@ -1,7 +1,7 @@
 ; Tools for processing the alists that represent parsed mach-o files.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,7 +20,7 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
-(include-book "kestrel/memory/memory-regions" :dir :system)
+(include-book "memory-regions")
 (include-book "kestrel/lists-light/repeat-def" :dir :system)
 (include-book "parse-mach-o-file") ; todo: reduce?
 (local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
@@ -287,8 +287,7 @@
 
 (local
   (defthm natp-of-get-section-number-mach-o-aux-iff
-    (implies (and (parsed-mach-o-p parsed-mach-o)
-                  (natp curr))
+    (implies (natp curr)
              (iff (natp (get-section-number-mach-o-aux segname sectname sections curr))
                   (get-section-number-mach-o-aux segname sectname sections curr)))
     :hints (("Goal" :in-theory (enable get-section-number-mach-o-aux)))))
@@ -304,11 +303,10 @@
   (get-section-number-mach-o-aux segname sectname sections 1))
 
 (local
-  (defthm natp-of-get-section-number-mach-o-iff
-    (implies (parsed-mach-o-p parsed-mach-o)
-             (iff (natp (get-section-number-mach-o segname sectname sections))
-                  (get-section-number-mach-o segname sectname sections)))
-    :hints (("Goal" :in-theory (enable get-section-number-mach-o)))))
+ (defthm natp-of-get-section-number-mach-o-iff
+   (iff (natp (get-section-number-mach-o segname sectname sections))
+        (get-section-number-mach-o segname sectname sections))
+   :hints (("Goal" :in-theory (enable get-section-number-mach-o)))))
 
 ;; Get the number of the __TEXT,__text section in a parsed Mach-O
 ;; file.  Section numbering spans all segments in order of their load

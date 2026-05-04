@@ -195,8 +195,7 @@
 (defthm unsigned-byte-p-of-logtail-strong
   (equal (unsigned-byte-p n (logtail pos i))
          (and (natp n)
-              (unsigned-byte-p (+ n (nfix pos)) (ifix i))))
-  :hints (("Goal" :cases ((integerp x)))))
+              (unsigned-byte-p (+ n (nfix pos)) (ifix i)))))
 
 (defthm logtail-shift-gen2
   (implies (and (<= size n) ;this case

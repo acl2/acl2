@@ -1,7 +1,7 @@
 ; Utilities for testing prove-with-stp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -62,12 +62,12 @@
       (if (eq *valid* result)
           (prog2$ (er hard? 'must-not-prove-with-stp "Test ~x0 was supposed to fail" name)
                   (mv (erp-t) :fail state))
-        (prog2$ (cw "TEST ~x0 PASSED" name)
+        (prog2$ (cw "TEST ~x0 PASSED.~%" name)
                 (mv (erp-nil) '(progn) state))))))
 
 ;; Ensures that STP cannot prove the TERM.
 ;; Returns (mv erp result state) where if things go well, RESULT is an empty progn.
-;; We could perhaps use must-fail, but this more informative messages.
+;; We could perhaps use must-fail, but this gives more informative messages.
 (defmacro must-not-prove-with-stp (name term
                                         &key
                                         (counterexample 't)

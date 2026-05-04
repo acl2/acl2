@@ -1,7 +1,7 @@
 ; Mixed rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,8 +45,6 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
-
-(in-theory (disable take)) ; drop?
 
 ;; todo: consider putting back the stuff with finalcdr
 
@@ -723,7 +721,7 @@
 ;;               (EQUAL Y (NTHCDR (LEN X) Z))))
 ;;   :hints (("Goal" :in-theory (enable LIST::EQUAL-APPEND-REDUCTION!))))
 
-(in-theory (disable len)) ;new
+;(in-theory (disable len)) ;new
 
 ;add to lists
 (defthm len-of-update-nth-last-val
@@ -983,11 +981,6 @@
                 (natp n))
            (equal (len (update-nth n v lst))
                   (len lst))))
-
-(defun indhh4 (lst n)
-  (if (endp lst)
-      (list lst n)
-    (indhh4 (cdr lst) (+ -1 n))))
 
 ;(theory-invariant (incompatible (:rewrite LIST::FIX-OF-NTHCDR) (:rewrite NTHCDR-OF-TRUE-LIST-FIX)))
 
@@ -1538,7 +1531,6 @@
 ;bozo gen?
 (defthm update-nth-equal-update-subrange-special
   (implies (and (<= n end)
-                (< end (len lst))
                 (natp n)
                 (natp end)
                 (equal val1 val2)

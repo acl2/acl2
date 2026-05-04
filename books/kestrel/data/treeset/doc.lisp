@@ -40,21 +40,31 @@
          are the practical worst-case complexities of core operations:")
       ;; TODO: technically, these also scale multiplicatively with the size of
       ;;   the elements, since << is O(n). Same for the hash.
-      (xdoc::ul
-        (xdoc::li
-          "@(tsee setp) &mdash; @($O(n)$)")
-        (xdoc::li
-          "@(tsee in) &mdash; @($O(\\log(n))$)")
-        (xdoc::li
-          "@(tsee insert) &mdash; @($O(\\log(n))$)")
-        (xdoc::li
-          "@(tsee delete) &mdash; @($O(\\log(n))$)")
-        (xdoc::li
-          "@(tsee union) &mdash; @($O(m\\log(n/m))$)")
-        (xdoc::li
-          "@(tsee intersect) &mdash; @($O(m\\log(n/m))$)")
-        (xdoc::li
-          "@(tsee diff) &mdash; @($O(m\\log(n/m))$)"))
+      (xdoc::table_
+        (xdoc::tr
+          (xdoc::td "@(tsee setp)")
+          (xdoc::td "@($O(n)$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee in)")
+          (xdoc::td "@($O(\\log(n))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee subset)")
+          (xdoc::td "@($O(m\\log(n/m))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee insert)")
+          (xdoc::td "@($O(\\log(n))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee delete)")
+          (xdoc::td "@($O(\\log(n))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee union)")
+          (xdoc::td "@($O(m\\log(n/m))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee intersect)")
+          (xdoc::td "@($O(m\\log(n/m))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee diff)")
+          (xdoc::td "@($O(m\\log(n/m))$)")))
       (xdoc::p
         "(where @($m < n$)).")
       (xdoc::p

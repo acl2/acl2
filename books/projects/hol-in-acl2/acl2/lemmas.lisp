@@ -30,10 +30,10 @@
 ; The hypotheses were originally forced, but that cause complications for
 ; ../examples/eval-poly-proof.lisp.
 
-  (implies (and (hpp f hta)
-                (arrow-typep (hp-type f))
-                (hpp x hta)
-                (equal (hp-type x) (arrow-domain (hp-type f))))
+  (implies (and (force (force (hpp f hta)))
+                (force (arrow-typep (hp-type f)))
+                (force (hpp x hta))
+                (force (equal (hp-type x) (arrow-domain (hp-type f)))))
            (hpp (hap f x) hta))
   :props (zfc prod2$prop domain$prop inverse$prop fun-space$prop)
   :hints (("Goal"
@@ -159,7 +159,7 @@
   :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval)))
   :rule-classes :forward-chaining)
 
-(defthmz hpp-natp
+(defthmz hpp-natp ; relies on omega-is-not-natp
   (implies (and (alist-subsetp (hta0) hta)
                 (force (natp x)))
            (hpp (cons x :num)

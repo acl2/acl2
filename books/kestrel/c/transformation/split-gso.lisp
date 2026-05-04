@@ -24,16 +24,17 @@
 (include-book "utilities/collect-idents")
 (include-book "utilities/fresh-ident")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (tau-system))))
-(set-induction-depth-limit 0)
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/system/w" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (enable* c$::abstract-syntax-annop-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,8 +104,8 @@
 
 (define get-gso-filepath-linkage-search
   ((ident identp)
-   (tunits filepath-transunit-mapp))
-  :guard (c$::filepath-transunit-map-annop tunits)
+   (tunits filepath-trans-unit-mapp))
+  :guard (c$::filepath-trans-unit-map-annop tunits)
   :returns (mv (er? maybe-msgp)
                (filepath filepathp)
                (linkage c$::linkagep)
@@ -117,16 +118,16 @@
        ((mv erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
-          (c$::transunit-info->table-end (c$::transunit->info tunit))))
+          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
        ((unless erp)
         (retok filepath linkage tag?)))
     (get-gso-filepath-linkage-search ident (omap::tail tunits)))
-  :guard-hints (("Goal" :in-theory (enable c$::filepath-transunit-map-annop
-                                           c$::transunit-annop))))
+  :guard-hints (("Goal" :in-theory (enable c$::filepath-trans-unit-map-annop
+                                           c$::trans-unit-annop))))
 
 (defrulel assoc-of-get-gso-filepath-linkage-search.filepath
   (implies
-    (and (filepath-transunit-mapp tunits)
+    (and (filepath-trans-unit-mapp tunits)
          (not (mv-nth 0 (get-gso-filepath-linkage-search ident tunits))))
     (omap::assoc (mv-nth 1 (get-gso-filepath-linkage-search ident tunits))
                  tunits))
@@ -136,14 +137,14 @@
 (define get-gso-filepath-linkage
   ((filepath? c$::filepath-optionp)
    (ident identp)
-   (tunits transunit-ensemblep))
-  :guard (c$::transunit-ensemble-annop tunits)
+   (tunits trans-ensemblep))
+  :guard (c$::trans-ensemble-annop tunits)
   :returns (mv (er? maybe-msgp)
                (filepath filepathp)
                (linkage c$::linkagep)
                (tag? ident-optionp))
   (b* (((reterr) (filepath "") (c$::irr-linkage) nil)
-       (unwrapped-tunits (transunit-ensemble->units tunits))
+       (unwrapped-tunits (trans-ensemble->units tunits))
        ((unless filepath?)
         (get-gso-filepath-linkage-search ident unwrapped-tunits))
        (lookup
@@ -156,35 +157,35 @@
        ((erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
-          (c$::transunit-info->table-end (c$::transunit->info tunit)))))
+          (c$::trans-unit-info->table-end (c$::trans-unit->info tunit)))))
     (retok filepath? linkage tag?))
-  :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop)))
+  :guard-hints (("Goal" :in-theory (enable c$::trans-ensemble-annop)))
   :prepwork
-  ((defrulel transunit-infop-of-assoc-tunits
-     (implies (and (filepath-transunit-mapp tunits)
-                   (c$::filepath-transunit-map-annop tunits)
+  ((defrulel trans-unit-infop-of-assoc-tunits
+     (implies (and (filepath-trans-unit-mapp tunits)
+                   (c$::filepath-trans-unit-map-annop tunits)
                    (omap::assoc filepath tunits))
-              (c$::transunit-infop
-                (c$::transunit->info
+              (c$::trans-unit-infop
+                (c$::trans-unit->info
                   (cdr (omap::assoc filepath tunits)))))
      :induct t
      :enable (omap::assoc
-              c$::filepath-transunit-map-annop
-              c$::transunit-annop))))
+              c$::filepath-trans-unit-map-annop
+              c$::trans-unit-annop))))
 
 (defrulel assoc-of-get-gso-filepath-linkage.filepath
   (implies
-    (and (transunit-ensemblep tunits)
+    (and (trans-ensemblep tunits)
          (not (mv-nth 0 (get-gso-filepath-linkage filepath? ident tunits))))
     (omap::assoc (mv-nth 1 (get-gso-filepath-linkage filepath? ident tunits))
-                 (transunit-ensemble->units tunits)))
+                 (trans-ensemble->units tunits)))
   :enable get-gso-filepath-linkage)
 
 (define get-gso-info
   ((filepath? c$::filepath-optionp)
    (ident identp)
-   (tunits transunit-ensemblep))
-  :guard (c$::transunit-ensemble-annop tunits)
+   (tunits trans-ensemblep))
+  :guard (c$::trans-ensemble-annop tunits)
   :returns (mv (er? maybe-msgp)
                (struct-tag identp)
                (filepath filepathp)
@@ -198,10 +199,10 @@
 
 (defruled assoc-of-get-gso-info.filepath?
   (implies
-    (and (transunit-ensemblep tunits)
+    (and (trans-ensemblep tunits)
          (not (mv-nth 0 (get-gso-info filepath? ident tunits))))
     (omap::assoc (mv-nth 2 (get-gso-info filepath? ident tunits))
-                 (transunit-ensemble->units tunits)))
+                 (trans-ensemble->units tunits)))
   :enable get-gso-info)
 
 (local (in-theory (enable assoc-of-get-gso-info.filepath?)))
@@ -213,24 +214,17 @@
 (define struct-declor-list-get-ident
   ((structdeclors struct-declor-listp))
   :returns (mv (er? maybe-msgp)
-               (ident identp))
+               (ident? ident-optionp))
   (b* (((reterr) (c$::irr-ident))
        ((when (endp structdeclors))
-        (retmsg$ "Syntax error: there should be at least one struct declarator
-                  in the struct declaration."))
+        (retok nil))
        ((unless (endp (rest structdeclors)))
         (retmsg$ "Multiple struct declarators in a single struct declaration
                   are unsupported: ~x0"
                  structdeclors))
-       ((struct-declor structdeclor) (first structdeclors))
-       ((when structdeclor.expr?)
-        (retmsg$ "Bit-field struct declarator is unsupported: ~x0"
-                 structdeclor.expr?))
-       ((unless structdeclor.declor?)
-        (retmsg$ "Syntax error: a non-bit-field struct declarator must have
-                  a declarator: ~x0"
-                 structdeclor)))
-    (retok (declor->ident structdeclor.declor?))))
+       ((struct-declor structdeclor) (first structdeclors)))
+    (retok (and structdeclor.declor?
+                (declor->ident structdeclor.declor?)))))
 
 (define struct-declon-member-in-listp
   ((names ident-listp)
@@ -243,9 +237,11 @@
       struct-declon
       ;; TODO: properly handle struct declarations with multiple declarators
       ;;   instead of returning error.
-      :member (b* (((erp ident)
-                    (struct-declor-list-get-ident struct-declon.declors)))
-                (retok (and (member-equal ident names) t)))
+      :member (b* (((erp ident?)
+                    (struct-declor-list-get-ident struct-declon.declors))
+                   ((unless ident?)
+                    (retok nil)))
+                (retok (and (member-equal ident? names) t)))
       :statassert (retmsg$ "Static assertion structure declaration unsupported:
                             ~x0"
                            struct-declon.statassert)
@@ -276,6 +272,32 @@
       (and (null (c$::init-declor->initer? (first initdeclors)))
            (all-no-init (rest initdeclors)))))
 
+(define any-incomplete-struct
+  ((specs decl-spec-listp))
+  (declare (xargs :type-prescription (booleanp (any-incomplete-struct specs))))
+  (and (consp specs)
+       (let ((spec (first specs)))
+         (or (decl-spec-case
+               spec
+               :typespec (type-spec-case
+                           spec.spec
+                           :struct (b* (((struni-spec struni-spec) spec.spec.spec))
+                                     (endp struni-spec.members))
+                           :otherwise nil)
+               :otherwise nil)
+             (any-incomplete-struct (rest specs))))))
+
+(define incomplete-typedef
+  ((specs decl-spec-listp))
+  (declare (xargs :type-prescription (booleanp (incomplete-typedef specs))))
+  (and (consp specs)
+       (let ((spec (first specs)))
+         (and (decl-spec-case
+                spec
+                :stoclass (c$::stor-spec-case spec.spec :typedef)
+                :otherwise nil)
+              (any-incomplete-struct (rest specs))))))
+
 (define dup-split-struct-type-declon
   ((original identp)
    (new1 ident-optionp)
@@ -295,7 +317,8 @@
            ((erp type-match new1 new2 remanining-struct-decls split-struct-decls)
             (b* (((reterr) nil nil nil nil nil)
                  ((unless (and type-spec?
-                               (all-no-init declon.declors)))
+                               (all-no-init declon.declors)
+                               (not (incomplete-typedef declon.specs))))
                   (retok nil nil nil nil nil)))
               (type-spec-case
                 type-spec?
@@ -387,101 +410,138 @@
     (true-listp extdecls)
     :rule-classes :type-prescription))
 
-(define dup-split-struct-type-ext-declon-list
+(define dup-split-struct-type-trans-item
   ((original identp)
    (new1 ident-optionp)
    (new2 ident-optionp)
    (blacklist ident-setp)
    (split-members ident-listp)
-   (extdecls ext-declon-listp))
+   (item trans-itemp))
   :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
-               (extdecls$ ext-declon-listp))
+               (items trans-item-listp))
+  (b* (((reterr) nil nil nil))
+    (trans-item-case
+      item
+      :declon (b* (((erp new1 new2 extdecls)
+                    (dup-split-struct-type-ext-declon
+                     original
+                     new1
+                     new2
+                     blacklist
+                     split-members
+                     item.declon)))
+                (retok new1
+                       new2
+                       (c$::trans-item-list-declon extdecls)))
+      :include (retmsg$ "#include directives not supported.")
+      :define (retmsg$ "#define directives not supported.")
+      :undef (retmsg$ "#undef directives not supported.")
+      :cond (retmsg$ "Conditional directives not supported.")
+      :line-comment (retok nil nil (list (trans-item-fix item)))))
+  ///
+
+  (defret identp-of-dup-split-struct-type-trans-item.new2$
+    (equal (identp new2$)
+           (identp new1$)))
+
+  (defret dup-split-struct-type-extdecl.trans-items-type-prescription
+    (true-listp items)
+    :rule-classes :type-prescription))
+
+(define dup-split-struct-type-trans-item-list
+  ((original identp)
+   (new1 ident-optionp)
+   (new2 ident-optionp)
+   (blacklist ident-setp)
+   (split-members ident-listp)
+   (items trans-item-listp))
+  :returns (mv (er? maybe-msgp)
+               (new1$ ident-optionp)
+               (new2$ ident-optionp)
+               (items$ trans-item-listp))
   (b* (((reterr) nil nil nil)
-       ((when (endp extdecls))
+       ((when (endp items))
         (retok nil nil nil))
-       ((erp new1$ new2$ new-extdecls1)
-        (dup-split-struct-type-ext-declon
+       ((erp new1$ new2$ new-items1)
+        (dup-split-struct-type-trans-item
           original
           new1
           new2
           blacklist
           split-members
-          (first extdecls)))
+          (first items)))
        ((when new1$)
         (retok new1$
                new2$
-               (append new-extdecls1
-                       (ext-declon-list-fix (rest extdecls)))))
-       ((erp new1 new2 new-extdecls2)
-        (dup-split-struct-type-ext-declon-list
+               (append new-items1
+                       (trans-item-list-fix (rest items)))))
+       ((erp new1 new2 new-items2)
+        (dup-split-struct-type-trans-item-list
           original
           new1
           new2
           blacklist
           split-members
-          (rest extdecls))))
-    (retok new1 new2 (append new-extdecls1 new-extdecls2)))
+          (rest items))))
+    (retok new1 new2 (append new-items1 new-items2)))
 
-  :measure (acl2-count extdecls)
+  :measure (acl2-count items)
   ///
 
-  (defret identp-of-dup-split-struct-type-ext-declon-list.new2$
+  (defret identp-of-dup-split-struct-type-trans-item-list.new2$
     (equal (identp new2$)
            (identp new1$))
     :hints (("Goal" :induct t))))
 
-(define dup-split-struct-type-transunit
+(define dup-split-struct-type-trans-unit
   ((original identp)
    (new1 ident-optionp)
    (new2 ident-optionp)
    (blacklist ident-setp)
    (split-members ident-listp)
-   (tunit transunitp))
+   (tunit trans-unitp))
   :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
-               (tunit$ transunitp))
-  (b* (((reterr) nil nil (c$::irr-transunit))
-       ((transunit tunit) tunit)
-       ((when tunit.includes)
-        (retmsg$ "Unsupported #include directives."))
-       ((erp new1 new2 extdecls)
-        (dup-split-struct-type-ext-declon-list
+               (tunit$ trans-unitp))
+  (b* (((reterr) nil nil (c$::irr-trans-unit))
+       ((trans-unit tunit) tunit)
+       ((erp new1 new2 items)
+        (dup-split-struct-type-trans-item-list
           original
           new1
           new2
           blacklist
           split-members
-          tunit.declons)))
+          tunit.items)))
     (retok new1
            new2
-           (make-transunit :comment nil
-                           :declons extdecls
+           (make-trans-unit :items items
                            :info tunit.info)))
     ///
 
-    (defret identp-of-dup-split-struct-type-transunit.new2$
+    (defret identp-of-dup-split-struct-type-trans-unit.new2$
       (equal (identp new2$)
              (identp new1$))))
 
-(define dup-split-struct-type-filepath-transunit-map
+(define dup-split-struct-type-filepath-trans-unit-map
   ((original identp)
    (new1 ident-optionp)
    (new2 ident-optionp)
    (blacklist ident-setp)
    (split-members ident-listp)
-   (map filepath-transunit-mapp))
+   (map filepath-trans-unit-mapp))
   :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
-               (map$ filepath-transunit-mapp))
+               (map$ filepath-trans-unit-mapp))
   (b* (((reterr) nil nil nil)
        ((when (omap::emptyp map))
         (retok nil nil nil))
        ((erp new1$ new2$ tunit)
-        (dup-split-struct-type-transunit
+        (dup-split-struct-type-trans-unit
           original
           new1
           new2
@@ -489,7 +549,7 @@
           split-members
           (omap::head-val map)))
        ((erp new1 new2 map$)
-        (dup-split-struct-type-filepath-transunit-map
+        (dup-split-struct-type-filepath-trans-unit-map
           original
           new1
           new2
@@ -508,7 +568,7 @@
   :verify-guards :after-returns
   ///
 
-  (defret identp-of-dup-split-struct-type-filepath-transunit-map.new2$
+  (defret identp-of-dup-split-struct-type-filepath-trans-unit-map.new2$
     (equal (identp new2$)
            (identp new1$))
     :hints (("Goal" :induct t))))
@@ -517,52 +577,110 @@
 
 ;; split global struct object
 
-(define match-designors
-  ((split-members ident-listp)
-   (designors designor-listp))
+(define make-desiniter-explicit
+  ((desiniter desiniterp))
   :returns (mv (er? maybe-msgp)
-               (match booleanp
-                      :rule-classes :type-prescription))
-  (b* (((reterr) nil)
-       ((when (endp designors))
-        (retmsg$ "Initializer elements without designations are unsupported."))
-       ((unless (endp (rest designors)))
-        (retmsg$ "Initializer element with mutiple designations is unsupported:
-                  ~x0"
-                 designors))
-       (designor (first designors)))
-    (designor-case
-      designor
-      ;; :sub case should be ill-typed, since this function should only be
-      ;; called on objects with struct types (not array types).
-      :sub (retmsg$ "Array index initializer element is unsupported: ~x0"
-                    designor)
-      :dot (retok (and (member-equal designor.name split-members) t)))))
+               (desiniter$ desiniterp))
+  :parents (split-gso-implementation)
+  :short "Add an explicit designation to an initializer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the initializer does not have a designator,
+     the annotation is checked.
+     If a designator is present in the annotation, we use that.
+     Otherwise, this function fails.")
+   (xdoc::p
+    "We may consider adding a guard of @('(desiniter-annop desiniter)')
+     at some point in the future.
+     Currently, we do not have a proof that the necessary annotations
+     are present after the first pass of the transformation."))
+  (b* (((reterr) (c$::irr-desiniter))
+       ((desiniter desiniter) desiniter)
+       ((unless (endp desiniter.designors))
+        (retok (desiniter-fix desiniter)))
+       ((unless (desiniter-annop desiniter))
+        (retmsg$ "Cannot infer designation from initializer: ~x0"
+                 (desiniter-fix desiniter)))
+       ((c$::desiniter-info info) desiniter.info)
+       ((when (endp info.designors))
+        (retmsg$ "Cannot infer designation from initializer: ~x0"
+                 (desiniter-fix desiniter))))
+    (retok (c$::change-desiniter
+             desiniter
+             :designors info.designors)))
+  ///
 
-(define split-desiniter-list
-  ((split-members ident-listp)
-   (desiniters desiniter-listp))
+  (defret desiniter->designors-of-make-desiniter-explicit.desiniter$-type-prescription
+    (implies (not er?)
+             (consp (c$::desiniter->designors desiniter$)))
+    :rule-classes :type-prescription))
+
+(define explicit-desiniter-listp
+  ((desiniters desiniter-listp))
+  :returns (yes/no booleanp)
+  :parents (split-gso-implementation)
+  :short "Recognizer of lists of initializers with required designations."
+  (or (endp desiniters)
+      (and (not (endp (c$::desiniter->designors (first desiniters))))
+           (explicit-desiniter-listp (rest desiniters)))))
+
+(define make-desiniters-explicit
+  ((desiniters desiniter-listp))
   :returns (mv (er? maybe-msgp)
-               (desiniter-list1 desiniter-listp)
-               (desiniter-list2 desiniter-listp))
-  (b* (((reterr) nil nil)
+               (desiniters$ desiniter-listp))
+  (b* (((reterr) nil)
        ((when (endp desiniters))
-        (retok nil nil))
-       ((erp desiniters1 desiniters2)
-        (split-desiniter-list split-members (rest desiniters)))
-       ((desiniter desiniter) (desiniter-fix (first desiniters)))
-       ((erp match)
-        (match-designors split-members desiniter.designors)))
-    (if match
-        (retok desiniters1 (cons desiniter desiniters2))
-      (retok (cons desiniter desiniters1) desiniters2)))
+        (retok nil))
+       ((erp first) (make-desiniter-explicit (first desiniters)))
+       ((erp rest) (make-desiniters-explicit (rest desiniters))))
+    (retok (cons first rest)))
   ///
 
   (more-returns
-   (desiniter-list1 true-listp :rule-classes :type-prescription)
-   (desiniter-list2 true-listp :rule-classes :type-prescription)))
+   (desiniters$ explicit-desiniter-listp
+                :hints (("Goal" :induct t
+                                :in-theory (enable explicit-desiniter-listp))))))
 
-(define split-struct-initer
+(define designors-is-dot-any-ident
+  ((designors designor-listp)
+   (split-members ident-listp))
+  :guard (not (endp designors))
+  (and (endp (rest designors))
+       (let ((designor (first designors)))
+         (designor-case
+           designor
+           :sub nil
+           :dot (and (member-equal designor.name
+                                   (c$::ident-list-fix split-members))
+                     t)))))
+
+(define split-explicit-desiniters
+  ((split-members ident-listp)
+   (desiniters desiniter-listp))
+  :guard (explicit-desiniter-listp desiniters)
+  :returns (mv (desiniters1 desiniter-listp)
+               (desiniters2 desiniter-listp))
+  (b* (((when (endp desiniters))
+        (mv nil nil))
+       ((desiniter first-desiniter) (first desiniters))
+       (rightp (designors-is-dot-any-ident
+                first-desiniter.designors split-members))
+       ((mv rest-desiniters1 rest-desiniters2)
+        (split-explicit-desiniters split-members (rest desiniters))))
+    (if rightp
+        (mv rest-desiniters1
+            (cons (desiniter-fix first-desiniter) rest-desiniters2))
+      (mv (cons (desiniter-fix first-desiniter) rest-desiniters1)
+          rest-desiniters2)))
+  :guard-hints (("Goal" :in-theory (enable explicit-desiniter-listp)))
+  ///
+
+  (more-returns
+   (desiniters1 true-listp :rule-classes :type-prescription)
+   (desiniters2 true-listp :rule-classes :type-prescription)))
+
+(define split-struct-global-initer
   ((split-members ident-listp)
    (initer initerp))
   :returns (mv (er? maybe-msgp)
@@ -571,11 +689,15 @@
   (b* (((reterr) nil nil))
     (initer-case
       initer
-      :single (retmsg$ "Assignment expression initializers are unsupported:
-                        ~x0"
-                       initer.expr)
-      :list (b* (((erp elems1 elems2)
-                  (split-desiniter-list split-members initer.elems))
+      :single (retmsg$ "Internal error: non-brace-enclosed initializer ~
+                        is illegal for a file-scope ~
+                        struct initializer declarators:
+                        ~x0."
+                       (initer-fix initer))
+      :list (b* (((erp explicit-elems)
+                  (make-desiniters-explicit initer.elems))
+                 ((mv elems1 elems2)
+                  (split-explicit-desiniters split-members explicit-elems))
                  (elems1 (desiniter-list-fix elems1))
                  (elems2 (desiniter-list-fix elems2)))
               (retok (if (endp elems1)
@@ -624,18 +746,14 @@
      :array-star nil
      :function-params nil
      :function-names nil)
-    :measure (dirdeclor-count dirdeclor))
+    :measure (dirdeclor-count dirdeclor)))
 
-  :hints (("Goal" :in-theory (enable o< o-finp))))
-
-(define split-struct-init-declor
+(define split-struct-global-init-declor
   ((target identp)
    (split-members ident-listp)
    (initdeclor init-declorp))
   :returns (mv (er? maybe-msgp)
-               ;; TODO: is the generated type-prescription reasonable?
-               (match booleanp
-                      :rule-classes :type-prescription)
+               (match booleanp :rule-classes :type-prescription)
                (initer-option1 initer-optionp)
                (initer-option2 initer-optionp))
   (b* (((reterr) nil nil nil)
@@ -645,10 +763,10 @@
        ((unless initdeclor.initer?)
         (retok t nil nil))
        ((erp initer-option1 initer-option2)
-        (split-struct-initer split-members initdeclor.initer?)))
+        (split-struct-global-initer split-members initdeclor.initer?)))
     (retok t initer-option1 initer-option2)))
 
-(define split-struct-init-declors
+(define split-struct-global-init-declors
   ((target identp)
    (split-members ident-listp)
    (initdeclors init-declor-listp))
@@ -665,9 +783,18 @@
        ((unless (endp (rest initdeclors)))
         (retmsg$ "Multiple initializer declarators are not supported: ~x0"
                  initdeclors)))
-    (split-struct-init-declor target
-                              split-members
-                              (first initdeclors))))
+    (split-struct-global-init-declor target
+                                     split-members
+                                     (first initdeclors))))
+
+(define has-extern-p ((specs decl-spec-listp))
+  (and (not (endp specs))
+       (or (let ((spec (first specs)))
+             (decl-spec-case
+               spec
+               :stoclass (c$::stor-spec-case spec.spec :extern)
+               :otherwise nil))
+           (has-extern-p (rest specs)))))
 
 (define split-gso-split-object-declon
   ((original identp)
@@ -679,8 +806,7 @@
    (split-members ident-listp)
    (declon declonp))
   :returns (mv (er? maybe-msgp)
-               (found booleanp
-                      :rule-classes :type-prescription)
+               (found booleanp :rule-classes :type-prescription)
                (declons declon-listp))
   (b* (((reterr) nil nil))
     (declon-case
@@ -693,11 +819,14 @@
            ((erp match initer-option1 initer-option2)
             (type-spec-case
               type-spec?
-              :struct (split-struct-init-declors original split-members declon.declors)
-              :typedef (split-struct-init-declors original split-members declon.declors)
+              :struct (split-struct-global-init-declors
+                        original split-members declon.declors)
+              :typedef (split-struct-global-init-declors
+                         original split-members declon.declors)
               :otherwise (mv nil nil nil nil)))
            ((unless match)
             (retok nil (list (declon-fix declon))))
+           (explicit-extern (has-extern-p declon.specs))
            (decl-new1-type
              (c$::decl-spec-typespec
                (c$::type-spec-struct
@@ -720,7 +849,11 @@
                            :internal (list (c$::decl-spec-stoclass
                                              (c$::stor-spec-static))
                                            decl-new1-type)
-                           :otherwise (list decl-new1-type))
+                           :otherwise (if explicit-extern
+                                          (list (c$::decl-spec-stoclass
+                                                  (c$::stor-spec-extern))
+                                                decl-new1-type)
+                                        (list decl-new1-type)))
                   :declors (list (c$::make-init-declor
                                   :declor (c$::make-declor
                                            :direct (c$::dirdeclor-ident new1))
@@ -731,7 +864,11 @@
                            :internal (list (c$::decl-spec-stoclass
                                              (c$::stor-spec-static))
                                            decl-new2-type)
-                           :otherwise (list decl-new2-type))
+                           :otherwise (if explicit-extern
+                                          (list (c$::decl-spec-stoclass
+                                                  (c$::stor-spec-extern))
+                                                decl-new2-type)
+                                        (list decl-new2-type)))
                   :declors (list (c$::make-init-declor
                                   :declor (c$::make-declor
                                            :direct (c$::dirdeclor-ident new2))
@@ -774,7 +911,7 @@
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription)))
 
-(define split-gso-split-object-ext-declon-list
+(define split-gso-split-object-trans-item
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -782,14 +919,51 @@
    (new1-type identp)
    (new2-type identp)
    (split-members ident-listp)
-   (extdecls ext-declon-listp))
+   (item trans-itemp))
   :returns (mv (er? maybe-msgp)
-               (extdecls$ ext-declon-listp))
+               (found booleanp :rule-classes :type-prescription)
+               (items trans-item-listp))
+  (b* (((reterr) nil nil))
+    (trans-item-case
+      item
+      :declon (b* (((erp found extdecls)
+                    (split-gso-split-object-ext-declon
+                     original
+                     linkage
+                     new1
+                     new2
+                     new1-type
+                     new2-type
+                     split-members
+                     item.declon)))
+                (retok found
+                       (c$::trans-item-list-declon extdecls)))
+      :include (retmsg$ "#include directives not supported.")
+      :define (retmsg$ "#define directives not supported.")
+      :undef (retmsg$ "#undef directives not supported.")
+      :cond (retmsg$ "Conditional directives not supported.")
+      :line-comment (retok nil (list (trans-item-fix item)))))
+  ///
+
+  (more-returns
+   (items true-listp :rule-classes :type-prescription)))
+
+(define split-gso-split-object-trans-item-list
+  ((original identp)
+   (linkage c$::linkagep)
+   (new1 identp)
+   (new2 identp)
+   (new1-type identp)
+   (new2-type identp)
+   (split-members ident-listp)
+   (items trans-item-listp))
+  :returns (mv (er? maybe-msgp)
+               (items$ trans-item-listp))
   (b* (((reterr) nil)
-       ((when (endp extdecls))
+       ((when (endp items))
         (retok nil))
-       ((erp found new-extdecls1)
-        (split-gso-split-object-ext-declon
+       ((erp - new-items1)
+        (split-gso-split-object-trans-item
           original
           linkage
           new1
@@ -797,12 +971,9 @@
           new1-type
           new2-type
           split-members
-          (first extdecls)))
-       ((when found)
-        (retok (append new-extdecls1
-                       (ext-declon-list-fix (rest extdecls)))))
-       ((erp new-extdecls2)
-        (split-gso-split-object-ext-declon-list
+          (first items)))
+       ((erp new-items2)
+        (split-gso-split-object-trans-item-list
           original
           linkage
           new1
@@ -810,10 +981,10 @@
           new1-type
           new2-type
           split-members
-          (rest extdecls))))
-    (retok (append new-extdecls1 new-extdecls2))))
+          (rest items))))
+    (retok (append new-items1 new-items2))))
 
-(define split-gso-split-object-transunit
+(define split-gso-split-object-trans-unit
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -821,15 +992,13 @@
    (new1-type identp)
    (new2-type identp)
    (split-members ident-listp)
-   (tunit transunitp))
+   (tunit trans-unitp))
   :returns (mv (er? maybe-msgp)
-               (tunit$ transunitp))
-  (b* (((reterr) (c$::irr-transunit))
-       ((transunit tunit) tunit)
-       ((when tunit.includes)
-        (retmsg$ "Unsupported #include directives."))
-       ((erp extdecls)
-        (split-gso-split-object-ext-declon-list
+               (tunit$ trans-unitp))
+  (b* (((reterr) (c$::irr-trans-unit))
+       ((trans-unit tunit) tunit)
+       ((erp items)
+        (split-gso-split-object-trans-item-list
           original
           linkage
           new1
@@ -837,10 +1006,10 @@
           new1-type
           new2-type
           split-members
-          tunit.declons)))
-    (retok (make-transunit :comment nil :declons extdecls :info tunit.info))))
+          tunit.items)))
+    (retok (make-trans-unit :items items :info tunit.info))))
 
-(define split-gso-split-object-filepath-transunit-map
+(define split-gso-split-object-filepath-trans-unit-map
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -848,14 +1017,14 @@
    (new1-type identp)
    (new2-type identp)
    (split-members ident-listp)
-   (map filepath-transunit-mapp))
+   (map filepath-trans-unit-mapp))
   :returns (mv (er? maybe-msgp)
-               (map$ filepath-transunit-mapp))
+               (map$ filepath-trans-unit-mapp))
   (b* (((reterr) nil)
        ((when (omap::emptyp map))
         (retok nil))
        ((erp tunit)
-        (split-gso-split-object-transunit
+        (split-gso-split-object-trans-unit
           original
           linkage
           new1
@@ -865,7 +1034,7 @@
           split-members
           (omap::head-val map)))
        ((erp map$)
-        (split-gso-split-object-filepath-transunit-map
+        (split-gso-split-object-filepath-trans-unit-map
           original
           linkage
           new1
@@ -890,14 +1059,18 @@
 (encapsulate ()
   ;; TODO: something in deffold-map seems dependent on tau
   (local (in-theory (enable (tau-system))))
+  (std::make-define-config :no-function nil)
 
   (fty::deffold-map replace-field-access
     :types #!c$(exprs/decls/stmts
                 fundef
                 ext-declon
                 ext-declon-list
-                transunit
-                filepath-transunit-map)
+                hash-if/elif-expr
+                hash-if/ifdef/ifndef
+                trans-items
+                trans-unit
+                filepath-trans-unit-map)
     :extra-args
     ((original identp)
      (linkage c$::linkagep)
@@ -978,18 +1151,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-gso-rename-filepaths
-  ((map filepath-transunit-mapp))
-  :returns (map$ filepath-transunit-mapp)
+  ((map filepath-trans-unit-mapp))
+  :returns (map$ filepath-trans-unit-mapp)
   (b* (((when (omap::emptyp map)) nil)
        ((mv path tunit) (omap::head map)))
     (omap::update (c$::filepath-fix path)
-                  (c$::transunit-fix tunit)
+                  (c$::trans-unit-fix tunit)
                   (split-gso-rename-filepaths (omap::tail map))))
   :verify-guards :after-returns)
 
 ;; TODO: add `:fragment` argument indicate the map does not represent a
 ;;   complete program. In such cases, fail if the gso is external.
-(define split-gso-filepath-transunit-map
+(define split-gso-filepath-trans-unit-map
   ((struct-tag identp)
    (filepath filepathp)
    (linkage c$::linkagep)
@@ -999,20 +1172,20 @@
    (new-struct-tag1 ident-optionp)
    (new-struct-tag2 ident-optionp)
    (split-members ident-listp)
-   (map filepath-transunit-mapp))
+   (map filepath-trans-unit-mapp))
   :guard (omap::assoc filepath map)
   :returns (mv (er? maybe-msgp)
-               (map$ filepath-transunit-mapp))
+               (map$ filepath-trans-unit-mapp))
   (b* (((reterr) nil)
-       (map (c$::filepath-transunit-map-fix map))
+       (map (c$::filepath-trans-unit-map-fix map))
        ((when (equal linkage (c$::linkage-none)))
         (retmsg$ "Invalid struct object linkage: ~x0" linkage))
-       (ident-blacklist (filepath-transunit-map-collect-idents map))
+       (ident-blacklist (filepath-trans-unit-map-collect-idents map))
        (new-struct1 (or new-struct1 orig-struct))
        (new-struct2 (or new-struct2 orig-struct))
        ((when (equal linkage (c$::linkage-external)))
         (b* (((erp new-struct-tag1 new-struct-tag2 map)
-              (dup-split-struct-type-filepath-transunit-map
+              (dup-split-struct-type-filepath-trans-unit-map
                 struct-tag
                 new-struct-tag1
                 new-struct-tag2
@@ -1031,7 +1204,7 @@
                                   new-struct2)
                             ident-blacklist))
              ((erp map)
-              (split-gso-split-object-filepath-transunit-map
+              (split-gso-split-object-filepath-trans-unit-map
                 orig-struct
                 linkage
                 new-struct1
@@ -1041,7 +1214,7 @@
                 split-members
                 map))
              (map
-               (filepath-transunit-map-replace-field-access
+               (filepath-trans-unit-map-replace-field-access
                  map
                  orig-struct
                  linkage
@@ -1051,7 +1224,7 @@
           (retok map)))
        (tunit (omap::lookup filepath map))
        ((erp new-struct-tag1 new-struct-tag2 tunit)
-        (dup-split-struct-type-transunit
+        (dup-split-struct-type-trans-unit
           struct-tag
           new-struct-tag1
           new-struct-tag2
@@ -1070,7 +1243,7 @@
                             new-struct2)
                       ident-blacklist))
        ((erp tunit)
-        (split-gso-split-object-transunit
+        (split-gso-split-object-trans-unit
           orig-struct
           linkage
           new-struct1
@@ -1080,7 +1253,7 @@
           split-members
           tunit))
        (tunit
-         (transunit-replace-field-access
+         (trans-unit-replace-field-access
            tunit
            orig-struct
            linkage
@@ -1091,7 +1264,7 @@
                          tunit
                          map))))
 
-(define split-gso-transunit-ensemble
+(define split-gso-trans-ensemble
   ((filepath? c$::filepath-optionp)
    (orig-struct identp)
    (new-struct1 ident-optionp)
@@ -1099,16 +1272,16 @@
    (new-struct-tag1 ident-optionp)
    (new-struct-tag2 ident-optionp)
    (split-members ident-listp)
-   (tunits transunit-ensemblep))
-  :guard (c$::transunit-ensemble-annop tunits)
+   (tunits trans-ensemblep))
+  :guard (c$::trans-ensemble-annop tunits)
   :returns (mv (er? maybe-msgp)
-               (tunits$ transunit-ensemblep))
-  (b* (((reterr) (c$::transunit-ensemble-fix tunits))
+               (tunits$ trans-ensemblep))
+  (b* (((reterr) (c$::trans-ensemble-fix tunits))
        ((erp struct-tag filepath linkage)
         (get-gso-info filepath? orig-struct tunits))
-       (map (transunit-ensemble->units tunits))
+       (map (trans-ensemble->units tunits))
        ((erp map)
-        (split-gso-filepath-transunit-map
+        (split-gso-filepath-trans-unit-map
           struct-tag
           filepath
           linkage
@@ -1120,7 +1293,7 @@
           split-members
           map)))
     (retok
-      (c$::make-transunit-ensemble :units (split-gso-rename-filepaths map)))))
+      (c$::make-trans-ensemble :units (split-gso-rename-filepaths map)))))
 
 (define split-gso-code-ensemble
   ((filepath? c$::filepath-optionp)
@@ -1136,15 +1309,15 @@
                (code$ code-ensemblep))
   (b* (((reterr) (irr-code-ensemble))
        ((code-ensemble code) code)
-       ((erp tunits) (split-gso-transunit-ensemble filepath?
-                                                   orig-struct
-                                                   new-struct1
-                                                   new-struct2
-                                                   new-struct-tag1
-                                                   new-struct-tag2
-                                                   split-members
-                                                   code.transunits)))
-    (retok (change-code-ensemble code :transunits tunits)))
+       ((erp tunits) (split-gso-trans-ensemble filepath?
+                                               orig-struct
+                                               new-struct1
+                                               new-struct2
+                                               new-struct-tag1
+                                               new-struct-tag2
+                                               split-members
+                                               code.trans-units)))
+    (retok (change-code-ensemble code :trans-units tunits)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -25,7 +25,7 @@
           (add-pc-command ,name ',command-type)))
 
 (defun define-pc-meta-or-macro-fn (command-type raw-name formals body)
-  (let ((name (make-official-pc-command raw-name)) )
+  (let ((name (make-official-pc-command raw-name)))
     `(install-new-pc-meta-or-macro ,command-type ,raw-name ,name
                                    ,formals
                                    nil ; ,doc

@@ -68,6 +68,11 @@
            (unsigned-byte-p size (bv-list-read-chunk-little element-size element-count index list)))
   :hints (("Goal" :in-theory (enable bv-list-read-chunk-little))))
 
+;; for axe only (move)
+(defthmd integerp-of-bv-list-read-chunk-little
+  (integerp (bv-list-read-chunk-little element-size element-count index list))
+  :hints (("Goal" :in-theory (enable bv-list-read-chunk-little))))
+
 ;; prevent matching a constant list?
 (defthm bv-list-read-chunk-little-of-cons-irrel
   (implies (not (zp index))

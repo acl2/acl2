@@ -1,7 +1,7 @@
 ; A tool for making (non-simple) evaluators
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -46,6 +46,7 @@
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 (local (in-theory (e/d (rational-listp-when-nat-listp
@@ -458,7 +459,7 @@
                                                    (farg3 form)  ;else part
                                                    )
                                                  interpreted-function-alist array-depth))
-                        ;;not an if, so evalate all arguments:
+                        ;;not an if, so evaluate all arguments:
                         (let ((args (,eval-list-function-name alist (fargs form) interpreted-function-alist array-depth)))
                           ;;regular function call:
                           (,apply-function-name fn
@@ -500,9 +501,9 @@
                (unquote dag)
              (let* ((top-nodenum (top-nodenum-of-dag dag))
                     (dag-array-name (pack$ 'dag-array- array-depth '-for-dag-val))
-                    (dag-array (make-into-array dag-array-name dag)) ; todo: call make-dag-into-array?
+                    (dag-array (alist-to-array1 dag-array-name dag)) ; todo: call make-dag-into-array?
                     (eval-array-name (pack$ 'eval-array- array-depth '-for-dag-val))
-                    (eval-array (make-empty-array eval-array-name (+ 1 top-nodenum))))
+                    (eval-array (new-array1 eval-array-name (+ 1 top-nodenum))))
                (car ;strip off the cons
                 (aref1 eval-array-name
                        (,eval-dag-name (list top-nodenum)

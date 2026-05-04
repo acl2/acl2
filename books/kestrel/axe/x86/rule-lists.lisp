@@ -997,7 +997,7 @@
     x86isa::!prefixes->adr$inline
     x86isa::!prefixes->nxt$inline
 
-    ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
+    ;; are constant-openers better than enabling these functions? todo: remove once built into x86 evaluator and other evaluators no longer used
     X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
     x86isa::!prefixes->seg$inline-constant-opener
 
@@ -1255,9 +1255,9 @@
   '(acl2::logand-becomes-bvand-arg1-axe
     acl2::logand-becomes-bvand-arg2-axe
     acl2::logior-becomes-bvor-arg1-axe ; based on the form of arg1
-    acl2::logior-becomes-bvor-arg1-axe ; based on the form of arg2
+    acl2::logior-becomes-bvor-arg2-axe ; based on the form of arg2
     acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg1
-    acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg2
+    acl2::logxor-becomes-bvxor-arg2-axe ; based on the form of arg2
     ;acl2::logxor-bvchop-bvchop        ; introduce bvxor
     ;acl2::logxor-of-bvchop-becomes-bvxor-arg1 ; introduce bvxor
     ;;            acl2::bvplus-of-logxor-arg1                     ; introduce bvxor
@@ -2287,7 +2287,6 @@
 
 ;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
-;; todo: should this include core-rules-bv (see below)?
 (defund lifter-rules-common ()
   (declare (xargs :guard t))
   (append (read-over-write-rules-common) ; todo: don't use all these?
@@ -5629,9 +5628,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Try this rule first
-(set-axe-rule-priority read-of-write-irrel -1) ; todo: also below
-
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
 ;; (set-axe-rule-priority read-when-program-at 1)
 ;; these are no longer used:
@@ -5851,7 +5847,6 @@
     ;;rflagsbits->af-of-myif
     ;;rflagsbits->af-of-if
 
-    ;; acl2::equal-of-constant-and-bvuminus
     ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
     ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
     ;; acl2::bvif-of-myif-arg3 ; introduces bvif
@@ -5904,8 +5899,6 @@
     acl2::slice-of-bvand-of-constant
     ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
     acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
-    acl2::equal-of-bvplus-constant-and-constant
-    acl2::equal-of-bvplus-constant-and-constant-alt
     ;; acl2::getbit-of-lognot ; now handled by convert-to-bv machinery
     acl2::bvif-of-if-constants-nil-nonnil
     acl2::bvif-of-if-constants-nonnil-nil
@@ -5974,7 +5967,7 @@
             ;acl2::bvcat-of-0-arg2
             acl2::bvmod-tighten-64-32
             acl2::bvdiv-tighten-64-32
-            acl2::not-bvlt-of-max-when-unsiged-byte-p
+            acl2::not-bvlt-of-max-when-unsigned-byte-p
             ;x86isa::sf-spec32-rewrite ; trying without...
             ;jle-condition-rewrite-1-with-bvif ; this one works on bvif
             ;jle-condition-rewrite-1-with-bvif-and-bvchop
@@ -6295,8 +6288,6 @@
      ;; read-when-program-at-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
-     acl2::equal-of-bvplus-constant-and-constant
-     acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::mod-of-+-of-constant
      xr-of-if
 
@@ -6496,7 +6487,7 @@
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
 (set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
-(set-axe-rule-priority read-of-write-irrel -1)
+(set-axe-rule-priority read-of-write-irrel -1) ; Try this rule first
 (set-axe-rule-priority read-of-write-irrel-bv-axe-smt 1) ; try late, as this uses SMT
 (set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt 1)
 (set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt-alt 1)

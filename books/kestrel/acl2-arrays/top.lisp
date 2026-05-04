@@ -1,6 +1,6 @@
 ; Top file for acl2-arrays library
 ;
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "bounded-nat-alists")
 (include-book "bounded-integer-alistp")
+(include-book "constants")
 (include-book "array1p")
 (include-book "typed-acl2-arrays")
 (include-book "expandable-arrays")
@@ -27,10 +28,11 @@
 (include-book "aref1-list")
 (include-book "aset1-list")
 (include-book "array-to-alist")
-(include-book "make-empty-array")
-(include-book "make-into-array-with-len")
-(include-book "make-into-array")
+(include-book "new-array1")
+(include-book "alist-to-array1-with-len")
+(include-book "alist-to-array1")
 (include-book "acl2-arrays")
 (include-book "aset1-safe")
 (include-book "print-array")
 (include-book "copy-array-vals")
+(include-book "doc")

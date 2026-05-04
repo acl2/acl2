@@ -1,6 +1,6 @@
 ; A function to write a sequence of objects to a channel
 ;
-; Copyright (C) 2017-2025 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,9 @@
 (local (include-book "open-output-channel-p"))
 
 (local (in-theory (disable open-output-channel-p open-output-channel-p1
-                           print-object$-fn)))
+                           print-object$
+                           print-object$-fn
+                           w)))
 
 ;; Write each element of OBJECTS to CHANNEL, with a newline preceding each one.  Returns STATE.
 (defund write-objects-to-channel-aux (objects channel state)
@@ -49,6 +51,18 @@
   :hints (("Goal" :in-theory (enable write-objects-to-channel-aux
                                      open-output-channel-p))))
 
+(defthm state-p-of-write-objects-to-channel-aux
+  (implies (and (open-output-channel-p channel :object state)
+                (state-p state))
+           (state-p (write-objects-to-channel-aux list channel state)))
+  :hints (("Goal" :in-theory (enable write-objects-to-channel-aux
+                                     open-output-channel-p))))
+
+(defthm w-of-write-objects-to-channel-aux
+  (equal (w (write-objects-to-channel-aux objects channel state))
+         (w state))
+  :hints (("Goal" :in-theory (enable write-objects-to-channel-aux))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns STATE.
@@ -74,3 +88,14 @@
            (state-p1 (write-objects-to-channel list channel state)))
   :hints (("Goal" :in-theory (enable write-objects-to-channel
                                      open-output-channel-p))))
+
+(defthm state-p-of-write-objects-to-channel
+  (implies (and (open-output-channel-p channel :object state)
+                (state-p state))
+           (state-p (write-objects-to-channel list channel state)))
+  :hints (("Goal" :in-theory (enable write-objects-to-channel open-output-channel-p))))
+
+(defthm w-of-write-objects-to-channel
+  (equal (w (write-objects-to-channel objects channel state))
+         (w state))
+  :hints (("Goal" :in-theory (enable write-objects-to-channel))))

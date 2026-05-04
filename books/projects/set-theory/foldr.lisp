@@ -134,32 +134,33 @@
            (equal (nth n x)
                   (nth (1- n) (cdr x)))))
 
-(defthmz in-apply
+(defthmdz in-apply-special-case
+
+; I'm disabling this lemma by default because the condition (in 0 s2) is
+; pretty weird.  In fact this lemma isn't used (as of late 2/2026 when writing
+; this comment).
+
   (implies (and (subset fn (prod2 s1 s2))
-                (in x s1)
                 (in 0 s2))
            (in (apply fn x)
-                s2))
+               s2))
   :props (zfc prod2$prop)
   :hints (("Goal" :in-theory (enable apply))))
 
 (defthmz acl2p-apply
-  (implies (and (subset fn (prod2 s1 (acl2)))
-                (in x s1))
+  (implies (subset fn (prod2 s1 (acl2)))
            (acl2p (apply fn x)))
   :props (foldr-prop)
   :hints (("Goal" :in-theory (enable apply))))
 
 (defthmz acl2p-apply-acl2p
-  (implies (and (subset fn (prod2 (acl2) (acl2)))
-                (in x (acl2)))
+  (implies (subset fn (prod2 (acl2) (acl2)))
            (acl2p (apply fn x)))
   :props (foldr-prop)
   :hints (("Goal" :in-theory (enable apply))))
 
 (defthmz acl2p-map ; based on prove-acl2p
-  (implies (and (subset f (prod2 (acl2) (acl2)))
-                (acl2p lst))
+  (implies (subset f (prod2 (acl2) (acl2)))
            (acl2p (map f lst)))
   :props (foldr-prop))
 

@@ -26,7 +26,7 @@
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (natp max-term-size))))
   (if (dag-or-quotep-size-less-than dag max-term-size)
-      (cw "~X01" (dag-to-term dag) nil) ; todo: untranslate (see below)
+      (cw "~X01" (dag2term dag) nil) ; todo: untranslate (see below)
     (cw "~X01" dag nil)))
 
 ;; Returns state.
@@ -43,7 +43,7 @@
            (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
                       (set-print-base-radix print-base state)
                     state))
-           (term (dag-to-term dag))
+           (term (dag2term dag))
            (term (if untranslatep (untranslate$ term nil state) term))
            (- (cw "~X01" term nil))
            (state (set-print-base-radix 10 state)) ;make-event sets it to 10
@@ -92,7 +92,7 @@
     (cons (if (and (not (first bools))
                    (let ((arg (first args)))
                      (and (myquotep arg)
-                          (consp (unquote arg)) ; checks for a fairly long list
+                          (consp (unquote arg)) ; checks for a fairly long list ; todo: allow elision-spec to contain a number indicating the max size (not length) item to print
                           (<= 100 (len (unquote arg))))))
               :elided
             (first args))
@@ -260,7 +260,7 @@
               (this-step-increment (this-step-increment step-increment steps-done))
               (desired-steps-for-this-iteration (min (- step-limit steps-done) this-step-increment))
               ((when (not (posp desired-steps-for-this-iteration))) ; todo: add MBT
-               (er hard? ',name "Temination problem: Desired steps is ~x0." desired-steps-for-this-iteration)
+               (er hard? ',name "Termination problem: Desired steps is ~x0." desired-steps-for-this-iteration)
                (mv :termination-problem nil nil state))
               (- (cw "(Running (up to ~x0 steps):~%" desired-steps-for-this-iteration))
               ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -294,7 +294,7 @@
               ;; usually 0, unless we are done (can this ever be negative?):
               (remaining-limit (limit-for-rule step-opener-rule limits))
               ((when (not remaining-limit)) ; todo: prove this can't happen
-               (er hard? 'make-repeatedly-run-function-fn "The limit for ~x0 disappeared." step-opener-rule)
+               (er hard? ',name "The limit for ~x0 disappeared." step-opener-rule)
                (mv :limit-error dag-or-constant hits state))
               (steps-done-this-time (- desired-steps-for-this-iteration remaining-limit))
               (steps-done (+ steps-done-this-time steps-done))
@@ -303,13 +303,14 @@
                  (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
                  (cw "s.)"))
               (- (cw ")~%")) ; matches "(Running"
-              ((when (quotep dag-or-constant))
+              ((when (quotep dag-or-constant)) ; rare for it to be a constant
                (cw "Total steps: ~x0.~%" steps-done)
                (cw "Result is a constant!~%")
                (mv (erp-nil) dag-or-constant hits state))
               (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
-              ;; TODO: Consider not pruning if this increment didn't create any new branches:
+              (dag-before-pruning dag) ; remember this for comparison below
               ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
+              ;; TODO: Consider not pruning if this run didn't create any new branches:
               ((mv erp dag-or-constant state) (maybe-prune-dag-approximately prune-approx
                                                                              dag
                                                                              (remove-assumptions-about non-stp-assumption-functions assumptions)
@@ -353,90 +354,133 @@
                       (progn$ (cw "(DAG after this limited run:~%")
                               (cw "~X01" dag nil)
                               (cw ")~%"))))
-              ;; TODO: Error if dag too big (must be able to add it to old dag, or make a version of equivalent-dagsp that signals an error):
               ;; (- (and print (progn$ (cw "(DAG after second pruning:~%")
               ;;                       (cw "~X01" dag nil)
               ;;                       (cw ")~%"))))
               ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).  But perhaps now there are enough rules used in pruning to handle that?
-              (dag-fns (dag-fns dag))
-
-              ;; TODO: Maybe don't prune if the run completed and there are no error branches?
-              (run-completedp (not (intersection-eq
-                                    incomplete-run-fns
-                                    dag-fns))) ; todo: call contains-anyp-eq
-              ((mv erp nothing-changedp) (if run-completedp
-                                             (mv nil nil) ; we know something changed since the run is now complete
-                                           (equivalent-dagsp2 dag old-dag))) ; todo: can we test equivalence up to xor nest normalization? ; todo: check using the returned limits whether any work was done (want if was simplification but not stepping?)?
-              ((when erp) (mv erp nil hits state))
-
-              ;; Stop if we hit an unimplemented instruction (it may be on an unreachable branch, but we've already pruned -- todo: prune harder?):
-              ;; ((when ..)
-              ;;  (progn$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%") ; todo: print the name of the instruction
-              ;;          (cw "~%")
-              ;;          (mv :unimplemented-instruction dag state)))
-
-              ;; ((when nothing-changedp)
-              ;;  (cw "Note: Stopping the run because nothing changed.~%") ; todo: check if one of the incomplete-run-fns remains (but what if we hit one of the stop-pcs?)
-              ;;  ;; check how many steps used?
-              ;;  ;; todo: check for the error-fns here
-              ;;  (mv (erp-nil) dag state))
-; todo: return an error?  or maybe this can happen if we hit one of the stop-pcs
+              (dag-fns (dag-fns dag)) ; todo: optimize to avoid making this whole list
+              ;; Check for an incomplete run (TODO: What if we could prune away such branches with more work?):
+              (remaining-incomplete-run-fns (intersection-eq incomplete-run-fns dag-fns))
+              (run-completedp (not remaining-incomplete-run-fns)) ; todo: call contains-anyp-eq?
               )
-           (if (or run-completedp nothing-changedp)
-               ;; stop if the run is done
-               ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
-               (b* ((- (if run-completedp
-                           (cw " The run completed normally.~%")
-                         (cw " The run completed abnormally (nothing changed).~%")))
+           (if run-completedp
+               ;; Stop, since the run is done (but maybe simplify one last time):
+               (b* ((- (cw " The run completed.~%"))
                     (- (cw "Total steps: ~x0.~%" steps-done))
-                    (- (cw "(Doing final simplification:~%"))
-                    ((mv erp dag-or-constant & hits2 state) ; todo: check if it is a constant?  ; todo: use the limits?
-                     (,simplify-dag-name dag
-                                         assumptions
-                                         rule-alist
-                                         nil ; interpreted-function-alist
-                                         (known-booleans (w state))
-                                         normalize-xors
-                                         limits
-                                         memoizep
-                                         count-hits
-                                         print
-                                         rules-to-monitor
-                                         no-warn-ground-functions
-                                         fns-to-elide
-                                         state))
+                    ;; Maybe simplify one last time:
+                    ((mv erp dag-or-constant hits2 state)
+                     (if (equal dag dag-before-pruning) ; could use equivalent-dagsp here but maybe not needed
+                         (prog2$ ;; Pruning did nothing, so we don't need to simplify again:
+                           (cw "Note: No need for final simplification.~%")
+                           (mv (erp-nil) dag nil state))
+                       (b* ((- (cw "(Doing final simplification:~%"))
+                            ((mv erp dag-or-constant & hits2 state) ; ignore the limits
+                             (,simplify-dag-name dag
+                                                 assumptions
+                                                 rule-alist ; todo: don't use the symbolic execution rules here?
+                                                 nil ; interpreted-function-alist
+                                                 (known-booleans (w state))
+                                                 normalize-xors
+                                                 limits ; todo: don't pass, since we are done running?  can non-run rule be limited?
+                                                 memoizep
+                                                 count-hits
+                                                 print
+                                                 rules-to-monitor
+                                                 no-warn-ground-functions
+                                                 fns-to-elide
+                                                 state))
+                            (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
+                            )
+                         (mv erp dag-or-constant hits2 state))))
                     ((when erp) (mv erp nil hits state))
                     (hits (combine-hits hits hits2))
+                    ((when (quotep dag-or-constant)) ; rare for it to be a constant
+                     (cw "Result is a constant!~%")
+                     (mv (erp-nil) dag-or-constant hits state))
+                    (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
                     ;; todo: also prune here, if the simplfication does anything?
-                    (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
+                    ;; TODO: Maybe don't prune if the run completed and there are no error branches?
+
                     ;; Check for error branches (TODO: What if we could prune them away with more work?):
-                    (dag-fns (if (quotep dag-or-constant) nil (dag-fns dag-or-constant)))
+                    ;; This should probably never happen, since the run-until should remain wrapped around the error branch.
+                    (dag-fns (dag-fns dag))
                     (error-branch-functions (intersection-eq error-fns dag-fns))
-                    (incomplete-run-functions (intersection-eq incomplete-run-fns dag-fns))
                     ((when error-branch-functions)
                      (cw "~%")
                      (print-dag-nicely dag max-printed-term-size) ; use the print-base?
                      (er hard? ',name "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
-                     (mv :unresolved-error-branches nil hits state))
-                    ;; Check for an incomplete run (TODO: What if we could prune away such branches with more work?):
-                    ((when incomplete-run-functions)
-                     (cw "~%")
-                     (print-dag-nicely dag max-printed-term-size) ; use the print-base?
-                     (er hard? ',name " Incomplete run (see calls of ~&0 in the term or DAG above)." incomplete-run-functions)
-                     (mv :incomplete-run nil hits state)))
-                 (mv (erp-nil) dag-or-constant hits state))
-             ;; Continue the symbolic execution:
-             (b* (((when (not (posp steps-done-this-time))) ; for termination
-                   (er hard? ',name "No steps were done, but the run is not complete.")
-                   (mv :no-steps-done dag hits state))
-                  (- (cw "(Steps so far: ~x0.)~%" steps-done))
-                  (state ;; Print as a term unless it would be huge:
-                   (if (print-level-at-least-tp print)
-                       (print-dag-nicely-with-base dag max-printed-term-size (concatenate 'string "after " (nat-to-string steps-done) " steps") untranslatep print-base state)
-                     state)))
-               (,name steps-done step-limit step-increment
-                      dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns untranslatep memoizep
-                      state))))))))
+                     (mv :unresolved-error-branches nil hits state)))
+                 (mv (erp-nil) dag hits state))
+             ;; The run did not complete:
+             (b* (((mv erp nothing-changedp) (equivalent-dagsp2 dag old-dag)) ; todo: can we test equivalence up to xor nest normalization? ; todo: check using the returned limits whether any work was done (what if it was simplification but not stepping?)?
+                  ((when erp) (mv erp nil hits state))
+                  ;; Stop if we hit an unimplemented instruction (it may be on an unreachable branch, but we've already pruned -- todo: prune harder?):
+                  ;; ((when ..)
+                  ;;  (progn$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%") ; todo: print the name of the instruction
+                  ;;          (cw "~%")
+                  ;;          (mv :unimplemented-instruction dag state)))
+                  ;;  )
+                  )
+               (if nothing-changedp ; we know from the check above that the run is not complete (what if we hit one of the stop-pcs?)
+                   ;; todo: return an error?  or maybe this can happen if we hit one of the stop-pcs
+                   (b* ((- (cw " The run did not complete, but nothing is changing.~%"))
+                        (- (cw "Total steps: ~x0.~%" steps-done))
+                        ;; No need to try a final simplification or pruning, I guess, because the simplification/pruning this time around didn't change anything.
+                        ;; Check for error branches (TODO: What if we could prune them away with more work?):
+                        (dag-fns (dag-fns dag)) ; done above?
+                        (error-branch-functions (intersection-eq error-fns dag-fns))
+                        ;; todo: consider printing both of these kinds of info:
+                        ((when error-branch-functions)
+                         (cw "~%")
+                         (print-dag-nicely dag max-printed-term-size) ; use the print-base?
+                         (er hard? ',name "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
+                         (mv :unresolved-error-branches nil hits state))
+                        ((when remaining-incomplete-run-fns)
+                         (cw "~%")
+                         (print-dag-nicely dag max-printed-term-size) ; use the print-base?
+                         (er hard? ',name " Incomplete run (see calls of ~&0 in the term or DAG above)." remaining-incomplete-run-fns)
+                         (mv :incomplete-run nil hits state)))
+                     (mv :error-incomplete-run ; is this case possible?
+                         dag hits state))
+                 ;; Something changed, so continue the symbolic execution:
+                 (b* (((when (not (posp steps-done-this-time))) ; for termination
+                       (er hard? ',name "No steps were done, but the run is not complete.")
+                       (mv :no-steps-done dag hits state))
+                      (- (cw "(Steps so far: ~x0.)~%" steps-done))
+                      (state ;; Print as a term unless it would be huge:
+                        (if (print-level-at-least-tp print)
+                            (print-dag-nicely-with-base dag max-printed-term-size (concatenate 'string "after " (nat-to-string steps-done) " steps") untranslatep print-base state)
+                          state)))
+                   (,name steps-done step-limit step-increment
+                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns untranslatep memoizep
+                          state))))))))))
 
 (defmacro make-repeatedly-run-function (name simplify-dag-name)
   `(make-event (make-repeatedly-run-function-fn ',name ',simplify-dag-name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; maybe extends acc
+(defund add-lifter-event-name (event acc)
+  (declare (xargs :guard (true-listp acc)))
+  (if (not (and (consp event)
+                (true-listp event)))
+      (er hard? 'lifter-event-name "Bad event encountered: ~x0." event)
+    (case (car event)
+      ;; These events don't have names:
+      ((include-book) acc)
+      ((skip-proofs) (add-lifter-event-name (cadr event) acc))
+      ;; probably anything local should be ignored?
+      ((defconst defun defun-nx defund defund-nx defthm defthmd)
+       (cons (cadr event) acc))
+      (otherwise (er hard? 'lifter-event-name "Unhandled event type: ~x0." event)))))
+
+;; These are passed to value-triple for printing as the 'return value' of the lifter.
+(defund lifter-event-names (events acc)
+  (declare (xargs :guard (and (true-listp events)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable add-lifter-event-name)))))
+  (if (endp events)
+      (reverse acc)
+    (lifter-event-names (rest events)
+                        (add-lifter-event-name (first events) acc))))

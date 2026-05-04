@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2019, Kestrel Technology, LLC
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -37,14 +37,13 @@
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 ; Contributing Author(s):
-; Alessandro Coglio   <coglio@kestrel.edu>
+; Alessandro Coglio   <www.alessandrocoglio.info>
 
 (in-package "X86ISA")
 
 ;; ======================================================================
 
-(include-book "../decoding-and-spec-utils"
-              :ttags (:undef-flg))
+(include-book "../decoding-and-spec-utils")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ; The Intel and AMD documentation is ambiguous about the determination of the
@@ -572,121 +571,82 @@
 
     x86)
 
-  :guard-hints (("Goal" :in-theory (enable rme-size)))
-  )
+  :guard-hints (("Goal" :in-theory (enable rme-size))))
 
-;; (def-inst x86-pop-segment-register
+(def-inst x86-pop-segment-register
 
-;;   :parents (one-byte-opcodes)
+  :parents (one-byte-opcodes two-byte-opcodes)
 
-;;   :short "POP FS/GS"
+  :short "Pop to segment register."
 
-;;   :long "<p><tt>0F A1</tt>: \[POP FS\]</p>
-;; <p><tt>0F A9</tt>: \[POP GS\]</p>
-;;    <p>Popping other segment registers in the 64-bit mode is
-;;    invalid.</p>
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "1F      POP DS"
+    "07      POP ES"
+    "17      POP SS"
+    "0F A1   POP FS"
+    "0F A9   POP GS"))
 
-;; <p>If the source operand is a segment register \(16 bits\) and the
-;;  operand size is 64-bits, a zero- extended value is pushed on the
-;;  stack; if the operand size is 32-bits, either a zero-extended value
-;;  is pushed on the stack or the segment selector is written on the
-;;  stack using a 16-bit move. For the last case, all recent Core and
-;;  Atom processors perform a 16-bit move, leaving the upper portion of
-;;  the stack location unmodified.</p>
+  :guard (member-equal opcode '(#x1f #x07 #x17 #xa1 #xa9))
 
-;; <p>POP doesn't have a separate instruction semantic function, unlike
-;; other opcodes like ADD, SUB, etc. I've just coupled the decoding with
-;; the execution in this case.</p>"
+  :returns (x86 x86p :hyp (x86p x86))
 
-;;   :returns (x86 x86p :hyp (x86p x86))
+  :body
 
-;;   :modr/m t
+  (b* (;; Determine operand size.
+       ((the (integer 2 8) operand-size)
+        (select-operand-size proc-mode
+                             nil ; byte-operand?
+                             rex-byte
+                             nil ; imm?
+                             prefixes
+                             t ; default64?
+                             t ; ignore-rex?
+                             nil ; ignore-p3-64?
+                             x86))
 
-;;   :body
+       ;; Retrieve stack pointer.
+       (rsp (read-*sp proc-mode x86))
 
-;;   (b* ((lock (equal #.*lock* (prefixes->lck prefixes)))
-;;        ((when lock)
-;;         (!!ms-fresh :lock-prefix prefixes))
-;;        (p2 (prefixes->group-2-prefix prefixes))
-;;        (p3 (equal #.*operand-size-override*
-;;               (prefixes->group-3-prefix prefixes)))
+       ;; Increment the stack pointer.
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+       (x86 (write-*sp proc-mode new-rsp x86))
 
-;;        ((the (integer 1 8) operand-size)
-;;         (if p3
-;;             2
-;;           ;; 4-byte operand size is N.E. in 64-bit mode
-;;           8))
+       ;; Read value from the stack.
+       (check-alignment? (alignment-checking-enabled-p x86))
+       ((mv flg0 val x86)
+        (rme-size-opt proc-mode operand-size rsp #.*ss* :r check-alignment? x86
+                      :mem-ptr? nil
+                      :check-canonicity t))
+       ((when flg0) (!!ms-fresh :rme-size-opt flg))
 
-;;        (rsp (rgfi *rsp* x86))
-;;        ((when (not (canonical-address-p rsp)))
-;;         (!!ms-fresh :rsp-not-canonical rsp))
+       ;; Only the low 16 bits of the popped value are kept,
+       ;; because segment descriptors are only 16 bits.
+       ;; The Intel manuals do not seem to explicate the truncation
+       ;; (e.g. in the pseudocode for POP),
+       ;; but it seems the reasonable thing to do.
+       (selector (n16 val))
 
-;;        ((the (signed-byte #.*max-linear-address-size+1*) new-rsp)
-;;         (+ (the (signed-byte #.*max-linear-address-size*) rsp) operand-size))
-;;        ;; TO-DO@Shilpi: Raise a #SS exception.
-;;        ((when (not (canonical-address-p new-rsp)))
-;;         (!!ms-fresh :new-rsp-not-canonical new-rsp))
+       ;; We can determine the segment register from the opcode.
+       (seg-reg (case opcode
+                  (#x1f #.*ds*)
+                  (#x07 #.*es*)
+                  (#x17 #.*ss*)
+                  (#xa1 #.*fs*)
+                  (#xa9 #.*gs*)))
 
-;;        ((mv flg0 val x86)
-;;         (rme-size proc-mode operand-size rsp *ss* :r x86))
-;;        ((when flg0) ;; #SS exception?
-;;         (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
+       ;; Load the selector into the segment register.
+       ((mv flg descriptor x86)
+        (get-segment-descriptor seg-reg selector x86))
+       ((when flg)
+        (b* (((when (equal flg t))
+              (!!ms-fresh :get-segment-descriptor)))
+          (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
+       (x86 (load-segment-reg seg-reg selector descriptor x86)))
 
-;;        (p4 (equal #.*addr-size-override*
-;;               (prefixes->group-4-prefix prefixes)))
-;;        ((mv flg1 v-addr (the (unsigned-byte 3) increment-RIP-by) x86)
-;;         (if (equal mod #b11)
-;;             (mv nil 0 0 x86)
-;;           (x86-effective-addr proc-mode p4 temp-rip rex-byte r/m mod sib 0 x86)))
-;;        ((when flg1) ;; #SS exception?
-;;         (!!ms-fresh :x86-effective-addr-error flg1))
-
-;;        ((mv flg2 v-addr)
-;;         (case p2
-;;           (0 (mv nil v-addr))
-;;           ;; TO-DO@Shilpi: I don't really need to check whether FS and
-;;           ;; GS base are canonical or not.  On the real machine, if
-;;           ;; the MSRs containing these bases are assigned
-;;           ;; non-canonical addresses, an exception is raised.
-;;           (#.*fs-override*
-;;            (let* ((nat-fs-base (msri *IA32_FS_BASE-IDX* x86))
-;;                   (fs-base (n64-to-i64 nat-fs-base)))
-;;              (if (not (canonical-address-p fs-base))
-;;                  (mv 'Non-Canonical-FS-Base fs-base)
-;;                (mv nil (+ fs-base v-addr)))))
-;;           (#.*gs-override*
-;;            (let* ((nat-gs-base (msri *IA32_GS_BASE-IDX* x86))
-;;                   (gs-base (n64-to-i64 nat-gs-base)))
-;;              (if (not (canonical-address-p gs-base))
-;;                  (mv 'Non-Canonical-GS-Base gs-base)
-;;                (mv nil (+ gs-base v-addr)))))
-;;           (t (mv 'Unidentified-P2 v-addr))))
-;;        ((when flg2)
-;;         (!!ms-fresh :Fault-in-FS/GS-Segment-Addressing flg2))
-;;        ((when (not (canonical-address-p v-addr)))
-;;         (!!ms-fresh :v-addr-not-canonical v-addr))
-
-;;        ((mv flg3 x86)
-;;         (x86-operand-to-reg/mem
-;;          operand-size val v-addr rex-byte r/m mod x86))
-;;        ((when flg3)
-;;         (!!ms-fresh :x86-operand-to-reg/mem flg2))
-
-;;        ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-;;         (+ increment-RIP-by temp-rip))
-;;        ((when (not (canonical-address-p temp-rip)))
-;;         (!!ms-fresh :virtual-memory-error temp-rip))
-
-;;        ;; TO-DO@Shilpi: If the instruction goes beyond 15 bytes, stop. Change
-;;        ;; to an exception later.
-;;        ((when (> (- temp-rip start-rip) 15))
-;;         (!!ms-fresh :instruction-length (- temp-rip start-rip)))
-
-;;        ;; Update the x86 state:
-;;        (x86 (!rgfi *rsp* new-rsp x86))
-;;        (x86 (!rip temp-rip x86)))
-
-;;       x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: PUSHF/PUSHFQ

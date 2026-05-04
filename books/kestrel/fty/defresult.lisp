@@ -1,10 +1,10 @@
 ; FTY Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,9 +28,6 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-intro
-
-    (xdoc::p
-     "This is an experimental tool for now.")
 
     (xdoc::p
      "It is common for a function to return an error result in certain cases.
@@ -70,15 +67,16 @@
       because if there is an error result then there is no good result at all;
       the downside is that the result may have two different types.
       Since disjunctions are awkward in rewrite rules,
-      it is beneficial to always introduce a type for
+      it is beneficial to introduce a type for
       the union of good and error results,
       and use that as the return type of the function.
       But then one needs rules to handle the inherent disjunction.")
 
     (xdoc::p
      "When functions naturally return multiple results (via @(tsee mv)),
-      the first approach adds an error result,
-      while the second approach could be applied to one of the results
+      the first approach adds an error result, as in "
+     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
+     ", while the second approach could be applied to one of the results
       (e.g. the ``main'' one, if there is such a thing).
       Better yet from a conceptual point of view,
       the function can be made to return a single result,
@@ -117,7 +115,10 @@
       which propagates the error triples unchanged;
       @(tsee b*) provides the "
      (xdoc::seetopic "acl2::patbind-er" "@('er') binder")
-     ", which expands into something like @(tsee er-let*).")
+     ", which expands into something like @(tsee er-let*).
+      Also "
+     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
+     " provide convenience binders and macros.")
 
     (xdoc::p
      "The @('defresult') macro provides support for the second approach above.
@@ -156,7 +157,7 @@
     (xdoc::p
      "The @(tsee reserrf) and @(tsee reserrf-push) macros,
       and the @(tsee patbind-okf) binder,
-      may be very useful for debugging,
+      may be useful for debugging,
       or in general to provide informative error information.
       They may be less useful for higher-level specifications,
       in which errors do not carry much information
@@ -228,7 +229,7 @@
      "@(':ok')"
      (xdoc::p
       "A symbol that specifies the fixtype of the good results.
-       Let @('ok') be the recognizer of this fixtype."))
+       Let @('okp') be the recognizer of this fixtype."))
 
     (xdoc::desc
      "@(':pred')"
@@ -263,8 +264,15 @@
     (xdoc::desc
      "@(':prepwork')"
      (xdoc::p
-      "A list of preparatory event forms.
-       See the `" xdoc::*evmac-section-generated-title* "' section.")))
+      "A list of preparatory event forms (none by default).
+       See the `"
+      xdoc::*evmac-section-appconds-title*
+      "' and '"
+      xdoc::*evmac-section-generated-title*
+      "' sections.
+       Like other @(':prepwork') options in other event macros,
+       these events are not implicitly local,
+       so they must be explicitly localized if needed (as often).")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -307,14 +315,18 @@
       "The equivalence for the fixtype @('type')."))
 
     (xdoc::desc
-     "@('pred-when-ok')"
+     "@('pred-when-okp')"
      (xdoc::p
       "A theorem asserting that
        a value in the fixtype specified by @(':ok')
        is also in the fixtype @('type'):")
      (xdoc::codeblock
-      "(implies (ok x)"
-      "         (pred x))"))
+      "(implies (okp x)"
+      "         (pred x))")
+     (xdoc::p
+      "This is enabled by default,
+       because @('okp') is part of the definition of @('pred'),
+       and so the backchaining attempt is justified."))
 
     (xdoc::desc
      "@('pred-when-reserrp')"
@@ -324,24 +336,28 @@
        is also in the fixtype @('type'):")
      (xdoc::codeblock
       "(implies (reserrp x)"
-      "         (pred x))"))
+      "         (pred x))")
+     (xdoc::p
+      "This is enabled by default,
+       because @(tsee reserrp) is part of the definition of @('pred'),
+       and so the backchaining attempt is justified."))
 
     (xdoc::desc
-     "@('not-reserrp-when-ok')"
+     "@('not-reserrp-when-okp')"
      (xdoc::p
       "A theorem asserting that
        a value in the fixtype specified by @(':ok')
        is not an error in @(tsee reserrp):")
      (xdoc::codeblock
-      "(implies (ok x)"
+      "(implies (okp x)"
       "         (not (reserrp x)))")
      (xdoc::p
       "This theorem is disabled by default,
-       because it backchains from @(tsee reserrp) to @('ok'),
+       because it backchains from @(tsee reserrp) to @('okp'),
        where the former may be used without any reference to the latter."))
 
     (xdoc::desc
-     "@('ok-when-pred-and-not-error')"
+     "@('okp-when-result-not-error')"
      (xdoc::p
       "A theorem asserting that
        a value in the fixtype @('type')
@@ -350,10 +366,26 @@
      (xdoc::codeblock
       "(implies (and (pred x)"
       "              (not (reserrp x)))"
-      "         (ok x))")
+      "         (okp x))")
      (xdoc::p
       "This theorem is disabled by default,
-       because it backchains from @('ok') to @('pred'),
+       because it backchains from @('okp') to @('pred'),
+       where the former may be used without any reference to the latter."))
+
+    (xdoc::desc
+     "@('reserrp-when-pred-not-ok')"
+     (xdoc::p
+      "A theorem asserting that
+       a value in the fixtype @('type')
+       that is not in the fixtype specified by @(':ok')
+       is in the fixtype @('reserr'):")
+     (xdoc::codeblock
+      "(implies (and (pred x)"
+      "              (not (okp x)))"
+      "         (reserrp x))")
+     (xdoc::p
+      "This theorem is disabled by default,
+       because it backchains from @('reserr') to @('pred'),
        where the former may be used without any reference to the latter."))
 
     (xdoc::p
@@ -376,7 +408,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is the fixtype of error results for @(tsee defresult);
-     see the introduction of @(tsee defresult) for background and motivation.")
+     see the introduction section of @(tsee defresult)
+     for background and motivation.")
    (xdoc::p
     "An error result consists of some unconstrained information,
      wrapped with @(':error') to make it distinct from any good value
@@ -384,7 +417,14 @@
      a condition that seems reasonably easy to satisfy)."))
   ((info acl2::any))
   :tag :error
-  :pred reserrp)
+  :pred reserrp
+
+  ///
+
+  (defruled true-listp-when-reserrp
+    (implies (reserrp x)
+             (true-listp x))
+    :enable reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -422,7 +462,7 @@
    "This macro is a bit like the @('reserr') constructor
     of the fixtype @(tsee reserr),
     but the @('f') in the name conveys that
-    it adds the name of the function to the infomation passed as argument."))
+    it adds the name of the function to the information passed as argument."))
  `(make-reserr :info (list (list __function__ ,info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -459,7 +499,9 @@
   (xdoc::topstring
    (xdoc::p
     "This is somewhat similar to @(tsee acl2::patbind-er),
-     but it is for " (xdoc::seetopic "defresult" "result types") ".")
+     but it is for "
+    (xdoc::seetopic "defresult" "result types")
+    ".")
    (xdoc::p
     "It checks whether the value of the bound term is an error,
      returning the same error if the check succeeds.
@@ -488,7 +530,7 @@
   :body
   `(b* ((patbinder-ok-fresh-variable-for-result ,(car acl2::forms))
         ((when (reserrp patbinder-ok-fresh-variable-for-result))
-         (reserrf-push patbinder-ok-fresh-variable-for-result))
+         patbinder-ok-fresh-variable-for-result)
         (,(car args) patbinder-ok-fresh-variable-for-result))
      ,acl2::rest-expr))
 
@@ -567,11 +609,13 @@
          (type-fix (or fix (add-suffix type "-FIX")))
          (type-equiv (or equiv (add-suffix type "-EQUIV")))
          (not-reserrp-when-ok-pred
-          (acl2::packn-pos (list 'not-reserrp-when- ok-pred)
-                           type))
-         (ok-pred-when-type-pred-and-not-reserrp
-          (acl2::packn-pos (list ok-pred '-when- type-pred '-and-not-reserrp)
-                           type)))
+          (acl2::packn-pos (list 'not-reserrp-when- ok-pred) type))
+         (ok-pred-when-result-not-error
+          (acl2::packn-pos (list ok-pred '-when-result-not-error) type))
+         (reserrp-when-type-pred-not-ok
+          (acl2::packn-pos (list 'reserrp-when- type-pred '-not-ok) type)))
+      ;; The theorems TYPE-PRED-WHEN-OK-PRED and TYPE-PRED-WHEN-RESERRP
+      ;; are generated by DEFFLATSUM.
       `(encapsulate ()
          ,@prepwork
          (defflatsum ,type
@@ -587,8 +631,13 @@
            (implies (,ok-pred x)
                     (not (reserrp x)))
            :enable (,ok-pred reserrp))
-         (defruled ,ok-pred-when-type-pred-and-not-reserrp
+         (defruled ,ok-pred-when-result-not-error
            (implies (and (,type-pred x)
                          (not (reserrp x)))
                     (,ok-pred x))
+           :enable ,type-pred)
+         (defruled ,reserrp-when-type-pred-not-ok
+           (implies (and (,type-pred x)
+                         (not (,ok-pred x)))
+                    (reserrp x))
            :enable ,type-pred)))))

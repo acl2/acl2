@@ -4,7 +4,7 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,7 +20,7 @@
 (include-book "kestrel/bv/bvshr" :dir :system)
 (include-book "kestrel/bv/slice-def" :dir :system)
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1750,7 +1750,7 @@
 (define atc-formal-affectablep ((formal symbolp)
                                 (typed-formals atc-symbol-varinfo-alistp))
   :returns (yes/no booleanp)
-  :short "Check if a formal parameter is a affectable."
+  :short "Check if a formal parameter is affectable."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3702,7 +3702,7 @@
                ((mv okp subst) (one-way-unify$ meas-gen meas-inst state))
                ((when (not okp))
                 (reterr
-                 (msg "Failed to match istantiated measure ~x0 ~
+                 (msg "Failed to match instantiated measure ~x0 ~
                        to general measure ~x1 of function ~x2."
                       meas-inst meas-gen fn)))
                (measure-args (fty-fsublis-var-lst subst measure-formals)))
@@ -4697,7 +4697,7 @@
      the reason is so we can have the appropriate induction.")
    (xdoc::p
     "We make use of the theorems for the test and body,
-     so that the proof the the loop itself is, in a sense,
+     so that the proof the loop itself is, in a sense,
      independent from the specifics of test and body;
      this is critical for efficiency of the proof.
      While the theorem for the test is used as a rewrite rule,

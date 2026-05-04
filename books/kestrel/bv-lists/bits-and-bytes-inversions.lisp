@@ -1,7 +1,7 @@
 ; Inversion theorems about converting between bytes and bit lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -39,8 +39,7 @@
                 (all-unsigned-byte-p 1 bits)
                 (true-listp bits))
            (equal (bytes-to-bits (bits-to-bytes bits))
-                  bits))
-  :hints (("Goal" :in-theory (enable))))
+                  bits)))
 
 (defthm bits-to-bytes-of-bytes-to-bits
   (implies (and (all-unsigned-byte-p 8 bytes)
@@ -52,7 +51,7 @@
                                      len-mult-of-8p)
            :expand (bits-to-bytes (byte-to-bits (car bytes))))))
 
-;; Somewhat unusal because the inner function operates on a single byte but the
+;; Somewhat unusual because the inner function operates on a single byte but the
 ;; outer function returns a list of bytes.
 (defthm bits-to-bytes-of-byte-to-bits
   (implies (unsigned-byte-p 8 byte)

@@ -335,14 +335,14 @@ rule.</p>")
 
 
 (define unconditional (x)
-  :parents (fgl-rewrite-rule)
+  :parents (fgl-rewrite-rules)
   :short "Identity function; when wrapped around an IF branch indicates that the
 test of the IF should not be included in the path condition while rewriting the
  branch."
   x)
 
 (define left-to-right (x)
-  :parents (fgl-rewrite-rule)
+  :parents (fgl-rewrite-rules)
   :short "Identity function that directs replacements due to an equivalence to prefer replacing the left-hand side with the right-hand side."
   :long "<p>When this identity function is wrapped around an equivalence term, then when
 that term is assumed true (as in a hypothesis or path condition element), the symbolic object resulting from the first argument of the equivalence will be replaced by that resulting from the second argument whenever it occurs under a matching equivalence context.</p>
@@ -402,6 +402,7 @@ call can be used to check for unsatisfiability of the path condition within
 <p>The (regular, non-binder) function @(see assume) has similar functionality,
 but can only be used under the @('unequiv') equivalence context, i.e. when
 there is no soundness requirements on the correctness of the evaluation.</p>"
+  :parents (fgl-rewrite-rules)
   :ignore-ok t
   :irrelevant-formals-ok t
   (if cond x ans)
@@ -412,6 +413,24 @@ there is no soundness requirements on the correctness of the evaluation.</p>"
 
   (defmacro conditionalize! (&rest args)
     `(binder (conditionalize! . ,args))))
+
+
+(define disallow-boolean-var-intro (x)
+  :enabled t
+  :parents (fgl-rewrite-rules)
+  :short "Special identity function that disallows the introduction of Boolean variables
+during the rewriting of its argument. An @(':intro-bvars-fail') error will be
+produced if necessary."
+  x)
+
+(define handle-error (errtype x &optional on-error)
+  :enabled t
+  :parents (fgl-rewrite-rules)
+  (declare (ignore errtype on-error))
+  :short "Special identity function that (in an unequiv context only) catches an error of
+the given type during rewriting of its second argument. If such an error
+occurs, the result is that of rewriting the third argument instead."
+  x)
 
 
 

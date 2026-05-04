@@ -1720,18 +1720,19 @@
                       (pairlis$ b (cdr c))))))
 (local (in-theory (disable pairlis$)))
 
-(defthm run-gified-clause-proc-correct
+(local (in-theory (disable (run-gified-ev-theoremp))))
+(local (defthm run-gified-ev-theoremp-of-nil
+         (not (run-gified-ev-theoremp ''nil))
+         :hints(("Goal" :in-theory (enable run-gified-ev-theoremp)))))
+(local
+ (defthm run-gified-clause-proc-correct-lemma
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
                 (run-gified-ev-meta-extract-global-facts)
-                (run-gified-ev
+                (run-gified-ev-theoremp
                  (conjoin-clauses
                   (acl2::clauses-result
-                   (run-gified-clause-proc clause hints state)))
-                 (run-gified-ev-falsify
-                  (conjoin-clauses
-                   (acl2::clauses-result
-                    (run-gified-clause-proc clause hints state))))))
+                   (run-gified-clause-proc clause hints state)))))
            (run-gified-ev (disjoin clause) a))
   :hints (("goal" :do-not-induct t
            :in-theory (enable run-gified-ev-constraint-0 ;; assoc-equal
@@ -1809,6 +1810,19 @@
                                                        OKP-TERM
                                                        'NIL)
                                                    (EQUAL LHS-TERM RHS-TERM)))
-                                        CLAUSE 'NIL)) . subst))))))
-  :rule-classes :clause-processor)
+                                        CLAUSE 'NIL)) . subst))))))))
 
+(defthm run-gified-clause-proc-correct
+  (implies (and (pseudo-term-listp clause)
+                (alistp a)
+                (run-gified-ev-meta-extract-global-facts)
+                (run-gified-ev-theoremp*
+                 (conjoin-clauses
+                  (acl2::clauses-result
+                   (run-gified-clause-proc clause hints state)))))
+           (run-gified-ev (disjoin clause) a))
+  :hints (("goal" :use run-gified-clause-proc-correct-lemma
+           :in-theory (e/d (run-gified-ev-theoremp)
+                           (run-gified-clause-proc-correct-lemma
+                            run-gified-clause-proc))))
+  :rule-classes :clause-processor)

@@ -1,7 +1,7 @@
 ; A tool to simplify a term and store the resulting DAG in a constant
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -42,7 +42,10 @@
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
+(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/rules3" :dir :system) ; for max-constants-lemma
+(include-book "kestrel/bv/rules4" :dir :system) ; for bvlt-of-bvcat-arg2-constant-arg4-arg3, etc.
 (include-book "kestrel/arithmetic-light/ifix" :dir :system) ; for ifix-when-integerp
 (include-book "kestrel/bv/adder" :dir :system) ; for RIPPLE-CARRY-ADDER-RECURSIVE -- drop?
 (include-book "kestrel/bv/bvif2" :dir :system) ; for BVLT-OF-BVIF-ARG2-SAFE
@@ -58,9 +61,9 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 ;(include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
 ;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
-(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system) ; for LIST-TO-BV-ARRAY
-(include-book "kestrel/bv-lists/array-patterns" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system) ; for LIST-TO-BV-ARRAY
+(include-book "kestrel/bv-arrays/array-patterns" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-clear" :dir :system)
 (include-book "kestrel/utilities/mv-nth" :dir :system) ; for MV-NTH-OF-CONS-SAFE
 (include-book "kestrel/utilities/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
@@ -191,7 +194,7 @@
   (declare (xargs :stobjs state
                   :mode :program ;; because this translates terms
                   :guard (and (symbolp defconst-name)
-                              ;; (pseudo-termp term) ;; really an untranlated term
+                              ;; (pseudo-termp term) ;; really an untranslated term
                               (or (eq :auto rules)
                                   (symbol-listp rules))
                               ;; (or (eq :auto rule-lists)
@@ -241,7 +244,7 @@
                                  &key
                                  (rules ':auto) ;to completely replace the usual set of rules
                                  (extra-rules 'nil) ; to add to the usual set of rules
-                                 (remove-rules 'nil) ; to remove from to the usual set of rules
+                                 (remove-rules 'nil) ; to remove from the usual set of rules
                                  ;;(rule-lists ':auto) ;to completely replace the usual set of rules
                                  ;;(rule-alists 'auto) ;to completely replace the usual set of rules
                                  (assumptions 'nil)

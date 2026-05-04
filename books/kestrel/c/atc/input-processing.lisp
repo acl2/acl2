@@ -165,7 +165,7 @@
                                'o<))))
         (reterr (msg "The well-founded relation ~
                       of the recursive target function ~x0 ~
-                      must be O<, but it ~x1 instead. ~
+                      must be O<, but it is ~x1 instead. ~
                       Only recursive functions with well-founded relation O< ~
                       are currently supported by ATC."
                      fn (get-well-founded-relation+ fn wrld))))
@@ -689,7 +689,7 @@
        (msg? (acl2::fresh-namep-msg-weak prog-const 'acl2::const wrld))
        ((when msg?)
         (reterr (msg "The constant name ~x0 ~
-                      determined by the :CONST-NAME input ~x0 ~
+                      determined by the :CONST-NAME input ~x1 ~
                       is invalid: ~@2"
                      prog-const const-name msg?)))
        (wf-thm (add-suffix prog-const "-WELL-FORMED"))

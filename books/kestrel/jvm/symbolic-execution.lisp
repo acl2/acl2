@@ -1,7 +1,7 @@
 ; Symbolic execution using run-until-return and run-until-return-from-stack-height
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "jvm") ; for step
 (include-book "symbolic-execution-common")
 
 ;BBOZO think about this stuff
@@ -39,7 +40,8 @@
                               (natp pc)
                               (pseudo-termp intern-table))))
   (let* ((staticp (jvm::method-staticp method-info))
-         (inst (if staticp :invokestatic :invokevirtual)))
+         (inst (if staticp :invokestatic :invokevirtual)) ; todo: consider other cases
+         )
     `(jvm::make-state
        (jvm::bind (th)
                   (jvm::push-frame (jvm::make-frame ',pc
@@ -49,7 +51,7 @@
                                                     ',method-info ;we quote the method info
                                                     ',(jvm::make-method-designator class-name method-name method-descriptor))
                                    (jvm::push-frame ;this is used only for catching the result and knowing how much to increment the PC upon return (but the invoke instruction is kind of fake here - we just use invokevirtual)
-                                     (jvm::make-frame '0
+                                     (jvm::make-frame '0 ; having a constant here may help the axe-bind-free functions?
                                                       frame2-locals
                                                       frame2-operand-stack
                                                       frame2-locked-object ;ffixme

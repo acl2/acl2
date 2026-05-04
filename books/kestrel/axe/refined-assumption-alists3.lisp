@@ -1,7 +1,7 @@
 ; More material on refined-assumption-alists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -55,7 +55,7 @@
                                               acc))))
 
 ;; only used by the legacy rewriter
-;; todo: guard is awkward.  pass in the nume-valid-nodes of the renaming-array and use as the bound
+;; todo: guard is awkward.  pass in the num-valid-nodes of the renaming-array and use as the bound
 (defund fixup-refined-assumption-alist (refined-assumption-alist renaming-array-name renaming-array acc)
   ;; (declare (xargs :guard (and (bounded-refined-assumption-alistp refined-assumption-alist num-valid-nodes)
   ;;                             (renaming-arrayp renaming-array-name renaming-array num-valid-nodes))))

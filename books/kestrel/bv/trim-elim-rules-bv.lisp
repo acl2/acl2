@@ -1,7 +1,7 @@
 ; Rules about trim applied to BV functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,11 +24,12 @@
 (include-book "bvmult")
 (include-book "bvminus")
 (include-book "bvand-def")
-(include-book "bvor")
-(include-book "bvxor")
+(include-book "bvor-def")
+(include-book "bvxor-def")
 (include-book "bvif")
 (include-book "bvshl")
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "bvcat-rules"))
 (local (include-book "repeatbit2"))
 (local (include-book "getbit"))

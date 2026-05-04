@@ -1,7 +1,7 @@
 ; Rules about the JVM model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -841,29 +841,6 @@
 ;move to a sequences library or drop the rule?
 ;(in-theory (disable JVM::NTH-OPENER)) ;BOZO trying...
 
-;allow alists to differ?
-(defthm bind-equal-bind-reduce
-  (equal (equal (jvm::bind x y alist) (jvm::bind x y2 alist))
-         (equal y y2))
-  :hints (("Goal" :in-theory (enable jvm::bind))))
-
-;move
-;newly disabled
-(defthmd bind-what-was-already-there
-  (implies (and (assoc-equal key alist)
-                (alistp alist)
-                (equal v (cdr (assoc-equal key alist))))
-           (equal (jvm::bind key v alist)
-                  alist))
-  :hints (("Goal" :in-theory (enable jvm::bind assoc-equal))))
-
-;move
-(defthm alistp-of-bind
-  (implies (alistp alist)
-           (equal (alistp (JVM::BIND x y alist))
-                  t))
-  :hints (("Goal" :in-theory (enable JVM::BIND alistp))))
-
 (defthm do-inst-of-myif
   (equal (jvm::do-inst (myif test op-code1 op-code2) inst th s)
          (myif test (jvm::do-inst op-code1 inst th s)
@@ -897,8 +874,8 @@
                        free)
                 (syntaxp (quotep free)))
            (equal (jvm::lookup-method-in-classes method-id class-names class-table)
-                  (if (acl2::lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
-                      (cons (acl2::lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
+                  (if (lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
+                      (cons (lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
                             (car class-names))
                     (jvm::lookup-method-in-classes method-id (cdr class-names) class-table))))
   :hints (("Goal" :in-theory (enable jvm::lookup-method-in-classes))))

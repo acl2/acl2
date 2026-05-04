@@ -518,4 +518,6 @@ case you misspell @(':g-concrete').</p>
                                (fgl-object-p x))
                       :hints(("Goal" :in-theory (enable fgl-object-p))))))
   ///
-  (verify-guards summarize-fgl-object))
+  (verify-guards summarize-fgl-object)
+
+  (memoize 'summarize-fgl-object))

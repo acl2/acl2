@@ -363,7 +363,7 @@
   (xdoc::topstring
    (xdoc::p
     "The concatenations are assembled into an alternation,
-     which is the immediate constituent of a option.")
+     which is the immediate constituent of an option.")
    (xdoc::@def "?_"))
 
   (defmacro ?_ (&rest concatenations)

@@ -1,6 +1,6 @@
 ; A simple evaluator that knows only about NOT
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,4 +12,4 @@
 
 (include-book "defevaluator-plus")
 
-(defevaluator+ not-eval not) ; an evaluator with no built-in functions
+(defevaluator+ not-eval not)

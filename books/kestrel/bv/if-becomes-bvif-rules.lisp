@@ -1,7 +1,7 @@
-; Rules about that turn IF into BVIF inside BV ops
+; Rules that turn IF into BVIF inside BV ops
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,6 +27,7 @@
 (include-book "sbvdiv")
 (include-book "sbvrem")
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "bvlt"))
 (local (include-book "bvuminus"))
 (local (include-book "slice"))

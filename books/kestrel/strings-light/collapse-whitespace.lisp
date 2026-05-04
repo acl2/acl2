@@ -1,6 +1,6 @@
 ; Collapsing/removing whitespace in strings
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -68,13 +68,21 @@
 
 ;; Replace each maximal run in ELEMS of consecutive elements from the
 ;; TARGET-ELEMS with a single copy of the REPLACEMENT-ELEMS.
-(defun replace-runs (elems target-elems replacement-elems)
+(defund replace-runs (elems target-elems replacement-elems)
   (declare (xargs :guard (and (true-listp elems)
                               (true-listp target-elems)
                               (true-listp replacement-elems))))
   (replace-runs-aux elems target-elems (reverse replacement-elems) nil))
 
 ;; (equal (replace-runs '(a b c 1 d e 1 2 3 f g 3 h i) '(1 2 3) '(small numbers here)) '(a b c small numbers here d e small numbers here f g small numbers here h i))
+
+(local
+  (defthm character-listp-of-replace-runs
+    (implies (and (character-listp elems)
+                  ;; (character-listp target-elems)
+                  (character-listp rev-replacement-elems))
+             (character-listp (replace-runs elems target-elems rev-replacement-elems)))
+    :hints (("Goal" :in-theory (enable replace-runs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

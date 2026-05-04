@@ -119,7 +119,9 @@
     const-exprp
     const-expr-count
     const-expr
+    make-const-expr
     const-expr->expr
+    const-expr->info
 
     const-expr-optionp
     const-expr-option-fix
@@ -462,34 +464,42 @@
     ext-declon-listp
     ext-declon-list-fix
 
-    transunitp
-    transunit
-    make-transunit
-    transunit-fix
-    transunit->includes
-    transunit->declons
+    trans-itemp
+    trans-item-fix
+    trans-item-case
+    trans-item-declon
+    trans-item-line-comment
 
-    filepath-transunit-mapp
+    trans-item-listp
+    trans-item-list-fix
 
-    transunit-ensemblep
-    transunit-ensemble
-    transunit-ensemble->units
+    trans-unitp
+    trans-unit
+    make-trans-unit
+    trans-unit-fix
+    trans-unit->items
+
+    filepath-trans-unit-mapp
+
+    trans-ensemblep
+    trans-ensemble
+    trans-ensemble->units
 
     filepathp
     filepath
-    filepath->unwrap
+    filepath->string
 
     filedatap
     filedata
-    filedata->unwrap
+    filedata->bytes
 
     filesetp
     fileset
-    fileset->unwrap
+    fileset->files
 
     code-ensemble
     code-ensemblep
-    code-ensemble->transunits
+    code-ensemble->trans-units
     code-ensemble->ienv
     make-code-ensemble
     change-code-ensemble
@@ -512,8 +522,9 @@
     irr-comp-stmt
     irr-block-item
     irr-fundef
-    irr-transunit
-    irr-transunit-ensemble
+    irr-trans-item
+    irr-trans-unit
+    irr-trans-ensemble
     irr-code-ensemble
 
     ;; unambiguity:
@@ -571,9 +582,11 @@
     fundef-unambp
     ext-declon-unambp
     ext-declon-list-unambp
-    transunit-unambp
-    filepath-transunit-map-unambp
-    transunit-ensemble-unambp
+    trans-item-unambp
+    trans-item-list-unambp
+    trans-unit-unambp
+    filepath-trans-unit-map-unambp
+    trans-ensemble-unambp
     code-ensemble-unambp
 
     ;; purity:
@@ -639,9 +652,11 @@
     fundef-aidentp
     ext-declon-aidentp
     ext-declon-list-aidentp
-    transunit-aidentp
-    filepath-transunit-map-aidentp
-    transunit-ensemble-aidentp
+    trans-item-aidentp
+    trans-item-list-aidentp
+    trans-unit-aidentp
+    filepath-trans-unit-map-aidentp
+    trans-ensemble-aidentp
     code-ensemble-aidentp
 
     ;; formalized subset:
@@ -814,9 +829,11 @@
     fundef-annop
     ext-declon-annop
     ext-declon-list-annop
-    transunit-annop
-    filepath-transunit-map-annop
-    transunit-ensemble-annop
+    trans-item-annop
+    trans-item-list-annop
+    trans-unit-annop
+    filepath-trans-unit-map-annop
+    trans-ensemble-annop
     code-ensemble-annop
 
     ;; other operations:

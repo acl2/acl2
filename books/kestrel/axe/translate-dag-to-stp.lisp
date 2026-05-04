@@ -61,11 +61,11 @@
 (include-book "kestrel/bv/leftrotate32" :dir :system) ; todo: split out the def
 (include-book "kestrel/bv/bvequal" :dir :system)
 ;(include-book "kestrel/bv/getbit-def" :dir :system)
-;(include-book "kestrel/bv-lists/bv-arrays" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-if" :dir :system)
+;(include-book "kestrel/bv-arrays/bv-arrays" :dir :system)
+(include-book "kestrel/bv-arrays/bv-arrayp" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-if" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/file-io-string-trees" :dir :system)
@@ -2457,7 +2457,7 @@
 ;; (defun prove-with-stp-quick (dag-lst var-type-alist max-conflicts state)
 ;;   (declare (xargs
 ;;                   :stobjs state))
-;;   (let* ((dag-array (make-into-array 'dag-array dag-lst))
+;;   (let* ((dag-array (alist-to-array1 'dag-array dag-lst))
 ;;          (dag-len (len dag-lst)))
 ;;     (prove-equality-with-stp (+ -1 dag-len) ;top node of the dag (we prove it equals true)
 ;;                              *t*

@@ -1,7 +1,7 @@
 ; More utilities supporting the lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,7 +28,7 @@
   (declare (xargs :guard (all-method-designator-stringp all-lifted-methods)))
   ;; we'll avoid exporting this since many versions of this will be generated
   `(defthmd step-opener-for-non-already-lifted-methods
-     (implies (and (member-equal (jvm::op-code (jvm::current-inst th s)) *invoke-opcodes*)
+     (implies (and (member-equal (jvm::instruction-opcode (jvm::current-inst th s)) *invoke-opcodes*)
                    (not (member-equal (string-append (farg1 (jvm::current-inst th s)) ;the class name
                                                      (string-append "."
                                                                     (string-append (farg2 (jvm::current-inst th s)) ;the method name
@@ -36,7 +36,7 @@
                                       ',all-lifted-methods)))
               (equal (jvm::step th s)
                      (let ((inst (jvm::current-inst th s)))
-                       (jvm::do-inst (jvm::op-code inst)
+                       (jvm::do-inst (jvm::instruction-opcode inst)
                                      inst th s))))
      :hints (("Goal" :in-theory (enable jvm::step)))))
 
@@ -54,10 +54,10 @@
 ;; lifted.
 ;; todo: just go to step-always-open?
 (defthm step-opener-for-non-invokes
-  (implies (not (member-equal (jvm::op-code (jvm::current-inst th s)) *invoke-opcodes*))
+  (implies (not (member-equal (jvm::instruction-opcode (jvm::current-inst th s)) *invoke-opcodes*))
            (equal (jvm::step th s)
                   (let ((inst (jvm::current-inst th s)))
-                    (jvm::do-inst (jvm::op-code inst)
+                    (jvm::do-inst (jvm::instruction-opcode inst)
                                   inst th s))))
   :hints (("Goal" :in-theory (enable jvm::step))))
 
@@ -145,7 +145,7 @@
                             TERM PARAM-NAME-TO-SLOT-ALIST
                             PARAM-SLOT-TO-STACK-ITEM-ALIST)))
     :FLAG DESUGAR-PARAMS-IN-ASSUMPTION-TERM-TO-STACK-ITEMS)
-  (DEFTHM pseudo-term-listp-of--DESUGAR-PARAMS-IN-ASSUMPTION-TERMS-TO-STACK-ITEMS
+  (DEFTHM pseudo-term-listp-of-DESUGAR-PARAMS-IN-ASSUMPTION-TERMS-TO-STACK-ITEMS
     (IMPLIES (and (pseudo-term-listp terms)
                   (symbol-alistp param-name-to-slot-alist)
                   (alistp param-slot-to-stack-item-alist)

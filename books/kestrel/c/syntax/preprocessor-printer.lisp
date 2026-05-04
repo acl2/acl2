@@ -502,17 +502,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-cprefix ((cprefix cprefixp) (bytes byte-listp))
-  :returns (new-bytes byte-listp)
-  :short "Print a character constant prefix after preprocessing."
-  (cprefix-case
-   cprefix
-   :upcase-l (pprint-astring "L" bytes)
-   :locase-u (pprint-astring "u" bytes)
-   :upcase-u (pprint-astring "U" bytes)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define pprint-eprefix ((eprefix eprefixp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print an encoding prefix after preprocessing."
@@ -529,9 +518,9 @@
   :returns (new-bytes byte-listp)
   :short "Print a character constant after preprocessing."
   (b* (((cconst cconst) cconst)
-       (bytes (cprefix-option-case
+       (bytes (eprefix-option-case
                cconst.prefix?
-               :some (pprint-cprefix cconst.prefix?.val bytes)
+               :some (pprint-eprefix cconst.prefix?.val bytes)
                :none bytes))
        (bytes (pprint-astring "'" bytes))
        (bytes (pprint-c-char-list cconst.cchars bytes))
@@ -607,13 +596,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-ident ((ident identp) (bytes byte-listp))
+(define pprint-ident ((ident stringp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print an identifier after preprocessing."
-  (b* ((string (ident->unwrap ident))
-       ((unless (stringp string))
-        (raise "Internal error: bad identifier non-string ~x0." string))
-       (chars (acl2::string=>nats string))
+  (b* ((chars (acl2::string=>nats ident))
        ((unless (grammar-character-listp chars))
         (raise "Internal error: bad identifier characters ~x0." chars)))
     (pprint-chars chars bytes))

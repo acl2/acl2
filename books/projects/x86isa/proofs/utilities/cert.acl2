@@ -44,6 +44,6 @@
 (add-include-book-dir :proof-utils ".")
 ; Previously, the book basics.lisp, at least, seemed to need :useless-runes nil
 ; but that no longer seems to be the case.
-;; cert-flags: ? t :ttags (:syscall-exec :other-non-det :undef-flg)
+;; cert-flags: ? t :ttags (:syscall-exec)
 
 ;; ======================================================================

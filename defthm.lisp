@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -100,16 +100,18 @@
     (msg
      "A :REWRITE-QUOTED-CONSTANT rule generated from ~x0 is illegal because ~
       the conclusion is not compatible with any of the allowed forms.  To be ~
-      Form [1], the conclusion must be an equivalence (other than EQUAL) ~
+      Form [1], the conclusion must be an equivalence (other than ~x1) ~
       between two quoted constants.  To be Form [2], the conclusion must be ~
-      an equivalence (other than EQUAL) between, on the left, a call of a ~
+      an equivalence (other than ~x1) between, on the left, a call of a ~
       monadic function symbol on a variable symbol and, on the right, that ~
       same variable symbol.  To be of Form [3], the conclusion must be an ~
       equivalence relation and the left-hand side must be a variable, a ~
-      quoted constant, or a call of one of the function symbols in ~
-      *ONE-WAY-UNifY1-IMPLICIT-FNS* so that the left-hand side can match a ~
-      quoted constant.  But the conclusion of ~x0 is ~x1."
+      quoted constant, or a call of one of the function symbols in ~x2 so ~
+      that the left-hand side can match a quoted constant.  But the ~
+      conclusion of ~x0 is ~x3."
      name
+     'equal
+     '*one-way-unify1-implicit-fns*
      (list equiv lhs rhs)))
    ((and (not qc-flg)
          (or (variablep lhs)
@@ -326,8 +328,8 @@
        (fargs term) ens wrld
 
 ; The following call of ilks-per-argument-slot is responsible for considering
-; :FN? above, which it returns as a slot for for apply$.  So it might be nice
-; to have a version of ilks-per-argument-slot that does not make a special case
+; :FN? above, which it returns as a slot for apply$.  So it might be nice to
+; have a version of ilks-per-argument-slot that does not make a special case
 ; for apply$, using :FN in place of :FN?.  But the resulting trivial runtime
 ; benefit and code simplification didn't seem worth making another definition.
 
@@ -508,12 +510,13 @@
 ; LAMBDA, then fns-i is nil.
 
 ; Note: John Cowles first suggested the idea that led to the idea of invisible
-; function symbols as implemented here.  Cowles observation was that it would
+; function symbols as implemented here.  Cowles's observation was that it would
 ; be very useful if x and (- x) were moved into adjacency by permutative rules.
 ; His idea was to redefine term-order so that those two terms were of virtually
 ; equal weight.  Our notion of invisible function symbols and the handling of
-; loop-stopper is meant to address Cowles original concern without complicating
-; term-order, which is used in places besides permutative rewriting.
+; loop-stopper is meant to address Cowles's original concern without
+; complicating term-order, which is used in places besides permutative
+; rewriting.
 
   (mv-let (ans unify-subst)
     (variantp lhs rhs)
@@ -914,7 +917,7 @@
 ; the first rule and determines whether there is some hypothesis that
 ; cannot possibly be matched against the hyps of the other rule.
 
-; The caller is responsible for insuring that both rules are ordinary
+; The caller is responsible for ensuring that both rules are ordinary
 ; :rewrite rules (e.g., of :subclass abbreviation, backchain, etc) or
 ; :rewrite-quoted-constant rules (e.g., :subclass rewrite-quoted-constant).
 ; This is done by chk-rewrite-rule-warnings when it checks a new :rewrite
@@ -930,8 +933,8 @@
 ; subsumption check you'd have to swap the orientation of conclusion.
 ; Furthermore, you'd find it would subsume any rule it was compared to, and
 ; you would find that no rule (except another form [2] rule) would subsume
-; it.  It short, it seems pointless to include form [2] rules in subsumption
-; checks!  Recal that the :heuristic-info field of a rewrite-quoted-constant
+; it.  In short, it seems pointless to include form [2] rules in subsumption
+; checks!  Recall that the :heuristic-info field of a rewrite-quoted-constant
 ; rule is (n . loop-stopper), where n is the form number.
 
   (and (not (eql (car (access rewrite-rule rule1 :heuristic-info)) 2))
@@ -3829,7 +3832,7 @@
 
 (defun shallow-clausify (term)
 
-; We extract a set of clauses from term whose conjunction is is
+; We extract a set of clauses from term whose conjunction is
 ; propositionally equivalent to term.  This is like clausify except
 ; that we are very shallow and stupid.
 
@@ -4313,25 +4316,35 @@
                (cond (entry (cons entry macro-alist))
                      (t macro-alist)))))))
 
+(defun defevaluator-guard-msg (form)
+  (declare (xargs :guard t))
+  (msg "The form of a ~x0 event is (~x0 evfn evfn-lst fn-args-lst ...), where ~
+        evfn and evfn-lst are symbols, and fn-args-lst is an alist each of ~
+        whose members is a true list of symbols.  However, ~x1 does not have ~
+        this form.  See :DOC defevaluator."
+       'defevaluator
+       form))
+
 (defun defevaluator-check (x evfn evfn-lst fn-args-lst ctx state)
-  (declare (xargs :guard
-                  (and (state-p state)
-                       (symbol-alistp fn-args-lst)
-                       (symbol-alistp
-                        (fgetprop 'macro-aliases-table
-                                  'table-alist
-                                  nil
-                                  (w state))))))
-  (cond ((not (and (symbolp evfn)
-                   (symbolp evfn-lst)
-                   (symbol-list-listp fn-args-lst)))
-         (er soft ctx
-             "The form of a defevaluator event is (defevaluator evfn evfn-lst ~
-              fn-args-lst), where evfn and evfn-lst are symbols and ~
-              fn-args-lst is a true list of lists of symbols.  Optionally, ~
-              one may supply the final keyword argument :namedp with value t ~
-              or nil (default).  However, ~x0 does not have this form."
-             x))
+
+; This must ultimately be in :logic mode so that the mbt calls behave as calls
+; of the identity function when guard-checking is :none.
+
+  (declare (xargs :stobjs state
+                  :guard (and (error1-state-p state)
+                              (symbolp evfn)
+                              (symbolp evfn-lst)
+                              (alistp fn-args-lst)
+                              (symbol-list-listp fn-args-lst)
+                              (symbol-alistp (macro-aliases (w state)))))
+; The following can avoid a warning for the raw Lisp definition because of the
+; meaning of mbt in raw Lisp.
+           (ignorable evfn evfn-lst x))
+  (cond ((not (and (mbt (symbolp evfn))
+                   (mbt (symbolp evfn-lst))
+                   (mbt (alistp fn-args-lst))
+                   (mbt (symbol-list-listp fn-args-lst))))
+         (er soft ctx "~@0" (defevaluator-guard-msg x)))
         (t (let* ((wrld (w state))
                   (msg (defevaluator-check-msg
                          fn-args-lst
@@ -4372,10 +4385,17 @@
 ; make it clear that the :namedp option only affects the names of the
 ; constraint theorems.
 
+  (declare (xargs :guard (and (symbolp evfn)
+                              (symbolp evfn-lst)
+                              (alistp fn-args-lst)
+                              (symbol-list-listp fn-args-lst))))
   (let ((form (defevaluator-form evfn evfn-lst namedp fn-args-lst)))
     (cond (skip-checks form)
           (t `(progn ,(defevaluator-check-form x evfn evfn-lst fn-args-lst)
                      ,form)))))
+
+(set-guard-msg defevaluator
+               (defevaluator-guard-msg (cons 'defevaluator args)))
 
 (set-table-guard term-table
                  (term-listp val world)
@@ -4815,8 +4835,8 @@
   (cond
    ((and trp
 
-; A transparent function with no attachment gets ancestors as as through it's
-; not transparent.
+; A transparent function with no attachment gets ancestors as though it's not
+; transparent.
 
          (let ((pair (attachment-pair fn wrld)))
            (and pair
@@ -6100,7 +6120,7 @@
 ; There are at least two reasons we require equivalence relations to be
 ; Boolean.  One is to simplify assume-true-false.  When we assume (fn x y)
 ; true, we pair it with *ts-t* rather than its full type-set take away
-; *ts-nil*.  The other is that from reflexivity and Boolean we get than fn is
+; *ts-nil*.  The other is that from reflexivity and Boolean we get that fn is
 ; commutative and so can freely use (fn y x) for (fn x y).  If we did not have
 ; the Boolean condition we would have to be more careful about, say,
 ; commutative unification.
@@ -6915,7 +6935,7 @@
                              name
                              (msg "the variables ~x0 and ~x1 occur at ~
                                    different positions in the first and ~
-                                   second arguments, respectively, of ~x3 in ~
+                                   second arguments, respectively, of ~x2 in ~
                                    the conclusion of the proposed rule"
                                   xk yk equiv2))))
                    ((not (equal args2 (subst-var-lst yk xk args1)))
@@ -9604,6 +9624,42 @@
                                     corollary
                                     name x ctx ens wrld state))))))
 
+(defconst *rule-tokens*
+
+; The comments below are taken from the original occurrence of the list below
+; in the definition of translate-rule-class1.
+
+  '(:REWRITE
+    :REWRITE-QUOTED-CONSTANT
+    :LINEAR ; :TRIGGER-TERMS (optional)
+    :WELL-FOUNDED-RELATION
+    :BUILT-IN-CLAUSE
+    :COMPOUND-RECOGNIZER
+    :ELIM
+    :GENERALIZE
+    :META             ; :TRIGGER-FNS
+    :FORWARD-CHAINING ; :TRIGGER-TERMS (optional)
+    :EQUIVALENCE
+    :REFINEMENT
+    :CONGRUENCE
+    :TYPE-PRESCRIPTION ; :TYPED-TERM (optional)
+    :DEFINITION        ; :CLIQUE and :CONTROLLER-ALIST
+    :INDUCTION         ; :PATTERN, :CONDITION (optional), and :SCHEME
+    :TYPE-SET-INVERTER ; :TYPE-SET (optional)
+    :CLAUSE-PROCESSOR
+    :TAU-SYSTEM
+    ))
+
+(defun weak-runep (x)
+  (declare (xargs :guard t :mode :logic))
+  (case-match x
+    ((key sym . rest)
+     (and (member-eq key *rule-tokens*)
+          (symbolp sym)
+          (or (null rest)
+              (posp rest))))
+    (& nil)))
+
 (defun translate-rule-class1 (class tflg name x ctx ens wrld state)
 
 ; Class is a candidate rule class.  We know it is of the form (:key
@@ -9624,27 +9680,7 @@
 ; found in :DOC rule-classes.  It is hygienic to compare periodically the
 ; setting below to the form described there.
 
-  (let ((rule-tokens '(:REWRITE
-                       :REWRITE-QUOTED-CONSTANT
-                       :LINEAR            ; :TRIGGER-TERMS (optional)
-                       :WELL-FOUNDED-RELATION
-                       :BUILT-IN-CLAUSE
-                       :COMPOUND-RECOGNIZER
-                       :ELIM
-                       :GENERALIZE
-                       :META              ; :TRIGGER-FNS
-                       :FORWARD-CHAINING  ; :TRIGGER-TERMS (optional)
-                       :EQUIVALENCE
-                       :REFINEMENT
-                       :CONGRUENCE
-                       :TYPE-PRESCRIPTION ; :TYPED-TERM (optional)
-                       :DEFINITION        ; :CLIQUE and :CONTROLLER-ALIST
-                       :INDUCTION         ; :PATTERN, :CONDITION (optional),
-                                          ;   and :SCHEME
-                       :TYPE-SET-INVERTER ; :TYPE-SET (optional)
-                       :CLAUSE-PROCESSOR
-                       :TAU-SYSTEM
-                       )))
+  (let ((rule-tokens *rule-tokens*))
   (cond
    ((not (member-eq (car class) rule-tokens))
     (er soft ctx

@@ -1,7 +1,7 @@
 ; The Axe equivalence checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,6 @@
 (in-package "ACL2")
 
 (include-book "find-probable-facts")
-;(include-book "jvm/rule-lists-jvm") ;drop?
 (include-book "rules-in-rule-lists")
 (include-book "make-axe-rules2")
 (include-book "equivalence-checker-helpers") ; not strictly necessary; helpful functions and justifications of correctness
@@ -24,7 +23,7 @@
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
-(include-book "rewriter") ;TODO: brings in JVM stuff and skip-proofs ; use rewriter-basic instead?
+(include-book "rewriter") ;TODO: brings in JVM stuff and skip-proofs ; use rewriter-basic instead? but may need support for nested DAGs
 ;(include-book "rewriter-alt") ;TODO: brings in JVM stuff...
 (include-book "identical-xor-nests")
 (include-book "kestrel/utilities/check-boolean" :dir :system)
@@ -65,7 +64,7 @@
 (local (include-book "kestrel/bv/arith" :dir :system))
 (include-book "kestrel/bv-lists/packing" :dir :system) ;bring in some stuff in axe-runes
 (include-book "unify-term-and-dag-with-name")
-(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 (include-book "lists-axe")
 (include-book "group-axe")
 (include-book "dag-to-term-with-lets")
@@ -140,7 +139,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; move, so we can use it in other tools?
-;; Can throw an error or pring a warning if the vars disagree.  Returns nil.
+;; Can throw an error or print a warning if the vars disagree.  Returns nil.
 (defun maybe-check-dag-vars (check-vars
                              dag-or-quotep1
                              dag-or-quotep2
@@ -163,12 +162,12 @@
       (if (not vars-differp)
           nil
         (progn$ (and (not (subsetp-eq vars1 vars2)) ; todo: optimize these set operations, given that the lists are sorted
-                     (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
+                     (prog2$ (and (eq :warn check-vars) (cw "WARNING: "))
                              (cw "The first DAG has vars, ~x0, not in the second DAG.~%" (set-difference-eq vars1 vars2))))
                 (and (not (subsetp-eq vars2 vars1))
-                     (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
+                     (prog2$ (and (eq :warn check-vars) (cw "WARNING: "))
                              (cw "The second DAG has vars, ~x0, not in the first DAG.~%" (set-difference-eq vars2 vars1))))
-                (if (eq :warning check-vars)
+                (if (eq :warn check-vars)
                     nil ; no error
                   (er hard? ctx "Mismatch in DAG vars (see above).")))))))
 
@@ -1003,8 +1002,7 @@
       (let ((expr (aref1 dag-array-name dag-array nodenum)))
         (if (or (not (consp expr))
                 (eq 'quote (ffn-symb expr)))
-            (hard-error 'get-trace-for-node "Unexpected a recursive function call but got ~x0"
-                        (acons #\0 expr nil))
+            (er hard? 'get-trace-for-node "Expected a recursive function call but got ~x0" expr)
           ;;regular function call
           (let* ((fn (ffn-symb expr))
                  (dargs (dargs expr))
@@ -1140,7 +1138,7 @@
                               (test-case-array-alistp test-case-array-alist (+ 1 bignodenum))
                               (<= (len test-cases) (len test-case-array-alist)))))
   (if (equal smallnodenum bignodenum)
-      (er hard? 'get-traces-for-two-nodes "the two nodes should not be the same" nil)
+      (er hard? 'get-traces-for-two-nodes "the two nodes should not be the same")
     (prog2$
      (cw "(Getting traces from ~x0 test cases:~%" (len test-cases))
      (let ((traces-pair (get-traces-for-two-nodes-aux test-cases ;can this be too many? used to use 100 (if we are taking just a few, choose a better sample?)
@@ -1877,7 +1875,7 @@
 
                ;;upper bound:
                (if (all-same upper-bounds)
-                   ;; all traces count up the the same value:
+                   ;; all traces count up to the same value:
                    `((not (sbvlt '32 ',(first upper-bounds) ,term)))
 
                  ;; the traces count up to different values, so try to find an expression for the ending values
@@ -4041,7 +4039,7 @@
 ;;         (filter-explanations (cdr explanations) formals)))))
 
 
-;; ;seperates out the explanations that are about lengths
+;; ;separates out the explanations that are about lengths
 ;; ;; Returns (list length-explanations formal-or-component-explanations)
 ;; (defun filter-explanations (explanations length-explanations-acc formal-or-component-explanations-acc)
 ;;   (if (endp explanations)
@@ -6694,7 +6692,7 @@
 ;; (defund fns-that-support-node (nodenum dag-array-name dag-array)
 ;;   (declare (xargs :guard (and (natp nodenum)
 ;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
-;;   (let* ((fns-array (make-empty-array 'fns-array (+ 1 nodenum)))
+;;   (let* ((fns-array (new-array1 'fns-array (+ 1 nodenum)))
 ;;          ;;this makes the fns-array for all nodes.  could just do it for supporters, but that might be slower if most nodes are supporters
 ;;          (fns-array (make-fns-array-for-nodes 0 nodenum dag-array-name dag-array fns-array)))
 ;;     (aref1 'fns-array fns-array nodenum)))
@@ -7176,7 +7174,7 @@
                     ;;don't want to unroll if there are no reps on any test case:
                     nil))
         (if (symbolp match)
-            (prog2$ (cw "Found symbol pattern: ~x0. (FAILING since we don't yet derive bounds for vars)%" match)
+            (prog2$ (cw "Found symbol pattern: ~x0. (FAILING since we don't yet derive bounds for vars)~%" match)
                     nil) ;ffixme if the rep-count is some input, what we do here depends on whether we have a (small) bound on the input - pass in the assumptions?
           (if (and (call-of 'mod match)
                    (quotep (farg2 match))) ;the bound of (mod x <constant>) is that constant (assuming it's a natp)
@@ -7516,7 +7514,7 @@
                   :stobjs state))
   (non-tagged-supporters-with-rec-fns-to-handle-aux (list nodenum) miter-array-name miter-array tag-array-name tag-array
                                                     'done-array-name
-                                                    (make-empty-array 'done-array-name (+ 1 nodenum))
+                                                    (new-array1 'done-array-name (+ 1 nodenum))
                                                     nil
                                                     state))
 
@@ -7575,7 +7573,7 @@
            (evaluated-term (sublis-var-and-eval (enquote-cdrs test-case) ;gross?
                                                   term interpreted-function-alist)))
       (if (not (myquotep evaluated-term))
-          (prog2$ (er hard? 'partition-test-cases "Unable to evaluate test case: ~x0.  Got: ~x1." (acons #\0 test-case (acons #\1 evaluated-term nil)))
+          (prog2$ (er hard? 'partition-test-cases "Unable to evaluate test case: ~x0.  Got: ~x1." test-case evaluated-term)
                   (mv nil nil))
         (if (unquote evaluated-term)
             (partition-test-cases (rest test-cases) term interpreted-function-alist (cons test-case true-acc) false-acc)
@@ -7602,7 +7600,7 @@
     (let* ((test-case (first test-cases))
            (result-array (eval-dag-with-axe-evaluator (list nodenum) dag-array-name dag-array test-case
                                                        'result-array-for-choosing-a-miter-splitter
-                                                       (make-empty-array 'result-array-for-choosing-a-miter-splitter (+ 1 nodenum)) ;computed values are wrapped in cons
+                                                       (new-array1 'result-array-for-choosing-a-miter-splitter (+ 1 nodenum)) ;computed values are wrapped in cons
                                                        interpreted-function-alist
                                                        0 ;array-depth
                                                        ))
@@ -8012,7 +8010,7 @@
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               (var-type-alistp var-type-alist))))
-  (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (make-empty-array 'done-array-temp (+ 1 nodenum)) var-type-alist))
+  (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (new-array1 'done-array-temp (+ 1 nodenum)) var-type-alist))
 
 ;; Checks whether smaller-nodenum and larger-nodenum and all of their supporters are pure.
 ;; May be faster than doing the 2 checks separately.
@@ -8022,7 +8020,7 @@
                               (< smaller-nodenum larger-nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 larger-nodenum))
                               (var-type-alistp var-type-alist))))
-  (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (+ 1 larger-nodenum) (make-empty-array 'done-array-temp (+ 1 larger-nodenum)) var-type-alist))
+  (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (+ 1 larger-nodenum) (new-array1 'done-array-temp (+ 1 larger-nodenum)) var-type-alist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -9756,8 +9754,8 @@
            (new-update-dags-in-order (lookup-eq-lst new-formals full-formals-update-dag-alist))
            (new-fn (packnew fn '-with-duplicated-numcdrs-param-for-consumer))
            ;;fffixme can these calls to dag-to-term blow up?
-           (new-exit-test-expr (embed-dag-as-term new-exit-test-dag interpreted-function-alist)) ;(dag-to-term new-exit-test-dag)
-           (new-base-case-expr (embed-dag-as-term new-base-case-dag interpreted-function-alist)) ;(dag-to-term new-base-case-dag)
+           (new-exit-test-expr (embed-dag-as-term new-exit-test-dag interpreted-function-alist)) ;(dag2term new-exit-test-dag)
+           (new-base-case-expr (embed-dag-as-term new-base-case-dag interpreted-function-alist)) ;(dag2term new-base-case-dag)
            (new-update-exprs (embed-dags-as-terms new-update-dags-in-order interpreted-function-alist)) ;(dags-to-terms new-update-dags-in-order)
            (defthm-name (packnew fn '--becomes-- new-fn))
            (exit-test-dags-agree-defthm-name (packnew defthm-name '-dags-agree-for-exit-test))
@@ -10000,7 +9998,7 @@
            ((mv erp dag-for-base-case-expr state)
             (get-dag-for-expr-no-theorem base-case-expr interpreted-function-alist state))
            ((when erp) (mv erp nil state))
-           (base-case-term (dag-to-term dag-for-base-case-expr)))
+           (base-case-term (dag2term dag-for-base-case-expr)))
         (if (not (member-eq base-case-term formals)) ;a producer must return a single formal (fixme relax this restriction?)
             (mv (erp-nil) nil state)
           (b* ((formal-update-expr-alist (pairlis$-fast formals update-expr-list))
@@ -10012,12 +10010,12 @@
                      (call-of 'add-to-end (top-expr update-dag-for-returned-formal))
                      (eq base-case-term (lookup (farg2 (top-expr update-dag-for-returned-formal))
                                                 update-dag-for-returned-formal)))
-                (let* ((nodenunm-or-quotep-for-value-added-on (farg1 (top-expr update-dag-for-returned-formal)))
+                (let* ((nodenum-or-quotep-for-value-added-on (farg1 (top-expr update-dag-for-returned-formal)))
                        (dag-for-value-added-on
-                        (if (quotep nodenunm-or-quotep-for-value-added-on)
-                            nodenunm-or-quotep-for-value-added-on
+                        (if (quotep nodenum-or-quotep-for-value-added-on)
+                            nodenum-or-quotep-for-value-added-on
                           ;;fixme destroys 'dag-array! <-- old comment?
-                          (drop-non-supporters (drop-nodes-past nodenunm-or-quotep-for-value-added-on update-dag-for-returned-formal)))))
+                          (drop-non-supporters (drop-nodes-past nodenum-or-quotep-for-value-added-on update-dag-for-returned-formal)))))
                   (if (member-eq base-case-term (dag-vars-unsorted dag-for-value-added-on))
                       ;;if the element produced depends on previous elements, it's not a producer in this sense (we can't get rid of the list argument when combining it with a consumer)
                       (mv (erp-nil) nil state)
@@ -10272,7 +10270,7 @@
                  :check-inputs nil)
       (if erp
           (mv erp nil nil state)
-        (let* ((simplified-conclusion (dag-to-term simplified-dag))
+        (let* ((simplified-conclusion (dag2term simplified-dag))
                (defthm-name (packnew rule-base conclusion-number))
                (state (submit-event-brief `(defthm ,defthm-name
                                        (implies ,(make-conjunction-from-list hyps)
@@ -10440,7 +10438,7 @@
                              (equal 1 (len dag))                 ;slow?
                              (equal 0 (car (car dag)))           ;just to check
                              (symbolp (cdr (car dag))))
-                            (dag-to-term dag)
+                            (dag2term dag)
                           `(dag-val-with-axe-evaluator ',dag
                                                        ,(make-acons-nest (dag-vars-unsorted dag))
                                                        ',(supporting-interpreted-function-alist
@@ -10684,7 +10682,7 @@
                    :check-inputs nil))
        ((when erp)
         (mv erp nil nil nil nil nil state))
-       (simplified-expanded-new-exit-test-expr (dag-to-term simplified-expanded-new-exit-test-expr-dag)) ;do the equivalence proof of this sooner? make a simplify-and-prove function?
+       (simplified-expanded-new-exit-test-expr (dag2term simplified-expanded-new-exit-test-expr-dag)) ;do the equivalence proof of this sooner? make a simplify-and-prove function?
        ;;new-formals is a slightly deceptive name, since it doesn't include the old vars
 ;fffffffixme check for name clashes
        (new-update-fns ;(make-var-names (pack$ new-fn '-update-) (len new-formals))  ;may not all be used?? ;also, no update fns for orig vars
@@ -11253,7 +11251,7 @@
                :check-inputs nil)
     (if erp
         (mv erp nil nil state)
-      (let ((simplified-fact (dag-to-term simplified-fact))) ; i hope this never blows up
+      (let ((simplified-fact (dag2term simplified-fact))) ; i hope this never blows up
         (if (equal fact simplified-fact)
             ;;no change:
             (mv nil nil nil state)
@@ -11668,7 +11666,7 @@
                            :normalize-xors nil
                            :check-inputs nil)))
        ((when erp) (mv erp nil nil nil analyzed-function-table rand state))
-       (simplified-expanded-exit-test-expr (dag-to-term simplified-expanded-exit-test-expr))
+       (simplified-expanded-exit-test-expr (dag2term simplified-expanded-exit-test-expr))
        (- (cw "Simplified exit test: ~x0)~%" simplified-expanded-exit-test-expr))
        (simplified-expanded-exit-test-theorem-name (packnew fn '-simplified-expanded-exit-test-theorem))
        ;;make sure to include here anything we used above to simplify the exit test (fffixme do the simplification and the proof simultaneously?):
@@ -12039,7 +12037,7 @@
                                              ))
                  ((when erp) (mv erp miter-array miter-len))
                  ;;rebuild all the nodes above nodenum:
-                 (renaming-array (make-empty-array 'renaming-array original-miter-len))
+                 (renaming-array (new-array1 'renaming-array original-miter-len))
                  (renaming-array (aset1-safe 'renaming-array renaming-array nodenum nodenum-or-quotep))
                  ((mv erp miter-array & & & & ;; miter-len miter-parent-array miter-constant-alist miter-variable-alist
                       renaming-array)
@@ -12142,7 +12140,7 @@
        ;; ;;                                        (get-context-assumptions-for-nodenum nodenum miter-array miter-len)))
 
        ;; ;;ffixme eventually pass the miter-array to the rewriter (but don't overwrite any existing nodes), but for now the rewriter can only work on an array named 'dag-array
-       ;; (dag-array (make-empty-array 'dag-array miter-len ;(+ 1 nodenum) using this caused a problem in make-dag-indices (in simplify-tree-and-add-to-dag-wrapper??) ffffixme
+       ;; (dag-array (new-array1 'dag-array miter-len ;(+ 1 nodenum) using this caused a problem in make-dag-indices (in simplify-tree-and-add-to-dag-wrapper??) ffffixme
        ;;                              ))
        ;; (dag-array (copy-array-vals nodenum miter-array-name miter-array 'dag-array dag-array)) ;fixme only copy the supporting values?  we basically already computed the supporters when we did the purity check
        ;; ((mv erp miter-nodenum-or-quotep dag-array
@@ -13743,7 +13741,7 @@
                       :check-inputs nil)
            (if erp
                (mv erp nil nil rand state)
-             (let* ((simplified-exit-test-expr1 (dag-to-term simplified-exit-test-expr1))
+             (let* ((simplified-exit-test-expr1 (dag2term simplified-exit-test-expr1))
                     (dummy9 (cw "Simplified exit test expr 1: ~x0)~%" simplified-exit-test-expr1))
                     (dummy10 (cw "(Simplifying exit test 2:~%")))
                (declare (ignore dummy9 dummy10))
@@ -13764,7 +13762,7 @@
                             :check-inputs nil)
                  (if erp
                      (mv erp nil nil rand state)
-                   (let* ((simplified-exit-test-expr2 (dag-to-term simplified-exit-test-expr2))
+                   (let* ((simplified-exit-test-expr2 (dag2term simplified-exit-test-expr2))
                           (dummy11 (cw "Simplified exit test expr 2: ~x0)~%" simplified-exit-test-expr2))
                           (simplified-exit-test1-theorem-name (packnew fn1 '-simplified-exit-test-theorem))
                           (simplified-exit-test2-theorem-name (packnew fn2 '-simplified-exit-test-theorem))
@@ -14680,7 +14678,7 @@
         ;;fixme should we do this outside this function? might be expensive!
         ;;ffixme eventually pass the miter-array to the rewriter?? (be careful not to override existing nodes), but for now it has the wrong name
         ;;(dag-len (+ 1 original-nodenum2)) ;only include nodes 0...original-nodenum2
-        ;;(dag-array (make-empty-array 'dag-array dag-len)) ;give it some extra space to grow?
+        ;;(dag-array (new-array1 'dag-array dag-len)) ;give it some extra space to grow?
         ;;(dag-array (copy-array-vals original-nodenum2 miter-array-name miter-array 'dag-array dag-array))
         ;;(dag-lst (dag-array-to-dag-lst2 miter-array-name miter-array original-nodenum2)) ;drop this conversion?
         ;;add the equality:
@@ -16096,7 +16094,7 @@
          (mv :false-test-case :dit-nothing miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state))
         (sweep-array-name 'sweep-array) ;ffixme use a different name, according to the miter depth?
         ;; Set up the tags that are used to choose which node or node pair to handle next:
-        (sweep-array (make-empty-array sweep-array-name miter-len))
+        (sweep-array (new-array1 sweep-array-name miter-len))
         ;;mark all nodes that are probably constants:
         ;;the tags are the constant values themselves (quoted)
         (sweep-array (prog2$ (and print (eq :verbose print) (cw "Identifying and tagging probably-constant nodes...~%"))
@@ -16315,7 +16313,7 @@
                                                  analyzed-function-table monitored-symbols rand state))))
                          (b* ( ;;fixme - make sure something changed, or this can loop! huh?
                               (miter-len (len dag-lst-or-quotep))
-                              (miter-array (make-into-array miter-array-name dag-lst-or-quotep))
+                              (miter-array (alist-to-array1 miter-array-name dag-lst-or-quotep))
                               (- (and print (cw "Miter DAG after sweep ~x0 (depth ~x1):~%" sweep-num miter-depth)))
                               ;;fixme do we now print the dag before and after each sweep?  is that a waste?
                               (state (if (print-level-at-least-tp print)
@@ -16477,7 +16475,7 @@
       (if (not rec-fn-nodenums)
           (prog2$ (cw "No more loop fns to handle.)~%")
                   (mv nil dag-lst interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state))
-        (let* ((dag-array (make-into-array dag-array-name dag-lst)) ;call a -with-len version?
+        (let* ((dag-array (alist-to-array1 dag-array-name dag-lst)) ;call a -with-len version?
                (dag-len (len dag-lst)) ;rename miter-len
                ;;fixme just print the dag-lst? or have miter and merge print before presimp and then print after each presimp sweep that changes something?
                (state (if (print-level-at-least-tp print)
@@ -16556,7 +16554,7 @@
                                             (progn$
 ;fixme separate out the loop functions here:
                                              (cw "(Fns after pre-simplification sweep ~x0: ~x1)~%" sweep-count (dag-fns dag-lst)) ;fixme do better in the not printing case?
-                                             (let* ( ;;(dag-array (make-into-array dag-array-name dag-lst))
+                                             (let* ( ;;(dag-array (alist-to-array1 dag-array-name dag-lst))
                                                     ;;(dag-len (len dag-lst))
 ;(state (if print (print-dag-array-to-temp-file dag-array-name dag-array dag-len
 ;                                          (concatenate 'string (symbol-name proof-name) "-DAG-AFTER-PS-SWEEP-" (nat-to-string sweep-count)) state)
@@ -16743,7 +16741,7 @@
          ;; Not a constant;
          (b* ((dag dag-or-quotep)
               (miter-array-name (pack$ 'miter-array- miter-depth))
-              (miter-array (make-into-array miter-array-name dag)) ;call a -with-len version?
+              (miter-array (alist-to-array1 miter-array-name dag)) ;call a -with-len version?
               (miter-len (len dag))
               (- (progn$ (cw "(Proving goal ~x0 (depth ~x1, len ~x2):~%" miter-name miter-depth miter-len) ;name the miters according to their cases...
                          (cw "(Using ~x0 test cases)~%" (len test-cases))
@@ -16814,7 +16812,7 @@
                   ;;(- (cw "(Assumptions:~%~x0)~%" assumptions))
                   (- (cw ")~%"))
                   (miter-len (len miter-dag))
-                  (miter-array (make-into-array miter-array-name miter-dag)) ;gross to convert here?
+                  (miter-array (alist-to-array1 miter-array-name miter-dag)) ;gross to convert here?
                   (nodenum-to-split-on (find-a-node-to-split-miter-on
                                         miter-array-name miter-len miter-array
                                         test-cases interpreted-function-alist)) ; ffixme think about heuristics!
@@ -17187,7 +17185,7 @@
             (cw "DAG for error message below:~%")
             (print-list dag)             ; always print the DAG
             (if (< (dag-size dag) 10000) ; print the term too, if small
-                (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
+                (cw "~%(Term: ~X01)~%" (dag2term dag) nil)
               nil)
             (er hard? 'prove-with-axe-core "If the tactic is :rewrite, the DAG must simplify to true, but it simplified to the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
             (mv :no-test-cases nil nil state))
@@ -18848,7 +18846,7 @@
 ;not quite sure what to do here, so i'm trying this:
 ;FIXME think this through! look for a node set with at least one ready node and where the other node would be ready except it depends on the first node (node sets are just pairs now, right?)
 ;; (defun find-nodenum-to-replace-when-no-safe-sets (len sweep-array dag-array-name dag-array)
-;;   (let* ((size-array (make-empty-array 'size-array len))
+;;   (let* ((size-array (new-array1 'size-array len))
 ;;          (size-array (add-node-sizes-to-size-array 0 len dag-array-name dag-array size-array))
 ;;          ;;bozo on the big number below
 ;;          (nodenum (get-nodenum-for-minimum-replacement-set 0 len 100000000000000000000000000 'error-didnt-find-any-nodenums-to-replace sweep-array size-array)))
@@ -19177,7 +19175,7 @@
 ;;                     (mv nil nil nil)))))))))
 
 ;; ;decides which literals to translate and tags the relevant nodes for translation
-;; ;fixme should be able to translate almost any literal (as a boolean variable in the worst case, unless it's not clearly a a boolean...)
+;; ;fixme should be able to translate almost any literal (as a boolean variable in the worst case, unless it's not clearly a boolean...)
 ;; ;returns (mv literal-nodenums-to-translate translation-tag-array cut-nodenum-type-alist)
 ;; ;extends cut-nodenum-type-alist
 ;; ;rename
@@ -19336,7 +19334,7 @@
 ;;   (declare (xargs :mode :program
 ;;                   :stobjs state))
 ;;   (let* ((dag-len (+ 1 max-nodenum)) ;length of the relevant portion of the dag
-;;          (dag-array (make-empty-array 'dag-array (+ 100 dag-len))) ;gives it a little space to grow
+;;          (dag-array (new-array1 'dag-array (+ 100 dag-len))) ;gives it a little space to grow
 ;;          (dag-array (copy-array-vals max-nodenum miter-array-name miter-array 'dag-array dag-array)) ;could copy only supporting nodes but that would change the numbering..
 ;;          (negated-assumptions (cons-onto-all 'not (enlist-all assumptions))) ;make a negate-all? see negate-terms
 ;; ;using the runes from the table here is new:
@@ -19433,11 +19431,11 @@
 ;;              (+ -1 dag-len)
 ;;              dag-array
 ;;              ;; var-type-alist
-;;              (aset1 'needed-for-node1-tag-array (make-empty-array 'needed-for-node1-tag-array dag-len) nodenum1 t)
-;;              (aset1 'needed-for-node2-tag-array (make-empty-array 'needed-for-node2-tag-array dag-len) nodenum2 t)
-;;              ;; (make-empty-array 'replacement-tag-array dag-len)
+;;              (aset1 'needed-for-node1-tag-array (new-array1 'needed-for-node1-tag-array dag-len) nodenum1 t)
+;;              (aset1 'needed-for-node2-tag-array (new-array1 'needed-for-node2-tag-array dag-len) nodenum2 t)
+;;              ;; (new-array1 'replacement-tag-array dag-len)
 ;;              ;; we will translate the top node (the equality we just put in temporarily)
-;;              (aset1 'translation-tag-array (make-empty-array 'translation-tag-array dag-len) (+ -1 dag-len) t)
+;;              (aset1 'translation-tag-array (new-array1 'translation-tag-array dag-len) (+ -1 dag-len) t)
 
 ;;              0 ;we don't count the top node, since it doesn't have a set of parens, which is really what we're counting here...
 ;;              )
@@ -19527,7 +19525,7 @@
 ;;                                     dag-array
 ;;                                     var-signature-alist
 ;;                                     test-case-count
-;;                                     (make-empty-array 'signature-array dag-len)
+;;                                     (new-array1 'signature-array dag-len)
 ;;                                     )
 ;;               rand)))
 
@@ -19726,7 +19724,7 @@
 ;;           (make-children-alist-aux (cdr dag) (aset1 'children-array acc nodenum (keep-non-quoteps (fargs expr)))))))))
 
 ;; (defun make-children-alist (dag)
-;;   (make-children-alist-aux dag (make-empty-array 'children-array (len dag))))
+;;   (make-children-alist-aux dag (new-array1 'children-array (len dag))))
 
 ;; (defun all-safe (nodenums tag-alist)
 ;;   (if (endp nodenums)
@@ -20035,7 +20033,7 @@
 ;;                                :print print
 ;;                                :assumptions facts-acc
 ;;                                :normalize-xors nil)
-;;                 (let ((result-term (dag-to-term result)))
+;;                 (let ((result-term (dag2term result)))
 ;;                   (if (equal result-term *t*) ;skip any t..
 ;;                       (simplify-facts-aux (rest facts)
 ;;                                           facts-acc

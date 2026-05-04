@@ -1,7 +1,7 @@
 ; Constants for max array length, etc.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,7 +20,7 @@
 (defconst *max-array-maximum-length* (array-maximum-length-bound))
 
 ;; The length of the longest possible 1-dimensional array.
-;; The -1 is here because array1p requries the length to be strictly less than
+;; The -1 is here because array1p requires the length to be strictly less than
 ;; the :MAXIMUM-LENGTH (why?).
 ;; See array1p.
 (defconst *max-1d-array-length* (+ -1 *max-array-maximum-length*))

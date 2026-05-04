@@ -1,7 +1,7 @@
 ; Lists of rule names (JVM-related)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -211,8 +211,8 @@
           (step-state-with-pc-and-call-stack-height-rules)
           '(run-until-return-from-stack-height-of-myif-axe ;chooses a state to step and introduces STEP-STATE-WITH-PC-AND-CALL-STACK-HEIGHT
             ;; run-until-return-from-stack-height-of-myif-axe-alt ;fixme which of these do we prefer?
-            run-until-return-from-stack-height-of-myif-axe-split-1 ;in case there are exeception states
-            run-until-return-from-stack-height-of-myif-axe-split-2 ;in case there are exeception states
+            run-until-return-from-stack-height-of-myif-axe-split-1 ;in case there are exception states
+            run-until-return-from-stack-height-of-myif-axe-split-2 ;in case there are exception states
             )))
 
 ;; Since Axe cannot natively evaluate these functions
@@ -918,7 +918,7 @@
             logext-when-usb-cheap ;new, since logext is still used a little bit (for arraycopy?)
             logext-identity-when-usb-smaller-axe
 
-            jvm::op-code
+            jvm::instruction-opcode
 
             jvm::call-stack
 
@@ -944,10 +944,11 @@
             jvm::initialize-static-fields-base
             default-value
 ;    strip-cars-opener
-            strip-cars-of-non-consp
+;            strip-cars-when-not-consp
             ;bvand-of-logext
             ;bvand-of-logext-alt
 
+            array-length ; try array-length-of-set-field-both instead?
             ;; rules about get-field:
             get-field-of-set-field-both ;todo: try this one first
             ;; don't need these 3 if we have get-field-of-set-field-both:
@@ -1032,6 +1033,7 @@
             jvm::stack-of-make-frame
             jvm::method-designator-of-make-frame
             jvm::method-info-of-make-frame
+            ;jvm::method-program ; new
             ;; todo: rename to frame-method-descriptor, etc.:
             jvm::cur-method-descriptor
             jvm::cur-method-name
@@ -1647,7 +1649,7 @@
 (set-axe-rule-priority run-until-return-from-stack-height-opener-axe -10)
 (set-axe-rule-priority run-until-return-from-stack-height-base-axe -9)
 
-(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -13)
+(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame-of-push-frame -13)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -12)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame -11)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame -10)

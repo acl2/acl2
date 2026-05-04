@@ -81,7 +81,7 @@
 ;;
 ;;      KECCAK-224-BYTES, KECCAK-256-BYTES, KECCAK-384-BYTES, KECCAK-512-BYTES
 ;;
-;;    See these definitions for more details on endianness and the FIP 202
+;;    See these definitions for more details on endianness and the FIPS 202
 ;;    specification.
 ;;
 ;; 3. Internally, the functions take a list of bits and return a bitvector
@@ -196,7 +196,7 @@
 ;; --------
 ;; Bit lists
 
-;; For compatiblity with the bit vector library we introduce the following rule,
+;; For compatibility with the bit vector library we introduce the following rule,
 ;; which turns bit-listp into the true-listp and all-unsigned-byte-p,
 ;; which is the form used by the bit vector library.
 

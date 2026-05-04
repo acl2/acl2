@@ -16,7 +16,7 @@ certify books in the normal manner.
 
 But if that breaks, then rebuild as follows.
 
-./write-td-cands.sh
+./write-td-cands.sh <path_to_acl2>
 
 And if that breaks, see comments in the defun for
 write-td-fn-include-books-extra in file termination-database.lisp, and
@@ -117,7 +117,7 @@ there is probably no need to update.  Thus, this update procedure is
 _not_ incorporated into any makefile or overall build procedure.  To
 force an update, execute this at the shell:
 
-./write-td-cands.sh
+./write-td-cands.sh <path_to_acl2>
 
 Here are the main steps implemented by this script for regenerating
 td-cands.lisp and td-cands.acl2.  The complete steps are implemented

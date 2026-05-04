@@ -26,8 +26,8 @@
     :files '("main.c" "file1.c"))
 
   (defconst *call-graph*
-    (call-graph-transunit-ensemble
-     (code-ensemble->transunits *test*)))
+    (call-graph-trans-ensemble
+     (code-ensemble->trans-units *test*)))
 
   (acl2::assert-equal
     *call-graph*
@@ -37,17 +37,17 @@
         (ident "main")))
       (((filepath?)
         (ident "main"))
-       ((filepath? (c$::unwrap . "main.c"))
+       ((filepath? (c$::string . "main.c"))
         (ident "foo")))
-      (((filepath? (c$::unwrap . "file1.c"))
+      (((filepath? (c$::string . "file1.c"))
         (ident "fibonacci"))
-       ((filepath? (c$::unwrap . "file1.c"))
+       ((filepath? (c$::string . "file1.c"))
         (ident "fibonacci")))
-      (((filepath? (c$::unwrap . "file1.c"))
+      (((filepath? (c$::string . "file1.c"))
         (ident "foo"))
        ((filepath?)
         (ident "call_main")))
-      (((filepath? (c$::unwrap . "main.c"))
+      (((filepath? (c$::string . "main.c"))
         (ident "foo"))
        nil
        ((filepath?)
@@ -63,7 +63,7 @@
     '(nil
       ((filepath?)
        (ident "main"))
-      ((filepath? (c$::unwrap . "main.c"))
+      ((filepath? (c$::string . "main.c"))
        (ident "foo"))))
 
   :with-output-off nil)
@@ -76,8 +76,8 @@
     :files '("main2.c" "file1.c"))
 
   (defconst *call-graph*
-    (call-graph-transunit-ensemble
-     (code-ensemble->transunits *test*)))
+    (call-graph-trans-ensemble
+     (code-ensemble->trans-units *test*)))
 
   (acl2::assert-equal
     *call-graph*
@@ -87,17 +87,17 @@
         (ident "main")))
       (((filepath?)
         (ident "main"))
-       ((filepath? (c$::unwrap . "main2.c"))
+       ((filepath? (c$::string . "main2.c"))
         (ident "foo")))
-      (((filepath? (c$::unwrap . "file1.c"))
+      (((filepath? (c$::string . "file1.c"))
         (ident "fibonacci"))
-       ((filepath? (c$::unwrap . "file1.c"))
+       ((filepath? (c$::string . "file1.c"))
         (ident "fibonacci")))
-      (((filepath? (c$::unwrap . "file1.c"))
+      (((filepath? (c$::string . "file1.c"))
         (ident "foo"))
        ((filepath?)
         (ident "call_main")))
-      (((filepath? (c$::unwrap . "main2.c"))
+      (((filepath? (c$::string . "main2.c"))
         (ident "foo"))
        nil
        ((filepath?)
@@ -113,7 +113,7 @@
     '(nil
       ((filepath?)
        (ident "main"))
-      ((filepath? (c$::unwrap . "main2.c"))
+      ((filepath? (c$::string . "main2.c"))
        (ident "foo"))))
 
   :with-output-off nil)

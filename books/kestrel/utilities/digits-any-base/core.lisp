@@ -726,10 +726,10 @@
     (theory-invariant (incompatible (:definition bendian=>nat)
                                     (:rewrite lendian=>nat-as-bendian=>nat)))
 
-    (theory-invariant (incompatible (:definiton bendian=>nat)
+    (theory-invariant (incompatible (:definition bendian=>nat)
                                     (:rewrite lendian=>nat-of-rev)))
 
-    (theory-invariant (incompatible (:definiton bendian=>nat)
+    (theory-invariant (incompatible (:definition bendian=>nat)
                                     (:rewrite bendian=>nat-of-rev)))
 
     (theory-invariant (incompatible (:rewrite lendian=>nat-as-bendian=>nat)

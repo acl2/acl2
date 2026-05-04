@@ -1,7 +1,7 @@
 ; The class-table structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,14 @@
 (local (include-book "kestrel/sequences/defforall" :dir :system))
 (local (include-book "utilities"))
 (local (include-book "std/lists/union" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+
+(local
+ (defthm class-namep-when-member-equal
+   (implies (and (class-name-listp class-names)
+                 (member-equal class-name class-names))
+            (class-namep class-name))
+   :hints (("Goal" :in-theory (enable class-name-listp)))))
 
 ; The class-table of a JVM state is a map, where the keys are class
 ; names (strings) and the values are class-infos.
@@ -25,7 +33,7 @@
 ;fixme the defforall could add -list or just -s to the names of the list params?
 (defforall all-keys-bound-to-class-infosp (key class-table)
   (class-infop (g key class-table) key) ; can't use get-class-info because this function is needed for its guard
-  :declares ((xargs :guard (all-class-namesp key)))
+  :declares ((xargs :guard (class-name-listp key)))
   :fixed class-table)
 
 ;; The class-table is a map from class/interface names to class-infos.
@@ -35,7 +43,7 @@
   (let* (;call mapp here?
          (dom (acl2::rkeys class-table))
          (key-list (SET::2LIST dom))) ;call key-list?
-    (and (all-class-namesp key-list) ;;fixme abstract into something like deffoldmap:
+    (and (class-name-listp key-list) ;;fixme abstract into something like deffoldmap:
          (all-keys-bound-to-class-infosp key-list class-table))))
 
 (defund bound-in-class-tablep (class-name class-table)
@@ -90,11 +98,11 @@
            :in-theory (disable true-listp-of-class-decl-interfaces))))
 
 ;no free var
-(defthm all-class-namesp-of-class-decl-interfaces-of-get-class-info
+(defthm class-name-listp-of-class-decl-interfaces-of-get-class-info
   (implies (class-infop (get-class-info class-name class-table) class-name)
-           (all-class-namesp (class-decl-interfaces (get-class-info class-name class-table))))
-  :hints (("Goal" :use (:instance all-class-namesp-of-class-decl-interfaces (class-info (get-class-info class-name class-table)))
-           :in-theory (disable all-class-namesp-of-class-decl-interfaces))))
+           (class-name-listp (class-decl-interfaces (get-class-info class-name class-table))))
+  :hints (("Goal" :use (:instance class-name-listp-of-class-decl-interfaces (class-info (get-class-info class-name class-table)))
+           :in-theory (disable class-name-listp-of-class-decl-interfaces))))
 
 ;; (defun all-keys-bound-to-class-infosp (key-list class-table)
 ;;   (declare (xargs :guard (string-listp key-list)))
@@ -128,8 +136,8 @@
            (class-infop0 (get-class-info key class-table)))
   :hints (("Goal" :use (:instance use-all-keys-bound-to-class-infosp-alt)
            :in-theory (disable use-all-keys-bound-to-class-infosp-alt
-                               jvm::use-all-keys-bound-to-class-infosp-2
-                               jvm::use-all-keys-bound-to-class-infosp))))
+                               use-all-keys-bound-to-class-infosp-2
+                               use-all-keys-bound-to-class-infosp))))
 
 ;equivalent to subsetp-equal but also prints a message
 ;todo: add a version of defforall that prints a message if any element fails to satisfy the predicate, then use that here
@@ -153,8 +161,8 @@
     (all-interfaces-present (class-decl-interfaces (get-class-info class-name class-table)) all-class-names)
     ;alternative syntax: (lambda (class-name) (subsetp-eq (class-decl-interfaces (get-class-info class-name class-table)) all-class-names))
     :fixed (class-table all-class-names)
-    :declares ((xargs :guard (and (all-class-namesp class-name)
-                                  (all-class-namesp all-class-names)
+    :declares ((xargs :guard (and (class-name-listp class-name)
+                                  (class-name-listp all-class-names)
                                   (true-listp all-class-names)
                                   (CLASS-TABLEP0 CLASS-TABLE)
                                   (all-keys-bound-to-class-infosp class-name class-table)))))
@@ -174,7 +182,7 @@
 ;use a forall?
 (defund all-bound-in-class-tablep (class-names class-table)
   (declare (xargs :guard (and (true-listp class-names)
-                              (all-class-namesp class-names)
+                              (class-name-listp class-names)
                               (class-tablep0 class-table)
                               )))
   (if (endp class-names)
@@ -219,10 +227,10 @@
   (implies (and (all-superinterfaces-bound class-names class-table (set::2list (acl2::rkeys class-table)))
                 (memberp class-name class-names))
            (all-bound-in-class-tablep (class-decl-interfaces (get-class-info class-name class-table)) class-table))
-  :hints (("Goal" :use (:instance jvm::use-all-superinterfaces-bound (acl2::free-class-name class-names)
+  :hints (("Goal" :use (:instance use-all-superinterfaces-bound (acl2::free-class-name class-names)
                                   (all-class-names (set::2list (acl2::rkeys class-table)))
                                   (acl2::x class-name))
-           :in-theory (e/d (all-bound-in-class-tablep-alt) (jvm::use-all-superinterfaces-bound)))))
+           :in-theory (e/d (all-bound-in-class-tablep-alt) (use-all-superinterfaces-bound)))))
 
 
 (defthm class-namep-of-class-decl-superclass-of-get-class-info
@@ -268,7 +276,7 @@
   (superclass-okayp class-name class-table)
   :fixed (class-table)
   :declares ((xargs :guard (and (true-listp class-name)
-                                (all-class-namesp class-name)
+                                (class-name-listp class-name)
                                 (class-tablep0 class-table)
                                 (all-keys-bound-to-class-infosp class-name class-table)))))
 
@@ -404,7 +412,7 @@
 
 (defund all-bound-to-a-non-interfacep (items class-table)
   (declare (xargs :guard (and (true-listp items)
-                              (all-class-namesp items)
+                              (class-name-listp items)
                               (class-tablep0 class-table))))
   (if (endp items)
       t
@@ -527,15 +535,15 @@
 
 (encapsulate (((error-looking-up-class * *) => *))
              (local (defun error-looking-up-class (class-name class-table) (declare (ignore class-name class-table)) nil))
-             (defthm all-class-namesp-of-error-looking-up-class
-               (all-class-namesp (error-looking-up-class class-name class-table)))
+             (defthm class-name-listp-of-error-looking-up-class
+               (class-name-listp (error-looking-up-class class-name class-table)))
              (defthm true-listp-of-error-looking-up-class
                (true-listp (error-looking-up-class class-name class-table))))
 
 ;; (defthm true-listp-of-error-looking-up-class
 ;;   (true-listp (error-looking-up-class class-name class-table))
-;;   :hints (("Goal" :use (:instance all-class-namesp-of-error-looking-up-class)
-;;            :in-theory (disable all-class-namesp-of-error-looking-up-class))))
+;;   :hints (("Goal" :use (:instance class-name-listp-of-error-looking-up-class)
+;;            :in-theory (disable class-name-listp-of-error-looking-up-class))))
 
 
 
@@ -707,11 +715,11 @@
          nil)
   :hints (("Goal" :in-theory (enable get-superclasses-aux))))
 
-(defthm all-class-namesp-of-get-superclasses-aux
+(defthm class-name-listp-of-get-superclasses-aux
   (implies (and (class-tablep class-table)
 ;                (not (class-decl-interfacep (get-class-info class-name class-table)))
                 )
-           (all-class-namesp (get-superclasses-aux class-name class-table n)))
+           (class-name-listp (get-superclasses-aux class-name class-table n)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable get-superclasses-aux ;class-tablep
                               bound-in-class-tablep))))
@@ -810,7 +818,7 @@
 (defun get-superinterfaces-aux (class-or-interface-names class-table count acc)
   (declare (xargs :measure (nfix (+ 1 count))
                   :guard (and (class-tablep class-table)
-                              (all-class-namesp class-or-interface-names)
+                              (class-name-listp class-or-interface-names)
                               (true-listp class-or-interface-names)
                               (true-listp acc)
                               (all-bound-in-class-tablep class-or-interface-names class-table))
@@ -853,7 +861,7 @@
            (true-listp (get-superinterfaces-aux class-or-interface-names class-table count acc))))
 
 (defun get-superinterfaces (class-or-interface-names class-table)
-  (declare (xargs :guard (and (all-class-namesp class-or-interface-names)
+  (declare (xargs :guard (and (class-name-listp class-or-interface-names)
                               (true-listp class-or-interface-names)
                               (class-tablep class-table)
                               (all-bound-in-class-tablep class-or-interface-names class-table))
@@ -978,22 +986,22 @@
 
 ;; ;gen?
 ;; ;delete?
-;; (defthm ALL-CLASS-NAMESP-of-CLASS-DECL-INTERFACES-of-g-alt
+;; (defthm CLASS-NAME-LISTP-of-CLASS-DECL-INTERFACES-of-g-alt
 ;;   (implies (and (SET::IN C (ACL2::RKEYS CLASS-TABLE))
 ;;                 (CLASS-TABLEp class-table)
 ;;                 (CLASS-NAMEP C))
-;;            (ALL-CLASS-NAMESP (CLASS-DECL-INTERFACES (get-class-info C CLASS-TABLE))))
-;;   :hints (("Goal" :in-theory (e/d (CLASS-TABLEP) (all-class-namesp-of-class-decl-interfaces))
-;;            :use (:instance all-class-namesp-of-class-decl-interfaces (class-name c) (class-info (get-class-info c class-table))))))
+;;            (CLASS-NAME-LISTP (CLASS-DECL-INTERFACES (get-class-info C CLASS-TABLE))))
+;;   :hints (("Goal" :in-theory (e/d (CLASS-TABLEP) (class-name-listp-of-class-decl-interfaces))
+;;            :use (:instance class-name-listp-of-class-decl-interfaces (class-name c) (class-info (get-class-info c class-table))))))
 
 ;; ;move
 ;; ;todo: compare to the other
-;; (defthm all-class-namesp-of-class-decl-interfaces-of-g-alt2
+;; (defthm class-name-listp-of-class-decl-interfaces-of-g-alt2
 ;;   (implies (and (bound-in-class-tablep class-name class-table)
 ;;                 (class-tablep class-table))
-;;            (all-class-namesp (class-decl-interfaces (get-class-info class-name class-table))))
-;;   :hints (("Goal" :use (:instance ALL-CLASS-NAMESP-OF-CLASS-DECL-INTERFACES (class-info (get-class-info class-name class-table)))
-;;            :in-theory (disable ALL-CLASS-NAMESP-OF-CLASS-DECL-INTERFACES))))
+;;            (class-name-listp (class-decl-interfaces (get-class-info class-name class-table))))
+;;   :hints (("Goal" :use (:instance CLASS-NAME-LISTP-OF-CLASS-DECL-INTERFACES (class-info (get-class-info class-name class-table)))
+;;            :in-theory (disable CLASS-NAME-LISTP-OF-CLASS-DECL-INTERFACES))))
 
 ;; Note that JLS says "A class necessarily implements all the interfaces that
 ;; its direct superclasses and direct superinterfaces do" so we have to check

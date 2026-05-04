@@ -129,8 +129,8 @@
     iff-of-constant-arg1
     iff-of-constant-arg2
     iff-same
-    iff-bool-fix-arg1
-    iff-bool-fix-arg2))
+    iff-of-bool-fix-arg1
+    iff-of-bool-fix-arg2))
 
 ;some of these may be necessary for case-splitting in the dag prover to work right
 (defun boolean-rules ()
@@ -295,6 +295,8 @@
     bvif-of-bvcat-low-arg4
     bvcat-of-bvcat-tighten-arg2
     bvcat-of-bvcat-tighten-arg4
+    bvlt-of-bvcat-low-arg2
+    bvlt-of-bvcat-low-arg3
     ;; bvsx rules:
     bitand-of-bvsx-low-arg1
     bitand-of-bvsx-low-arg2
@@ -315,6 +317,8 @@
     bvminus-of-bvsx-low-arg2
     bvminus-of-bvsx-low-arg3
     bvuminus-of-bvsx-low
+    bvlt-of-bvsx-low-arg2
+    bvlt-of-bvsx-low-arg3
     ;; todo: what about rules like bvand-of-bvcat-tighten-arg2 here?
 
     ;;these also seem safe (perhaps trimming constants is always safe?):
@@ -561,6 +565,8 @@
     bool->bit-becomes-bool-to-bit ; bool->bit is from std
     bit->bool-becomes-bit-to-bool
     logbitp-to-getbit-equal-1 ;rename
+
+    bitp-becomes-unsigned-byte-p ; since our rules use unsigned-byte-p
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
@@ -678,7 +684,10 @@
     ;; bvif-trim-arg3-axe-all ; use instead?
     ;; bvif-trim-arg4-axe-all ; use instead?
     leftrotate32-trim-arg1-axe-all
-    bvsx-trim-axe-all))
+    bvsx-trim-axe-all
+
+    bvlt-trim-arg1-axe-all
+    bvlt-trim-arg2-axe-all))
 
 ;; WARNING: Keep in sync with *trimmable-operators*
 (defun trim-helper-rules ()
@@ -805,8 +814,8 @@
      ;; bvplus-of-0-arg3 ; in case we are not commuting constants forward ; todo: enable
      bvplus-of-ifix-arg2
      bvplus-of-ifix-arg3
-     equal-of-bvplus-constant-and-constant
-     equal-of-bvplus-constant-and-constant-alt
+     equal-of-constant-and-bvplus-of-constant
+     equal-of-bvplus-of-constant-and-constant
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
@@ -1136,6 +1145,8 @@
      ;;bvif-trim-constant-arg2
 
      bvuminus-of-bvuminus
+     equal-of-bvuminus-and-constant
+     equal-of-constant-and-bvuminus
 
      bvlt-of-bvif-arg2-safe
      bvlt-of-bvif-arg3-safe
@@ -1315,7 +1326,11 @@
      equal-of-1-and-bool-to-bit
      ;; equal-of-bool-to-bit-and-0 ; not needed if we turn equals around
      ;; equal-of-bool-to-bit-and-1 ; not needed if we turn equals around
-     )))
+
+     bvlt-of-bvcat-arg2-constant-arg2-arg3
+     bvlt-of-bvcat-arg2-constant-arg4-arg3
+     bvlt-of-bvcat-arg3-constant-arg2-arg2
+     bvlt-of-bvcat-arg3-constant-arg2-arg4)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1477,7 +1492,7 @@
     ;; unSIGNED-BYTE-P-OF-MYIF-strong ;slow?
     ;; BVCHOP-IDENTITY ;trying  - restrict to vars? ;trying without this since we have the dag one - what about vars? other terms?
 ;newest is without this:    getbit-identity ;restrict to vars? trying.. try without this, since we have the dag version?  or limit?
-    unsigned-byte-p-of-bvor2
+    unsigned-byte-p-of-bvor-2
     unsigned-byte-p-of-bvor3))
 
 (defun update-nth2-rules ()
@@ -2320,10 +2335,8 @@
     mod-becomes-bvchop-when-power-of-2p
     bvlt-of-bvmult-6-5-20 ;which one of these helps?
     bvlt-of-bvmult-6-5-20-alt
-    bvlt-trim-arg1-axe-all
-    bvlt-trim-arg2-axe-all
-    equal-of-bvplus-constant-and-constant
-    equal-of-bvplus-constant-and-constant-alt
+    bvlt-trim-arg1-axe-all ; drop?
+    bvlt-trim-arg2-axe-all ; drop?
     bvlt-of-bvplus-of-bvcat-of-slice-sha1
     bvlt-of-bvif-same-1
     unsigned-byte-p-of-bvplus-of-1-sha1 ;would it fire with a free var for the 31?
@@ -3503,7 +3516,7 @@
 ;    bvuminus-when-smaller-bind-free-dag
              commutativity-2-of-+-when-constant
              rationalp-of--
-             rationalp-of-+
+             rationalp-+
              bvlt-of-1
              max
              bvchop-of-times-of-/-32
@@ -4360,7 +4373,7 @@
 (set-axe-rule-priority bvchop-of-bvmult -1)
 (set-axe-rule-priority bvchop-of-bvxor -1)
 (set-axe-rule-priority bvchop-of-bvor -1)
-(set-axe-rule-priority bvchop-of-bvand -1)
+(set-axe-rule-priority bvchop-of-bvand -1) ;happens before bvchop-identity to prevent loops? more like this?
 (set-axe-rule-priority bvchop-of-bvif -1)
 (set-axe-rule-priority bvchop-of-bv-array-read -1)
 (set-axe-rule-priority bvchop-of-bitand -1)
@@ -4385,9 +4398,6 @@
 ;new:
 (set-axe-rule-priority bvchop-identity-axe -1/2)
 (set-axe-rule-priority getbit-identity-axe -1/2)
-
-;bozo more like this?
-(set-axe-rule-priority bvchop-of-bvand -1) ;happens before bvchop-identity to prevent loops?
 
 ;these should happen before bv-array-read-of-bv-array-write-tighten:
 (set-axe-rule-priority bv-array-read-of-bv-array-write-diff-safe -10)

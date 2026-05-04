@@ -155,6 +155,7 @@
      (b* (((when (equal number.number
                         (make-pnumber-number-nondigit
                          :number (pnumber-digit #\0)
+                         :squotep nil
                          :nondigit #\x)))
            (retok
             (make-iconst
@@ -166,6 +167,7 @@
           ((when (equal number.number
                         (make-pnumber-number-nondigit
                          :number (pnumber-digit #\0)
+                         :squotep nil
                          :nondigit #\X)))
            (retok
             (make-iconst
@@ -222,6 +224,7 @@
      (b* (((when (equal number.number
                         (make-pnumber-number-nondigit
                          :number (pnumber-digit #\0)
+                         :squotep nil
                          :nondigit #\x)))
            (if (str::hex-digit-char-p number.nondigit)
                (retok
@@ -236,6 +239,7 @@
           ((when (equal number.number
                         (make-pnumber-number-nondigit
                          :number (pnumber-digit #\0)
+                         :squotep nil
                          :nondigit #\X)))
            (if (str::hex-digit-char-p number.nondigit)
                (retok
@@ -1628,8 +1632,7 @@
         (retok (pexpr-char (plexeme-char->const token)) lexemes))
        ((plexeme-case token :ident) ; ident
         (cond
-         ((equal (ident->unwrap (plexeme-ident->ident token))
-                 "defined") ; defined
+         ((equal (plexeme-ident->ident token) "defined") ; defined
           (b* (((mv token2 lexemes) (find-first-token lexemes)))
             (cond
              ((not token2) ; defined END

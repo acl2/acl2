@@ -87,8 +87,8 @@
   (b* ((- (cw "(Running initializer for ~x0.~%" class-name))
        ((mv erp term-to-run) (dagify-term `(run-until-return-from-stack-height
                                              (binary-+ '1 (stack-height s0))
-                                             ;; The dag-to-term here might be slow:
-                                             (jvm::invoke-static-initializer-for-next-class ',class-name (th) ,(dag-to-term s-dag))
+                                             ;; The dag2term here might be slow:
+                                             (jvm::invoke-static-initializer-for-next-class ',class-name (th) ,(dag2term s-dag))
                                              )))
        ((when erp) (mv erp nil state))
        (- (cw "Term to run: ~x0" term-to-run))
@@ -185,7 +185,7 @@
   (declare (xargs :mode :program
                   :stobjs state
                   :guard (and (symbol-listp extra-rules)
-                              (jvm::all-class-namesp class-names)
+                              (jvm::class-name-listp class-names)
                               ;; what about th?
                               (weak-dag-or-quotep s-dag)
                               (pseudo-term-listp hyps)
@@ -245,7 +245,7 @@
                                     )
                             state))
        ((when erp) (mv erp nil state)))
-    (mv (erp-nil) (dag-to-term result-dag) state)))
+    (mv (erp-nil) (dag2term result-dag) state)))
 
 ;; Returns (mv erp term state).
 (defmacro initialize-classes-in-arbitrary-state (class-names
@@ -713,7 +713,8 @@
                                     ;; generate an assumption about all the
                                     ;; addresses being bound:
                                     `((all-bound-in-heap (get-field ,term-for-assumptions ,quoted-class-field-pair ,base-heap-term)
-                                                         ,base-heap-term))
+                                                         ,base-heap-term)
+                                      (all-addressp (get-field ,term-for-assumptions ,quoted-class-field-pair ,base-heap-term)))
                                   nil)
                                 (initialized-field-assumptions-for-heap-addresses (+ -1 count)
                                                                                   symbolic-new-addresses
@@ -821,7 +822,9 @@
                                all-bound-in-heap-of-nil
                                get-field-of-addresses-of-nil
                                get-field-of-addresses-of-cons
-                               in-of-nth-new-ad-and-2set-of-n-new-ads)
+                               in-of-nth-new-ad-and-2set-of-n-new-ads
+                               all-addressp-of-cons
+                               all-addressp-when-not-consp)
                              (base-rules)
                              ;; (jvm-semantics-rules)
                              (jvm-simplification-rules)
@@ -862,7 +865,7 @@
   (declare (xargs :mode :program
                   :stobjs state
                   :guard (and (true-listp class-names)
-                              (jvm::all-class-namesp class-names))))
+                              (jvm::class-name-listp class-names))))
   (b* ((- (cw "(Generating assumptions established by the static initializers of ~x0:~%" class-names))
        (state-var 's0)
        ((mv erp initialized-state-term state)

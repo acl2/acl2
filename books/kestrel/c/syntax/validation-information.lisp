@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,8 +14,12 @@
 (include-book "types")
 (include-book "uid")
 (include-book "unambiguity")
+(include-book "evaluation")
+
+(include-book "kestrel/utilities/messages" :dir :system)
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
+(include-book "kestrel/fty/nat-option" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -43,6 +48,668 @@
      the predicates just say that information of the right type is present."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum initer-subobjects
+  :parents (initer-context)
+  :short "Fixtype of initializer subobjects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Subobjects are defined in [C17:6.7.9/17]
+     to characterize the meaning of initializers.
+     This fixtype follows the standard's notion of subobjects,
+     and is used to represent the portion of an object type
+     which has not yet been initialized.")
+   (xdoc::p
+    "The @(':array-index') case represents the elements of an array
+     including and following the specified index.
+     Optionally, it may include the end of an index range.
+     This supports the GCC extension for designator ranges
+     (see @(see designor)).
+     Eventually, we may wish to extend this case
+     to also track the size of the array object.
+     This will be necessary to determine
+     whether we can advance the array-index without reaching the end.
+     Currently, we do not track the length of array @(see types)
+     and so never have this information.")
+   (xdoc::p
+    "The @(':struct') case represents the remaining members of a structure,
+     excluding unnamed members [C17:6.7.9/9].
+     We require a non-empty list of members.
+     (We do not currently have a representation for empty struct types,
+     a GCC extension.)")
+   (xdoc::p
+    "Finally, the @(':union') case considers
+     only the first member of the union [C17:6.7.9/20]."))
+  ;; TODO: we might consider making this index optional,
+  ;;   to reflect the case where we could not evaluate
+  ;;   the integer constant expression of the designator.
+  ;;   At the moment, we use the unknown initializer subobjects in this case.
+  (:array-index ((of type) (index nat) (range? acl2::nat-option)))
+  (:struct ((members type-struni-member-list
+                     :reqfix (if (endp members)
+                                 (list (irr-type-struni-member))
+                               members)))
+   :require (not (endp members)))
+  (:union ((first-member type-struni-member)))
+  :pred initer-subobjects-p
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-initer-subobjects
+  :parents (initer-subobjects)
+  :short "Irrelevant initializer subobjects."
+  :type initer-subobjects-p
+  :body (make-initer-subobjects-array-index :of (irr-type) :index 0))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption initer-subobjects-option
+  initer-subobjects
+  :parents (initer-subobjects)
+  :short "Fixtype of optional initializer objects."
+  :pred initer-subobjects-optionp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist initer-subobjects-list
+  :parents (initer-subobjects)
+  :short "Fixtype of a list of initializer subobjects."
+  :long
+   (xdoc::topstring-p
+    "Initializer subobjects are defined in @(tsee initer-subobjects).")
+  :elt-type initer-subobjects
+  :true-listp t
+  :elementp-of-nil nil
+  :pred initer-subobjects-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum initer-subobjects-stack
+  :parents (initer-subobjects)
+  :short "Fixtype of a stack of initializer subobjects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A known stack is represented by a list.
+     We also allow an ``unknown'' stack, with no further information.
+     This unknown option is necessary
+     to deal with imprecision elsewhere in our model
+     (e.g. in our typing and constant evaluation).")
+   (xdoc::p
+    "When an initializer occurs without a designation
+     in a brace-enclosed initializer,
+     it implicitly initializes the ``next'' subobject after the previous,
+     where the standard defines which subobjects follow which others
+     [C17:6.7.9/17].
+     Our @(tsee initer-subobjects) fixtype represents
+     the remaining immediate subobjects of some object type.
+     But, because of the implicit way
+     we may initialize subobjects recursively [C17:6.7.9/20],
+     we must maintain a stack of the subobjects.
+     When we ``open'' or ``enter'' the current type
+     (i.e. the type returned by (tsee subobjects-stack-peek-type)),
+     we push the expanded subobjects to the top of the stack.
+     When we initialize all subobjects on the top of the stack,
+     we pop it and continue initializing in the parent object.")
+   (xdoc::p
+    "For example, consider the following initializer.")
+   (xdoc::codeblock
+     "// Assume this is in translation unit named \"foo.c\""
+     "// and `struct foo_s` has UID 0."
+     "struct foo_s {"
+     "  int x;"
+     "  int y;"
+     "};"
+     ""
+     "struct foo_s foo[10] = {"
+     "  [5].x = 0,"
+     "  1,"
+     "};")
+   (xdoc::p
+    "At the sub-initializer @('1')
+     (which initializes the subobject represented by designation @('[5].y')),
+     the stack, if known, would be:")
+   (xdoc::codeblock
+     "(initer-subobjects-stack-known"
+     " (list (initer-subobjects-struct"
+     "        (list (make-type-struni-member"
+     "               :name (ident \"x\")"
+     "               :type (type-sint))))"
+     "       (make-initer-subobjects-array-index"
+     "        :of (make-type-struct"
+     "             :uid (uid 0)"
+     "             :tunit? (filepath \"foo.c\")"
+     "             :tag/members (type-struni-tag/members-tagged (ident \"foo_s\")))"
+     "        :index 5)))"))
+  (:unknown ())
+  (:known ((list initer-subobjects-list)))
+  :pred initer-subobjects-stack-p
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-initer-subobjects-stack
+  :parents (initer-subobjects-stack)
+  :short "An irrelevant initializer subobjects stack."
+  :type initer-subobjects-stack-p
+  :body (initer-subobjects-stack-known nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum initer-context
+  :short "Fixtype of initializer context."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This fixtype stores the type and position information
+     required to validate initializers.
+     The @(':top') case corresponds to an outermost initializer;
+     only the type is stored.
+     The @(':stack') case applies when we are at some particular position
+     within a brace-enclosed initializer.
+     See @(tsee initer-subobjects-stack) for details."))
+  (:top ((type type)))
+  (:stack ((stack initer-subobjects-stack)))
+  :pred initer-context-p
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-initer-context
+  :parents (initer-context)
+  :short "An irrelevant initializer context."
+  :type initer-context-p
+  :body (initer-context-top (irr-type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define initer-context-unknown ()
+  (initer-context-stack (initer-subobjects-stack-unknown))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-stack-end-p ((stack initer-subobjects-stack-p))
+  :returns (yes/no booleanp)
+  :parents (initer-subobjects-stack)
+  :short "Check whether a subobject stack is definitely at the end."
+  :long
+  (xdoc::topstring-p
+   "This recognizer is underapproximate.
+    It returns @('nil') in the @(':unknown') case.")
+  (initer-subobjects-stack-case
+    stack
+    :unknown nil
+    :known (endp stack.list))
+
+  ///
+  (defrule subobjects-stack-end-p-of-initer-subobjects-stack-known
+    (equal (subobjects-stack-end-p (initer-subobjects-stack-known list))
+           (endp list)))
+
+  (defrule subobjects-stack-end-p-forward-chaining
+    (implies (and (not (subobjects-stack-end-p stack))
+                  (initer-subobjects-stack-case stack :known))
+             (consp (initer-subobjects-stack-known->list stack)))
+    :rule-classes ((:forward-chaining
+                    :trigger-terms ((subobjects-stack-end-p stack))))
+    :enable subobjects-stack-end-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define initer-context-end-p ((ctx initer-context-p))
+  :returns (yes/no booleanp)
+  :parents (initer-context)
+  :short "Check whether an initializer context is definitely at the end."
+  :long
+  (xdoc::topstring-p
+   "This recognizer, like @(tsee subobjects-stack-end-p),
+    is underapproximate.")
+  (initer-context-case
+    ctx
+    :top nil
+    :stack (subobjects-stack-end-p ctx.stack))
+
+  ///
+
+  (defrule initer-context-end-p-of-initer-context-top
+    (not (initer-context-end-p (initer-context-top type))))
+
+  (defrule initer-context-end-p-forward-chaining
+    (implies (and (not (initer-context-end-p ctx))
+                  (initer-context-case ctx :stack))
+             (not (subobjects-stack-end-p (initer-context-stack->stack ctx))))
+    :rule-classes ((:forward-chaining
+                    :trigger-terms ((initer-context-end-p ctx))))
+    :enable initer-context-end-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-peek-type ((subobjects initer-subobjects-p))
+  :returns (type typep)
+  :parents (initer-subobjects)
+  :short "Get the type of the ``current'' subobject."
+  (initer-subobjects-case
+    subobjects
+    :array-index subobjects.of
+    :struct (b* (((type-struni-member member) (first subobjects.members)))
+              member.type)
+    :union (b* (((type-struni-member member) subobjects.first-member))
+             member.type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-stack-peek-type ((stack initer-subobjects-stack-p))
+  :guard (not (subobjects-stack-end-p stack))
+  :returns (type typep)
+  :parents (initer-subobjects-stack)
+  :short "Get the type of the ``current'' subobject on the stack."
+  (initer-subobjects-stack-case
+    stack
+    :unknown (type-unknown)
+    :known (subobjects-peek-type (initer-subobjects-fix (first stack.list)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define initer-context->type ((ctx initer-context-p))
+  :guard (not (initer-context-end-p ctx))
+  :returns (type typep)
+  :parents (initer-context)
+  :short "Get the type at the current position in the context."
+  (initer-context-case
+    ctx
+    :top ctx.type
+    :stack (subobjects-stack-peek-type ctx.stack))
+
+  ///
+
+  (defrule initer-context->type-of-initer-context-top
+    (equal (initer-context->type (initer-context-top type))
+           (type-fix type)))
+
+  (defrule initer-context->type-when-case-stack
+    (implies (initer-context-case ctx :stack)
+             (equal (initer-context->type ctx)
+                    (subobjects-stack-peek-type
+                      (initer-context-stack->stack ctx))))
+    :rule-classes ((:rewrite :backchain-limit-lst (0)))
+    :enable initer-context->type))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-advance ((subobjects initer-subobjects-p))
+  :returns (mv (unknownp booleanp)
+               (subobjects? initer-subobjects-optionp))
+  :parents (initer-subobjects)
+  :short "Advance the subobjects past the current subobject."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('unknownp') return flag indicates
+     whether the remaining subobjects are unknown.
+     If @('unknownp'), then the @('subobjects?') return value is irrelevant.
+     Otherwise, if the @('subobjects?') return is non-@('nil'),
+     it represents the remaining subobjects
+     after advancing forward one position.
+     Finally, if @('unknownp') and @('subobjects?') are both @('nil'),
+     There are no remaining subobjects.")
+   (xdoc::p
+    "When advancing an @(':array-index'),
+     the result is always unknown, as we do not currently have the array size,
+     and therefore cannot determine
+     whether we have reached the end of the array.")
+   (xdoc::p
+    "To advance a @(':struct'),
+     we proceed to the next member in declaration order [C17:6.7.9/17].
+     The @(tsee initer-subobjects-struct) members are stored in order,
+     so we take the @('cdr') of these members.
+     If there are no remaining members,
+     then there are no remaining subobjects.")
+   (xdoc::p
+    "For a @(':union'), only the first named member is considered.
+     Therefore, advancing always leads to no remaining subobjects."))
+  (initer-subobjects-case
+    subobjects
+    :array-index (mv t nil)
+    :struct (mv nil
+                (if (endp (cdr subobjects.members))
+                    nil
+                  (initer-subobjects-struct (cdr subobjects.members))))
+    :union (mv nil nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-list-advance ((list initer-subobjects-listp))
+  :guard (not (endp list))
+  :returns (mv (unknownp booleanp)
+               (new-list initer-subobjects-listp))
+  :parents (initer-subobjects-list)
+  :short "Advance a list of subobjects past the current subobject."
+  :long
+  (xdoc::topstring-p
+   "First, the subobjects at the head of the list are advanced,
+    according to @(tsee subobjects-advance).
+    If after advancement, there are no remaining subobjects in the head,
+    we advance recursively on the list tail.
+    This is necessary since the head of the list represents
+    some portion of the subobjects
+    of the current subobject of the tail's head.")
+  (b* (((mv unknownp subobjects?) (subobjects-advance (first list))))
+    (cond ((not (mbt (not (endp list))))
+           (mv nil nil))
+          (unknownp
+           (mv t nil))
+          (subobjects?
+            (mv nil (cons subobjects?
+                          (initer-subobjects-list-fix (rest list)))))
+          ((endp (rest list))
+           (mv nil nil))
+          (t
+           (subobjects-list-advance (rest list))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-stack-advance ((stack initer-subobjects-stack-p))
+  :guard (not (subobjects-stack-end-p stack))
+  :returns (new-stack initer-subobjects-stack-p)
+  :parents (initer-subobjects-stack)
+  :short "Advance a stack of subobjects past the current subobject."
+  :long
+  (xdoc::topstring-p
+   "See (tsee subobjects-list-advance).")
+  (initer-subobjects-stack-case
+    stack
+    :unknown (initer-subobjects-stack-fix stack)
+    :known (b* (((mv unknownp new-list)
+                 (subobjects-list-advance stack.list)))
+             (if unknownp
+                 (initer-subobjects-stack-unknown)
+               (initer-subobjects-stack-known new-list)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-from-type ((type typep)
+                              (completions type-completions-p))
+  :guard (or (type-aggregatep type)
+             (type-case type '(:union :unknown)))
+  :returns (mv (erp maybe-msgp)
+               (unknownp booleanp)
+               (subobjects? initer-subobjects-optionp))
+  :parents (initer-subobjects)
+  :short "Get the subobjects of a type."
+  :long
+  (xdoc::topstring-p
+   "Types are expected be complete.
+    An incomplete type may result in an error.")
+  (b* (((reterr) nil nil)
+       (type (type-fix type))
+       (completions (type-completions-fix completions)))
+    (type-case
+      type
+      :struct (b* (((erp members)
+                    (type-struni-tag/members->members
+                      type.tag/members type.uid completions)
+                    :iferr (msg$ "Type ~x0 is incomplete. ~
+                                  Therefore, we cannot ~
+                                  get the subobjects-stack."
+                                 type))
+                   (filtered (members-filter-contributers members)))
+                (retok nil
+                       (if (endp filtered)
+                           nil
+                         (initer-subobjects-struct filtered))))
+      :union (b* (((erp members)
+                    (type-struni-tag/members->members
+                      type.tag/members type.uid completions)
+                    :iferr (msg$ "Type ~x0 is incomplete. ~
+                                  Therefore, we cannot ~
+                                  get the subobjects-stack."
+                                 type))
+                  (filtered (members-filter-contributers members)))
+               (if (endp filtered)
+                   (retmsg$ "Complete union type ~x0 has no named members."
+                            type)
+                 (retok nil (initer-subobjects-union (car filtered)))))
+      :array (retok nil
+                    (make-initer-subobjects-array-index
+                      :of type.of
+                      :index 0))
+      :unknown (retok t nil)
+      :otherwise (prog2$ (impossible) (retmsg$ "Internal error."))))
+  :guard-hints (("Goal" :in-theory (enable type-aggregatep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-stack-enter ((stack initer-subobjects-stack-p)
+                                (completions type-completions-p))
+  :guard (and (not (subobjects-stack-end-p stack))
+              (or (type-aggregatep (subobjects-stack-peek-type stack))
+                  (type-case (subobjects-stack-peek-type stack) :union)))
+  :returns (mv (erp maybe-msgp)
+               (new-stack initer-subobjects-stack-p))
+  :parents (initer-subobjects-stack)
+  :short "Expand the current subobject and push to the stack."
+  :long
+  (xdoc::topstring-p
+   "This gets the type of the current subobject,
+    converts the type into subobjects,
+    and pushes said subobjects to the top of the stack.")
+  (b* (((reterr) (irr-initer-subobjects-stack))
+       (type (subobjects-stack-peek-type stack))
+       ((erp unknownp subobjects?)
+        (subobjects-from-type type completions))
+       ((when (or unknownp (not subobjects?)))
+        (retok (initer-subobjects-stack-unknown))))
+    (retok (initer-subobjects-stack-known
+             (cons subobjects? (initer-subobjects-stack-known->list stack)))))
+  :guard-hints (("Goal" :in-theory (enable subobjects-stack-peek-type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define initer-context-enter ((ctx initer-context-p)
+                              (completions type-completions-p))
+  :guard (and (not (initer-context-end-p ctx))
+              (or (type-aggregatep (initer-context->type ctx))
+                  (type-case (initer-context->type ctx) :union)))
+  :returns (mv (erp maybe-msgp)
+               (stack initer-subobjects-stack-p))
+  :parents (initer-context)
+  :short "Expand the current subobject and push to the stack."
+  :long
+  (xdoc::topstring-p
+   "If the context represents an outermost initializer
+    (and therefore there is no current stack),
+    create a new stack and push the new subobjects.")
+  (initer-context-case
+    ctx
+    :top (b* (((reterr) (irr-initer-subobjects-stack))
+              ((erp unknownp subobjects?)
+               (subobjects-from-type ctx.type completions)))
+           (retok (if (and (not unknownp) subobjects?)
+                      (initer-subobjects-stack-known
+                        (list subobjects?))
+                    (initer-subobjects-stack-unknown))))
+    :stack (subobjects-stack-enter ctx.stack completions))
+  :guard-hints (("Goal" :in-theory (enable initer-context->type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-from-members-lookup ((ident identp)
+                                        (is-struct-p booleanp)
+                                        (members type-struni-member-listp))
+  :returns (mv (erp booleanp)
+               (list initer-subobjects-listp))
+  :parents (initer-subobjects-stack)
+  :short "Lookup the struct/union subobjects at and following a named member."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('is-struct-p') argument indicates whether
+     @('members') belong to a struct type.
+     If @('is-struct-p') is @('nil'),
+     then @('members') must belong instead to a union type.")
+   (xdoc::p
+    "Like @(tsee type-struni-member-list-lookup),
+     this function searches recursively in anonymous structs and unions,
+     as the members of these are considered members of the outer struct/union
+     [C17:6.7.2.1/13].")
+   (xdoc::p
+    "The remaining subobjects after a struct member are
+     all the named members which follow in declaration order [C17:6.7.9/17],
+     excluding the unnamed members [C17:6.7.9/9].")
+   (xdoc::p
+    "There are no remaining subobjects
+     following a union member [C17:6.7.9/20]."))
+  (b* (((reterr) (list (irr-initer-subobjects)))
+       ((when (endp members))
+        (reterr t))
+       ((type-struni-member member) (first members))
+       ((when member.name?)
+        (if (ident-equal ident member.name?)
+            (retok (if is-struct-p
+                       (list (initer-subobjects-struct
+                               (cons (first members)
+                                     (members-filter-contributers (rest members)))))
+                     (list (initer-subobjects-union (first members)))))
+          (subobjects-from-members-lookup ident is-struct-p (rest members))))
+       ((mv erp list)
+        (type-case
+          member.type
+          :struct (type-struni-tag/members-case
+                    member.type.tag/members
+                    :tagged (reterr t)
+                    :untagged (subobjects-from-members-lookup
+                                ident
+                                t
+                                member.type.tag/members.members))
+          :union (type-struni-tag/members-case
+                   member.type.tag/members
+                   :tagged (reterr t)
+                   :untagged (subobjects-from-members-lookup
+                               ident
+                               nil
+                               member.type.tag/members.members))
+          :otherwise (reterr t))))
+    (if erp
+        (subobjects-from-members-lookup ident is-struct-p (rest members))
+      (retok (append list
+                     (if is-struct-p
+                         (list (initer-subobjects-struct
+                                 (cons (first members)
+                                       (members-filter-contributers
+                                         (rest members)))))
+                       (list (initer-subobjects-union (first members))))))))
+  :measure (type-struni-member-list-count members)
+  :ruler-extenders :all
+  ;; Verified below
+  :verify-guards nil
+  :hooks ((:fix :hints (("Goal" :induct t))))
+
+  ///
+  (more-returns
+   (list true-listp :rule-classes :type-prescription)
+   (list consp
+         :rule-classes :type-prescription
+         :hints (("Goal" :induct t))))
+
+  (verify-guards subobjects-from-members-lookup))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-to-designor ((subobjects initer-subobjects-p)
+                                (ienv ienvp))
+  :returns (desingor? designor-optionp)
+  :parents (initer-subobjects)
+  :short "Create a designator from an initializer subobjects fixtype object."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This conversion is largely straightforward.
+     However, it does require creating an integer constant AST node
+     from a natural number.
+     This is the reason we need the implementation environment
+     (to check whether the number will fit).")
+   (xdoc::p
+    "A return value of @('nil') indicates a failure to convert.
+     This occurs when a natural number
+     cannot be converted into an integer constant
+     due to its size."))
+  (initer-subobjects-case
+    subobjects
+    :array-index (b* ((index-iconst?
+                       (nat-to-iconst subobjects.index ienv))
+                      ((unless index-iconst?)
+                       nil)
+                      ((mv to-iconst-failedp range-iconst?)
+                       (b* (((unless subobjects.range?)
+                             (mv nil nil))
+                            (range-cexpr?
+                             (nat-to-iconst subobjects.range? ienv)))
+                         (mv (not range-cexpr?) range-cexpr?)))
+                      ((when to-iconst-failedp)
+                       nil)
+                      (index-cexpr
+                       (make-const-expr
+                         :expr (make-expr-const
+                                 :const (const-int index-iconst?))))
+                      (range-cexpr?
+                       (and range-iconst?
+                            (make-const-expr
+                              :expr (make-expr-const
+                                      :const (const-int range-iconst?))))))
+                   (make-designor-sub
+                     :index index-cexpr
+                     :range? range-cexpr?))
+    :struct (b* (((type-struni-member member) (first subobjects.members))
+                 ((unless member.name?)
+                  nil))
+              (make-designor-dot :name member.name?))
+    :union (b* (((type-struni-member member) subobjects.first-member)
+                ((unless member.name?)
+                 nil))
+             (make-designor-dot :name member.name?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-list-to-designors ((list initer-subobjects-listp)
+                                      (ienv ienvp)
+                                      (acc designor-listp))
+  :guard (not (endp list))
+  :returns (designors designor-listp)
+  :parents (initer-subobjects-list)
+  :short "Create a designator list from a list of initializer subobjects."
+  :long
+  (xdoc::topstring-p
+   "A return value of @('nil') indicates a failure to convert.")
+  (b* (((unless (mbt (not (endp list))))
+        nil)
+       (designor? (subobjects-to-designor (first list) ienv))
+       ((unless designor?)
+        nil)
+       (acc (cons designor? (designor-list-fix acc))))
+    (if (endp (rest list))
+        acc
+      (subobjects-list-to-designors (rest list) ienv acc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define subobjects-stack-to-designors ((stack initer-subobjects-stack-p)
+                                       (ienv ienvp))
+  :guard (not (subobjects-stack-end-p stack))
+  :returns (designors designor-listp)
+  :parents (initer-subobjects-stack)
+  :short "Create a designator list from a stack of initializer subobjects."
+  :long
+  (xdoc::topstring-p
+   "A return value of @('nil') indicates a failure to convert.")
+  (initer-subobjects-stack-case
+    stack
+    :unknown nil
+    :known (subobjects-list-to-designors stack.list ienv nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -485,9 +1152,9 @@
         (type-composite x y table.completions table.next-uid ienv)))
     (mv composite
         (change-valid-table
-          table
-          :completions completions
-          :next-uid next-uid))))
+         table
+         :completions completions
+         :next-uid next-uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -637,6 +1304,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod const-expr-info
+  :short "Fixtype of validation information for constant expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to constant expressions,
+     i.e. the @(tsee const-expr) fixtype.
+     The information for a constant expression consists of
+     its value after evaluation."))
+  ((value valuep))
+  :pred const-expr-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod desiniter-info
+  :short "Fixtype of validation information for initializers with optional
+          designations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to initializers with optional designations,
+     i.e. the @(tsee desiniter) fixtype.
+     The information for a initializers with optional designations consists of
+     an optional designation.
+     When a designation is not present in the syntax,
+     the validator may add a designation here
+     corresponding to the implicitly initialized subobject."))
+  ((designors designor-list))
+  :pred desiniter-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod param-declor-nonabstract-info
   :short "Fixtype of validation information for
           non-abstract parameter declarators."
@@ -715,7 +1416,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-info
+(fty::defprod trans-unit-info
   :short "Fixtype of validation information for translation units."
   :long
   (xdoc::topstring
@@ -725,21 +1426,21 @@
      The information consists of
      the final validation table for the translation unit."))
   ((table-end valid-table))
-  :pred transunit-infop)
+  :pred trans-unit-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-ensemble-info
-  :short "Fixtype of validation information for translation unit ensembles."
+(fty::defprod trans-ensemble-info
+  :short "Fixtype of validation information for translation ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the type of the annotations that
-     the validator adds to translation unit ensembles.
+     the validator adds to translation ensembles.
      The information consists of
-     the final validation table for the translation unit ensemble."))
+     the final validation table for the translation ensemble."))
   ((table-end valid-table))
-  :pred transunit-ensemble-infop)
+  :pred trans-ensemble-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -790,9 +1491,12 @@
             fundef
             ext-declon
             ext-declon-list
-            transunit
-            filepath-transunit-map
-            transunit-ensemble
+            hash-if/elif-expr
+            hash-if/ifdef/ifndef
+            trans-items
+            trans-unit
+            filepath-trans-unit-map
+            trans-ensemble
             code-ensemble)
     :result booleanp
     :default t
@@ -830,6 +1534,11 @@
                                   (expr-fix expr)))
      (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
                                      (expr-fix expr)))
+     (const-expr (and (expr-annop (const-expr->expr const-expr))
+                      (const-expr-infop (const-expr->info const-expr))))
+     (desiniter (and (designor-list-annop (desiniter->designors desiniter))
+                     (initer-annop (desiniter->initer desiniter))
+                     (desiniter-infop (desiniter->info desiniter))))
      (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
                                      (type-spec-fix type-spec)))
      (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
@@ -870,16 +1579,17 @@
                   (declon-list-annop (fundef->declons fundef))
                   (comp-stmt-annop (fundef->body fundef))
                   (fundef-infop (fundef->info fundef))))
-     (transunit (and (ext-declon-list-annop (transunit->declons transunit))
-                     (transunit-infop (transunit->info transunit))))
-     (transunit-ensemble (and (filepath-transunit-map-annop
-                                (transunit-ensemble->units transunit-ensemble))
-                              (transunit-ensemble-infop
-                                (transunit-ensemble->info transunit-ensemble)))))))
+     (trans-unit (and (trans-item-list-annop (trans-unit->items trans-unit))
+                      (trans-unit-infop (trans-unit->info trans-unit))))
+     (trans-ensemble (and (filepath-trans-unit-map-annop
+                           (trans-ensemble->units trans-ensemble))
+                          (trans-ensemble-infop
+                           (trans-ensemble->info
+                            trans-ensemble)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection abstract-syntax-anno-additional-theroems
+(defsection abstract-syntax-anno-additional-theorems
   :short "Additional theorems about the annotation predicates."
   :long
   (xdoc::topstring
@@ -899,53 +1609,63 @@
   (defruled iconst-annop-of-iconst
     (equal (iconst-annop (iconst core suffix? info))
            (iconst-infop info))
-    :enable (iconst-annop identity))
+    :enable iconst-annop)
 
   (defruled expr-annop-of-expr-ident
     (equal (expr-annop (expr-ident ident info))
            (var-infop info))
-    :enable (expr-annop identity))
+    :enable expr-annop)
 
   (defruled expr-annop-of-expr-const
     (equal (expr-annop (expr-const const info))
            (and (const-annop const)
                 (expr-const-infop info)))
-    :enable (expr-annop identity))
+    :enable expr-annop)
 
   (defruled expr-annop-of-expr-string
     (equal (expr-annop (expr-string strings info))
            (expr-string-infop info))
-    :enable (expr-annop identity))
+    :enable expr-annop)
 
   (defruled expr-annop-of-expr-arrsub
     (equal (expr-annop (expr-arrsub arg1 arg2 info))
            (and (expr-annop arg1)
                 (expr-annop arg2)
                 (expr-arrsub-infop info)))
-    :expand (expr-annop (expr-arrsub arg1 arg2 info))
-    :enable identity)
+    :expand (expr-annop (expr-arrsub arg1 arg2 info)))
 
   (defruled expr-annop-of-expr-funcall
     (equal (expr-annop (expr-funcall fun args info))
            (and (expr-annop fun)
                 (expr-list-annop args)
                 (expr-funcall-infop info)))
-    :expand (expr-annop (expr-funcall fun args info))
-    :enable identity)
+    :expand (expr-annop (expr-funcall fun args info)))
 
   (defruled expr-annop-of-expr-unary
     (equal (expr-annop (expr-unary op arg info))
            (and (expr-annop arg)
                 (expr-unary-infop info)))
-    :expand (expr-annop (expr-unary op arg info))
-    :enable identity)
+    :expand (expr-annop (expr-unary op arg info)))
 
   (defruled expr-annop-of-expr-binary
     (equal (expr-annop (expr-binary op arg1 arg2 info))
            (and (expr-annop arg1)
                 (expr-annop arg2)
                 (expr-binary-infop info)))
-    :expand (expr-annop (expr-binary op arg1 arg2 info))
+    :expand (expr-annop (expr-binary op arg1 arg2 info)))
+
+  (defruled const-expr-annop-of-const-expr
+    (equal (const-expr-annop (const-expr expr info))
+           (and (expr-annop expr)
+                (const-expr-infop info)))
+    :expand (const-expr-annop (const-expr expr info)))
+
+  (defruled desiniter-annop-of-desiniter
+    (equal (desiniter-annop (desiniter designors initer info))
+           (and (designor-list-annop designors)
+                (initer-annop initer)
+                (desiniter-infop info)))
+    :expand (desiniter-annop (desiniter designors initer info))
     :enable identity)
 
   (defruled tyname-annop-of-tyname
@@ -953,23 +1673,20 @@
            (and (spec/qual-list-annop specquals)
                 (absdeclor-option-annop declor?)
                 (tyname-infop info)))
-    :expand (tyname-annop (tyname specquals declor? info))
-    :enable identity)
+    :expand (tyname-annop (tyname specquals declor? info)))
 
   (defruled param-declor-annop-of-param-declor-nonabstract
     (equal (param-declor-annop (param-declor-nonabstract declor info))
            (and (declor-annop declor)
                 (param-declor-nonabstract-infop info)))
-    :expand (param-declor-annop (param-declor-nonabstract declor info))
-    :enable identity)
+    :expand (param-declor-annop (param-declor-nonabstract declor info)))
 
   (defruled init-declor-annop-of-init-declor
     (equal (init-declor-annop (init-declor declor asm? attribs initer? info))
            (and (declor-annop declor)
                 (initer-option-annop initer?)
                 (init-declor-infop info)))
-    :expand (init-declor-annop (init-declor declor asm? attribs initer? info))
-    :enable identity)
+    :expand (init-declor-annop (init-declor declor asm? attribs initer? info)))
 
   (defruled fundef-annop-of-fundef
     (equal (fundef-annop
@@ -980,22 +1697,21 @@
                 (comp-stmt-annop body)
                 (fundef-infop info)))
     :expand (fundef-annop
-             (fundef extension specs declor asm? attribs declons body info))
-    :enable identity)
+             (fundef extension specs declor asm? attribs declons body info)))
 
-  (defruled transunit-annop-of-transunit
-    (equal (transunit-annop (transunit comment includes declons info))
-           (and (ext-declon-list-annop declons)
-                (transunit-infop info)))
-    :expand (transunit-annop (transunit comment includes declons info))
-    :enable identity)
+  (defruled trans-unit-annop-of-trans-unit
+    (equal (trans-unit-annop (trans-unit items info))
+           (and (trans-item-list-annop items)
+                (trans-unit-infop info)))
+    :expand (trans-unit-annop (trans-unit items info)))
 
-  (defruled transunit-ensemble-annop-of-transunit-ensemble
-    (equal (transunit-ensemble-annop (transunit-ensemble units info))
-           (and (filepath-transunit-map-annop units)
-                (transunit-ensemble-infop info)))
-    :expand (transunit-ensemble-annop (transunit-ensemble units info))
-    :enable identity)
+  (defruled trans-ensemble-annop-of-trans-ensemble
+    (equal (trans-ensemble-annop
+            (trans-ensemble units resolved-includes info))
+           (and (filepath-trans-unit-map-annop units)
+                (trans-ensemble-infop info)))
+    :expand (trans-ensemble-annop
+             (trans-ensemble units resolved-includes info)))
 
   ;; theorems about accessors:
 
@@ -1094,6 +1810,31 @@
              (expr-binary-infop (expr-binary->info expr)))
     :enable expr-annop)
 
+  (defruled expr-annop-of-const-expr->expr
+    (implies (const-expr-annop const-expr)
+             (expr-annop (const-expr->expr const-expr)))
+    :enable const-expr-annop)
+
+  (defruled const-expr-infop-of-const-expr->info
+    (implies (const-expr-annop const-expr)
+             (const-expr-infop (const-expr->info const-expr)))
+    :enable const-expr-annop)
+
+  (defruled designor-list-annop-of-desiniter->designors
+    (implies (desiniter-annop desiniter)
+             (designor-list-annop (desiniter->designors desiniter)))
+    :enable desiniter-annop)
+
+  (defruled initer-annop-of-desiniter->initer
+    (implies (desiniter-annop desiniter)
+             (initer-annop (desiniter->initer desiniter)))
+    :enable desiniter-annop)
+
+  (defruled desiniter-infop-of-desiniter->info
+    (implies (desiniter-annop desiniter)
+             (desiniter-infop (desiniter->info desiniter)))
+    :enable desiniter-annop)
+
   (defruled declor-annop-of-init-declor->declor
     (implies (init-declor-annop init-declor)
              (declor-annop (init-declor->declor init-declor)))
@@ -1162,34 +1903,34 @@
              (fundef-infop (fundef->info fundef)))
     :enable fundef-annop)
 
-  (defruled ext-declon-list-annop-of-transunit->declons
-    (implies (transunit-annop transunit)
-             (ext-declon-list-annop (transunit->declons transunit)))
-    :enable transunit-annop)
+  (defruled trans-item-list-annop-of-trans-unit->items
+    (implies (trans-unit-annop trans-unit)
+             (trans-item-list-annop (trans-unit->items trans-unit)))
+    :enable trans-unit-annop)
 
-  (defruled transunit-annop-of-cdr-assoc
-    (implies (and (filepath-transunit-map-annop map)
-                  (filepath-transunit-mapp map)
+  (defruled trans-unit-annop-of-cdr-assoc
+    (implies (and (filepath-trans-unit-map-annop map)
+                  (filepath-trans-unit-mapp map)
                   (omap::assoc filepath map))
-             (transunit-annop (cdr (omap::assoc filepath map))))
+             (trans-unit-annop (cdr (omap::assoc filepath map))))
     :induct t
     :enable (omap::assoc
-             filepath-transunit-map-annop))
+             filepath-trans-unit-map-annop))
 
-  (defruled transunit-infop-of-transunit->info
-    (implies (transunit-annop transunit)
-             (transunit-infop (transunit->info transunit)))
-    :enable transunit-annop)
+  (defruled trans-unit-infop-of-trans-unit->info
+    (implies (trans-unit-annop trans-unit)
+             (trans-unit-infop (trans-unit->info trans-unit)))
+    :enable trans-unit-annop)
 
-  (defruled filepath-transunit-map-annop-of-transunit-ensemble->units
-    (implies (transunit-ensemble-annop ensemble)
-             (filepath-transunit-map-annop (transunit-ensemble->units ensemble)))
-    :enable transunit-ensemble-annop)
+  (defruled filepath-trans-unit-map-annop-of-trans-ensemble->units
+    (implies (trans-ensemble-annop ensemble)
+             (filepath-trans-unit-map-annop (trans-ensemble->units ensemble)))
+    :enable trans-ensemble-annop)
 
-  (defruled transunit-ensemble-infop-of-transunit-ensemble->info
-    (implies (transunit-ensemble-annop ensemble)
-             (transunit-ensemble-infop (transunit-ensemble->info ensemble)))
-    :enable transunit-ensemble-annop)
+  (defruled trans-ensemble-infop-of-trans-ensemble->info
+    (implies (trans-ensemble-annop ensemble)
+             (trans-ensemble-infop (trans-ensemble->info ensemble)))
+    :enable trans-ensemble-annop)
 
   ;; Add the above theorems to the rule set.
 
@@ -1203,13 +1944,15 @@
      expr-annop-of-expr-funcall
      expr-annop-of-expr-unary
      expr-annop-of-expr-binary
+     const-expr-annop-of-const-expr
+     desiniter-annop-of-desiniter
      tyname-annop-of-tyname
      param-declor-annop-of-param-declor-nonabstract
      param-declor-nonabstract-infop-of-param-declor-nonabstract->info
      init-declor-annop-of-init-declor
      fundef-annop-of-fundef
-     transunit-annop-of-transunit
-     transunit-ensemble-annop-of-transunit-ensemble
+     trans-unit-annop-of-trans-unit
+     trans-ensemble-annop-of-trans-ensemble
      iconst-infop-of-iconst->info
      var-infop-of-expr-ident->info
      const-annop-of-expr-const->const
@@ -1226,6 +1969,11 @@
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
      expr-binary-infop-of-expr-binary->info
+     expr-annop-of-const-expr->expr
+     const-expr-infop-of-const-expr->info
+     designor-list-annop-of-desiniter->designors
+     initer-annop-of-desiniter->initer
+     desiniter-infop-of-desiniter->info
      declor-annop-of-init-declor->declor
      initer-option-annop-of-init-declor->initer?
      init-declor-infop-of-init-declor->info
@@ -1238,11 +1986,11 @@
      declon-list-annop-of-fundef->declons
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
-     ext-declon-list-annop-of-transunit->declons
-     transunit-annop-of-cdr-assoc
-     transunit-infop-of-transunit->info
-     filepath-transunit-map-annop-of-transunit-ensemble->units
-     transunit-ensemble-infop-of-transunit-ensemble->info)))
+     trans-item-list-annop-of-trans-unit->items
+     trans-unit-annop-of-cdr-assoc
+     trans-unit-infop-of-trans-unit->info
+     filepath-trans-unit-map-annop-of-trans-ensemble->units
+     trans-ensemble-infop-of-trans-ensemble->info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

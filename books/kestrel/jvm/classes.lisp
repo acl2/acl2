@@ -1,7 +1,7 @@
 ; Classes in the JV, including the class-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 ;; See also class-tables.lisp.
 
 (include-book "methods")
-(local (include-book "kestrel/sequences/defforall" :dir :system)) ; reduce?
+;(local (include-book "kestrel/sequences/defforall" :dir :system)) ; reduce?
 (local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 ;move
@@ -41,11 +41,60 @@
 
 ;; (verify-guards string-descriptor-pairsp)
 
-(acl2::defforall all-class-namesp (item) (class-namep item))
-(verify-guards all-class-namesp)
+(defund class-name-listp (names)
+  (declare (xargs :guard t))
+  (if (not (consp names))
+      (null names)
+    (and (class-namep (first names))
+         (class-name-listp (rest names)))))
 
-(acl2::defforall all-field-idp (item) (field-idp item))
-(verify-guards all-field-idp)
+(defthm class-name-listp-forward-to-true-listp
+  (implies (class-name-listp names)
+           (true-listp names))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable class-name-listp))))
+
+(defthm class-name-listp-of-cdr
+  (implies (class-name-listp names)
+           (class-name-listp (cdr names)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable class-name-listp))))
+
+(defthm class-namep-of-car
+  (implies (class-name-listp names)
+           (equal (class-namep (car names))
+                  (consp names)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable class-name-listp))))
+
+(defthm class-name-listp-of-cons
+  (equal (class-name-listp (cons name names))
+         (and (class-namep name)
+              (class-name-listp names)))
+  :hints (("Goal" :in-theory (enable class-name-listp))))
+
+(defthm class-name-listp-of-append
+  (equal (class-name-listp (append names1 names2))
+         (and (class-name-listp (true-list-fix names1))
+              (class-name-listp names2)))
+  :hints (("Goal" :in-theory (enable class-name-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund field-id-listp (ids)
+  (declare (xargs :guard t))
+  (if (not (consp ids))
+      (null ids)
+    (and (field-idp (first ids))
+         (field-id-listp (rest ids)))))
+
+(defthm field-id-listp-of-cons
+  (equal (field-id-listp (cons name names))
+         (and (field-idp name)
+              (field-id-listp names)))
+  :hints (("Goal" :in-theory (enable field-id-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A method-id is a pair of two strings: a name and a descriptor.
 (defun method-idp (item)
@@ -54,6 +103,19 @@
        (method-namep (car item))
        (method-descriptorp (cdr item))))
 
+;; Makes a method-id
+(defund make-method-id (name desc)
+  (declare (xargs :guard (and (method-namep name)
+                              (method-descriptorp desc))))
+  (cons name desc))
+
+(defthm method-idp-of-make-method-id
+  (equal (method-idp (make-method-id name desc))
+         (and (method-namep name)
+              (method-descriptorp desc)))
+  :hints (("Goal" :in-theory (enable method-idp make-method-id))))
+
+;; Extracts the name of a method-id
 (defund method-id-name (method-id)
   (declare (xargs :guard (method-idp method-id)))
   (car method-id))
@@ -68,6 +130,7 @@
            (stringp (method-id-name method-id)))
   :hints (("Goal" :in-theory (enable method-id-name method-idp method-namep))))
 
+;; Extracts the descriptor of a method-id
 (defund method-id-descriptor (method-id)
   (declare (xargs :guard (method-idp method-id)))
   (cdr method-id))
@@ -82,19 +145,22 @@
            (stringp (method-id-descriptor method-id)))
   :hints (("Goal" :in-theory (enable method-id-descriptor method-idp method-descriptorp))))
 
-(defund make-method-id (name desc)
-  (declare (xargs :guard (and (method-namep name)
-                              (method-descriptorp desc))))
-  (cons name desc))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm method-idp-of-make-method-id
-  (equal (method-idp (make-method-id name desc))
-         (and (method-namep name)
-              (method-descriptorp desc)))
-  :hints (("Goal" :in-theory (enable method-idp make-method-id))))
+(defund method-id-listp (ids)
+  (declare (xargs :guard t))
+  (if (not (consp ids))
+      (null ids)
+    (and (method-idp (first ids))
+         (method-id-listp (rest ids)))))
 
-(acl2::defforall all-method-idp (item) (method-idp item))
-(verify-guards all-method-idp)
+(defthm method-id-listp-of-cons
+  (equal (method-id-listp (cons name names))
+         (and (method-idp name)
+              (method-id-listp names)))
+  :hints (("Goal" :in-theory (enable method-id-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun all-keys-bound-to-field-infosp (field-info-alist)
   (declare (xargs :guard (acl2::alistp field-info-alist)))
@@ -105,11 +171,13 @@
       (and (field-infop field-info)
            (all-keys-bound-to-field-infosp (rest field-info-alist))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;an alist from field-ids to their field-infos
 (defund field-info-alistp (field-info-alist)
   (declare (xargs :guard t))
   (and (acl2::alistp field-info-alist)
-       (all-field-idp (acl2::strip-cars field-info-alist)) ;combine these steps?
+       (field-id-listp (acl2::strip-cars field-info-alist)) ;combine these steps?
        (all-keys-bound-to-field-infosp field-info-alist)))
 
 (defthm field-info-alistp-forward-to-true-listp
@@ -146,6 +214,13 @@
                   (consp field-info-alist)))
   :hints (("Goal" :in-theory (enable field-info-alistp))))
 
+(defthm field-id-listp-of-strip-cars-when-field-info-alistp
+  (implies (field-info-alistp field-info-alist)
+           (field-id-listp (strip-cars field-info-alist)))
+  :hints (("Goal" :in-theory (enable field-info-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun all-keys-bound-to-method-infosp (method-info-alist)
   (declare (xargs :guard (acl2::alistp method-info-alist)))
   (if (endp method-info-alist)
@@ -158,7 +233,7 @@
 (defund method-info-alistp (method-info-alist)
   (declare (xargs :guard t))
   (and (acl2::alistp method-info-alist)
-       (all-method-idp (acl2::strip-cars method-info-alist)) ;combine these steps?
+       (method-id-listp (acl2::strip-cars method-info-alist)) ;combine these steps?
        (all-keys-bound-to-method-infosp method-info-alist)))
 
 (defthm method-info-alistp-forward-to-alistp
@@ -205,16 +280,16 @@
   (and (alistp class-info)
        (equal (strip-cars class-info)
               '(:superclass :interfaces :access-flags :fields :static-fields :methods))
-       (let ((superclass (acl2::lookup-eq :superclass class-info))
-             (interfaces (acl2::lookup-eq :interfaces class-info))
-             (access-flags (acl2::lookup-eq :access-flags class-info))
-             (fields (acl2::lookup-eq :fields class-info))
-             (static-fields (acl2::lookup-eq :static-fields class-info))
-             (methods (acl2::lookup-eq :methods class-info)))
+       (let ((superclass (lookup-eq :superclass class-info))
+             (interfaces (lookup-eq :interfaces class-info))
+             (access-flags (lookup-eq :access-flags class-info))
+             (fields (lookup-eq :fields class-info))
+             (static-fields (lookup-eq :static-fields class-info))
+             (methods (lookup-eq :methods class-info)))
          (and (or (eq :none superclass)
                   (class-namep superclass))
               (true-listp interfaces)
-              (all-class-namesp interfaces)
+              (class-name-listp interfaces)
               (acl2::keyword-listp access-flags)
               (acl2::no-duplicatesp access-flags)
               (acl2::subsetp-eq access-flags '(:ACC_PUBLIC
@@ -239,10 +314,10 @@
   (and
    (class-infop0 class-info)
    ;; Check the super class:
-   (let ((superclass (acl2::lookup-eq :superclass class-info)))
+   (let ((superclass (lookup-eq :superclass class-info)))
      (if (equal class-name "java.lang.Object")
          (eq :none superclass)
-       (if  (member-eq :acc_interface (acl2::lookup-eq :access-flags class-info))
+       (if  (member-eq :acc_interface (lookup-eq :access-flags class-info))
            ;; The superclass of an interface is java.lang.Object (see JVMS: The ClassFile Structure)
            (equal "java.lang.Object" superclass)
          (class-namep superclass))))
@@ -263,19 +338,19 @@
 ;fixme these apply to interfaces too, not just classes, despite their names
 ;fixme these should be macros?
 ;a list of the direct superinterfaces implemented by the class (i.e., a list of strings):
-(defund class-decl-interfaces        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :interfaces    class-info))
+(defund class-decl-interfaces        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :interfaces    class-info))
 ;just the name of the class (a string), or :none for java.lang.Object's superclass:
-(defund class-decl-superclass        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :superclass   class-info))
-(defund class-decl-non-static-fields (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :fields        class-info))
-(defund class-decl-static-fields     (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :static-fields class-info))
+(defund class-decl-superclass        (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :superclass   class-info))
+(defund class-decl-non-static-fields (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :fields        class-info))
+(defund class-decl-static-fields     (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :static-fields class-info))
 ;format?
-(defund class-decl-methods           (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :methods       class-info))
-(defund class-decl-access-flags      (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (acl2::lookup-eq :access-flags  class-info))
+(defund class-decl-methods           (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :methods       class-info))
+(defund class-decl-access-flags      (class-info) (declare (xargs :guard (class-infop0 class-info) :guard-hints (("Goal" :in-theory (enable CLASS-INFOP0))))) (lookup-eq :access-flags  class-info))
 
 (defund class-decl-interfacep (class-info)
   (declare (xargs :guard (class-infop0 class-info)
                   :guard-hints (("Goal" :in-theory (enable class-infop0)))))
-  (member-eq :acc_interface (acl2::lookup-eq :access-flags class-info)))
+  (member-eq :acc_interface (lookup-eq :access-flags class-info)))
 
 
 ;; A "normal" class is one that is not java.lang.Object
@@ -285,7 +360,7 @@
   (and
    (class-infop0 class-info)
    ;; the superclass is a class name (if there is a superclass):
-   (let ((superclass (acl2::lookup-eq :superclass class-info)))
+   (let ((superclass (lookup-eq :superclass class-info)))
      (if (class-decl-interfacep class-info)
          ;; The superclass of an interface is java.lang.Object (see JVMS: The ClassFile Structure)
          (equal "java.lang.Object" superclass)
@@ -358,9 +433,9 @@
            (true-listp (class-decl-interfaces class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 class-decl-interfaces))))
 
-(defthm all-class-namesp-of-class-decl-interfaces
+(defthm class-name-listp-of-class-decl-interfaces
   (implies (class-infop class-info class-name) ;darn class-name is a free var
-           (all-class-namesp (class-decl-interfaces class-info)))
+           (class-name-listp (class-decl-interfaces class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 class-decl-interfaces))))
 
 (defthm class-namep-of-class-decl-superclass
@@ -398,7 +473,7 @@
                                                  :ACC_ANNOTATION
                                                  :ACC_ENUM))
                 (true-listp interfaces)
-                (all-class-namesp interfaces)
+                (class-name-listp interfaces)
                 (field-info-alistp static-field-info-alist)
                 (field-info-alistp non-static-field-info-alist)
                 (method-info-alistp method-info-alist)
@@ -469,12 +544,12 @@
 
 (defthm method-infop-of-lookup-equal-helper
   (implies (and (all-keys-bound-to-method-infosp method-info-alist)
-                (acl2::lookup-equal method-id method-info-alist))
-           (method-infop (acl2::lookup-equal method-id method-info-alist)))
-  :hints (("Goal" :in-theory (enable acl2::lookup-equal all-keys-bound-to-method-infosp assoc-equal))))
+                (lookup-equal method-id method-info-alist))
+           (method-infop (lookup-equal method-id method-info-alist)))
+  :hints (("Goal" :in-theory (enable lookup-equal all-keys-bound-to-method-infosp assoc-equal))))
 
 (defthm method-infop-of-lookup-equal
   (implies (and (method-info-alistp method-info-alist)
-                (acl2::lookup-equal method-id method-info-alist))
-           (method-infop (acl2::lookup-equal method-id method-info-alist)))
+                (lookup-equal method-id method-info-alist))
+           (method-infop (lookup-equal method-id method-info-alist)))
   :hints (("Goal" :in-theory (enable method-info-alistp all-keys-bound-to-method-infosp))))

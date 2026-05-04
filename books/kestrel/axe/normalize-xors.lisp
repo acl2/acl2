@@ -24,7 +24,7 @@
 ;operands to bitxor/bvxor are sorted into decreasing order - i hope that helps with sharing
 ;all constants are combined and put first
 
-;this may now efficiently handle even xor nests with an exponetial number of leaves.. - how will that apply to functions that don't have the nice property of xor that x xor x = 0
+;this may now efficiently handle even xor nests with an exponential number of leaves.. - how will that apply to functions that don't have the nice property of xor that x xor x = 0
 ;well, for and and or, you can drop all but one of a set of equal operands
 
 ;BBOZO handle negations! -well, we handle xoring with 1, right?
@@ -805,7 +805,7 @@
 ;;                               (<= nodenum *max-1d-array-index*)
 ;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
 ;;   (let* ((tag-array-name 'bitxor-nest-leaves-for-node-tag-array)
-;;          (tag-array (make-empty-array tag-array-name (+ 1 nodenum))) ;all tags are initially nil
+;;          (tag-array (new-array1 tag-array-name (+ 1 nodenum))) ;all tags are initially nil
 ;;          (tag-array (aset1 tag-array-name tag-array nodenum t)) ;tag the start node
 ;;          )
 ;;     (bitxor-nest-leaves-for-node-aux nodenum
@@ -880,20 +880,20 @@
 ;;          (dag-len (len dag-lst))
 ;;          (top-nodenum (top-nodenum dag-lst))
 ;;          (dag-array-name 'simplify-bitxors-array)
-;;          (dag-array (make-into-array dag-array-name dag-lst)) ;could pass in the len? ;add slack space?
+;;          (dag-array (alist-to-array1 dag-array-name dag-lst)) ;could pass in the len? ;add slack space?
 ;;          (dag-parent-array-name 'simplify-bitxors-parent-array))
 ;;     (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
 ;;             (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)
 ;;             (declare (ignore dag-constant-alist dag-variable-alist)) ;ffixme dont waste time computing these!
 ;;             (let* ((new-dag-size (* 2 dag-len)) ;none of the nodes are valid
 ;;                    (new-dag-array-name 'simplify-bitxors-new-array)
-;;                    (new-dag-array (make-empty-array new-dag-array-name new-dag-size)) ;will get expanded if it needs to be bigger
+;;                    (new-dag-array (new-array1 new-dag-array-name new-dag-size)) ;will get expanded if it needs to be bigger
 ;;                    (new-dag-parent-array-name 'simplify-bitxors-new-parent-array)
-;;                    (new-dag-parent-array (make-empty-array new-dag-parent-array-name new-dag-size))
+;;                    (new-dag-parent-array (new-array1 new-dag-parent-array-name new-dag-size))
 ;;                    (new-dag-constant-alist (empty-alist))
 ;;                    (new-dag-variable-alist (empty-alist))
 ;;                    ;;indicates what each node in the original dag rewrote to:
-;;                    (translation-array (make-empty-array 'translation-array dag-len)))
+;;                    (translation-array (new-array1 'translation-array dag-len)))
 ;;               (prog2$ (and ;print
 ;;                        (cw "(Simplifying bitxors (len is ~x0)...~%" dag-len))
 ;;                       (mv-let (new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist translation-array)
@@ -1050,7 +1050,7 @@
    :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
                                    (pseudo-dag-arrayp))))))
 
-(defthm integer-of-mv-nth-1-of-bvxor-nest-leaves-aux
+(defthm integerp-of-mv-nth-1-of-bvxor-nest-leaves-aux
   (implies (integerp accumulated-constant)
            (integerp (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))
   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp)))))
@@ -1444,14 +1444,14 @@
            ;; Initialize the new dag:
            (new-dag-size (* 2 old-dag-len)) ;none of the nodes are valid
            (new-dag-array-name 'normalize-xors-new-array)
-           (new-dag-array (make-empty-array new-dag-array-name new-dag-size)) ;will get expanded if it needs to be bigger
+           (new-dag-array (new-array1 new-dag-array-name new-dag-size)) ;will get expanded if it needs to be bigger
            (new-dag-len 0) ; initially empty
            (new-dag-parent-array-name 'normalize-xors-new-parent-array)
-           (new-dag-parent-array (make-empty-array new-dag-parent-array-name new-dag-size))
+           (new-dag-parent-array (new-array1 new-dag-parent-array-name new-dag-size))
            (new-dag-constant-alist (empty-dag-constant-alist))
            (new-dag-variable-alist (empty-dag-variable-alist))
            ;; a map from nodes in the old-dag to nodes in the new-dag:
-           (translation-array (make-empty-array 'translation-array old-dag-len)))
+           (translation-array (new-array1 'translation-array old-dag-len)))
       (prog2$ (and print
                    (cw "(Simplifying xors (len is ~x0)...~%" old-dag-len))
               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist translation-array)
@@ -1487,9 +1487,9 @@
 ;(normalize-xors '((2 bvxor '32 0 1) (1 . x) (0 . y)) t)
 
 ;;   (let* ((dag-len (len dag))
-;;          (dag-array (make-into-array 'dag-array dag))
-;;          (parent-array (make-dag-parent-array-with-name 0 dag-len dag-array (make-empty-array 'parent-array dag-len)))
-;;          (translation-array (make-empty-array 'translation-array dag-len)))
+;;          (dag-array (alist-to-array1 'dag-array dag))
+;;          (parent-array (make-dag-parent-array-with-name 0 dag-len dag-array (new-array1 'parent-array dag-len)))
+;;          (translation-array (new-array1 'translation-array dag-len)))
 ;;     (prog2$ (cw "Simplifying bitxors...~%" nil)
 ;;             (simplify-bitxors-aux 0 dag-len dag-array parent-array nil translation-array)))
 ;)
@@ -1648,8 +1648,8 @@
 
 ;; (defun bit-blast-vars (dag var-width-alist)
 ;;   (let* ((dag-len (len dag))
-;;          (dag-array (make-into-array 'dag-array dag))
-;;       (translation-array (make-empty-array 'translation-array dag-len))
+;;          (dag-array (alist-to-array1 'dag-array dag))
+;;       (translation-array (new-array1 'translation-array dag-len))
 ;;       )
 ;;     (bit-blast-vars-aux 0 dag-len dag-array var-width-alist nil translation-array)))
 
@@ -1707,7 +1707,7 @@
 ;; ;this one doesn't change any node numbering, just renames vars
 ;; (defun rename-vars (dag renaming-alist)
 ;;   (let* ((dag-len (len dag))
-;;          (dag-array (make-into-array 'dag-array dag))
+;;          (dag-array (alist-to-array1 'dag-array dag))
 ;;       )
 ;;     (rename-vars-aux 0 dag-len dag-array renaming-alist nil)))
 

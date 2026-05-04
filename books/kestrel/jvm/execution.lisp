@@ -1,7 +1,7 @@
 ; Concrete (non-symbolic) execution of the JVM.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "jvm") ; for step
 (include-book "misc/defpun" :dir :system)
 (include-book "misc/defp" :dir :system)
 (include-book "execution-common")
@@ -188,7 +189,7 @@
                      (jvm::do-inst (car instr) instr (th) s)))))
   :hints (("Goal"
            :use (:instance run-until-return-from-stack-height-opener)
-           :in-theory (enable stack-height jvm::step jvm::op-code th))))
+           :in-theory (enable stack-height jvm::step jvm::instruction-opcode th))))
 
 ;this really splits the simulation
 (defthmd run-until-return-from-stack-height-of-myif-split

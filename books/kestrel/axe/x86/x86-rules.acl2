@@ -10,4 +10,4 @@
 
 (include-book "kestrel/x86/portcullis" :dir :system)
 
-; cert-flags: ? T :TTAGS :ALL
+; cert-flags: ? T

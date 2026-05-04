@@ -186,6 +186,8 @@
              (cdr (assoc ccm-cs1 ccm-cs-vals)))))))
 
 (rewrite-table-guard
+; Acl2-defaults-table has its :guard set in ACL2 source file axioms.lisp:
+; (depends-on "../../../axioms.lisp")
  acl2-defaults-table
  (:carpat %body%
   :vars %body%
@@ -7605,6 +7607,8 @@ e2-e1+1.
 (progn+touchable
  :all
  (redefun+rewrite
+; Defstobj-fn is defined in ACL2 source file other-events.lisp:
+; (depends-on "../../../other-events.lisp")
   defstobj-fn
   (:carpat (process-embedded-events %1%
                                     %2%

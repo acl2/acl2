@@ -61,7 +61,7 @@
 (def-constant-opener riscv::instr-load)
 (def-constant-opener riscv::instr-op)
 
-;; (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+;; (include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 ;; (def-constant-opener list-to-bv-array)
 ;; (def-constant-opener list-to-bv-array-aux) ; too slow?
 

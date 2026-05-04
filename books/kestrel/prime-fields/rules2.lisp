@@ -1,3 +1,13 @@
+; More rules
+;
+; Copyright (C) 2020-2026 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "PFIELD")
 
 ;; TODO: Are some of these specific to idioms of certain R1CS compilers?
@@ -8,6 +18,7 @@
 (local (include-book "kestrel/prime-fields/equal-of-add-move-negs-bind-free" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/booleans/bool-fix" :dir :system))
 
 ;; (defthm solve-1
 ;;   (implies (and (fep z p)

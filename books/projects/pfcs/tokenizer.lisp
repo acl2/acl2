@@ -100,7 +100,7 @@
        (repetition (car branches))
        ;; Repetition is a list of subtrees.
        ;; Here, the repetition should have exactly one item
-       ;; (which is the identifier, integer, operator, or separattor)
+       ;; (which is the identifier, integer, operator, or separator)
        ;; but we don't check that here).
        ((unless (equal (len repetition) 1))
         (reserrf "token repetition should have exactly one subtree"))
@@ -151,7 +151,7 @@
     ;; can't get here, but return '() for logic reasons
     '())
   :guard-hints
-  (("Goal" :in-theory (enable abnf::treep-when-tree-resultp-and-not-reserrp)))
+  (("Goal" :in-theory (enable abnf::treep-when-result-not-error)))
   :hooks nil)
 
 (define tokenize-pfcs ((pfcs-string stringp))
@@ -179,7 +179,7 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (enable abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)))
+    (enable abnf::tree-listp-when-result-not-error)))
   :hooks nil)
 
 ;; A variation on tokenize-pfcs that takes a list of bytes
@@ -202,5 +202,5 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (enable abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)))
+    (enable abnf::tree-listp-when-result-not-error)))
   :hooks nil)

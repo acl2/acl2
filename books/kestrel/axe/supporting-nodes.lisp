@@ -1,7 +1,7 @@
 ; Computing sets of DAG nodes that support DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -85,7 +85,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Set the tag bit for each thing in DARGS that is a nodeum.  DARGS are nodenums
+;Set the tag bit for each thing in DARGS that is a nodenum.  DARGS are nodenums
 ;or quoted constants.
 ;; The "-with-name" suffix indicates that this function takes the tag-array-name as an argument.
 (defund tag-nodenums-with-name (dargs tag-array-name array)
@@ -235,7 +235,7 @@
                               (all-< nodenums tag-array-length) ;implies that tag-array-length is positive
                               (<= tag-array-length *max-1d-array-length*)
                               (symbolp tag-array-name))))
-  (let* ((tag-array (make-empty-array tag-array-name tag-array-length))
+  (let* ((tag-array (new-array1 tag-array-name tag-array-length))
          ;; Tag all the NODENUMS...
          (tag-array (aset1-list tag-array-name tag-array nodenums t))
          ;; ... and their supporters:
@@ -763,7 +763,7 @@
                   ))
   (b* ((old-node-count (+ 1 top-nodenum))
        (tag-array (tag-supporters-of-node-with-name top-nodenum dag-array-name dag-array 'tag-array (+ 1 top-nodenum)))
-       (translation-array (make-empty-array 'translation-array (+ 1 top-nodenum)))
+       (translation-array (new-array1 'translation-array (+ 1 top-nodenum)))
        ((mv dag & ;translation-array
             )
         (build-reduced-dag-with-name 0 top-nodenum dag-array-name dag-array tag-array 0 translation-array nil))
@@ -842,7 +842,7 @@
                                  :in-theory (enable pseudo-dag-arrayp  ;fixme?
                                                     )))))
   (let* ((tag-array (tag-supporters-of-nodes-with-name (list smaller-nodenum larger-nodenum) (max smaller-nodenum larger-nodenum) dag-array-name dag-array 'tag-array (+ 1 larger-nodenum)))
-         (translation-array (make-empty-array 'translation-array (+ 1 larger-nodenum))))
+         (translation-array (new-array1 'translation-array (+ 1 larger-nodenum))))
     (mv-let (dag-lst translation-array)
             (build-reduced-dag-with-name 0 larger-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
             (mv (aref1 'translation-array translation-array smaller-nodenum)

@@ -1,7 +1,7 @@
 ; BV Lists Library: bvnot-list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "bvchop-list")
 (include-book "kestrel/bv/defs-bitwise" :dir :system)
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/bv/bvnot" :dir :system))
 
 ;could use a defmap to define this

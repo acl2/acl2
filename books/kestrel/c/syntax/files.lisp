@@ -23,9 +23,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel all-bytep-when-byte-listp
+(defrulel unsigned-byte-listp-8-when-byte-listp
   (implies (byte-listp x)
-           (acl2::all-bytep x))
+           (acl2::unsigned-byte-listp 8 x))
   :induct t
   :enable (byte-listp bytep unsigned-byte-p))
 
@@ -59,7 +59,7 @@
     "This represents the raw content of a file,
      as a list (i.e. finite sequence) of bytes.
      We wrap that into this fixtype for separation and extensibility."))
-  ((unwrap byte-list))
+  ((bytes byte-list))
   :pred filedatap)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -95,7 +95,7 @@
      which we therefore represent as a map from file paths to file data.
      This is wrapped into a one-component product fixtype
      for separation and extensibility."))
-  ((unwrap filepath-filedata-map))
+  ((files filepath-filedata-map))
   :pred filesetp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -120,7 +120,7 @@
    (xdoc::p
     "Together with @(tsee file-at-path),
      it can be used as an API to inspect a file set."))
-  (omap::keys (fileset->unwrap files)))
+  (omap::keys (fileset->files files)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -139,7 +139,7 @@
    (xdoc::p
     "Together with @(tsee fileset-paths),
      it can be used an as API to inspect a file set."))
-  (filedata-fix (omap::lookup (filepath-fix path) (fileset->unwrap files)))
+  (filedata-fix (omap::lookup (filepath-fix path) (fileset->files files)))
   :guard-hints (("Goal" :in-theory (enable fileset-paths))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,7 +152,7 @@
    (xdoc::p
     "The file paths in the file set are interpreted
      relative to the base directory passed as input."))
-  (write-fileset-loop (fileset->unwrap fileset) base-dir state)
+  (write-fileset-loop (fileset->files fileset) base-dir state)
   :prepwork
   ((define write-fileset-loop ((filemap filepath-filedata-mapp)
                                (base-dir stringp)
@@ -163,13 +163,9 @@
           ((when (omap::emptyp (filepath-filedata-map-fix filemap)))
            (retok state))
           ((mv filepath data) (omap::head filemap))
-          (file-string (filepath->unwrap filepath))
-          ((unless (stringp file-string))
-           (reterr (msg "File path must contain a string, ~
-                         but it contains ~x0 instead."
-                        file-string)))
+          (file-string (filepath->string filepath))
           (path-to-write (str::cat (str-fix base-dir) "/" file-string))
-          ((mv erp state) (acl2::write-bytes-to-file! (filedata->unwrap data)
+          ((mv erp state) (acl2::write-bytes-to-file! (filedata->bytes data)
                                                       path-to-write
                                                       'output-files
                                                       state))

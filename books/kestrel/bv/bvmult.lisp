@@ -211,7 +211,7 @@
 
 (theory-invariant (incompatible (:rewrite bvchop-of-*-becomes-bvmult) (:definition bvmult)))
 
-;saves us from having to chose a prefered form.  maybe i'm just being a wimp
+;saves us from having to choose a preferred form.  maybe i'm just being a wimp
 (defthm bvmult-equal-bvchop-times-rewrite
   (implies (and (integerp x)
                 (integerp y))

@@ -1,7 +1,7 @@
 ; More tools for crunching DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -88,11 +88,6 @@
   (implies (nat-listp x)
            (all-> x -1)))
 
-(defthm all->-of--1-when-all-natp
-  (implies (all-natp x)
-           (all-> x -1))
-  :hints (("Goal" :in-theory (enable all-natp all->))))
-
 (local
  (defthm maxelem-lemma
    (implies (and (all-natp nodes)
@@ -118,7 +113,7 @@
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))))
   (let* ((max-nodenum (maxelem nodenums))
          (tag-array (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array 'tag-array (+ 1 max-nodenum)))
-         (translation-array (make-empty-array 'translation-array (+ 1 max-nodenum))))
+         (translation-array (new-array1 'translation-array (+ 1 max-nodenum))))
     (mv-let (dag translation-array)
       (build-reduced-dag-with-name 0 max-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
       (mv (aref1-list 'translation-array translation-array nodenums)

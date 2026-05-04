@@ -1200,48 +1200,66 @@
    :asm nil)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define trans-item-formalp ((item trans-itemp))
+  :guard (trans-item-unambp item)
+  :returns (yes/no booleanp)
+  :short "Check if a translation item has dynamic formal semantics."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We accept external declarations with formal semantics,
+     but not yet preprocessing constructs and comments."))
+  (trans-item-case
+   item
+   :declon (ext-declon-formalp item.declon)
+   :include nil
+   :define nil
+   :undef nil
+   :cond nil
+   :line-comment nil)
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-declon-list-formalp ((edecls ext-declon-listp))
-  :guard (ext-declon-list-unambp edecls)
+(define trans-item-list-formalp ((items trans-item-listp))
+  :guard (trans-item-list-unambp items)
   :returns (yes/no booleanp)
-  :short "Check if all the external declarations in a list
+  :short "Check if all the translation items in a list
           have formal dynamic semantics."
-  (or (endp edecls)
-      (and (ext-declon-formalp (car edecls))
-           (ext-declon-list-formalp (cdr edecls))))
+  (or (endp items)
+      (and (trans-item-formalp (car items))
+           (trans-item-list-formalp (cdr items))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-formalp ((tunit transunitp))
-  :guard (transunit-unambp tunit)
+(define trans-unit-formalp ((tunit trans-unitp))
+  :guard (trans-unit-unambp tunit)
   :returns (yes/no booleanp)
   :short "Check if a translation unit has formal dynamic semantics."
   :long
   (xdoc::topstring
    (xdoc::p
-    "There must be no @('#include') directives.")
-   (xdoc::p
-    "All its external declarations must be supported."))
-  (and (not (transunit->includes tunit))
-       (ext-declon-list-formalp (transunit->declons tunit)))
+    "All its translation items must have formal semantics."))
+  (trans-item-list-formalp (trans-unit->items tunit))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-ensemble-formalp ((tunits transunit-ensemblep))
-  :guard (transunit-ensemble-unambp tunits)
+(define trans-ensemble-formalp ((tunits trans-ensemblep))
+  :guard (trans-ensemble-unambp tunits)
   :returns (yes/no booleanp)
-  :short "Check if a translation unit ensemble has formal dynamic semantics."
+  :short "Check if a translation ensemble has formal dynamic semantics."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As in @(tsee ldm-transunit-ensemble),
+    "As in @(tsee ldm-trans-ensemble),
      there must be a single translation unit,
      and in addition it must have formal dynamic semantics."))
-  (b* ((map (transunit-ensemble->units tunits)))
+  (b* ((map (trans-ensemble->units tunits)))
     (and (= (omap::size map) 1)
-         (transunit-formalp (omap::head-val map))))
+         (trans-unit-formalp (omap::head-val map))))
   :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))
   :hooks (:fix))

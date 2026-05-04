@@ -412,7 +412,7 @@
           (remove-bad-and-shadowed-pairs (rest alist))
         (cons entry (remove-bad-and-shadowed-pairs (clear-key2 (car entry) (rest alist))))))))
 
-;; (defthm true-list-of-remove-bad-and-shadowed-pairs-type
+;; (defthm true-listp-of-remove-bad-and-shadowed-pairs-type
 ;;   (implies (true-listp alist)
 ;;            (true-listp (remove-bad-and-shadowed-pairs alist)))
 ;;   :rule-classes :type-prescription)
@@ -427,7 +427,7 @@
             (clear-keys-simple keys (rest alist))
           (cons entry (clear-keys-simple keys (rest alist))))))))
 
-(defthm true-list-of-clear-keys-simple-type
+(defthm true-listp-of-clear-keys-simple-type
   (implies (true-listp alist)
            (true-listp (clear-keys-simple keys alist)))
   :rule-classes :type-prescription

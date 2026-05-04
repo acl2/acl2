@@ -1,7 +1,7 @@
 ; Calling STP to prove things about DAGs and terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -46,13 +46,14 @@
 (local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 (local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
-(local (include-book "kestrel/bv-lists/bv-arrays" :dir :system))
+(local (include-book "kestrel/bv-arrays/bv-arrays" :dir :system))
 (local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 
 ;; We have developed a connection between the ACL2 theorem prover, on which
 ;; most of our tools are based, and the STP SMT solver.  This allows us to take
@@ -81,7 +82,7 @@
 ;; appropriate abstraction level (abstract away too much and the STP goal may
 ;; no longer be true, abstract away too little and the solver may time out).
 
-;; We now parse, process, and return the counter-examples found by STP.  This
+;; We now parse, process, and return the counterexamples found by STP.  This
 ;; forms the basis of our query answering capability; we pose a query to STP
 ;; that attempts to prove that some behavior is impossible, and it returns a
 ;; concrete input showing when the behavior is in fact possible.
@@ -997,7 +998,7 @@
 ;; Returns an axe-type, or nil to indicate that no type could be determined.
 ;; If a type is returned, the NODENUM can be safely assumed to be of that type,
 ;; without loss of generality, with respect to its appearance in this
-;; PARENT-EXPR (if it appeals in multiple parent-exprs, the types should be
+;; PARENT-EXPR (if it appears in multiple parent-exprs, the types should be
 ;; unioned together).  That is, if X only appears in argument positions of
 ;; exprs that are chopped to 32 bits (see the THMs above that justify this), then
 ;; we can transform a proof about all Xs to a proof about Xs that are
@@ -1286,7 +1287,7 @@
 ;; nodes where we know the return type and can always translate (e.g., constants; (bvxor 32 .. ..) - args can be chopped)
 ;; nodes where we know the return type and can sometimes translate (e.g., equal, unsigned-byte-p - arg types must be known)
 ;; nodes where we know the return type but can't translate (e.g., < - can replace with a boolean variable)
-;; nodes where we don't know the return type and can't translate (e.g., varaiables, calls to foo - but assumptions may tell us the type)
+;; nodes where we don't know the return type and can't translate (e.g., variables, calls to foo - but assumptions may tell us the type)
 ; If a node whose type we don't know (not obvious, not in the known-type-alist) appears sometimes as a choppable arg (e.g., to XOR) and sometimes as an arg to equal (cannot chop), we'll use the induced type (the largest type of all the choppable uses of the term) and the equal will just have to be made into a boolean variable.
 ;
 ;ffixme other possibilities:
@@ -2055,7 +2056,7 @@
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (integer-listp-when-nat-listp) (natp))))))
   (b* (;; Array to track which nodes we've considered as we go through the disjuncts (disjuncts may have nodes in common):
-       (handled-node-array (make-empty-array 'handled-node-array (+ 1 (max-nodenum-in-possibly-negated-nodenums disjuncts))))
+       (handled-node-array (new-array1 'handled-node-array (+ 1 (max-nodenum-in-possibly-negated-nodenums disjuncts))))
        ;; Decide which disjuncts to include in the query and which nodes under them to translate / cut:
        ;; TODO: What if a node is shallow in one disjunct and deep in another?  How should we treat it?
        ((mv erp disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)

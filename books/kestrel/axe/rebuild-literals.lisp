@@ -1,7 +1,7 @@
 ; Tools to rebuild DAGs while applying variable substitutions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -322,7 +322,7 @@
   (rebuild-nodes-with-var-subst-aux worklist
                                     translation-array
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                    (make-empty-array 'worklist-array (alen1 'translation-array translation-array))))
+                                    (new-array1 'worklist-array (alen1 'translation-array translation-array))))
 
 (def-dag-builder-theorems
   (rebuild-nodes-with-var-subst worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -424,7 +424,7 @@
             nil ;provedp
             literal-nodenums ;; the original literal-nodenums (so that the order is the same)
             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-       (translation-array (make-empty-array 'translation-array (+ 1 max-literal-nodenum)))
+       (translation-array (new-array1 'translation-array (+ 1 max-literal-nodenum)))
        ;; Mark nodenum-to-replace to be replaced by new-nodenum:
        (translation-array (aset1 'translation-array translation-array nodenum-to-replace new-nodenum-or-quotep))
        ;; Rebuild all the literals, and their supporters, with the substitution applied:
@@ -483,7 +483,6 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp nodenum-to-replace)
-                (nat-listp acc)
                 (dargp-less-than new-nodenum-or-quotep dag-len)
                 ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)))
                 )
@@ -501,10 +500,8 @@
                 (all-< literal-nodenums dag-len)
                 (natp nodenum-to-replace)
                 (< nodenum-to-replace dag-len)
-                (nat-listp acc)
                 (dargp-less-than new-nodenum-or-quotep dag-len)
                 ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)))
-                (all-< acc dag-len)
                 )
            (all-< (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))
                   (mv-nth 4 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))

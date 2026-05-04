@@ -35,7 +35,7 @@
       (xdoc::p
         "@('propagate-iso') takes one or more isomorphisms and a set of functions and a sequence of events
          and propagates the isomorphisms from the given set of functions to those events that reference any of
-         these functions either directly or directly. It maintains a substitution from old functions to their new isomorphic
+         these functions either directly or indirectly. It maintains a substitution from old functions to their new isomorphic
          functions. For function definitions it creates a new function by applying the substitution to the old body and
          extends the substitution to map the old function name to the newly created function name. Similarly, it applies
          the substitution to existing theorems to generate theorems on the new functions.  Currently does not handle
@@ -72,7 +72,7 @@
 
         (xdoc::p
           "where @('iso-fn') is the isomorphic version of @('fn') and @('fn-->iso-fn--thm') is a
-           theorem for rewriting @('fn') to @('iso-fn'), and and @('iso-fn-->fn--thm') is a
+           theorem for rewriting @('fn') to @('iso-fn'), and @('iso-fn-->fn--thm') is a
            theorem for rewriting @('iso-fn') to @('fn').  @('arg-sig') gives the signature of
            the argument list of @('fn') with respect to the isomorphism, i.e. if an argument of
            @('fn') is of one of the isomorphism types (predicate) then the corresponding element

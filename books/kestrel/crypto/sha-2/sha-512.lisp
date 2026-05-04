@@ -1,7 +1,7 @@
 ; Formal spec of the SHA-512 hash function
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "SHA2")
 
-;; A formal specification for of SHA-512 hash function, which is standardized
+;; A formal specification of the SHA-512 hash function, which is standardized
 ;; in FIPS PUB 180-4.  See:
 ;; http://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
 

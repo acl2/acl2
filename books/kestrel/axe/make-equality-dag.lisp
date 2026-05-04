@@ -1,7 +1,7 @@
 ; Making equality dags
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,7 +19,7 @@
 ;dag1 is a quotep or dag-lst
 ;dag2 is a quotep or dag-lst
 ;; Returns (mv erp res) where res is a quotep or dag-lst.
-;todo: consider returning the auxilary data structures.
+;todo: consider returning the auxiliary data structures.
 (defund make-equality-dag (dag1 dag2)
   (declare (xargs :guard (and (or (quotep dag1)
                                   (and (pseudo-dagp dag1)

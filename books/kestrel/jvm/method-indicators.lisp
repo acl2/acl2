@@ -1,6 +1,6 @@
 ; Indicators for methods that can be elaborated into method-designator-strings
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,7 +28,7 @@
 (defun elaborate-method-indicator (m class-alist)
   (declare (xargs :guard (and (method-indicatorp m)
                               (alistp class-alist)
-                              (all-class-namesp (strip-cars class-alist))
+                              (class-name-listp (strip-cars class-alist))
                               (class-info0-listp (strip-cdrs class-alist)))))
   (if (position #\( m)
       ;; A paren is present, so m is unambiguous
@@ -37,7 +37,7 @@
     ;; m might be foo.bar.baz.ClassName.methodName
     (let* ((class-name (acl2::substring-before-last-occurrence m #\.))
            (method-name (acl2::substring-after-last-occurrence m #\.))
-           (class-info (acl2::lookup-equal class-name class-alist)))
+           (class-info (lookup-equal class-name class-alist)))
       (if (not class-info)
           (er hard? 'elaborate-method-indicator "Class not found: ~x0." class-name)
         (if (not (class-infop0 class-info)) ; for guard proof
@@ -46,6 +46,6 @@
             (if (endp methods-matching-name)
                 (er hard? 'elaborate-method-indicator "No methods in ~x0 named ~x1." class-name method-name)
               (if (consp (cdr methods-matching-name))
-                  (er hard? 'elaborate-method-indicator "More than 1 method in ~x0 named ~x1: ~x0.  Matching methods: ~x2.  Disambiguate by adding a descriptor." class-name method-name methods-matching-name)
+                  (er hard? 'elaborate-method-indicator "More than 1 method in ~x0 named ~x1.  Matching methods: ~x2.  Disambiguate by adding a descriptor." class-name method-name methods-matching-name)
                 ;; exactly 1 matching method:
                 (first methods-matching-name)))))))))

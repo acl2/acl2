@@ -45,7 +45,7 @@
 (in-package "X86ISA")
 (include-book "application-level-memory")
 (include-book "paging-structures" :dir :utils)
-(include-book "physical-memory" :ttags (:undef-flg))
+(include-book "physical-memory")
 (include-book "clause-processors/find-matching" :dir :system)
 
 ;; [Shilpi]: For now, I've removed nested paging and all paging modes

@@ -15,6 +15,7 @@
 (local (in-theory (disable inst-list-p-of-maps)))
 
 (def-sdm-instruction-section "5.1 General-Purpose Instructions")
+
 (def-sdm-instruction-section "5.1.1 Data Transfer Instructions"
   :mnemonics
   '(MOV
@@ -23,16 +24,16 @@
     CMOVP/PE
     CMOVNP/PO
     CMOVO CMOVNO CMOVS CMOVNS  XCHG
-    BSWAP XADD CMPXCHG CMPXCHG8B PUSH |PUSH CS| |PUSH DS| |PUSH ES| |PUSH FS| |PUSH GS| |PUSH SS|
-    POP |POP DS| |POP ES| |POP SS| PUSHA/PUSHAD POPA/POPAD CWD/CDQ/CQO
-    CBW/CWDE/CDQE MOVSX MOVZX
+    BSWAP XADD CMPXCHG CMPXCHG8B
+    PUSH |PUSH CS| |PUSH DS| |PUSH ES| |PUSH FS| |PUSH GS| |PUSH SS|
+    POP |POP DS| |POP ES| |POP FS| |POP GS| |POP SS|
+    PUSHA/PUSHAD POPA/POPAD
+    CWD/CDQ/CQO
+    CBW/CWDE/CDQE
+    MOVSX
+    MOVZX
     ;; not listed but seems to belong here?
-    MOVSXD)
-  :doc "<p>Unimplemented instructions are:</p>
-<ul>
-<li>POP variants that write to segment registers: these have side effects,
-perhaps similar to those of MOV to a segment register</li>
-</ul>")
+    MOVSXD))
 
 (def-sdm-instruction-section "5.1.2 Binary Arithmetic Instructions"
   :mnemonics
@@ -40,8 +41,7 @@ perhaps similar to those of MOV to a segment register</li>
 
 (def-sdm-instruction-section "5.1.3 Decimal Arithmetic Instructions"
   :mnemonics
-  '(DAA DAS AAA AAS AAM AAD)
-  :doc "<p>These are all unimplemented.</p>")
+  '(DAA DAS AAA AAS AAM AAD))
 
 (def-sdm-instruction-section "5.1.4 Logical Instructions"
   :mnemonics '(AND OR XOR NOT))
@@ -53,12 +53,7 @@ perhaps similar to those of MOV to a segment register</li>
   :mnemonics '(BT BTS BTR BTC BSF BSR
                   SETB/NAE/C SETNB/AE/NC SETNBE/A SETP/PE SETNP/PO SETL/NGE
                   SETNL/GE SETLE/NG SETNLE/G SETZ/E SETNZ/NE SETBE/NA
-                  SETS SETNS SETO SETNO  TEST CRC32 POPCNT)
-  :doc "<p>Unimplemented instructions are:</p>
-<ul>
-<li>BTC</li>
-<li>CRC32</li>
-</ul>")
+                  SETS SETNS SETO SETNO  TEST CRC32 POPCNT))
 
 (def-sdm-instruction-section "5.1.7 Control Transfer Instructions"
   :mnemonics '(JMP JB/NAE/C JNB/AE/NC JZ/E JNZ/NE JBE/NA JNBE/A JP/PE JNP/PO JL/NGE
@@ -114,8 +109,7 @@ perhaps similar to those of MOV to a segment register</li>
   :mnemonics '(STC CLC CMC CLD STD LAHF SAHF PUSHF/D/Q POPF/D/Q STI CLI))
 
 (def-sdm-instruction-section "5.1.12 Segment Register Instructions"
-  :mnemonics '(LDS LES LFS LGS LSS)
-  :doc "<p>None of these are implemented</p>")
+  :mnemonics '(LDS LES LFS LGS LSS))
 
 (def-sdm-instruction-section "5.1.13 Miscellaneous Instructions"
   :mnemonics '(
@@ -218,13 +212,11 @@ what the instruction. Not sure why they are listed that way.</p>")
 
 (def-sdm-instruction-section "5.4.1 MMX Data Transfer Instructions"
   :mnemonics '(MOVD/Q MOVQ)
-  :features :mmx
-  :doc "<p>Only MOVQ is implemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.2 MMX Conversion Instructions"
   :mnemonics '(PACKSSWB PACKSSDW PACKUSWB PUNPCKHBW PUNPCKHWD PUNPCKHDQ PUNPCKLBW PUNPCKLWD PUNPCKLDQ)
-  :features :mmx
-  :doc "<p>All unimplemented</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.3 MMX Packed Arithmetic Instructions"
   :mnemonics '(PADDB PADDW PADDD PADDSB PADDSW PADDUSB PADDUSW PSUBB PSUBW
@@ -233,22 +225,18 @@ what the instruction. Not sure why they are listed that way.</p>")
 
 (def-sdm-instruction-section "5.4.4 MMX Comparison Instructions"
   :mnemonics '(PCMPEQB PCMPEQW PCMPEQD PCMPGTB PCMPGTW PCMPGTD)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.5 MMX Logical Instructions"
   :mnemonics '(PAND PANDN POR PXOR)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.6 MMX Shift and Rotate Instructions"
   :mnemonics '(PSLLW PSLLD PSLLQ PSRLW PSRLD PSRLQ PSRAW PSRAD)
-  :features :mmx
-  :doc "<p>MMX versions are all unimplemented.</p>")
+  :features :mmx)
 
 (def-sdm-instruction-section "5.4.7 MMX State Management Instructions"
-  :mnemonics '(EMMS)
-  :doc "<p>Unimplemented</p>")
+  :mnemonics '(EMMS))
 
 (def-sdm-instruction-section "5.5 Intel(R) SSE Instructions")
 
@@ -257,12 +245,7 @@ what the instruction. Not sure why they are listed that way.</p>")
 (def-sdm-instruction-section "5.5.1.1 Intel(R) SSE Data Transfer Instructions"
   :mnemonics '(MOVAPS MOVUPS MOVHPS MOVHLPS MOVLPS MOVLHPS MOVMSKPS MOVSS)
   ;; :features :sse
-  :doc "<p>Unimplemented:</p>
-<ul>
-<li>MOVLHPS</li>
-<li>MOVMSKPS</li>
-</ul>
-")
+)
 
 (def-sdm-instruction-section "5.5.1.2 Intel(R) SSE Packed Arithmetic Instructions"
   :mnemonics '(ADDPS ADDSS SUBPS SUBSS MULPS MULSS DIVPS DIVSS RCPPS RCPSS

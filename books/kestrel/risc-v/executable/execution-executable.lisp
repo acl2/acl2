@@ -11,6 +11,9 @@
 
 (in-package "RISCV")
 
+; Matt K. mod: Avoid ACL2(p) error during guard verification of STEPNX.
+(acl2::set-waterfall-parallelism nil)
+
 (include-book "decoding-correct")
 
 (include-book "../specification/execution")

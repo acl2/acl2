@@ -1,7 +1,7 @@
 ; Memoizing the DAG nodes that Axe trees rewrote to.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -395,7 +395,7 @@
 ;; Create an empty memoization structure
 (defund empty-memoization ()
   (declare (xargs :guard t))
-  (make-empty-array 'memoization *memoization-size*))
+  (new-array1 'memoization *memoization-size*))
 
 ;; Avoid expensive computation during proofs:
 (in-theory (disable (:e empty-memoization)))
@@ -500,7 +500,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns a nodenum/quotep (to which the memozation equates TREE), or nil
+;; Returns a nodenum/quotep (to which the memoization equates TREE), or nil
 ;; (meaning TREE is not equated to anything in the memoization).
 ;todo: check *fns-not-to-memoize*?
 ;todo: can't we sort the memoization by function symbol?
@@ -653,7 +653,7 @@
                 (posp size)
                 (<= size 1152921504606846974))
            (array-of-bounded-memo-alistsp-aux array-name
-                                              (make-empty-array array-name size)
+                                              (new-array1 array-name size)
                                               index
                                               bound))
   :hints (("Goal" :in-theory (enable array-of-bounded-memo-alistsp-aux))))

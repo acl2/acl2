@@ -1,0 +1,29 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains rules for header names,
+; which are common to all the C dialects [C17:6.4.7/1] [C23:6.4.8].
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+header-name = "<" h-char-sequence ">"
+            / double-quote q-char-sequence double-quote
+
+h-char-sequence = h-char
+                / h-char-sequence h-char
+
+h-char = character-not-greater-than-or-new-line
+
+q-char-sequence = q-char
+                / q-char-sequence q-char
+
+q-char = character-not-double-quote-or-new-line

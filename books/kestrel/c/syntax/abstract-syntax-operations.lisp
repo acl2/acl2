@@ -11,6 +11,8 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-irrelevants")
+(include-book "abstract-syntax-structurals")
+(include-book "implementation-environments")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -26,12 +28,64 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stringlit-list->prefix?-list ((strlits stringlit-listp))
-  :returns (prefixes eprefix-option-listp)
-  :short "Lift @(tsee stringlit->prefix?) to lists."
-  (cond ((endp strlits) nil)
-        (t (cons (stringlit->prefix? (car strlits))
-                 (stringlit-list->prefix?-list (cdr strlits))))))
+(define dec/oct/hex-const->value ((const dec/oct/hex-constp))
+  :returns (value natp)
+  :short "Evaluate a decimal, octal, or hexadecimal constant to a natural number."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a decimal or octal constant, the value is a component of the fixtype.
+     For a hexadecimal constant, we use a library function
+     to convert the digits into a value;
+     the digits are as they appear in the concrete syntax,
+     i.e. in big-endian order."))
+  (dec/oct/hex-const-case
+    const
+    :dec const.value
+    :oct const.value
+    :hex (str::hex-digit-chars-value const.digits))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nat-to-iconst ((n natp) (ienv ienvp))
+  :returns (iconst? iconst-optionp)
+  :short "Create an integer constant from a natural number."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A ``length'' suffix is added to the constant if
+     the number is not otherwise be representable.
+     An ``unsigned'' suffix is added only if
+     the number cannot be represented as a @('signed long long').")
+   (xdoc::p
+    "If the number is not representable by an integer type,
+     @('nil') is returned instead."))
+  (b* ((n (lnfix n))
+       ((ienv ienv) ienv)
+       (core (if (= (the unsigned-byte n) 0)
+                 (make-dec/oct/hex-const-oct :leading-zeros 1 :value 0)
+               (dec/oct/hex-const-dec n)))
+       ((mv too-big-p suffix?)
+        (cond ((signed-byte-p n ienv.int-bytes)
+               (mv nil nil))
+              ((signed-byte-p n ienv.long-bytes)
+               (mv nil (isuffix-l (lsuffix-locase-l))))
+              ((signed-byte-p n ienv.llong-bytes)
+               (mv nil (isuffix-l (lsuffix-locase-ll))))
+              ((unsigned-byte-p n ienv.llong-bytes)
+               (mv nil
+                   (make-isuffix-ul :unsigned (usuffix-locase-u)
+                                    :length (lsuffix-locase-ll))))
+              (t (mv t nil)))))
+    (if too-big-p
+        nil
+      (make-iconst :core core :suffix? suffix?)))
+
+  ///
+  (defrule iconstp-of-nat-to-iconst-undef-iff
+    (iff (iconstp (nat-to-iconst n ienv))
+         (nat-to-iconst n ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1084,9 +1138,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-ensemble-paths ((tunits transunit-ensemblep))
+(std::deflist trans-item-list-declon/include-p (x)
+  :guard (trans-item-listp x)
+  :short "Check if all the translation items in a list
+          are external declarations or @('#include') directives."
+  (or (trans-item-case x :declon)
+      (trans-item-case x :include))
+  :elementp-of-nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist trans-item-list-commentp (x)
+  :guard (trans-item-listp x)
+  :short "Check if all the translation items in a list are comments."
+  (trans-item-case x :line-comment)
+  :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define trans-unit-emptyp ((tunit trans-unitp))
+  :returns (yes/no booleanp)
+  :short "Check if a translation unit is empty, in the sense of having
+          no external declarations and no @('#include') directives."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, if the translation unit only contains comments,
+     it is regarded as effectively empty, according to this predicate."))
+  (trans-item-list-commentp (trans-unit->items tunit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define trans-ensemble-paths ((tunits trans-ensemblep))
   :returns (paths filepath-setp)
-  :short "Set of file paths in a translation unit ensemble."
+  :short "Set of file paths in a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1095,27 +1180,27 @@
     "It is more concise, and more abstract,
      than extracting the map and then the keys.")
    (xdoc::p
-    "Together with @(tsee transunit-at-path),
-     it can be used as an API to inspect translation unit ensembles."))
-  (omap::keys (transunit-ensemble->units tunits)))
+    "Together with @(tsee trans-unit-at-path),
+     it can be used as an API to inspect translation ensembles."))
+  (omap::keys (trans-ensemble->units tunits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-at-path ((path filepathp) (tunits transunit-ensemblep))
-  :guard (set::in path (transunit-ensemble-paths tunits))
-  :returns (tunit transunitp)
-  :short "Translation unit at a certain path in a translation unit ensemble."
+(define trans-unit-at-path ((path filepathp) (tunits trans-ensemblep))
+  :guard (set::in path (trans-ensemble-paths tunits))
+  :returns (tunit trans-unitp)
+  :short "Translation unit at a certain path in a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the value associated to the key (path) in the map,
-     which the guard requires to be in the translation unit ensemble.")
+     which the guard requires to be in the translation ensemble.")
    (xdoc::p
     "It is more concise, and more abstract,
      than accessing the map and then looking up the path.")
    (xdoc::p
-    "Together with @(tsee transunit-ensemble-paths),
+    "Together with @(tsee trans-ensemble-paths),
      it can be used an as API to inspect a file set."))
-  (transunit-fix
-   (omap::lookup (filepath-fix path) (transunit-ensemble->units tunits)))
-  :guard-hints (("Goal" :in-theory (enable transunit-ensemble-paths))))
+  (trans-unit-fix
+   (omap::lookup (filepath-fix path) (trans-ensemble->units tunits)))
+  :guard-hints (("Goal" :in-theory (enable trans-ensemble-paths))))

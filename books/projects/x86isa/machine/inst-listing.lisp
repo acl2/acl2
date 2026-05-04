@@ -89,7 +89,8 @@
                      "PUSH ES is illegal in the 64-bit mode!"))
           '((:UD T)))
     (INST "POP ES" (OP :OP #x7 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "#UD" (OP :OP #x7 :MODE :O64)
           NIL
@@ -168,7 +169,8 @@
                      "PUSH SS is illegal in the 64-bit mode!"))
           '((:UD T)))
     (INST "POP SS" (OP :OP #x17 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "#UD" (OP :OP #x17 :MODE :O64)
           NIL
@@ -210,7 +212,8 @@
                      "PUSH DS is illegal in the 64-bit mode!"))
           '((:UD T)))
     (INST "POP DS" (OP :OP #x1F :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "#UD" (OP :OP #x1F :MODE :O64)
           NIL
@@ -247,7 +250,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "DAA" (OP :OP #x27 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-DAA)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x27 :MODE :O64)
@@ -283,7 +287,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "DAS" (OP :OP #x2F :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-DAS)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x2F :MODE :O64)
@@ -319,7 +324,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "AAA" (OP :OP #x37 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-AAA)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x37 :MODE :O64)
@@ -355,7 +361,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "AAS" (OP :OP #x3F :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-AAS)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x3F :MODE :O64)
@@ -1409,7 +1416,7 @@
           'NIL)
     (INST "LES" (OP :OP #xC4 :MODE :I64)
           (ARG :OP1 '(G Z) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST :VEX2-BYTE0 (OP :OP #xC5 :MODE :O64)
@@ -1418,7 +1425,7 @@
           'NIL)
     (INST "LDS" (OP :OP #xC5 :MODE :I64)
           (ARG :OP1 '(G Z) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "MOV"
@@ -1717,7 +1724,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "AAM" (OP :OP #xD4 :MODE :I64)
           (ARG :OP1 '(I B))
-          'NIL
+          '(X86-AAM)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #xD4 :MODE :O64)
@@ -1726,7 +1733,7 @@
      '((:UD T)))
     (INST "AAD" (OP :OP #xD5 :MODE :I64)
           (ARG :OP1 '(I B))
-          'NIL
+          '(X86-AAD)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #xD5 :MODE :O64)
@@ -4063,7 +4070,7 @@
           (ARG :OP1 '(V DQ)
                :OP2 '(H Q)
                :OP3 '(U Q))
-          'NIL
+          '(X86-MOVLHPS-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
     (INST "MOVHPD"
           (OP :OP #xF16
@@ -7171,7 +7178,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PUNPCKL-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PUNPCKLBW"
           (OP :OP #xF60 :PFX :66 :FEAT '(:SSE2))
@@ -7219,7 +7226,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PUNPCKL-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PUNPCKLWD"
           (OP :OP #xF61 :PFX :66 :FEAT '(:SSE2))
@@ -7267,7 +7274,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PUNPCKL-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PUNPCKLDQ"
           (OP :OP #xF62 :PFX :66 :FEAT '(:SSE2))
@@ -7315,7 +7322,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PACKSSWB-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKSSWB"
           (OP :OP #xF63 :PFX :66 :FEAT '(:SSE2))
@@ -7363,7 +7370,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPGTB"
           (OP :OP #xF64 :PFX :66 :FEAT '(:SSE2))
@@ -7413,7 +7420,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPGTW"
           (OP :OP #xF65 :PFX :66 :FEAT '(:SSE2))
@@ -7463,7 +7470,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPGTD"
           (OP :OP #xF66 :PFX :66 :FEAT '(:SSE2))
@@ -7513,7 +7520,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PACKUSWB-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKUSWB"
           (OP :OP #xF67 :PFX :66 :FEAT '(:SSE2))
@@ -7561,7 +7568,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PUNPCKH-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PUNPCKHBW"
           (OP :OP #xF68 :PFX :66 :FEAT '(:SSE2))
@@ -7609,7 +7616,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PUNPCKH-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PUNPCKHWD"
           (OP :OP #xF69 :PFX :66 :FEAT '(:SSE2))
@@ -7657,7 +7664,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PUNPCKH-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PUNPCKHDQ"
           (OP :OP #xF6A :PFX :66 :FEAT '(:SSE2))
@@ -7705,7 +7712,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q D))
-          'NIL
+          '(X86-PACKSSDW-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PACKSSDW"
           (OP :OP #xF6B :PFX :66 :FEAT '(:SSE2))
@@ -7835,7 +7842,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P D) :OP2 '(E Y))
-          'NIL
+          '(X86-MOVD/MOVQ-TO-MMX)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVD/Q"
           (OP :OP #xF6E :PFX :66 :FEAT '(:SSE2))
@@ -8160,7 +8167,7 @@
               :GROUP '(:GROUP-12)
               :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
-          'NIL
+          '(X86-PSRL-IMM-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSRLW"
           (OP :OP #xF71
@@ -8184,7 +8191,7 @@
               :GROUP '(:GROUP-12)
               :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
-          'NIL
+          '(X86-PSRA-IMM-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSRAW"
           (OP :OP #xF71
@@ -8208,7 +8215,7 @@
               :GROUP '(:GROUP-12)
               :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
-          'NIL
+          '(X86-PSLL-IMM-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSLLW"
           (OP :OP #xF71
@@ -8349,7 +8356,7 @@
               :GROUP '(:GROUP-13)
               :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
-          'NIL
+          '(X86-PSRL-IMM-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSRLD"
           (OP :OP #xF72
@@ -8373,7 +8380,7 @@
               :GROUP '(:GROUP-13)
               :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
-          'NIL
+          '(X86-PSRA-IMM-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSRAD"
           (OP :OP #xF72
@@ -8397,7 +8404,7 @@
               :GROUP '(:GROUP-13)
               :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
-          'NIL
+          '(X86-PSLL-IMM-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSLLD"
           (OP :OP #xF72
@@ -8643,7 +8650,7 @@
               :GROUP '(:GROUP-14)
               :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
-          'NIL
+          '(X86-PSRL-IMM-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSRLQ"
           (OP :OP #xF73
@@ -8680,7 +8687,7 @@
               :GROUP '(:GROUP-14)
               :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
-          'NIL
+          '(X86-PSLL-IMM-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSLLQ"
           (OP :OP #xF73
@@ -8869,7 +8876,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQB"
           (OP :OP #xF74 :PFX :66 :FEAT '(:SSE2))
@@ -8919,7 +8926,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQW"
           (OP :OP #xF75 :PFX :66 :FEAT '(:SSE2))
@@ -8969,7 +8976,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PCMPEQD"
           (OP :OP #xF76 :PFX :66 :FEAT '(:SSE2))
@@ -9015,9 +9022,11 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
     (INST "EMMS" (OP :OP #xF77 :PFX :NO-PREFIX)
-          NIL 'NIL
+          NIL
+          '(X86-EMMS)
           '((:UD (UD-LOCK-USED)
-                 (EQUAL (CR0BITS->EM (CR0)) #x1))))
+                 (EQUAL (CR0BITS->EM (CR0)) #x1))
+            (:NM (NM-CR0-TS-IS-1))))
     (INST "VZEROALL"
           (OP :OP #xF77
               :VEX '(:0F :256 :WIG)
@@ -9495,7 +9504,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(E Y) :OP2 '(P D))
-          'NIL
+          '(X86-MOVD/MOVQ-FROM-MMX)
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
     (INST "MOVD/Q"
           (OP :OP #xF7E :PFX :66 :FEAT '(:SSE2))
@@ -10045,10 +10054,10 @@
           (ARG :OP1 '(:FS))
           '(X86-PUSH-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
-    (INST "POP"
+    (INST "POP FS"
           (OP :OP #xFA1 :SUPERSCRIPTS '(:D64))
           (ARG :OP1 '(:FS))
-          'NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "CPUID" (OP :OP #xFA2)
           NIL '(X86-CPUID)
@@ -10074,17 +10083,17 @@
           (ARG :OP1 '(:GS))
           '(X86-PUSH-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
-    (INST "POP"
+    (INST "POP GS"
           (OP :OP #xFA9 :SUPERSCRIPTS '(:D64))
           (ARG :OP1 '(:GS))
-          'NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "RSM" (OP :OP #xFAA)
           NIL 'NIL
           'NIL)
     (INST "BTS" (OP :OP #xFAB)
           (ARG :OP1 '(E V) :OP2 '(G V))
-          '(X86-BT-0F-AB)
+          '(X86-BTS-0F-AB)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "SHRD" (OP :OP #xFAC)
           (ARG :OP1 '(E V)
@@ -10271,7 +10280,7 @@
               :SUPERSCRIPTS '(:1A :1C)
               :GROUP '(:GROUP-15)
               :FEAT '(:SSE))
-          NIL 'NIL
+          NIL '(X86-TWO-BYTE-NOP)
           '((:UD (UD-LOCK-USED))))
     (INST "VLDMXCSR"
           (OP :OP #xFAE
@@ -10301,7 +10310,7 @@
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "LSS" (OP :OP #xFB2)
           (ARG :OP1 '(G V) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "BTR" (OP :OP #xFB3)
@@ -10310,12 +10319,12 @@
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "LFS" (OP :OP #xFB4)
           (ARG :OP1 '(G V) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "LGS" (OP :OP #xFB5)
           (ARG :OP1 '(G V) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "MOVZX" (OP :OP #xFB6)
@@ -10349,7 +10358,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E V) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED))))
     (INST "BTS"
           (OP :OP #xFBA
@@ -10357,7 +10366,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTR"
           (OP :OP #xFBA
@@ -10365,7 +10374,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTC"
           (OP :OP #xFBA
@@ -10373,11 +10382,11 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          '(X86-BT-0F-BA)
+          '(X86-BT/BTS/BTR/BTC-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTC" (OP :OP #xFBB)
           (ARG :OP1 '(E V) :OP2 '(G V))
-          'NIL
+          '(X86-BTC-0F-BB)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BSF" (OP :OP #xFBC :PFX :NO-PREFIX)
           (ARG :OP1 '(G V) :OP2 '(E V))
@@ -10936,7 +10945,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSRL-MM/M64-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSRLW"
           (OP :OP #xFD1 :PFX :66 :FEAT '(:SSE2))
@@ -10984,7 +10993,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSRL-MM/M64-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSRLD"
           (OP :OP #xFD2 :PFX :66 :FEAT '(:SSE2))
@@ -11032,7 +11041,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSRL-MM/M64-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSRLQ"
           (OP :OP #xFD3 :PFX :66 :FEAT '(:SSE2))
@@ -11379,7 +11388,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PAND"
           (OP :OP #xFDB :PFX :66 :FEAT '(:SSE2))
@@ -11594,7 +11603,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PANDN"
           (OP :OP #xFDF :PFX :66 :FEAT '(:SSE2))
@@ -11713,7 +11722,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSRA-MM/M64-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSRAW"
           (OP :OP #xFE1 :PFX :66 :FEAT '(:SSE2))
@@ -11761,7 +11770,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSRA-MM/M64-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSRAD"
           (OP :OP #xFE2 :PFX :66 :FEAT '(:SSE2))
@@ -12287,7 +12296,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "POR"
           (OP :OP #xFEB :PFX :66 :FEAT '(:SSE2))
@@ -12502,7 +12511,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PAND/PANDN/POR/PXOR-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PXOR"
           (OP :OP #xFEF :PFX :66 :FEAT '(:SSE2))
@@ -12593,7 +12602,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSLL-MM/M64-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSLLW"
           (OP :OP #xFF1 :PFX :66 :FEAT '(:SSE2))
@@ -12641,7 +12650,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSLL-MM/M64-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSLLD"
           (OP :OP #xFF2 :PFX :66 :FEAT '(:SSE2))
@@ -12689,7 +12698,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PSLL-MM/M64-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PSLLQ"
           (OP :OP #xFF3 :PFX :66 :FEAT '(:SSE2))

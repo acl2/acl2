@@ -1,6 +1,6 @@
 ; Connecting our spec to similar notions from the RTL library
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,7 +21,6 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -178,7 +177,7 @@
 ;;   :hints (("Goal" :in-theory (enable expt-of-+))))
 
 (local
-  (defthm not-integer-of-*-of-expt2-when-<-of-expt2-of--
+  (defthm not-integerp-of-*-of-expt2-when-<-of-expt2-of--
     (implies (and (< rat (expt 2 (- i)))
                   (rationalp rat)
                   (< 0 rat))
@@ -214,8 +213,8 @@
                                         (wfn k p) ; exponent width
                                         ))))
   :hints (("Goal"
-           :use ((:instance not-integer-of-*-of-expt2-when-<-of-expt2-of-- (i (+ -3 p (expt 2 (+ -1 k (- p))))))
-                 (:instance not-integer-of-*-of-expt2-when-<-of-expt2-of-- (rat (- rat)) (i (+ -3 p (expt 2 (+ -1 k (- p)))))))
+           :use ((:instance not-integerp-of-*-of-expt2-when-<-of-expt2-of-- (i (+ -3 p (expt 2 (+ -1 k (- p))))))
+                 (:instance not-integerp-of-*-of-expt2-when-<-of-expt2-of-- (rat (- rat)) (i (+ -3 p (expt 2 (+ -1 k (- p)))))))
            :in-theory (e/d (formatp representable-subnormalp representable-positive-subnormalp emin emax wfn
                                      rtl::drepp
                                      rtl::formatp
@@ -223,7 +222,7 @@
                                      rtl::expw rtl::prec rtl::sig rtl::exactp
                                      *-of-expt-and-/-of-expt
                                      *-of-/-of-expt-and-expt)
-                           (not-integer-of-*-of-expt2-when-<-of-expt2-of--)))))
+                           (not-integerp-of-*-of-expt2-when-<-of-expt2-of--)))))
 
 (defthm drepp-becomes-representable-subnormalp
   (implies (rtl::formatp f)
@@ -231,8 +230,8 @@
                   (and (rationalp x)
                        (representable-subnormalp (format-k f) (format-p f) x))))
   :hints (("Goal"
-           :use ((:instance not-integer-of-*-of-expt2-when-<-of-expt2-of-- (rat x) (i (+ -3 (format-p f) (expt 2 (+ -1 (format-k f) (- (format-p f)))))))
-                 (:instance not-integer-of-*-of-expt2-when-<-of-expt2-of-- (rat (- x)) (i (+ -3 (format-p f) (expt 2 (+ -1 (format-k f) (- (format-p f))))))))
+           :use ((:instance not-integerp-of-*-of-expt2-when-<-of-expt2-of-- (rat x) (i (+ -3 (format-p f) (expt 2 (+ -1 (format-k f) (- (format-p f)))))))
+                 (:instance not-integerp-of-*-of-expt2-when-<-of-expt2-of-- (rat (- x)) (i (+ -3 (format-p f) (expt 2 (+ -1 (format-k f) (- (format-p f))))))))
            :in-theory (e/d (formatp representable-subnormalp representable-positive-subnormalp emin emax wfn
                                     rtl::drepp
                                     rtl::formatp
@@ -241,7 +240,7 @@
                                     rtl::expw rtl::prec rtl::sig rtl::exactp
                                     *-of-expt-and-/-of-expt
                                     *-of-/-of-expt-and-expt)
-                           (not-integer-of-*-of-expt2-when-<-of-expt2-of--)))))
+                           (not-integerp-of-*-of-expt2-when-<-of-expt2-of--)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

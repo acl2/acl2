@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -269,7 +269,7 @@
 ; Historical Note: Once upon a time (Version 3.6 and earlier) the wormhole
 ; function had a pseudo-flg argument which allowed the user a quick way to
 ; determine whether it was appropriate to incur the expense of going into the
-; wormhole.  The idea was that the form could have one a free var in it,
+; wormhole.  The idea was that the form could have one free var in it,
 ; wormhole-output, and that when it was evaluated in raw Lisp that variable was
 ; bound to the last value returned by the wormhole.  Since wormhole always
 ; returned nil anyway, this screwy semantics didn't matter.  However, it was
@@ -287,7 +287,7 @@
 ; with, printed, etc.  This is very handy because it means code executed in the
 ; wormhole can easily access the previously inaccessible status.
 
-; But the emphemeral whs cannot be directly changed.  That is: wormhole-status
+; But the ephemeral whs cannot be directly changed.  That is: wormhole-status
 ; is untouchable, even from within the wormhole: (f-put-global 'wormhole-status
 ; new-whs state) will cause an error.  This is necessary to prevent the
 ; interactive user from violating invariants we maintain on system wormholes.
@@ -890,7 +890,7 @@
   (cond ((endp decls) ())
 
 ; Here we do a cheap check that the declare form is illegal.  It is tempting to
-; use collect-declarations, but it take state.  Anyhow, there is no soundness
+; use collect-declarations, but it takes state.  Anyhow, there is no soundness
 ; issue; the user will just be a bit surprised when the error shows up later as
 ; the macro defined by the defabbrev is applied.
 
@@ -1529,7 +1529,7 @@
 
 (defun iprint-blockedp (state)
 
-; Check for the effect off block-iprint-ar.
+; Check for the effect of block-iprint-ar.
 
   (declare (xargs :guard (array1p 'iprint-ar (f-get-global 'iprint-ar state))))
   (let ((x (aref1 'iprint-ar (f-get-global 'iprint-ar state) 0)))
@@ -1994,7 +1994,7 @@
 
 ; A ppr tuple has the form (token n . z).  In the display below, the variables
 ; ti represent ppr tuples and the variables xi represent objects to be printed
-; directly.  Any xi could an eviscerated object, a list whose car is the
+; directly.  Any xi could be an eviscerated object, a list whose car is the
 ; evisceration mark.
 
 ; (FLAT n x1 ... xk) - Print the xi, separated by spaces, all on one
@@ -2193,7 +2193,7 @@
                (>= n 0))
           n
         (er-hard-val 0 ,ctx
-                     "The object ~x0 is not a nonnagative fixnum (precisely:  ~
+                     "The object ~x0 is not a nonnegative fixnum (precisely:  ~
                       not a ~x1)."
                      n *fixnat-type*)))))
 
@@ -7989,8 +7989,8 @@
                               (member-eq key1
                                          '(:recognizer
                                            :length :resize :accessor :updater
-                                           :creator :boundp :accessor? :remove
-                                           :count :clear :init))
+                                           :creator :boundp :keys :accessor?
+                                           :remove :count :clear :init))
                               (symbolp key2)
                               (doublet-listp renaming-alist))))
   (let* ((default-fnname
@@ -8027,6 +8027,10 @@
               (and (or (eq key2 :hash-table)
                        (eq key2 :stobj-table))
                    (packn-pos (list root "-BOUNDP") root)))
+             (:keys
+              (and (or (eq key2 :hash-table)
+                       (eq key2 :stobj-table))
+                   (packn-pos (list root "-KEYS") root)))
              (:accessor?
               (and (eq key2 :hash-table)
                    (packn-pos (list root "-GET?") root)))
@@ -8192,6 +8196,7 @@
            (accessor-name (defstobj-fnname field :accessor key2 renaming))
            (updater-name (defstobj-fnname field :updater key2 renaming))
            (boundp-name (defstobj-fnname field :boundp key2 renaming))
+           (keys-name (defstobj-fnname field :keys key2 renaming))
            (accessor?-name (defstobj-fnname field :accessor? key2
                              renaming))
            (remove-name (defstobj-fnname field :remove key2 renaming))
@@ -8221,6 +8226,7 @@
                   :element-type element-type
                   :other
                   (list boundp-name
+                        keys-name
                         accessor?-name
                         remove-name
                         count-name
@@ -8677,6 +8683,16 @@
                        ar)
                   0)))))
 
+#-acl2-loop-only
+(defun hash-table-sorted-keys (ht)
+  (declare (type hash-table ht))
+  (let ((keys nil))
+    (maphash (lambda (key val)
+               (declare (ignore val))
+               (push key keys))
+             ht)
+    (merge-sort-lexorder keys)))
+
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
@@ -8760,11 +8776,12 @@
                            field-template
                            :other))
             (boundp-name (nth 0 other))
-            (accessor?-name (nth 1 other))
-            (remove-name (nth 2 other))
-            (count-name (nth 3 other))
-            (clear-name (nth 4 other))
-            (init-name (nth 5 other)))
+            (keys-name (nth 1 other))
+            (accessor?-name (nth 2 other))
+            (remove-name (nth 3 other))
+            (count-name (nth 4 other))
+            (clear-name (nth 5 other))
+            (init-name (nth 6 other)))
        (cond
         ((or hashp stobj-tablep)
          (let ((key (if stobj-tablep
@@ -8824,6 +8841,10 @@
                                    (gethash ,key (the hash-table ,fld))
                                    (declare (ignore val))
                                    (if boundp t nil)))
+             (,keys-name
+              (,var)
+              ,@(and inline (list *stobj-inline-declare*))
+              (hash-table-sorted-keys (the hash-table ,fld)))
              ,@(and hashp ; skip this for a stobj-table
 ; Keep the following in sync with the accessor-name case above.
                     `((,accessor?-name
@@ -9447,11 +9468,11 @@
 ; variable.  However, now the live stobj corresponding to st is stored on the
 ; raw Lisp alist *user-stobj-alist* under the key st.
 
-; Back when we stored it under the value of the the-live-var, we thought that
-; one might wonder why we didn't choose to name this object $s.  Below we
-; explain our earlier thinking.  Now that we use only (the-live-var name) only
-; to store properties, perhaps we could instead store those properties on name;
-; but when we eliminated the special variable in October 2019, that didn't seem
+; Back when we stored it under the value of the-live-var, we thought that one
+; might wonder why we didn't choose to name this object $s.  Below we explain
+; our earlier thinking.  Now that we use only (the-live-var name) only to store
+; properties, perhaps we could instead store those properties on name; but when
+; we eliminated the special variable in October 2019, that didn't seem
 ; worthwhile to explore.
 
 ; Historical Plaque for Why the Live Var for $S Is Not $S

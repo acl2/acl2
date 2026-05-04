@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,7 +131,7 @@
    (xdoc::p
     "Some integer operations have boolean results.")
    (xdoc::p
-    "[JLS14:4.2.2] also lists the prefix and posfix @('++') and @('--') operators,
+    "[JLS14:4.2.2] also lists the prefix and postfix @('++') and @('--') operators,
      but those operate on variables, not just values,
      and therefore must be formalized elsewhere.")
    (xdoc::p
@@ -243,14 +243,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-rem
-  :short "Remainder @('&') on @('int')s [JLS14:4.2.2] [JLS14:15.17.3]."
+  :short "Remainder @('%') on @('int')s [JLS14:4.2.2] [JLS14:15.17.3]."
   :nonzero t
   :operation (logext 32 (rem x y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-rem
-  :short "Remainder @('&') on @('long')s [JLS14:4.2.2] [JLS14:15.17.3]."
+  :short "Remainder @('%') on @('long')s [JLS14:4.2.2] [JLS14:15.17.3]."
   :nonzero t
   :operation (logext 64 (rem x y)))
 
@@ -501,7 +501,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-long-ushiftr
-  :short "Unsigned right shift of an @('long') by an @('long')
+  :short "Unsigned right shift of a @('long') by a @('long')
           [JLS14:4.2.2] [JLS14:15.19]."
   :long
   (xdoc::topstring
@@ -558,7 +558,7 @@
      all the unary and binary operations on floating-point values
      that are not conversions (those are formalized separately).")
    (xdoc::p
-    "[JLS14:4.2.4] also lists the prefix and posfix @('++') and @('--') operators,
+    "[JLS14:4.2.4] also lists the prefix and postfix @('++') and @('--') operators,
      but those operate on variables, not just values,
      and therefore must be formalized elsewhere.")
    (xdoc::p
@@ -721,7 +721,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-great
-  :short "Greater-than-or-equal-to comparison @('>') on @('double')s
+  :short "Greater-than comparison @('>') on @('double')s
           [JLS14:4.2.4] [JLS14:15.20.1]."
   :operation (double-great-abs x y))
 

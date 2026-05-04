@@ -1,0 +1,28 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains rules for string literals
+; for the C17 dialects [C17:6.4.5/1].
+; The rules are the same as for C23,
+; but we include the rule for 'encoding-prefix' here,
+; while in C23 it is with the rules for character constants.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+string-literal =
+    [ encoding-prefix ] double-quote [ s-char-sequence ] double-quote
+
+s-char-sequence = s-char
+                / s-char-sequence s-char
+
+s-char = character-not-double-quote-or-backslash-or-new-line
+       / escape-sequence

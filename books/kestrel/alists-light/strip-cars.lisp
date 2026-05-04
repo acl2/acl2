@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function strip-cars.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -56,6 +56,13 @@
   (equal (strip-cars (append x y))
          (append (strip-cars x)
                  (strip-cars y)))
+  :hints (("Goal" :in-theory (enable strip-cars))))
+
+;; Disabled, but see strip-cars-when-not-consp-cheap.
+(defthmd strip-cars-when-not-consp
+  (implies (not (consp x))
+           (equal (strip-cars x)
+                  nil))
   :hints (("Goal" :in-theory (enable strip-cars))))
 
 (defthm strip-cars-when-not-consp-cheap

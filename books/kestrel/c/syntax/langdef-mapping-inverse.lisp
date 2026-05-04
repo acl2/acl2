@@ -53,7 +53,7 @@
   (defrule ldm-ident-of-ildm-ident
     (equal (ldm-ident (ildm-ident ident))
            (mv nil (c::ident-fix ident)))
-    :enable (ldm-ident identity)))
+    :enable ldm-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -754,7 +754,7 @@
    label
    :name (make-label-name :name (ildm-ident label.get)
                           :attribs nil)
-   :cas (make-label-casexpr :expr (const-expr (ildm-expr label.get))
+   :cas (make-label-casexpr :expr (make-const-expr :expr (ildm-expr label.get))
                             :range? nil)
    :default (label-default)))
 
@@ -894,8 +894,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ildm-transunit ((file-name string-optionp) (tunit c::transunitp))
-  :returns (tunit1 transunitp)
+(define ildm-trans-unit ((file-name string-optionp) (tunit c::trans-unitp))
+  :returns (tunit1 trans-unitp)
   :short "Map a translation unit in the language definition
           to a translation unit in the syntax for tools."
   :long
@@ -904,40 +904,42 @@
     "The optional file name passed as input represents (if present)
      an implicit @('#include') in the translation unit
      for a header with that name, to which we add the @('.h') extension.
-     See @(tsee ildm-transunit-ensemble)."))
-  (make-transunit
-   :comment nil
-   :includes (and file-name
-                  (list (string-to-q-header-name (str::cat file-name ".h"))))
-   :declons (ildm-ext-declon-list (c::transunit->declons tunit))
-   :info nil))
+     See @(tsee ildm-trans-ensemble)."))
+  (b* ((includes
+        (and file-name
+             (list (string-to-q-header-name (str::cat file-name ".h")))))
+       (declons (ildm-ext-declon-list (c::trans-unit->declons tunit)))
+       (items (append (trans-item-list-include includes)
+                      (trans-item-list-declon declons))))
+    (make-trans-unit :items items :info nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ildm-transunit-ensemble ((file-name stringp)
-                                 (tunits c::transunit-ensemblep))
-  :returns (tunits1 transunit-ensemblep)
-  :short "Map a translation unit ensemble in the language definition
-          to a translation unit ensemble in the syntax for tools."
+(define ildm-trans-ensemble ((file-name stringp)
+                             (tunits c::trans-ensemblep))
+  :returns (tunits1 trans-ensemblep)
+  :short "Map a translation ensemble in the language definition
+          to a translation ensemble in the syntax for tools."
   :long
   (xdoc::topstring
    (xdoc::p
     "The string input represents the name of the file or files,
      without extension."))
-  (b* (((c::transunit-ensemble tunits) tunits)
+  (b* (((c::trans-ensemble tunits) tunits)
        (file-name (str-fix file-name)))
-    (make-transunit-ensemble
+    (make-trans-ensemble
      :units (b* ((map-with-source-file
                   (omap::update (filepath (str::cat file-name ".c"))
-                                (ildm-transunit (and tunits.dot-h
-                                                     file-name)
-                                                tunits.dot-c)
+                                (ildm-trans-unit (and tunits.dot-h
+                                                      file-name)
+                                                 tunits.dot-c)
                                 nil))
                  (map-with-all-files
                   (if tunits.dot-h
                       (omap::update (filepath (str::cat file-name ".h"))
-                                    (ildm-transunit nil tunits.dot-h)
+                                    (ildm-trans-unit nil tunits.dot-h)
                                     map-with-source-file)
                     map-with-source-file)))
               map-with-all-files)
+     :resolved-includes nil
      :info nil)))

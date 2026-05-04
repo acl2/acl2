@@ -1,7 +1,7 @@
 ; Rules that deal with both bvcat and other operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,8 +12,8 @@
 (in-package "ACL2")
 
 (include-book "bvcat")
-(include-book "bvxor")
-(include-book "bvor")
+(include-book "bvxor-def")
+(include-book "bvor-def")
 (include-book "bitnot")
 (include-book "bvand-def")
 (include-book "bitand")
@@ -24,7 +24,9 @@
 (include-book "bvminus")
 (include-book "bvuminus-def")
 (include-book "bvif")
+(include-book "bvlt-def")
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "logapp"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
@@ -559,3 +561,21 @@
                 (natp high))
            (equal (bvcat highsize (slice high low x) lowsize lowval)
                   (bvcat highsize (slice (+ -1 low highsize) low x) lowsize lowval))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvlt-of-bvcat-low-arg2
+  (implies (and (<= size lowsize)
+                (natp size)
+                (natp lowsize))
+           (equal (bvlt size (bvcat highsize highval lowsize lowval) x)
+                  (bvlt size lowval x)))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthm bvlt-of-bvcat-low-arg3
+  (implies (and (<= size lowsize)
+                (natp size)
+                (natp lowsize))
+           (equal (bvlt size x (bvcat highsize highval lowsize lowval))
+                  (bvlt size x lowval)))
+  :hints (("Goal" :in-theory (enable bvlt))))

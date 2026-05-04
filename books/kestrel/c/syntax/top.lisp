@@ -11,15 +11,15 @@
 (in-package "C$")
 
 (include-book "implementation-environments")
-(include-book "unicode-characters")
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
+(include-book "evaluation")
 (include-book "preprocessing")
 (include-book "parsing")
 (include-book "disambiguation")
 (include-book "validation")
 (include-book "printing")
-(include-book "builtin")
+(include-book "built-in")
 (include-book "input-files")
 (include-book "input-files-doc")
 (include-book "output-files")
@@ -49,8 +49,7 @@
      in IDE-like tools.")
    (xdoc::p
     "Currently this abstract syntax covers all of C after preprocessing,
-     but it also includes some initial forms of preprocessing constructs,
-     which we plan to extend.
+     but it also includes some forms of preprocessing constructs.
      Preserving preprocessing constructs from the original concrete syntax
      is also important,
      since preprocessed code can be fairly distant from the original one.
@@ -208,7 +207,6 @@
      This package naming pattern could be used for
      ACL2 libraries (and sub-libraries) for other programming languages."))
   :order-subtopics (implementation-environments
-                    unicode-characters
                     concrete-syntax
                     abstract-syntax
                     preprocessing

@@ -22,6 +22,8 @@
 (include-book "../syntax/abstract-syntax-trees")
 (include-book "../syntax/code-ensembles")
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -91,9 +93,12 @@
               fundef
               ext-declon
               ext-declon-list
-              transunit
-              filepath-transunit-map
-              transunit-ensemble)
+              hash-if/elif-expr
+              hash-if/ifdef/ifndef
+              trans-items
+              trans-unit
+              filepath-trans-unit-map
+              trans-ensemble)
   :extra-args ((subst ident-ident-alistp))
   :override ((ident (ident-ident-subst ident subst))))
 
@@ -102,5 +107,5 @@
   :returns (new-code code-ensemblep)
   (change-code-ensemble
    code
-   :transunits
-   (transunit-ensemble-rename (code-ensemble->transunits code) subst)))
+   :trans-units
+   (trans-ensemble-rename (code-ensemble->trans-units code) subst)))

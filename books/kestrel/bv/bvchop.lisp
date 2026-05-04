@@ -769,7 +769,7 @@
   (implies (and (<= (+ -1 (expt 2 n)) k)
                 (natp n))
            (not (< k (bvchop n x))))
-  :hints (("Goal" :cases ((<= low high))
+  :hints (("Goal"
            :use (:instance bound-when-usb (x (bvchop n x)))
            :in-theory (disable bound-when-usb))))
 

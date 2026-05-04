@@ -88,7 +88,7 @@
     (implies (and (equiv-ev-theoremp (equiv-rel-term fn))
                   (pseudo-fnsym-p fn))
              (equiv-ev (list fn x x) a))
-    :hints (("goal" :use ((:instance equiv-ev-falsify
+    :hints (("goal" :use ((:instance equiv-ev-theoremp-implies
                            (x `(,fn x x))
                            (a `((x . ,(equiv-ev x a))))))
              :in-theory (enable equiv-ev-of-fncall-args))))
@@ -98,7 +98,7 @@
                   (pseudo-fnsym-p fn)
                   (equiv-ev (list fn x y) a))
              (equiv-ev (list fn y x) a))
-    :hints (("goal" :use ((:instance equiv-ev-falsify
+    :hints (("goal" :use ((:instance equiv-ev-theoremp-implies
                            (x `(implies (,fn x y)
                                         (,fn y x)))
                            (a `((x . ,(equiv-ev x a))
@@ -111,7 +111,7 @@
                   (equiv-ev (list fn x y) a)
                   (equiv-ev (list fn y z) a))
              (equiv-ev (list fn x z) a))
-    :hints (("goal" :use ((:instance equiv-ev-falsify
+    :hints (("goal" :use ((:instance equiv-ev-theoremp-implies
                            (x `(implies (if (,fn x y)
                                             (,fn y z)
                                           'nil)
@@ -249,17 +249,20 @@
              (iff (equiv-ev-theoremp term)
                   (and (equiv-ev-theoremp (first (pseudo-term-call->args term)))
                        (equiv-ev-theoremp (second (pseudo-term-call->args term))))))
-    :hints (("goal" :use ((:instance equiv-ev-falsify
+    :hints (("goal" :use ((:instance equiv-ev-theoremp-implies
                            (x term) (a (equiv-ev-falsify (first (pseudo-term-call->args term)))))
-                          (:instance equiv-ev-falsify
+                          (:instance equiv-ev-theoremp-implies
                            (x term) (a (equiv-ev-falsify (second (pseudo-term-call->args term)))))
-                          (:instance equiv-ev-falsify
+                          (:instance equiv-ev-theoremp-implies
                            (x (first (pseudo-term-call->args term)))
                            (a (equiv-ev-falsify term)))
-                          (:instance equiv-ev-falsify
+                          (:instance equiv-ev-theoremp-implies
                            (x (second (pseudo-term-call->args term)))
                            (a (equiv-ev-falsify term))))
-             :in-theory (disable pseudo-termp pseudo-term-listp))))
+             :in-theory (disable pseudo-termp pseudo-term-listp))
+            (and stable-under-simplificationp
+                 (let ((lit (assoc-equal 'equiv-ev-theoremp clause)))
+                   `(:expand (,lit))))))
 
   (defthmd search-match-in-conjunction-correct
     (implies (and (equiv-ev-theoremp term)
@@ -269,7 +272,7 @@
                                     equiv-ev-theoremp-of-conjunction))
             :induct (search-match-in-conjunction pat term))
            (and stable-under-simplificationp
-                '(:use ((:instance equiv-ev-falsify
+                '(:use ((:instance equiv-ev-theoremp-implies
                          (x term)
                          (a (equiv-ev-alist
                              (mv-nth 1 (term-unify-strict term pat nil))
@@ -403,7 +406,8 @@
                     (equiv-ev-meta-extract-global-facts)
                     (equal w (w state)))
                (equiv-ev (equiv-rel-term e) a))
-      :hints(("Goal" :in-theory (e/d (check-equiv-formula-correct))))))
+      :hints(("Goal" :in-theory (e/d (check-equiv-formula-correct
+                                      equiv-ev-meta-extract-formula-theoremp))))))
 
 
 
@@ -452,6 +456,14 @@
                 '(:in-theory (enable equiv-relp))))
     :otf-flg t)
 
+  (defthmd ensure-equiv-relationp-implies-theoremp
+    (implies (and (equiv-ev-meta-extract-global-facts)
+                  (ensure-equiv-relationp e (w state)))
+             (equiv-ev-theoremp (equiv-rel-term e)))
+    :hints(("Goal" :in-theory (e/d (equiv-ev-theoremp
+                                    ensure-equiv-relationp-correct)
+                                   (ensure-equiv-relationp)))))
+
   (defthmd ensure-equiv-relationp-implies1
     (implies (and (equiv-ev-meta-extract-global-facts)
                   (ensure-equiv-relationp e (w state))
@@ -462,11 +474,11 @@
                   (implies (and (equiv-ev (list e x y) a)
                                 (equiv-ev (list e y z) a))
                            (equiv-ev (list e x z) a))))
-    :hints(("Goal" :use ((:instance ensure-equiv-relationp-correct
-                          (a (equiv-ev-falsify (equiv-rel-term e)))))
+    :hints(("Goal" 
             :in-theory (e/d (equiv-rel-term-implies-reflexive
                              equiv-rel-term-implies-symmetric
-                             equiv-rel-term-implies-transitive)
+                             equiv-rel-term-implies-transitive
+                             ensure-equiv-relationp-implies-theoremp)
                             (ensure-equiv-relationp))))
     :otf-flg t)
 

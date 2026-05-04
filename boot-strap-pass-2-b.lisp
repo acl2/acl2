@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -354,7 +354,7 @@
 ;;; Attachment: brr-near-missp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; It may seem that section belongs with similar sections in
+; It may seem that this section belongs with similar sections in
 ; boot-strap-pass-2-a.lisp.  However, we need to wait till brr-criteria-alistp
 ; and built-in-brr-near-missp are in :logic mode, which is after the calls of
 ; system-verify-guards above.
@@ -441,10 +441,10 @@
 
 (defun mempos (e lst)
 
-; Even though it is not necessary to define mempos in order to build ACL2, but
-; because the book books/projects/apply/loop.lisp introduces it to establish
-; the loop$-as-correspondence rule, it is best not to let the user define it.
-; It is identically defined in community book books/projects/apply/loop.lisp,
+; It is not necessary to define mempos in order to build ACL2, but because the
+; book books/projects/apply/loop.lisp introduces it to establish the
+; loop$-as-correspondence rule, it is best not to let the user define it.  It
+; is identically defined in community book books/projects/apply/loop.lisp,
 ; which should be included anytime the user is serious about using scions.
 
   (declare (xargs :guard (true-listp lst)))

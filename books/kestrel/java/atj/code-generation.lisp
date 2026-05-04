@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,7 +124,7 @@
      that prints the name of the test,
      builds the input values (zero or more) of the test,
      builds the output value(s) of the test,
-     calls (the Java representation of) the function on the inupt values,
+     calls (the Java representation of) the function on the input values,
      compares the obtained result value(s) with the output value(s) of the test,
      and prints a message of success or failure.
      It also sets the failures field to true if the test fails.")
@@ -454,7 +454,7 @@
    (xdoc::p
     "The compilation unit imports all the AIJ public classes,
      since it needs to reference (at least some of) them.
-     It also imports @('BigInteger'), used to build certain ACL2 value.
+     It also imports @('BigInteger'), used to build certain ACL2 values.
      It also imports @('Arrays'), whose @('equals()') method
      is used to compare array results.
      However, if the @(':no-aij-types') input is @('t'),

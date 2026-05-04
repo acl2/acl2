@@ -24,6 +24,7 @@
 (include-book "bitxor")
 (include-book "bitnot")
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "rules"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
@@ -150,7 +151,7 @@
                                           low
                                           x)))))
   :hints (("Goal" :cases ((NATP (+ 1 (- LOW) M)))
-           :in-theory (e/d (bitops::part-install-width-low ifix getbit-of-logand)
+           :in-theory (e/d (bitops::part-install-width-low ifix getbit-of-logand getbit-of-lognot)
                            (ash logmask)))))
 
 (defthm bvchop-of-part-install-width-low-same

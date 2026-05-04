@@ -1,7 +1,7 @@
 ; Tests of defthm-axe-basic
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -50,16 +50,6 @@
             x))))
 
 ;; Test the use of a 0-ary function to indicate a list of rules.
-(deftest
-  (defun rules1 ()
-    '(car-cons equal-same))
-
-  (defthm-axe-basic test
-    (equal (car (cons x y))
-           x)
-    :rules '((rules1))))
-
-
 (deftest
   (defun rules1 ()
     '(car-cons equal-same))
@@ -453,7 +443,7 @@
    :rule-classes nil))
 
 (must-fail
- (defthm-axe-basic contra-2d
+ (defthm-axe-basic contra-2e
    (boolor (not x) (equal x t))
    :rule-classes nil))
 
@@ -468,7 +458,7 @@
 
 (must-fail
  ;; Replaces the var with the constant '3
- (defthm-axe-basic contra-2d
+ (defthm-axe-basic contra-2f
    (implies (equal x 3)
             (foo x))
    :rule-classes nil))
@@ -555,3 +545,13 @@
 
 (defthm-axe-basic implies-1 (implies x x) :rule-classes nil)
 (must-fail (defthm-axe-basic implies-2 (implies x y) :rule-classes nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this works (without calling STP), because the assumptions are processed using the known-booleans stored in the state
+(deftest
+  (defthm-axe-basic new-test-1
+    (implies (and (unsigned-byte-p 3 x)
+                  (unsigned-byte-p 4 y))
+             (equal (unsigned-byte-p 3 x)
+                    (unsigned-byte-p 4 y)))))

@@ -103,7 +103,7 @@
              (acl2::mextract-ev (acl2::rewrite-rule-term (car x)) a))
     :hints(("Goal" :in-theory (disable acl2::rewrite-rule-term)
             :expand ((mextract-good-rewrite-rulesp x))
-            :use ((:instance acl2::mextract-ev-falsify
+            :use ((:instance acl2::mextract-ev-theoremp-implies
                    (x (acl2::rewrite-rule-term (car x))) (a a))))))
 
   (local (defun mextract-good-rewrite-rulesp-badguy (rules)
@@ -124,7 +124,8 @@
     (implies (and (acl2::mextract-ev-global-facts)
                   (equal wrld (w state)))
              (mextract-good-rewrite-rulesp (fgetprop fn 'acl2::lemmas nil wrld)))
-    :hints(("Goal" :in-theory (e/d (mextract-good-rewrite-rulesp-by-badguy)
+    :hints(("Goal" :in-theory (e/d (mextract-good-rewrite-rulesp-by-badguy
+                                    acl2::mextract-ev-theoremp)
                                    (mextract-good-rewrite-rulesp
                                     mextract-good-rewrite-rulesp-badguy
                                     acl2::rewrite-rule-term

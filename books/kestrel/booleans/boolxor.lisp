@@ -1,7 +1,7 @@
 ; A book about boolxor (boolean-valued xor)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,11 +13,13 @@
 
 ;; STATUS: In-progress
 
-(include-book "bool-fix")
+(include-book "bool-fix-def")
+(local (include-book "bool-fix"))
 
-;TODO: compare to the built-in function xor!
-
+;; Logically the same as the built-in function XOR, but this one
+;; has a name consistent with other boolean ops.
 (defund boolxor (x y)
+  (declare (xargs :guard t))
   (if x
       (if y nil t)
     (if y t nil)))

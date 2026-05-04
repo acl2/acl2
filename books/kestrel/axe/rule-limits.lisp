@@ -90,7 +90,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns t, ni, or :not-yet.
+;; Returns t, nil, or :not-yet.
 ;; This part is not inlined but is only called if there are limits.
 ;; TODO: Optimize (avoid the assoc-eq by just walking down the list)
 (defund limit-reached-aux (stored-rule limits print)
@@ -137,7 +137,7 @@
 ;; Decrements the limit for the supplied STORED-RULE by 1.
 ;; TODO: This repeats some work done in limit-reached.  But this may be called
 ;; much less often than limit-reached, since most rules have no limits.
-;; TODO: Optimize: avoid 2 list walks Optimize (avoid assoc-eq followed bt acons-unique-eq).
+;; TODO: Optimize: avoid 2 list walks Optimize (avoid assoc-eq followed by acons-unique-eq).
 (defund decrement-rule-limit (stored-rule limits)
   (declare (xargs :guard (and (stored-axe-rulep stored-rule)
                               (rule-limitsp limits)

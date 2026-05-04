@@ -1,7 +1,7 @@
 ; New tools for substituting equated vars in DAGS
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -786,7 +786,7 @@
                                                            all-integerp-when-nat-listp)))))
   (let* (;(max-var-nodenum (maxelem (strip-cars subst-candidates)))
          (max-equated-thing-nodenum (largest-non-quotep (strip-cadrs subst-candidates))) ;the equated-things are what we look up in the deps array
-         (candidate-deps-array (make-empty-array 'candidate-deps-array (+ 1 max-equated-thing-nodenum)))
+         (candidate-deps-array (new-array1 'candidate-deps-array (+ 1 max-equated-thing-nodenum)))
          ;; We'll track what depends on the candidate vars
          (candidate-deps-array (mark-all-relevant-vars subst-candidates max-equated-thing-nodenum candidate-deps-array))
          ;; We'll also track what depends on the vars in the var-ordering
@@ -904,8 +904,6 @@
                  )
             (<= (car y) a))
    :hints (("Goal" :in-theory (enable sortedp-<= member-equal)))))
-
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
 (local
  (defthm member-equal-when-<=-of-len-and-1
@@ -1299,7 +1297,7 @@
                (max-literal-nodenum (car (last sorted-literal-nodenums)))
                ;; Drop any candidate for which the var to be replaced does not appear in any literal (needed since we size the array according to max-literal-nodenum) (todo: when exactly is the best time to deal with this?)
                (subst-candidates (drop-irrelevant-subst-candidates subst-candidates max-literal-nodenum nil))
-               (translation-array (make-empty-array 'translation-array (+ 1 max-literal-nodenum)))
+               (translation-array (new-array1 'translation-array (+ 1 max-literal-nodenum)))
                ;; Mark all the nodenums to be replaced:
                (translation-array (mark-replacements subst-candidates translation-array))
                (- (and print (print-subst-candidates subst-candidates dag-array dag-len print)))
@@ -1500,7 +1498,6 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp prover-depth)
-                (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
@@ -1521,7 +1518,6 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp prover-depth)
-                (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
@@ -1538,7 +1534,6 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp prover-depth)
-                (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
@@ -1562,7 +1557,6 @@
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len)
                 (natp prover-depth)
-                (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)

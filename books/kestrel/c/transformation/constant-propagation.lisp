@@ -37,7 +37,7 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "This is a very preliminary transformation to propogate constants at the
+      "This is a very preliminary transformation to propagate constants at the
        function level.")
     (xdoc::p
       "The transformation currently only folds integer constants."))
@@ -282,7 +282,7 @@
 (define const-prop-eval-unop-expr
   ((unop c$::unopp)
    (arg c::valuep))
-  :short "Propogate a constant through a @(see c$::unop)."
+  :short "Propagate a constant through a @(see c$::unop)."
   :returns (value? c::value-optionp)
   (c$::unop-case
    unop
@@ -324,7 +324,7 @@
   ((binop c$::binopp)
    (left c::valuep)
    (right c::valuep))
-  :short "Propogate a constant through a pure @(see c$::binop)."
+  :short "Propagate a constant through a pure @(see c$::binop)."
   :guard (pure-binopp binop)
   :returns (value? c::value-optionp)
   (c$::binop-case
@@ -380,7 +380,7 @@
    (left exprp)
    (right c::valuep)
    (env envp))
-  :short "Propogate a constant through an impure @(see c$::binop)."
+  :short "Propagate a constant through an impure @(see c$::binop)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -579,7 +579,7 @@
   (define const-prop-expr
     ((expr exprp)
      (env envp))
-    :short "Propogate a constant through an impure @(see c$::expr)."
+    :short "Propagate a constant through an impure @(see c$::expr)."
     :returns (mv (new-expr exprp)
                  (value? c::value-optionp)
                  (new-env envp))
@@ -876,7 +876,7 @@
                  (new-env envp))
     (b* (((mv expr - env)
           (const-prop-expr (const-expr->expr cexpr) env)))
-      (mv (const-expr expr) env))
+      (mv (make-const-expr :expr expr) env))
     :measure (const-expr-count cexpr))
 
   (define const-prop-const-expr-option
@@ -1986,50 +1986,62 @@
    :empty (ext-declon-empty)
    :asm (ext-declon-fix extdecl)))
 
-(define const-prop-ext-declon-list
-  ((extdecls ext-declon-listp)
+(define const-prop-trans-item
+  ((item trans-itemp)
    (env envp))
-  :returns (new-extdecls ext-declon-listp)
-  (if (endp extdecls)
+  :returns (new-item trans-itemp)
+  (trans-item-case
+   item
+   :declon (trans-item-declon (const-prop-ext-declon item.declon env))
+   :include (prog2$ (raise "Unsupported #include directives.")
+                    (irr-trans-item))
+   :define (prog2$ (raise "Unsupported #define directives.")
+                   (irr-trans-item))
+   :undef (prog2$ (raise "Unsupported #undef directives.")
+                  (irr-trans-item))
+   :cond (prog2$ (raise "Unsupported conditional directives.")
+                 (irr-trans-item))
+   :line-comment (trans-item-fix item)))
+
+(define const-prop-trans-item-list
+  ((items trans-item-listp)
+   (env envp))
+  :returns (new-items trans-item-listp)
+  (if (endp items)
       nil
-    (cons (const-prop-ext-declon (first extdecls) env)
-          (const-prop-ext-declon-list (rest extdecls) env)))
-  :measure (acl2-count extdecls)
+    (cons (const-prop-trans-item (first items) env)
+          (const-prop-trans-item-list (rest items) env)))
+  :measure (acl2-count items)
   :hints (("Goal" :in-theory nil)))
 
-(define const-prop-transunit
-  ((tunit transunitp))
-  :returns (new-tunit transunitp)
-  (b* (((transunit tunit) tunit)
-       ((when tunit.includes)
-        (raise "Unsupported #include directives.")
-        (transunit-fix tunit)))
-    (make-transunit :comment nil
-                    :includes nil
-                    :declons (const-prop-ext-declon-list tunit.declons nil)
-                    :info tunit.info)))
+(define const-prop-trans-unit
+  ((tunit trans-unitp))
+  :returns (new-tunit trans-unitp)
+  (b* (((trans-unit tunit) tunit))
+    (make-trans-unit :items (const-prop-trans-item-list tunit.items nil)
+                     :info tunit.info)))
 
-(define const-prop-filepath-transunit-map
-  ((map filepath-transunit-mapp))
-  :returns (new-map filepath-transunit-mapp
-                    :hyp (filepath-transunit-mapp map))
+(define const-prop-filepath-trans-unit-map
+  ((map filepath-trans-unit-mapp))
+  :returns (new-map filepath-trans-unit-mapp
+                    :hyp (filepath-trans-unit-mapp map))
   (b* (((when (omap::emptyp map)) nil)
        ((mv path tunit) (omap::head map))
-       (new-tunit (const-prop-transunit tunit))
+       (new-tunit (const-prop-trans-unit tunit))
        (new-map
-         (const-prop-filepath-transunit-map (omap::tail map))))
+         (const-prop-filepath-trans-unit-map (omap::tail map))))
     (omap::update (c$::filepath-fix path)
                   new-tunit
                   new-map))
   :verify-guards :after-returns)
 
-(define const-prop-transunit-ensemble
-  ((tunits transunit-ensemblep))
-  :returns (new-tunits transunit-ensemblep)
-  :short "Transform a translation unit ensemble."
-  (b* (((transunit-ensemble tunits) tunits))
-    (c$::make-transunit-ensemble
-      :units (const-prop-filepath-transunit-map tunits.units))))
+(define const-prop-trans-ensemble
+  ((tunits trans-ensemblep))
+  :returns (new-tunits trans-ensemblep)
+  :short "Transform a translation ensemble."
+  (b* (((trans-ensemble tunits) tunits))
+    (c$::make-trans-ensemble
+      :units (const-prop-filepath-trans-unit-map tunits.units))))
 
 (define const-prop-code-ensemble
   ((code code-ensemblep))
@@ -2037,5 +2049,5 @@
   :short "Transform a code ensemble."
   (b* (((code-ensemble code) code))
     (make-code-ensemble
-     :transunits (const-prop-transunit-ensemble code.transunits)
+     :trans-units (const-prop-trans-ensemble code.trans-units)
      :ienv code.ienv)))

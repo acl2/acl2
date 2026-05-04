@@ -105,9 +105,9 @@
         (t (mv :unsupported nil nil))))
 
      (defthm ,(pack-in-package "ARM" name '-return-type)
-       (implies (not (mv-nth 0 (arm32-decode inst)))
-                (good-instp (mv-nth 1 (arm32-decode inst))
-                            (mv-nth 2 (arm32-decode inst))))
+       (implies (not (mv-nth 0 (,name inst)))
+                (good-instp (mv-nth 1 (,name inst))
+                            (mv-nth 2 (,name inst))))
        :hints (("Goal" :in-theory (enable ,name good-instp ,@(make-good-inst-names alist)))))))
 
 ;; This makes a decoder called arm32-decode that decodes a USB32 into an

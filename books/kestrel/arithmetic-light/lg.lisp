@@ -1,7 +1,7 @@
 ; Base-2 integer logarithm
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,9 +26,11 @@
 (local (include-book "floor"))
 
 (defthm lg-of-expt
-  (implies (natp x)
-           (equal (lg (expt 2 x))
-                  x))
+  (implies (integerp n)
+           (equal (lg (expt 2 n))
+                  (if (natp n)
+                      n
+                    -1)))
   :hints (("Goal" :in-theory (enable lg))))
 
 ;; (defthmd lg-of-both-sides

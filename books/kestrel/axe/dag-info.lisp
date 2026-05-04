@@ -1,7 +1,7 @@
 ; Computing information and statistics about DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -228,6 +228,6 @@
                           print-sizep)
           (value :invisible)))
 
-;; Prine info about the given DAG.  The DAG argument is evaluated.
+;; Print info about the given DAG.  The DAG argument is evaluated.
 (defmacro dag-info (dag &key (print-sizep 'nil))
   `(dag-info-fn ,dag ',dag ,print-sizep state))

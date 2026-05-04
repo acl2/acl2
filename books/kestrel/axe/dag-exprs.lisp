@@ -99,15 +99,27 @@
   :hints (("Goal" :expand ((nth 1 (cdr (cdr (dargs expr))))
                            (nth 2 (cdr (dargs expr)))
                            (nth 3 (dargs expr)))
-           :in-theory (enable nth))))
+                  :in-theory (enable nth))))
 
-;; todo: should these go to nth?
-(defun-inline darg1 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 1 (len (dargs x)))))) (first (dargs x)))
-(defun-inline darg2 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 2 (len (dargs x)))))) (second (dargs x)))
-(defun-inline darg3 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 3 (len (dargs x)))))) (third (dargs x)))
-(defun-inline darg4 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 4 (len (dargs x)))))) (fourth (dargs x)))
-(defun-inline darg5 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 5 (len (dargs x)))))) (fifth (dargs x)))
-(defun-inline darg6 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 6 (len (dargs x)))))) (sixth (dargs x)))
+(local
+ (defthmd nth-opener
+   (implies (and (syntaxp (quotep n))
+                 (natp n))
+            (equal (nth n l)
+                   (if (endp l)
+                       nil
+                     (if (zp n)
+                         (car l)
+                       (nth (- n 1) (cdr l))))))
+   :hints (("Goal" :in-theory (enable nth)))))
+
+;; We use nth in the :logic part since we prefer that normal form for accessing individual dargs.
+(defun-inline darg1 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 1 (len (dargs x)))) :guard-hints (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 0 (dargs x)) :exec (first (dargs x))))
+(defun-inline darg2 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 2 (len (dargs x)))) :guard-hints  (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 1 (dargs x)) :exec (second (dargs x))))
+(defun-inline darg3 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 3 (len (dargs x)))) :guard-hints  (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 2 (dargs x)) :exec (third (dargs x))))
+(defun-inline darg4 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 4 (len (dargs x)))) :guard-hints  (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 3 (dargs x)) :exec (fourth (dargs x))))
+(defun-inline darg5 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 5 (len (dargs x)))) :guard-hints  (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 4 (dargs x)) :exec (fifth (dargs x))))
+(defun-inline darg6 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 6 (len (dargs x)))) :guard-hints  (("Goal" :in-theory (enable nth-opener))))) (mbe :logic (nth 5 (dargs x)) :exec (sixth (dargs x))))
 
 ;; Now that dargs has been defined, we redefine dag-function-call-exprp so that
 ;; its expansion mentions dargs instead of fargs.

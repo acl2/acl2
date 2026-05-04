@@ -1,7 +1,7 @@
 ; JVM methods, including the method-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,6 +21,9 @@
 ;(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system) ; todo: just include the def?
 (local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
+
+(local (in-theory (disable strip-cars)))
 
 (local
  (defthm keyword-listp-forward-to-true-listp
@@ -36,7 +39,7 @@
 
 (in-theory (disable ;acl2::member-of-cons
                     ;acl2::subsetp-car-member
-                    acl2::MEMBER-EQUAL)) ;for speed
+                    member-EQUAL)) ;for speed
 
 
 ;; Note that method-namep is defined in instructions.lisp
@@ -79,60 +82,158 @@
            (pcp (+ pc2 pc1)))
   :hints (("Goal" :in-theory (enable pcp))))
 
+(defconst *program-enders*
+  '(:ret :return :areturn :ireturn :freturn :dreturn :lreturn :athrow :goto))
 
-
-;fixme check that the pcs increment correctly for each instruction
 ;fixme check that relative jumps are in bounds (or at least don't go negative, which may be enough for now to show the PC is a natp)
-(defund jvm-instructions-okayp (program valid-pcs)
-  (declare (xargs :guard (and (true-listp valid-pcs)
-                              (acl2::all-pcp valid-pcs))))
+;; PROGRAM is a list of (<pc> . <inst>) pairs
+;; VALID-PCS is all the valid PCs in the current method (allowable jump targets)
+;; todo: check that the last inst is a return?
+(defund method-programp-aux (program next-pc valid-pcs)
+  (declare (xargs :guard (and (pcp next-pc)
+                              (true-listp valid-pcs)
+                              (all-pcp valid-pcs))
+                  :guard-hints (("Goal" :in-theory (enable pcp acl2::acl2-numberp-when-natp)))))
   (if (atom program)
-      (equal program nil)
+      (null program)
     (let* ((entry (first program)))
       (and (consp entry)
            (let* ((pc (car entry))
                   (inst (cdr entry)))
-             (and (pcp pc)
+             (and (equal pc next-pc)
+                  (instructionp inst)
                   (jvm-instruction-okayp inst pc valid-pcs)
-                  (jvm-instructions-okayp (rest program) valid-pcs)))))))
+                  (if (not (member-eq (instruction-opcode inst) *program-enders*))
+                      (consp (rest program)) ; there are more instrs unless this one is a return
+                    t)
+                  (method-programp-aux (rest program) (+ (inst-len inst) next-pc) valid-pcs)))))))
 
-(defthm alistp-when-jvm-instructions-okayp
-  (implies (jvm-instructions-okayp program valid-pcs)
+(defthm alistp-when-method-programp-aux
+  (implies (method-programp-aux program next-pc valid-pcs)
            (alistp program))
-  :hints (("Goal" :in-theory (enable jvm-instructions-okayp alistp))))
+  :hints (("Goal" :in-theory (enable method-programp-aux alistp))))
 
-(defthm integer-listp-of-strip-cars-when-jvm-instructions-okayp
-  (implies (jvm-instructions-okayp program valid-pcs)
-           (integer-listp (strip-cars program)))
-  :hints (("Goal" :in-theory (enable jvm-instructions-okayp strip-cars))))
+(defthm integer-listp-of-strip-cars-when-method-programp-aux
+  (implies (and (method-programp-aux program next-pc valid-pcs)
+                (pcp next-pc))
+           (all-pcp (strip-cars program)))
+  :hints (("Goal" :in-theory (enable method-programp-aux strip-cars all-pcp))))
 
-;fixme should this have a guard of true-list?
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
-(defun increasing-pcsp (pcs prev-pc)
-  (declare (xargs :guard (and (true-listp pcs)
-                              (pcp prev-pc)
-                              (acl2::all-pcp pcs))))
-  (if (endp pcs)
+(local
+ (defthm method-programp-aux-key-property
+   (implies (and (method-programp-aux program first-pc valid-pcs)
+                 (member-equal pc (strip-cars program))
+                 (not (member-equal (instruction-opcode (lookup-eq pc program)) *program-enders*)))
+            (member-equal (+ pc (inst-len (lookup-equal pc program)))
+                          (strip-cars program)))
+   :hints (("Goal" :induct (method-programp-aux program first-pc valid-pcs)
+                   :expand ((strip-cars (cdr program))
+                            (method-programp-aux program (car (car program))
+                                                    valid-pcs)
+                            (member-equal pc (strip-cars program))
+                            (strip-cars program))
+                   :in-theory (enable method-programp-aux ;lookup-equal assoc-equal ;jvm-instruction-okayp
+                                      strip-cars
+                                      )))))
+
+;; (thm
+;;  (implies (and (method-programp-aux program start-pc valid-pcs)
+;;                (member-equal pc (strip-cars program)))
+;;           (<= (caar program) pc))
+;;  :hints (("Goal" :in-theory (enable method-programp-aux strip-cars))))
+
+(defund ascendingp (vals)
+  (declare (xargs :guard (integer-listp vals)))
+  (if (endp vals)
       t
-    (and (pc< prev-pc (first pcs))
-         (increasing-pcsp (rest pcs) (first pcs)))))
+    (if (endp (rest vals))
+        t
+      (and (< (first vals) (first (rest vals)))
+           (ascendingp (rest vals))))))
+
+(defthm ascendingp-of-strip-cars-when-method-programp-aux
+  (implies (method-programp-aux program start-pc valid-pcs)
+           (ascendingp (strip-cars program)))
+  :hints (("Goal" :expand (method-programp-aux (cdr program)
+                                               (+ (car (car program))
+                                                  (inst-len (cdr (car program))))
+                                               valid-pcs)
+                  :in-theory (enable method-programp-aux ascendingp strip-cars))))
+
+(defthm jvm-instruction-okayp-of-lookup-equal-when-method-programp-aux
+  (implies (and (method-programp-aux program start-pc valid-pcs)
+                (<= start-pc pc)
+                (member-equal pc (strip-cars program)))
+           (jvm-instruction-okayp (lookup-equal pc program) pc valid-pcs))
+  :hints (("Goal" :in-theory (enable method-programp-aux lookup-equal strip-cars))))
+
+(defthm instructionp-of-lookup-equal-when-method-programp-aux
+  (implies (and (method-programp-aux program start-pc valid-pcs)
+                (<= start-pc pc)
+                (member-equal pc (strip-cars program)))
+           (instructionp (lookup-equal pc program)))
+  :hints (("Goal" :in-theory (enable method-programp-aux lookup-equal strip-cars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: constrain to only apply to non-native methods?  should always be preceded by a check?
+;; Recognizes the code for a method, a non-empty sequence of (<pc> . <inst>) pairs.
 (defund method-programp (program)
   (declare (xargs :guard t))
-  (and (alistp program)
-       (let ((pcs (strip-cars program)))
-         (and (acl2::all-pcp pcs)
-              (consp program)        ;the program cannot be empty
-              (eql 0 (first pcs)) ;the first instruction should be at PC 0
-              (increasing-pcsp (rest pcs) 0)
-              (jvm-instructions-okayp program pcs)))))
+  (and (consp program) ; the program cannot be empty
+       (alistp program) ; needed for strip-cars ; todo: separate out the valid-pcs check from the rest?
+       (let ((valid-pcs (strip-cars program)))
+         (and (all-pcp valid-pcs) ; for the guard of method-programp-aux
+              ;; the first instruction should be at PC 0:
+              (method-programp-aux program 0 valid-pcs)))))
+
+;; lets us show the next instruction is in the program
+(defthm method-programp-key-property
+  (implies (and (method-programp program)
+                (member-equal pc (strip-cars program))
+                (not (member-equal (instruction-opcode (lookup-eq pc program)) *program-enders*)))
+           (member-equal (+ pc (inst-len (lookup-eq pc program)))
+                         (strip-cars program)))
+  :hints (("Goal" :in-theory (enable method-programp))))
+
+(defthm instructionp-of-lookup-equal-when-method-programp
+  (implies (and (method-programp program)
+                (natp pc) ;drop?
+                (member-equal pc (strip-cars program)))
+           (instructionp (lookup-equal pc program)))
+  :hints (("Goal" :in-theory (enable method-programp))))
 
 ;todo: slow?
 (defthm alistp-when-method-programp
   (implies (method-programp program)
            (alistp program))
   :hints (("Goal" :in-theory (enable method-programp alistp))))
+
+(defthmd eqlable-listp-when-all-pcp
+  (implies (all-pcp pcs)
+           (equal (eqlable-listp pcs)
+                  (true-listp pcs)))
+  :hints (("Goal" :in-theory (enable eqlable-listp all-pcp))))
+
+(defthm eqlable-listp-of-strip-cars-when-method-programp
+  (implies (method-programp program)
+           (eqlable-listp (strip-cars program)))
+  :hints (("Goal" :in-theory (e/d (method-programp eqlable-listp-when-all-pcp)
+                                  (integer-listp-of-strip-cars-when-method-programp-aux)))))
+
+(local
+ (defthm eqlable-alistp-when-alistp-and-all-pcp-of-strip-cars
+   (implies (and (alistp x)
+                 (all-pcp (strip-cars x)))
+            (eqlable-alistp x))
+   :hints (("Goal" :in-theory (enable all-pcp strip-cars)))))
+
+(defthm eqlable-alistp-when-method-programp
+  (implies (method-programp x)
+           (eqlable-alistp x))
+  :hints (("Goal" :in-theory (enable method-programp))))
 
 (defun get-pcs-from-program (program)
   (declare (xargs :guard (method-programp program)))
@@ -145,6 +246,8 @@
 (defthm method-programp-of-empty-program
   (method-programp (empty-program)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun exception-table-entryp (entry)
   (declare (xargs :guard t))
   (and (= 4 (len entry))
@@ -155,18 +258,17 @@
            (class-namep (fourth entry))) ;exception "type"
        ))
 
-;;move to jvm package!
-(defun acl2::all-exception-table-entryp (x)
+(defun all-exception-table-entryp (x)
   (declare (xargs :guard t))
   (if (atom x)
       t
       (and (jvm::exception-table-entryp (first x))
-           (acl2::all-exception-table-entryp (rest x)))))
+           (all-exception-table-entryp (rest x)))))
 
 (defund exception-tablep (table)
   (declare (xargs :guard t))
   (and (true-listp table)
-       (acl2::all-exception-table-entryp table)))
+       (all-exception-table-entryp table)))
 
 (defund local-variable-table-entryp (entry)
   (declare (xargs :guard t))
@@ -230,7 +332,7 @@
   :hints (("Goal" :in-theory (enable local-variable-tablep))))
 
 ;returns (list name type) for the local, or nil
-(defund acl2::lookup-in-local-variable-table (localnum pc local-variable-table)
+(defund lookup-in-local-variable-table (localnum pc local-variable-table)
   (declare (xargs :guard (and (local-variable-tablep local-variable-table)
                               (natp localnum)
                               (natp pc))
@@ -248,14 +350,14 @@
                (<= start-pc pc)
                (<= pc end-pc))
           (list name type)
-        (acl2::lookup-in-local-variable-table localnum pc (rest local-variable-table))))))
+        (lookup-in-local-variable-table localnum pc (rest local-variable-table))))))
 
 (defthm stringp-of-car-of-lookup-in-local-variable-table
   (implies (and (local-variable-tablep local-variable-table)
-                (acl2::lookup-in-local-variable-table localnum pc local-variable-table))
-           (stringp (car (acl2::lookup-in-local-variable-table localnum pc local-variable-table))))
+                (lookup-in-local-variable-table localnum pc local-variable-table))
+           (stringp (car (lookup-in-local-variable-table localnum pc local-variable-table))))
   :hints (("Goal" :in-theory (enable local-variable-tablep
-                                     acl2::lookup-in-local-variable-table
+                                     lookup-in-local-variable-table
                                      local-variable-table-entryp))))
 
 ;;The keys in the method-info alist must be in this list:
@@ -277,7 +379,7 @@
   (declare (xargs :guard t))
   (and (alistp method-info)
        (acl2::subsetp-eq (strip-cars method-info) *method-info-keys*)
-       (let ((access-flags (acl2::lookup-eq :access-flags method-info)))
+       (let ((access-flags (lookup-eq :access-flags method-info)))
          (and (acl2::keyword-listp access-flags)
               (acl2::no-duplicatesp access-flags)
               (acl2::subsetp-eq access-flags '(:acc_public
@@ -293,18 +395,18 @@
                                                :acc_strict
                                                :acc_synthetic))
               ;; The program is a well-formed program iff the method is not native or abstract (in either case, it would have no program).
-              (if (and (not (acl2::member-eq :acc_native access-flags))
-                       (not (acl2::member-eq :acc_abstract access-flags)))
-                  (method-programp (acl2::lookup-eq :program method-info))
-                (eq :no-program  (acl2::lookup-eq :program method-info)))
-              (return-typep (acl2::lookup-eq :return-type method-info))
-              (true-listp (acl2::lookup-eq :parameter-types method-info))
-              (all-typep (acl2::lookup-eq :parameter-types method-info))
-              (let ((max-locals (acl2::lookup-eq :max-locals method-info)))
+              (if (and (not (member-eq :acc_native access-flags))
+                       (not (member-eq :acc_abstract access-flags)))
+                  (method-programp (lookup-eq :program method-info))
+                (eq :no-program  (lookup-eq :program method-info)))
+              (return-typep (lookup-eq :return-type method-info))
+              (true-listp (lookup-eq :parameter-types method-info))
+              (all-typep (lookup-eq :parameter-types method-info))
+              (let ((max-locals (lookup-eq :max-locals method-info)))
                 (or (not max-locals) (natp max-locals)))
-              (local-variable-tablep (acl2::lookup-equal :local-variable-table method-info))
+              (local-variable-tablep (lookup-equal :local-variable-table method-info))
               ;; fixme something about the line-number-table
-              (exception-tablep (acl2::lookup-eq :exception-table method-info))))))
+              (exception-tablep (lookup-eq :exception-table method-info))))))
 
 ;nil should not be a method-info, so that we can use it to indicate failure (failure to look up a method's info)
 (defthm not-method-infop-of-nil
@@ -318,7 +420,7 @@
 
 (defthm method-infop-forward-to-true-listp-of-lookup-eq
   (implies (method-infop method-info)
-           (true-listp (acl2::lookup-equal :access-flags method-info)))
+           (true-listp (lookup-equal :access-flags method-info)))
   :rule-classes ((:forward-chaining))
   :hints (("Goal" :in-theory (enable method-infop))))
 
@@ -328,14 +430,19 @@
   :rule-classes ((:forward-chaining))
   :hints (("Goal" :in-theory (enable method-infop))))
 
+(defthmd alistp-when-method-infop
+  (implies (method-infop method-info)
+           (alistp method-info))
+  :hints (("Goal" :in-theory (enable method-infop))))
+
 (defthm exception-tablep-of-lookup-equal-of-exception-table
   (implies (method-infop method-info)
-           (exception-tablep (acl2::lookup-equal :exception-table method-info)))
+           (exception-tablep (lookup-equal :exception-table method-info)))
   :hints (("Goal" :in-theory (enable method-infop))))
 
 (defund method-access-flags (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::lookup-eq :access-flags method-info))
+  (lookup-eq :access-flags method-info))
 
 (defthm true-listp-of-method-access-flags-forward
   (implies (method-infop method-info)
@@ -347,35 +454,35 @@
 
 (defun method-publicp (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_public (method-access-flags method-info)))
+  (member-eq :acc_public (method-access-flags method-info)))
 
 (defun method-privatep (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_private (method-access-flags method-info)))
+  (member-eq :acc_private (method-access-flags method-info)))
 
 (defun method-protectedp (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_protected (method-access-flags method-info)))
+  (member-eq :acc_protected (method-access-flags method-info)))
 
 (defun method-synchronizedp (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_synchronized (method-access-flags method-info)))
+  (member-eq :acc_synchronized (method-access-flags method-info)))
 
 (defun method-staticp (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_static (method-access-flags method-info)))
+  (member-eq :acc_static (method-access-flags method-info)))
 
 (defun method-nativep (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_native (method-access-flags method-info)))
+  (member-eq :acc_native (method-access-flags method-info)))
 
 (defun method-abstractp (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::member-eq :acc_abstract (method-access-flags method-info)))
+  (member-eq :acc_abstract (method-access-flags method-info)))
 
-(defun method-program (method-info)
+(defund method-program (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::lookup-eq :program method-info))
+  (lookup-eq :program method-info))
 
 (defthm method-program-of-acons
   (equal (method-program (acons key val alist))
@@ -386,7 +493,7 @@
 
 (defun exception-table (method-info)
   (declare (xargs :guard (method-infop method-info)))
-  (acl2::lookup-eq :exception-table method-info))
+  (lookup-eq :exception-table method-info))
 
 (defthm method-programp-of-method-program
   (implies (and (method-infop method-info)
@@ -416,6 +523,30 @@
               (method-descriptorp method-descriptor)))
   :hints (("Goal" :in-theory (enable method-designatorp make-method-designator))))
 
+(defthm method-designatorp-forward-to-length-claim
+  (implies (method-designatorp method-designator)
+           (equal 3 (len method-designator)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable method-designatorp))))
+
+(defthm class-namep-of-car-when-method-designatorp
+  (implies (method-designatorp x)
+           (class-namep (car x)))
+  :hints (("Goal" :in-theory (enable method-designatorp))))
+
+(defthm method-namep-of-cadr-when-method-designatorp
+  (implies (method-designatorp x)
+           (method-namep (cadr x)))
+  :hints (("Goal" :in-theory (enable method-designatorp))))
+
+;todo: make named accesors for these
+(defthm method-descriptorp-of-caddr-when-method-designatorp
+  (implies (method-designatorp x)
+           (method-descriptorp (caddr x)))
+  :hints (("Goal" :in-theory (enable method-designatorp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;Make a dummy method with the given program.  Makes it static so we don't have
 ;to provide an instance.
 (defun make-dummy-method-info (program)
@@ -433,19 +564,19 @@
 (defthm method-infop-of-make-dummy-method-info
   (implies (method-programp program)
            (method-infop (make-dummy-method-info program)))
-  :hints (("Goal" :in-theory (enable method-infop))))
+  :hints (("Goal" :in-theory (enable method-infop strip-cars))))
 
 (defthm true-listp-of-lookup-equal-of-parameter-type-when-method-infop
   (implies (method-infop method-info)
-           (true-listp (acl2::lookup-equal :parameter-types method-info)))
+           (true-listp (lookup-equal :parameter-types method-info)))
   :hints (("Goal" :in-theory (enable method-infop))))
 
 (defthm all-typep-of-lookup-equal-of-parameter-type-when-method-infop
   (implies (method-infop method-info)
-           (all-typep (acl2::lookup-equal :parameter-types method-info)))
+           (all-typep (lookup-equal :parameter-types method-info)))
   :hints (("Goal" :in-theory (enable method-infop))))
 
 (defthm local-variable-tablep-of-lookup-equal-of-parameter-type-when-method-infop
   (implies (method-infop method-info)
-           (local-variable-tablep (acl2::lookup-equal :local-variable-table method-info)))
+           (local-variable-tablep (lookup-equal :local-variable-table method-info)))
   :hints (("Goal" :in-theory (enable method-infop))))

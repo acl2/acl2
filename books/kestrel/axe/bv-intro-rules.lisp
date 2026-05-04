@@ -1,7 +1,7 @@
 ; Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -31,7 +31,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
-;(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
+;(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
 ;(include-book "known-booleans")
 (local (include-book "kestrel/bv/intro" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
@@ -130,16 +130,14 @@
                 (unsigned-byte-p xsize y)
                 (unsigned-byte-p-forced xsize x))
            (equal (mod x y)
-                  (bvmod xsize x y)))
-  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1 (size xsize)))))
+                  (bvmod xsize x y))))
 
 (defthmd mod-becomes-bvmod-axe-bind-free-arg2
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p ysize x)
                 (unsigned-byte-p-forced ysize y))
            (equal (mod x y)
-                  (bvmod ysize x y)))
-  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1 (size xsize)))))
+                  (bvmod ysize x y))))
 
 ;drop?
 (defthmd mod-becomes-bvmod-axe-bind-free-and-bind-free
@@ -362,7 +360,7 @@
 ;; Y is an obvious BV, X has an unsigned-byte-p hyp.
 ;cheap, requires both x and y to be BVs (possibly constants)
 (defthmd <-becomes-bvlt-axe-free-and-bind-free
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize axe-array) '(ysize))
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p xsize x) ; free var
                 (unsigned-byte-p-forced ysize y))
            (equal (< x y)

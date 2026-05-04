@@ -43,7 +43,7 @@
     "This type does not distinguish between different
      syntaxes that can be used to create a unary operator;
      for example, @('!x') and @('x.not()') both create an
-     expression of kind @(':unary) with op @('(unop-not)').
+     expression of kind @(':unary') with op @('(unop-not)').
      This is because these two syntaxes have the same
      meaning.  However, if we wish to capture such
      information we could do that here.")
@@ -87,7 +87,7 @@
     "This type does not distinguish between different
      syntaxes that can be used to create a binary operator;
      for example, @('a>b') and @('a.gt(b)') both create an
-     expression of kind @(':binary) with op @('(binop-gt)').
+     expression of kind @(':binary') with op @('(binop-gt)').
      This is because these two syntaxes have the same
      meaning.  However, if we wish to capture such
      information we could do that here.")

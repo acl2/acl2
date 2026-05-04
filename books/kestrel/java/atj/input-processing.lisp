@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -172,7 +172,8 @@
               (if (= (len target-prims) 1)
                   (msg "the function ~x0 cannot be specified as target"
                        (car target-prims))
-                (msg "the functions ~&0 cannot be specified as targets")))))
+                (msg "the functions ~&0 cannot be specified as targets"
+                     target-prims)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,7 +191,7 @@
      and that it is consistent with @(':deep') and @(':guards').
      The actual checks on the functions to translate,
      if @(':no-aij-types') is @('t'),
-     is performed elsewhere."))
+     are performed elsewhere."))
   (b* (((er &) (ensure-value-is-boolean$ no-aij-types
                                          "The :NO-AIJ-TYPES input"
                                          t
@@ -405,7 +406,7 @@
    (xdoc::p
     "This is some sub-term @('in') of a term @('(fn ... in ...)')
      specified in the @(':tests') input.
-     The requirements on @('in'), as expained in the user documentation,
+     The requirements on @('in'), as explained in the user documentation,
      depend on the @(':deep') and @(':guards') inputs,
      as well as on the ATJ type assigned to
      the parameter of @('fn') that corresponds to @('in'):
@@ -1040,7 +1041,7 @@
     :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
                  (new-worklist-chk symbol-listp :hyp :guard)
                  (new-called-fns symbol-listp :hyp :guard)
-                 (unsuppported-return-last? booleanp))
+                 (unsupported-return-last? booleanp))
     (b* (((when (member-eq (pseudo-term-kind term)
                            '(:null :var :quote)))
           (mv worklist-gen worklist-chk called-fns nil))
@@ -1059,7 +1060,7 @@
                    (b* (((mv worklist-gen
                              worklist-chk
                              called-fns
-                             unsuppported-return-last?)
+                             unsupported-return-last?)
                          (atj-collect-fns-in-term (third args)
                                                   nil
                                                   worklist-gen
@@ -1069,7 +1070,7 @@
                                                   collected-chk
                                                   deep$
                                                   guards$))
-                        ((when unsuppported-return-last?)
+                        ((when unsupported-return-last?)
                          (mv worklist-gen worklist-chk called-fns t)))
                      (atj-collect-fns-in-term (second args)
                                               gen?
@@ -1083,7 +1084,7 @@
                  (b* (((mv worklist-gen
                            worklist-chk
                            called-fns
-                           unsuppported-return-last?)
+                           unsupported-return-last?)
                        (atj-collect-fns-in-term (second args)
                                                 nil
                                                 worklist-gen
@@ -1093,7 +1094,7 @@
                                                 collected-chk
                                                 deep$
                                                 guards$))
-                      ((when unsuppported-return-last?)
+                      ((when unsupported-return-last?)
                        (mv worklist-gen worklist-chk called-fns t)))
                    (atj-collect-fns-in-term (third args)
                                             gen?
@@ -1108,7 +1109,7 @@
                (b* (((mv worklist-gen
                          worklist-chk
                          called-fns
-                         unsuppported-return-last?)
+                         unsupported-return-last?)
                      (atj-collect-fns-in-term (second args)
                                               nil
                                               worklist-gen
@@ -1118,7 +1119,7 @@
                                               collected-chk
                                               deep$
                                               guards$))
-                    ((when unsuppported-return-last?)
+                    ((when unsupported-return-last?)
                      (mv worklist-gen worklist-chk called-fns t)))
                  (atj-collect-fns-in-term (third args)
                                           gen?
@@ -1184,9 +1185,9 @@
     :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
                  (new-worklist-chk symbol-listp :hyp :guard)
                  (new-called-fns symbol-listp :hyp :guard)
-                 (unsuppported-return-last? booleanp))
+                 (unsupported-return-last? booleanp))
     (b* (((when (endp terms)) (mv worklist-gen worklist-chk called-fns nil))
-         ((mv worklist-gen worklist-chk called-fns unsuppported-return-last?)
+         ((mv worklist-gen worklist-chk called-fns unsupported-return-last?)
           (atj-collect-fns-in-term (car terms)
                                    gen?
                                    worklist-gen
@@ -1196,7 +1197,7 @@
                                    collected-chk
                                    deep$
                                    guards$))
-         ((when unsuppported-return-last?)
+         ((when unsupported-return-last?)
           (mv worklist-gen worklist-chk called-fns t)))
       (atj-collect-fns-in-terms (cdr terms)
                                 gen?
@@ -1368,7 +1369,7 @@
         (if gen?
             (mv (cons fn collected-gen) collected-chk)
           (mv collected-gen (cons fn collected-chk))))
-       ((mv worklist-gen worklist-chk called-fns unsuppported-return-last?)
+       ((mv worklist-gen worklist-chk called-fns unsupported-return-last?)
         (atj-collect-fns-in-term body
                                  gen?
                                  worklist-gen
@@ -1378,7 +1379,7 @@
                                  collected-chk
                                  deep$
                                  guards$))
-       ((when unsuppported-return-last?)
+       ((when unsupported-return-last?)
         (er-soft+ ctx t nil
                   "The function RETURN-LAST is used ~
                    with an unsupported first argument; ~
@@ -1561,8 +1562,8 @@
        (ignore-whitelist (cdr (assoc-eq :ignore-whitelist options)))
        (verbose (cdr (assoc-eq :verbose options)))
        ((er &) (atj-process-targets targets deep guards ctx state))
-       ((er &) (ensure-value-is-boolean$ deep "The :DEEP intput" t nil))
-       ((er &) (ensure-value-is-boolean$ guards "The :GUARDS intput" t nil))
+       ((er &) (ensure-value-is-boolean$ deep "The :DEEP input" t nil))
+       ((er &) (ensure-value-is-boolean$ guards "The :GUARDS input" t nil))
        ((er &) (atj-process-no-aij-types no-aij-types deep guards ctx state))
        ((er &) (atj-process-java-package java-package ctx state))
        ((er java-class$) (atj-process-java-class java-class ctx state))

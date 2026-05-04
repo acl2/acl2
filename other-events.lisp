@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -1030,7 +1030,7 @@
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
 
-; The following became necessary after Version_8.2, when we starting storing a
+; The following became necessary after Version_8.2, when we started storing a
 ; new 'recognizer-alist property on symbols (in the primordial-world) in place
 ; of using a world global for the recognizer-alist.
 
@@ -1112,7 +1112,7 @@
 ; whether a property should be set in end-prehistoric-world rather than here.
 ; But be careful; through Version_8.3 we had that issue in mind when we called
 ; a function to initialize invariant-risk for certain function symbols (see
-; *boot-strap-invariant-risk-alist*)a at the end of the boot-strap, in
+; *boot-strap-invariant-risk-alist*) at the end of the boot-strap, in
 ; end-prehistoric-world, instead of here.  But then the 'invariant-risk
 ; property was never set for aset1-lst, even though it calls aset1, which has
 ; invariant-risk.
@@ -1450,8 +1450,7 @@
 ;   :rule-classes nil)
 
          (er soft ctx
-             "The empty string is not a legal package name for defpkg."
-             name))
+             "The empty string is not a legal package name for defpkg."))
         ((not (equal (string-upcase name) name))
          (er soft ctx
              "~x0 is not a legal package name for defpkg, which disallows ~
@@ -1459,7 +1458,7 @@
              name))
         ((equal name "LISP")
          (er soft ctx
-             "~x0 is disallowed as a a package name for defpkg, because this ~
+             "~x0 is disallowed as a package name for defpkg, because this ~
               package name is used under the hood in some Common Lisp ~
               implementations."
              name))
@@ -3111,27 +3110,24 @@
   nil)
 
 (defmacro incompatible (rune1 rune2 &optional strictp)
-  (let ((active-fn (if strictp 'active-or-non-runep 'active-runep)))
-    (cond ((and (consp rune1)
-                (consp (cdr rune1))
-                (symbolp (cadr rune1))
-                (consp rune2)
-                (consp (cdr rune2))
-                (symbolp (cadr rune2)))
+  (let ((active-fn (if strictp 'active-or-non-runep 'active-runep))
+        (caller (if strictp 'incompatible! 'incompatible)))
+    (cond ((and (weak-runep rune1)
+                (weak-runep rune2))
 
 ; The above condition is similar to conditions in runep and active-runep.
 
            `(not (and (,active-fn ',rune1)
                       (,active-fn ',rune2))))
-          (t (er hard 'incompatible
+          (t (er hard caller
                  "Each argument to ~x0 should have the shape of a rune, ~
-                  (:KEYWORD BASE-SYMBOL), unlike ~x1."
-                 'incompatible
-                 (or (and (consp rune1)
-                          (consp (cdr rune1))
-                          (symbolp (cadr rune1))
-                          rune2)
-                     rune1))))))
+                  (:KEYWORD BASE-SYMBOL) or (:KEYWORD BASE-SYMBOL . N), as ~
+                  defined by ~x1.  But ~&2 ~#2~[does~/do~] not meet this ~
+                  criterion."
+                 caller
+                 'weak-runep
+                 (append (if (weak-runep rune1) nil (list rune1))
+                         (if (weak-runep rune2) nil (list rune2))))))))
 
 (defmacro incompatible! (rune1 rune2)
   `(incompatible ,rune1 ,rune2 t))
@@ -6139,7 +6135,7 @@
 ; This is the second pass of the encapsulate event.  We assume that the
 ; installed world in state is wrld1 of the encapsulate essay.  We assume that
 ; chk-acceptable-encapsulate1 has approved of wrld1 and
-; chk-acceptable-encapsulate2 has approved of the wrld2 generated in with
+; chk-acceptable-encapsulate2 has approved of the wrld2 generated with
 ; ld-skip-proofsp nil.  Insigs is the internal form signatures list.  We either
 ; cause an error and return a state in which wrld1 is current or else we return
 ; normally and return a state in which wrld3 of the essay is current.  In the
@@ -8511,8 +8507,8 @@
 ; encapsulation quickly if we process one while skipping proofs.  That is,
 ; suppose the user has produced a script of some session, including some
 ; encapsulations, and the whole thing has been processed with ld-skip-proofsp
-; nil, once upon a time.  Now the user wants to assume that script and and
-; continue -- i.e., he is loading a "book".
+; nil, once upon a time.  Now the user wants to assume that script and continue
+; -- i.e., he is loading a "book".
 
 ; Suppose we hit the encapsulation when skipping proofs.  Suppose we are
 ; again in wrld1 (i.e., processing the previous events of this script
@@ -12969,8 +12965,8 @@
 ; This function writes out, and returns, a certificate file.  We first give
 ; that file a temporary name, based originally on the expectation that
 ; afterwards, compilation is performed and then the certificate file is renamed
-; to its suitable .cert name.  This way, we expect that that the compiled file
-; will have a write date that is later than (or at least, not earlier than) the
+; to its suitable .cert name.  This way, we expect that the compiled file will
+; have a write date that is later than (or at least, not earlier than) the
 ; write date of the certificate file; yet, we can be assured that "make"
 ; targets that depend on the certificate file's existence will be able to rely
 ; implicitly on the compiled file's existence as well.  After Version_4.3 we
@@ -15934,7 +15930,7 @@
                                   (value nil))
                                  (t (er soft ctx
                                         "Obtained non-zero exit status ~x0 ~
-                                         when attempting to touch file ~x0 ."
+                                         when attempting to touch file ~x1 ."
                                         status filename))))))
                 (t (value nil))))))))
 
@@ -17335,7 +17331,7 @@
   (cond ((and write-acl2x pcert)
          (er soft ctx
              "It is illegal to specify the writing  of a .acl2x file when a ~
-              non-nil value for :pcert (here, ~x1) is specified~@0."
+              non-nil value for :pcert (here, ~x0) is specified~@1."
              pcert
              (cond (pcert-env
                     " (even when the :pcert argument is supplied, as in this ~
@@ -19869,6 +19865,7 @@
                       ((or (eq key2 :hash-table)
                            (eq key2 :stobj-table))
                        (list* (defstobj-fnname field :boundp key2 nil)
+                              (defstobj-fnname field :keys key2 nil)
                               (defstobj-fnname field :accessor? key2 nil)
                               (defstobj-fnname field :remove key2 nil)
                               (defstobj-fnname field :count key2 nil)
@@ -20003,6 +20000,7 @@
                     t))
             (key2 (defstobj-fnname-key2 type))
             (boundp-name (defstobj-fnname field :boundp key2 renaming))
+            (keys-name (defstobj-fnname field :keys key2 renaming))
             (accessor?-name (defstobj-fnname field :accessor? key2
                               renaming))
             (remove-name (defstobj-fnname field :remove key2
@@ -20029,6 +20027,8 @@
               (eq key2 :stobj-table))
           (er-progn (chk-all-but-new-name boundp-name ctx
                                           'function wrld state)
+                    (chk-all-but-new-name keys-name ctx
+                                          'function wrld state)
                     (if (eq key2 :hash-table)
                         (chk-all-but-new-name accessor?-name ctx
                                               'function wrld state)
@@ -20054,6 +20054,7 @@
                                                   names))
                                           ((eq key2 :hash-table)
                                            (list* boundp-name
+                                                  keys-name
                                                   accessor?-name
                                                   remove-name
                                                   count-name
@@ -20062,6 +20063,7 @@
                                                   names))
                                           ((eq key2 :stobj-table)
                                            (list* boundp-name
+                                                  keys-name
                                                   remove-name
                                                   count-name
                                                   clear-name
@@ -20384,11 +20386,12 @@
                             field-template
                             :other))
              (boundp-name (nth 0 other))
-             (accessor?-name (nth 1 other))
-             (remove-name (nth 2 other))
-             (count-name (nth 3 other))
-             (clear-name (nth 4 other))
-             (init-name (nth 5 other)))
+             (keys-name (nth 1 other))
+             (accessor?-name (nth 2 other))
+             (remove-name (nth 3 other))
+             (count-name (nth 4 other))
+             (clear-name (nth 5 other))
+             (init-name (nth 6 other)))
         (cond
          (arrayp
           (append
@@ -20513,6 +20516,14 @@
                                                       nil)
                                 :verify-guards t))
                 (consp (hons-assoc-equal k (nth ,n ,var))))
+               (,keys-name
+                (,var)
+                (declare (xargs :guard ,(common-guard 'equal ; avoid k arg
+                                                      var top-recog
+                                                      nil)
+                                :verify-guards t))
+                (remove-adjacent-duplicates
+                 (merge-sort-lexorder (alist-keys (nth ,n ,var)))))
                ,@(and hashp ; skip this for a stobj-table
                       `((,accessor?-name
                          (k ,var)
@@ -20688,11 +20699,12 @@
                             field-template
                             :other))
              (boundp-fn (nth 0 other))
-             (accessor?-fn (nth 1 other))
-             (remove-fn (nth 2 other))
-             (count-fn (nth 3 other))
-             (clear-fn (nth 4 other))
-             (init-fn (nth 5 other)))
+             (keys-fn (nth 1 other))
+             (accessor?-fn (nth 2 other))
+             (remove-fn (nth 3 other))
+             (count-fn (nth 4 other))
+             (clear-fn (nth 5 other))
+             (init-fn (nth 6 other)))
         (put-stobjs-in-and-outs1
          name
          (cdr field-templates)
@@ -20742,36 +20754,38 @@
                     (putprop
                      boundp-fn 'stobjs-in (list nil name)
                      (putprop
+                      keys-fn 'stobjs-in (list name)
+                      (putprop
 ; Note that 'stobjs-out for acc-fn in the stobj-table case is placed further
 ; below.
-                      acc-fn 'stobjs-in (if (eq (car type) 'hash-table)
-                                            (list nil name)
+                       acc-fn 'stobjs-in (if (eq (car type) 'hash-table)
+                                             (list nil name)
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
-                                          (list nil name *stobj-table-stobj*))
-                      (putprop-unless
-                       acc-fn 'stobjs-out (list stobj-flg) '(nil)
-                       (putprop
-                        upd-fn 'stobjs-in
-                        (if (eq (car type) 'stobj-table)
-
-; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
-
-                            (list nil *stobj-table-stobj* name)
-                          (list nil stobj-flg name))
+                                           (list nil name *stobj-table-stobj*))
+                       (putprop-unless
+                        acc-fn 'stobjs-out (list stobj-flg) '(nil)
                         (putprop
-                         upd-fn 'stobjs-out (list name)
-                         (if (eq (car type) 'hash-table)
-                             (putprop
-                              accessor?-fn 'stobjs-in (list nil name)
-                              wrld)
+                         upd-fn 'stobjs-in
+                         (if (eq (car type) 'stobj-table)
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
-                           (putprop acc-fn 'stobjs-out
-                                    (list *stobj-table-stobj*)
-                                    wrld))))))))))))))))
+                             (list nil *stobj-table-stobj* name)
+                           (list nil stobj-flg name))
+                         (putprop
+                          upd-fn 'stobjs-out (list name)
+                          (if (eq (car type) 'hash-table)
+                              (putprop
+                               accessor?-fn 'stobjs-in (list nil name)
+                               wrld)
+
+; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
+
+                            (putprop acc-fn 'stobjs-out
+                                     (list *stobj-table-stobj*)
+                                     wrld)))))))))))))))))
           (t
            (let ((stobj-flg (if (eq type 'double-float)
                                 :df
@@ -20821,6 +20835,7 @@
 ; stobj-table updater      (nil ? name)       (name)
 ; array updater            (nil nil name)     (name)
 ; table boundp             (nil name)         (nil)
+; table keys               (name)             (nil)
 ; hash-table accessor?     (nil name)         (nil nil)
 ; table remove             (nil name)         (name)
 ; table count              (name)             (nil)
@@ -21866,7 +21881,7 @@
 ; Recalling that (ev+ u a_E A c) = (mv erp r_E c') by hypothesis, we can state
 ; our goal as follows.
 
-; (*)     r_E E-corresponds to r_L with respect to A and and s0.
+; (*)     r_E E-corresponds to r_L with respect to A and s0.
 
 ; Let s0$c be the foundational stobj name for s0 and make the following
 ; definitions.
@@ -24612,7 +24627,7 @@
       (er-let* ((recognizer0
 
 ; Since the call of chk-acceptable-defabsstobj requires st$ap, we need to
-; expand the recognizer here (rather than letting it getting expanded by
+; expand the recognizer here (rather than letting it get expanded by
 ; chk-acceptable-defabsstobj).  We really only need the :logic recognizer
 ; (st$ap) here, not the :exec recognizer, but we might as well do the full
 ; expansion of the recognizer function spec.
@@ -26069,12 +26084,11 @@
                  (or (eq (cadr notinline-tail) :fncall)
                      (and memo-entry
                           (er hard ctx
-                              "It is illegal to specify a value for ~
-                                      trace$ option :NOTINLINE other than ~
-                                      :FNCALL for a memoized function.  The ~
-                                      suggested trace spec for ~x0, which ~
-                                      specifies :NOTINLINE ~x0, is thus ~
-                                      illegal."
+                              "It is illegal to specify a value for trace$ ~
+                               option :NOTINLINE other than :FNCALL for a ~
+                               memoized function.  The suggested trace spec ~
+                               for ~x0, which specifies :NOTINLINE ~x1, is ~
+                               thus illegal."
                               fn
                               (cadr notinline-tail)))))
                 (memo-entry
@@ -33896,10 +33910,8 @@
 
 #+acl2-loop-only
 (defmacro defund (&rest def)
-  (declare (xargs :guard (and (true-listp def)
-                              (symbolp (car def))
-                              (symbol-listp (cadr def)))))
-
+; The weak guard enables helpful error reports from defun.
+  (declare (xargs :guard (true-listp def)))
   `(with-output
      :stack :push :off :all
      (progn (with-output :stack :pop (defun ,@def))
@@ -35240,8 +35252,7 @@
        ((and error-triple-p+ (car replaced-val))
         (er soft ctx
             "Evaluation failed: Result was of the form (mv t _ state).  See ~
-             :DOC error-triple."
-            (car replaced-val)))
+             :DOC error-triple."))
        (check (cond ((and (car stobjs-out)
                           (not (eq (car stobjs-out) :df)))
                      (er soft ctx
@@ -36270,7 +36281,7 @@
 ; unless and until there is a demonstrated need.
 
 ; For (memoize 'f :invoke 'g), must f and/or g be in logic mode and even
-; guard-verified?  Well, they must in be logic mode, because otherwise the
+; guard-verified?  Well, they must be in logic mode, because otherwise the
 ; necessary equality theorem won't exist.  We further require g to be
 ; guard-verified; otherwise we can't trust that the guard of f is sufficient to
 ; ensure a well-guarded call of g.  Should we also require f to be
@@ -36971,7 +36982,7 @@
 
 (defun old-and-new-event-data-fn (book-string name namep dir ctx state)
 
-; This function returns (old-event-data . new-event-date), where the car and
+; This function returns (old-event-data . new-event-data), where the car and
 ; cdr are event-data values (see :DOC get-event-data) that are intended to
 ; correspond, where new-event-data is the most recent event-data -- associated
 ; with name, if namep is true -- and old-event-data is intended to be the
@@ -37690,12 +37701,12 @@
 
 ; - Case: u is (with-local-stobj st body).  We skip the easy check that the
 ;   recursive call (cl-eval body a' gs') is coherent, where a' and gs' are as
-;   defined for this case of cl-eval, thus accommodating a new root note for
+;   defined for this case of cl-eval, thus accommodating a new root node for
 ;   local stobj st.  Then conclusion (a) follows from the inductive hypothesis,
 ;   which also gives us that the update of gs' from the recursive call
 ;   satisfies the disjointness specified by (C1).  Conclusion (b) also follows
 ;   from the inductive hypothesis; in particular, the update of gs from the
-;   original call satisfies (C1) since it is the same the update of gs' from
+;   original call satisfies (C1) since it is the same as the update of gs' from
 ;   the recursive call with one exception: the child stobj memories of the new
 ;   (local-stobj) node added to gs' disappear when finally updating gs.
 

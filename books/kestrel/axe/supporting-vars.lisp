@@ -1,7 +1,7 @@
 ; Computing the vars that support DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,7 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Extends ACC with the vars that support (any of the) the nodes in the WORKLIST.
+;; Extends ACC with the vars that support (any of) the nodes in the WORKLIST.
 ;; TODO: Can we avoid passing the steps-left, by following a standard worklist pattern?
 (defund vars-that-support-dag-nodes-aux (steps-left worklist dag-array-name dag-array dag-len done-array acc)
   (declare (xargs :guard (and (natp steps-left)
@@ -74,7 +74,7 @@
       nil
     (let* ((max-nodenum (maxelem nodenums))
            (max-steps (* 10 (+ 1 max-nodenum))) ;todo
-           (done-array (make-empty-array 'done-array (+ 1 max-nodenum))))
+           (done-array (new-array1 'done-array (+ 1 max-nodenum))))
       (vars-that-support-dag-nodes-aux max-steps nodenums dag-array-name dag-array dag-len done-array nil))))
 
 (defthm true-listp-of-vars-that-support-dag-nodes

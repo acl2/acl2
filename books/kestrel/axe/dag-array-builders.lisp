@@ -1,7 +1,7 @@
 ; Functions to create and extend dag-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -542,7 +542,7 @@
                  (:linear :trigger-terms ((mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))))
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array bounded-dag-constant-alistp))))
 
-;; shows that the new dag is good up through the returne node, at least
+;; shows that the new dag is good up through the returned node, at least
 ;; move up, but this depends on some rules about (mv-nth 3 ..).
 (defthm pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist) ; dag-variable-alist is a free var
@@ -760,9 +760,9 @@
 (defund empty-dag-array (slack-amount)
   (declare (xargs :guard (and (posp slack-amount)
                               (<= slack-amount *max-1d-array-length*))))
-  (mv (make-empty-array 'dag-array slack-amount)
+  (mv (new-array1 'dag-array slack-amount)
       0
-      (make-empty-array 'dag-parent-array slack-amount)
+      (new-array1 'dag-parent-array slack-amount)
       nil ; empty-dag-constant-alist ; todo: name that notion
       (empty-dag-variable-alist)))
 

@@ -1,7 +1,7 @@
 ; Rules about the JVM model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,26 +33,15 @@
 (local (in-theory (disable default-cdr
                            default-car
                            intersection-equal
-                           )))
+                           signed-byte-p
+                           mod
+                           acl2::logext)))
 
 ;(local (in-theory (disable acl2::NTH-OF-CDR))) ;looped!
 
 ;(local (in-theory (cons 'zp (disable mod))))
 
 ;(local (in-theory (disable ACL2::LOGAPP-0))) ;does forcing
-
-; Mappings
-
-(defthm assoc-equal-bind
-  (equal (assoc-equal key1 (bind key2 val alist))
-         (if (equal key1 key2)
-             (cons key1 val)
-           (assoc-equal key1 alist)))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
-
-(defthm bind-bind
-  (equal (bind x v (bind x w a))
-         (bind x v a)))
 
 ; Semi-Ground Terms
 
@@ -65,10 +54,11 @@
 
 (defthm run-of-cons
   (equal (run (cons th sched) s)
-         (if (bound-in-alistp th (thread-table s))
+         (if (and (bound-in-alistp th (thread-table s))
+                  (call-stack-non-emptyp th s))
              (run sched (step th s))
            (run sched s)))
-  :hints (("Goal" :in-theory (e/d (run)( step)))))
+  :hints (("Goal" :in-theory (e/d (run) (step step-opener)))))
 
 (defthm run-append
   (equal (run (append sched1 sched2) s)
@@ -122,82 +112,8 @@
          (equal thread-table thread-table2))
   :hints (("Goal" :in-theory (enable make-state))))
 
-;; (defthm move-bound?-inside-bind
-;;   (implies (not (equal x y))
-;;         (equal (BOUND?
-;;                 x
-;;                 (BIND
-;;                  y
-;;                  val
-;;                  alist))
-;;                (bound? x alist)))
-;;   :hints (("Goal" :in-theory (enable bound?))))
-
-;; (defthm bound?-bind
-;;   (BOUND? x (BIND x val alist))
-;;    :hints (("Goal" :in-theory (enable bound?))))
 
 
-(defthm move-binding-inside-bind
-  (implies (not (equal x y))
-           (equal (binding x (bind y val alist))
-                  (binding x alist)))
-  :hints (("Goal" :in-theory (enable bind binding))))
-
-(defthm bind-bind-diff
-  (implies (and (assoc-equal y alist) ;case-split?
-                (case-split (not (equal x y)))
-                )
-           (equal (bind x xval (bind y yval alist))
-                  (bind y yval (bind x xval alist))))
-  :rule-classes ((:rewrite :loop-stopper ((x y))))
-  :hints (("Goal" :in-theory (enable bind ;bound?
-                                     assoc-equal))))
-
-(defthm bind-bind-diff-2
-  (implies (and (assoc-equal x alist) ;case-split?
-                (case-split (not (equal x y)))
-                )
-           (equal (bind x xval (bind y yval alist))
-                  (bind y yval (bind x xval alist))))
-  :rule-classes ((:rewrite :loop-stopper ((x y))))
-  :hints (("Goal" :in-theory (enable bind assoc-equal))))
-
-(defthm bind-with-constant-key-move-past-first-binding-with-diff-constant-key
-  (implies (and (stringp (caar alist)) ;generalize this but still restrict to constants
-                (stringp key1) ;generalize this but still restrict to constants
-                (not (equal key1 (caar alist)))
-                (case-split (consp alist))
-                )
-           (equal (bind key1 val1 alist)
-                  (cons (car alist) (bind key1 val1 (cdr alist)))))
-  :hints (("Goal" :in-theory (enable bind))))
-
-(defthm bind-with-constant-key-move-past-first-binding-with-same-constant-key
-  (implies (and (stringp (caar alist)) ;generalize this but still restrict to constants
-                (stringp key1) ;generalize this but still restrict to constants
-                (equal key1 (caar alist))
-                (case-split (consp alist))
-                )
-           (equal (bind key1 val1 alist)
-                  (cons (cons key1 val1) (cdr alist))))
-  :hints (("Goal" :in-theory (enable bind))))
-
-; test for the rules above
-;; (thm (equal zz (BIND "previous" (LIST 'REF (LEN (HEAP S)))
-;;                      '(("element" REF -1)
-;;                        ("next" REF -1)
-;;                        ("previous" REF -1)))))
-
-(defthm alistp-bind
-  (implies (case-split (alistp alist))
-           (alistp (bind key val alist)))
-  :hints (("Goal" :in-theory (enable alistp bind))))
-
-(defthm alistp-bind-force
-  (implies (force (alistp alist))
-           (alistp (bind key val alist)))
-  :hints (("Goal" :in-theory (enable alistp bind))))
 
 ;; ;Note: this does not check that the field actually exists!!
 ;; ;Does the JVM model check that we are setting a valid field?  It really should, and return an error state if we are not setting a valid field.
@@ -208,11 +124,6 @@
 ;;     new-instance))
 
 
-
-
-
-
-
 ;; ;this allowed effect-of-invoking-addbefore to be proved
 ;; (def axiom bind-bind-diff-3
 ;;   (implies (and ;(bound? y alist) ;case-split?
@@ -220,52 +131,6 @@
 ;;              )
 ;;         (equal (bind x xval (bind y yval alist))
 ;;                (bind y yval (bind x xval alist)))))
-
-
-
-
-;rename
-(defthm binding-with-const-1
-  (implies (not (equal key1 key2))
-           (equal (BINDING
-                   key1
-                   (cons
-                    (CONS key2
-                          val)
-                    rest))
-                  (binding key1 rest)))
-  :hints (("Goal" :in-theory (enable binding))))
-
-(defthm binding-with-const-2
-  (equal (BINDING
-          key1
-          (cons
-           (CONS key1
-                 val)
-           rest))
-         val)
-  :hints (("Goal" :in-theory (enable binding))))
-
-(defthm binding-with-const-both
-  (equal (binding key1 (cons (cons key2 val) rest))
-         (if (equal key1 key2)
-             val
-           (binding key1 rest)))
-  :hints (("goal" :in-theory (enable binding))))
-
-(defthm binding-bind
-  (equal (binding x (bind x val alist))
-   val)
-  :hints (("goal" :in-theory (enable bind binding))))
-
-;causes a case-split but I think we usually want this rule
-(defthm move-binding-inside-bind-both
-  (equal (binding x (bind y val alist))
-         (if (equal x y)
-             val
-           (binding x alist)))
-  :hints (("goal" :in-theory (enable bind binding))))
-
 
 ;; ;can classes be different? no?
 ;; ;rename
@@ -396,6 +261,7 @@
                   alist))
   :hints (("goal" :in-theory (enable bind assoc-equal binding assoc-equal))))
 
+;; todo: causes many case splits in Android app proofs
 (defthm bind-to-binding-better
   (implies (and (case-split (alistp alist))
                 (case-split (assoc-equal field alist)))
@@ -589,7 +455,6 @@
 ;;                (JVM-STATEP S))
 ;;           (ADDRESSP (LOCKED-OBJECT (TOP-FRAME-of-thread TH S)))))
 
-;; ; all-framep-change
 ;; (defthm framep-of-thead-top-frame-better
 ;;   (implies (and (thread-designatorp th)
 ;;                 (jvm-statep s)
@@ -653,7 +518,7 @@
  (defthm not-equal-special-data-of-lookup-field-lst
    (implies (and ;(lookup-field-lst field-id class-or-interface-names class-table ctr)
                  (class-tablep class-table)
-                 (all-class-namesp class-or-interface-names)
+                 (class-name-listp class-or-interface-names)
                  )
             (not (equal :special-data (lookup-field-lst field-id class-or-interface-names class-table ctr))))
    :flag lookup-field-lst)
@@ -664,13 +529,13 @@
 ;fffixme: is this theorem really helpful for anything?  it's kind of nonsense without hyps saying that the stack looks right according to the instruction about to be executed...
 (defthm jvm-statep-of-do-inst
   (implies (and (jvm-statep s)
-                ;; (call-stack-non-emptyp th s) ; all-framep-change
-                ;; (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; all-framep-change
-                ;; (not (empty-call-stackp (binding th (thread-table s))))
+                (call-stack-non-emptyp th s)
+                (instructionp inst)
+                (jvm-instruction-okayp inst (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s)))))
+                (equal inst (current-inst th s)) ; todo think about this
                 (bound-in-alistp th (thread-table s))
                 (thread-designatorp th))
-           (jvm-statep (do-inst (op-code inst) inst th s)))
-  :otf-flg t
+           (jvm-statep (do-inst (instruction-opcode inst) inst th s)))
   :hints (("goal" :do-not '(generalize eliminate-destructors)
 ;           :induct nil
            :in-theory (e/d (JVM-INSTRUCTION-OKAYP
@@ -680,7 +545,7 @@
                             obtain-and-throw-exception
                             ;;thread-top-frame ;why?  don't we have rules about this (maybe later in the development)?
                             SKIP-INVOKESTATIC-INSTRUCTION
-                            JVM-INSTRUCTIONP
+                            INSTRUCTIONP
 ;                            acl2::mv-nth-becomes-nth
                             ;JVM-STATEP
                             ;make-state
@@ -696,13 +561,15 @@
                             ;; execute-invokevirtual
                             ;; execute-invokevirtual-helper
                             resolve-field ; so we can see what exceptions/errors it throws
-
                             ;is-A-CLASSP ;todo
                             ;bound-to-a-non-interfacep ;todo
                             ;;is-an-interfacep ;todo
                             execute-java.lang.float.intbitstofloat
                             execute-java.lang.float.floattorawintbits
-                            )
+                            instruction-opcode
+                            method-programp-key-property-2-alt
+                            inst-len
+                            pc-if)
                            (acons
                             mv-nth
                             TRUE-LISTP
@@ -717,25 +584,27 @@
 ;                                   OBJECTLOCKABLE?
 
 ;                                  LOCK-OBJECT
-                            initialize-locals)))))
+                            initialize-locals
+                            execute-invokestatic
+                            method-program)))))
 
 ;ffffixme prove this after strenghthening framep to require that the pc is in the program and having jvm-instruction-okayp ensure that relative jumps are okay...
 ;; (thm
 ;;  (implies (and (jvm-statep s)
 ;;                (call-stack-non-emptyp th s)
 ;;                )
-;;           (JVM-INSTRUCTION-OKAYP (ACL2::LOOKUP-EQUAL (PC (TOP-FRAME-of-thread TH S)) (PROGRAM (TOP-FRAME-of-thread TH S))) (PC (TOP-FRAME-of-thread TH S))))
+;;           (JVM-INSTRUCTION-OKAYP (LOOKUP-EQUAL (PC (TOP-FRAME-of-thread TH S)) (PROGRAM (TOP-FRAME-of-thread TH S))) (PC (TOP-FRAME-of-thread TH S))))
 ;;  :hints (("Goal" :in-theory (enable jvm-statep call-stack-non-emptyp))))
 
 (defthm jvm-statep-step
   (implies (and (jvm-statep s)
-;                (call-stack-non-emptyp th s)
+                (call-stack-non-emptyp th s)
+;                (jvm-instruction-okayp (current-inst th s) (pc (thread-top-frame th s)) (strip-cars (method-program (method-info (thread-top-frame th s))))) ; name this pattern?
                 (bound-in-alistp th (thread-table s)) ;now step ignores thread IDs that are not bound
                 (thread-designatorp th) ;or step could ignore bad thread ids
                 )
            (jvm-statep (step th s)))
-  :hints (("goal" :in-theory (e/d (step) ( ;do-inst
-                                          )))))
+  :hints (("goal" :in-theory (e/d (step) (method-program)))))
 
 (acl2::defforall-simple thread-designatorp)
 
@@ -743,7 +612,7 @@
   (implies (and (jvm-statep s)
                 (all-thread-designatorp sched))
            (jvm-statep (run sched s)))
-  :hints (("goal" :in-theory (enable run))))
+  :hints (("goal" :in-theory (e/d (run) (method-program)))))
 
 ;move
 (defthm addressp-of-myif (equal (jvm::addressp (myif test tp ep)) (myif test (addressp tp) (addressp ep))) :hints (("Goal" :in-theory (enable myif))))

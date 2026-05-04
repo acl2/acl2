@@ -33,7 +33,7 @@
 (acl2::assert! (code-ensemblep *parsed-simple*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths (code-ensemble->transunits *parsed-simple*))
+ (trans-ensemble-paths (code-ensemble->trans-units *parsed-simple*))
  (set::mergesort (list (filepath "simple.c"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,7 +50,7 @@
 (acl2::assert! (code-ensemblep *ppext-parsed-simple*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths (code-ensemble->transunits *ppext-parsed-simple*))
+ (trans-ensemble-paths (code-ensemble->trans-units *ppext-parsed-simple*))
  (set::mergesort (list (filepath "simple.c"))))
 
 (acl2::assert-equal *ppext-parsed-simple*
@@ -66,8 +66,8 @@
 (acl2::assert! (code-ensemblep *ppext-parsed-simple/stdbool/stdint*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths
-  (code-ensemble->transunits *ppext-parsed-simple/stdbool/stdint*))
+ (trans-ensemble-paths
+  (code-ensemble->trans-units *ppext-parsed-simple/stdbool/stdint*))
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c")
                        (filepath "stdint.c"))))
@@ -87,8 +87,8 @@
 (acl2::assert! (code-ensemblep *ppextlist-parsed-simple/stdbool/stdint*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths
-   (code-ensemble->transunits *ppextlist-parsed-simple/stdbool/stdint*))
+ (trans-ensemble-paths
+   (code-ensemble->trans-units *ppextlist-parsed-simple/stdbool/stdint*))
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c")
                        (filepath "stdint.c"))))
@@ -120,13 +120,13 @@
 (acl2::assert! (code-ensemblep *ppextomap-parsed-simple/stdbool/stdint*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths
-   (code-ensemble->transunits *ppextomap-parsed-simple/stdbool/stdint*))
+ (trans-ensemble-paths
+   (code-ensemble->trans-units *ppextomap-parsed-simple/stdbool/stdint*))
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c")
                        (filepath "stdint.c"))))
 
-(acl2::assert-equal *ppextlist-parsed-simple/stdbool/stdint*
+(acl2::assert-equal *ppextomap-parsed-simple/stdbool/stdint*
                     *ppext-parsed-simple/stdbool/stdint*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -146,8 +146,8 @@
 (acl2::assert! (code-ensemblep *macro-tests*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths
-   (code-ensemble->transunits *macro-tests*))
+ (trans-ensemble-paths
+   (code-ensemble->trans-units *macro-tests*))
  (set::mergesort (list (filepath "macro_test1.c")
                        (filepath "macro_test2.c"))))
 
@@ -157,14 +157,15 @@
 (input-files :files '("macro_test1.c" "macro_test2.c")
              :preprocess :auto
              :preprocess-args *preprocess-args-macro-tests*
-             :ienv (ienv-default :extensions :gcc)
+             :ienv (ienv-default
+                     :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
              :const *macro-tests2*)
 
 (acl2::assert! (code-ensemblep *macro-tests2*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths
-   (code-ensemble->transunits *macro-tests2*))
+ (trans-ensemble-paths
+   (code-ensemble->trans-units *macro-tests2*))
  (set::mergesort (list (filepath "macro_test1.c")
                        (filepath "macro_test2.c"))))
 
@@ -182,7 +183,7 @@
 (acl2::assert! (code-ensemblep *ppint-parsed-simple*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths (code-ensemble->transunits *ppint-parsed-simple*))
+ (trans-ensemble-paths (code-ensemble->trans-units *ppint-parsed-simple*))
  (set::mergesort (list (filepath "simple.c"))))
 
 (acl2::assert-equal *ppint-parsed-simple*
@@ -211,7 +212,8 @@
              :process :disambiguate
              ;; We need GCC (or Clang) extensions because
              ;; stdint.h brings in __buildin_va_list.
-             :ienv (ienv-default :extensions :gcc)
+             :ienv (ienv-default
+                     :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
              :const *ppext-disamb-simple/stdbool/stdint*)
 
 (acl2::assert! (code-ensemblep *ppext-disamb-simple/stdbool/stdint*))
@@ -239,7 +241,8 @@
              :process :validate
              ;; We need GCC (or Clang) extensions because
              ;; stdint.h brings in __buildin_va_list.
-             :ienv (ienv-default :extensions :gcc)
+             :ienv (ienv-default
+                     :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
              :const *valid-simple/stdbool/stdint*)
 
 (acl2::assert! (code-ensemblep *valid-simple/stdbool/stdint*))

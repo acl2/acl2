@@ -1,4 +1,4 @@
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
@@ -234,7 +234,7 @@
 (defun too-many-polysp (var-lst pot-lst counter)
 
 ; Var-list is a list of pot-labels from pot-lst, and counter is initially
-; 1.  We we are about to multiply the polys from the pots in var-lst,
+; 1.  Since we are about to multiply the polys from the pots in var-lst,
 ; we first check whether doing so would generate too many polys.
 
 ; Note: This function has a magic number, 20, which probably should be
@@ -612,8 +612,8 @@
                   (and inv-var-ubd
                        (< inv-var-ubd 0)))
 
-; We try to gather bounds polys in four stages --- a upper bound for inv-var,
-; a upper bound for var, an lower bound for inv-var, and an lower bound
+; We try to gather bounds for polys in four stages --- an upper bound for
+; inv-var, an upper bound for var, a lower bound for inv-var, and a lower bound
 ; for var.
 
               (let* ((ttree1 (cons-tag-trees ttree

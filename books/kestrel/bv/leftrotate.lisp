@@ -1,7 +1,7 @@
 ; BV Library: leftrotate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -152,7 +152,7 @@
   :hints (("Goal" ;:cases ((equal amount width))
            :in-theory (enable leftrotate))))
 
-;; is there a nicer way to comvine the cases?
+;; is there a nicer way to combine the cases?
 (defthm bvchop-of-leftrotate-both
   (implies (and (<= size width)
                 (<= amount width)
@@ -274,8 +274,7 @@
 
 ;; special case when the slice is a single bit so we have getbit instead
 (defthmd bvcat-of-getbit-becomes-leftrotate
-  (implies (and (natp lowsize)
-                (posp highsize))
+  (implies (posp highsize)
            (equal (bvcat highsize x 1 (getbit highsize x))
                   (leftrotate (+ highsize 1) 1 x)))
   :hints (("Goal" :in-theory (enable leftrotate))))

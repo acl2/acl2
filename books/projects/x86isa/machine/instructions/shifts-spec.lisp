@@ -47,8 +47,7 @@
 (in-package "X86ISA")
 
 (include-book "structures" :dir :utils)
-(include-book "../rflags-spec"
-              :ttags (:undef-flg))
+(include-book "../rflags-spec")
 (include-book "centaur/bitops/fast-rotate" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
