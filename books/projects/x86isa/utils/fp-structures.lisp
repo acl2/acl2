@@ -57,7 +57,7 @@
 
 (defbitstruct fp-statusBits
   :short "The x87 FPU Status Register."
-  :long "<p>Source: Intel Manual, Dec-23, Vol. 1, Section 8.1.3.</p>"
+  :long "<p>Source: Intel Manual, Mar 2026, Vol. 1, Section 8.1.3.</p>"
   ((ie bitp)    ;; Invalid Operation Flag
    (de bitp)    ;; Denormalized Operand Flag
    (ze bitp)    ;; Zero Divide Flag
@@ -86,7 +86,7 @@
 
 (defbitstruct mxcsrBits
   :short "The MXCSR Control and Status Register."
-  :long "<p>Source: Intel Manual, Dec-23, Vol. 1, Section 10.2.3.</p>"
+  :long "<p>Source: Intel Manual, Mar 2026, Vol. 1, Section 10.2.3.</p>"
   ;; From the manual:
   ;;   Bits 16 through 31 of the MXCSR register are reserved and are
   ;;   cleared on a power-up or reset of the processor; attempting to
