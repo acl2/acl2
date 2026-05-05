@@ -178,7 +178,8 @@
                     (pdoc-size (pdoc-concat->left pdoc))
                     (pdoc-size (pdoc-concat->right pdoc))))
    (pdoc :nest (+ 1 (pdoc-size (pdoc-nest->body pdoc))))
-   (pdoc :group (+ 1 (pdoc-size (pdoc-group->body pdoc))))))
+   (pdoc :group (+ 1 (pdoc-size (pdoc-group->body pdoc)))))
+  :name abstract-syntax-size)
 
 (define cmds-size ((cs cmd-listp))
   :returns (n natp :rule-classes (:rewrite :type-prescription))
