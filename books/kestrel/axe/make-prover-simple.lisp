@@ -983,34 +983,33 @@
          ;;(local (in-theory (disable CADR-BECOMES-NTH-OF-1))) ;need better acl2-count rules about nth (maybe when we know the length...)
 
          ;;for speed:
-         (local (in-theory (disable
-                             weak-dagp-aux
-                             ;;consp-from-len-cheap
-                             default-car
-                             <-of-nth-and-alen1 ;todo
-                             dag-exprp
-                             ;;list::nth-with-large-index
-                             ;;list::nth-with-large-index-2
-                             nat-listp
-                             rational-listp
-                             ;;AXE-TREE-LISTP ;try
-                             (:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
-                             (:FORWARD-CHAINING INTEGER-LISTP-FORWARD-TO-RATIONAL-LISTP)
-                             (:FORWARD-CHAINING NAT-LISTP-FORWARD-TO-INTEGER-LISTP)
-                             (:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
-                             member-equal
-;all-natp-when-not-consp
-                             all-<-when-not-consp
-                             darg-listp-when-not-consp
-                             acl2-count ;yuck
-                             SYMBOL-ALISTP ;move
-                             SYMBOL-LISTP  ; prevent inductions
-                             dag-function-call-exprp-redef
-;axe-treep
-                             axe-treep-of-cadr axe-treep-of-caddr axe-treep-of-cadddr
-                             state-p
-                             alistp
-                             mv-nth)))
+         (local (in-theory (disable weak-dagp-aux
+                                    ;;consp-from-len-cheap
+                                    default-car
+                                    <-of-nth-and-alen1 ;todo
+                                    dag-exprp
+                                    ;;list::nth-with-large-index
+                                    ;;list::nth-with-large-index-2
+                                    nat-listp
+                                    rational-listp
+                                    ;;axe-tree-listp ;try
+                                    (:forward-chaining acl2-number-listp-forward-to-true-listp)
+                                    (:forward-chaining integer-listp-forward-to-rational-listp)
+                                    (:forward-chaining nat-listp-forward-to-integer-listp)
+                                    (:forward-chaining rational-listp-forward-to-acl2-number-listp)
+                                    member-equal
+                                    ;;all-natp-when-not-consp
+                                    all-<-when-not-consp
+                                    darg-listp-when-not-consp
+                                    acl2-count ;yuck
+                                    symbol-alistp ;move
+                                    symbol-listp  ; prevent inductions
+                                    dag-function-call-exprp-redef
+                                    ;; axe-treep
+                                    axe-treep-of-cadr axe-treep-of-caddr axe-treep-of-cadddr
+                                    state-p
+                                    alistp
+                                    mv-nth)))
 
          (local (in-theory (enable natp-of-+-of-1-alt
                                    natp-of-car-when-bounded-darg-listp-gen
@@ -1018,7 +1017,7 @@
                                    nat-listp-forward-to-rational-listp
                                    symbol-list-listp-of-union-eq-with-all
                                    apply-axe-use-instances-return-type
-;apply-axe-use-instances-bound
+                                   ;;apply-axe-use-instances-bound
                                    <=-of-mv-nth-3-of-apply-axe-use-instances
                                    natp-mv-nth-3-of-apply-axe-use-instances)))
 
@@ -1030,8 +1029,6 @@
          ;; (make-instantiation-code-simple ,suffix ,evaluator-base-name)
          (make-instantiation-code-simple-free-vars ,suffix ,evaluator-base-name)
          (make-instantiation-code-simple-no-free-vars2 ,suffix ,evaluator-base-name)
-
-         ;;(in-theory (disable car-becomes-nth-of-0)) ;move to arrays-axe
 
          ;;
          ;; The main mutual recursion for the rewriting tactics:
