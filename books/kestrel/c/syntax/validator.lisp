@@ -8186,6 +8186,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-filepath-trans-unit-map ((map filepath-trans-unit-mapp)
+                                       (externals valid-externalsp)
+                                       (completions type-completions-p)
+                                       (next-uid uidp)
+                                       (ienv ienvp)
+                                       (keep-going booleanp))
+  :guard (filepath-trans-unit-map-unambp map)
+  :returns (mv (erp maybe-msgp)
+               (new-map filepath-trans-unit-mapp
+                        :hyp (filepath-trans-unit-mapp map))
+               (new-vstate vstatep))
+  :short "Validate a map from file paths to translation units."
+  (b* (((reterr) nil (irr-vstate))
+       ((when (omap::emptyp map))
+        (retok nil (irr-vstate))) ; TODO: check this
+       (path (omap::head-key map))
+       ((mv erp new-tunit vstate)
+        (valid-trans-unit
+         path (omap::head-val map) externals completions next-uid ienv))
+       ((when erp)
+        (if keep-going
+            (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
+                        (filepath->string path)
+                        erp)
+                    (valid-filepath-trans-unit-map (omap::tail map)
+                                                   externals
+                                                   completions
+                                                   next-uid
+                                                   ienv
+                                                   keep-going))
+          (retmsg$ "Error in translation unit ~x0: ~@1"
+                   (filepath->string path)
+                   erp)))
+       ((vstate vstate) vstate)
+       ((valid-table table) vstate.table)
+       ((erp new-map -) (valid-filepath-trans-unit-map (omap::tail map)
+                                                       table.externals
+                                                       table.completions
+                                                       table.next-uid
+                                                       ienv
+                                                       keep-going)))
+    (retok (omap::update path new-tunit new-map)
+           vstate))
+  :verify-guards :after-returns
+  :hooks nil
+
+  ///
+
+  (fty::deffixequiv valid-filepath-trans-unit-map
+    :args ((ienv ienvp)
+           (keep-going booleanp)))
+
+  (defret filepath-trans-unit-map-unambp-of-valid-filepath-trans-unit-map
+    (implies (not erp)
+             (filepath-trans-unit-map-unambp new-map))
+    :hyp (and (filepath-trans-unit-mapp map)
+              (filepath-trans-unit-map-unambp map))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define valid-trans-ensemble ((tunits trans-ensemblep)
                               (ienv ienvp)
                               (keep-going booleanp))
@@ -8205,7 +8266,7 @@
   (b* (((reterr) (irr-trans-ensemble))
        (map (trans-ensemble->units tunits))
        ((erp new-map vstate)
-        (valid-trans-ensemble-loop map nil nil (uid 0) ienv keep-going))
+        (valid-filepath-trans-unit-map map nil nil (uid 0) ienv keep-going))
        (- (if keep-going
               (b* ((len-map (omap::size map))
                    (len-new-map (omap::size new-map))
@@ -8219,66 +8280,6 @@
             :units new-map
             :resolved-includes nil
             :info (trans-ensemble-info (vstate->table vstate)))))
-
-  :prepwork
-  ((define valid-trans-ensemble-loop ((map filepath-trans-unit-mapp)
-                                      (externals valid-externalsp)
-                                      (completions type-completions-p)
-                                      (next-uid uidp)
-                                      (ienv ienvp)
-                                      (keep-going booleanp))
-     :guard (filepath-trans-unit-map-unambp map)
-     :returns (mv (erp maybe-msgp)
-                  (new-map filepath-trans-unit-mapp
-                           :hyp (filepath-trans-unit-mapp map))
-                  (new-vstate vstatep))
-     :parents nil
-     (b* (((reterr) nil (irr-vstate))
-          ((when (omap::emptyp map))
-           (retok nil (irr-vstate))) ; TODO: check this
-          (path (omap::head-key map))
-          ((mv erp new-tunit vstate)
-           (valid-trans-unit
-            path (omap::head-val map) externals completions next-uid ienv))
-          ((when erp)
-           (if keep-going
-               (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
-                           (filepath->string path)
-                           erp)
-                       (valid-trans-ensemble-loop (omap::tail map)
-                                                  externals
-                                                  completions
-                                                  next-uid
-                                                  ienv
-                                                  keep-going))
-             (retmsg$ "Error in translation unit ~x0: ~@1"
-                      (filepath->string path)
-                      erp)))
-          ((vstate vstate) vstate)
-          ((valid-table table) vstate.table)
-          ((erp new-map -) (valid-trans-ensemble-loop (omap::tail map)
-                                                      table.externals
-                                                      table.completions
-                                                      table.next-uid
-                                                      ienv
-                                                      keep-going)))
-       (retok (omap::update path new-tunit new-map)
-              vstate))
-     :verify-guards :after-returns
-     :hooks ()
-
-     ///
-
-     (fty::deffixequiv valid-trans-ensemble-loop
-       :args ((ienv ienvp)
-              (keep-going booleanp)))
-
-     (defret filepath-trans-unit-map-unambp-of-valid-trans-ensemble-loop
-       (implies (not erp)
-                (filepath-trans-unit-map-unambp new-map))
-       :hyp (and (filepath-trans-unit-mapp map)
-                 (filepath-trans-unit-map-unambp map))
-       :hints (("Goal" :induct t)))))
 
   ///
 
