@@ -8202,54 +8202,90 @@
   :returns (mv (erp maybe-msgp)
                (new-map filepath-trans-unit-mapp
                         :hyp (filepath-trans-unit-mapp map))
-               (new-vstate vstatep))
+               (final-vstate vstatep))
   :short "Validate a map from file paths to translation units."
-  (b* (((reterr) nil (irr-vstate))
-       ((when (omap::emptyp map))
-        (retok nil (irr-vstate))) ; TODO: check this
-       (path (omap::head-key map))
-       ((mv erp new-tunit vstate)
-        (valid-trans-unit
-         path (omap::head-val map) externals completions next-uid ienv))
-       ((when erp)
-        (if keep-going
-            (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
-                        (filepath->string path)
-                        erp)
-                    (valid-filepath-trans-unit-map (omap::tail map)
-                                                   externals
-                                                   completions
-                                                   next-uid
-                                                   ienv
-                                                   keep-going))
-          (retmsg$ "Error in translation unit ~x0: ~@1"
-                   (filepath->string path)
-                   erp)))
-       ((vstate vstate) vstate)
-       ((valid-table table) vstate.table)
-       ((erp new-map -) (valid-filepath-trans-unit-map (omap::tail map)
-                                                       table.externals
-                                                       table.completions
-                                                       table.next-uid
-                                                       ienv
-                                                       keep-going)))
-    (retok (omap::update path new-tunit new-map)
-           vstate))
-  :verify-guards :after-returns
-  :hooks nil
+  (valid-filepath-trans-unit-map-loop (omap::keys
+                                       (filepath-trans-unit-map-fix map))
+                                      map
+                                      externals
+                                      completions
+                                      next-uid
+                                      ienv
+                                      keep-going)
+
+  :prepwork
+  ((define valid-filepath-trans-unit-map-loop ((paths filepath-setp)
+                                               (map filepath-trans-unit-mapp)
+                                               (externals valid-externalsp)
+                                               (completions type-completions-p)
+                                               (next-uid uidp)
+                                               (ienv ienvp)
+                                               (keep-going booleanp))
+     :guard (filepath-trans-unit-map-unambp map)
+     :returns (mv (erp maybe-msgp)
+                  (new-map filepath-trans-unit-mapp
+                           :hyp (filepath-trans-unit-mapp map))
+                  (final-vstate vstatep))
+     :parents nil
+     (b* (((reterr) nil (irr-vstate))
+          ((when (set::emptyp (filepath-set-fix paths)))
+           (retok nil (irr-vstate))) ; TODO: check this
+          (map (filepath-trans-unit-map-fix map))
+          (path (set::head paths))
+          (path+tunit (omap::assoc path map))
+          ((unless path+tunit)
+           (raise "Internal error: ~x0 not in ~x1." path map)
+           (reterr "irrelevant"))
+          (tunit (cdr path+tunit))
+          ((mv erp new-tunit vstate)
+           (valid-trans-unit path tunit externals completions next-uid ienv))
+          ((when erp)
+           (if keep-going
+               (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
+                           (filepath->string path)
+                           erp)
+                       (valid-filepath-trans-unit-map-loop (set::tail paths)
+                                                           map
+                                                           externals
+                                                           completions
+                                                           next-uid
+                                                           ienv
+                                                           keep-going))
+             (retmsg$ "Error in translation unit ~x0: ~@1"
+                      (filepath->string path)
+                      erp)))
+          ((vstate vstate) vstate)
+          ((valid-table table) vstate.table)
+          ((erp new-map -) (valid-filepath-trans-unit-map-loop (set::tail paths)
+                                                               map
+                                                               table.externals
+                                                               table.completions
+                                                               table.next-uid
+                                                               ienv
+                                                               keep-going)))
+       (retok (omap::update path new-tunit new-map)
+              vstate))
+     :no-function nil
+     :prepwork ((local (in-theory (enable emptyp-of-filepath-set-fix))))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret
+       filepath-trans-unit-map-unambp-of-valid-filepath-trans-unit-map-loop
+       (implies (not erp)
+                (filepath-trans-unit-map-unambp new-map))
+       :hyp (and (filepath-trans-unit-mapp map)
+                 (filepath-trans-unit-map-unambp map))
+       :hints (("Goal" :induct t)))))
 
   ///
-
-  (fty::deffixequiv valid-filepath-trans-unit-map
-    :args ((ienv ienvp)
-           (keep-going booleanp)))
 
   (defret filepath-trans-unit-map-unambp-of-valid-filepath-trans-unit-map
     (implies (not erp)
              (filepath-trans-unit-map-unambp new-map))
     :hyp (and (filepath-trans-unit-mapp map)
-              (filepath-trans-unit-map-unambp map))
-    :hints (("Goal" :induct t))))
+              (filepath-trans-unit-map-unambp map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
