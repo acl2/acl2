@@ -1015,7 +1015,7 @@
                               (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len))
                   :guard-hints (("Goal" :in-theory (enable dag-parent-arrayp)))))
   (let* (;; All nodes initially have a context of "true" but all contexts except that of the top node get overwritten as we go:
-         (context-array (make-empty-array-with-default 'context-array dag-len (true-context)))
+         (context-array (new-array1-with-default 'context-array dag-len (true-context)))
          (top-nodenum (+ -1 dag-len))
          ;; (context-array (aset1 'context-array context-array top-nodenum (true-context))) ;top node has no context
          (context-array (make-full-context-array-aux (+ -1 top-nodenum) ; skip the top node
@@ -1069,7 +1069,7 @@
                               (<= (len dag) *max-1d-array-length*))
                   :guard-hints (("Goal" :in-theory (enable len-when-pseudo-dagp)))))
   (let* ((dag-array-name 'temp-dag-array)
-         (dag-array (make-into-array 'temp-dag-array dag)))
+         (dag-array (alist-to-array1 'temp-dag-array dag)))
     (make-full-context-array dag-array-name dag-array (+ 1 (top-nodenum-of-dag dag)))))
 
 ;; TODO: Improve to match better
@@ -1208,7 +1208,7 @@
 ;;                   :guard-hints (("Goal" :in-theory (e/d (pseudo-dagp) (pseudo-dag-arrayp))))))
 ;;   (prog2$ (cw "(Computing contexts:~%")
 ;;           (let* ((dag-len (len dag-lst))
-;;                  (dag-array (make-into-array 'dag-array dag-lst))
+;;                  (dag-array (alist-to-array1 'dag-array dag-lst))
 ;;                  (context-array (make-full-context-array 'dag-array dag-array dag-len)))
 ;;             (prog2$ (cw ")~%")
 ;;                     (print-array 'context-array context-array dag-len)))))

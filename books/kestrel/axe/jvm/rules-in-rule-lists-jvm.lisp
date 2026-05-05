@@ -1,7 +1,7 @@
 ; Rules mentioned in rule-lists-jvm.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,7 @@
 
 (include-book "../rules-in-rule-lists") ;todo: remove some list stuff from this?
 (include-book "kestrel/lists-light/member-equal" :dir :system)
+(include-book "kestrel/bv/intro" :dir :system) ; for now
 (include-book "kestrel/jvm/jvm-facts" :dir :system)
 (include-book "kestrel/jvm/jvm-rules" :dir :system)
 (include-book "kestrel/jvm/set-classes" :dir :system)

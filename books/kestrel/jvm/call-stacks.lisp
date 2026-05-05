@@ -45,7 +45,7 @@
 
 ;fixme should be types for the different uses (e.g., for the call stack, obj must be a framep)
 (defund push-frame (obj stack)
- (declare (xargs :guard (and (call-stackp stack) (framep obj))))
+ (declare (xargs :guard (and (framep obj) (call-stackp stack))))
  (cons obj stack))
 
 ;guard to require a non-empty-stack?

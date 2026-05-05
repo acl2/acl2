@@ -455,8 +455,8 @@
                                                                      options (+ -1 count) state))
                                  ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
                                  ;;restore the dag:
-                                 ;;(dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (make-into-array-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
-                                 ;;(dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (make-into-array-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
+                                 ;;(dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (alist-to-array1-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
+                                 ;;(dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (alist-to-array1-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
                                  ;;(dag-len saved-dag-len)
                                  ;;(dag-constant-alist saved-dag-constant-alist)
                                  ;;(dag-variable-alist saved-dag-variable-alist)
@@ -983,7 +983,7 @@
                                                  (merge-embedded-dag-into-dag-for-axe-prover
                                                   (reverse embedded-dag)
                                                   renaming-array-for-merge-embedded-dag-name
-                                                  (make-empty-array renaming-array-for-merge-embedded-dag-name embedded-dag-len) ;associates nodenums in the embedded dag with the nodenums (or quoteps) they rewrote to in the main dag
+                                                  (new-array1 renaming-array-for-merge-embedded-dag-name embedded-dag-len) ;associates nodenums in the embedded dag with the nodenums (or quoteps) they rewrote to in the main dag
                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                   (pairlis$ dag-vars var-nodenums-or-quoteps)
                                                   rule-alist
@@ -1305,7 +1305,7 @@
          ;;fixme would it make sense to memoize in this (moot if we call the new rewriter)?:
          (rewrite-nodes-for-axe-prover (list nodenum)
                                        result-array-name
-                                       (make-empty-array result-array-name dag-len) ;fixme dag-len here is overkill? use (+ 1 nodenum)?
+                                       (new-array1 result-array-name dag-len) ;fixme dag-len here is overkill? use (+ 1 nodenum)?
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        nodenums-to-assume-false
                                        rule-alist
@@ -1877,8 +1877,8 @@
                  ;;In case 2 we assume nodenum is nil (false), i.e., we try to prove (or nodenum C):
                  (b* ((- (cw "Proved ~s0)~%" case-1-designator)) ;end of case1
                       ;;restore the dag:
-                      ;; (dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (make-into-array-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
-                      ;; (dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (make-into-array-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
+                      ;; (dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (alist-to-array1-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
+                      ;; (dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (alist-to-array1-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
                       ;; (dag-constant-alist saved-dag-constant-alist)
                       ;; (dag-variable-alist saved-dag-variable-alist)
                       ;;(dag-len saved-dag-len)
@@ -1962,7 +1962,7 @@
     (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
 ;          (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
          ;; Load the DAG nodes into an array:
-         (dag-array (make-into-array 'dag-array dag))
+         (dag-array (make-dag-into-array 'dag-array dag 0)) ; todo: use nonzero slack?
          (top-nodenum (top-nodenum dag))
          (dag-len (+ 1 top-nodenum))
          ;; make auxiliary dag data structures:
@@ -1978,7 +1978,7 @@
             ;;these is at least one context node:
             (add-array-nodes-to-dag 0 max-context-nodenum context-array-name context-array context-array-len
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                    (make-empty-array 'renaming-array (+ 1 max-context-nodenum)))))
+                                    (new-array1 'renaming-array (+ 1 max-context-nodenum)))))
          ((when erp) (mv erp :failed state))
          ;;Fix up the context to use the new node numbers:
          (context (if no-context-nodesp context (fixup-non-false-context context 'renaming-array renaming-array)))

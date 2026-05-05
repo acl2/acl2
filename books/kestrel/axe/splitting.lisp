@@ -511,7 +511,7 @@
                                  :in-theory (enable all-rationalp-when-nat-listp
                                                     true-listp-when-nat-listp-rewrite)))))
   (let* ((max-literal-nodenum (maxelem literal-nodenums))
-         (done-array (make-empty-array 'done-array (+ 1 max-literal-nodenum)))
+         (done-array (new-array1 'done-array (+ 1 max-literal-nodenum)))
          ;;won't include any nodes that are calls to not:
          (candidate-nodenums (find-node-to-split-candidates-work-list literal-nodenums dag-array-name dag-array dag-len done-array nil))
          (candidate-nodenums (merge-sort-< candidate-nodenums))
