@@ -1739,3 +1739,33 @@ void f(void) {
   static struct s b = a;
 }
 ")
+
+(test-valid
+  "struct myStruct {
+  int a;
+  int b : 4;
+  union { int c; int d; };
+  _Bool e;
+  int : 4;
+  unsigned long int f;
+};
+
+static struct myStruct my = { 1, 1, 1, 1, 1 };
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (my-declon (ext-declon-declon->declon
+                          (trans-item-declon->declon (second items))))
+             (my-init-declor (car (declon-declon->declors my-declon)))
+             (initer (init-declor->initer? my-init-declor))
+             (desiniters (initer-list->elems initer)))
+          (and (equal (desiniter-info->designors (desiniter->info (first desiniters)))
+                      (list (designor-dot (ident "a"))))
+               (equal (desiniter-info->designors (desiniter->info (second desiniters)))
+                      (list (designor-dot (ident "b"))))
+               (equal (desiniter-info->designors (desiniter->info (third desiniters)))
+                      (list (designor-dot (ident "c"))))
+               (equal (desiniter-info->designors (desiniter->info (fourth desiniters)))
+                      (list (designor-dot (ident "e"))))
+               (equal (desiniter-info->designors (desiniter->info (fifth desiniters)))
+                      (list (designor-dot (ident "f")))))))
