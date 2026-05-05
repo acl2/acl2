@@ -36,18 +36,18 @@
                                    )))))
 
 (local
- (DEFTHM GETBIT-OF-MINUS-EXPT-when->=
-  (IMPLIES (AND (>= SIZE SIZE2)
-                (NATP SIZE)
-                (NATP SIZE2))
-           (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
-                  1))))
+  (defthm getbit-of-minus-expt-when->=
+    (implies (and (>= i j)
+                  (natp i)
+                  (natp j))
+             (equal (getbit i (- (expt 2 j)))
+                    1))))
 
-(DEFTHM GETBIT-OF-MINUS-EXPT-gen
-  (IMPLIES (AND (NATP SIZE)
-                (NATP SIZE2))
-           (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
-                  (if (>= SIZE SIZE2)
+(defthm getbit-of-minus-of-expt
+  (implies (and (natp i)
+                (natp j))
+           (equal (getbit i (- (expt 2 j)))
+                  (if (>= i j)
                       1
                     0))))
 

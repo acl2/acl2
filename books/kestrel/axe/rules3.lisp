@@ -1387,12 +1387,6 @@
   :hints (("Goal"
            :in-theory (enable bvlt))))
 
-;; (defthm getbit-when-not-1-stronger
-;;   (implies (not (equal (getbit n x) 1))
-;;            (equal (getbit n x)
-;;                   0))
-;;   :rule-classes ((:rewrite :backchain-limit-lst (1))))
-
 (DEFTHM UNSIGNED-BYTE-P-TIGHTEN-alt
   (IMPLIES (not (EQUAL 1 (GETBIT 31 X)))
            (EQUAL (UNSIGNED-BYTE-P 32 X)
@@ -1659,6 +1653,7 @@
                                    BITXOR-OF-SLICE-ARG2 ;looped
                                    )))))
 
+;gen
 (defthm equal-1-getbit-bvuminus
   (implies (unsigned-byte-p 31 x)
            (equal (equal '1 (getbit '31 (bvuminus 32 x)))
@@ -1666,6 +1661,7 @@
                        (bvle 32 x (expt 2 31)))))
   :hints (("Goal" :in-theory (enable bvuminus32-when-usb31 bvlt))))
 
+;gen
 (defthm equal-0-getbit-bvuminus
   (implies (unsigned-byte-p 31 x)
            (equal (equal 0 (getbit '31 (bvuminus 32 x)))
@@ -2756,11 +2752,6 @@
                            (exponents-add ; for speed
                             )))))
 
-(defthm getbit-impossible-value
-  (implies (and (syntaxp (quotep k))
-                (not (unsigned-byte-p 1 k)))
-           (not (equal k (getbit n x)))))
-
 (defthm slice-tighten-when-top-bit-0
   (implies (and (equal 0 (getbit high x))
                 (natp high)
@@ -2866,14 +2857,6 @@
   :hints (("Goal"
            :in-theory (disable BVCHOP-CONTRACT-HACK-GEN)
            :use (:instance split-with-bvcat (x (bvchop n x)) (hs 1) (ls (+ -1 n))))))
-
-(defthm getbit-of-minus-expt
-  (implies (and (< size size2)
-                (natp size)
-                (natp size2))
-           (equal (getbit size (- (expt 2 size2)))
-                  0))
-  :hints (("Goal" :in-theory (e/d (getbit) (slice-becomes-getbit)))))
 
 (defthm not-equal-bitnot-same
   (not (equal x (bitnot x)))
@@ -3516,18 +3499,6 @@
            (equal (equal 0 (slice n n x))
                   (not (equal 1 (slice n n x))))))
 
-(defthm getbit-of-times-2
-  (implies (and (syntaxp (not (quotep x))) ;defeats acl2's bone-headed matching
-                (integerp x))
-           (equal (getbit size (* 2 x))
-                  (if (zp size)
-                      0
-                    (getbit (+ -1 size) x))))
-  :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (anti-slice
-                                   ;logtail-equal-0 ; todo: loop with unsigned-byte-p-of-bvchop-bigger2
-                                   )))))
-
 ;does this cause many case splits?
 (defthm equal-of-1-and-getbit-of-bvplus
   (implies (and (syntaxp (and (quotep k)
@@ -3573,6 +3544,7 @@
   :hints (("Goal" :use (:instance equal-of-1-and-getbit-of-bvplus)
            :in-theory (disable equal-of-1-and-getbit-of-bvplus))))
 
+;move
 (defthmd getbit-must-be-1
   (implies (and (<= (expt 2 size) k)
                 (unsigned-byte-p (+ 1 size) k)
@@ -11953,14 +11925,6 @@
            (equal (unsigned-byte-p 31 x)
                   (unsigned-byte-p 25 x)))
   :hints (("Goal" :in-theory (enable bvlt))))
-
-(defthm getbit-of-expt-too-high
-  (implies (and (< m n)
-                (integerp m)
-                (natp n))
-           (equal (getbit n (expt 2 m))
-                  0))
-  :hints (("Goal" :in-theory (e/d (getbit slice) (anti-slice)))))
 
 ;gen!
 (defthmd bvlt-of-64
