@@ -4951,12 +4951,12 @@
           (irr-desiniter) (irr-initer-subobjects-stack) nil (irr-vstate))
          ((vstate vstate) vstate)
          ((desiniter desiniter) desiniter)
-         (info
-          (desiniter-info
-            (if (and (endp desiniter.designors)
-                     (not (subobjects-stack-end-p subobjects-stack)))
-                (subobjects-stack-to-designors subobjects-stack vstate.ienv)
-              nil)))
+         ;; (info
+         ;;  (desiniter-info
+         ;;    (if (and (endp desiniter.designors)
+         ;;             (not (subobjects-stack-end-p subobjects-stack)))
+         ;;        (subobjects-stack-to-designors subobjects-stack vstate.ienv)
+         ;;      nil)))
          ((erp new-design subobjects-stack types vstate)
           (if (endp desiniter.designors)
               (retok desiniter.designors
@@ -4974,6 +4974,12 @@
                         vstate
                         1024))
          (new-subobjects-stack (initer-context-stack->stack ctx))
+         (info
+          (desiniter-info
+            (if (and (endp desiniter.designors)
+                     (not (subobjects-stack-end-p new-subobjects-stack)))
+                (subobjects-stack-to-designors new-subobjects-stack vstate.ienv)
+              nil)))
          (new-subobjects-stack
           (if (subobjects-stack-end-p new-subobjects-stack)
               ;; TODO: this case is impossible.
