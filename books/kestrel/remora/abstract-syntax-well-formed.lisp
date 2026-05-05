@@ -134,4 +134,5 @@
    (expr :frame (and (consp (expr-frame->exprs expr))
                      (expr-list-wf-ast-p (expr-frame->exprs expr))))
    (expr :bracket (and (consp (expr-bracket->exprs expr))
-                       (expr-list-wf-ast-p (expr-bracket->exprs expr))))))
+                       (expr-list-wf-ast-p (expr-bracket->exprs expr)))))
+  :name abstract-syntax-wf-ast-p)

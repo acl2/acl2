@@ -50,7 +50,8 @@
          :cast (make-expr-cast :type expr.type
                                :arg (expr-funcall-fun-rename-fn
                                       expr.arg uid new-fn))
-         :otherwise (expr-fix c$::expr))))))
+         :otherwise (expr-fix c$::expr)))))
+  :name abstract-syntax-funcall-fun-rename-fn)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,4 +71,5 @@
      :funcall
      (make-expr-funcall
        :fun (expr-funcall-fun-rename-fn expr.fun uid new-fn)
-       :args (expr-list-rename-fn expr.args uid new-fn)))))
+       :args (expr-list-rename-fn expr.args uid new-fn))))
+  :name abstract-syntax-rename-fn)
