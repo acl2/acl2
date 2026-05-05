@@ -94,6 +94,17 @@
 
 (def-inst x86-movs
 
+  :short "MOVS/MOVSB/MOVSW/MOVSD/MOVSQ: move data from string to string."
+
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The distinction between MOVS and the others is just at the assembly level,
+     as explained in the Intel manual;
+     the m8, m16, m32, and m64 assembly-level operands are
+     just a way to specify the operand size,
+     but not the actual operands, which are always implicit."))
+
   ;; A4 MOVSB: Move  byte from address (R/E)SI to (R/E)DI
   ;; A5 MOVSW: Move  word from address (R/E)SI to (R/E)DI
   ;; A5 MOVSD: Move dword from address (R/E)SI to (R/E)DI
