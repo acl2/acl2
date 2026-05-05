@@ -49,7 +49,7 @@
 
 (defsection fp-bitstructs
   :parents (structures)
-  :short "<b>Bitstructs related to floating-point operations</b>")
+  :short "Bitstructs related to floating-point operations.")
 
 (local (xdoc::set-default-parents fp-bitstructs))
 
