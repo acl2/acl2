@@ -113,7 +113,8 @@
                   (var+dim (omap::assoc dim.name subst)))
                (if var+dim
                    (cdr var+dim)
-                 (dim-var dim.name))))))
+                 (dim-var dim.name)))))
+  :name abstract-syntax-subst-dim-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,7 +161,8 @@
                    :params type.params
                    :body (type-subst-ispace-vars type.body
                                                  dim-subst
-                                                 shape-subst))))))
+                                                 shape-subst)))))
+  :name abstract-syntax-subst-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,7 +199,8 @@
             :params type.params
             :body (type-subst-type-vars type.body
                                         atom-subst
-                                        array-subst))))))
+                                        array-subst)))))
+  :name abstract-syntax-subst-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,7 +213,8 @@
                   (var+name (omap::assoc dim.name renam)))
                (if var+name
                    (dim-var (cdr var+name))
-                 (dim-var dim.name))))))
+                 (dim-var dim.name)))))
+  :name abstract-syntax-rename-dim-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,7 +263,8 @@
             :params type.params
             :body (type-rename-ispace-vars type.body
                                            dim-renam
-                                           shape-renam))))))
+                                           shape-renam)))))
+  :name abstract-syntax-rename-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,7 +301,8 @@
             :params type.params
             :body (type-rename-type-vars type.body
                                          atom-renam
-                                         array-renam))))))
+                                         array-renam)))))
+  :name abstract-syntax-rename-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -396,7 +402,8 @@
                            (bind-list-bound-ispace-vars expr.binds))))
    (atom :ilambda
          (set::difference (expr-free-ispace-vars atom.body)
-                          (set::mergesort atom.params)))))
+                          (set::mergesort atom.params))))
+  :name abstract-syntax-free-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -424,4 +431,5 @@
                      (set::difference (expr-free-type-vars expr.body)
                                       (bind-list-bound-type-vars expr.binds))))
    (atom :tlambda (set::difference (expr-free-type-vars atom.body)
-                                   (set::mergesort atom.params)))))
+                                   (set::mergesort atom.params))))
+  :name abstract-syntax-free-type-vars)

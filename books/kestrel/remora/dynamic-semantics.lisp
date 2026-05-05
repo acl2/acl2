@@ -10,26 +10,18 @@
 
 (in-package "REMORA")
 
-(include-book "static-environments")
-(include-book "ispace-equivalence")
-(include-book "type-equivalence")
-(include-book "type-checking")
+(include-book "values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ static-semantics
+(defxdoc+ dynamic-semantics
   :parents (remora)
-  :short "Static semantics of Remora."
+  :short "Dynamic semantics of Remora."
   :long
   (xdoc::topstring
    (xdoc::p
     "The static semantics of Remora is defined via inference rules,
      in the Remora publications [thesis] [arxiv] [esop].
      We plan to formalize those inference rules as directly as possible,
-     but we start by providing an executable definition of type checking,
-     that is meant to be equivalent to those inference rules;
-     we plan to prove this equivalence."))
-  :order-subtopics (static-environments
-                    ispace-equivalence
-                    type-equivalence
-                    type-checking))
+     but we will start by providing an executable interpreter."))
+  :order-subtopics (values))

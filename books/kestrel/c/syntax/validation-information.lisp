@@ -1585,7 +1585,8 @@
                            (trans-ensemble->units trans-ensemble))
                           (trans-ensemble-infop
                            (trans-ensemble->info
-                            trans-ensemble)))))))
+                            trans-ensemble)))))
+    :name abstract-syntax-annop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
