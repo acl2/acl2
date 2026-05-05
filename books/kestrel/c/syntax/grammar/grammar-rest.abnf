@@ -727,9 +727,6 @@ parameter-declaration = declaration-specifiers
                         [ abstract-declarator ]
                         *attribute-specifier ; GCC extension
 
-identifier-list = identifier
-                / identifier-list "," identifier
-
 type-name = specifier-qualifier-list [ abstract-declarator ]
 
 abstract-declarator = pointer
