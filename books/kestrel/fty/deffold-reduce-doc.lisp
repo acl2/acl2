@@ -459,7 +459,9 @@
       (xdoc::li
        "@('<type>-<suffix>-of-update')")
       (xdoc::li
-       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>')"))
+       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>')")
+      (xdoc::li
+       "@('<valtype>-<suffix>-of-cdr-assoc-when-<type>-<suffix>')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
