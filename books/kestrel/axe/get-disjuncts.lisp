@@ -12,8 +12,10 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/utilities/myif-def" :dir :system) ;; since this tool knows about myif
 (include-book "kestrel/booleans/booland" :dir :system) ;; since this tool knows about booland
 (include-book "kestrel/booleans/boolor" :dir :system) ;; since this tool knows about boolor
+(include-book "kestrel/booleans/boolif-def" :dir :system) ;; since this tool knows about boolif
 (include-book "dag-array-builders")
 (include-book "def-dag-builder-theorems")
 (include-book "merge-sort-less-than-and-remove-dups")
@@ -28,8 +30,13 @@
 (local (in-theory (disable nth len natp))) ; for speed
 
 ;; Sanity checks that justify the operations below:
-(thm (iff (if x x y) (or x y)))
 (thm (iff (boolor x y) (or x y)))
+(thm (iff (if x x y) (or x y)))
+(thm (iff (if x t y) (or x y)))
+(thm (iff (myif x x y) (or x y)) :hints (("Goal" :in-theory (enable myif))))
+(thm (iff (myif x t y) (or x y)) :hints (("Goal" :in-theory (enable myif))))
+(thm (iff (boolif x x y) (or x y)) :hints (("Goal" :in-theory (enable boolif))))
+(thm (iff (boolif x t y) (or x y)) :hints (("Goal" :in-theory (enable boolif))))
 
 ;; Returns (mv erp truep extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; When NEGATED-FLG is nil, EXTENDED-ACC is ACC extended with the disjuncts of ITEM, except that if a true disjunct is found, we signal it by returning T for TRUEP.
@@ -97,29 +104,30 @@
                                                   nil ; negated-flg
                                                   print
                                                   ))))
-                  (if (if (not (= 3 (len (dargs expr))))
-                          (prog2$ (er hard? 'get-darg-disjuncts "Bad arity for IF.")
-                                  (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                        (if (equal (darg1 expr) (darg2 expr))
-                            ;; (if x x y) is just (or x y), so get disjuncts from the arguments:
-                            (b* (((mv erp truep acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                  (get-darg-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                      acc
-                                                      nil ;negated-flg
-                                                      print
-                                                      ))
-                                 ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                                 ((when truep) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-                              (get-darg-disjuncts (darg3 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                  acc ; has been extended for darg1
-                                                  nil ; negated-flg
-                                                  print
-                                                  ))
-                          ;; TODO: Handle more cases of if, such as (if x t y)
-                          (mv (erp-nil)
-                              nil ; truep
-                              (cons darg acc)
-                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+                  ((if myif boolif)
+                   (if (not (= 3 (len (dargs expr))))
+                       (prog2$ (er hard? 'get-darg-disjuncts "Bad arity for IF.")
+                               (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                     (if (or (equal (darg1 expr) (darg2 expr))
+                             (equal (darg2 expr) *t*))
+                         ;; (if x x y) is just (or x y), so get disjuncts from the first and third arguments
+                         ;; (if x t y) is also essentially (or x y), so get disjuncts from the first and third arguments
+                         (b* (((mv erp truep acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                               (get-darg-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                   acc
+                                                   nil ;negated-flg
+                                                   print))
+                              ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                              ((when truep) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                           (get-darg-disjuncts (darg3 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                               acc ; has been extended for darg1
+                                               nil ; negated-flg
+                                               print))
+                       ;; TODO: Any more cases of if to handle?  handle (if x y y)?
+                       (mv (erp-nil)
+                           nil ; truep
+                           (cons darg acc)
+                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
                   (not (if (not (= 1 (len (dargs expr))))
                            (prog2$ (er hard? 'get-darg-disjuncts "Bad arity for NOT.")
                                    (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
@@ -243,9 +251,7 @@
 
 (def-dag-builder-theorems
   (get-darg-disjuncts darg dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print)
-  (mv erp
-      truep ;todo: when this was missing, def-dag-builder-theorems did not throw a nice error
-      disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+  (mv erp truep disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
 
 ;; The disjuncts are always nodenums.
 (defthm nat-listp-of-mv-nth-2-of-get-darg-disjuncts
