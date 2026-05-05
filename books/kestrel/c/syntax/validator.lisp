@@ -8247,11 +8247,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-trans-ensemble ((tunits trans-ensemblep)
+(define valid-trans-ensemble ((tuens trans-ensemblep)
                               (ienv ienvp)
                               (keep-going booleanp))
-  :guard (trans-ensemble-unambp tunits)
-  :returns (mv (erp maybe-msgp) (new-tunits trans-ensemblep))
+  :guard (trans-ensemble-unambp tuens)
+  :returns (mv (erp maybe-msgp) (new-tuens trans-ensemblep))
   :short "Validate a translation ensemble."
   :long
   (xdoc::topstring
@@ -8264,7 +8264,7 @@
      the externally linked identifiers across
      different translation units of a translation ensemble."))
   (b* (((reterr) (irr-trans-ensemble))
-       (map (trans-ensemble->units tunits))
+       (map (trans-ensemble->units tuens))
        ((erp new-map vstate)
         (valid-filepath-trans-unit-map map nil nil (uid 0) ienv keep-going))
        (- (if keep-going
@@ -8285,5 +8285,5 @@
 
   (defret trans-ensemble-unambp-of-valid-trans-ensemble
     (implies (not erp)
-             (trans-ensemble-unambp new-tunits))
-    :hyp (trans-ensemble-unambp tunits)))
+             (trans-ensemble-unambp new-tuens))
+    :hyp (trans-ensemble-unambp tuens)))
