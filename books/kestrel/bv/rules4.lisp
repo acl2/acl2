@@ -321,10 +321,10 @@
                            (< (bvchop lowsize x)
                               (bvchop lowsize lowval))))))
   :hints (("Goal"
-           :use ( ;(:instance multiply-both-sides-hack (x (LOGTAIL LOWSIZE X)) (y (+ 1 HIGHVAL)) (z (expt 2 lowsize)))
+           :use (;(:instance multiply-both-sides-hack (x (LOGTAIL LOWSIZE X)) (y (+ 1 HIGHVAL)) (z (expt 2 lowsize)))
                  )
            :in-theory (e/d (logapp slice  logapp-less-than-alt-helper-1)
-                           ( ;;plus-of-times-expt-bound2
+                           (;;plus-of-times-expt-bound2
                             PLUS-OF-TIMES-EXPT-BOUND
                             anti-slice
                             <-of-logtail-arg1 ;logtail-lessp

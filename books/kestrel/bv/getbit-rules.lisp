@@ -31,9 +31,7 @@
                     (bitnot (getbit n x)))))
   :hints (("Goal" ;; :cases ((integerp x))
            :in-theory (e/d (getbit bitnot)
-                                  (
-
-                                   ;BITNOT-OF-SLICE ;bozo
+                                  (;BITNOT-OF-SLICE ;bozo
                                    ;BITXOR-OF-SLICE-ARG2 ;loops with defn getbit
                                    )))))
 
@@ -82,9 +80,7 @@
                 (natp n))
            (equal (getbit n (floor x y))
                   0))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail-when-equal-of-logtail-and-0-and->=)
-                                  (
-                                   )))))
+  :hints (("Goal" :in-theory (enable getbit slice logtail-when-equal-of-logtail-and-0-and->=))))
 
 (defthm getbit-when-<=-of-constant-high
   (implies (and (syntaxp (quotep n)) ; to ensure this is cheap

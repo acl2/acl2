@@ -206,8 +206,7 @@
                  (natp width))
             (equal (getbit n (leftrotate width amt x))
                    (getbit (- n amt) x)))
-   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (
-                                                        ))))))
+   :hints (("Goal" :in-theory (enable getbit leftrotate)))))
 
 (local
  (defthm getbit-of-leftrotate-low
@@ -219,8 +218,7 @@
                  (natp width))
             (equal (getbit n (leftrotate width amt x))
                    (getbit (+ width (- amt) n) x)))
-   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (
-                                                        ))))))
+   :hints (("Goal" :in-theory (enable getbit leftrotate)))))
 
 ;; todo: restrict to the case when we can resolve the (< n width) test?
 (defthm getbit-of-leftrotate
@@ -234,8 +232,7 @@
                           (getbit (+ width (- (mod amt width)) n) x)
                         (getbit (- n (mod amt width)) x))
                     0)))
-  :hints (("Goal" :in-theory (e/d (getbit leftrotate) (
-                                                       )))))
+  :hints (("Goal" :in-theory (enable getbit leftrotate))))
 
 ;; no mod in rhs
 ;; todo: restrict to the case when we can resolve the (< n width) test?

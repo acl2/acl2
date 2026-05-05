@@ -440,7 +440,7 @@
   :hints (("Goal" :use (:instance bvchop-of-*-of-bvchop (size 1))
            :in-theory
            (e/d (getbit)
-                ( bvchop-of-*-of-bvchop)))))
+                (bvchop-of-*-of-bvchop)))))
 
 (defthm getbit-when-slice-is-known-constant
   (implies (and (equal free (slice high low x)) ;reversed the equality
@@ -475,7 +475,7 @@
                    0)))
  :hints (("Goal" :in-theory
           (e/d (getbit slice bvchop) ; todo: disable less
-               ( bvchop-of-*-of-bvchop)))))
+               (bvchop-of-*-of-bvchop)))))
 
 (defthm getbit-of-0-and-+-of-1-and-*-of-2
   (implies (integerp x)

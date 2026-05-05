@@ -545,16 +545,14 @@
 ;;                 (integerp z))
 ;;            (equal (slice 31 5 (+ (bvchop 32 y) z))
 ;;                   (slice 31 5 (+ y z))))
-;;   :hints (("Goal" :in-theory (e/d (slice) (
-;;                                            LOGTAIL-EQUAL-0)))))
+;;   :hints (("Goal" :in-theory (e/d (slice) (LOGTAIL-EQUAL-0)))))
 
 ;; (defthmd slice-of-bvchop-hack6b
 ;;   (implies (and (integerp y)
 ;;                 (integerp z))
 ;;            (equal (slice 31 5 (+ z (bvchop 32 y)))
 ;;                   (slice 31 5 (+ y z))))
-;;   :hints (("Goal" :in-theory (e/d (slice) (
-;;                                            LOGTAIL-EQUAL-0)))))
+;;   :hints (("Goal" :in-theory (e/d (slice) (LOGTAIL-EQUAL-0)))))
 
 (defthm slice-of-sum-drop-bvchop
   (implies (and (< high size)
@@ -1317,16 +1315,12 @@
          (getbit 0 (lognot x)))
   :hints (("Goal"
            :use ((:instance bvchop-lognot-bvchop (n 1)))
-           :in-theory (e/d (getbit) (
-
-                                     bvchop-lognot-bvchop)))))
+           :in-theory (e/d (getbit) (bvchop-lognot-bvchop)))))
 
 ;; (defthm bvnot-equal-0-rewrite
 ;;   (equal (equal 0 (bvnot 1 x))
 ;;          (mynot (equal 0 (getbit 0 x))))
-;;   :hints (("Goal" :in-theory (e/d (bitnot) (
-;;                                         )))))
-
+;;   :hints (("Goal" :in-theory (enable bitnot))))
 
 ;;
 ;; bool-to-bit - do we translate this op to stp?
@@ -4737,8 +4731,9 @@
                       (bvlt size (bvplus size k2 (bvuminus size k1)) y)))))
   :hints (("Goal" :use (bvlt-of-bvuminus-arg2
                         bvlt-add-to-both-sides-constant-lemma-helper)
-           :in-theory (e/d (;bvlt-of-bvuminus-arg2) (
-                            bvlt-add-to-both-sides-constant-lemma-helper)))))
+           :in-theory (e/d (;bvlt-of-bvuminus-arg2
+                            )
+                            (bvlt-add-to-both-sides-constant-lemma-helper)))))
 
 ;fixme  - simplify this?
 (defthm bvlt-add-to-both-sides-constant-lemma
@@ -5514,12 +5509,10 @@
 ;;                     (if (equal (bvchop 32 x) (expt 2 31))
 ;;                         1
 ;;                       (getbit 31 x)))))
-;;   :hints (("Goal" :in-theory (e/d (bvlt bvplus
-;;                                         bvchop-of-sum-cases
-;;                                         getbit
-;;                                         slice)
-;;                                   (
-;;                                    )))))
+;;   :hints (("Goal" :in-theory (enable bvlt bvplus
+;;                                      bvchop-of-sum-cases
+;;                                      getbit
+;;                                      slice))))
 
 ;; since x>=y, x is usually not less than y+1
 (defthmd bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt

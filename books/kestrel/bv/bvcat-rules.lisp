@@ -377,7 +377,7 @@
                             (size size2)
                             (x y)
                             (y x)))
-           :in-theory (e/d ( ;bvmult
+           :in-theory (e/d (;bvmult
                             ) (BVMULT-OF-BVCHOP-arg2
                             BVMULT-OF-BVCHOP-arg3
                             )))))

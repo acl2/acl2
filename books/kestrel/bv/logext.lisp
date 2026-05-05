@@ -709,7 +709,7 @@
                   (getbit n x)))
   :hints (("Goal" :cases ((integerp x))
            :in-theory (e/d (getbit slice BVCHOP-OF-LOGTAIL)
-                           ( ;LOGTAIL-BVCHOP
+                           (;LOGTAIL-BVCHOP
                             ;;BVCHOP-OF-LOGTAIL
                             )))))
 
