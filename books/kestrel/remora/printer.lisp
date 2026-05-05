@@ -902,12 +902,81 @@
 (define char-lit-list-to-string ((chars char-lit-listp))
   :returns (s stringp)
   :short "Render the contents of a Remora string literal: concatenation
-          of @(tsee char-lit-to-string) over @('chars').  The wrapping
-          double quotes are added by @(tsee expr-to-pdoc) for the
-          @(':string') case."
+          of @(tsee char-lit-to-string) over @('chars').  Does NOT
+          insert empty escapes; use @(tsee string-lit-to-string) for
+          a round-trip-safe rendering of a string literal."
   (cond ((endp chars) "")
         (t (str::cat (char-lit-to-string (car chars))
                      (char-lit-list-to-string (cdr chars))))))
+
+;; ---- Disambiguation: insert "\&" empty-escapes where adjacent
+;; char-lits would otherwise be merged on re-parse. ----
+;;
+;; The Remora grammar has two sources of round-trip ambiguity:
+;;   1. num-escape is greedy (1*DIGIT, 1*OCTDIGIT, 1*HEXDIG), so
+;;      :dec "5" followed by char '7' merges to "\57".
+;;   2. ascii-escape :so is a prefix of :soh, so :so followed by 'H'
+;;      or 'h' merges to "\SOH".
+;; In both cases, the next char-lit is a :char.  Following an :escape
+;; char-lit by another :escape always begins with '\', which never
+;; extends a num-escape's digit run nor completes "SOH" after "SO".
+
+(define char-lit-first-codepoint ((cl char-litp))
+  :returns (cp natp)
+  :short "First codepoint of @('cl')'s printed form."
+  :hooks nil
+  (char-lit-case cl
+    :char (lnfix cl.code)
+    :escape #x5C))
+
+(define needs-empty-escape-between ((prev char-litp) (next char-litp))
+  :returns (yes/no booleanp)
+  :short "Whether to emit @('\\&') between @('prev') and @('next') so
+          that re-parsing recovers the same two char-lits.  Returns
+          @('t') when @('prev')'s greedy or prefix-ambiguous parse
+          would otherwise consume part of @('next')."
+  :hooks nil
+  (b* ((next-cp (char-lit-first-codepoint next)))
+    (char-lit-case prev
+      :char nil  ; non-escape consumes exactly one codepoint
+      :escape
+      (escape-case prev.escape
+        :char nil    ; \X mnemonic: 1 fixed codepoint
+        :caret nil   ; \^X: caret consumes exactly 2 codepoints
+        :ascii (ascii-escape-case prev.escape.escape
+                 :nul-to-sp
+                 ;; Only :so (code 14) has a prefix conflict (with :soh)
+                 (and (eql prev.escape.escape.code 14)
+                      (or (eql next-cp #x48)    ; 'H'
+                          (eql next-cp #x68)))  ; 'h'
+                 :del nil)
+        :num (num-escape-case prev.escape.escape
+               :dec (and (<= #x30 next-cp) (<= next-cp #x39))   ; 0-9
+               :oct (and (<= #x30 next-cp) (<= next-cp #x37))   ; 0-7
+               :hex (or (and (<= #x30 next-cp) (<= next-cp #x39))    ; 0-9
+                        (and (<= #x41 next-cp) (<= next-cp #x46))    ; A-F
+                        (and (<= #x61 next-cp) (<= next-cp #x66)))))))) ; a-f
+
+(define char-lit-list-to-string-disambig ((chars char-lit-listp))
+  :returns (s stringp)
+  :short "Render @('chars') as the contents of a string literal,
+          inserting @('\\&') between adjacent char-lits where the
+          parser would otherwise re-merge them."
+  (cond ((endp chars) "")
+        ((endp (cdr chars))
+         (char-lit-to-string (car chars)))
+        (t (str::cat
+            (char-lit-to-string (car chars))
+            (str::cat (if (needs-empty-escape-between (car chars)
+                                                       (cadr chars))
+                          "\\&" "")
+                      (char-lit-list-to-string-disambig (cdr chars)))))))
+
+(define string-lit-to-string ((chars char-lit-listp))
+  :returns (s stringp)
+  :short "Render a string literal: surround the disambig'd contents
+          with double quotes."
+  (str::cat "\"" (str::cat (char-lit-list-to-string-disambig chars) "\"")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -936,10 +1005,7 @@
                            (pdoc-concat (pdoc-line)
                                         (expr-list-to-pdoc e.exprs))))
       :frame-empty (pdoc-text "<frame-empty>")
-      :string (pdoc-text (str::cat "\""
-                                   (str::cat
-                                    (char-lit-list-to-string e.chars)
-                                    "\"")))
+      :string (pdoc-text (string-lit-to-string e.chars))
       :app (if (consp e.args)
                (pdoc-call-form (expr-to-pdoc e.fun)
                                (expr-list-to-pdoc e.args))
