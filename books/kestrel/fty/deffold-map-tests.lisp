@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -43,7 +43,8 @@
     :types (exprs)
     :override
     ((bexpr :true (bexpr-false))
-     (bexpr :false (bexpr-true))))
+     (bexpr :false (bexpr-true)))
+    :name test)
 
   (acl2::assert-equal
     (aexpr-invert (aexpr-cond (bexpr-false) (aexpr-const 0) (aexpr-const 1)))
@@ -62,7 +63,8 @@
                right)
               ((equal right (aexpr-const 0))
                left)
-              (t (aexpr-add left right)))))))
+              (t (aexpr-add left right))))))
+    :name test)
 
   (acl2::assert-equal
     (aexpr-simpadd0 (aexpr-add (aexpr-const 42)
@@ -81,7 +83,8 @@
         (if (and lookup
                  (stringp (cdr lookup)))
             (aexpr-var (cdr lookup))
-          (aexpr-fix aexpr))))))
+          (aexpr-fix aexpr)))))
+    :name test)
 
   (acl2::assert-equal
     (bexpr-subst-vars (bexpr-less (aexpr-var "x") (aexpr-var "y"))
@@ -116,7 +119,8 @@
     :types (foo+)
     :override
     ((foo :list (foo-bar))
-     (foo :omap (foo-bar))))
+     (foo :omap (foo-bar)))
+    :name test)
 
   (acl2::assert-equal
     (foo-omap-becomes-bar
@@ -159,7 +163,8 @@
     :types (foo+)
     :extra-args ((i integerp))
     :override
-    ((foo :int (foo-int i))))
+    ((foo :int (foo-int i)))
+    :name test)
 
   (acl2::assert-equal
     (foo-omap-replace-int
@@ -198,7 +203,8 @@
   (deffold-map becomes-baz
     :types (foo+)
     :override
-    ((foo :bar (foo-baz))))
+    ((foo :bar (foo-baz)))
+    :name test)
 
   (acl2::assert-equal
     (foo-option-becomes-baz (foo-bar nil))

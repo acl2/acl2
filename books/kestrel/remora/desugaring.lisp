@@ -129,7 +129,8 @@
                  fun-targs-iargs-args))
    (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
                     (make-expr-frame :dims (list (len exprs))
-                                     :exprs exprs)))))
+                                     :exprs exprs))))
+  :name abstract-syntax-desugar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

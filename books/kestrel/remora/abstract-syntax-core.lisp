@@ -125,7 +125,8 @@
    (type :bracket nil)
    (expr :string nil)
    (expr :capp nil)
-   (expr :bracket nil)))
+   (expr :bracket nil))
+  :name abstract-syntax-corep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

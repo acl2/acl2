@@ -233,8 +233,8 @@
     ;; identifier: *id-continue
     "*id-continue" repetition-*-id-continue
 
-    ;; string-lit: *char-lit
-    "*char-lit" repetition-*-char-lit
+    ;; string-lit: *string-elem (= *( char-lit / empty-escape ))
+    "*string-elem" repetition-*-string-elem
 
     ;; ---- Repetitions for ws-separated lists ----
     "*( ws exp )" repetition-*-ws-exp
@@ -742,8 +742,12 @@
              (< (len rest-input) (len input)))
     :rule-classes :linear))
 
-;; string-lit = DQUOTE *char-lit DQUOTE
-(defparse-remora-*-rulename "char-lit")
+;; string-lit = DQUOTE *string-elem DQUOTE
+;; string-elem = char-lit / empty-escape
+;; empty-escape = "\&"
+(defparse-remora-rulename "empty-escape")
+(defparse-remora-rulename "string-elem")
+(defparse-remora-*-rulename "string-elem")
 (defparse-remora-rulename "string-lit")
 
 ;; ---- Type and ispace parameters ----
