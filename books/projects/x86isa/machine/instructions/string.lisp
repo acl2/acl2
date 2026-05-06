@@ -154,8 +154,6 @@
        (p4? (equal #.*addr-size-override*
                    (the (unsigned-byte 8) (prefixes->adr prefixes))))
 
-       ((the (unsigned-byte 1) df) (flgi :df x86))
-
        ((the (integer 2 8) counter/addr-size) ; CX or ECX or RCX
         (select-address-size proc-mode p4? x86))
 
@@ -174,6 +172,7 @@
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
 
+       ;; Read data from the source.
        (src-addr (if counter/addr-size-2/4?
                      (rgfi-size counter/addr-size #.*rsi* rex-byte x86) ; SI/ESI
                    (rgfi #.*rsi* x86))) ; RSI
@@ -181,11 +180,8 @@
                    ;; A 16-bit or 32-bit address is always canonical.
                    (not (canonical-address-p src-addr))))
         (!!ms-fresh :src-addr-not-canonical src-addr))
-
        (inst-ac? (alignment-checking-enabled-p x86))
-
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
        ((mv flg0 src x86) (rme-size-opt proc-mode
                                         operand-size
                                         (the (signed-byte 64) src-addr)
@@ -196,6 +192,7 @@
        ((when flg0)
         (!!ms-fresh :src-rme-size-error flg0))
 
+       ;; Write data to the destination. This is always in segment ES.
        (dst-addr (if counter/addr-size-2/4?
                      (rgfi-size counter/addr-size #.*rdi* rex-byte x86) ; DI/EDI
                    (rgfi #.*rdi* x86))) ; RDI
@@ -203,15 +200,31 @@
                    ;; A 16-bit or 32-bit address is always canonical.
                    (not (canonical-address-p dst-addr))))
         (!!ms-fresh :dst-addr-not-canonical dst-addr))
+       ((mv flg1 x86) (wme-size proc-mode
+                                operand-size
+                                dst-addr
+                                #.*es*
+                                src
+                                inst-ac?
+                                x86))
+       ((when flg1)
+        (!!ms-fresh :wme-size-error flg1))
 
-       ((the (signed-byte #.*max-linear-address-size*) original-dst-addr)
-        dst-addr)
+       ;; If there is a REP prefix, decrement rCX and leave the rIP unchanged,
+       ;; so that we can (attempt to) repeat this instruction;
+       ;; note that if we get here rCX is not 0, because we tested it above.
+       ;; If there is no REP prefix, advance rIP to the next instructions.
+       (x86 (if (equal group-1-prefix #.*rep*)
+                (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
+              (write-*ip proc-mode temp-rip x86)))
 
        ;; A repeating string operation can be suspended by an exception or
        ;; interrupt. When this happens, the state of the register is preserved
        ;; to allow the string operation to be resumed upon a return from the
        ;; exception or interrupt handler.
 
+       ;; Increment and update rSI and rDI.
+       ((the (unsigned-byte 1) df) (flgi :df x86))
        ((mv (the (signed-byte #.*max-linear-address-size+1*) src-addr)
             (the (signed-byte #.*max-linear-address-size+1*) dst-addr))
         (case operand-size
@@ -251,27 +264,6 @@
                                       src-addr))
                            (+ -8 (the (signed-byte #.*max-linear-address-size*)
                                       dst-addr)))))))
-
-       ;; Write data to the destination. This is always in segment ES.
-       ((mv flg1 x86) (wme-size proc-mode
-                                operand-size
-                                original-dst-addr
-                                #.*es*
-                                src
-                                inst-ac?
-                                x86))
-       ((when flg1)
-        (!!ms-fresh :wme-size-error flg1))
-
-       ;; If there is a REP prefix, decrement rCX and leave the rIP unchanged,
-       ;; so that we can (attempt to) repeat this instruction;
-       ;; note that if we get here rCX is not 0, because we tested it above.
-       ;; If there is no REP prefix, advance rIP to the next instructions.
-       (x86 (if (equal group-1-prefix #.*rep*)
-                (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
-              (write-*ip proc-mode temp-rip x86)))
-
-       ;; Update rSI and rDI.
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
                              #.*rsi*
