@@ -766,8 +766,6 @@
        (p4? (equal #.*addr-size-override*
                    (the (unsigned-byte 8) (prefixes->adr prefixes))))
 
-       ((the (unsigned-byte 1) df) (flgi :df x86))
-
        ((the (integer 2 8) counter/addr-size) ; CX or ECX or RCX
         (select-address-size proc-mode p4? x86))
 
@@ -786,6 +784,10 @@
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
 
+       ;; Read rAX.
+       (al/ax/eax/rax (rgfi-size operand-size #.*rax* 0 x86))
+
+       ;; Write data to the destination. This is always in segment ES.
        (dst-addr (if counter/addr-size-2/4?
                      (rgfi-size counter/addr-size #.*rdi* rex-byte x86) ; DI/EDI
                    (rgfi #.*rdi* x86))) ; RDI
@@ -793,10 +795,6 @@
                    ;; A 16-bit or 32-bit address is always canonical.
                    (not (canonical-address-p dst-addr))))
         (!!ms-fresh :dst-addr-not-canonical dst-addr))
-
-       (al/ax/eax/rax (rgfi-size operand-size #.*rax* 0 x86))
-
-       ;; Write rAX to destination. This is always in segment ES.
        (inst-ac? (alignment-checking-enabled-p x86))
        ((mv flg0 x86) (wme-size proc-mode
                                 operand-size
@@ -808,6 +806,16 @@
        ((when flg0)
         (!!ms-fresh :wme-size-error flg0))
 
+       ;; If there is a REP prefix, decrement rCX and leave the rIP unchanged,
+       ;; so that we can (attempt to) repeat this instruction;
+       ;; note that if we get here rCX is not 0, because we tested it above.
+       ;; If there is no REP prefix, advance rIP to the next instructions.
+       (x86 (if (equal group-1-prefix *repe*)
+                (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
+              (write-*ip proc-mode temp-rip x86)))
+
+       ;; Update rDI.
+       ((the (unsigned-byte 1) df) (flgi :df x86))
        ((the (signed-byte #.*max-linear-address-size+1*) dst-addr)
         (case operand-size
           (1 (if (equal df 0)
@@ -823,16 +831,6 @@
            (if (equal df 0)
                (+ 8 (the (signed-byte #.*max-linear-address-size*) dst-addr))
              (+ -8 (the (signed-byte #.*max-linear-address-size*) dst-addr))))))
-
-       ;; If there is a REP prefix, decrement rCX and leave the rIP unchanged,
-       ;; so that we can (attempt to) repeat this instruction;
-       ;; note that if we get here rCX is not 0, because we tested it above.
-       ;; If there is no REP prefix, advance rIP to the next instructions.
-       (x86 (if (equal group-1-prefix *repe*)
-                (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
-              (write-*ip proc-mode temp-rip x86)))
-
-       ;; Update rDI.
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
                              #.*rdi*
