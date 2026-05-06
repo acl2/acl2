@@ -223,7 +223,7 @@
        ;; to allow the string operation to be resumed upon a return from the
        ;; exception or interrupt handler.
 
-       ;; Increment and update rSI and rDI.
+       ;; Update rSI and rDI.
        ((the (unsigned-byte 1) df) (flgi :df x86))
        ((mv (the (signed-byte #.*max-linear-address-size+1*) src-addr)
             (the (signed-byte #.*max-linear-address-size+1*) dst-addr))
@@ -373,8 +373,6 @@
        (p4? (equal #.*addr-size-override*
                    (the (unsigned-byte 8) (prefixes->adr prefixes))))
 
-       ((the (unsigned-byte 1) df) (flgi :df x86))
-
        ((the (integer 2 8) counter/addr-size) ; CX or ECX or RCX
         (select-address-size proc-mode p4? x86))
 
@@ -395,6 +393,7 @@
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
 
+       ;; Read data from the first source.
        (src1-addr (if counter/addr-size-2/4?
                      (rgfi-size counter/addr-size #.*rsi* rex-byte x86) ; SI/ESI
                    (rgfi #.*rsi* x86))) ; RSI
@@ -402,11 +401,8 @@
                    ;; A 16-bit or 32-bit address is always canonical.
                    (not (canonical-address-p src1-addr))))
         (!!ms-fresh :src1-addr-not-canonical src1-addr))
-
        (inst-ac? (alignment-checking-enabled-p x86))
-
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
        ((mv flg0 src1 x86) (rme-size-opt proc-mode
                                         operand-size
                                         (the (signed-byte 64) src1-addr)
@@ -417,21 +413,22 @@
        ((when flg0)
         (!!ms-fresh :src1-rme-size-error flg0))
 
+       ;; Read data from the second source.
        (src2-addr (if counter/addr-size-2/4?
-                     (rgfi-size counter/addr-size #.*rdi* rex-byte x86) ; DI/EDI
-                   (rgfi #.*rdi* x86))) ; RDI
+                      (rgfi-size counter/addr-size #.*rdi* rex-byte x86) ; DI/EDI
+                    (rgfi #.*rdi* x86))) ; RDI
        ((when (and (not counter/addr-size-2/4?)
                    ;; A 16-bit or 32-bit address is always canonical.
                    (not (canonical-address-p src2-addr))))
         (!!ms-fresh :src2-addr-not-canonical src2-addr))
 
        ((mv flg0 src2 x86) (rme-size-opt proc-mode
-                                        operand-size
-                                        src2-addr
-                                        #.*es*
-                                        :r
-                                        inst-ac?
-                                        x86))
+                                         operand-size
+                                         src2-addr
+                                         #.*es*
+                                         :r
+                                         inst-ac?
+                                         x86))
        ((when flg0)
         (!!ms-fresh :src2-rme-size-error flg0))
 
@@ -439,7 +436,6 @@
        ;; subtracts the second operand from the first operand and sets the
        ;; status flags in the same manner as the SUB instruction, but does not
        ;; alter the first operand. The two operands must be of the same size."
-
        ((the (unsigned-byte 32) input-rflags) (rflags x86))
        ((mv ?result
             (the (unsigned-byte 32) output-rflags)
@@ -447,11 +443,40 @@
         (gpr-arith/logic-spec operand-size #.*OP-SUB* src1 src2 input-rflags))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
+       ;; If there is a REPE/REPZ or REPNE/REPNZ prefix,
+       ;; decrement rCX and leave the rIP unchanged,
+       ;; so that we can (attempt to) repeat this instruction
+       ;; (unless the ZF flag, checked below, stops the repetition);
+       ;; note that if we get here rCX is not 0, because we tested it above.
+       ;; If there is no REPE/REPZ or REPNE/REPNZ prefix,
+       ;; advance rIP to the next instructions.
+       (x86 (if (or (equal group-1-prefix #.*repe*) ; REPE/REPZ
+                    (equal group-1-prefix #.*repne*)) ; REPNE/REPNZ
+                (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
+              (write-*ip proc-mode temp-rip x86)))
+
+       ;; If there is a REPE/REPZ prefix and ZF is 0, stop repetition.
+       ;; If there is a REPNE/REPNZ prefix and ZF is 1, stop repetition.
+       ;; Note that ZF is set by the comparison performed above.
+       ;; If the repetition stops, we update rIP,
+       ;; so that the next execution step is on the next instruction;
+       ;; otherwise, rIP stays as is,
+       ;; and the next step re-executes this instruction.
+       (stop-repeat (or (and (equal group-1-prefix #.*repe*)
+                             (= (rflagsbits->zf output-rflags) 0))
+                        (and (equal group-1-prefix #.*repne*)
+                             (= (rflagsbits->zf output-rflags) 1))))
+       (x86 (if stop-repeat
+                (write-*ip proc-mode temp-rip x86)
+              x86))
+
        ;; A repeating string operation can be suspended by an exception or
        ;; interrupt. When this happens, the state of the register is preserved
        ;; to allow the string operation to be resumed upon a return from the
        ;; exception or interrupt handler.
 
+       ;; Update rSI and rDI.
+       ((the (unsigned-byte 1) df) (flgi :df x86))
        ((mv (the (signed-byte #.*max-linear-address-size+1*) src1-addr)
             (the (signed-byte #.*max-linear-address-size+1*) src2-addr))
         (case operand-size
@@ -491,35 +516,6 @@
                                       src1-addr))
                            (+ -8 (the (signed-byte #.*max-linear-address-size*)
                                       src2-addr)))))))
-
-       ;; If there is a REPE/REPZ or REPNE/REPNZ prefix,
-       ;; decrement rCX and leave the rIP unchanged,
-       ;; so that we can (attempt to) repeat this instruction
-       ;; (unless the ZF flag, checked below, stops the repetition);
-       ;; note that if we get here rCX is not 0, because we tested it above.
-       ;; If there is no REPE/REPZ or REPNE/REPNZ prefix,
-       ;; advance rIP to the next instructions.
-       (x86 (if (or (equal group-1-prefix #.*repe*) ; REPE/REPZ
-                    (equal group-1-prefix #.*repne*)) ; REPNE/REPNZ
-                (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
-              (write-*ip proc-mode temp-rip x86)))
-
-       ;; If there is a REPE/REPZ prefix and ZF is 0, stop repetition.
-       ;; If there is a REPNE/REPNZ prefix and ZF is 1, stop repetition.
-       ;; Note that ZF is set by the comparison performed above.
-       ;; If the repetition stops, we update rIP,
-       ;; so that the next execution step is on the next instruction;
-       ;; otherwise, rIP stays as is,
-       ;; and the next step re-executes this instruction.
-       (stop-repeat (or (and (equal group-1-prefix #.*repe*)
-                             (= (rflagsbits->zf output-rflags) 0))
-                        (and (equal group-1-prefix #.*repne*)
-                             (= (rflagsbits->zf output-rflags) 1))))
-       (x86 (if stop-repeat
-                (write-*ip proc-mode temp-rip x86)
-              x86))
-
-       ;; Update rSI and rDI.
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
                              #.*rsi*
