@@ -100,7 +100,8 @@
               filepath-trans-unit-map
               trans-ensemble)
   :extra-args ((subst ident-ident-alistp))
-  :override ((ident (ident-ident-subst ident subst))))
+  :override ((ident (ident-ident-subst ident subst)))
+  :name abstract-syntax-rename)
 
 (define code-ensemble-rename ((code code-ensemblep)
                               (subst ident-ident-alistp))

@@ -188,6 +188,8 @@
             x86isa::ror-spec-32
             ror-spec-64-alt-def ; x86isa::ror-spec-64
 
+            x86isa::blsi
+
             x86isa::x86-operand-to-xmm/mem
 
             x86isa::simd-add-spec-base-1 x86isa::simd-add-spec-base-2 x86isa::simd-add-spec-unroll
@@ -1225,7 +1227,12 @@
     ;;todo: not x86-specific
     acl2::integerp-of-logext
     acl2::signed-byte-p-of-logext
-    acl2::integerp-of--))
+    acl2::integerp-of--
+
+    integerp-of-tzcnt
+    natp-of-tzcnt
+    tzcnt ; these help make tzcnt amenable to SMT
+    ))
 
 ;move?
 (defund arith-to-bv-rules ()
@@ -1263,7 +1270,6 @@
     ;;            acl2::bvplus-of-logxor-arg1                     ; introduce bvxor
     ;;            acl2::bvxor-of-logxor-arg2                      ; introduce bvxor
 
-    acl2::loghead-becomes-bvchop
     ;;acl2::bvchop-of-lognot-becomes-bvnot ; now handled by convert-to-bv machinery
     ;;acl2::bvchop-of-logand-becomes-bvand ; now handled by convert-to-bv machinery
     ;;acl2::bvchop-of-logior-becomes-bvor
@@ -1318,7 +1324,8 @@
     acl2::logbit-becomes-getbit
     acl2::b-and-becomes-bitand
     acl2::b-ior-becomes-bitor
-    acl2::b-xor-becomes-bitxor))
+    acl2::b-xor-becomes-bitxor
+    acl2::b-not-becomes-bitnot))
 
 ;; See also bitops-to-bv-rules.
 ;; todo: add more constant openers
@@ -3615,7 +3622,8 @@
     bvchop-of-decrement-esp-hack
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
-    slice-63-32-of-+-of-esp-when-stack-segment-assumptions32
+    slice-63-32-of-+-of-esp-when-stack-segment-assumptions32 ; drop since we have the rule just below?
+    slice-63-32-of-bvplus-64-of-esp-when-stack-segment-assumptions32
     bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop ; todo: involved in loops!
     ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound

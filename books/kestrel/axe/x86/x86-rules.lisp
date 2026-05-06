@@ -1198,3 +1198,38 @@
                   ;; bv-array-read-cases here will then get unrolled:
                   (set-rip (bv-array-read-cases (+ -1 len) size len index data) x86)))
   :hints (("Goal" :in-theory (enable acl2::bv-array-read-becomes-bv-array-read-cases))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm integerp-of-tzcnt
+  (implies (and (natp i)
+                (natp bits)
+                (<= i bits))
+           (integerp (tzcnt bits i n)))
+  :hints (("Goal" :in-theory (enable tzcnt))))
+
+(defthm natp-of-tzcnt
+  (implies (and (natp i)
+                (natp bits)
+                (<= i bits))
+           (natp (tzcnt bits i n)))
+  :hints (("Goal" :in-theory (enable tzcnt))))
+
+;; This did not give me what I wanted:
+;; (defopeners tzcnt :hyps ((syntaxp (and (quotep i)
+;;                                        (quotep x86isa::bits)))))
+
+(defthm tzcnt-opener
+  (implies (and (syntaxp (and (quotep i)
+                              (quotep bits)))
+                (natp i)
+                (natp bits)
+                (<= i bits))
+           (equal (tzcnt bits i n)
+                  (if (equal i bits)
+                      bits
+                    (if (logbitp i n)
+                        i
+                      (tzcnt bits (1+ i) n)))))
+  :hints (("Goal" :in-theory (enable tzcnt))))

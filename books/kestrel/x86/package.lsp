@@ -1,7 +1,7 @@
 ; The "X" package for x86 Axe proofs
 ;
 ; Copyright (C) 2017-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1306,7 +1306,8 @@
     x86isa::sib->index
     x86isa::sib->scale
 
-    x86isa::bitcount8))
+    x86isa::bitcount8
+    x86isa::tzcnt))
 
 ;; formals that appear in theorems (or do we want to import these from acl2?):
 ;; also includes some vars that are let-bound in definitions

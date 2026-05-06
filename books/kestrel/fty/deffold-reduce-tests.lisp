@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -39,7 +39,8 @@
     :result string-listp
     :default nil
     :combine append
-    :override ((aexpr :var (list (aexpr-var->name aexpr))))))
+    :override ((aexpr :var (list (aexpr-var->name aexpr))))
+    :name test))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,7 +66,8 @@
     :default 0
     :combine binary-+
     :override
-    ((foo :bar 1))))
+    ((foo :bar 1))
+    :name test))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,4 +93,5 @@
     :default 0
     :combine binary-+
     :override
-    ((foo :bar 1))))
+    ((foo :bar 1))
+    :name test))

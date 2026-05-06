@@ -24,7 +24,7 @@
   (xdoc::topstring
    (xdoc::p
     "The static semantics of Remora is defined via inference rules,
-     in the publications mentioned in @(see remora).
+     in the Remora publications [thesis] [arxiv] [esop].
      We plan to formalize those inference rules as directly as possible,
      but we start by providing an executable definition of type checking,
      that is meant to be equivalent to those inference rules;

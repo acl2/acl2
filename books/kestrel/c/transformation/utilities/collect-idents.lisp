@@ -62,4 +62,5 @@
   :result ident-setp
   :default nil
   :combine union
-  :override ((ident (insert (ident-fix ident) nil))))
+  :override ((ident (insert (ident-fix ident) nil)))
+  :name abstract-syntax-collect-idents)

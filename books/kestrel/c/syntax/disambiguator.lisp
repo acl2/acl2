@@ -4577,6 +4577,7 @@
       (ienv ienvp)
       (keep-going booleanp)
       (tumap-dimb filepath-trans-unit-mapp))
+     :guard (set::subset paths (omap::keys tumap))
      :returns (mv (erp maybe-msgp)
                   (new-tumap-dimb filepath-trans-unit-mapp))
      :parents nil
@@ -4588,11 +4589,7 @@
           (resolved-includes
            (string-header-name-string-map-map-fix resolved-includes))
           (path (set::head paths))
-          (path+tunit (omap::assoc path tumap))
-          ((unless path+tunit)
-           (raise "Internal error: ~x0 not in ~x1." path tumap)
-           (reterr "irrelevant"))
-          (tunit (cdr path+tunit))
+          (tunit (omap::lookup path tumap))
           (file (filepath->string path))
           (dstate (init-dstate file ienv))
           ((mv erp new-tunit & tumap-dimb)
@@ -4621,6 +4618,8 @@
                                           tumap-dimb))
      :no-function nil
      :prepwork ((local (in-theory (enable emptyp-of-filepath-set-fix))))
+     :guard-hints (("Goal" :in-theory (enable* omap::assoc-to-in-of-keys
+                                               set::expensive-rules)))
 
      ///
 
@@ -4635,7 +4634,7 @@
     (implies (not erp)
              (filepath-trans-unit-map-unambp new-tumap))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-trans-ensemble ((tuens trans-ensemblep)
                              (ienv ienvp)

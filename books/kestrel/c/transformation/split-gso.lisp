@@ -1146,7 +1146,8 @@
            :op expr.op
            :arg (expr-replace-field-access
                   expr.arg original linkage new1 new2 split-members)
-           :info nil))))))
+           :info nil))))
+    :name abstract-syntax-replace-field-access))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

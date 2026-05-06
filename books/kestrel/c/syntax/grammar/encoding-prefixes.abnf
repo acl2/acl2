@@ -10,7 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains the rule for encoding prefixes [C17:6.4.5/1] [C23:6.4.5.5].
+; This file contains the grammar rule for encoding prefixes
+; [C17:6.4.5/1] [C23:6.4.5.5].
 ; In [C17] it is with the rules for string literals,
 ; while in [C23] it is with the rules for character constants;
 ; but the rule is the same in both cases, so we factor it here.

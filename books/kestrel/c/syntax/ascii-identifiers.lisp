@@ -122,7 +122,8 @@
   :result booleanp
   :default t
   :combine and
-  :override ((ident (ascii-ident-stringp (ident->unwrap ident) dialect))))
+  :override ((ident (ascii-ident-stringp (ident->unwrap ident) dialect)))
+  :name abstract-syntax-aidentp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

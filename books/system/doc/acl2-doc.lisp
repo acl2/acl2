@@ -7054,7 +7054,7 @@ and @(tsee include-book)"
  })
 
  <p>@('Obj') may be any object and is called the ``default value'' of the
- array.  @(tsee Max) must be an integer greater than @('dim').  @('Name') must
+ array.  @('Max') must be an integer greater than @('dim').  @('Name') must
  be a symbol.  The @(':')@(tsee default) and @(':name') entries are optional;
  if @(':')@(tsee default) is omitted, the default value is @('nil').  The
  function @(tsee header), when given a name and a 1- or 2-dimensional array,
@@ -7106,7 +7106,7 @@ and @(tsee include-book)"
  <p>To prevent arrays from growing excessively long due to repeated @(tsee
  aset1) operations, @(tsee aset1) essentially calls @(tsee compress1) on the
  new alist whenever the length of the new alist exceeds the @(':')@(tsee
- maximum-length) entry, @(tsee max), in the @(see header) of the array.  See
+ maximum-length) entry, @('max'), in the @(see header) of the array.  See
  the definition of @(tsee aset1) (for example by using @(':')@(tsee pe)).  This
  is primarily just a mechanism for freeing up @(tsee cons) space consumed while
  doing @(tsee aset1) operations.  Note however that this @(tsee compress1) call

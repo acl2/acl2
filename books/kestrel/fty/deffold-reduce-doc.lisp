@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -51,6 +51,7 @@
      "                :default    ...  ; no default"
      "                :combine    ...  ; no default"
      "                :override   ...  ; default nil"
+     "                :name       ...  ; no default"
      "                :parents    ...  ; no default"
      "                :short      ...  ; no default"
      "                :long       ...  ; no default"
@@ -173,6 +174,13 @@
         and the formals specified in @(':extra-args').")))
 
     (xdoc::desc
+     "@('name')"
+     (xdoc::p
+      "Symbol that specifies the name of the generated XDOC topic
+       and the prefix of the name of the generated ruleset.
+       See Section `Generated Events' below."))
+
+    (xdoc::desc
      (list
       "@(':parents')"
       "@(':short')"
@@ -195,11 +203,9 @@
    (xdoc::evmac-section-generated
 
     (xdoc::desc
-     "@('abstract-syntax-<suffix>')"
+     "@('<name>')"
      (xdoc::p
-      "An XDOC topic whose name is obtained by adding,
-       at the end of the symbol @('abstract-syntax-'),
-       the symbol specified by the @('suffix') input.
+      "An XDOC topic whose name is specified by the @(':name') input.
        If any of the @(':parents'), @(':short'), or @(':long') inputs
        are provided, they are added to this XDOC topic.
        This XDOC topic is generated with @(tsee acl2::defxdoc+),
@@ -453,13 +459,17 @@
       (xdoc::li
        "@('<type>-<suffix>-of-update')")
       (xdoc::li
-       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>')"))
+       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>')")
+      (xdoc::li
+       "@('<valtype>-<suffix>-of-cdr-assoc-when-<type>-<suffix>')")
+      (xdoc::li
+       "@('<valtype>-<suffix>-of-lookup-when-<type>-<suffix>')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
 
     (xdoc::desc
-     "@('abstract-syntax-<suffix>-rules')"
+     "@('<name>-rules')"
      (xdoc::p
       "A "
       (xdoc::seetopic "acl2::rulesets" "ruleset")

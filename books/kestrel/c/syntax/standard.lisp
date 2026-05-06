@@ -258,4 +258,5 @@
    (trans-unit (and (not (trans-item-list-commentp
                           (trans-unit->items trans-unit)))
                     (trans-item-list-standardp
-                     (trans-unit->items trans-unit))))))
+                     (trans-unit->items trans-unit)))))
+  :name abstract-syntax-standardp)

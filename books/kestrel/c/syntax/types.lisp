@@ -576,7 +576,8 @@
            :union (type-struni-tag/members-case
                     type-struni-member.type.tag/members
                     :untagged)
-           :otherwise t))))))
+           :otherwise t)))))
+  :name abstract-syntax-well-formed-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
