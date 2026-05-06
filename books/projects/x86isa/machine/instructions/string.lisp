@@ -134,35 +134,14 @@
   ;; REPNE/REPNZ (F2): Repeats a string operation until the rCX
   ;; register equals 0 or the ZF is set to 1.
 
-  :returns (x86 x86p
-                :hyp (x86p x86)
-                :hints
-                (("Goal" :in-theory (e/d ()
-                                         (rme-size
-                                          !rgfi-size
-                                          unsigned-byte-p
-                                          signed-byte-p)))
-                 (if (and (consp id)
-                          (consp (car id))
-                          (equal (caar id) 1))
-                     ;; Top-level goals in a forcing round:
-                     '(:in-theory (e/d ()
-                                       (segment-base-and-bounds
-                                        rme-size
-                                        !rgfi-size
-                                        signed-byte-p
-                                        unsigned-byte-p)))
-                   nil)))
+  :returns (x86 x86p :hyp (x86p x86))
 
-  :guard-hints (("Goal" :in-theory (e/d (rme-size
-                                         select-address-size)
-                                        (segment-base-and-bounds
-                                         signed-byte-p
-                                         unsigned-byte-p
-                                         force (force)))))
-
-  :prepwork
-  ((local (in-theory (e/d () (not (tau-system))))))
+  :guard-hints (("Goal" :in-theory (e/d (rme-size-of-1-to-rme08
+                                         rme-size-of-2-to-rme16
+                                         rme-size-of-4-to-rme32
+                                         rme-size-of-8-to-rme64)
+                                        (signed-byte-p
+                                         not))))
 
   :modr/m t
 
@@ -382,36 +361,14 @@
 
   ;; Only the REP prefix is valid for CMPS
 
-  :returns (x86 x86p
-                :hyp (x86p x86)
-                :hints
-                (("Goal" :in-theory (e/d ()
-                                         (rme-size
-                                          !rgfi-size
-                                          unsigned-byte-p
-                                          signed-byte-p
-                                          force (force)
-                                          !rgfi-size)))
-                 (if (and (consp id)
-                          (consp (car id))
-                          (equal (caar id) 1))
-                     ;; Top-level goals in a forcing round:
-                     '(:in-theory (e/d ()
-                                       (segment-base-and-bounds
-                                        rme-size
-                                        !rgfi-size
-                                        signed-byte-p
-                                        unsigned-byte-p)))
-                   nil)))
+  :returns (x86 x86p :hyp (x86p x86))
 
-  :guard-hints (("Goal" :in-theory (e/d (rme-size select-address-size)
-                                        (segment-base-and-bounds
-                                         signed-byte-p
-                                         unsigned-byte-p
-                                         force (force)))))
-
-  :prepwork
-  ((local (in-theory (e/d () (not (tau-system))))))
+  :guard-hints (("Goal" :in-theory (e/d (rme-size-of-1-to-rme08
+                                         rme-size-of-2-to-rme16
+                                         rme-size-of-4-to-rme32
+                                         rme-size-of-8-to-rme64)
+                                        (signed-byte-p
+                                         not))))
 
   :modr/m t
 
@@ -627,37 +584,14 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p
-                :hyp (x86p x86)
-                :hints
-                (("Goal" :in-theory (e/d ()
-                                         (trunc
-                                          rme-size
-                                          !rgfi-size
-                                          !rgfi-size
-                                          unsigned-byte-p
-                                          signed-byte-p
-                                          (force) force)))
-                 (if (and (consp id)
-                          (consp (car id))
-                          (equal (caar id) 1))
-                     ;; Top-level goals in a forcing round:
-                     '(:in-theory (e/d ()
-                                       (rme-size
-                                        !rgfi-size
-                                        unsigned-byte-p
-                                        segment-base-and-bounds
-                                        signed-byte-p)))
-                   nil)))
+  :returns (x86 x86p :hyp (x86p x86))
 
-  :guard-hints (("Goal" :in-theory (e/d (rme-size select-address-size)
-                                        (segment-base-and-bounds
-                                         signed-byte-p
-                                         unsigned-byte-p
-                                         force (force)))))
-
-  :prepwork
-  ((local (in-theory (e/d () (not (tau-system))))))
+  :guard-hints (("Goal" :in-theory (e/d (rme-size-of-1-to-rme08
+                                         rme-size-of-2-to-rme16
+                                         rme-size-of-4-to-rme32
+                                         rme-size-of-8-to-rme64)
+                                        (signed-byte-p
+                                         not))))
 
   :body
 
