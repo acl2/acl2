@@ -101,7 +101,9 @@
    (xdoc::p
     "See Intel manual Mar 2026, Volume 1, Section 7.3.9,
      for an overview of string operations,
-     including the use of repetition prefixes.")
+     including the use of repetition prefixes.
+     Also see REP instruction prefix listed under `R'
+     in Intel manual Mar 2026, Volume 2, alphabetical instruction list.")
    (xdoc::p
     "The distinction between MOVS and the others is just at the assembly level,
      as explained in the Intel manual;
@@ -180,7 +182,7 @@
 
        (counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
 
-       ;; If REP is used and CX/ECX/RCX is 0, continue to the next instruction.
+       ;; If REP is used and rCX is 0, continue to the next instruction.
        ((when (and (equal group-1-prefix #.*rep*)
                    (equal counter 0)))
         (write-*ip proc-mode temp-rip x86))
@@ -233,21 +235,16 @@
 
        ((mv (the (signed-byte #.*max-linear-address-size+1*) src-addr)
             (the (signed-byte #.*max-linear-address-size+1*) dst-addr))
-
         (case operand-size
           (1 (if (equal df 0)
                  (mv (+ 1 (the (signed-byte #.*max-linear-address-size*)
                                src-addr))
-                     (+ 1
-                        (the (signed-byte #.*max-linear-address-size*)
-                             dst-addr)))
-               (mv (+ -1
-                      (the (signed-byte #.*max-linear-address-size*)
-                           src-addr))
-                   (+ -1
-                      (the (signed-byte #.*max-linear-address-size*)
-                           dst-addr)))))
-
+                     (+ 1 (the (signed-byte #.*max-linear-address-size*)
+                               dst-addr)))
+               (mv (+ -1 (the (signed-byte #.*max-linear-address-size*)
+                              src-addr))
+                   (+ -1 (the (signed-byte #.*max-linear-address-size*)
+                              dst-addr)))))
           (2 (if (equal df 0)
                  (mv (+ 2 (the (signed-byte #.*max-linear-address-size*)
                                src-addr))
@@ -257,7 +254,6 @@
                               src-addr))
                    (+ -2 (the (signed-byte #.*max-linear-address-size*)
                               dst-addr)))))
-
           (4 (if (equal df 0)
                  (mv (+ 4 (the (signed-byte #.*max-linear-address-size*)
                                src-addr))
@@ -267,7 +263,6 @@
                               src-addr))
                    (+ -4 (the (signed-byte #.*max-linear-address-size*)
                               dst-addr)))))
-
           (otherwise (if (equal df 0)
                          (mv (+ 8 (the (signed-byte #.*max-linear-address-size*)
                                        src-addr))
@@ -345,6 +340,23 @@
 
 (def-inst x86-cmps
 
+  :short "CMPS/CMPSB/CMPSW/CMPSD/CMPSQ: compare string operands."
+
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See Intel manual Mar 2026, Volume 1, Section 7.3.9,
+     for an overview of string operations,
+     including the use of repetition prefixes.
+     Also see REPE/REPZ and REPNE/REPNZ instruction prefixes listed under `R`
+     in Intel manual Mar 206, Volume 2, alphabetical instruction list.")
+   (xdoc::p
+    "The distinction between CMPS and the others is just at the assembly level,
+     as explained in the Intel manual;
+     the m8, m16, m32, and m64 assembly-level operands are
+     just a way to specify the operand size,
+     but not the actual operands, which are always implicit."))
+
   ;; A6 CMPSB: Compare  byte from address (R/E)SI to (R/E)DI
   ;; A7 CMPSW: Compare  word from address (R/E)SI to (R/E)DI
   ;; A7 CMPSD: Compare dword from address (R/E)SI to (R/E)DI
@@ -405,12 +417,8 @@
 
   :body
 
-  (b* ((group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
-
-       ;; TODO: is the following already checked by GET-PREFIXES?
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+  (b* (;; Only the REPE/REPZ and REPNE/REPNZ are valid for these instructions.
+       (group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
 
        (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
        (p4? (equal #.*addr-size-override*
@@ -418,14 +426,17 @@
 
        ((the (unsigned-byte 1) df) (flgi :df x86))
 
-       ((the (integer 2 8) counter/addr-size)
-        (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
+       ((the (integer 2 8) counter/addr-size) ; CX or ECX or RCX
+        (select-address-size proc-mode p4? x86))
 
        (counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
 
-       ;; If REP is used and *cx is 0, continue to the next instruction
-       ((when (and (equal group-1-prefix #.*rep*)
-                   (equal counter 0))) (write-*ip proc-mode temp-rip x86))
+       ;; If REPE/REPZ or REPNE/REPZ is used and rCX is 0,
+       ;; continue to the next instruction.
+       ((when (and (or (equal group-1-prefix #.*repe*) ; REPE/REPZ
+                       (equal group-1-prefix #.*repne*)) ; REPNE/REPNZ
+                   (equal counter 0)))
+        (write-*ip proc-mode temp-rip x86))
 
        (select-byte-operand (equal #xA6 opcode))
        ((the (integer 1 8) operand-size)
@@ -436,8 +447,8 @@
                                    (eql counter/addr-size 4)))
 
        (src-addr (if counter/addr-size-2/4?
-                     (rgfi-size counter/addr-size #.*rsi* rex-byte x86)
-                   (rgfi #.*rsi* x86)))
+                     (rgfi-size counter/addr-size #.*rsi* rex-byte x86) ; SI/ESI
+                   (rgfi #.*rsi* x86))) ; RSI
        ((when (and (not counter/addr-size-2/4?)
                    ;; A 16-bit or 32-bit address is always canonical.
                    (not (canonical-address-p src-addr))))
@@ -447,21 +458,31 @@
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-       ((mv flg0 src x86)
-        (rme-size-opt proc-mode operand-size src-addr seg-reg :r inst-ac? x86))
+       ((mv flg0 src x86) (rme-size-opt proc-mode
+                                        operand-size
+                                        (the (signed-byte 64) src-addr)
+                                        seg-reg
+                                        :r
+                                        inst-ac?
+                                        x86))
        ((when flg0)
         (!!ms-fresh :src-rme-size-error flg0))
 
        (dst-addr (if counter/addr-size-2/4?
-                     (rgfi-size counter/addr-size #.*rdi* rex-byte x86)
-                   (rgfi #.*rdi* x86)))
+                     (rgfi-size counter/addr-size #.*rdi* rex-byte x86) ; DI/EDI
+                   (rgfi #.*rdi* x86))) ; RDI
        ((when (and (not counter/addr-size-2/4?)
                    ;; A 16-bit or 32-bit address is always canonical.
                    (not (canonical-address-p dst-addr))))
         (!!ms-fresh :dst-addr-not-canonical dst-addr))
 
-       ((mv flg0 dst x86)
-        (rme-size-opt proc-mode operand-size dst-addr #.*es* :r inst-ac? x86))
+       ((mv flg0 dst x86) (rme-size-opt proc-mode
+                                        operand-size
+                                        dst-addr
+                                        #.*es*
+                                        :r
+                                        inst-ac?
+                                        x86))
        ((when flg0)
         (!!ms-fresh :dst-rme-size-error flg0))
 
@@ -475,9 +496,6 @@
             (the (unsigned-byte 32) output-rflags)
             (the (unsigned-byte 32) undefined-flags))
         (gpr-arith/logic-spec operand-size #.*OP-SUB* dst src input-rflags))
-
-       ;; Update the x86 state:
-
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ;; A repeating string operation can be suspended by an exception or
@@ -489,50 +507,70 @@
             (the (signed-byte #.*max-linear-address-size+1*) dst-addr))
         (case operand-size
           (1 (if (equal df 0)
-                 (mv (+ (the (signed-byte
-                              #.*max-linear-address-size*) src-addr) 1)
-                     (+ (the (signed-byte
-                              #.*max-linear-address-size*) dst-addr) 1))
-               (mv (- (the (signed-byte
-                            #.*max-linear-address-size*) src-addr) 1)
-                   (- (the (signed-byte
-                            #.*max-linear-address-size*) dst-addr) 1))))
+                 (mv (+ 1 (the (signed-byte #.*max-linear-address-size*)
+                               src-addr))
+                     (+ 1 (the (signed-byte #.*max-linear-address-size*)
+                               dst-addr)))
+               (mv (+ -1 (the (signed-byte #.*max-linear-address-size*)
+                              src-addr))
+                   (+ -1 (the (signed-byte #.*max-linear-address-size*)
+                              dst-addr)))))
           (2 (if (equal df 0)
-                 (mv (+ (the (signed-byte
-                              #.*max-linear-address-size*) src-addr) 2)
-                     (+ (the (signed-byte
-                              #.*max-linear-address-size*) dst-addr) 2))
-               (mv (- (the (signed-byte
-                            #.*max-linear-address-size*) src-addr) 2)
-                   (- (the (signed-byte
-                            #.*max-linear-address-size*) dst-addr) 2))))
+                 (mv (+ 2 (the (signed-byte
+                                #.*max-linear-address-size*) src-addr))
+                     (+ 2 (the (signed-byte
+                                #.*max-linear-address-size*) dst-addr)))
+               (mv (+ -2 (the (signed-byte #.*max-linear-address-size*)
+                              src-addr))
+                   (+ -2 (the (signed-byte #.*max-linear-address-size*)
+                              dst-addr)))))
           (4 (if (equal df 0)
-                 (mv (+ (the (signed-byte
-                              #.*max-linear-address-size*) src-addr) 4)
-                     (+ (the (signed-byte
-                              #.*max-linear-address-size*) dst-addr) 4))
-               (mv (- (the (signed-byte
-                            #.*max-linear-address-size*) src-addr) 4)
-                   (- (the (signed-byte
-                            #.*max-linear-address-size*) dst-addr) 4))))
+                 (mv (+ 4 (the (signed-byte #.*max-linear-address-size*)
+                               src-addr))
+                     (+ 4 (the (signed-byte #.*max-linear-address-size*)
+                               dst-addr)))
+               (mv (+ -4 (the (signed-byte #.*max-linear-address-size*)
+                              src-addr))
+                   (+ -4 (the (signed-byte #.*max-linear-address-size*)
+                              dst-addr)))))
           (otherwise (if (equal df 0)
-                         (mv (+ (the (signed-byte
-                                      #.*max-linear-address-size*) src-addr) 8)
-                             (+ (the (signed-byte
-                                      #.*max-linear-address-size*) dst-addr) 8))
-                       (mv (- (the (signed-byte
-                                    #.*max-linear-address-size*) src-addr) 8)
-                           (- (the (signed-byte
-                                    #.*max-linear-address-size*) dst-addr) 8))))))
+                         (mv (+ 8 (the (signed-byte #.*max-linear-address-size*)
+                                       src-addr))
+                             (+ 8 (the (signed-byte #.*max-linear-address-size*)
+                                       dst-addr)))
+                       (mv (+ -8 (the (signed-byte #.*max-linear-address-size*)
+                                      src-addr))
+                           (+ -8 (the (signed-byte #.*max-linear-address-size*)
+                                      dst-addr)))))))
 
-       ;; REP prefix: Updating rCX and RIP:
+       ;; If there is a REPE/REPZ or REPNE/REPNZ prefix,
+       ;; decrement rCX and leave the rIP unchanged,
+       ;; so that we can (attempt to) repeat this instruction
+       ;; (unless the ZF flag, checked below, stops the repetition);
+       ;; note that if we get here rCX is not 0, because we tested it above.
+       ;; If there is no REPE/REPZ or REPNE/REPNZ prefix,
+       ;; advance rIP to the next instructions.
+       (x86 (if (or (equal group-1-prefix #.*repe*) ; REPE/REPZ
+                    (equal group-1-prefix #.*repne*)) ; REPNE/REPNZ
+                (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
+              (write-*ip proc-mode temp-rip x86)))
 
-       (x86 (if (equal group-1-prefix #.*rep*)
-                      (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
-                      (write-*ip proc-mode temp-rip x86)))
+       ;; If there is a REPE/REPZ prefix and ZF is 0, stop repetition.
+       ;; If there is a REPNE/REPNZ prefix and ZF is 1, stop repetition.
+       ;; Note that ZF is set by the comparison performed above.
+       ;; If the repetition stops, we update rIP,
+       ;; so that the next execution step is on the next instruction;
+       ;; otherwise, rIP stays as is,
+       ;; and the next step re-executes this instruction.
+       (stop-repeat (or (and (equal group-1-prefix #.*repe*)
+                             (= (rflagsbits->zf output-rflags) 0))
+                        (and (equal group-1-prefix #.*repne*)
+                             (= (rflagsbits->zf output-rflags) 1))))
+       (x86 (if stop-repeat
+                (write-*ip proc-mode temp-rip x86)
+              x86))
 
-       ;; Updating rSI and rDI:
-
+       ;; Update rSI and rDI.
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
                              #.*rsi*
@@ -549,30 +587,31 @@
               (t (!rgfi #.*rsi*
                         (the (signed-byte
                               #.*max-linear-address-size+1*)
-                          src-addr)
+                             src-addr)
                         x86))))
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
                              #.*rdi*
                              (n16 (the
-                                      (signed-byte
-                                       #.*max-linear-address-size+1*)
-                                    dst-addr))
+                                   (signed-byte
+                                    #.*max-linear-address-size+1*)
+                                   dst-addr))
                              rex-byte
                              x86))
               (4 (!rgfi-size 4
                              #.*rdi*
                              (n32 (the
-                                      (signed-byte
-                                       #.*max-linear-address-size+1*)
-                                    dst-addr))
+                                   (signed-byte
+                                    #.*max-linear-address-size+1*)
+                                   dst-addr))
                              rex-byte
                              x86))
               (t (!rgfi #.*rdi*
                         (the (signed-byte
                               #.*max-linear-address-size+1*)
-                          dst-addr)
+                             dst-addr)
                         x86)))))
+
     x86))
 
 ;; ======================================================================
