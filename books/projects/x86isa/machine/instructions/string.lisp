@@ -452,7 +452,7 @@
        ((mv ?result
             (the (unsigned-byte 32) output-rflags)
             (the (unsigned-byte 32) undefined-flags))
-        (gpr-arith/logic-spec operand-size #.*OP-SUB* src2 src1 input-rflags))
+        (gpr-arith/logic-spec operand-size #.*OP-SUB* src1 src2 input-rflags))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ;; A repeating string operation can be suspended by an exception or
