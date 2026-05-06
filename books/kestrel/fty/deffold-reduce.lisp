@@ -1147,6 +1147,12 @@
        (val-type-suffix-of-head-when-type-suffix
         (acl2::packn-pos (list val-type-suffix '-of-head-when- type-suffix)
                          suffix))
+       (val-type-suffix-of-cdr-assoc-when-type-suffix
+        (acl2::packn-pos (list val-type-suffix '-of-cdr-assoc-when- type-suffix)
+                         suffix))
+       (val-type-suffix-of-lookup-when-type-suffix
+        (acl2::packn-pos (list val-type-suffix '-of-lookup-when- type-suffix)
+                         suffix))
        (thm-events
         (append
          `((defruled ,type-suffix-when-emptyp
@@ -1189,11 +1195,30 @@
                            (,val-type-suffix (mv-nth 1 (omap::head ,type))
                                              ,@extra-args-names))
                   :enable ,type-suffix)
+                (defruled ,val-type-suffix-of-cdr-assoc-when-type-suffix
+                  (implies (and (,recog ,type)
+                                (,type-suffix ,type ,@extra-args-names)
+                                (omap::assoc key ,type))
+                           (,val-type-suffix (cdr (omap::assoc key ,type))
+                                             ,@extra-args-names))
+                  :induct t
+                  :enable ,type-suffix)
+                (defruled ,val-type-suffix-of-lookup-when-type-suffix
+                  (implies (and (,recog ,type)
+                                (,type-suffix ,type ,@extra-args-names)
+                                (set::in key (omap::keys ,type)))
+                           (,val-type-suffix (omap::lookup key ,type)
+                                             ,@extra-args-names))
+                  :enable (omap::lookup
+                           omap::assoc-to-in-of-keys
+                           ,val-type-suffix-of-cdr-assoc-when-type-suffix))
                 (add-to-ruleset
                  ,(deffoldred-gen-ruleset-name name)
                  '(,type-suffix-of-tail
                    ,type-suffix-of-update
-                   ,val-type-suffix-of-head-when-type-suffix)))))))
+                   ,val-type-suffix-of-head-when-type-suffix
+                   ,val-type-suffix-of-cdr-assoc-when-type-suffix
+                   ,val-type-suffix-of-lookup-when-type-suffix)))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
