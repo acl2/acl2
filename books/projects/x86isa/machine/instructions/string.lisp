@@ -872,3 +872,142 @@
     x86))
 
 ;; ======================================================================
+;; INSTRUCTION: LODS/LODSB/LODSW/LODSD/LODSQ
+;; ======================================================================
+
+(def-inst x86-lods
+
+  :parents (one-byte-opcodes)
+
+  :short "LODS/LODSB/LODSW/LODSD/LODSQ: load string."
+
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See Intel manual Mar 2026, Volume 1, Section 7.3.9,
+     for an overview of string operations,
+     including the use of repetition prefixes.
+     Also see REP instruction prefix listed under `R'
+     in Intel manual Mar 2026, Volume 2, alphabetical instruction list.")
+   (xdoc::p
+    "The distinction between LODS and the others is just at the assembly level,
+     as explained in the Intel manual;
+     the m8, m16, m32, and m64 assembly-level operands are
+     just a way to specify the operand size,
+     but not the actual operands, which are always implicit."))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :guard-hints (("Goal" :in-theory (e/d (rme-size-of-1-to-rme08
+                                         rme-size-of-2-to-rme16
+                                         rme-size-of-4-to-rme32
+                                         rme-size-of-8-to-rme64)
+                                        (signed-byte-p
+                                         not))))
+
+  :modr/m t
+
+  :body
+
+  (b* (;; Only the REP prefix is valid for these instructions.
+       (group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
+
+       (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
+       (p4? (equal #.*addr-size-override*
+                   (the (unsigned-byte 8) (prefixes->adr prefixes))))
+
+       ((the (unsigned-byte 1) df) (flgi :df x86))
+
+       ((the (integer 2 8) counter/addr-size) ; CX or ECX or RCX
+        (select-address-size proc-mode p4? x86))
+
+       (counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
+
+       ;; If REP is used and rCX is 0, continue to the next instruction.
+       ((when (and (equal group-1-prefix *rep*)
+                   (equal counter 0)))
+        (write-*ip proc-mode temp-rip x86))
+
+       (select-byte-operand (equal #xAC opcode))
+       ((the (integer 1 8) operand-size)
+        (select-operand-size
+         proc-mode select-byte-operand rex-byte nil prefixes nil nil nil x86))
+
+       (counter/addr-size-2/4? (or (eql counter/addr-size 2)
+                                   (eql counter/addr-size 4)))
+
+       (src-addr (if counter/addr-size-2/4?
+                     (rgfi-size counter/addr-size #.*rsi* rex-byte x86) ; SI/SDI
+                   (rgfi #.*rsi* x86))) ; RSI
+       ((when (and (not counter/addr-size-2/4?)
+                   ;; A 16-bit or 32-bit address is always canonical.
+                   (not (canonical-address-p src-addr))))
+        (!!ms-fresh :src-addr-not-canonical src-addr))
+
+       ;; Read source operand from memory.
+       (inst-ac? (alignment-checking-enabled-p x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       ((mv flg0 src x86) (rme-size-opt proc-mode
+                                        operand-size
+                                        (the (signed-byte 64) src-addr)
+                                        seg-reg
+                                        :r
+                                        inst-ac?
+                                        x86))
+       ((when flg0)
+        (!!ms-fresh :src-rme-size-error flg0))
+
+       ;; Write source operand to rAX.
+       (x86 (!rgfi-size operand-size #.*rax* src 0 x86))
+
+       ((the (signed-byte #.*max-linear-address-size+1*) src-addr)
+        (case operand-size
+          (1 (if (equal df 0)
+                 (+ 1 (the (signed-byte #.*max-linear-address-size*) src-addr))
+               (+ -1 (the (signed-byte #.*max-linear-address-size*) src-addr))))
+          (2 (if (equal df 0)
+                 (+ 2 (the (signed-byte #.*max-linear-address-size*) src-addr))
+               (+ -2 (the (signed-byte #.*max-linear-address-size*) src-addr))))
+          (4 (if (equal df 0)
+                 (+ 4 (the (signed-byte #.*max-linear-address-size*) src-addr))
+               (+ -4 (the (signed-byte #.*max-linear-address-size*) src-addr))))
+          (otherwise
+           (if (equal df 0)
+               (+ 8 (the (signed-byte #.*max-linear-address-size*) src-addr))
+             (+ -8 (the (signed-byte #.*max-linear-address-size*) src-addr))))))
+
+       ;; If there is a REP prefix, decrement rCX and leave the rIP unchanged,
+       ;; so that we can (attempt to) repeat this instruction;
+       ;; note that if we get here rCX is not 0, because we tested it above.
+       ;; If there is no REP prefix, advance rIP to the next instructions.
+       (x86 (if (equal group-1-prefix *repe*)
+                (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
+              (write-*ip proc-mode temp-rip x86)))
+
+       ;; Update rSI.
+       (x86 (case counter/addr-size
+              (2 (!rgfi-size 2
+                             #.*rsi*
+                             (n16 (the
+                                   (signed-byte
+                                    #.*max-linear-address-size+1*)
+                                   src-addr))
+                             rex-byte
+                             x86))
+              (4 (!rgfi-size 4
+                             #.*rsi*
+                             (n32 (the
+                                   (signed-byte
+                                    #.*max-linear-address-size+1*)
+                                   src-addr))
+                             rex-byte
+                             x86))
+              (t (!rgfi #.*rsi*
+                        (the (signed-byte
+                              #.*max-linear-address-size+1*)
+                             src-addr)
+                        x86)))))
+
+    x86))
+
+;; ======================================================================
