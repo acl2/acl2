@@ -94,6 +94,8 @@
 
 (def-inst x86-movs
 
+  :parents (one-byte-opcodes)
+
   :short "MOVS/MOVSB/MOVSW/MOVSD/MOVSQ: move data from string to string."
 
   :long
@@ -131,8 +133,6 @@
   ;; equals 0 or the ZF is cleared.
   ;; REPNE/REPNZ (F2): Repeats a string operation until the rCX
   ;; register equals 0 or the ZF is set to 1.
-
-  :parents (one-byte-opcodes)
 
   :returns (x86 x86p
                 :hyp (x86p x86)
@@ -340,6 +340,8 @@
 
 (def-inst x86-cmps
 
+  :parents (one-byte-opcodes)
+
   :short "CMPS/CMPSB/CMPSW/CMPSD/CMPSQ: compare string operands."
 
   :long
@@ -379,8 +381,6 @@
   ;; register equals 0 or the ZF is set to 1.
 
   ;; Only the REP prefix is valid for CMPS
-
-  :parents (one-byte-opcodes)
 
   :returns (x86 x86p
                 :hyp (x86p x86)
