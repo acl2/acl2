@@ -403,45 +403,45 @@
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
 
-       (src-addr (if counter/addr-size-2/4?
+       (src1-addr (if counter/addr-size-2/4?
                      (rgfi-size counter/addr-size #.*rsi* rex-byte x86) ; SI/ESI
                    (rgfi #.*rsi* x86))) ; RSI
        ((when (and (not counter/addr-size-2/4?)
                    ;; A 16-bit or 32-bit address is always canonical.
-                   (not (canonical-address-p src-addr))))
-        (!!ms-fresh :src-addr-not-canonical src-addr))
+                   (not (canonical-address-p src1-addr))))
+        (!!ms-fresh :src1-addr-not-canonical src1-addr))
 
        (inst-ac? (alignment-checking-enabled-p x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-       ((mv flg0 src x86) (rme-size-opt proc-mode
+       ((mv flg0 src1 x86) (rme-size-opt proc-mode
                                         operand-size
-                                        (the (signed-byte 64) src-addr)
+                                        (the (signed-byte 64) src1-addr)
                                         seg-reg
                                         :r
                                         inst-ac?
                                         x86))
        ((when flg0)
-        (!!ms-fresh :src-rme-size-error flg0))
+        (!!ms-fresh :src1-rme-size-error flg0))
 
-       (dst-addr (if counter/addr-size-2/4?
+       (src2-addr (if counter/addr-size-2/4?
                      (rgfi-size counter/addr-size #.*rdi* rex-byte x86) ; DI/EDI
                    (rgfi #.*rdi* x86))) ; RDI
        ((when (and (not counter/addr-size-2/4?)
                    ;; A 16-bit or 32-bit address is always canonical.
-                   (not (canonical-address-p dst-addr))))
-        (!!ms-fresh :dst-addr-not-canonical dst-addr))
+                   (not (canonical-address-p src2-addr))))
+        (!!ms-fresh :src2-addr-not-canonical src2-addr))
 
-       ((mv flg0 dst x86) (rme-size-opt proc-mode
+       ((mv flg0 src2 x86) (rme-size-opt proc-mode
                                         operand-size
-                                        dst-addr
+                                        src2-addr
                                         #.*es*
                                         :r
                                         inst-ac?
                                         x86))
        ((when flg0)
-        (!!ms-fresh :dst-rme-size-error flg0))
+        (!!ms-fresh :src2-rme-size-error flg0))
 
        ;; From the AMD Manual: "To perform the comparison, the instruction
        ;; subtracts the second operand from the first operand and sets the
@@ -452,7 +452,7 @@
        ((mv ?result
             (the (unsigned-byte 32) output-rflags)
             (the (unsigned-byte 32) undefined-flags))
-        (gpr-arith/logic-spec operand-size #.*OP-SUB* dst src input-rflags))
+        (gpr-arith/logic-spec operand-size #.*OP-SUB* src2 src1 input-rflags))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ;; A repeating string operation can be suspended by an exception or
@@ -460,45 +460,45 @@
        ;; to allow the string operation to be resumed upon a return from the
        ;; exception or interrupt handler.
 
-       ((mv (the (signed-byte #.*max-linear-address-size+1*) src-addr)
-            (the (signed-byte #.*max-linear-address-size+1*) dst-addr))
+       ((mv (the (signed-byte #.*max-linear-address-size+1*) src1-addr)
+            (the (signed-byte #.*max-linear-address-size+1*) src2-addr))
         (case operand-size
           (1 (if (equal df 0)
                  (mv (+ 1 (the (signed-byte #.*max-linear-address-size*)
-                               src-addr))
+                               src1-addr))
                      (+ 1 (the (signed-byte #.*max-linear-address-size*)
-                               dst-addr)))
+                               src2-addr)))
                (mv (+ -1 (the (signed-byte #.*max-linear-address-size*)
-                              src-addr))
+                              src1-addr))
                    (+ -1 (the (signed-byte #.*max-linear-address-size*)
-                              dst-addr)))))
+                              src2-addr)))))
           (2 (if (equal df 0)
                  (mv (+ 2 (the (signed-byte
-                                #.*max-linear-address-size*) src-addr))
+                                #.*max-linear-address-size*) src1-addr))
                      (+ 2 (the (signed-byte
-                                #.*max-linear-address-size*) dst-addr)))
+                                #.*max-linear-address-size*) src2-addr)))
                (mv (+ -2 (the (signed-byte #.*max-linear-address-size*)
-                              src-addr))
+                              src1-addr))
                    (+ -2 (the (signed-byte #.*max-linear-address-size*)
-                              dst-addr)))))
+                              src2-addr)))))
           (4 (if (equal df 0)
                  (mv (+ 4 (the (signed-byte #.*max-linear-address-size*)
-                               src-addr))
+                               src1-addr))
                      (+ 4 (the (signed-byte #.*max-linear-address-size*)
-                               dst-addr)))
+                               src2-addr)))
                (mv (+ -4 (the (signed-byte #.*max-linear-address-size*)
-                              src-addr))
+                              src1-addr))
                    (+ -4 (the (signed-byte #.*max-linear-address-size*)
-                              dst-addr)))))
+                              src2-addr)))))
           (otherwise (if (equal df 0)
                          (mv (+ 8 (the (signed-byte #.*max-linear-address-size*)
-                                       src-addr))
+                                       src1-addr))
                              (+ 8 (the (signed-byte #.*max-linear-address-size*)
-                                       dst-addr)))
+                                       src2-addr)))
                        (mv (+ -8 (the (signed-byte #.*max-linear-address-size*)
-                                      src-addr))
+                                      src1-addr))
                            (+ -8 (the (signed-byte #.*max-linear-address-size*)
-                                      dst-addr)))))))
+                                      src2-addr)))))))
 
        ;; If there is a REPE/REPZ or REPNE/REPNZ prefix,
        ;; decrement rCX and leave the rIP unchanged,
@@ -532,19 +532,19 @@
               (2 (!rgfi-size 2
                              #.*rsi*
                              (n16 (the (signed-byte
-                                        #.*max-linear-address-size+1*) src-addr))
+                                        #.*max-linear-address-size+1*) src1-addr))
                              rex-byte
                              x86))
               (4 (!rgfi-size 4
                              #.*rsi*
                              (n32 (the (signed-byte
-                                        #.*max-linear-address-size+1*) src-addr))
+                                        #.*max-linear-address-size+1*) src1-addr))
                              rex-byte
                              x86))
               (t (!rgfi #.*rsi*
                         (the (signed-byte
                               #.*max-linear-address-size+1*)
-                             src-addr)
+                             src1-addr)
                         x86))))
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
@@ -552,7 +552,7 @@
                              (n16 (the
                                    (signed-byte
                                     #.*max-linear-address-size+1*)
-                                   dst-addr))
+                                   src2-addr))
                              rex-byte
                              x86))
               (4 (!rgfi-size 4
@@ -560,13 +560,13 @@
                              (n32 (the
                                    (signed-byte
                                     #.*max-linear-address-size+1*)
-                                   dst-addr))
+                                   src2-addr))
                              rex-byte
                              x86))
               (t (!rgfi #.*rdi*
                         (the (signed-byte
                               #.*max-linear-address-size+1*)
-                             dst-addr)
+                             src2-addr)
                         x86)))))
 
     x86))
