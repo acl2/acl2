@@ -45,60 +45,7 @@ lexeme = token
 
 ; Preprocessing Directives [C17:6.10] [C17:A.3]
 
-preprocessing-file = [ group ]
-
-group = group-part
-      / group group-part
-
-group-part = if-section
-           / control-line
-           / text-line
-           / "#" non-directive
-
-if-section = if-group [ elif-groups ] [ else-group ] endif-line
-
-if-group = "#" %s"if" constant-expression new-line [ group ]
-         / "#" %s"ifdef" identifier new-line [ group ]
-         / "#" %s"ifndef" identifier new-line [ group ]
-
-elif-groups = elif-group
-            / elif-groups elif-group
-
-elif-group = "#" %s"elif" constant-expression new-line [ group ]
-
-else-group = "#" %s"else" new-line [ group ]
-
-endif-line = "#" %s"endif" new-line
-
-control-line = "#" %s"include" pp-tokens new-line
-             / "#" %s"define" identifier replacement-list new-line
-             / "#" %s"define" identifier lparen [ identifier-list ] ")"
-               replacement-list new-line
-             / "#" %s"define" identifier lparen "..." ")"
-               replacement-list new-line
-             / "#" %s"define" identifier lparen identifier-list "," "..." ")"
-               replacement-list new-line
-             / "#" %s"undef" identifier new-line
-             / "#" %s"line" pp-tokens new-line
-             / "#" %s"error" [ pp-tokens ] new-line
-             / "#" %s"pragma" [ pp-tokens ] new-line
-             / "#" new-line
-
-text-line = [ pp-tokens ] new-line
-
-non-directive = pp-tokens new-line
-
-lparen = "(" ; not immediately preceded by white space
-
-replacement-list = [ pp-tokens ]
-
-pp-tokens = preprocessing-token
-          / pp-tokens preprocessing-token
-
 on-off-switch = %s"ON" / %s"OFF" / %s"DEFAULT"
-
-; The rule for new line is omitted here,
-; because it is already under the subsection on characters.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

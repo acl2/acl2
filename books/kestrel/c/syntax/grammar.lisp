@@ -66,6 +66,9 @@
 ; (depends-on "grammar/preprocessing-tokens-c17.abnf")
 ; (depends-on "grammar/preprocessing-tokens-c23.abnf")
 ; (depends-on "grammar/preprocessing-lexemes.abnf")
+; (depends-on "grammar/preprocessing-directives.abnf")
+; (depends-on "grammar/preprocessing-directives-c17.abnf")
+; (depends-on "grammar/preprocessing-directives-c23.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -236,6 +239,8 @@
 
 (defgrammar identifiers-c23 "identifiers that are specific to the C23 dialects")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defgrammar identifier-lists "lists of identifiers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -354,6 +359,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar preprocessing-directives
+  "preprocessing directives that are common to all the C dialects")
+
+(defgrammar preprocessing-directives-c17
+  "preprocessing directives that are specific to the C17 dialects")
+
+(defgrammar preprocessing-directives-c23
+  "preprocessing directives that are specific to the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -453,6 +469,11 @@
                        :c23 *grammar-preprocessing-tokens-c23*)
      ;; preprocessing lexemes:
      *grammar-preprocessing-lexemes*
+     ;; preprocessing directives:
+     *grammar-preprocessing-directives*
+     (c::standard-case dialect.std
+                       :c17 *grammar-preprocessing-directives-c17*
+                       :c23 *grammar-preprocessing-directives-c23*)
      ;; rest (TODO: modularize):
      *grammar-rest*))
 
