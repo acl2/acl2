@@ -8221,7 +8221,8 @@
                                                (next-uid uidp)
                                                (ienv ienvp)
                                                (keep-going booleanp))
-     :guard (filepath-trans-unit-map-unambp map)
+     :guard (and (set::subset paths (omap::keys map))
+                 (filepath-trans-unit-map-unambp map))
      :returns (mv (erp maybe-msgp)
                   (new-map filepath-trans-unit-mapp
                            :hyp (filepath-trans-unit-mapp map))
@@ -8232,11 +8233,7 @@
            (retok nil (irr-vstate))) ; TODO: check this
           (map (filepath-trans-unit-map-fix map))
           (path (set::head paths))
-          (path+tunit (omap::assoc path map))
-          ((unless path+tunit)
-           (raise "Internal error: ~x0 not in ~x1." path map)
-           (reterr "irrelevant"))
-          (tunit (cdr path+tunit))
+          (tunit (omap::lookup path map))
           ((mv erp new-tunit vstate)
            (valid-trans-unit path tunit externals completions next-uid ienv))
           ((when erp)
@@ -8268,6 +8265,8 @@
      :no-function nil
      :prepwork ((local (in-theory (enable emptyp-of-filepath-set-fix))))
      :verify-guards :after-returns
+     :guard-hints (("Goal" :in-theory (enable* omap::assoc-to-in-of-keys
+                                               set::expensive-rules)))
 
      ///
 
@@ -8276,8 +8275,11 @@
        (implies (not erp)
                 (filepath-trans-unit-map-unambp new-map))
        :hyp (and (filepath-trans-unit-mapp map)
-                 (filepath-trans-unit-map-unambp map))
-       :hints (("Goal" :induct t)))))
+                 (filepath-trans-unit-map-unambp map)
+                 (set::subset (filepath-set-fix paths) (omap::keys map)))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable* set::expensive-rules))))))
 
   ///
 
