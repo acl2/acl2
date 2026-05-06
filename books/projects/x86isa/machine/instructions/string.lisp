@@ -901,7 +901,6 @@
        (p4? (equal #.*addr-size-override*
                    (the (unsigned-byte 8) (prefixes->adr prefixes))))
 
-       ((the (unsigned-byte 1) df) (flgi :df x86))
 
        ((the (integer 2 8) counter/addr-size) ; CX or ECX or RCX
         (select-address-size proc-mode p4? x86))
@@ -921,15 +920,14 @@
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
 
+       ;; Read source operand from memory.
        (src-addr (if counter/addr-size-2/4?
-                     (rgfi-size counter/addr-size #.*rsi* rex-byte x86) ; SI/SDI
+                     (rgfi-size counter/addr-size #.*rsi* rex-byte x86) ; SI/ESI
                    (rgfi #.*rsi* x86))) ; RSI
        ((when (and (not counter/addr-size-2/4?)
                    ;; A 16-bit or 32-bit address is always canonical.
                    (not (canonical-address-p src-addr))))
         (!!ms-fresh :src-addr-not-canonical src-addr))
-
-       ;; Read source operand from memory.
        (inst-ac? (alignment-checking-enabled-p x86))
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
        ((mv flg0 src x86) (rme-size-opt proc-mode
@@ -945,6 +943,16 @@
        ;; Write source operand to rAX.
        (x86 (!rgfi-size operand-size #.*rax* src 0 x86))
 
+       ;; If there is a REP prefix, decrement rCX and leave the rIP unchanged,
+       ;; so that we can (attempt to) repeat this instruction;
+       ;; note that if we get here rCX is not 0, because we tested it above.
+       ;; If there is no REP prefix, advance rIP to the next instructions.
+       (x86 (if (equal group-1-prefix *repe*)
+                (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
+              (write-*ip proc-mode temp-rip x86)))
+
+       ;; Update rSI.
+       ((the (unsigned-byte 1) df) (flgi :df x86))
        ((the (signed-byte #.*max-linear-address-size+1*) src-addr)
         (case operand-size
           (1 (if (equal df 0)
@@ -960,16 +968,6 @@
            (if (equal df 0)
                (+ 8 (the (signed-byte #.*max-linear-address-size*) src-addr))
              (+ -8 (the (signed-byte #.*max-linear-address-size*) src-addr))))))
-
-       ;; If there is a REP prefix, decrement rCX and leave the rIP unchanged,
-       ;; so that we can (attempt to) repeat this instruction;
-       ;; note that if we get here rCX is not 0, because we tested it above.
-       ;; If there is no REP prefix, advance rIP to the next instructions.
-       (x86 (if (equal group-1-prefix *repe*)
-                (!rgfi-size counter/addr-size #.*rcx* (1- counter) rex-byte x86)
-              (write-*ip proc-mode temp-rip x86)))
-
-       ;; Update rSI.
        (x86 (case counter/addr-size
               (2 (!rgfi-size 2
                              #.*rsi*
