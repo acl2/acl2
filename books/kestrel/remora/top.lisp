@@ -19,6 +19,7 @@
 (include-book "printer")
 (include-book "parse-directory-files") ; for testing
 (include-book "static-semantics")
+(include-book "dynamic-semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,4 +101,5 @@
                     parser-interface
                     printer
                     parse-directory-utilities
-                    static-semantics))
+                    static-semantics
+                    dynamic-semantics))

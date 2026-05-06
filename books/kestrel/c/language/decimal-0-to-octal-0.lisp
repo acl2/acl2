@@ -73,4 +73,5 @@
   ((iconst (if (and (iconst-base-case (iconst->base iconst) :dec)
                     (equal (iconst->value iconst) 0))
                (change-iconst iconst :base (iconst-base-oct))
-             (iconst-fix iconst)))))
+             (iconst-fix iconst))))
+  :name abstract-syntax-dec0-to-oct0)

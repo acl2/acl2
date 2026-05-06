@@ -330,7 +330,8 @@
             :otherwise (list trans-item))
            :otherwise (list trans-item))))
       (append split-trans-items
-              (trans-item-list-add-attributes (rest c$::trans-item-list) attrs))))))
+              (trans-item-list-add-attributes (rest c$::trans-item-list) attrs)))))
+  :name abstract-syntax-add-attributes)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

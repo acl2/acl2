@@ -66,7 +66,8 @@
   :combine and
   :override
   ((dim :mul nil)
-   (dim :sub nil)))
+   (dim :sub nil))
+  :name abstract-syntax-addp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

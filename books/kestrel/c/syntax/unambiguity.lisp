@@ -111,7 +111,8 @@
    (block-item :ambig nil)
    (amb-expr/tyname nil)
    (amb-declor/absdeclor nil)
-   (amb-declon/stmt nil)))
+   (amb-declon/stmt nil))
+  :name abstract-syntax-unambp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
