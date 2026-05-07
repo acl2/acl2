@@ -725,7 +725,7 @@
     (xdoc::topstring
      (xdoc::p
       "The type of a base value
-       is independent from the static environment(s),
+       is independent from the static environment,
        and determined via separate functions.")
      (xdoc::p
       "For a term abstraction,

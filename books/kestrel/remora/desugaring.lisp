@@ -76,7 +76,7 @@
     "A bracket type is turned into an array type
      whose shape is the concatenation of the shapes.")
    (xdoc::p
-    "A string is turned into an arary expression
+    "A string is turned into an array expression
      with the length of the string as its single dimension
      and with the characters, converted to integers, as atoms.")
    (xdoc::p
