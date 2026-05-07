@@ -376,6 +376,8 @@
   :short "Set of free ispace variables in
           ispaces,
           types,
+          optional types,
+          optional lists of types,
           variables with types,
           expressions,
           atoms,
@@ -386,7 +388,7 @@
    (xdoc::p
     "The free variables of a binder are the ones
      in the thing that the variable is bound to.
-     Thus, for the ispace function binder,
+     Thus, for the ispace and combined function binders,
      we remove the parameters,
      because the thing that the variable is bound to
      is like a lambda abstraction."))
@@ -394,8 +396,10 @@
           shapes
           ispace
           ispace-list
+          ispace-list-option
           types
           type-option
+          type-list-option
           var+type
           var+type-list
           exprs/atoms/binds)
@@ -430,9 +434,8 @@
    (bind :cfun
          (set::difference (set::union
                            (var+type-list-free-ispace-vars bind.params)
-                           (set::union
-                            (type-free-ispace-vars bind.type)
-                            (expr-free-ispace-vars bind.expr)))
+                           (set::union (type-free-ispace-vars bind.type)
+                                       (expr-free-ispace-vars bind.expr)))
                           (ispace-var-list-option-case
                            bind.iparams?
                            :some (set::mergesort bind.iparams?.val)
@@ -444,6 +447,8 @@
 (fty::deffold-reduce free-type-vars
   :short "Set of free type variables in
           types,
+          optional types,
+          optional lists of types,
           variables with types,
           expressions,
           atoms,
@@ -454,12 +459,13 @@
    (xdoc::p
     "The free variables of a binder are the ones
      in the thing that the variable is bound to.
-     Thus, for the type function binder,
+     Thus, for the type and combined function binders,
      we remove the parameters,
      because the thing that the variable is bound to
      is like a lambda abstraction."))
   :types (types
           type-option
+          type-list-option
           var+type
           var+type-list
           exprs/atoms/binds)
@@ -484,9 +490,8 @@
    (bind :cfun
          (set::difference (set::union
                            (var+type-list-free-type-vars bind.params)
-                           (set::union
-                            (type-free-type-vars bind.type)
-                            (expr-free-type-vars bind.expr)))
+                           (set::union (type-free-type-vars bind.type)
+                                       (expr-free-type-vars bind.expr)))
                           (type-var-list-option-case
                            bind.tparams?
                            :some (set::mergesort bind.tparams?.val)
