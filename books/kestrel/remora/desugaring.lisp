@@ -18,7 +18,7 @@
 
 (acl2::controlled-configuration)
 
-(local (in-theory (enable* abstract-syntax-corep-rules)))
+(local (in-theory (enable* ast-corep-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,7 +130,7 @@
    (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
                     (make-expr-frame :dims (list (len exprs))
                                      :exprs exprs))))
-  :name abstract-syntax-desugar)
+  :name ast-desugar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

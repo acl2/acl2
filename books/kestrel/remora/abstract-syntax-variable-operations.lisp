@@ -114,7 +114,7 @@
                (if var+dim
                    (cdr var+dim)
                  (dim-var dim.name)))))
-  :name abstract-syntax-subst-dim-vars)
+  :name ast-subst-dim-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +162,7 @@
                    :body (type-subst-ispace-vars type.body
                                                  dim-subst
                                                  shape-subst)))))
-  :name abstract-syntax-subst-ispace-vars)
+  :name ast-subst-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,7 +200,7 @@
             :body (type-subst-type-vars type.body
                                         atom-subst
                                         array-subst)))))
-  :name abstract-syntax-subst-type-vars)
+  :name ast-subst-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,7 +214,7 @@
                (if var+name
                    (dim-var (cdr var+name))
                  (dim-var dim.name)))))
-  :name abstract-syntax-rename-dim-vars)
+  :name ast-rename-dim-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -264,7 +264,7 @@
             :body (type-rename-ispace-vars type.body
                                            dim-renam
                                            shape-renam)))))
-  :name abstract-syntax-rename-ispace-vars)
+  :name ast-rename-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,7 +302,7 @@
             :body (type-rename-type-vars type.body
                                          atom-renam
                                          array-renam)))))
-  :name abstract-syntax-rename-type-vars)
+  :name ast-rename-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -437,7 +437,7 @@
                            bind.iparams?
                            :some (set::mergesort bind.iparams?.val)
                            :none nil))))
-  :name abstract-syntax-free-ispace-vars)
+  :name ast-free-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -491,4 +491,4 @@
                            bind.tparams?
                            :some (set::mergesort bind.tparams?.val)
                            :none nil))))
-  :name abstract-syntax-free-type-vars)
+  :name ast-free-type-vars)
