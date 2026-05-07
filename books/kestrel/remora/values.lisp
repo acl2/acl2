@@ -70,7 +70,7 @@
      e.g. whether it should prescribe one portable integer format,
      or allow a range of formats,
      or even allow multiple integer types.
-     Thus, for now, we use ACL2 integers."))
+     For now, we use ACL2 integers."))
   ((int int))
   :pred int-valuep)
 
@@ -81,22 +81,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We plan to use a more realistic representation of float values,
-     e.g. in terms of IEEE floatings from @('[books]/kestrel/floats').
-     But we do not yet know the exact intended definition of floats in Remora;
+    "[thesis] does not pin down the details of float values,
+     leaving them abstract.
      [impl] uses Haskell's @('Float'),
      which consists of single-precision floating-point numbers,
      ``desired'' (according to the Haskell documentation)
      to comply with the IEEE standard.")
    (xdoc::p
-    "We do not yet know the definite intention for flats in Remora,
+    "We do not yet know the definite intention for floats in Remora,
      e.g. whether it should prescribe one portable float format,
      or allow a range of formats,
      or even allow multiple float types.
-     Thus, for now, we use ACL2 rationals,
+     For now, we use ACL2 rationals,
      with the addition of negative zero (rational 0 being the positive one),
      negative and positive infinities, and not-a-number.
-     This is really just a placeholder."))
+     This is really a placeholder for
+     a more realistic representation of float values,
+     e.g. in terms of IEEE floatings from @('[books]/kestrel/floats'),
+     which we plan to use once the Remora design is clarified."))
   (:ratio ((ratio rational)))
   ;; no :pos0, which is just :ratio 0
   (:neg0 ())
