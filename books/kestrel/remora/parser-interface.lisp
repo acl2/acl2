@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parser-interface
-  :parents (remora)
+  :parents (parsing-and-printing)
   :short "API functions for parsing Remora source from a string."
   :long
   (xdoc::topstring
