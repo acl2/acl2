@@ -16,7 +16,7 @@
 
 (acl2::controlled-configuration)
 
-(local (in-theory (enable* abstract-syntax-corep-rules)))
+(local (in-theory (enable* ast-corep-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

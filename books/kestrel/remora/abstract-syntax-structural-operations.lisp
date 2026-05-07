@@ -21,6 +21,8 @@
 
 (acl2::controlled-configuration)
 
+(local (in-theory (enable* ast-corep-rules)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-structural-operations
@@ -69,8 +71,7 @@
 
   (defrule shape-list-corep-of-shape-dim-list
     (shape-list-corep (shape-dim-list dims))
-    :induct t
-    :enable abstract-syntax-corep-rules))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -90,8 +91,7 @@
 
   (defrule atom-list-corep-of-atom-base-list
     (atom-list-corep (atom-base-list lits))
-    :induct t
-    :enable abstract-syntax-corep-rules))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,8 +115,7 @@
     (implies (and (expr-list-corep exprs)
                   (expr-list-case-array exprs))
              (atom-list-list-corep (expr-array-list->atoms exprs)))
-    :induct t
-    :enable abstract-syntax-corep-rules))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -140,8 +139,7 @@
     (implies (and (expr-list-corep exprs)
                   (expr-list-case-frame exprs))
              (expr-list-list-corep (expr-frame-list->exprs exprs)))
-    :induct t
-    :enable abstract-syntax-corep-rules))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,6 +213,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-atomp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type has the atom kind."
+  (type-case type
+             :var (type-var-case type.var :atom)
+             :base t
+             :array nil
+             :bracket nil
+             :fun t
+             :forall t
+             :pi t
+             :sigma t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-append-all ((exprss expr-list-listp))
   :returns (exprs expr-listp)
   (cond ((endp exprss) nil)
@@ -226,8 +239,7 @@
   (defrule expr-list-corep-of-expr-append-all
     (equal (expr-list-corep (expr-append-all exprss))
            (expr-list-list-corep exprss))
-    :induct t
-    :enable abstract-syntax-corep-rules))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,5 +254,4 @@
   (defrule atom-list-corep-of-atom-append-all
     (equal (atom-list-corep (atom-append-all atomss))
            (atom-list-list-corep atomss))
-    :induct t
-    :enable abstract-syntax-corep-rules))
+    :induct t))

@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ identifier-syntax
-  :parents (remora)
+  :parents (concrete-syntax)
   :short "Syntactic constraints on Remora identifiers."
   :long
   (xdoc::topstring
@@ -82,9 +82,10 @@
       and @(tsee remora-keyword-p) when walking a CST to enforce
       [SC2].")
     (xdoc::li
-     "A planned AST-level well-formedness predicate @('wf-ast-p') will consult
-      @(tsee valid-identifier-string-p) on the strings stored inside
-      AST nodes such as @(tsee expr-var) and @(tsee bind-val).")))
+     "The AST-level well-formedness predicates @('xxx-wf-ast-p') consult
+      @(tsee valid-identifier-string-p) on the identifiers stored inside
+      AST nodes.  For example, @(tsee bind-wf-ast-p).  For the whole program,
+      @(tsee prog-wf-ast-p).")))
   :order-subtopics t
   :default-parent t)
 

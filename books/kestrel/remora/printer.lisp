@@ -29,10 +29,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ printer
-  :parents (remora)
+  :parents (parsing-and-printing)
   :short "A pretty-printer of Remora from the abstract syntax."
   :long
   (xdoc::topstring
+   (xdoc::p "
+ @({
+ (print-prog p)
+ })
+ ")
    (xdoc::p
     "We provide a pretty-printer that turns @(see abstract-syntax) ASTs
      into Remora source text, according to the concrete syntax described
@@ -59,10 +64,7 @@
     "The Remora-specific layer (@(see expr-to-pdoc), @(see prog-to-pdoc),
      etc.) walks the AST and builds the @(tsee pdoc).  The top-level
      entry point is @(tsee print-prog), which composes the walker and
-     @(tsee layout) into a single @('prog &rarr; string') function.")
-   (xdoc::p
-    "This file is work in progress.  The @(tsee pdoc) engine is in
-     place; the AST walker is being added incrementally."))
+     @(tsee layout) into a single @('prog &rarr; string') function."))
   :order-subtopics t
   :default-parent t)
 
@@ -567,6 +569,42 @@
           (t (pdoc-concat (dim-to-pdoc (car ds))
                           (pdoc-concat (pdoc-line)
                                        (dim-list-to-pdoc (cdr ds))))))
+    :measure (dim-list-count ds)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Flat-form string printers for dim and dim-list.  These produce the
+;; canonical compact form (single-space separators, no line breaks) that
+;; the parser accepts.  They are intended as round-trip-provable
+;; alternatives to dim-to-pdoc / dim-list-to-pdoc when pretty-printing
+;; layout flexibility is not needed.
+;;
+
+(defines dim-shape-to-string
+  :short "Render @(tsee dim) and @(tsee dim-list) values as flat strings."
+  :verify-guards :after-returns
+
+  (define dim-to-string ((d dimp))
+    :returns (s stringp)
+    (dim-case d
+      :var (str::cat "$" d.name)
+      :const (str::nat-to-dec-string d.value)
+      :add (str::cat "(+" (str::cat (dim-list-to-string d.dims) ")"))
+      :mul (str::cat "(*" (str::cat (dim-list-to-string d.dims) ")"))
+      :sub (str::cat "(-" (str::cat (dim-list-to-string d.dims) ")")))
+    :measure (dim-count d))
+
+  (define dim-list-to-string ((ds dim-listp))
+    :returns (s stringp)
+    :short "Render a @(tsee dim-list) as a flat string with each dim
+            preceded by a single space (so the empty list yields the
+            empty string, and a non-empty list looks like
+            @(' d1 d2 ...')).  Used by @(tsee dim-to-string) inside the
+            parens of @('+'), @('*'), and @('-') forms."
+    (cond ((endp ds) "")
+          (t (str::cat " "
+                       (str::cat (dim-to-string (car ds))
+                                 (dim-list-to-string (cdr ds))))))
     :measure (dim-list-count ds)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

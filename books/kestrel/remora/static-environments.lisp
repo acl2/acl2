@@ -58,7 +58,19 @@
       a set suffices, as opposed to a map from variables to kinds.")
     (xdoc::li
      "A map from the expression variables in scope to their types.
-      This corresponds to @($\\Gamma$).")))
+      This corresponds to @($\\Gamma$)."))
+   (xdoc::p
+    "Variables are in five separate name spaces:
+     one for dimension variables,
+     one for shape variables,
+     one for atom types,
+     one for array types,
+     and one for expression variables.
+     E.g. @('$x'), @('@x'), @('&x'), @('*x'), and @('x')
+     are all distinct variables, despite the common @('x') part;
+     indeed, they are unequivocated by the prefixes.
+     The variables in a static environment are similarly separated,
+     in the three components and via fixtype sum tags."))
   ((ispace-vars ispace-var-set)
    (type-vars type-var-set)
    (expr-vars string-type-map))

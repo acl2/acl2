@@ -40,7 +40,9 @@
                     nat
                     nat-list
                     nat-list-fix
+                    nat-list-resultp
                     nat-list-listp
+                    nat-list-list-resultp
                     nats=>string
                     prefixp
                     str-fix
@@ -57,6 +59,7 @@
                     fty::reserrf
                     fty::reserrf-push
                     fty::reserrp
+                    std::define-sk
                     std::defret-mutual
                     std::defval
                     str::dec-digit-char-list

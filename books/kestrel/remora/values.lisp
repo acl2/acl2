@@ -11,14 +11,20 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-structural-operations")
 
-(include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "kestrel/fty/nat-list-result" :dir :system)
+(include-book "kestrel/fty/nat-list-list-result" :dir :system)
 
+(local (include-book "std/typed-lists/nat-listp" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/basic/rfix" :dir :system))
 
 (acl2::controlled-configuration)
+
+(local (in-theory (enable acl2::nat-listp-when-result-not-error
+                          acl2::nat-list-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,7 +76,7 @@
      e.g. whether it should prescribe one portable integer format,
      or allow a range of formats,
      or even allow multiple integer types.
-     Thus, for now, we use ACL2 integers."))
+     For now, we use ACL2 integers."))
   ((int int))
   :pred int-valuep)
 
@@ -81,22 +87,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We plan to use a more realistic representation of float values,
-     e.g. in terms of IEEE floatings from @('[books]/kestrel/floats').
-     But we do not yet know the exact intended definition of floats in Remora;
+    "[thesis] does not pin down the details of float values,
+     leaving them abstract.
      [impl] uses Haskell's @('Float'),
      which consists of single-precision floating-point numbers,
      ``desired'' (according to the Haskell documentation)
      to comply with the IEEE standard.")
    (xdoc::p
-    "We do not yet know the definite intention for flats in Remora,
+    "We do not yet know the definite intention for floats in Remora,
      e.g. whether it should prescribe one portable float format,
      or allow a range of formats,
      or even allow multiple float types.
-     Thus, for now, we use ACL2 rationals,
+     For now, we use ACL2 rationals,
      with the addition of negative zero (rational 0 being the positive one),
      negative and positive infinities, and not-a-number.
-     This is really just a placeholder."))
+     This is really a placeholder for
+     a more realistic representation of float values,
+     e.g. in terms of IEEE floatings from @('[books]/kestrel/floats'),
+     which we plan to use once the Remora design is clarified."))
   (:ratio ((ratio rational)))
   ;; no :pos0, which is just :ratio 0
   (:neg0 ())
@@ -120,93 +128,177 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes atomvalues/values
-  :short "Fixtypes of atom values, (array) values, and lists thereof."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As in [thesis] (@($\\mathit{Val}$) and @($\\mathit{Atval}$) in Figure 4.2),
-     we distinguish atom and array values,
-     but we generally use the unqualified `values' to refer to array values,
-     because in a way these are the ``primary'' values of interest.
-     This partitioning of values reflects the one of atoms and expressions.
-     In contrast, [impl] has one Haskell type for all values."))
+(fty::deftypes values/valuelists
+  :short "Fixtypes of values and and lists of values."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum atom-value
-    :parents (values atomvalues/values)
-    :short "Fixtype of atom values."
+  (fty::deftagsum value
+    :parents (values/valuelists)
+    :short "Fixtype of values."
     :long
     (xdoc::topstring
      (xdoc::p
-      "There are
+      "In Remora, every value, which an expression may evaluate to, is an array.
+       Scalar values are zero-rank arrays, consisting of single atom values,
+       but we do not define a distinct notion of atom value,
+       folding them into the initial summands of this fixtype of values
+       (described in more detail below).
+       Non-scalar values are positive-rank arrays,
+       consisting of zero or more values of rank immediately lower
+       (i.e. the tank of the containing array decremented by one);
+       we call non-scalars `vectors' in our model of values.
+       A one-dimensional array is a vector of scalars,
+       a two-dimensional array is a vector of one-dimensional arrays,
+       and so on.
+       We treat empty vectors separately:
+       they carry their own type,
+       in the form of
+       (i) a non-empty list of the dimensions of its elements
+       (not the dimensions of the whole vector,
+       which is obtained by adding a 0 dimension
+       in front of the elements' dimensions;
+       see @(tsee check-dim-value))
+       and (ii) an atom type;
+       together, (i) and (ii) determine the array type of the value.")
+     (xdoc::p
+      "The atoms that form scalar values are
        base values,
        lambda abstractions,
-       and boxed array values.
-       This corresponds to @($\\mathit{Atval}$) in [thesis],
+       and boxed values.
+       Our current definition of box values follows [thesis],
+       but we may be able to derive ispaces and types
+       from the array value itself;
+       this will be investigated soon.
+       Scalar values correspond to atom values @($\\mathit{Atval}$) in [thesis],
        with the difference that we do not have @($\\mathfrak{o}$) here,
        because in our ASTs, as in [impl],
        primitive operations are represented as variables
-       (whose values are predefined).")
+       (whose values are predefined).
+       However, as already noted, we fold atom values into (array) values.
+       Our fixtype of values loosely corresponds
+       to @($\\mathit{Val}$) in [thesis],
+       but with a different yet equivalent structure.")
      (xdoc::p
-      "Our current definition of box values follows [thesis],
-       but we may be able to derive ispaces and types
-       from the array value itself.
-       This will be investigated soon."))
+      "This fixtype does not capture constraints like
+       the non-emptiness of the value list in @(':vector'),
+       and the dimension and type consistency of the elements of a @(':vector').
+       These constraints are captured separately."))
     (:base ((val base-value)))
     (:lambda ((params var+type-list)
               (body expr)))
     (:tlambda ((params type-var-list)
                (body expr)))
-    (:ilambda ((parms ispace-var-list)
+    (:ilambda ((params ispace-var-list)
                (body expr)))
     (:box ((ispaces ispace-list)
            (array value)
            (type type)))
-    :pred atom-valuep
-    :measure (two-nats-measure (acl2-count x) 0))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (fty::deftagsum value
-    :parents (values atomvalues/values)
-    :short "Fixtype of (array) values."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We depart from [thesis] and [impl],
-       and define an array value as
-       either a scalar (zero-ranked)
-       or a vector (i.e. list) of one or more values,
-       or an empty vector that carries its type.
-       So a one-dimensional array is a vector of scalars,
-       a two-dimensional array is a vector of one-dimensional arrays,
-       and so on.
-       The type in an empty vector is the type of the whole vector,
-       not of its elements,
-       unlike @(':arrray-empty') and @(':frame-empty') in @(tsee expr).")
-     (xdoc::p
-      "The non-emptiness of the value list in @(':vector')
-       is not captured in this fixtype.
-       The FTY @(':require') feature does not seem to work here,
-       perhaps because of the interaction with the mutually recursive fixtypes.
-       We can enforce this non-emptiness via well-formedness predicates,
-       which we need to enforce other constraints on our model of values,
-       e.g. that all the array values of a vector have the same shape."))
-    (:scalar ((atom atom-value)))
     (:vector ((elems value-list)))
-    (:vector-empty ((type type)))
-    :pred valuep
-    :measure (two-nats-measure (acl2-count x) 1))
+    (:vector-empty ((dims nat-list)
+                    (atom type)))
+    :pred valuep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist value-list
-    :parents (values atomvalues/values)
+    :parents (values/valuelists)
     :short "Fixtype of lists of (array) values."
     :elt-type value
     :true-listp t
     :elementp-of-nil nil
-    :pred value-listp
-    :measure (two-nats-measure (acl2-count x) 0)))
+    :pred value-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines check-dim-values
+  :short "Check dimension constraints on values and lists of values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As discussed in @(tsee value),
+     that fixtype does not capture many of the constraints of values.
+     We do that in these functions,
+     which also return the dimensions of the values
+     if the values satisfy the constraints:
+     the dimensions are needed to check the containing values.
+     So these functions define, simultaneously,
+     predicates on values saying whether the values are well-formed,
+     and functions returning dimensions of well-formed values.")
+   (xdoc::p
+    "These functions do not check type constraints on values."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-dim-value ((val valuep))
+    :returns (dims nat-list-resultp)
+    :parents (values check-dim-values)
+    :short "Check dimension constraints on values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Scalar values always satisfy dimension constraints
+       and have the empty list of dimensions.")
+     (xdoc::p
+      "For a (non-empty) vector, theere must be at least one element.
+       We recursively check its element values,
+       obtaining a list of lists of dimensions, in the same order.
+       All the lists of dimensions in the list must be the same,
+       i.e. all the elements must have the same dimensions.
+       Then the dimensions of the vector value are obtained
+       by adding the number of elements of the vector to
+       the list of dimensions of all the elements.
+       For instance, if a vector has 2 elements,
+       each of which is a 3x4 matrix,
+       the vector value is a 2x3x4 tensor.")
+     (xdoc::p
+      "An empty vector, as noted in @(tsee value),
+       carries the dimensions of its non-existent elements,
+       which otherwise could not be determined.
+       The dimensions of the whole vector are obtained
+       by adding 0 in front of the elements' dimensions.
+       It may seem strange to have dimensions for non-existent elements,
+       but that matches the Remora type system:
+       in particular, the syntax for empty arrays."))
+    (value-case
+     val
+     :base nil
+     :lambda nil
+     :tlambda nil
+     :ilambda nil
+     :box nil
+     :vector (b* (((ok dimss) (check-dim-value-list val.elems))
+                  ((unless (consp dimss)) (reserr nil))
+                  (dims (car dimss))
+                  ((unless (all-equalp dims dimss)) (reserr nil)))
+               (cons (len val.elems) dims))
+     :vector-empty (cons 0 val.dims))
+    :measure (value-count val))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-dim-value-list ((vals value-listp))
+    :returns (dimss nat-list-list-resultp)
+    :parents (values check-dim-values)
+    :short "Check dimension constraints on lists of values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Each list element is checked in turn.
+       If they all check successfully,
+       we return the dimensions of each, in the same order as the list."))
+    (b* (((when (endp vals)) nil)
+         ((ok dims) (check-dim-value (car vals)))
+         ((ok dimss) (check-dim-value-list (cdr vals))))
+      (cons dims dimss))
+    :measure (value-list-count vals))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork
+  ((local (in-theory (enable acl2::true-listp-when-nat-list-listp
+                             acl2::nat-listp-of-car-when-nat-list-listp))))
+
+  ///
+
+  (fty::deffixequiv-mutual check-dim-values))
