@@ -57,6 +57,7 @@
                     fty::reserrf
                     fty::reserrf-push
                     fty::reserrp
+                    std::define-sk
                     std::defret-mutual
                     std::defval
                     str::dec-digit-char-list
