@@ -301,7 +301,7 @@
       (equal result (atom-fix atom))
       :hyp (atom-corep atom)
       :fn atom-desugar)
-    (defret atom-desugar-when-atom-list-corep
+    (defret atom-list-desugar-when-atom-list-corep
       (equal result (atom-list-fix atom-list))
       :hyp (atom-list-corep atom-list)
       :fn atom-list-desugar)
