@@ -970,21 +970,26 @@
     :measure (abnf::tree-count tree))
 
   ;; dim-arith has branches with 2 tree-lists: an operator and the
-  ;; *( ws dim ) repetition.  We currently only support "+"; "*" and "-"
-  ;; produce a not-yet-implemented error because the AST has no dim-mul
-  ;; or dim-sub constructors yet.
+  ;; *( ws dim ) repetition.  The operator is one of "+", "*", "-",
+  ;; producing a dim-add, dim-mul, or dim-sub respectively.
   (define abs-dim-arith ((tree abnf::treep))
     :returns (d dim-resultp)
     :short "Abstract a @('dim-arith') to a @(tsee dim)."
     (b* (((okf (abnf::tree-list-tuple2 sub))
           (abnf::check-tree-nonleaf-2 tree "dim-arith"))
          ((okf op-tree) (abnf::check-tree-list-1 sub.1st))
+         ((okf dims) (abs-*-ws-dim sub.2nd))
          (plus-pass (abnf::check-tree-ichars op-tree "+"))
-         ((when (reserrp plus-pass))
-          (reserrf (list :dim-arith-op-not-yet-implemented
-                         (abnf::tree-info-for-error op-tree))))
-         ((okf dims) (abs-*-ws-dim sub.2nd)))
-      (make-dim-add :dims dims))
+         ((unless (reserrp plus-pass))
+          (make-dim-add :dims dims))
+         (mul-pass (abnf::check-tree-ichars op-tree "*"))
+         ((unless (reserrp mul-pass))
+          (make-dim-mul :dims dims))
+         (sub-pass (abnf::check-tree-ichars op-tree "-"))
+         ((unless (reserrp sub-pass))
+          (make-dim-sub :dims dims)))
+      (reserrf (list :dim-arith-op
+                     (abnf::tree-info-for-error op-tree))))
     :measure (abnf::tree-count tree))
 
   ;; ( ws dim ) wrapper: anonymous nonleaf with 2 tree-lists (ws and dim).
