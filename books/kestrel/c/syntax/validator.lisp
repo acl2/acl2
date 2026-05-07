@@ -8188,13 +8188,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We validate each translation unit.
-     As mentioned in @(tsee valid-trans-unit),
-     we annotate the translation unit with the final validation table.
-     For now we do no make any use of the returned table,
-     but in the future we should use it to validate
-     the externally linked identifiers across
-     different translation units of a translation ensemble."))
+    "We validate each translation unit,
+     annotating each one with its final validation table.
+     Information that accumulates across translation units
+     (external linkage identifiers, type completions, and the UID counter)
+     is threaded through the validation of each unit
+     and collected into the @(tsee trans-ensemble-info) annotation
+     on the resulting ensemble."))
   (b* (((reterr) (irr-trans-ensemble))
        (tumap (trans-ensemble->units tuens))
        (vstate (init-vstate ienv (irr-filepath)))
