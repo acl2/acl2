@@ -13,11 +13,18 @@
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-structural-operations")
 
+(include-book "kestrel/fty/nat-list-result" :dir :system)
+(include-book "kestrel/fty/nat-list-list-result" :dir :system)
+
+(local (include-book "std/typed-lists/nat-listp" :dir :system))
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/basic/rfix" :dir :system))
 
 (acl2::controlled-configuration)
+
+(local (in-theory (enable acl2::nat-listp-when-result-not-error
+                          acl2::nat-list-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,7 +154,11 @@
        We treat empty vectors separately:
        they carry their own type,
        in the form of
-       (i) a non-empty list of dimension at least one of which is 0
+       (i) a non-empty list of the dimensions of its elements
+       (not the dimensions of the whole vector,
+       which is obtained by adding a 0 dimension
+       in front of the elements' dimensions;
+       see @(tsee check-dim-value))
        and (ii) an atom type;
        together, (i) and (ii) determine the array type of the value.")
      (xdoc::p
@@ -197,3 +208,97 @@
     :true-listp t
     :elementp-of-nil nil
     :pred value-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines check-dim-values
+  :short "Check dimension constraints on values and lists of values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As discussed in @(tsee value),
+     that fixtype does not capture many of the constraints of values.
+     We do that in these functions,
+     which also return the dimensions of the values
+     if the values satisfy the constraints:
+     the dimensions are needed to check the containing values.
+     So these functions define, simultaneously,
+     predicates on values saying whether the values are well-formed,
+     and functions returning dimensions of well-formed values.")
+   (xdoc::p
+    "These functions do not check type constraints on values."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-dim-value ((val valuep))
+    :returns (dims nat-list-resultp)
+    :parents (values check-dim-values)
+    :short "Check dimension constraints on values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Scalar values always satisfy dimension constraints
+       and have the empty list of dimensions.")
+     (xdoc::p
+      "For a (non-empty) vector, theere must be at least one element.
+       We recursively check its element values,
+       obtaining a list of lists of dimensions, in the same order.
+       All the lists of dimensions in the list must be the same,
+       i.e. all the elements must have the same dimensions.
+       Then the dimensions of the vector value are obtained
+       by adding the number of elements of the vector to
+       the list of dimensions of all the elements.
+       For instance, if a vector has 2 elements,
+       each of which is a 3x4 matrix,
+       the vector value is a 2x3x4 tensor.")
+     (xdoc::p
+      "An empty vector, as noted in @(tsee value),
+       carries the dimensions of its non-existent elements,
+       which otherwise could not be determined.
+       The dimensions of the whole vector are obtained
+       by adding 0 in front of the elements' dimensions.
+       It may seem strange to have dimensions for non-existent elements,
+       but that matches the Remora type system:
+       in particular, the syntax for empty arrays."))
+    (value-case
+     val
+     :base nil
+     :lambda nil
+     :tlambda nil
+     :ilambda nil
+     :box nil
+     :vector (b* (((ok dimss) (check-dim-value-list val.elems))
+                  ((unless (consp dimss)) (reserr nil))
+                  (dims (car dimss))
+                  ((unless (all-equalp dims dimss)) (reserr nil)))
+               (cons (len val.elems) dims))
+     :vector-empty (cons 0 val.dims))
+    :measure (value-count val))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define check-dim-value-list ((vals value-listp))
+    :returns (dimss nat-list-list-resultp)
+    :parents (values check-dim-values)
+    :short "Check dimension constraints on lists of values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Each list element is checked in turn.
+       If they all check successfully,
+       we return the dimensions of each, in the same order as the list."))
+    (b* (((when (endp vals)) nil)
+         ((ok dims) (check-dim-value (car vals)))
+         ((ok dimss) (check-dim-value-list (cdr vals))))
+      (cons dims dimss))
+    :measure (value-list-count vals))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork
+  ((local (in-theory (enable acl2::true-listp-when-nat-list-listp
+                             acl2::nat-listp-of-car-when-nat-list-listp))))
+
+  ///
+
+  (fty::deffixequiv-mutual check-dim-values))
