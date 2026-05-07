@@ -30,10 +30,8 @@
    (xdoc::p
     "We define a desugaring transformation from all ASTs to the core ASTs.")
    (xdoc::p
-    "In [impl], this is mostly done during parsing,
-     on the fly as ASTs as constructed.
-     While [impl] also flattens frame expressions at the same time,
-     we formalize that as a separate transformation on ASTs."))
+    "In [impl], this is done during parsing,
+     on the fly as ASTs as constructed."))
   :order-subtopics t
   :default-parent t)
 
