@@ -108,15 +108,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-valid-table ((filepath filepathp))
+(define init-valid-table ((filepath filepathp)
+                          (dialect c::dialectp))
   :returns (table valid-tablep)
   :short "Initial validation table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This contains one empty scope (the initial file scope)."))
+    "This contains one empty scope (the initial file scope),
+     and the initial macro table for the given dialect."))
   (make-valid-table :filepath filepath
-                    :scopes (list (empty-valid-scope))))
+                    :scopes (list (empty-valid-scope))
+                    :macros (macro-init dialect)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,7 +319,6 @@
    (xdoc::p
     "This consists of
      a validation table,
-     a macro table,
      an information map for identifiers with external linkage,
      a type completion map,
      the next unused"
@@ -333,7 +335,6 @@
      accumulate over the entire validation process,
      and their contents apply to all translation units in the ensemble."))
   ((table valid-table)
-   (macros macro-table)
    (externals valid-externals)
    (completions type-completions)
    (next-uid uidp)
@@ -346,7 +347,6 @@
   :short "An irrelevant validator state."
   :type vstatep
   :body (vstate (irr-valid-table)
-                (irr-macro-table)
                 nil
                 nil
                 (irr-uid)
@@ -366,8 +366,7 @@
   (xdoc::topstring
    (xdoc::p
     "This contains one empty scope (the initial file scope)."))
-  (make-vstate :table (init-valid-table filepath)
-               :macros (macro-init (ienv->dialect ienv))
+  (make-vstate :table (init-valid-table filepath (ienv->dialect ienv))
                :externals externals
                :completions completions
                :next-uid next-uid
@@ -7964,25 +7963,36 @@
                   (info (macro-info-object
                          (list (make-plexeme-ident :ident name
                                                    :provenance nil))))
-                  (macros (vstate->macros vstate))
-                  ((mv erp new-macros) (macro-define name info macros))
+                  (table (vstate->table vstate))
+                  ((mv erp new-macros)
+                   (macro-define name info (valid-table->macros table)))
                   ((unless (maybe-msgp erp))
                    (raise "Internal error: malformed error ~x0." erp)
                    (reterr "irrelevant"))
                   ((when erp) (mv erp nil (irr-vstate)))
-                  (vstate (change-vstate vstate :macros new-macros)))
+                  (vstate (change-vstate
+                            vstate
+                            :table (change-valid-table
+                                     table
+                                     :macros new-macros))))
                (retok (list (trans-item-fix item)) vstate))
      :undef (b* ((name (ident->unwrap item.macro))
                  ((unless (stringp name))
                   (raise "Internal error: macro name ~x0." name)
                   (reterr "irrelevant"))
-                 (macros (vstate->macros vstate))
-                 ((mv erp new-macros) (macro-undefine name macros))
+                 (table (vstate->table vstate))
+                 ((mv erp new-macros)
+                  (macro-undefine name (valid-table->macros table)))
                  ((unless (maybe-msgp erp))
                   (raise "Internal error: malformed error ~x0." erp)
                   (reterr "irrelevant"))
                  ((when erp) (mv erp nil (irr-vstate)))
-                 (vstate (change-vstate vstate :macros new-macros)))
+                 (vstate (change-vstate
+                           vstate
+                           :table
+                           (change-valid-table
+                             table
+                             :macros new-macros))))
               (retok (list (trans-item-fix item)) vstate))
      :cond (reterr
             (msg "Validator does not support conditional directives yet."))
@@ -8069,7 +8079,7 @@
   (b* (((reterr) (irr-trans-unit) (irr-vstate))
        ((vstate vstate) vstate)
        (dialect (ienv->dialect vstate.ienv))
-       (vstate (change-vstate vstate :table (init-valid-table filepath)))
+       (vstate (change-vstate vstate :table (init-valid-table filepath dialect)))
        (vstate (vstate-add-ord-objfuns-file-scope
                (built-in-functions-for dialect)
                (make-type-function :ret (type-unknown)
