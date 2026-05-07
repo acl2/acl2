@@ -740,10 +740,11 @@
           (deffoldred-gen-prod-combination+theorem
             type type nil nil prod
             suffix targets extra-args default combine name fty-table)))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
            (declare (ignorable ,type))
-           :returns (result ,result)
+           :returns (,result-var ,result)
            :parents (,name)
            ,fn-body
            ,@(and (or mutrecp recp)
@@ -815,10 +816,11 @@
                 targets extra-args default combine overrides name fty-table)))
           (mv `(,type-case ,type ,@cases)
               thm-events)))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
            (declare (ignorable ,type))
-           :returns (result ,result)
+           :returns (,result-var ,result)
            :parents (,name)
            ,body
            ,@(and (or mutrecp recp)
@@ -870,9 +872,10 @@
                           :some (,base-type-suffix (,accessor ,type)
                                                    ,@extra-args-names)
                           :none ,default))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
-           :returns (result ,result)
+           :returns (,result-var ,result)
            :parents (,name)
            ,body
            ,@(and (or mutrecp recp)
@@ -997,9 +1000,10 @@
                 ,default)
                (t (,combine (,elt-type-suffix (car ,type) ,@extra-args-names)
                             (,type-suffix (cdr ,type) ,@extra-args-names)))))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
-           :returns (result ,result)
+           :returns (,result-var ,result)
            :parents (,name)
            ,body
            ,@(and (or mutrecp recp)
@@ -1128,9 +1132,10 @@
                                               ,@extra-args-names)
                             (,type-suffix (omap::tail ,type)
                                           ,@extra-args-names)))))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
-           :returns (result ,result)
+           :returns (,result-var ,result)
            :parents (,name)
            ,body
            ,@(and (or mutrecp recp)
