@@ -12,8 +12,6 @@
 
 (include-book "abstract-syntax-trees")
 
-(include-book "std/basic/two-nats-measure" :dir :system)
-
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/basic/rfix" :dir :system))
@@ -122,40 +120,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes atomvalues/values
-  :short "Fixtypes of atom values, (array) values, and lists thereof."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As in [thesis] (@($\\mathit{Val}$) and @($\\mathit{Atval}$) in Figure 4.2),
-     we distinguish atom and array values,
-     but we generally use the unqualified `values' to refer to array values,
-     because in a way these are the ``primary'' values of interest.
-     This partitioning of values reflects the one of atoms and expressions.
-     In contrast, [impl] has one Haskell type for all values."))
+(fty::deftypes values/valuelists
+  :short "Fixtypes of values and and lists of values."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum atom-value
-    :parents (values atomvalues/values)
-    :short "Fixtype of atom values."
+  (fty::deftagsum value
+    :parents (values/valuelists)
+    :short "Fixtype of values."
     :long
     (xdoc::topstring
      (xdoc::p
-      "There are
+      "In Remora, every value, which an expression may evaluate to, is an array.
+       Scalar values are zero-rank arrays, consisting of single atom values,
+       but we do not define a distinct notion of atom value,
+       folding them into the initial summands of this fixtype of values
+       (described in more detail below).
+       Non-scalar values are positive-rank arrays,
+       consisting of zero or more values of rank immediately lower
+       (i.e. the tank of the containing array decremented by one);
+       we call non-scalars `vectors' in our model of values.
+       A one-dimensional array is a vector of scalars,
+       a two-dimensional array is a vector of one-dimensional arrays,
+       and so on.
+       We treat empty vectors separately:
+       they carry their own type,
+       in the form of
+       (i) a non-empty list of dimension at least one of which is 0
+       and (ii) an atom type;
+       together, (i) and (ii) determine the array type of the value.")
+     (xdoc::p
+      "The atoms that form scalar values are
        base values,
        lambda abstractions,
-       and boxed array values.
-       This corresponds to @($\\mathit{Atval}$) in [thesis],
+       and boxed values.
+       Our current definition of box values follows [thesis],
+       but we may be able to derive ispaces and types
+       from the array value itself;
+       this will be investigated soon.
+       Scalar values correspond to atom values @($\\mathit{Atval}$) in [thesis],
        with the difference that we do not have @($\\mathfrak{o}$) here,
        because in our ASTs, as in [impl],
        primitive operations are represented as variables
-       (whose values are predefined).")
+       (whose values are predefined).
+       However, as already noted, we fold atom values into (array) values.
+       Our fixtype of values loosely corresponds
+       to @($\\mathit{Val}$) in [thesis],
+       but with a different yet equivalent structure.")
      (xdoc::p
-      "Our current definition of box values follows [thesis],
-       but we may be able to derive ispaces and types
-       from the array value itself.
-       This will be investigated soon."))
+      "This fixtype does not capture constraints like
+       the non-emptiness of the value list in @(':vector'),
+       and the shape and type consistency of the elements of a @(':vector').
+       These constraints are captured separately."))
     (:base ((val base-value)))
     (:lambda ((params var+type-list)
               (body expr)))
@@ -166,49 +182,17 @@
     (:box ((ispaces ispace-list)
            (array value)
            (type type)))
-    :pred atom-valuep
-    :measure (two-nats-measure (acl2-count x) 0))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (fty::deftagsum value
-    :parents (values atomvalues/values)
-    :short "Fixtype of (array) values."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We depart from [thesis] and [impl],
-       and define an array value as
-       either a scalar (zero-ranked)
-       or a vector (i.e. list) of one or more values,
-       or an empty vector that carries its type.
-       So a one-dimensional array is a vector of scalars,
-       a two-dimensional array is a vector of one-dimensional arrays,
-       and so on.
-       The type in an empty vector is the type of the whole vector,
-       not of its elements,
-       unlike @(':arrray-empty') and @(':frame-empty') in @(tsee expr).")
-     (xdoc::p
-      "The non-emptiness of the value list in @(':vector')
-       is not captured in this fixtype.
-       The FTY @(':require') feature does not seem to work here,
-       perhaps because of the interaction with the mutually recursive fixtypes.
-       We can enforce this non-emptiness via well-formedness predicates,
-       which we need to enforce other constraints on our model of values,
-       e.g. that all the array values of a vector have the same shape."))
-    (:scalar ((atom atom-value)))
     (:vector ((elems value-list)))
-    (:vector-empty ((type type)))
-    :pred valuep
-    :measure (two-nats-measure (acl2-count x) 1))
+    (:vector-empty ((dims nat-list)
+                    (atom type)))
+    :pred valuep)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist value-list
-    :parents (values atomvalues/values)
+    :parents (values/valuelists)
     :short "Fixtype of lists of (array) values."
     :elt-type value
     :true-listp t
     :elementp-of-nil nil
-    :pred value-listp
-    :measure (two-nats-measure (acl2-count x) 0)))
+    :pred value-listp))
