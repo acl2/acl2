@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-structural-operations")
 
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -170,14 +171,14 @@
      (xdoc::p
       "This fixtype does not capture constraints like
        the non-emptiness of the value list in @(':vector'),
-       and the shape and type consistency of the elements of a @(':vector').
+       and the dimension and type consistency of the elements of a @(':vector').
        These constraints are captured separately."))
     (:base ((val base-value)))
     (:lambda ((params var+type-list)
               (body expr)))
     (:tlambda ((params type-var-list)
                (body expr)))
-    (:ilambda ((parms ispace-var-list)
+    (:ilambda ((params ispace-var-list)
                (body expr)))
     (:box ((ispaces ispace-list)
            (array value)
