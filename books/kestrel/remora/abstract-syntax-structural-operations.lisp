@@ -213,6 +213,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-atomp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type has the atom kind."
+  (type-case type
+             :var (type-var-case type.var :atom)
+             :base t
+             :array nil
+             :bracket nil
+             :fun t
+             :forall t
+             :pi t
+             :sigma t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-append-all ((exprss expr-list-listp))
   :returns (exprs expr-listp)
   (cond ((endp exprss) nil)

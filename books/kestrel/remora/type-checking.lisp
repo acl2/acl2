@@ -67,21 +67,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-atomp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type has the atom kind."
-  (type-case type
-             :var (type-var-case type.var :atom)
-             :base t
-             :array nil
-             :bracket nil
-             :fun t
-             :forall t
-             :pi t
-             :sigma t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define base-type-of-base-lit ((lit base-litp))
   :returns (btype base-typep)
   :short "Base type of a base value."
