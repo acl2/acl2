@@ -129,7 +129,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes values/valuelists
-  :short "Fixtypes of values and and lists of values."
+  :short "Fixtypes of values and lists of values."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,7 +146,7 @@
        (described in more detail below).
        Non-scalar values are positive-rank arrays,
        consisting of zero or more values of rank immediately lower
-       (i.e. the tank of the containing array decremented by one);
+       (i.e. the rank of the containing array decremented by one);
        we call non-scalars `vectors' in our model of values.
        A one-dimensional array is a vector of scalars,
        a two-dimensional array is a vector of one-dimensional arrays,
@@ -240,7 +240,7 @@
       "Scalar values always satisfy dimension constraints
        and have the empty list of dimensions.")
      (xdoc::p
-      "For a (non-empty) vector, theere must be at least one element.
+      "For a (non-empty) vector, there must be at least one element.
        We recursively check its element values,
        obtaining a list of lists of dimensions, in the same order.
        All the lists of dimensions in the list must be the same,

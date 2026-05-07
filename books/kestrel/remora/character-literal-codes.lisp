@@ -28,7 +28,7 @@
      Our ASTs represent the former directly as their codes,
      while it represents escapes in a more structured way.
      Here we define mappings from all kinds of character literals
-     to their corresponding coded.")
+     to their corresponding codes.")
    (xdoc::p
     "This mapping is used to define @(see desugaring),
      but it may be also used to define the dynamic semantics

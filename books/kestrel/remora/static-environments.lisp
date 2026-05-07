@@ -68,7 +68,7 @@
      and one for expression variables.
      E.g. @('$x'), @('@x'), @('&x'), @('*x'), and @('x')
      are all distinct variables, despite the common @('x') part;
-     indeed, they are unequivocated by the prefixes.
+     indeed, they are distinguished by the prefixes.
      The variables in a static environment are similarly separated,
      in the three components and via fixtype sum tags."))
   ((ispace-vars ispace-var-set)

@@ -454,7 +454,7 @@
    (xdoc::p
     "The free variables of a binder are the ones
      in the thing that the variable is bound to.
-     Thus, for the ispace function binder,
+     Thus, for the type function binder,
      we remove the parameters,
      because the thing that the variable is bound to
      is like a lambda abstraction."))
