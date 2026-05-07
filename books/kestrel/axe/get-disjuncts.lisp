@@ -26,6 +26,7 @@
 ;(local (include-book "merge-sort-less-than-rules"))
 
 ;; TODO: Handle boolif
+;; TODO: Think about sortedness of the output
 
 (local (in-theory (disable nth len natp))) ; for speed
 
@@ -108,10 +109,12 @@
                    (if (not (= 3 (len (dargs expr))))
                        (prog2$ (er hard? 'get-darg-disjuncts "Bad arity for IF.")
                                (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                     (if (or (equal (darg1 expr) (darg2 expr))
-                             (equal (darg2 expr) *t*))
+                     (if (or (equal (darg1 expr) (darg2 expr)) ; (if x x y)
+                             (equal (darg2 expr) *t*) ; (if x t y) ; todo: allow any non-nil constant
+                             )
                          ;; (if x x y) is just (or x y), so get disjuncts from the first and third arguments
                          ;; (if x t y) is also essentially (or x y), so get disjuncts from the first and third arguments
+                         ;; TODO: Handle if with a constant test, if with same branches?
                          (b* (((mv erp truep acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                                (get-darg-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                    acc
