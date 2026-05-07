@@ -223,10 +223,9 @@
   (b* (((reterr) (c$::irr-uid))
        ((qualified-ident qual-ident) qual-ident)
        ((unless qual-ident.filepath?)
-        (b* (((c$::valid-table valid-table)
-              (c$::trans-ensemble-info->table-end
-                (c$::trans-ensemble->info ensemble)))
-             (info? (omap::assoc qual-ident.ident valid-table.externals))
+        (b* ((externals (c$::trans-ensemble-info->externals
+                          (c$::trans-ensemble->info ensemble)))
+             (info? (omap::assoc qual-ident.ident externals))
              ((unless info?)
               (retmsg$ "~x0 is not an object or function ~
                         with external linkage."
