@@ -302,3 +302,41 @@
   ///
 
   (fty::deffixequiv-mutual check-dim-values))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-dim-wfp ((val valuep))
+  :returns (yes/no booleanp)
+  :short "Check the dimension well-formedness of a value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, whether it satisfies the dimension constraints."))
+  (not (reserrp (check-dim-value val))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist value-list-dim-wfp (x)
+  :guard (value-listp x)
+  :short "Check the dimension well-formedness of a list of values."
+  (value-dim-wfp x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-dims ((val valuep))
+  :guard (value-dim-wfp val)
+  :returns (dims nat-listp :hints (("Goal" :in-theory (enable value-dim-wfp))))
+  :short "Dimensions of a well-formed value."
+  (if (mbt (value-dim-wfp val))
+      (check-dim-value val)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define value-list-dims ((vals value-listp))
+  :guard (value-list-dim-wfp vals)
+  :returns (dimss nat-list-listp)
+  :short "Lift @(tsee value-dims) to lists."
+  (cond ((endp vals) nil)
+        (t (cons (value-dims (car vals))
+                 (value-list-dims (cdr vals))))))
