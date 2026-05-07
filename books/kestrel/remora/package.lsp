@@ -40,7 +40,9 @@
                     nat
                     nat-list
                     nat-list-fix
+                    nat-list-resultp
                     nat-list-listp
+                    nat-list-list-resultp
                     nats=>string
                     prefixp
                     str-fix
