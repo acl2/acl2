@@ -8124,10 +8124,7 @@
 
 (define valid-trans-unit ((filepath filepathp)
                           (tunit trans-unitp)
-                          (externals valid-externalsp)
-                          (completions type-completions-p)
-                          (next-uid uidp)
-                          (ienv ienvp))
+                          (vstate vstatep))
   :guard (trans-unit-unambp tunit)
   :returns (mv (erp maybe-msgp) (new-tunit trans-unitp) (new-vstate vstatep))
   :short "Validate a translation unit."
@@ -8161,8 +8158,14 @@
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-trans-unit) (irr-vstate))
-       (dialect (ienv->dialect ienv))
-       (vstate (init-vstate ienv filepath externals completions next-uid))
+       ((vstate vstate) vstate)
+       (dialect (ienv->dialect vstate.ienv))
+       (vstate (change-vstate
+                 vstate
+                 :table (init-valid-table filepath
+                                          (vstate->externals vstate)
+                                          (vstate->completions vstate)
+                                          (vstate->next-uid vstate))))
        (vstate (vstate-add-ord-objfuns-file-scope
                (built-in-functions-for dialect)
                (make-type-function :ret (type-unknown)
@@ -8193,49 +8196,38 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
-                                       (externals valid-externalsp)
-                                       (completions type-completions-p)
-                                       (next-uid uidp)
-                                       (ienv ienvp)
-                                       (keep-going booleanp))
+                                       (keep-going booleanp)
+                                       (vstate vstatep))
   :guard (filepath-trans-unit-map-unambp tumap)
   :returns (mv (erp maybe-msgp)
-               (new-tumap filepath-trans-unit-mapp
-                          :hyp (filepath-trans-unit-mapp tumap))
+               (new-tumap filepath-trans-unit-mapp)
                (final-vstate vstatep))
   :short "Validate a map from file paths to translation units."
   (valid-filepath-trans-unit-map-loop (omap::keys
                                        (filepath-trans-unit-map-fix tumap))
                                       tumap
-                                      externals
-                                      completions
-                                      next-uid
-                                      ienv
-                                      keep-going)
+                                      keep-going
+                                      vstate)
 
   :prepwork
   ((define valid-filepath-trans-unit-map-loop ((paths filepath-setp)
                                                (tumap filepath-trans-unit-mapp)
-                                               (externals valid-externalsp)
-                                               (completions type-completions-p)
-                                               (next-uid uidp)
-                                               (ienv ienvp)
-                                               (keep-going booleanp))
+                                               (keep-going booleanp)
+                                               (vstate vstatep))
      :guard (and (set::subset paths (omap::keys tumap))
                  (filepath-trans-unit-map-unambp tumap))
      :returns (mv (erp maybe-msgp)
-                  (new-tumap filepath-trans-unit-mapp
-                             :hyp (filepath-trans-unit-mapp tumap))
+                  (new-tumap filepath-trans-unit-mapp)
                   (final-vstate vstatep))
      :parents nil
      (b* (((reterr) nil (irr-vstate))
           ((when (set::emptyp (filepath-set-fix paths)))
-           (retok nil (irr-vstate))) ; TODO: check this
+           (retok nil (vstate-fix vstate)))
           (tumap (filepath-trans-unit-map-fix tumap))
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
           ((mv erp new-tunit vstate)
-           (valid-trans-unit path tunit externals completions next-uid ienv))
+           (valid-trans-unit path tunit vstate))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
@@ -8243,23 +8235,15 @@
                            erp)
                        (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                            tumap
-                                                           externals
-                                                           completions
-                                                           next-uid
-                                                           ienv
-                                                           keep-going))
+                                                           keep-going
+                                                           vstate))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->string path)
                       erp)))
-          ((vstate vstate) vstate)
-          ((valid-table table) vstate.table)
           ((erp new-tumap -) (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                                  tumap
-                                                                 table.externals
-                                                                 table.completions
-                                                                 table.next-uid
-                                                                 ienv
-                                                                 keep-going)))
+                                                                 keep-going
+                                                                 vstate)))
        (retok (omap::update path new-tunit new-tumap)
               vstate))
      :no-function nil
@@ -8309,8 +8293,9 @@
      different translation units of a translation ensemble."))
   (b* (((reterr) (irr-trans-ensemble))
        (tumap (trans-ensemble->units tuens))
+       (vstate (init-vstate ienv (irr-filepath)))
        ((erp new-tumap vstate)
-        (valid-filepath-trans-unit-map tumap nil nil (uid 0) ienv keep-going))
+        (valid-filepath-trans-unit-map tumap keep-going vstate))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
                    (len-new-tumap (omap::size new-tumap))
@@ -8319,11 +8304,15 @@
                     nil
                   (cw "Validated ~x0/~x1 translation units.~%"
                       len-new-tumap len-tumap)))
-            nil)))
+            nil))
+       (info (make-trans-ensemble-info
+               :externals (vstate->externals vstate)
+               :completions (vstate->completions vstate)
+               :next-uid (vstate->next-uid vstate))))
     (retok (make-trans-ensemble
             :units new-tumap
             :resolved-includes nil
-            :info (trans-ensemble-info (vstate->table vstate)))))
+            :info info)))
 
   ///
 

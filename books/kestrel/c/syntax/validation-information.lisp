@@ -1136,7 +1136,7 @@
    (xdoc::p
     "The @('completions') field is a map of @(see type-completions).
      This maps @(see UID)s corresponding to struct and union types
-     to their list of named members.")
+     to their list of members.")
    (xdoc::p
     "The @('next-uid') field stores the next unused "
     (xdoc::seetopic "uid" "unique identifier")
@@ -1454,7 +1454,9 @@
     "This is the type of the annotations that
      the validator adds to translation units.
      The information consists of
-     the final validation table for the translation unit."))
+     the final validation table for the translation unit.
+     The table @('scopes') is expected to be a singleton,
+     representing the file-scope at the end of the translation unit."))
   ((table-end valid-table))
   :pred trans-unit-infop)
 
@@ -1468,8 +1470,14 @@
     "This is the type of the annotations that
      the validator adds to translation ensembles.
      The information consists of
-     the final validation table for the translation ensemble."))
-  ((table-end valid-table))
+     the validation information related to identifiers with external linkage,
+     the map of structure and union type UIDs to their members,
+     and the next unused "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
+  ((externals valid-externals)
+   (completions type-completions)
+   (next-uid uidp))
   :pred trans-ensemble-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
