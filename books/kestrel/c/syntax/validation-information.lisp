@@ -1114,10 +1114,9 @@
   (xdoc::topstring
    (xdoc::p
     "A validation table is a collection of validation information
-     for translation units and ensembles.")
+     for a single translation unit.")
    (xdoc::p
-    "The @('filepath') field stores the name of the translation unit
-     which we are validating.")
+    "The @('filepath') field stores the name of the translation unit.")
    (xdoc::p
     "Scopes are treated in a stack-like manner [C17:6.2.1].
      Thus, a validation table contains a list (i.e. stack) of scopes.
@@ -1126,26 +1125,9 @@
      in other words, in the nesting of scopes in the stack,
      the leftmost scope is the innermost,
      and the rightmost scope is the outermost
-     (i.e. the file scope [C17:6.2.1/4].)")
-   (xdoc::p
-    "We also track information about identifiers with external linkage,
-     which we use for cross-checking across disjoint scopes
-     and different translation units.
-     This information accumulates
-     as we validate each translation unit in the ensemble.")
-   (xdoc::p
-    "The @('completions') field is a map of @(see type-completions).
-     This maps @(see UID)s corresponding to struct and union types
-     to their list of members.")
-   (xdoc::p
-    "The @('next-uid') field stores the next unused "
-    (xdoc::seetopic "uid" "unique identifier")
-    "."))
+     (i.e. the file scope [C17:6.2.1/4].)"))
   ((filepath filepath)
-   (scopes valid-scope-list)
-   (externals valid-externals)
-   (completions type-completions)
-   (next-uid uidp))
+   (scopes valid-scope-list))
   :pred valid-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1153,7 +1135,7 @@
 (defirrelevant irr-valid-table
   :short "An irrelevant validation table."
   :type valid-tablep
-  :body (valid-table (irr-filepath) nil nil nil (irr-uid)))
+  :body (valid-table (irr-filepath) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1161,30 +1143,6 @@
   valid-table
   :short "Fixtype of optional validation tables."
   :pred valid-table-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-composite-with-table ((x typep)
-                                   (y typep)
-                                   (table valid-tablep)
-                                   (ienv ienvp))
-  :returns (mv (composite typep)
-               (new-table valid-tablep))
-  :short "Construct a composite @(see type) with a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This wraps @(tsee type-composite),
-     extracting the @('completions') @('next-uid') from the validation table,
-     and updating the values accordingly."))
-  (b* (((valid-table table) table)
-       ((mv composite completions next-uid)
-        (type-composite x y table.completions table.next-uid ienv)))
-    (mv composite
-        (change-valid-table
-         table
-         :completions completions
-         :next-uid next-uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -108,11 +108,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-valid-table ((filepath filepathp)
-                          &optional
-                          (externals valid-externalsp)
-                          ((completions type-completions-p) 'nil)
-                          ((next-uid uidp) '(uid 0)))
+(define init-valid-table ((filepath filepathp))
   :returns (table valid-tablep)
   :short "Initial validation table."
   :long
@@ -120,10 +116,7 @@
    (xdoc::p
     "This contains one empty scope (the initial file scope)."))
   (make-valid-table :filepath filepath
-                    :scopes (list (empty-valid-scope))
-                    :externals externals
-                    :completions completions
-                    :next-uid next-uid))
+                    :scopes (list (empty-valid-scope))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -258,220 +251,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-lookup-ext ((ident identp) (table valid-tablep))
-  :returns (info? valid-ext-info-optionp)
-  :short "Look up the validation information of an identifier in the
-          @('externals') map."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This holds the validation information
-     for an identifier with external linkage
-     which has been declared in any scope or translation unit.
-     See @(see valid-table)."))
-  (b* (((valid-table table) table))
-    (cdr (omap::assoc (ident-fix ident) table.externals))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-get-fresh-uid ((ident identp)
-                             (linkage linkagep)
-                             (table valid-tablep))
-  :returns (mv (uid uidp)
-               (new-table valid-tablep))
-  :short "Get a fresh @(tsee UID) and update the table accordingly."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('next-uid') field of the @(see valid-table) is incremented to record
-     that the returned @(tsee UID) is now taken."))
-  (b* (((valid-table table) table))
-    (linkage-case
-     linkage
-     :external (b* ((info? (valid-lookup-ext ident table)))
-                 (valid-ext-info-option-case
-                  info?
-                  :some (mv (valid-ext-info->uid info?.val)
-                            (valid-table-fix table))
-                  :none (mv table.next-uid
-                            (change-valid-table
-                             table
-                             :next-uid (uid-increment table.next-uid)))))
-     :otherwise (mv table.next-uid
-                    (change-valid-table
-                     table
-                     :next-uid (uid-increment table.next-uid)))))
-
-  ///
-
-  (defret valid-get-fresh-uid.uid-under-iff
-    uid))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-update-ext ((ident identp)
-                          (type typep)
-                          (uid uidp)
-                          (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Update the @('externals') map with an identifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If no entry exists for the identifier,
-     add a new @(tsee valid-ext-info).
-     If an entry does exist, update the @('declared-in') field to include
-     the name of the current translation unit.")
-   (xdoc::p
-    "When an existing entry already exists,
-     type compatibility is not checked, nor is the UID.
-     Instead, the caller should check compatibility and ensure a proper UID
-     before updating."))
-  (b* (((valid-table table) table)
-       (info? (valid-lookup-ext ident table))
-       (new-info
-        (valid-ext-info-option-case
-         info?
-         :some (change-valid-ext-info
-                info?
-                :declared-in (insert table.filepath
-                                     (valid-ext-info->declared-in
-                                      info?.val)))
-         :none (make-valid-ext-info
-                :type type
-                :declared-in (insert table.filepath nil)
-                :uid uid)))
-       (new-externals
-        (omap::update (ident-fix ident) new-info table.externals)))
-    (change-valid-table table :externals new-externals)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-add-ord ((ident identp)
-                       (info valid-ord-infop)
-                       (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Add an ordinary identifier to the validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We pass the information to associate to the identifier.")
-   (xdoc::p
-    "The identifier is always added to
-     the first (i.e. innermost, i.e. current) scope.
-     We check the existence of at least one scope;
-     recall that there must be always a file scope.")
-   (xdoc::p
-    "If the identifier is already present in the current scope,
-     its information is overwritten,
-     but we only call this function after checking that
-     this overwriting is acceptable,
-     i.e. when it ``refines'' the validation information for the identifier.
-     We could consider adding a guard to this function
-     that characterizes the acceptable overwriting.")
-   (xdoc::p
-    "If @('info') indicates external linkage, we update the @('externals') map.
-     See @(tsee valid-update-ext)."))
-  (b* (((valid-table table) table)
-       ((unless (> (valid-table-num-scopes table) 0))
-        (raise "Internal error: no scopes in validation table.")
-        (valid-table-fix table))
-       (scope (car table.scopes))
-       (ord-scope (valid-scope->ord scope))
-       (new-ord-scope (acons (ident-fix ident)
-                             (valid-ord-info-fix info)
-                             ord-scope))
-       (new-scope (change-valid-scope scope :ord new-ord-scope))
-       (new-scopes (cons new-scope (cdr table.scopes)))
-       (table (change-valid-table table :scopes new-scopes))
-       (table
-         (valid-ord-info-case
-          info
-          :objfun (linkage-case
-                   info.linkage
-                   :external
-                   (valid-update-ext ident info.type info.uid table)
-                   :otherwise table)
-          :otherwise table)))
-    table)
-  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define valid-add-ord-file-scope ((ident identp)
-                                  (info valid-ord-infop)
-                                  (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Add an ordinary identifier
-          to the file scope of a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Unlike @(tsee valid-add-ord), this skips any block scopes,
-     and directly updates the file scope at the bottom of the stack.
-     It is used in some situations.")
-   (xdoc::p
-    "As in @(tsee valid-add-ord), we update the @('externals') map
-     if @('info') indicates external linkage."))
-  (b* ((scopes (valid-table->scopes table))
-       ((when (endp scopes))
-        (raise "Internal error: no scopes.")
-        (irr-valid-table))
-       (scope (car (last scopes)))
-       (ord-scope (valid-scope->ord scope))
-       (new-ord-scope (acons (ident-fix ident)
-                             (valid-ord-info-fix info)
-                             ord-scope))
-       (new-scope (change-valid-scope scope :ord new-ord-scope))
-       (new-scopes (append (butlast scopes 1) (list new-scope)))
-       (table (change-valid-table table :scopes new-scopes))
-       (table
-         (valid-ord-info-case
-          info
-          :objfun (linkage-case
-                   info.linkage
-                   :external
-                   (valid-update-ext ident info.type info.uid table)
-                   :otherwise table)
-          :otherwise table)))
-    table)
-  :guard-hints (("Goal" :in-theory (enable acons)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define valid-add-ord-objfuns-file-scope ((idents ident-listp)
-                                          (type typep)
-                                          (linkage linkagep)
-                                          (defstatus valid-defstatusp)
-                                          (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Add a list of ordinary identifiers
-          corresponding to objects or functions
-          to the file scope of a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "See @(tsee valid-add-ord-file-scope)."))
-  (b* (((when (endp idents))
-        (valid-table-fix table))
-       ((mv uid table) (valid-get-fresh-uid (first idents) linkage table)))
-    (valid-add-ord-objfuns-file-scope
-     (rest idents)
-     type
-     linkage
-     defstatus
-     (valid-add-ord-file-scope (first idents)
-                               (make-valid-ord-info-objfun
-                                :type type
-                                :linkage linkage
-                                :defstatus defstatus
-                                :uid uid)
-                               table))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define valid-add-tag ((ident identp)
                        (info valid-tag-infop)
                        (table valid-tablep))
@@ -536,19 +315,28 @@
   (xdoc::topstring
    (xdoc::p
     "This consists of
-     a (mutable) validation table,
-     a (mutable) macro table,
-     and an immutable implementation environment.
+     a validation table,
+     a macro table,
+     an information map for identifiers with external linkage,
+     a type completion map,
+     the next unused"
+    (xdoc::seetopic "uid" "unique identifier")
+    ", and an implementation environment.
      It is analogous to @(tsee dstate).")
    (xdoc::p
-    "Currently validation tables are defined in @(see validation-information),
-     and are used to annotate certain ASTs.
-     We may refactor that at some point,
-     annotating ASTs with more targeted information extracted from the tables,
-     incorporating instead validation tables into validator states.
-     But we start with this simpler wrapping of validation tables for now."))
+    "The implementation environment is constant &mdash;
+     i.e. it is never updated once set.
+     The validation table is reset for each translation unit,
+     and only contains information for the current translation unit.
+     The remaining fields,
+     @('externals'), @('completions'), and @('next-uid'),
+     accumulate over the entire validation process,
+     and their contents apply to all translation units in the ensemble."))
   ((table valid-table)
    (macros macro-table)
+   (externals valid-externals)
+   (completions type-completions)
+   (next-uid uidp)
    (ienv ienv))
   :pred vstatep)
 
@@ -557,7 +345,12 @@
 (defirrelevant irr-vstate
   :short "An irrelevant validator state."
   :type vstatep
-  :body (vstate (irr-valid-table) (irr-macro-table) (irr-ienv)))
+  :body (vstate (irr-valid-table)
+                (irr-macro-table)
+                nil
+                nil
+                (irr-uid)
+                (irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -573,8 +366,11 @@
   (xdoc::topstring
    (xdoc::p
     "This contains one empty scope (the initial file scope)."))
-  (make-vstate :table (init-valid-table filepath externals completions next-uid)
+  (make-vstate :table (init-valid-table filepath)
                :macros (macro-init (ienv->dialect ienv))
+               :externals externals
+               :completions completions
+               :next-uid next-uid
                :ienv ienv)
   :inline t)
 
@@ -584,30 +380,6 @@
   :returns (filepath filepathp)
   :short "Wrapper of @(tsee valid-table->filepath)."
   (valid-table->filepath (vstate->table vstate))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate->externals ((vstate vstatep))
-  :returns (externals valid-externalsp)
-  :short "Wrapper of @(tsee valid-table->externals)."
-  (valid-table->externals (vstate->table vstate))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate->completions ((vstate vstatep))
-  :returns (completions type-completions-p)
-  :short "Wrapper of @(tsee valid-table->completions)."
-  (valid-table->completions (vstate->table vstate))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate->next-uid ((vstate vstatep))
-  :returns (next-uid uidp)
-  :short "Wrapper of @(tsee valid-table->next-uid)."
-  (valid-table->next-uid (vstate->table vstate))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -675,84 +447,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vstate-lookup-ext ((ident identp) (vstate vstatep))
-  :returns (info? valid-ext-info-optionp)
-  :short "Wrapper of @(tsee valid-lookup-ext)."
-  (valid-lookup-ext ident (vstate->table vstate))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-get-fresh-uid ((ident identp)
-                              (linkage linkagep)
-                              (vstate vstatep))
-  :returns (mv (uid uidp) (new-vstate vstatep))
-  :short "Wrapper of @(tsee valid-get-fresh-uid)."
-  (b* ((table (vstate->table vstate))
-       ((mv uid new-table) (valid-get-fresh-uid ident linkage table))
-       (new-vstate (change-vstate vstate :table new-table)))
-    (mv uid new-vstate))
-  :inline t
-
-  ///
-
-  (defret vstate-get-fresh-uid.uid-under-iff
-    uid))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-update-ext ((ident identp)
-                           (type typep)
-                           (uid uidp)
-                           (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Wrapper of @(tsee valid-update-ext)."
-  (b* ((table (vstate->table vstate))
-       (new-table (valid-update-ext ident type uid table)))
-    (change-vstate vstate :table new-table))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-add-ord ((ident identp)
-                        (info valid-ord-infop)
-                        (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "wrapper of @(tsee valid-add-ord)."
-  (b* ((table (vstate->table vstate))
-       (new-table (valid-add-ord ident info table)))
-    (change-vstate vstate :table new-table))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-add-ord-file-scope ((ident identp)
-                                   (info valid-ord-infop)
-                                   (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Wrapper of @(tsee valid-add-ord-file-scope)."
-  (b* ((table (vstate->table vstate))
-       (new-table (valid-add-ord-file-scope ident info table)))
-    (change-vstate vstate :table new-table))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-add-ord-objfuns-file-scope ((idents ident-listp)
-                                           (type typep)
-                                           (linkage linkagep)
-                                           (defstatus valid-defstatusp)
-                                           (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Wrapper of @(tsee valid-add-ord-objfuns-file-scope)."
-  (b* ((table (vstate->table vstate))
-       (new-table
-        (valid-add-ord-objfuns-file-scope idents type linkage defstatus table)))
-    (change-vstate vstate :table new-table))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define vstate-add-tag ((ident identp)
                         (info valid-tag-infop)
                         (vstate vstatep))
@@ -773,36 +467,246 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-composite-with-vstate ((x typep)
+(define vstate-lookup-ext ((ident identp) (vstate vstatep))
+  :returns (info? valid-ext-info-optionp)
+  :short "Look up the validation information of an identifier in the
+          @('externals') map."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This holds the validation information
+     for an identifier with external linkage
+     which has been declared in any scope or translation unit.
+     See @(see valid-table)."))
+  (b* (((vstate vstate) vstate))
+    (cdr (omap::assoc (ident-fix ident) vstate.externals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-get-fresh-uid ((ident identp)
+                              (linkage linkagep)
+                              (vstate vstatep))
+  :returns (mv (uid uidp)
+               (new-vstate vstatep))
+  :short "Get a fresh @(tsee UID) and update the vstate accordingly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('next-uid') field of the @(see vstate) is incremented to record
+     that the returned @(tsee UID) is now taken."))
+  (b* (((vstate vstate) vstate))
+    (linkage-case
+     linkage
+     :external (b* ((info? (vstate-lookup-ext ident vstate)))
+                 (valid-ext-info-option-case
+                  info?
+                  :some (mv (valid-ext-info->uid info?.val)
+                            (vstate-fix vstate))
+                  :none (mv vstate.next-uid
+                            (change-vstate
+                             vstate
+                             :next-uid (uid-increment vstate.next-uid)))))
+     :otherwise (mv vstate.next-uid
+                    (change-vstate
+                     vstate
+                     :next-uid (uid-increment vstate.next-uid)))))
+
+  ///
+
+  (defret vstate-get-fresh-uid.uid-under-iff
+    uid))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-update-ext ((ident identp)
+                           (type typep)
+                           (uid uidp)
+                           (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Update the @('externals') map with an identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If no entry exists for the identifier,
+     add a new @(tsee valid-ext-info).
+     If an entry does exist, update the @('declared-in') field to include
+     the name of the current translation unit.")
+   (xdoc::p
+    "When an existing entry already exists,
+     type compatibility is not checked, nor is the UID.
+     Instead, the caller should check compatibility and ensure a proper UID
+     before updating."))
+  (b* (((vstate vstate) vstate)
+       ((valid-table table) vstate.table)
+       (info? (vstate-lookup-ext ident vstate))
+       (new-info
+        (valid-ext-info-option-case
+         info?
+         :some (change-valid-ext-info
+                info?
+                :declared-in (insert table.filepath
+                                     (valid-ext-info->declared-in
+                                      info?.val)))
+         :none (make-valid-ext-info
+                :type type
+                :declared-in (insert table.filepath nil)
+                :uid uid)))
+       (new-externals
+        (omap::update (ident-fix ident) new-info vstate.externals)))
+    (change-vstate vstate :externals new-externals)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-add-ord ((ident identp)
+                        (info valid-ord-infop)
+                        (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Add an ordinary identifier to the validation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pass the information to associate to the identifier.")
+   (xdoc::p
+    "The identifier is always added to
+     the first (i.e. innermost, i.e. current) scope of the validation table.
+     We check the existence of at least one scope;
+     recall that there must be always a file scope.")
+   (xdoc::p
+    "If the identifier is already present in the current scope,
+     its information is overwritten,
+     but we only call this function after checking that
+     this overwriting is acceptable,
+     i.e. when it ``refines'' the validation information for the identifier.
+     We could consider adding a guard to this function
+     that characterizes the acceptable overwriting.")
+   (xdoc::p
+    "If @('info') indicates external linkage, we update the @('externals') map.
+     See @(tsee valid-update-ext)."))
+  (b* (((vstate vstate) vstate)
+       ((valid-table table) vstate.table)
+       ((unless (> (valid-table-num-scopes table) 0))
+        (raise "Internal error: no scopes in validation table.")
+        (vstate-fix vstate))
+       (scope (car table.scopes))
+       (ord-scope (valid-scope->ord scope))
+       (new-ord-scope (acons (ident-fix ident)
+                             (valid-ord-info-fix info)
+                             ord-scope))
+       (new-scope (change-valid-scope scope :ord new-ord-scope))
+       (new-scopes (cons new-scope (cdr table.scopes)))
+       (table (change-valid-table table :scopes new-scopes))
+       (vstate (change-vstate vstate :table table))
+       (vstate
+         (valid-ord-info-case
+          info
+          :objfun (linkage-case
+                   info.linkage
+                   :external
+                   (vstate-update-ext ident info.type info.uid vstate)
+                   :otherwise vstate)
+          :otherwise vstate)))
+    vstate)
+  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-add-ord-file-scope ((ident identp)
+                                   (info valid-ord-infop)
+                                   (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Add an ordinary identifier
+          to the file scope of a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unlike @(tsee vstate-add-ord), this skips any block scopes,
+     and directly updates the file scope at the bottom of the stack.
+     It is used in some situations.")
+   (xdoc::p
+    "As in @(tsee vstate-add-ord), we update the @('externals') map
+     if @('info') indicates external linkage."))
+  (b* (((vstate vstate) vstate)
+       ((valid-table table) vstate.table)
+       (scopes (valid-table->scopes table))
+       ((when (endp scopes))
+        (raise "Internal error: no scopes.")
+        (irr-vstate))
+       (scope (car (last scopes)))
+       (ord-scope (valid-scope->ord scope))
+       (new-ord-scope (acons (ident-fix ident)
+                             (valid-ord-info-fix info)
+                             ord-scope))
+       (new-scope (change-valid-scope scope :ord new-ord-scope))
+       (new-scopes (append (butlast scopes 1) (list new-scope)))
+       (table (change-valid-table table :scopes new-scopes))
+       (vstate (change-vstate vstate :table table))
+       (vstate
+         (valid-ord-info-case
+          info
+          :objfun (linkage-case
+                   info.linkage
+                   :external
+                   (vstate-update-ext ident info.type info.uid vstate)
+                   :otherwise vstate)
+          :otherwise vstate)))
+    vstate)
+  :guard-hints (("Goal" :in-theory (enable acons)))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-add-ord-objfuns-file-scope ((idents ident-listp)
+                                           (type typep)
+                                           (linkage linkagep)
+                                           (defstatus valid-defstatusp)
+                                           (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Add a list of ordinary identifiers
+          corresponding to objects or functions
+          to the file scope of a validation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee vstate-add-ord-file-scope)."))
+  (b* (((when (endp idents))
+        (vstate-fix vstate))
+       ((mv uid vstate) (vstate-get-fresh-uid (first idents) linkage vstate)))
+    (vstate-add-ord-objfuns-file-scope
+     (rest idents)
+     type
+     linkage
+     defstatus
+     (vstate-add-ord-file-scope (first idents)
+                                (make-valid-ord-info-objfun
+                                  :type type
+                                  :linkage linkage
+                                  :defstatus defstatus
+                                  :uid uid)
+                                vstate))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-make-type-composite ((x typep)
                                     (y typep)
                                     (vstate vstatep))
   :returns (mv (composite typep)
                (new-vstate vstatep))
-  :short "Wrapper of @(tsee type-composite-with-table)."
-  (b* (((vstate vstate))
-       ((mv composite new-table)
-        (type-composite-with-table x y vstate.table vstate.ienv)))
-    (mv composite (change-vstate vstate :table new-table)))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-change-next-uid ((uid uidp) (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Change the next UID in the validation table."
-  (b* ((table (vstate->table vstate))
-       (new-table (change-valid-table table :next-uid uid)))
-    (change-vstate vstate :table new-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define vstate-change-completions ((completions type-completions-p)
-                                   (vstate vstatep))
-  :returns (new-vstate vstatep)
-  :short "Change the completions in the validation table."
-  (b* ((table (vstate->table vstate))
-       (new-table (change-valid-table table :completions completions)))
-    (change-vstate vstate :table new-table)))
+  :short "Construct a composite @(see type) with a validation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This wraps @(tsee type-composite),
+     extracting the @('completions') @('next-uid') from the validation state,
+     and updating the values accordingly."))
+  (b* (((vstate vstate) vstate)
+       ((mv composite completions next-uid)
+        (type-composite x y vstate.completions vstate.next-uid vstate.ienv)))
+    (mv composite
+        (change-vstate
+          vstate
+          :completions completions
+          :next-uid next-uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2416,7 +2320,7 @@
                        type2
                        type3))
              ((mv composite vstate)
-              (type-composite-with-vstate type2 type3 vstate)))
+              (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
        ((when (and (type-case type2 :union)
                    (type-case type3 :union)))
@@ -2428,7 +2332,7 @@
                        type2
                        type3))
              ((mv composite vstate)
-              (type-composite-with-vstate type2 type3 vstate)))
+              (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
        ((when (and (type-case type2 :pointer)
                    (type-compatible-p type2
@@ -2436,7 +2340,7 @@
                                       (vstate->completions vstate)
                                       ienv)))
         (b* (((mv composite vstate)
-              (type-composite-with-vstate type2 type3 vstate)))
+              (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
        ((when (and (type-case type2 :pointer)
                    (expr-null-pointer-constp (expr-cond->else expr) type3)))
@@ -3856,8 +3760,9 @@
                                       tyspec.spec.name?
                                       (type-spec-fix tyspec))))
                           (uid (vstate->next-uid vstate))
-                          (vstate (vstate-change-next-uid (uid-increment uid)
-                                                          vstate))
+                          (vstate (change-vstate
+                                    vstate
+                                    :next-uid (uid-increment uid)))
                           (vstate (vstate-add-tag tyspec.spec.name?
                                                   (make-valid-tag-info
                                                    :kind (tag-kind-struct)
@@ -3893,8 +3798,9 @@
                      (b* (((when current-uid?)
                            (mv current-uid? vstate))
                           (uid (vstate->next-uid vstate))
-                          (vstate (vstate-change-next-uid (uid-increment uid)
-                                                          vstate)))
+                          (vstate (change-vstate
+                                    vstate
+                                    :next-uid (uid-increment uid))))
                        (mv uid
                            (if tyspec.spec.name?
                                (vstate-add-tag tyspec.spec.name?
@@ -3913,12 +3819,12 @@
                                              tyspec.spec.name?)
                                           (type-struni-tag/members-untagged
                                            type-struni-members))))
-                    (vstate (vstate-change-completions
-                             (hons-acons
-                              uid
-                              type-struni-members
-                              (vstate->completions vstate))
-                             vstate)))
+                    (vstate (change-vstate
+                              vstate
+                              :completions (hons-acons
+                                             uid
+                                             type-struni-members
+                                             (vstate->completions vstate)))))
                  (retok (type-spec-struct new-spec)
                         type
                         nil
@@ -3955,8 +3861,9 @@
                                      tyspec.spec.name?
                                      (type-spec-fix tyspec))))
                          (uid (vstate->next-uid vstate))
-                         (vstate (vstate-change-next-uid (uid-increment uid)
-                                                         vstate))
+                         (vstate (change-vstate
+                                   vstate
+                                   :next-uid (uid-increment uid)))
                          (vstate (vstate-add-tag tyspec.spec.name?
                                                  (make-valid-tag-info
                                                   :kind (tag-kind-union)
@@ -3992,8 +3899,9 @@
                     (b* (((when current-uid?)
                           (mv current-uid? vstate))
                          (uid (vstate->next-uid vstate))
-                         (vstate (vstate-change-next-uid (uid-increment uid)
-                                                         vstate)))
+                         (vstate (change-vstate
+                                   vstate
+                                   :next-uid (uid-increment uid))))
                       (mv uid
                           (if tyspec.spec.name?
                               (vstate-add-tag tyspec.spec.name?
@@ -4012,12 +3920,12 @@
                                             tyspec.spec.name?)
                                          (type-struni-tag/members-untagged
                                           type-struni-members))))
-                   (vstate (vstate-change-completions
-                            (hons-acons
-                             uid
-                             type-struni-members
-                             (vstate->completions vstate))
-                            vstate)))
+                   (vstate (change-vstate
+                              vstate
+                              :completions (hons-acons
+                                             uid
+                                             type-struni-members
+                                             (vstate->completions vstate)))))
                 (retok (type-spec-union new-spec)
                        type
                        nil
@@ -4091,9 +3999,9 @@
                            (b* (((when current-uid?)
                                  (mv current-uid? vstate))
                                 (uid (vstate->next-uid vstate))
-                                (vstate (vstate-change-next-uid
-                                         (uid-increment uid)
-                                         vstate)))
+                                (vstate (change-vstate
+                                          vstate
+                                          :next-uid (uid-increment uid))))
                              (mv uid
                                  (if tyspec.name?
                                      (vstate-add-tag tyspec.name?
@@ -4111,12 +4019,13 @@
                                       tyspec.name?)
                                    (type-struni-tag/members-untagged
                                     nil))))
-                          (vstate (vstate-change-completions
-                                   (hons-acons
-                                    uid
-                                    nil
-                                    (vstate->completions vstate))
-                                   vstate)))
+                          (vstate
+                            (change-vstate
+                              vstate
+                              :completions (hons-acons
+                                             uid
+                                             nil
+                                             (vstate->completions vstate)))))
                        (retok (make-type-spec-struct-empty
                                :attribs tyspec.attribs
                                :name? tyspec.name?)
@@ -8160,12 +8069,7 @@
   (b* (((reterr) (irr-trans-unit) (irr-vstate))
        ((vstate vstate) vstate)
        (dialect (ienv->dialect vstate.ienv))
-       (vstate (change-vstate
-                 vstate
-                 :table (init-valid-table filepath
-                                          (vstate->externals vstate)
-                                          (vstate->completions vstate)
-                                          (vstate->next-uid vstate))))
+       (vstate (change-vstate vstate :table (init-valid-table filepath)))
        (vstate (vstate-add-ord-objfuns-file-scope
                (built-in-functions-for dialect)
                (make-type-function :ret (type-unknown)
