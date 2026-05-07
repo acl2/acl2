@@ -30,6 +30,8 @@
 
 (include-book "propagate-iso")
 
+(include-book "remove-nesting")
+
 (include-book "rename-calls")
 
 (include-book "restrict")
