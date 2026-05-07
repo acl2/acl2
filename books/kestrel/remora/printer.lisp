@@ -29,10 +29,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ printer
-  :parents (remora)
+  :parents (parsing-and-printing)
   :short "A pretty-printer of Remora from the abstract syntax."
   :long
   (xdoc::topstring
+   (xdoc::p "
+ @({
+ (print-prog p)
+ })
+ ")
    (xdoc::p
     "We provide a pretty-printer that turns @(see abstract-syntax) ASTs
      into Remora source text, according to the concrete syntax described
@@ -59,10 +64,7 @@
     "The Remora-specific layer (@(see expr-to-pdoc), @(see prog-to-pdoc),
      etc.) walks the AST and builds the @(tsee pdoc).  The top-level
      entry point is @(tsee print-prog), which composes the walker and
-     @(tsee layout) into a single @('prog &rarr; string') function.")
-   (xdoc::p
-    "This file is work in progress.  The @(tsee pdoc) engine is in
-     place; the AST walker is being added incrementally."))
+     @(tsee layout) into a single @('prog &rarr; string') function."))
   :order-subtopics t
   :default-parent t)
 
