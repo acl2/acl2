@@ -405,7 +405,18 @@ num-escape      = 1*DIGIT             ; decimal (0-1114111)
 ; by the digit '7' (codepoint 55) --- whereas "\57" is the single
 ; character with codepoint 57 (the digit '9').  The empty escape
 ; carries no semantic content and is absorbed at parse time.
-empty-escape    = "\&"
+;
+; Compatibility note: our grammar accepts \& as a string-elem in any
+; position, following the Haskell Report's lexical syntax for string
+; literals.  The Haskell Remora reference implementation parses string
+; literals with Megaparsec's charLiteral combinator, which fails on a
+; leading \&.  As a consequence, Haskell Remora rejects "\&" and "\&a"
+; but accepts "a\&", "\SOH\&", and "a\&\&b\&\&".  We accept all of
+; these.  Our printer emits \& only between adjacent char-lits that
+; would otherwise merge on re-parse (see needs-empty-escape-between in
+; printer.lisp), so output produced from our printer is parseable by
+; either implementation.
+empty-escape = "\&"
 
 ; A string element is either a real char-lit or an empty escape.
 string-elem     = char-lit / empty-escape
