@@ -3334,14 +3334,13 @@
  Mac.  Even GitHub releases should generally be tested using the
  ``@('regression-everything')'' target for `@('make')' in the top-level
  directory, or equivalently, the ``@('regression-everything')'' target in the
- @('books/') directory.</p>
+ @('books/') directory; this should take place automatically when following
+ instructions in :DOC @(see github-commit-code-using-pull-requests).</p>
 
- <p>There are extensive instructions for doing numbered releases, which as of
- this writing have not been made public.  Anyone who cares to volunteer to make
- numbered releases should talk with Matt Kaufmann about obtaining those
- instructions, which perhaps would become public at that point.  (It could take
- non-trivial effort to clarify those instructions for the ``public'', so let's
- wait till there is such a volunteer.)</p>
+ <p>There are detailed instructions for doing numbered releases, which however
+ are not publicly available.  Anyone who cares to volunteer to make numbered
+ releases should talk with Matt Kaufmann, or any other developer with access to
+ those instructions, about gaining such access.</p>
 
  <p>NEXT SECTION: @(see developers-guide-style)</p>")
 
@@ -3467,7 +3466,8 @@
   :parents (developers-guide)
   :short "ACL2 development examples"
   :long "<p>This topic discusses issues encountered during ACL2 development
-  using two examples.  It consists of notes for the following talk.</p>
+  using examples.  The first two examples below are taken from the following
+  talk.</p>
 
  <blockquote>
 
@@ -3710,7 +3710,7 @@
  </blockquote>
 
  <p><i>ISSUE.</i> Can we convert warnings to errors regardless of the type
- (summary string).</p>
+ (the summary string).</p>
 
  <blockquote>
 
@@ -3942,7 +3942,7 @@
 
  <p>Sol requested this because @('cert.pl') loads @('.port') files of included
  books (stemming from @('.acl2') files), but those may contain expensive @(see
- local) @(tsee include-book) forms books that should be ignored.</p>
+ local) @(tsee include-book) forms that should be ignored.</p>
 
  @({
  (local (include-book ...)) ; form in a .port file to be ignored
@@ -4083,6 +4083,105 @@
  usage, just occasional use in tools like @('cert.pl').</p>
 
  </blockquote>
+
+ <h3>EXAMPLE 3:<br/></h3>
+
+ <p>The following example is taken from the following release note (see @(see
+ note-8-8)).</p>
+
+ <blockquote>
+
+ <p>For @(tsee defstobj) fields of hash-table type, a new &ldquo;keys&rdquo;
+ function returns a sorted list of keys of the hash table.  See @(see
+ defstobj).  Thanks to Eric Smith for requesting this enhancement.</p>
+
+ </blockquote>
+
+ <p>Here is an outline of how I went about adding this new capability.</p>
+
+ <ol>
+
+ <li>It became clear pretty quickly that the implementation of each new
+ function would map over the backing hash table, which by itself would produce
+ a result of indeterminate order &mdash; yet we require a function.  Thus, the
+ list of keys was to be sorted.  The cost of sorting might be non-trivial but
+ it seemed an acceptable cost, given that it would be surprising to access
+ frequently the sorted list of keys.</li>
+
+ <li>Thus, the logical definitions of the keys functions would be based on
+ sorting after extracting the keys of the alist.  The existing hash-table
+ accessor and boundp functions were already based on the use of @(tsee
+ hons-assoc-equal) rather than @(tsee assoc), so that keys functions would be,
+ too.  I found @(tsee alist-keys) in @('books/std/alists/alist-keys.lisp') and
+ I didn't want to introduce a second such function, so I got permission from
+ one of the book's authors, Sol Swords, to add that definition to the ACL2
+ sources.</li>
+
+ <li>I needed to name the new stobj field keys functions.  In the documentation
+ for @(tsee defstobj), the section &ldquo;Hash-table Types&rdquo; describes
+ existing functions added for hash-table types.  One of those is the
+ @('boundp') function, and there weren't a particularly large number of
+ occurrences of @('\"boundp\"') in the source code.
+
+ @({
+ $ grep -i '[^-a-z0-9]boundp' *.lisp | wc -l
+      131
+ $
+ })
+
+ So I did a tags-search for @('boundp') and put each relevant definition in an
+ evolving patch file.</li>
+
+ <li>It was then pretty straightforward to modify the definitions in the patch
+ file to add support for the new keys function.  I think I used the
+ implementation of the @('boundp') functions as a guide.</li>
+
+ <li>I tested the patch on the following example, which is simple in order to
+ support debugging.
+
+ @({
+ (defstobj st (ht  :type (hash-table eq 70 integer) :initially 0))
+ })
+
+ I got an error due to a bug, which I fixed.  Then:
+
+ @({
+ :redef+
+ (defun ...) ; fix bug
+ :redef-
+ (defstobj st (ht  :type (hash-table eq 70 integer) :initially 0))
+ })
+
+ That worked.  So I rebuilt ACL2 with the fix.</li>
+
+ <li>I updated @('books/tools/stobj-help.lisp').  I don't recall what made me
+ think of that, but I probably used shell command @('grep') or @('fgrep') to
+ find occurrences of some function, perhaps @('defstobj-fnname').</li>
+
+ <li>As usual, I needed to deal with documentation.  I wrote a release note
+ item for :DOC @(see note-8-8), fixed a minor issue that I happened to notice
+ with topic @(see count-keys) (namely, removing the definition of
+ @('hons-remove-assoc'), which I thought was distracting), and updated topic
+ @(see defstobj).  Initially I also added a new topic for @('alist-keys'); but
+ then I noticed that @('alist-keys') was already documented in
+ @('std/alists/alist-keys.lisp'), so I commented out its documentation that I'd
+ added to @('books/system/doc/acl2-doc.lisp'), and I added the symbol
+ @('alist-keys') to the definition of constant @('*acl2-exports-exclusions*')
+ in the book, @('books/misc/check-acl2-exports.lisp').</li>
+
+ <li>I discovered that I'd neglected to remove duplicates in the definitions of
+ the keys functions.  There was already a suitable definition of function
+ @('remove-adjacent-duplicates'), but it was restricted to ACL2(r) using
+ @('#+:non-standard-analysis').  I removed that restriction.</li>
+
+ <li>I ran @('make proofs'), perhaps because of the addition of the @(see
+ logic) mode definition of @('alist-keys').  Similarly, I performed the
+ devel-check process outlined in a comment in
+ @('*system-verify-guards-alist*').  (You can also see documentation for that
+ process in the discussion of ``make devel-check'' in the topic, @(see
+ verify-guards-for-system-functions).)</li>
+
+ </ol>
 
  <p>NEXT SECTION: @(see developers-guide-acl2-devel)</p>")
 
