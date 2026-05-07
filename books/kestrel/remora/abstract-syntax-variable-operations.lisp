@@ -309,6 +309,14 @@
 (define bind-bound-ispace-vars ((bind bindp))
   :returns (vars ispace-var-setp)
   :short "Set of ispace variables bound in a binding."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Only an ispace binding binds an ispace variable.
+     An ispace function binding does not bind ispace variables:
+     it binds a term variable;
+     the ispace parameters of the function are handled separately,
+     in the calculation of the free variables of the binding itself."))
   (bind-case
    bind
    :ispace (set::insert bind.var nil)
@@ -316,11 +324,8 @@
    :val nil
    :fun nil
    :tfun nil
-   :ifun (set::mergesort bind.params)
-   :cfun (ispace-var-list-option-case
-          bind.iparams?
-          :some (set::mergesort bind.iparams?.val)
-          :none nil)))
+   :ifun nil
+   :cfun nil))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -337,18 +342,23 @@
 (define bind-bound-type-vars ((bind bindp))
   :returns (vars type-var-setp)
   :short "Set of type variables bound in a binding."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Only a type binding binds a type variable.
+     A type function binding does not bind type variables:
+     it binds a term variable;
+     the type parameters of the function are handled separately,
+     in the calculation of the free variables of the binding itself."))
   (bind-case
    bind
    :ispace nil
    :type (set::insert bind.var nil)
    :val nil
    :fun nil
-   :tfun (set::mergesort bind.params)
+   :tfun nil
    :ifun nil
-   :cfun (type-var-list-option-case
-          bind.tparams?
-          :some (set::mergesort bind.tparams?.val)
-          :none nil)))
+   :cfun nil))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -371,11 +381,21 @@
           atoms,
           bindings,
           and lists thereof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The free variables of a binder are the ones
+     in the thing that the variable is bound to.
+     Thus, for the ispace function binder,
+     we remove the parameters,
+     because the thing that the variable is bound to
+     is like a lambda abstraction."))
   :types (dims
           shapes
           ispace
           ispace-list
           types
+          type-option
           var+type
           var+type-list
           exprs/atoms/binds)
@@ -402,7 +422,21 @@
                            (bind-list-bound-ispace-vars expr.binds))))
    (atom :ilambda
          (set::difference (expr-free-ispace-vars atom.body)
-                          (set::mergesort atom.params))))
+                          (set::mergesort atom.params)))
+   (bind :ifun
+         (set::difference (set::union (type-option-free-ispace-vars bind.type?)
+                                      (expr-free-ispace-vars bind.expr))
+                          (set::mergesort bind.params)))
+   (bind :cfun
+         (set::difference (set::union
+                           (var+type-list-free-ispace-vars bind.params)
+                           (set::union
+                            (type-free-ispace-vars bind.type)
+                            (expr-free-ispace-vars bind.expr)))
+                          (ispace-var-list-option-case
+                           bind.iparams?
+                           :some (set::mergesort bind.iparams?.val)
+                           :none nil))))
   :name abstract-syntax-free-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -415,7 +449,17 @@
           atoms,
           bindings,
           and lists thereof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The free variables of a binder are the ones
+     in the thing that the variable is bound to.
+     Thus, for the ispace function binder,
+     we remove the parameters,
+     because the thing that the variable is bound to
+     is like a lambda abstraction."))
   :types (types
+          type-option
           var+type
           var+type-list
           exprs/atoms/binds)
@@ -430,6 +474,21 @@
          (set::union (bind-list-free-type-vars expr.binds)
                      (set::difference (expr-free-type-vars expr.body)
                                       (bind-list-bound-type-vars expr.binds))))
-   (atom :tlambda (set::difference (expr-free-type-vars atom.body)
-                                   (set::mergesort atom.params))))
+   (atom :tlambda
+         (set::difference (expr-free-type-vars atom.body)
+                          (set::mergesort atom.params)))
+   (bind :tfun
+         (set::difference (set::union (type-option-free-type-vars bind.type?)
+                                      (expr-free-type-vars bind.expr))
+                          (set::mergesort bind.params)))
+   (bind :cfun
+         (set::difference (set::union
+                           (var+type-list-free-type-vars bind.params)
+                           (set::union
+                            (type-free-type-vars bind.type)
+                            (expr-free-type-vars bind.expr)))
+                          (type-var-list-option-case
+                           bind.tparams?
+                           :some (set::mergesort bind.tparams?.val)
+                           :none nil))))
   :name abstract-syntax-free-type-vars)
