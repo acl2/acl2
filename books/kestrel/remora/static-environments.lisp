@@ -142,6 +142,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define senv-add-ispace-vars ((vars ispace-var-listp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add zero or more ispace variables to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Variables already present have no effect."))
+  (b* ((ispace-vars (senv->ispace-vars senv))
+       (new-ispace-vars (set::union (set::mergesort (ispace-var-list-fix vars))
+                                    ispace-vars)))
+    (change-senv senv :ispace-vars new-ispace-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-type-vars ((vars type-var-listp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add zero or more type variables to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Variables already present have no effect."))
+  (b* ((type-vars (senv->type-vars senv))
+       (new-type-vars (set::union (set::mergesort (type-var-list-fix vars))
+                                  type-vars)))
+    (change-senv senv :type-vars new-type-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define senv-add-var+type ((var stringp) (type typep) (senv senvp))
   :returns (new-senv senvp)
   :short "Add a variable with a type to the static environment."
