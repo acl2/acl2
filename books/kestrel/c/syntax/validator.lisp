@@ -262,7 +262,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Just as in @(tsee valid-add-ord),
+    "Just as in @(tsee vstate-add-ord),
      the tag is added to the first (i.e. innermost) scope.
      If the tag is already present in the current scope,
      its information is overwritten."))
@@ -580,7 +580,7 @@
      that characterizes the acceptable overwriting.")
    (xdoc::p
     "If @('info') indicates external linkage, we update the @('externals') map.
-     See @(tsee valid-update-ext)."))
+     See @(tsee vstate-update-ext)."))
   (b* (((vstate vstate) vstate)
        ((valid-table table) vstate.table)
        ((unless (> (valid-table-num-scopes table) 0))
