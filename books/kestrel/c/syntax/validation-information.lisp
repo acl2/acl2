@@ -15,6 +15,7 @@
 (include-book "uid")
 (include-book "unambiguity")
 (include-book "evaluation")
+(include-book "macro-tables")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 
@@ -1125,9 +1126,12 @@
      in other words, in the nesting of scopes in the stack,
      the leftmost scope is the innermost,
      and the rightmost scope is the outermost
-     (i.e. the file scope [C17:6.2.1/4].)"))
+     (i.e. the file scope [C17:6.2.1/4].)")
+   (xdoc::p
+    "The @('macros') field stores the macro table."))
   ((filepath filepath)
-   (scopes valid-scope-list))
+   (scopes valid-scope-list)
+   (macros macro-table))
   :pred valid-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1135,7 +1139,7 @@
 (defirrelevant irr-valid-table
   :short "An irrelevant validation table."
   :type valid-tablep
-  :body (valid-table (irr-filepath) nil))
+  :body (valid-table (irr-filepath) nil (irr-macro-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
