@@ -500,24 +500,26 @@
 ;;          nil))
 
 ;could be bad?
-(defthm integerp-of-plus-of-minus
-  (implies (and (integerp (+ (- x) y))
-                (rationalp x)
-                (rationalp y))
-           (integerp (+ x (- y))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
-  :hints (("Goal" :use (:instance INTEGERP-OF-- (x (+ x (- y))))
-           :in-theory (disable INTEGERP-OF--))))
+(local
+  (defthm integerp-of-plus-of-minus
+    (implies (and (integerp (+ (- x) y))
+                  (rationalp x)
+                  (rationalp y))
+             (integerp (+ x (- y))))
+    :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
+    :hints (("Goal" :use (:instance INTEGERP-OF-- (x (+ x (- y))))
+             :in-theory (disable INTEGERP-OF--)))))
 
 ;could be bad?
-(defthm integerp-of-plus-of-minus-alt
-  (implies (and (integerp (+ y (- x)))
-                (rationalp x)
-                (rationalp y))
-           (integerp (+ (- y) x)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
-  :hints (("Goal" :use (:instance INTEGERP-OF-- (x (+ x (- y))))
-           :in-theory (disable INTEGERP-OF--))))
+(local
+  (defthm integerp-of-plus-of-minus-alt
+    (implies (and (integerp (+ y (- x)))
+                  (rationalp x)
+                  (rationalp y))
+             (integerp (+ (- y) x)))
+    :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
+    :hints (("Goal" :use (:instance INTEGERP-OF-- (x (+ x (- y))))
+             :in-theory (disable INTEGERP-OF--)))))
 
 ;gen
 ;move
@@ -587,15 +589,16 @@
 ;this is probably done better elsewhere
 ;as a forward-chaining rule, this caused a big slowdown
 ;rename
-(defthm expt-bound-fw
-  (implies (and (<= k j)
-                (syntaxp (and (quotep k)
-                              (not (quotep j))))
-                (< k 100) ;prevent huge computations
-                (integerp k)
-                (integerp j))
-           (<= (expt 2 k) (expt 2 j)))
-  :rule-classes ((:linear :trigger-terms ((EXPT 2 J)))))
+(local
+  (defthm expt-bound-fw
+    (implies (and (<= k j)
+                  (syntaxp (and (quotep k)
+                                (not (quotep j))))
+                  (< k 100) ;prevent huge computations
+                  (integerp k)
+                  (integerp j))
+             (<= (expt 2 k) (expt 2 j)))
+    :rule-classes ((:linear :trigger-terms ((expt 2 j))))))
 
 ;gen the 4!
 (defthm bvdiv-of-subtract-4-by-4
@@ -1892,8 +1895,8 @@
 ;gen to any bv operator
 (defthm equal-of-slice-and-impossible-constant
   (implies (and (syntaxp (quotep k))
-                (and (integerp high))
-                (and (integerp low))
+                (integerp high)
+                (integerp low)
                 (<= low high)
                 (not (unsigned-byte-p (+ high 1 (- low)) k)))
            (equal (equal k (slice high low x))
