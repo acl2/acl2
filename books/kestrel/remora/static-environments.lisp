@@ -33,7 +33,7 @@
      the sort environment @($\\Theta$),
      the kind environment @($\\Delta$), and
      the type environment @($\\Gamma$)
-     in [arxiv], [thesis], and [esop]."))
+     in [thesis], [arxiv], and [esop]."))
   :order-subtopics t
   :default-parent t)
 
