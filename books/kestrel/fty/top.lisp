@@ -95,6 +95,7 @@
 (include-book "string-stringlist-alist")
 (include-book "string-string-map")
 (include-book "string-stringlist-map")
+(include-book "string-string-map-pair")
 (include-book "symbol-pseudoeventform-alist")
 (include-book "symbol-pseudoterm-alist")
 (include-book "string-option")
