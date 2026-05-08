@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-variable-operations")
 (include-book "ispace-equivalence")
+(include-book "fresh-variables")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
@@ -35,7 +36,7 @@
      the equivalence of types, which involves the equivalence of ispaces.
      The latter is discussed in @(see ispace-equivalence).")
    (xdoc::p
-    "As for ispace equivalence,
+    "Like for ispace equivalence,
      we plan to define a high-level notion of type equivalence
      that accommodates undecidability.
      But we start with an executable version
