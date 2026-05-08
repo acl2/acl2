@@ -29,8 +29,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These include substitutions of variables with other ASTs,
-     as well as variable renamings.")
+    "These include
+     substitutions of variables with other ASTs,
+     variable renamings,
+     and collection of (free and all) variables.")
    (xdoc::p
     "The substitutions are represented as maps
      from strings (variable names) to ASTs.
@@ -376,8 +378,7 @@
   :short "Set of free ispace variables in
           ispaces,
           types,
-          optional types,
-          optional lists of types,
+          optional types and lists of types,
           variables with types,
           expressions,
           atoms,
@@ -447,8 +448,7 @@
 (fty::deffold-reduce free-type-vars
   :short "Set of free type variables in
           types,
-          optional types,
-          optional lists of types,
+          optional types and lists of types,
           variables with types,
           expressions,
           atoms,
@@ -497,3 +497,50 @@
                            :some (set::mergesort bind.tparams?.val)
                            :none nil))))
   :name ast-free-type-vars)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce all-type-vars
+  :short "Set of all (i.e. free and bound) type variables in
+          types,
+          optional types and lists of types,
+          variables with types,
+          expressions,
+          atoms,
+          bindings,
+          and lists thereof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all the free variables that occur anywhere,
+     including the parameters of universal types
+     and the type variables introduced by type binders."))
+  :types (types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds)
+  :result type-var-setp
+  :default nil
+  :combine set::union
+  :override
+  ((type :var (set::insert type.var nil))
+   (type :forall (set::union (set::mergesort type.params)
+                             (type-all-type-vars type.body)))
+   (atom :tlambda (set::union (set::mergesort atom.params)
+                              (expr-all-type-vars atom.body)))
+   (bind :type (set::insert bind.var
+                            (type-all-type-vars bind.type)))
+   (bind :tfun (set::union (set::mergesort bind.params)
+                           (set::union (type-option-all-type-vars bind.type?)
+                                       (expr-all-type-vars bind.expr))))
+   (bind :cfun (set::union
+                (type-var-list-option-case
+                 bind.tparams?
+                 :some (set::mergesort bind.tparams?.val)
+                 :none nil)
+                (set::union (var+type-list-all-type-vars bind.params)
+                            (set::union (type-all-type-vars bind.type)
+                                        (expr-all-type-vars bind.expr))))))
+  :name ast-all-type-vars)
