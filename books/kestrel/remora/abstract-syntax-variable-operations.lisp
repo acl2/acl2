@@ -277,6 +277,26 @@
                                            shape-renam)))))
   :name ast-rename-ispace-vars)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection types-count-of-rename-ispace-vars
+  :short "Renaming ispace variables does not change the measure of types."
+
+  (defret-mutual type-count-of-rename-ispace-vars
+    (defret type-count-of-type-rename-ispace-vars
+      (equal (type-count result)
+             (type-count type))
+      :fn type-rename-ispace-vars)
+    (defret type-list-count-of-type-list-rename-ispace-vars
+      (equal (type-list-count result)
+             (type-list-count type-list))
+      :fn type-list-rename-ispace-vars)
+    :mutual-recursion types-rename-ispace-vars
+    :hints (("Goal" :in-theory (enable type-rename-ispace-vars
+                                       type-list-rename-ispace-vars
+                                       type-count
+                                       type-list-count)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-type-vars
@@ -313,6 +333,26 @@
                                          atom-renam
                                          array-renam)))))
   :name ast-rename-type-vars)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection types-count-of-rename-type-vars
+  :short "Renaming type variables does not change the measure of types."
+
+  (defret-mutual type-count-of-rename-type-vars
+    (defret type-count-of-type-rename-type-vars
+      (equal (type-count result)
+             (type-count type))
+      :fn type-rename-type-vars)
+    (defret type-list-count-of-type-list-rename-type-vars
+      (equal (type-list-count result)
+             (type-list-count type-list))
+      :fn type-list-rename-type-vars)
+    :mutual-recursion types-rename-type-vars
+    :hints (("Goal" :in-theory (enable type-rename-type-vars
+                                       type-list-rename-type-vars
+                                       type-count
+                                       type-list-count)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
