@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ grammar
-  :parents (remora)
+  :parents (concrete-syntax parsing-and-printing)
   :short "ABNF grammar of Remora."
   :long
   (xdoc::topstring

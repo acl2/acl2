@@ -541,10 +541,11 @@
              (prod (car prods)))
           (deffold-map-gen-sum-case
             type fix prod suffix targets extra-args fty-table)))
-       (extra-args-names (deffold-map-extra-args-to-names extra-args)))
+       (extra-args-names (deffold-map-extra-args-to-names extra-args))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix)))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
        (declare (ignorable ,type ,@extra-args-names))
-       :returns (result ,recog)
+       :returns (,result-var ,recog)
        :parents (,name)
        ,body
        ,@(and (or mutrecp recp)
@@ -610,10 +611,11 @@
                       type fix prods suffix
                       targets extra-args overrides fty-table)))
           `(,type-case ,type ,@cases)))
-       (extra-args-names (deffold-map-extra-args-to-names extra-args)))
+       (extra-args-names (deffold-map-extra-args-to-names extra-args))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix)))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
        (declare (ignorable ,type ,@extra-args-names))
-       :returns (result ,recog)
+       :returns (,result-var ,recog)
        :parents (,name)
        ,body
        ,@(and (or mutrecp recp)
@@ -680,9 +682,10 @@
             :cases ((equal ,type nil)))))
        (ruleset-event
         `(add-to-ruleset ,(deffold-map-gen-ruleset-name name)
-                         '(,type-suffix-under-iff))))
+                         '(,type-suffix-under-iff)))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix)))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
-       :returns (result ,recog)
+       :returns (,result-var ,recog)
        :parents (,name)
        ,body
        ,@(and (or mutrecp recp)
@@ -863,9 +866,10 @@
                                ,len-of-type-suffix
                                ,nth-of-type-suffix
                                ,type-suffix-of-revappend
-                               ,type-suffix-of-reverse))))))
+                               ,type-suffix-of-reverse)))))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix)))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
-       :returns (result ,recog)
+       :returns (,result-var ,recog)
        :parents (,name)
        ,body
        ,@(and (or mutrecp recp)
@@ -984,9 +988,10 @@
                            ,emptyp-of-type-suffix
                            ;; ,size-of-type-suffix
                            ,keys-of-type-suffix
-                           ,assoc-of-type-suffix))))
+                           ,assoc-of-type-suffix)))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix)))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
-       :returns (result ,recog)
+       :returns (,result-var ,recog)
        :parents (,name)
        ,body
        ,@(and (or mutrecp recp)

@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "parser")
+
 ;; Pulls in *remora-keywords-as-natlists* and remora-keyword-p, which
 ;; are consulted by check-tree-no-keyword-identifiers below.
 (include-book "identifier-syntax")
@@ -18,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ post-parsing
-  :parents (remora)
+  :parents (concrete-syntax parsing-and-printing)
   :short "Post-parsing checks for the Remora parser."
   :long
   (xdoc::topstring

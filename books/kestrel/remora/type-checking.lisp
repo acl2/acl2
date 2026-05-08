@@ -67,21 +67,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-atomp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type has the atom kind."
-  (type-case type
-             :var (type-var-case type.var :atom)
-             :base t
-             :array nil
-             :bracket nil
-             :fun t
-             :forall t
-             :pi t
-             :sigma t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define base-type-of-base-lit ((lit base-litp))
   :returns (btype base-typep)
   :short "Base type of a base value."
@@ -355,6 +340,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ispace-vars-in-scope-p ((vars ispace-var-setp) (senv senvp))
+  :returns (yes/no booleanp)
+  :short "Check if the ispace variables in a set are all in scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when the variables are all in the static environment."))
+  (set::subset (ispace-var-set-fix vars) (senv->ispace-vars senv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-vars-in-scope-p ((vars type-var-setp) (senv senvp))
+  :returns (yes/no booleanp)
+  :short "Check if the type variables in a set are all in scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when the variables are all in the static environment."))
+  (set::subset (type-var-set-fix vars) (senv->type-vars senv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-exprs/atoms
   :short "Check expressions, atoms, and lists thereof."
   :long
@@ -535,10 +542,10 @@
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (type-atomp expr.type)) (reserr nil))
-          ((unless (and (set::subset (type-free-ispace-vars expr.type)
-                                     (senv->ispace-vars senv))
-                        (set::subset (type-free-type-vars expr.type)
-                                     (senv->type-vars senv))))
+          ((unless (and (ispace-vars-in-scope-p
+                         (type-free-ispace-vars expr.type) senv)
+                        (type-vars-in-scope-p
+                         (type-free-type-vars expr.type) senv)))
            (reserr nil)))
        (make-type-array :elem expr.type
                         :shape (shape-dims (dim-const-list expr.dims))))
@@ -557,10 +564,10 @@
                                    array.shape))))
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-          ((unless (and (set::subset (type-free-ispace-vars expr.type)
-                                     (senv->ispace-vars senv))
-                        (set::subset (type-free-type-vars expr.type)
-                                     (senv->type-vars senv))))
+          ((unless (and (ispace-vars-in-scope-p
+                         (type-free-ispace-vars expr.type) senv)
+                        (type-vars-in-scope-p
+                         (type-free-type-vars expr.type) senv)))
            (reserr nil))
           ((ok (type+shape array)) (type-match-array expr.type)))
        (make-type-array
@@ -604,10 +611,10 @@
           ((ok body-type+shape) (type-match-array body-arr-type))
           (body-atom-type (type+shape->type body-type+shape))
           (body-shape (type+shape->shape body-type+shape))
-          ((unless (and (set::subset (type-list-free-ispace-vars expr.args)
-                                     (senv->ispace-vars senv))
-                        (set::subset (type-list-free-type-vars expr.args)
-                                     (senv->type-vars senv))))
+          ((unless (and (ispace-vars-in-scope-p
+                         (type-list-free-ispace-vars expr.args) senv)
+                        (type-vars-in-scope-p
+                         (type-list-free-type-vars expr.args) senv)))
            (reserr nil))
           ((ok (stringtypemap-pair type-maps))
            (check-type-params-and-args vars expr.args))
@@ -629,8 +636,8 @@
           ((ok body-type+shape) (type-match-array body-arr-type))
           (body-atom-type (type+shape->type body-type+shape))
           (body-shape (type+shape->shape body-type+shape))
-          ((unless (set::subset (ispace-list-free-ispace-vars expr.args)
-                                (senv->ispace-vars senv)))
+          ((unless (ispace-vars-in-scope-p
+                    (ispace-list-free-ispace-vars expr.args) senv))
            (reserr nil))
           ((ok (stringdimmap+stringshapemap ispace-maps))
            (check-ispace-params-and-args vars expr.args))
@@ -766,10 +773,10 @@
      (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.params)))
            (reserr nil))
           (types (var+type-list->type atom.params))
-          ((unless (and (set::subset (type-list-free-ispace-vars types)
-                                     (senv->ispace-vars senv))
-                        (set::subset (type-list-free-type-vars types)
-                                     (senv->type-vars senv))))
+          ((unless (and (ispace-vars-in-scope-p
+                         (type-list-free-ispace-vars types) senv)
+                        (type-vars-in-scope-p
+                         (type-list-free-type-vars types) senv)))
            (reserr nil))
           (senv (senv-add-vars+types atom.params senv))
           ((ok type) (check-expr atom.body senv)))
@@ -785,15 +792,15 @@
           ((ok type) (check-expr atom.body senv)))
        (make-type-pi :params atom.params :body type))
      :box
-     (b* (((unless (set::subset (ispace-list-free-ispace-vars atom.ispaces)
-                                (senv->ispace-vars senv)))
+     (b* (((unless (ispace-vars-in-scope-p
+                    (ispace-list-free-ispace-vars atom.ispaces) senv))
            (reserr nil))
           ((unless (type-atomp atom.type)) (reserr nil))
           (box-type atom.type)
-          ((unless (and (set::subset (type-free-ispace-vars box-type)
-                                     (senv->ispace-vars senv))
-                        (set::subset (type-free-type-vars box-type)
-                                     (senv->type-vars senv))))
+          ((unless (and (ispace-vars-in-scope-p
+                         (type-free-ispace-vars box-type) senv)
+                        (type-vars-in-scope-p
+                         (type-free-type-vars box-type) senv)))
            (reserr nil))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
