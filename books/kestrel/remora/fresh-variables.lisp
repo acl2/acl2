@@ -34,8 +34,8 @@
      But it takes a little machinery to prove termination in the theorem prover,
      which we do here.")
    (xdoc::p
-    "We start with type variables,
-     but we plan to do the same for ispace and term variables as well."))
+    "We start with ispace and type variables,
+     but we plan to do the same for term variables."))
   :order-subtopics t
   :default-parent t)
 
