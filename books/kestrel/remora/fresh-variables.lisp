@@ -1,0 +1,394 @@
+; Remora Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "REMORA")
+
+(include-book "abstract-syntax-trees")
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/basic/nfix" :dir :system))
+
+(acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ fresh-variables
+  :parents (abstract-syntax)
+  :short "Generation of fresh variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For certain purposes, we need to generate fresh variables,
+     i.e. variables that do not occur in a given set.
+     This is easy to do and show correct, intuitively:
+     we attempt to generate distinct variables from increasing numeric indices,
+     until we find one not in the given set.
+     The process terminates because the given set is finite.
+     But it takes a little machinery to prove termination in the theorem prover,
+     which we do here.")
+   (xdoc::p
+    "We start with type variables,
+     but we plan to do the same for ispace and term variables as well."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled cardinality-lt-when-subset-and-not-member
+  :short "Key theorem in the termination argument for fresh variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a general theorem about sets,
+     which belongs to a more general library.")
+   (xdoc::p
+    "If we have two sets, one subset of the other,
+     but there is some element in the second but not in the first,
+     then the subset inclusion is strict,
+     and so is the inequality between cardinalities.")
+   (xdoc::p
+    "In the loop that attempts to generate a fresh variable:
+     @('a') is the variable generated in the current iteration,
+     which is still in the set of variables to avoid,
+     so that we need to do another loop iteratino;
+     @('y') is the difference between the set to avoid
+     and the variables generated so far, excluding @('a');
+     and @('x') is obtained by removing @('a') from @('y').
+     The measure of the loop is the cardinality of
+     the set of variables to avoid minus those generated so far,
+     i.e. @('y') in the current loop iteration
+     and @('x') in the subsequent loop iteration.
+     So this theorem serves to show that the measure decreases."))
+  (implies (and (set::subset x y)
+                (set::in a y)
+                (not (set::in a x)))
+           (< (set::cardinality x)
+              (set::cardinality y)))
+  :cases ((set::subset y x))
+  :enable set::expensive-rules)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-var-atom-with-index ((index natp))
+  :returns (var type-varp)
+  :short "Generate an atom type variable from a numeric index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable has the form @('$<i>'), where @('<i>') is the index.
+     This is a legal identifier in Remora (see ABNF grammar).
+     A key property is that it is an injective mapping:
+     different indices yield different variables."))
+  (type-var-atom (str::nat-to-dec-string (lnfix index)))
+
+  ///
+
+  (defret type-var-atom-of-type-var-atom-with-index
+    (equal (type-var-kind var) :atom))
+
+  (defrule type-var-atom-with-index-injective
+    (equal (equal (type-var-atom-with-index index1)
+                  (type-var-atom-with-index index2))
+           (equal (nfix index1)
+                  (nfix index2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-vars-atom-with-index-below ((index natp))
+  :returns (vars type-var-setp)
+  :short "Generate the set of atom type variables
+          for all the numeric indices below a given index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to remove, from the set of variables to be avoided,
+     all the failed attempts at generating a fresh variable.")
+   (xdoc::p
+    "Membership and subset reduce to index comparison;
+     the injectivity of @(tsee type-var-atom-with-index) is needed here.
+     This function is also injective."))
+  (b* (((when (zp index)) nil)
+       (index (1- index)))
+    (set::insert (type-var-atom-with-index index)
+                 (type-vars-atom-with-index-below index)))
+  :verify-guards :after-returns
+  :prepwork ((local (in-theory (enable nfix))))
+
+  ///
+
+  (defrule type-var-atom-with-index-in-set-below
+    (equal (set::in (type-var-atom-with-index index1)
+                    (type-vars-atom-with-index-below index2))
+           (< (nfix index1)
+              (nfix index2)))
+    :induct t
+    :enable nfix)
+
+  (defrule type-vars-atom-with-index-below-subset
+    (equal (set::subset (type-vars-atom-with-index-below index1)
+                        (type-vars-atom-with-index-below index2))
+           (<= (nfix index1) (nfix index2)))
+    :use (if-part only-if-part)
+    :prep-lemmas
+    ((defrule if-part
+       (implies (<= (nfix index1) (nfix index2))
+                (set::subset (type-vars-atom-with-index-below index1)
+                             (type-vars-atom-with-index-below index2)))
+       :induct t)
+     (defrule only-if-part
+       (implies (set::subset (type-vars-atom-with-index-below index1)
+                             (type-vars-atom-with-index-below index2))
+                (<= (nfix index1) (nfix index2)))
+       :induct t
+       :enable nfix)))
+
+  (defrule type-vars-atom-with-index-below-injective
+    (implies (equal (type-vars-atom-with-index-below index1)
+                    (type-vars-atom-with-index-below index2))
+             (equal (nfix index1) (nfix index2)))
+    :enable set::double-containment-no-backchain-limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remove-type-vars-atom-below-index ((index natp) (vars type-var-setp))
+  :returns (new-vars type-var-setp)
+  :short "Remove, from a set of type variables,
+          all the atom type variables with indices below a given index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the termination argument for generating fresh variables,
+     the set @('vars') is the one to be avoided.
+     So when we remove the variables below the index,
+     we remove all the variables attempted so far."))
+  (set::difference (type-var-set-fix vars)
+                   (type-vars-atom-with-index-below index))
+
+  ///
+
+  (defrule type-var-atom-with-index-in-remove-type-vars-atoms-below-index
+    (equal (set::in (type-var-atom-with-index index1)
+                    (remove-type-vars-atom-below-index index2 vars))
+           (and (set::in (type-var-atom-with-index index1)
+                         (type-var-set-fix vars))
+                (>= (nfix index1) (nfix index2)))))
+
+  (defrule remove-type-vars-atom-below-index-subset-when-index-leq
+    (implies (>= (nfix index1) (nfix index2))
+             (set::subset (remove-type-vars-atom-below-index index1 vars)
+                          (remove-type-vars-atom-below-index index2 vars)))
+    :enable set::expensive-rules))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fresh-atom-type-var ((used type-var-setp))
+  :returns (var type-varp)
+  :short "Generate a fresh atom type variable,
+          i.e. one not in the set of already used type variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the approach in @(see fresh-variables).
+     The termination lemma relies on the set theorem explained earlier."))
+  (fresh-atom-type-var-loop 0 used)
+
+  :prepwork
+  ((define fresh-atom-type-var-loop ((index natp) (used type-var-setp))
+     :returns (var type-varp)
+     (b* ((var (type-var-atom-with-index index)))
+       (if (set::in var (type-var-set-fix used))
+           (fresh-atom-type-var-loop (1+ (lnfix index)) used)
+         var))
+     :measure (set::cardinality (remove-type-vars-atom-below-index index used))
+     :prepwork
+     ((defrulel termination-lemma
+        (implies (set::in (type-var-atom-with-index index)
+                          (type-var-set-fix vars))
+                 (< (set::cardinality
+                     (remove-type-vars-atom-below-index (1+ (nfix index)) vars))
+                    (set::cardinality
+                     (remove-type-vars-atom-below-index index vars))))
+        :use (:instance
+              cardinality-lt-when-subset-and-not-member
+              (x (remove-type-vars-atom-below-index (1+ (nfix index)) vars))
+              (y (remove-type-vars-atom-below-index index vars))
+              (a (type-var-atom-with-index index)))))
+
+     ///
+
+     (defret type-var-atom-of-fresh-atom-type-var-loop
+       (equal (type-var-kind var) :atom)
+       :hints (("Goal" :induct t)))
+
+     (defret fresh-atom-type-var-loop-is-fresh
+       (not (set::in var (type-var-set-fix used)))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret type-var-atom-of-fresh-atom-type-var
+    (equal (type-var-kind var) :atom))
+
+  (defret fresh-atom-type-var-is-fresh
+    (not (set::in var (type-var-set-fix used)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-var-array-with-index ((index natp))
+  :returns (var type-varp)
+  :short "Generate an array type variable from a numeric index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee type-var-atom-with-index)."))
+  (type-var-array (str::nat-to-dec-string (lnfix index)))
+
+  ///
+
+  (defret type-var-array-of-type-var-array-with-index
+    (equal (type-var-kind var) :array))
+
+  (defrule type-var-array-with-index-injective
+    (equal (equal (type-var-array-with-index index1)
+                  (type-var-array-with-index index2))
+           (equal (nfix index1)
+                  (nfix index2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-vars-array-with-index-below ((index natp))
+  :returns (vars type-var-setp)
+  :short "Generate the set of array type variables
+          for all the numeric indices below a given index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee type-vars-atom-with-index-below)."))
+  (b* (((when (zp index)) nil)
+       (index (1- index)))
+    (set::insert (type-var-array-with-index index)
+                 (type-vars-array-with-index-below index)))
+  :verify-guards :after-returns
+  :prepwork ((local (in-theory (enable nfix))))
+
+  ///
+
+  (defrule type-var-array-with-index-in-set-below
+    (equal (set::in (type-var-array-with-index index1)
+                    (type-vars-array-with-index-below index2))
+           (< (nfix index1)
+              (nfix index2)))
+    :induct t
+    :enable nfix)
+
+  (defrule type-vars-array-with-index-below-subset
+    (equal (set::subset (type-vars-array-with-index-below index1)
+                        (type-vars-array-with-index-below index2))
+           (<= (nfix index1) (nfix index2)))
+    :use (if-part only-if-part)
+    :prep-lemmas
+    ((defrule if-part
+       (implies (<= (nfix index1) (nfix index2))
+                (set::subset (type-vars-array-with-index-below index1)
+                             (type-vars-array-with-index-below index2)))
+       :induct t)
+     (defrule only-if-part
+       (implies (set::subset (type-vars-array-with-index-below index1)
+                             (type-vars-array-with-index-below index2))
+                (<= (nfix index1) (nfix index2)))
+       :induct t
+       :enable nfix)))
+
+  (defrule type-vars-array-with-index-below-injective
+    (implies (equal (type-vars-array-with-index-below index1)
+                    (type-vars-array-with-index-below index2))
+             (equal (nfix index1) (nfix index2)))
+    :enable set::double-containment-no-backchain-limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remove-type-vars-array-below-index ((index natp) (vars type-var-setp))
+  :returns (new-vars type-var-setp)
+  :short "Remove, from a set of type variables,
+          all the array type variables with indices below a given index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee remove-type-vars-atom-below-index)."))
+  (set::difference (type-var-set-fix vars)
+                   (type-vars-array-with-index-below index))
+
+  ///
+
+  (defrule type-var-array-with-index-in-remove-type-vars-arrays-below-index
+    (equal (set::in (type-var-array-with-index index1)
+                    (remove-type-vars-array-below-index index2 vars))
+           (and (set::in (type-var-array-with-index index1)
+                         (type-var-set-fix vars))
+                (>= (nfix index1) (nfix index2)))))
+
+  (defrule remove-type-vars-array-below-index-subset-when-index-leq
+    (implies (>= (nfix index1) (nfix index2))
+             (set::subset (remove-type-vars-array-below-index index1 vars)
+                          (remove-type-vars-array-below-index index2 vars)))
+    :enable set::expensive-rules))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fresh-array-type-var ((used type-var-setp))
+  :returns (var type-varp)
+  :short "Generate a fresh array type variable,
+          i.e. one not in the set of already used type variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee fresh-atom-type-var)."))
+  (fresh-array-type-var-loop 0 used)
+
+  :prepwork
+  ((define fresh-array-type-var-loop ((index natp) (used type-var-setp))
+     :returns (var type-varp)
+     (b* ((var (type-var-array-with-index index)))
+       (if (set::in var (type-var-set-fix used))
+           (fresh-array-type-var-loop (1+ (lnfix index)) used)
+         var))
+     :measure (set::cardinality (remove-type-vars-array-below-index index used))
+     :prepwork
+     ((defrulel termination-lemma
+        (implies (set::in (type-var-array-with-index index)
+                          (type-var-set-fix vars))
+                 (< (set::cardinality
+                     (remove-type-vars-array-below-index (1+ (nfix index))
+                                                         vars))
+                    (set::cardinality
+                     (remove-type-vars-array-below-index index vars))))
+        :use (:instance
+              cardinality-lt-when-subset-and-not-member
+              (x (remove-type-vars-array-below-index (1+ (nfix index)) vars))
+              (y (remove-type-vars-array-below-index index vars))
+              (a (type-var-array-with-index index)))))
+
+     ///
+
+     (defret type-var-array-of-fresh-array-type-var-loop
+       (equal (type-var-kind var) :array)
+       :hints (("Goal" :induct t)))
+
+     (defret fresh-array-type-var-loop-is-fresh
+       (not (set::in var (type-var-set-fix used)))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret type-var-array-of-fresh-array-type-var
+    (equal (type-var-kind var) :array))
+
+  (defret fresh-array-type-var-is-fresh
+    (not (set::in var (type-var-set-fix used)))))
