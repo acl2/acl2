@@ -669,6 +669,7 @@
            (type-rename-ispace-vars sum-body-type
                                     renaming.1st
                                     renaming.2nd))
+          (senv (senv-add-ispace-vars expr.ispaces senv))
           (senv (senv-add-var+type expr.var sum-body-type-renam senv))
           ((ok arr-type) (check-expr expr.body senv))
           ((ok arr-type+shape) (type-match-array arr-type))
@@ -725,7 +726,7 @@
     (xdoc::topstring
      (xdoc::p
       "The type of a base value
-       is independent from the static environment(s),
+       is independent from the static environment,
        and determined via separate functions.")
      (xdoc::p
       "For a term abstraction,
@@ -784,11 +785,13 @@
      :tlambda
      (b* (((unless (no-duplicatesp-equal (type-var-list->name atom.params)))
            (reserr nil))
+          (senv (senv-add-type-vars atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-type-forall :params atom.params :body type))
      :ilambda
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name atom.params)))
            (reserr nil))
+          (senv (senv-add-ispace-vars atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-type-pi :params atom.params :body type))
      :box

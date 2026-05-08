@@ -30,10 +30,8 @@
    (xdoc::p
     "We define a desugaring transformation from all ASTs to the core ASTs.")
    (xdoc::p
-    "In [impl], this is mostly done during parsing,
-     on the fly as ASTs as constructed.
-     While [impl] also flattens frame expressions at the same time,
-     we formalize that as a separate transformation on ASTs."))
+    "In [impl], this is done during parsing,
+     on the fly as ASTs as constructed."))
   :order-subtopics t
   :default-parent t)
 
@@ -76,7 +74,7 @@
     "A bracket type is turned into an array type
      whose shape is the concatenation of the shapes.")
    (xdoc::p
-    "A string is turned into an arary expression
+    "A string is turned into an array expression
      with the length of the string as its single dimension
      and with the characters, converted to integers, as atoms.")
    (xdoc::p
@@ -301,7 +299,7 @@
       (equal result (atom-fix atom))
       :hyp (atom-corep atom)
       :fn atom-desugar)
-    (defret atom-desugar-when-atom-list-corep
+    (defret atom-list-desugar-when-atom-list-corep
       (equal result (atom-list-fix atom-list))
       :hyp (atom-list-corep atom-list)
       :fn atom-list-desugar)

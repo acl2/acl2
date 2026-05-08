@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-variable-operations")
 (include-book "ispace-equivalence")
+(include-book "fresh-variables")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
@@ -32,19 +33,15 @@
   (xdoc::topstring
    (xdoc::p
     "The static semantics of Remora involves
-     the equivalence of types.
-     Currently type equivalence in Remora is decidable,
-     but the language may evolve towards undecidability.")
+     the equivalence of types, which involves the equivalence of ispaces.
+     The latter is discussed in @(see ispace-equivalence).")
    (xdoc::p
-    "The current (decidable) equivalence of types
-     is described in [arxiv] and [thesis],
-     in terms of inference rules
-     that involve the semantic equivalence of ispaces;
-     the latter is defined in terms of normalization
-     (see @(see ispace-equivalence)).
-     We plan to formalize type equivalence,
-     both at a high level and as executable code.
-     For now we provide something that is mostly a placeholder."))
+    "Like for ispace equivalence,
+     we plan to define a high-level notion of type equivalence
+     that accommodates undecidability.
+     But we start with an executable version
+     that has the same restriction as decidable ispace equivalence,
+     namely that dimension arithmetic is confined to addition only."))
   :order-subtopics t
   :default-parent t)
 

@@ -21,6 +21,7 @@
 (include-book "character-literal-codes")
 (include-book "desugaring")
 (include-book "frame-flattening")
+(include-book "fresh-variables")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,4 +50,5 @@
                     abstract-syntax-well-formed
                     character-literal-codes
                     desugaring
-                    frame-flattening))
+                    frame-flattening
+                    fresh-variables))
