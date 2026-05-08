@@ -29,8 +29,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These include substitutions of variables with other ASTs,
-     as well as variable renamings.")
+    "These include
+     substitutions of variables with other ASTs,
+     variable renamings,
+     and collection of (free and all) variables.")
    (xdoc::p
     "The substitutions are represented as maps
      from strings (variable names) to ASTs.
@@ -376,6 +378,7 @@
   :short "Set of free ispace variables in
           ispaces,
           types,
+          optional types and lists of types,
           variables with types,
           expressions,
           atoms,
@@ -386,7 +389,7 @@
    (xdoc::p
     "The free variables of a binder are the ones
      in the thing that the variable is bound to.
-     Thus, for the ispace function binder,
+     Thus, for the ispace and combined function binders,
      we remove the parameters,
      because the thing that the variable is bound to
      is like a lambda abstraction."))
@@ -394,8 +397,10 @@
           shapes
           ispace
           ispace-list
+          ispace-list-option
           types
           type-option
+          type-list-option
           var+type
           var+type-list
           exprs/atoms/binds)
@@ -430,9 +435,8 @@
    (bind :cfun
          (set::difference (set::union
                            (var+type-list-free-ispace-vars bind.params)
-                           (set::union
-                            (type-free-ispace-vars bind.type)
-                            (expr-free-ispace-vars bind.expr)))
+                           (set::union (type-free-ispace-vars bind.type)
+                                       (expr-free-ispace-vars bind.expr)))
                           (ispace-var-list-option-case
                            bind.iparams?
                            :some (set::mergesort bind.iparams?.val)
@@ -444,6 +448,7 @@
 (fty::deffold-reduce free-type-vars
   :short "Set of free type variables in
           types,
+          optional types and lists of types,
           variables with types,
           expressions,
           atoms,
@@ -454,12 +459,13 @@
    (xdoc::p
     "The free variables of a binder are the ones
      in the thing that the variable is bound to.
-     Thus, for the ispace function binder,
+     Thus, for the type and combined function binders,
      we remove the parameters,
      because the thing that the variable is bound to
      is like a lambda abstraction."))
   :types (types
           type-option
+          type-list-option
           var+type
           var+type-list
           exprs/atoms/binds)
@@ -484,11 +490,57 @@
    (bind :cfun
          (set::difference (set::union
                            (var+type-list-free-type-vars bind.params)
-                           (set::union
-                            (type-free-type-vars bind.type)
-                            (expr-free-type-vars bind.expr)))
+                           (set::union (type-free-type-vars bind.type)
+                                       (expr-free-type-vars bind.expr)))
                           (type-var-list-option-case
                            bind.tparams?
                            :some (set::mergesort bind.tparams?.val)
                            :none nil))))
   :name ast-free-type-vars)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce all-type-vars
+  :short "Set of all (i.e. free and bound) type variables in
+          types,
+          optional types and lists of types,
+          variables with types,
+          expressions,
+          atoms,
+          bindings,
+          and lists thereof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all the free variables that occur anywhere,
+     including the parameters of universal types
+     and the type variables introduced by type binders."))
+  :types (types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds)
+  :result type-var-setp
+  :default nil
+  :combine set::union
+  :override
+  ((type :var (set::insert type.var nil))
+   (type :forall (set::union (set::mergesort type.params)
+                             (type-all-type-vars type.body)))
+   (atom :tlambda (set::union (set::mergesort atom.params)
+                              (expr-all-type-vars atom.body)))
+   (bind :type (set::insert bind.var
+                            (type-all-type-vars bind.type)))
+   (bind :tfun (set::union (set::mergesort bind.params)
+                           (set::union (type-option-all-type-vars bind.type?)
+                                       (expr-all-type-vars bind.expr))))
+   (bind :cfun (set::union
+                (type-var-list-option-case
+                 bind.tparams?
+                 :some (set::mergesort bind.tparams?.val)
+                 :none nil)
+                (set::union (var+type-list-all-type-vars bind.params)
+                            (set::union (type-all-type-vars bind.type)
+                                        (expr-all-type-vars bind.expr))))))
+  :name ast-all-type-vars)

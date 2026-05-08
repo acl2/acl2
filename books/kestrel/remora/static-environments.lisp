@@ -33,7 +33,7 @@
      the sort environment @($\\Theta$),
      the kind environment @($\\Delta$), and
      the type environment @($\\Gamma$)
-     in [arxiv], [thesis], and [esop]."))
+     in [thesis], [arxiv], and [esop]."))
   :order-subtopics t
   :default-parent t)
 
@@ -68,7 +68,7 @@
      and one for expression variables.
      E.g. @('$x'), @('@x'), @('&x'), @('*x'), and @('x')
      are all distinct variables, despite the common @('x') part;
-     indeed, they are unequivocated by the prefixes.
+     indeed, they are distinguished by the prefixes.
      The variables in a static environment are similarly separated,
      in the three components and via fixtype sum tags."))
   ((ispace-vars ispace-var-set)
@@ -139,6 +139,34 @@
   (make-senv :ispace-vars nil
              :type-vars nil
              :expr-vars (prim-op-types)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-ispace-vars ((vars ispace-var-listp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add zero or more ispace variables to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Variables already present have no effect."))
+  (b* ((ispace-vars (senv->ispace-vars senv))
+       (new-ispace-vars (set::union (set::mergesort (ispace-var-list-fix vars))
+                                    ispace-vars)))
+    (change-senv senv :ispace-vars new-ispace-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-type-vars ((vars type-var-listp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add zero or more type variables to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Variables already present have no effect."))
+  (b* ((type-vars (senv->type-vars senv))
+       (new-type-vars (set::union (set::mergesort (type-var-list-fix vars))
+                                  type-vars)))
+    (change-senv senv :type-vars new-type-vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

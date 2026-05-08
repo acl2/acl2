@@ -405,6 +405,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod stringstringmap-quadruple
+  :short "Fixtype of quadruples consisting of
+          four maps from strings to strings."
+  ((1st string-string-map)
+   (2nd string-string-map)
+   (3rd string-string-map)
+   (4th string-string-map))
+  :pred stringstringmap-quadruplep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult stringstringmap-quadruple-result
+  :short "Fixtype of (i) quadruples consisting of
+          four maps from strings to strings
+          and (ii) errors."
+  :ok stringstringmap-quadruple
+  :pred stringstringmap-quadruple-resultp
+  :prepwork ((local (in-theory (enable strip-cars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod type+shape
   :short "Fixtype of pairs consisting of a type and a shape."
   ((type type)
