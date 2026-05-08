@@ -340,6 +340,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-ispace-var-renaming ((vars1 ispace-var-listp)
+                                   (vars2 ispace-var-listp))
+  :returns (dim-and-shape-maps stringstringmap-pair-resultp)
+  :short "Check if two lists of ispace variables match in number and sorts,
+          and if so return maps between the dimension and shape variables."
+  (b* (((when (endp vars1))
+        (if (endp vars2)
+            (make-stringstringmap-pair :1st nil :2nd nil)
+          (reserr nil)))
+       ((when (endp vars2)) (reserr nil))
+       ((ok (stringstringmap-pair maps))
+        (check-ispace-var-renaming (cdr vars1) (cdr vars2)))
+       (var1 (car vars1))
+       (var2 (car vars2)))
+    (ispace-var-case
+     var1
+     :dim (ispace-var-case
+           var2
+           :dim (make-stringstringmap-pair
+                 :1st (omap::update var1.name var2.name maps.1st)
+                 :2nd maps.2nd)
+           :shape (reserr nil))
+     :shape (ispace-var-case
+             var2
+             :dim (reserr nil)
+             :shape (make-stringstringmap-pair
+                     :1st maps.1st
+                     :2nd (omap::update var1.name var2.name maps.2nd)))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ispace-vars-in-scope-p ((vars ispace-var-setp) (senv senvp))
   :returns (yes/no booleanp)
   :short "Check if the ispace variables in a set are all in scope."
