@@ -28,14 +28,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ values
+(defxdoc+ dynamic-values
   :parents (dynamic-semantics)
-  :short "Values."
+  :short "Values used in the dynamic semantics."
   :long
   (xdoc::topstring
    (xdoc::p
     "We define fixtypes for the values that
-     Remora expressions and atoms evaluate to.
+     Remora expressions and atoms evaluate to,
+     as well as other categories of values
+     that ispaces and types evaluate to.
      [thesis], [arxiv], and [esop],
      in line with much programming language literature,
      define values as subsets of expressions and atoms,
@@ -191,13 +193,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes values/valuelists
+(fty::deftypes values
   :short "Fixtypes of values and lists of values."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum value
-    :parents (values/valuelists)
+    :parents (values)
     :short "Fixtype of values."
     :long
     (xdoc::topstring
@@ -265,7 +267,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist value-list
-    :parents (values/valuelists)
+    :parents (values)
     :short "Fixtype of lists of (array) values."
     :elt-type value
     :true-listp t
