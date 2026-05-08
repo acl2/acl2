@@ -280,8 +280,7 @@
 (fty::defresult var+type-result
   :short "Fixtype of variables-with-types and errors."
   :ok var+type
-  :pred var+type-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred var+type-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -335,8 +334,7 @@
 (fty::defresult prog-result
   :short "Fixtype of programs and errors."
   :ok prog
-  :pred prog-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred prog-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -383,8 +381,7 @@
   :short "Fixtype of (i) pairs consisting of two maps from strings to types
           and (ii) errors."
   :ok stringtypemap-pair
-  :pred stringtypemap-pair-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred stringtypemap-pair-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -400,8 +397,7 @@
   :short "Fixtype of (i) pairs consisting of two maps from strings to strings
           and (ii) errors."
   :ok stringstringmap-pair
-  :pred stringstringmap-pair-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred stringstringmap-pair-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -421,8 +417,7 @@
           four maps from strings to strings
           and (ii) errors."
   :ok stringstringmap-quadruple
-  :pred stringstringmap-quadruple-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred stringstringmap-quadruple-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -473,8 +468,7 @@
           (i) pairs consisting of a list of types and a type
           and (ii) errors."
   :ok typelist+type
-  :pred typelist+type-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred typelist+type-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -492,8 +486,7 @@
           (i) pairs consisting of a list of ispace variables and a type
           and (ii) errors."
   :ok ispacevarlist+type
-  :pred ispacevarlist+type-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred ispacevarlist+type-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -511,8 +504,7 @@
           (i) pairs consisting of a list of type variables and a type
           and (ii) errors."
   :ok typevarlist+type
-  :pred typevarlist+type-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred typevarlist+type-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -533,5 +525,4 @@
           and a map from strings to shapes
           and (ii) errors."
   :ok stringdimmap+stringshapemap
-  :pred stringdimmap+stringshapemap-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred stringdimmap+stringshapemap-resultp)
