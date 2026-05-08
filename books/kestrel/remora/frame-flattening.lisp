@@ -30,7 +30,7 @@
      It could be thought of as
      a normalizing transformation,
      or even a desugaring transformation,
-     but it is not part of actual @(desugaring),
+     but it is not part of actual @(see desugaring),
      and may not be in fact necessary for most purposes.
      However, it is part of [impl]
      (part of desugaring in earlier versions, but not currently),
