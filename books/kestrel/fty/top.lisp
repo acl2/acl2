@@ -92,6 +92,7 @@
 (include-book "hex-digit-char")
 (include-book "oct-digit-char")
 (include-book "bin-digit-char")
+(include-book "string-nat-map")
 (include-book "string-stringlist-alist")
 (include-book "string-string-map")
 (include-book "string-stringlist-map")
