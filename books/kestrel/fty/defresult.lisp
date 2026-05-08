@@ -630,7 +630,7 @@
          (defruled ,not-reserrp-when-ok-pred
            (implies (,ok-pred x)
                     (not (reserrp x)))
-           :enable (,ok-pred reserrp))
+           :enable (,ok-pred reserrp strip-cars))
          (defruled ,ok-pred-when-result-not-error
            (implies (and (,type-pred x)
                          (not (reserrp x)))
