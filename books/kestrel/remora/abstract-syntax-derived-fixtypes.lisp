@@ -385,42 +385,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod stringstringmap-pair
-  :short "Fixtype of pairs consisting of two maps from strings to strings."
-  ((1st string-string-map)
-   (2nd string-string-map))
-  :pred stringstringmap-pairp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult stringstringmap-pair-result
-  :short "Fixtype of (i) pairs consisting of two maps from strings to strings
-          and (ii) errors."
-  :ok stringstringmap-pair
-  :pred stringstringmap-pair-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod stringstringmap-quadruple
-  :short "Fixtype of quadruples consisting of
-          four maps from strings to strings."
-  ((1st string-string-map)
-   (2nd string-string-map)
-   (3rd string-string-map)
-   (4th string-string-map))
-  :pred stringstringmap-quadruplep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult stringstringmap-quadruple-result
-  :short "Fixtype of (i) quadruples consisting of
-          four maps from strings to strings
-          and (ii) errors."
-  :ok stringstringmap-quadruple
-  :pred stringstringmap-quadruple-resultp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod type+shape
   :short "Fixtype of pairs consisting of a type and a shape."
   ((type type)

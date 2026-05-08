@@ -14,6 +14,8 @@
 (include-book "ispace-equivalence")
 (include-book "fresh-variables")
 
+(include-book "kestrel/fty/string-string-map-quadruple-result" :dir :system)
+
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -22,7 +24,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable stringstringmap-quadruplep-when-result-not-error)))
+(local
+ (in-theory (enable acl2::string-string-map-quadruplep-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,7 +53,7 @@
 (define fresh-ispace-var-renaming ((vars1 ispace-var-listp)
                                    (vars2 ispace-var-listp)
                                    (used ispace-var-setp))
-  :returns (renams stringstringmap-quadruple-resultp)
+  :returns (renams string-string-map-quadruple-resultp)
   :short "Generate fresh variable renamings for two lists of ispace variables,
           ensuring that the two lists match in number and sorts."
   :long
@@ -82,7 +85,7 @@
      we add it to the set of the variables to avoid."))
   (b* (((when (endp vars1))
         (if (endp vars2)
-            (make-stringstringmap-quadruple :1st nil :2nd nil :3rd nil :4th nil)
+            (make-string-string-map-quadruple :1st nil :2nd nil :3rd nil :4th nil)
           (reserr nil)))
        ((when (endp vars2)) (reserr nil))
        (var1 (car vars1))
@@ -93,11 +96,11 @@
      :dim (ispace-var-case
            var2
            :dim (b* (((ispace-var-dim var) (fresh-dim-ispace-var used))
-                     ((ok (stringstringmap-quadruple maps))
+                     ((ok (string-string-map-quadruple maps))
                       (fresh-ispace-var-renaming (cdr vars1)
                                                  (cdr vars2)
                                                  (set::insert var used))))
-                  (change-stringstringmap-quadruple
+                  (change-string-string-map-quadruple
                    maps
                    :1st (omap::update var1.name var.name maps.1st)
                    :3rd (omap::update var2.name var.name maps.3rd)))
@@ -106,11 +109,11 @@
              var2
              :dim (reserr nil)
              :shape (b* (((ispace-var-shape var) (fresh-shape-ispace-var used))
-                         ((ok (stringstringmap-quadruple maps))
+                         ((ok (string-string-map-quadruple maps))
                           (fresh-ispace-var-renaming (cdr vars1)
                                                      (cdr vars2)
                                                      (set::insert var used))))
-                      (change-stringstringmap-quadruple
+                      (change-string-string-map-quadruple
                        maps
                        :2nd (omap::update var1.name var.name maps.2nd)
                        :4th (omap::update var2.name var.name maps.4th))))))
@@ -121,7 +124,7 @@
 (define fresh-type-var-renaming ((vars1 type-var-listp)
                                  (vars2 type-var-listp)
                                  (used type-var-setp))
-  :returns (renams stringstringmap-quadruple-resultp)
+  :returns (renams string-string-map-quadruple-resultp)
   :short "Generate fresh variable renamings for two lists of type variables,
           ensuring that the two lists match in number and sorts."
   :long
@@ -153,7 +156,7 @@
      we add it to the set of the variables to avoid."))
   (b* (((when (endp vars1))
         (if (endp vars2)
-            (make-stringstringmap-quadruple :1st nil :2nd nil :3rd nil :4th nil)
+            (make-string-string-map-quadruple :1st nil :2nd nil :3rd nil :4th nil)
           (reserr nil)))
        ((when (endp vars2)) (reserr nil))
        (var1 (car vars1))
@@ -164,11 +167,11 @@
      :atom (type-var-case
             var2
             :atom (b* (((type-var-atom var) (fresh-atom-type-var used))
-                       ((ok (stringstringmap-quadruple maps))
+                       ((ok (string-string-map-quadruple maps))
                         (fresh-type-var-renaming (cdr vars1)
                                                  (cdr vars2)
                                                  (set::insert var used))))
-                    (change-stringstringmap-quadruple
+                    (change-string-string-map-quadruple
                      maps
                      :1st (omap::update var1.name var.name maps.1st)
                      :3rd (omap::update var2.name var.name maps.3rd)))
@@ -177,11 +180,11 @@
              var2
              :atom (reserr nil)
              :array (b* (((type-var-array var) (fresh-array-type-var used))
-                         ((ok (stringstringmap-quadruple maps))
+                         ((ok (string-string-map-quadruple maps))
                           (fresh-type-var-renaming (cdr vars1)
                                                    (cdr vars2)
                                                    (set::insert var used))))
-                      (change-stringstringmap-quadruple
+                      (change-string-string-map-quadruple
                        maps
                        :2nd (omap::update var1.name var.name maps.2nd)
                        :4th (omap::update var2.name var.name maps.4th))))))
@@ -276,7 +279,7 @@
                                                           type2.params
                                                           used))
                            ((when (reserrp maps)) nil)
-                           ((stringstringmap-quadruple maps) maps)
+                           ((string-string-map-quadruple maps) maps)
                            (body1 (type-rename-type-vars type1.body
                                                          maps.1st
                                                          maps.2nd))
@@ -293,7 +296,7 @@
                                                     type2.params
                                                     used))
                    ((when (reserrp maps)) nil)
-                   ((stringstringmap-quadruple maps) maps)
+                   ((string-string-map-quadruple maps) maps)
                    (body1 (type-rename-ispace-vars type1.body
                                                    maps.1st
                                                    maps.2nd))
@@ -310,7 +313,7 @@
                                                           type2.params
                                                           used))
                          ((when (reserrp maps)) nil)
-                         ((stringstringmap-quadruple maps) maps)
+                         ((string-string-map-quadruple maps) maps)
                          (body1 (type-rename-ispace-vars type1.body
                                                          maps.1st
                                                          maps.2nd))
