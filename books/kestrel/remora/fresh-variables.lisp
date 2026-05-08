@@ -76,13 +76,349 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ispace-var-dim-with-index ((index natp))
+  :returns (var ispace-varp)
+  :short "Generate a dimension ispace variable from a numeric index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In concrete syntax,
+     the variable has the form @('$<i>'), where @('<i>') is the index.
+     This is a legal identifier in Remora (see ABNF grammar).
+     A key property is that it is an injective mapping:
+     different indices yield different variables."))
+  (ispace-var-dim (str::nat-to-dec-string (lnfix index)))
+
+  ///
+
+  (defret ispace-var-dim-of-ispace-var-dim-with-index
+    (equal (ispace-var-kind var) :dim))
+
+  (defrule ispace-var-dim-with-index-injective
+    (equal (equal (ispace-var-dim-with-index index1)
+                  (ispace-var-dim-with-index index2))
+           (equal (nfix index1)
+                  (nfix index2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-vars-dim-with-index-below ((index natp))
+  :returns (vars ispace-var-setp)
+  :short "Generate the set of dimension ispace variables
+          for all the numeric indices below a given index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to remove, from the set of variables to be avoided,
+     all the failed attempts at generating a fresh variable.")
+   (xdoc::p
+    "Membership and subset reduce to index comparison;
+     the injectivity of @(tsee ispace-var-dim-with-index) is needed here.
+     This function is also injective."))
+  (b* (((when (zp index)) nil)
+       (index (1- index)))
+    (set::insert (ispace-var-dim-with-index index)
+                 (ispace-vars-dim-with-index-below index)))
+  :verify-guards :after-returns
+  :prepwork ((local (in-theory (enable nfix))))
+
+  ///
+
+  (defrule ispace-var-dim-with-index-in-set-below
+    (equal (set::in (ispace-var-dim-with-index index1)
+                    (ispace-vars-dim-with-index-below index2))
+           (< (nfix index1)
+              (nfix index2)))
+    :induct t
+    :enable nfix)
+
+  (defrule ispace-vars-dim-with-index-below-subset
+    (equal (set::subset (ispace-vars-dim-with-index-below index1)
+                        (ispace-vars-dim-with-index-below index2))
+           (<= (nfix index1) (nfix index2)))
+    :use (if-part only-if-part)
+    :prep-lemmas
+    ((defrule if-part
+       (implies (<= (nfix index1) (nfix index2))
+                (set::subset (ispace-vars-dim-with-index-below index1)
+                             (ispace-vars-dim-with-index-below index2)))
+       :induct t)
+     (defrule only-if-part
+       (implies (set::subset (ispace-vars-dim-with-index-below index1)
+                             (ispace-vars-dim-with-index-below index2))
+                (<= (nfix index1) (nfix index2)))
+       :induct t
+       :enable nfix)))
+
+  (defrule ispace-vars-dim-with-index-below-injective
+    (implies (equal (ispace-vars-dim-with-index-below index1)
+                    (ispace-vars-dim-with-index-below index2))
+             (equal (nfix index1) (nfix index2)))
+    :enable set::double-containment-no-backchain-limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remove-ispace-vars-dim-below-index ((index natp) (vars ispace-var-setp))
+  :returns (new-vars ispace-var-setp)
+  :short "Remove, from a set of ispace variables,
+          all the dimension ispace variables with indices below a given index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the termination argument for generating fresh variables,
+     the set @('vars') is the one to be avoided.
+     So when we remove the variables below the index,
+     we remove all the variables attempted so far."))
+  (set::difference (ispace-var-set-fix vars)
+                   (ispace-vars-dim-with-index-below index))
+
+  ///
+
+  (defrule ispace-var-dim-with-index-in-remove-ispace-vars-dims-below-index
+    (equal (set::in (ispace-var-dim-with-index index1)
+                    (remove-ispace-vars-dim-below-index index2 vars))
+           (and (set::in (ispace-var-dim-with-index index1)
+                         (ispace-var-set-fix vars))
+                (>= (nfix index1) (nfix index2)))))
+
+  (defrule remove-ispace-vars-dim-below-index-subset-when-index-leq
+    (implies (>= (nfix index1) (nfix index2))
+             (set::subset (remove-ispace-vars-dim-below-index index1 vars)
+                          (remove-ispace-vars-dim-below-index index2 vars)))
+    :enable set::expensive-rules))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fresh-dim-ispace-var ((used ispace-var-setp))
+  :returns (var ispace-varp)
+  :short "Generate a fresh dimension ispace variable,
+          i.e. one not in the set of already used ispace variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the approach in @(see fresh-variables).
+     The termination lemma relies on the set theorem explained earlier."))
+  (fresh-dim-ispace-var-loop 0 used)
+
+  :prepwork
+  ((define fresh-dim-ispace-var-loop ((index natp) (used ispace-var-setp))
+     :returns (var ispace-varp)
+     (b* ((var (ispace-var-dim-with-index index)))
+       (if (set::in var (ispace-var-set-fix used))
+           (fresh-dim-ispace-var-loop (1+ (lnfix index)) used)
+         var))
+     :measure (set::cardinality (remove-ispace-vars-dim-below-index index used))
+     :prepwork
+     ((defrulel termination-lemma
+        (implies (set::in (ispace-var-dim-with-index index)
+                          (ispace-var-set-fix vars))
+                 (< (set::cardinality
+                     (remove-ispace-vars-dim-below-index (1+ (nfix index)) vars))
+                    (set::cardinality
+                     (remove-ispace-vars-dim-below-index index vars))))
+        :use (:instance
+              cardinality-lt-when-subset-and-not-member
+              (x (remove-ispace-vars-dim-below-index (1+ (nfix index)) vars))
+              (y (remove-ispace-vars-dim-below-index index vars))
+              (a (ispace-var-dim-with-index index)))))
+
+     ///
+
+     (defret ispace-var-dim-of-fresh-dim-ispace-var-loop
+       (equal (ispace-var-kind var) :dim)
+       :hints (("Goal" :induct t)))
+
+     (defret fresh-dim-ispace-var-loop-is-fresh
+       (not (set::in var (ispace-var-set-fix used)))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret ispace-var-dim-of-fresh-dim-ispace-var
+    (equal (ispace-var-kind var) :dim))
+
+  (defret fresh-dim-ispace-var-is-fresh
+    (not (set::in var (ispace-var-set-fix used)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-var-shape-with-index ((index natp))
+  :returns (var ispace-varp)
+  :short "Generate a shape ispace variable from a numeric index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In concrete syntax,
+     the variable has the form @('@<i>'), where @('<i>') is the index.
+     This is a legal identifier in Remora (see ABNF grammar).
+     A key property is that it is an injective mapping:
+     different indices yield different variables."))
+  (ispace-var-shape (str::nat-to-dec-string (lnfix index)))
+
+  ///
+
+  (defret ispace-var-shape-of-ispace-var-shape-with-index
+    (equal (ispace-var-kind var) :shape))
+
+  (defrule ispace-var-shape-with-index-injective
+    (equal (equal (ispace-var-shape-with-index index1)
+                  (ispace-var-shape-with-index index2))
+           (equal (nfix index1)
+                  (nfix index2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-vars-shape-with-index-below ((index natp))
+  :returns (vars ispace-var-setp)
+  :short "Generate the set of shape ispace variables
+          for all the numeric indices below a given index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to remove, from the set of variables to be avoided,
+     all the failed attempts at generating a fresh variable.")
+   (xdoc::p
+    "Membership and subset reduce to index comparison;
+     the injectivity of @(tsee ispace-var-shape-with-index) is needed here.
+     This function is also injective."))
+  (b* (((when (zp index)) nil)
+       (index (1- index)))
+    (set::insert (ispace-var-shape-with-index index)
+                 (ispace-vars-shape-with-index-below index)))
+  :verify-guards :after-returns
+  :prepwork ((local (in-theory (enable nfix))))
+
+  ///
+
+  (defrule ispace-var-shape-with-index-in-set-below
+    (equal (set::in (ispace-var-shape-with-index index1)
+                    (ispace-vars-shape-with-index-below index2))
+           (< (nfix index1)
+              (nfix index2)))
+    :induct t
+    :enable nfix)
+
+  (defrule ispace-vars-shape-with-index-below-subset
+    (equal (set::subset (ispace-vars-shape-with-index-below index1)
+                        (ispace-vars-shape-with-index-below index2))
+           (<= (nfix index1) (nfix index2)))
+    :use (if-part only-if-part)
+    :prep-lemmas
+    ((defrule if-part
+       (implies (<= (nfix index1) (nfix index2))
+                (set::subset (ispace-vars-shape-with-index-below index1)
+                             (ispace-vars-shape-with-index-below index2)))
+       :induct t)
+     (defrule only-if-part
+       (implies (set::subset (ispace-vars-shape-with-index-below index1)
+                             (ispace-vars-shape-with-index-below index2))
+                (<= (nfix index1) (nfix index2)))
+       :induct t
+       :enable nfix)))
+
+  (defrule ispace-vars-shape-with-index-below-injective
+    (implies (equal (ispace-vars-shape-with-index-below index1)
+                    (ispace-vars-shape-with-index-below index2))
+             (equal (nfix index1) (nfix index2)))
+    :enable set::double-containment-no-backchain-limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remove-ispace-vars-shape-below-index ((index natp)
+                                              (vars ispace-var-setp))
+  :returns (new-vars ispace-var-setp)
+  :short "Remove, from a set of ispace variables,
+          all the shape ispace variables with indices below a given index."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the termination argument for generating fresh variables,
+     the set @('vars') is the one to be avoided.
+     So when we remove the variables below the index,
+     we remove all the variables attempted so far."))
+  (set::difference (ispace-var-set-fix vars)
+                   (ispace-vars-shape-with-index-below index))
+
+  ///
+
+  (defrule ispace-var-shape-with-index-in-remove-ispace-vars-shapes-below-index
+    (equal (set::in (ispace-var-shape-with-index index1)
+                    (remove-ispace-vars-shape-below-index index2 vars))
+           (and (set::in (ispace-var-shape-with-index index1)
+                         (ispace-var-set-fix vars))
+                (>= (nfix index1) (nfix index2)))))
+
+  (defrule remove-ispace-vars-shape-below-index-subset-when-index-leq
+    (implies (>= (nfix index1) (nfix index2))
+             (set::subset (remove-ispace-vars-shape-below-index index1 vars)
+                          (remove-ispace-vars-shape-below-index index2 vars)))
+    :enable set::expensive-rules))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fresh-shape-ispace-var ((used ispace-var-setp))
+  :returns (var ispace-varp)
+  :short "Generate a fresh shape ispace variable,
+          i.e. one not in the set of already used ispace variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the approach in @(see fresh-variables).
+     The termination lemma relies on the set theorem explained earlier."))
+  (fresh-shape-ispace-var-loop 0 used)
+
+  :prepwork
+  ((define fresh-shape-ispace-var-loop ((index natp) (used ispace-var-setp))
+     :returns (var ispace-varp)
+     (b* ((var (ispace-var-shape-with-index index)))
+       (if (set::in var (ispace-var-set-fix used))
+           (fresh-shape-ispace-var-loop (1+ (lnfix index)) used)
+         var))
+     :measure (set::cardinality
+               (remove-ispace-vars-shape-below-index index used))
+     :prepwork
+     ((defrulel termination-lemma
+        (implies (set::in (ispace-var-shape-with-index index)
+                          (ispace-var-set-fix vars))
+                 (< (set::cardinality
+                     (remove-ispace-vars-shape-below-index (1+ (nfix index))
+                                                           vars))
+                    (set::cardinality
+                     (remove-ispace-vars-shape-below-index index vars))))
+        :use (:instance
+              cardinality-lt-when-subset-and-not-member
+              (x (remove-ispace-vars-shape-below-index (1+ (nfix index)) vars))
+              (y (remove-ispace-vars-shape-below-index index vars))
+              (a (ispace-var-shape-with-index index)))))
+
+     ///
+
+     (defret ispace-var-shape-of-fresh-shape-ispace-var-loop
+       (equal (ispace-var-kind var) :shape)
+       :hints (("Goal" :induct t)))
+
+     (defret fresh-shape-ispace-var-loop-is-fresh
+       (not (set::in var (ispace-var-set-fix used)))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret ispace-var-shape-of-fresh-shape-ispace-var
+    (equal (ispace-var-kind var) :shape))
+
+  (defret fresh-shape-ispace-var-is-fresh
+    (not (set::in var (ispace-var-set-fix used)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-var-atom-with-index ((index natp))
   :returns (var type-varp)
   :short "Generate an atom type variable from a numeric index."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The variable has the form @('$<i>'), where @('<i>') is the index.
+    "In concrete syntax,
+     the variable has the form @('&<i>'), where @('<i>') is the index.
      This is a legal identifier in Remora (see ABNF grammar).
      A key property is that it is an injective mapping:
      different indices yield different variables."))
@@ -247,7 +583,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee type-var-atom-with-index)."))
+    "In concrete syntax,
+     the variable has the form @('*<i>'), where @('<i>') is the index.
+     This is a legal identifier in Remora (see ABNF grammar).
+     A key property is that it is an injective mapping:
+     different indices yield different variables."))
   (type-var-array (str::nat-to-dec-string (lnfix index)))
 
   ///
@@ -270,7 +610,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee type-vars-atom-with-index-below)."))
+    "This is used to remove, from the set of variables to be avoided,
+     all the failed attempts at generating a fresh variable.")
+   (xdoc::p
+    "Membership and subset reduce to index comparison;
+     the injectivity of @(tsee type-var-atom-with-index) is needed here.
+     This function is also injective."))
   (b* (((when (zp index)) nil)
        (index (1- index)))
     (set::insert (type-var-array-with-index index)
@@ -321,7 +666,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee remove-type-vars-atom-below-index)."))
+    "In the termination argument for generating fresh variables,
+     the set @('vars') is the one to be avoided.
+     So when we remove the variables below the index,
+     we remove all the variables attempted so far."))
   (set::difference (type-var-set-fix vars)
                    (type-vars-array-with-index-below index))
 
@@ -349,7 +697,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee fresh-atom-type-var)."))
+    "We use the approach in @(see fresh-variables).
+     The termination lemma relies on the set theorem explained earlier."))
   (fresh-array-type-var-loop 0 used)
 
   :prepwork
