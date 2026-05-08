@@ -369,19 +369,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod stringtypemap-pair
+(fty::defprod string-type-map-pair
   :short "Fixtype of pairs consisting of two maps from strings to types."
   ((1st string-type-map)
    (2nd string-type-map))
-  :pred stringtypemap-pairp)
+  :pred string-type-map-pairp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult stringtypemap-pair-result
+(fty::defresult string-type-map-pair-result
   :short "Fixtype of (i) pairs consisting of two maps from strings to types
           and (ii) errors."
-  :ok stringtypemap-pair
-  :pred stringtypemap-pair-resultp)
+  :ok string-type-map-pair
+  :pred string-type-map-pair-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -43,7 +43,7 @@
           typevarlist+type-p-when-result-not-error
           stringdimmap+stringshapemap-p-when-result-not-error
           string-type-mapp-when-result-not-error
-          stringtypemap-pairp-when-result-not-error)))
+          string-type-map-pairp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,7 +302,7 @@
 
 (define check-type-params-and-args ((params type-var-listp)
                                     (args type-listp))
-  :returns (maps stringtypemap-pair-resultp)
+  :returns (maps string-type-map-pair-resultp)
   :short "Check whether a list of type parameters
           and a list of type arguments match."
   :long
@@ -317,25 +317,25 @@
      to the corresponding array-kinded type arguments."))
   (b* (((when (endp params))
         (if (endp args)
-            (make-stringtypemap-pair
+            (make-string-type-map-pair
              :1st nil
              :2nd nil)
           (reserr nil)))
        ((when (endp args)) (reserr nil))
-       ((ok (stringtypemap-pair maps))
+       ((ok (string-type-map-pair maps))
         (check-type-params-and-args (cdr params) (cdr args)))
        (param (car params))
        (arg (type-fix (car args))))
     (type-var-case
      param
      :atom (if (type-atomp arg)
-               (make-stringtypemap-pair
+               (make-string-type-map-pair
                 :1st (omap::update param.name arg maps.1st)
                 :2nd maps.2nd)
              (reserr nil))
      :array (if (type-atomp arg)
                 (reserr nil)
-              (make-stringtypemap-pair
+              (make-string-type-map-pair
                :1st maps.1st
                :2nd (omap::update param.name arg maps.2nd)))))
   :verify-guards :after-returns)
@@ -650,7 +650,7 @@
                         (type-vars-in-scope-p
                          (type-list-free-type-vars expr.args) senv)))
            (reserr nil))
-          ((ok (stringtypemap-pair type-maps))
+          ((ok (string-type-map-pair type-maps))
            (check-type-params-and-args vars expr.args))
           (body-atom-type-subst
            (type-subst-type-vars body-atom-type
