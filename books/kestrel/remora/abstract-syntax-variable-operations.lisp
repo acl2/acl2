@@ -500,6 +500,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deffold-reduce all-ispace-vars
+  :short "Set of all (i.e. free and bound) ispace variables in
+          ispaces,
+          optional lists of ispaces,
+          types,
+          optional types and lists of types,
+          variables with types,
+          expressions,
+          atoms,
+          bindings,
+          and lists thereof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all the variables that occur anywhere,
+     including the parameters of product and sum types
+     and the ispace variables introduced by ispace binders."))
+  :types (dims
+          shapes
+          ispace
+          ispace-list
+          ispace-list-option
+          types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds)
+  :result ispace-var-setp
+  :default nil
+  :combine set::union
+  :override
+  ((dim :var (set::insert (ispace-var-dim dim.name) nil))
+   (shape :var (set::insert (ispace-var-shape shape.name) nil))
+   (type :pi
+         (set::union (set::mergesort type.params)
+                     (type-all-ispace-vars type.body)))
+   (type :sigma
+         (set::union (set::mergesort type.params)
+                     (type-all-ispace-vars type.body)))
+   (bind :ifun
+         (set::union (set::mergesort bind.params)
+                     (set::union (type-option-all-ispace-vars bind.type?)
+                                 (expr-all-ispace-vars bind.expr))))
+   (bind :cfun
+         (set::union
+          (ispace-var-list-option-case
+           bind.iparams?
+           :some (set::mergesort bind.iparams?.val)
+           :none nil)
+          (set::union (var+type-list-all-ispace-vars bind.params)
+                      (set::union (type-all-ispace-vars bind.type)
+                                  (expr-all-ispace-vars bind.expr))))))
+  :name ast-all-ispace-vars)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-reduce all-type-vars
   :short "Set of all (i.e. free and bound) type variables in
           types,
@@ -512,7 +569,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are all the free variables that occur anywhere,
+    "These are all the variables that occur anywhere,
      including the parameters of universal types
      and the type variables introduced by type binders."))
   :types (types
