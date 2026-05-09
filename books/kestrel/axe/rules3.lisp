@@ -764,18 +764,6 @@
                   (BVLT 31 (BVUMINUS 31 x) z)))
   :hints (("Goal" :in-theory (enable bvlt bvlt-tighten-when-getbit-0))))
 
-;gen
-(defthm bvlt-of-bvuminus-tighten-arg2
-  (equal (BVLT 31 z (BVUMINUS 32 x))
-         (BVLT 31 z (BVUMINUS 31 x)))
-  :hints (("Goal" :in-theory (enable bvlt))))
-
-;gen
-(defthm bvlt-of-bvuminus-tighten-arg1
-  (equal (BVLT 31 (BVUMINUS 32 x) z)
-         (BVLT 31 (BVUMINUS 31 x) z))
-  :hints (("Goal" :in-theory (enable bvlt))))
-
 ;can we split into fewer cases? maybe not?
 (defthm bvlt-of-bvuminus-and-constant
   (implies (and (syntaxp (and (quotep k)
@@ -792,14 +780,14 @@
                                         BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
-;todo: gen!
-(defthm bvlt-of-bvchop-tighten
-  (implies (and (unsigned-byte-p 31 y)
-                (< 31 size) ;<= would loop
-                (integerp size))
-           (equal (BVLT size (BVCHOP 31 x) y)
-                  (BVLT 31 (BVCHOP 31 x) y)))
-  :hints (("Goal" :in-theory (enable bvlt))))
+;; ;todo: gen!
+;; (defthm bvlt-of-bvchop-tighten
+;;   (implies (and (unsigned-byte-p 31 y)
+;;                 (< 31 size) ;<= would loop
+;;                 (integerp size))
+;;            (equal (BVLT size (BVCHOP 31 x) y)
+;;                   (BVLT 31 (BVCHOP 31 x) y)))
+;;   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;better way to handle this?  should a < in some rule somewhere be a bvlt?
 (defthm <-of-bvuminus-becomes-bvlt
