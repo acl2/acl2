@@ -6028,3 +6028,45 @@
   (equal (bvnot size x)
          (bvminus size (bvuminus size x) 1))
   :hints (("Goal" :use bvuminus-becomes-bvplus-of-bvnot-and-1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ ;two ways to write this, but I prefer to split on x since it might be constant
+(defthmd slice-of-bvplus-cases-helper
+  (implies (natp low)
+           (equal (<= (EXPT 2 low) (+ (BVCHOP low X) (BVCHOP low Y)))
+                  (if (EQUAL 0 (BVCHOP LOW x))
+                      nil
+                    (not (bvlt low y (bvuminus low x)))
+                    )))
+  :hints (("Goal" :in-theory (e/d (bvplus slice-of-sum-cases
+                                          bvlt
+                                          bvchop-of-sum-cases
+                                          bvuminus bvplus bvminus
+                                          bvchop-when-i-is-not-an-integer
+                                          slice-when-val-is-not-an-integer)
+                                  (bvminus-becomes-bvplus-of-bvuminus)))))
+
+(defthmd slice-of-bvplus-cases
+  (implies (and (equal size (+ 1 high))
+                (<= low high)
+                (natp low)
+                (integerp high))
+           (equal (slice high low (bvplus size x y))
+                  (if (if (equal 0 (bvchop low x))
+                          t
+                        (bvlt low y (bvuminus low x)))
+                      ;;no carry:
+                      (bvplus (+ 1 high (- low))
+                              (slice high low x)
+                              (slice high low y))
+                    ;;if carry
+                    (bvplus (+ 1 high (- low))
+                            1
+                            (bvplus (+ 1 high (- low))
+                                    (slice high low x)
+                                    (slice high low y))))))
+  :hints (("Goal" :in-theory (enable bvplus slice-of-sum-cases
+                                     slice-of-bvplus-cases-helper
+                                     bvchop-when-i-is-not-an-integer
+                                     slice-when-val-is-not-an-integer))))
