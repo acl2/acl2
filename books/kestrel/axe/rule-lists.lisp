@@ -866,6 +866,9 @@
      equal-of-0-and-bitnot
      equal-of-1-and-bitnot
 
+     bitnot-of-bitxor-of-1
+     bitxor-of-1-and-bitnot
+
      bvand-of-myif-arg1
      bvand-of-myif-arg2
      bvxor-of-myif-1
@@ -1017,6 +1020,7 @@
      bvif-of-getbit-arg3
      bvif-of-getbit-arg4
 
+     bvlt-of-1
      not-bvlt-self
      bvlt-of-ifix-arg2
      bvlt-of-ifix-arg3
@@ -1798,7 +1802,7 @@
     bvchop-list-of-bvchop-list))
 
 ;; are these all for when the logext is too big?
-;; do we need these if we have the convert-to-bv-rules?
+;; todo: can we rely on the convert-to-bv-rules instead (make sure those are always included)?
 (defun bv-of-logext-rules ()
   (declare (xargs :guard t))
   '(bvplus-of-logext-arg2
@@ -3519,7 +3523,6 @@
              commutativity-2-of-+-when-constant
              rationalp-of--
              rationalp-+
-             bvlt-of-1
              max
              bvchop-of-times-of-/-32
              integerp-of-1-times-1/32
