@@ -1068,9 +1068,9 @@
     "Finally, we store a "
     (xdoc::seetopic "uid" "unique identifier")
     " for the object.
-      All identifiers of the same name with external linkage
-      refer to the same object and therefore possess
-      the same unique identifier.")
+     All identifiers of the same name with external linkage
+     refer to the same object and therefore possess
+     the same unique identifier.")
    (xdoc::p
     "Eventually, we may wish to store a boolean flag indicating
      whether the identifier has been externally defined.
