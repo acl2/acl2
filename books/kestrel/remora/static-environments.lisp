@@ -29,7 +29,11 @@
     "A static environment consists of
      the contextual information needed to
      enforce the static semantics of some AST.
-     Our static environments correspond to the combination of
+     It is the static counterpart of a "
+    (xdoc::seetopic "dynamic-environments" "dynamic environment")
+    ".")
+   (xdoc::p
+    "Our static environments correspond to the combination of
      the sort environment @($\\Theta$),
      the kind environment @($\\Delta$), and
      the type environment @($\\Gamma$)

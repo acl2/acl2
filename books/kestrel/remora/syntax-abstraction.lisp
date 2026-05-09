@@ -1594,8 +1594,7 @@
 (fty::defresult fun-sig-info-result
   :short "Fixtype of @(tsee fun-sig-info) and errors."
   :ok fun-sig-info
-  :pred fun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred fun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1610,8 +1609,7 @@
 (fty::defresult tfun-sig-info-result
   :short "Fixtype of @(tsee tfun-sig-info) and errors."
   :ok tfun-sig-info
-  :pred tfun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred tfun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1627,8 +1625,7 @@
 (fty::defresult ifun-sig-info-result
   :short "Fixtype of @(tsee ifun-sig-info) and errors."
   :ok ifun-sig-info
-  :pred ifun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred ifun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1646,8 +1643,7 @@
 (fty::defresult at-fun-sig-info-result
   :short "Fixtype of @(tsee at-fun-sig-info) and errors."
   :ok at-fun-sig-info
-  :pred at-fun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred at-fun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1785,8 +1781,7 @@
 (fty::defresult unbox-spec-info-result
   :short "Fixtype of @(tsee unbox-spec-info) and errors."
   :ok unbox-spec-info
-  :pred unbox-spec-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred unbox-spec-info-resultp)
 
 (local (in-theory (enable unbox-spec-info-p-when-result-not-error)))
 
