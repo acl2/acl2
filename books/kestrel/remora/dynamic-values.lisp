@@ -28,14 +28,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ values
+(defxdoc+ dynamic-values
   :parents (dynamic-semantics)
-  :short "Values."
+  :short "Values used in the dynamic semantics."
   :long
   (xdoc::topstring
    (xdoc::p
     "We define fixtypes for the values that
-     Remora expressions and atoms evaluate to.
+     Remora expressions and atoms evaluate to,
+     as well as other categories of values
+     that ispaces and types evaluate to.
      [thesis], [arxiv], and [esop],
      in line with much programming language literature,
      define values as subsets of expressions and atoms,
@@ -59,6 +61,69 @@
      we will switch to that approach."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum ispace-value
+  :short "Fixtype of ispace values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like a normalized ground form of ispace ASTs:
+     if there are no free variables,
+     a dimension can be reduced to a natural numbers,
+     and a shape can be reduced to a list of natural numbers."))
+  (:dim ((val nat)))
+  (:shape ((val nat-list)))
+  :pred ispace-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes type-values
+  :short "Fixtypes of type values and lists of types of values."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum type-value
+    :parents (values type-values)
+    :short "Fixtype of type values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is like a normalized ground form of type ASTs:
+       if there are no free variables,
+       a type is a base type,
+       or an array with a type value element
+       and a list of natural numbers as shape
+       (like a shape ispace value, see @(tsee ispace-value)),
+       or a function type with input and output type values,
+       or a universal, product, or sum type.
+       The latter three categories of types do not use type values in bodies,
+       but they have the full type ASTS,
+       because the bindings ``shield'' the body,
+       like common lambda abstractions."))
+    (:base ((type base-type)))
+    (:array ((elem type-value)
+             (shape nat-list)))
+    (:fun ((in type-value-list)
+           (out type-value)))
+    (:forall ((params type-var-list)
+              (body type)))
+    (:pi ((params ispace-var-list)
+          (body type)))
+    (:sigma ((params ispace-var-list)
+             (body type)))
+    :pred type-valuep)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deflist type-value-list
+    :parents (values type-values)
+    :short "Fixtype of lists of type values."
+    :elt-type type-value
+    :true-listp t
+    :elementp-of-nil nil
+    :pred type-value-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,13 +193,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes values/valuelists
+(fty::deftypes values
   :short "Fixtypes of values and lists of values."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum value
-    :parents (values/valuelists)
+    :parents (values)
     :short "Fixtype of values."
     :long
     (xdoc::topstring
@@ -202,7 +267,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist value-list
-    :parents (values/valuelists)
+    :parents (values)
     :short "Fixtype of lists of (array) values."
     :elt-type value
     :true-listp t

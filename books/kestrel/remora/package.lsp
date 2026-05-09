@@ -31,12 +31,15 @@
                                        values))
                   '(all-equalp
                     bool
+                    change-string-string-map-quadruple
                     defmacro+
                     defxdoc+
                     enable*
                     impossible
                     int
                     lnfix
+                    make-string-string-map-pair
+                    make-string-string-map-quadruple
                     nat
                     nat-list
                     nat-list-fix
@@ -48,9 +51,12 @@
                     str-fix
                     string=>nats
                     string-setp
-                    string-string-map
                     string-string-mapp
                     string-string-map-fix
+                    string-string-map-pair
+                    string-string-map-pair-resultp
+                    string-string-map-quadruple
+                    string-string-map-quadruple-resultp
                     fty::ok
                     fty::okf
                     fty::patbind-ok
