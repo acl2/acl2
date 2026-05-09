@@ -819,7 +819,7 @@
    (xdoc::p
     "This represents a storage duration [C17:6.2.4],
      but only three kinds, excluding the allocated kind.
-     We use the term `liftetime' because it is just one word,
+     We use the term `lifetime' because it is just one word,
      and also to avoid implying that there are only three storage durations,
      when there are in fact four.
      Since a storage duration defines the kind of lifetime of an object,
