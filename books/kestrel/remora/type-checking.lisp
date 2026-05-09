@@ -18,6 +18,8 @@
 (include-book "type-equivalence")
 (include-book "static-environments")
 
+(include-book "kestrel/fty/string-string-map-pair-result" :dir :system)
+
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/fix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -33,7 +35,7 @@
           shape-listp-when-result-not-error
           typep-when-result-not-error
           type-listp-when-result-not-error
-          stringstringmap-pairp-when-result-not-error
+          acl2::string-string-map-pairp-when-result-not-error
           type+shape-p-when-result-not-error
           type+shape-listp-when-result-not-error
           typelist+type-p-when-result-not-error
@@ -41,7 +43,7 @@
           typevarlist+type-p-when-result-not-error
           stringdimmap+stringshapemap-p-when-result-not-error
           string-type-mapp-when-result-not-error
-          stringtypemap-pairp-when-result-not-error)))
+          string-type-map-pairp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -300,7 +302,7 @@
 
 (define check-type-params-and-args ((params type-var-listp)
                                     (args type-listp))
-  :returns (maps stringtypemap-pair-resultp)
+  :returns (maps string-type-map-pair-resultp)
   :short "Check whether a list of type parameters
           and a list of type arguments match."
   :long
@@ -315,27 +317,59 @@
      to the corresponding array-kinded type arguments."))
   (b* (((when (endp params))
         (if (endp args)
-            (make-stringtypemap-pair
+            (make-string-type-map-pair
              :1st nil
              :2nd nil)
           (reserr nil)))
        ((when (endp args)) (reserr nil))
-       ((ok (stringtypemap-pair maps))
+       ((ok (string-type-map-pair maps))
         (check-type-params-and-args (cdr params) (cdr args)))
        (param (car params))
        (arg (type-fix (car args))))
     (type-var-case
      param
      :atom (if (type-atomp arg)
-               (make-stringtypemap-pair
+               (make-string-type-map-pair
                 :1st (omap::update param.name arg maps.1st)
                 :2nd maps.2nd)
              (reserr nil))
      :array (if (type-atomp arg)
                 (reserr nil)
-              (make-stringtypemap-pair
+              (make-string-type-map-pair
                :1st maps.1st
                :2nd (omap::update param.name arg maps.2nd)))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ispace-var-renaming ((vars1 ispace-var-listp)
+                                   (vars2 ispace-var-listp))
+  :returns (dim-and-shape-maps string-string-map-pair-resultp)
+  :short "Check if two lists of ispace variables match in number and sorts,
+          and if so return maps between the dimension and shape variables."
+  (b* (((when (endp vars1))
+        (if (endp vars2)
+            (make-string-string-map-pair :1st nil :2nd nil)
+          (reserr nil)))
+       ((when (endp vars2)) (reserr nil))
+       ((ok (string-string-map-pair maps))
+        (check-ispace-var-renaming (cdr vars1) (cdr vars2)))
+       (var1 (car vars1))
+       (var2 (car vars2)))
+    (ispace-var-case
+     var1
+     :dim (ispace-var-case
+           var2
+           :dim (make-string-string-map-pair
+                 :1st (omap::update var1.name var2.name maps.1st)
+                 :2nd maps.2nd)
+           :shape (reserr nil))
+     :shape (ispace-var-case
+             var2
+             :dim (reserr nil)
+             :shape (make-string-string-map-pair
+                     :1st maps.1st
+                     :2nd (omap::update var1.name var2.name maps.2nd)))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -616,7 +650,7 @@
                         (type-vars-in-scope-p
                          (type-list-free-type-vars expr.args) senv)))
            (reserr nil))
-          ((ok (stringtypemap-pair type-maps))
+          ((ok (string-type-map-pair type-maps))
            (check-type-params-and-args vars expr.args))
           (body-atom-type-subst
            (type-subst-type-vars body-atom-type
@@ -663,7 +697,7 @@
           (sum-vars (ispacevarlist+type->vars sum-vars+type))
           (sum-body-type (ispacevarlist+type->type sum-vars+type))
           ((unless (= (len expr.ispaces) (len sum-vars))) (reserr nil))
-          ((ok (stringstringmap-pair renaming))
+          ((ok (string-string-map-pair renaming))
            (check-ispace-var-renaming sum-vars expr.ispaces))
           (sum-body-type-renam
            (type-rename-ispace-vars sum-body-type

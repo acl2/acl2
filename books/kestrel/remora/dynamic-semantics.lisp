@@ -10,7 +10,8 @@
 
 (in-package "REMORA")
 
-(include-book "values")
+(include-book "dynamic-values")
+(include-book "dynamic-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,4 +25,5 @@
      in the Remora publications [thesis] [arxiv] [esop].
      We plan to formalize those inference rules as directly as possible,
      but we will start by providing an executable interpreter."))
-  :order-subtopics (values))
+  :order-subtopics (dynamic-values
+                    dynamic-environments))

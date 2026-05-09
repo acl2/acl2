@@ -107,7 +107,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map subst-dim-vars
-  :short "Substitute dimension variables in dimensions and lists of dimensions."
+  :short "Substitute free dimension variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This only covers dimensions, which only contain dimension variables,
+     because other ASTs contain both dimension and shape variables,
+     and thus need two substitution maps."))
   :types (dims)
   :extra-args ((subst string-dim-mapp))
   :override
@@ -121,8 +127,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map subst-ispace-vars
-  :short "Substitute (free) ispace (i.e. dimension and shape) variables
-          in shapes, ispaces, types, and lists thereof."
+  :short "Substitute free ispace (i.e. dimension and shape) variables in ASTs."
   :types (shapes
           ispace
           ispace-list
@@ -169,8 +174,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map subst-type-vars
-  :short "Substitute (free) (atom-kind and array-kind) type variables
-          in types and lists of types."
+  :short "Substitute free (atom-kind and array-kind) type variables in ASTs."
   :types (types)
   :extra-args ((atom-subst string-type-mapp)
                (array-subst string-type-mapp))
@@ -207,7 +211,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-dim-vars
-  :short "Rename dimension variables in dimensions and lists of dimensions."
+  :short "Rename dimension variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This only covers dimensions, which only contain dimension variables,
+     because other ASTs contain both dimension and shape variables,
+     and thus need two renaming maps."))
   :types (dims)
   :extra-args ((renam string-string-mapp))
   :override
@@ -221,8 +231,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-ispace-vars
-  :short "Rename (free) ispace (i.e. dimension and shape) variables
-          in shapes, ispaces, types, and lists thereof."
+  :short "Rename free ispace (i.e. dimension and shape) variables in ASTs."
   :types (shapes
           ispace
           ispace-list
@@ -268,11 +277,30 @@
                                            shape-renam)))))
   :name ast-rename-ispace-vars)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection types-count-of-rename-ispace-vars
+  :short "Renaming ispace variables does not change the measure of types."
+
+  (defret-mutual type-count-of-rename-ispace-vars
+    (defret type-count-of-type-rename-ispace-vars
+      (equal (type-count result)
+             (type-count type))
+      :fn type-rename-ispace-vars)
+    (defret type-list-count-of-type-list-rename-ispace-vars
+      (equal (type-list-count result)
+             (type-list-count type-list))
+      :fn type-list-rename-ispace-vars)
+    :mutual-recursion types-rename-ispace-vars
+    :hints (("Goal" :in-theory (enable type-rename-ispace-vars
+                                       type-list-rename-ispace-vars
+                                       type-count
+                                       type-list-count)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-type-vars
-  :short "Rename (free) (atom-kind and array-kind) type variables
-          in types and lists of types."
+  :short "Rename free (atom-kind and array-kind) type variables in ASTs."
   :types (types)
   :extra-args ((atom-renam string-string-mapp)
                (array-renam string-string-mapp))
@@ -305,6 +333,26 @@
                                          atom-renam
                                          array-renam)))))
   :name ast-rename-type-vars)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection types-count-of-rename-type-vars
+  :short "Renaming type variables does not change the measure of types."
+
+  (defret-mutual type-count-of-rename-type-vars
+    (defret type-count-of-type-rename-type-vars
+      (equal (type-count result)
+             (type-count type))
+      :fn type-rename-type-vars)
+    (defret type-list-count-of-type-list-rename-type-vars
+      (equal (type-list-count result)
+             (type-list-count type-list))
+      :fn type-list-rename-type-vars)
+    :mutual-recursion types-rename-type-vars
+    :hints (("Goal" :in-theory (enable type-rename-type-vars
+                                       type-list-rename-type-vars
+                                       type-count
+                                       type-list-count)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -375,15 +423,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce free-ispace-vars
-  :short "Set of free ispace variables in
-          ispaces,
-          types,
-          optional types and lists of types,
-          variables with types,
-          expressions,
-          atoms,
-          bindings,
-          and lists thereof."
+  :short "Set of free ispace variables in ASTs."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -446,14 +486,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce free-type-vars
-  :short "Set of free type variables in
-          types,
-          optional types and lists of types,
-          variables with types,
-          expressions,
-          atoms,
-          bindings,
-          and lists thereof."
+  :short "Set of free type variables in ASTs."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -500,19 +533,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deffold-reduce all-type-vars
-  :short "Set of all (i.e. free and bound) type variables in
-          types,
-          optional types and lists of types,
-          variables with types,
-          expressions,
-          atoms,
-          bindings,
-          and lists thereof."
+(fty::deffold-reduce all-ispace-vars
+  :short "Set of all (i.e. free and bound) ispace variables in ASTs."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are all the free variables that occur anywhere,
+    "These are all the variables that occur anywhere,
+     including the parameters of product and sum types
+     and the ispace variables introduced by ispace binders."))
+  :types (dims
+          shapes
+          ispace
+          ispace-list
+          ispace-list-option
+          types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds)
+  :result ispace-var-setp
+  :default nil
+  :combine set::union
+  :override
+  ((dim :var (set::insert (ispace-var-dim dim.name) nil))
+   (shape :var (set::insert (ispace-var-shape shape.name) nil))
+   (type :pi
+         (set::union (set::mergesort type.params)
+                     (type-all-ispace-vars type.body)))
+   (type :sigma
+         (set::union (set::mergesort type.params)
+                     (type-all-ispace-vars type.body)))
+   (bind :ifun
+         (set::union (set::mergesort bind.params)
+                     (set::union (type-option-all-ispace-vars bind.type?)
+                                 (expr-all-ispace-vars bind.expr))))
+   (bind :cfun
+         (set::union
+          (ispace-var-list-option-case
+           bind.iparams?
+           :some (set::mergesort bind.iparams?.val)
+           :none nil)
+          (set::union (var+type-list-all-ispace-vars bind.params)
+                      (set::union (type-all-ispace-vars bind.type)
+                                  (expr-all-ispace-vars bind.expr))))))
+  :name ast-all-ispace-vars)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce all-type-vars
+  :short "Set of all (i.e. free and bound) type variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all the variables that occur anywhere,
      including the parameters of universal types
      and the type variables introduced by type binders."))
   :types (types

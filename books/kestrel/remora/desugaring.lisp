@@ -74,9 +74,11 @@
     "A bracket type is turned into an array type
      whose shape is the concatenation of the shapes.")
    (xdoc::p
-    "A string is turned into an array expression
+    "A non-empty string is turned into an array expression
      with the length of the string as its single dimension
-     and with the characters, converted to integers, as atoms.")
+     and with the characters, converted to integers, as atoms.
+     The empty string is turned into an empty array expression
+     with the type of integers.")
    (xdoc::p
     "A combined application is turned into its constituent applications,
      also based on whether type and ispace arguments are present or not.")
@@ -100,11 +102,14 @@
    (type :bracket (make-type-array :elem (type-desugar type.elem)
                                    :shape (shape-append
                                            (shape-list-desugar type.shapes))))
-   (expr :string (make-expr-array
-                  :dims (list (len expr.chars))
-                  :atoms (atom-base-list
-                          (base-lit-int-list
-                           (char-lit-list-desugar expr.chars)))))
+   (expr :string (if (consp expr.chars)
+                     (make-expr-array
+                      :dims (list (len expr.chars))
+                      :atoms (atom-base-list
+                              (base-lit-int-list
+                               (char-lit-list-desugar expr.chars))))
+                   (make-expr-array-empty :dims (list 0)
+                                          :type (type-base (base-type-int)))))
    (expr :capp (b* ((fun (expr-desugar expr.fun))
                     (fun-targs
                      (type-list-option-case
