@@ -1799,11 +1799,6 @@
 ;;                  xx))
 ;;  :hints (("Goal" :in-theory (enable sbvdivdown bvplus))))
 
-(defthm slice-of-bvplus-trim
-  (equal (SLICE 30 2 (BVPLUS 32 x y))
-         (SLICE 30 2 (BVPLUS 31 x y)))
-  :hints (("Goal" :in-theory (e/d (slice) (anti-slice)))))
-
  ;two ways to write this, but I prefer to split on x since it might be constant
 (defthmd slice-of-bvplus-cases-helper
   (implies (natp low)
