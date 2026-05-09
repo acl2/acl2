@@ -6168,7 +6168,7 @@
                     (initial-array-size (min *max-1d-array-length* (* 2 dag-len))) ; could make this adjustable
                     ;; Start with an array with all the nodes loaded (since we are using contexts):
                     ;; TODO: Opt: Combine these steps?:
-                    (dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
+                    (dag-array (alist-to-array1-with-len 'dag-array dag initial-array-size))
                     ;; Make the auxiliary data structures for the DAG:
                     ((mv dag-parent-array dag-constant-alist dag-variable-alist)
                      (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))

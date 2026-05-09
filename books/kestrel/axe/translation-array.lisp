@@ -1,7 +1,7 @@
 ; Renumbering DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -85,14 +85,14 @@
            (translation-arrayp-aux n (aset1 'translation-array translation-array index val)))
   :hints (("Goal":in-theory (e/d (translation-arrayp-aux) (myquotep)))))
 
-(defthm translation-arrayp-aux-of-make-empty-array
+(defthm translation-arrayp-aux-of-new-array1
   (implies (and (natp len)
                 (< n len)
                 (natp n)
                 (<= len *max-1d-array-length*))
-           (translation-arrayp-aux n (make-empty-array 'translation-array len)))
+           (translation-arrayp-aux n (new-array1 'translation-array len)))
   :hints (("Goal" :expand ((translation-arrayp-aux 0
-                                                   (make-empty-array 'translation-array
+                                                   (new-array1 'translation-array
                                                                      len)
                                                    ))
            :in-theory (enable translation-arrayp-aux))))
@@ -249,17 +249,17 @@
   :hints (("Goal" :induct (bounded-translation-arrayp-aux nodenum2 translation-array bound2)
            :in-theory (enable bounded-translation-arrayp-aux))))
 
-(defthm bounded-translation-arrayp-aux-of-make-empty-array
+(defthm bounded-translation-arrayp-aux-of-new-array1
   (implies (and (natp len)
                 (< n len)
                 (natp n)
                 (<= len *max-1d-array-length*))
            (bounded-translation-arrayp-aux n
-                                           (make-empty-array 'translation-array
+                                           (new-array1 'translation-array
                                                              len)
                                            bound))
   :hints (("Goal" :expand ((bounded-translation-arrayp-aux 0
-                                                           (make-empty-array 'translation-array
+                                                           (new-array1 'translation-array
                                                                              len)
                                                            bound))
            :in-theory (enable bounded-translation-arrayp-aux))))

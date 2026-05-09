@@ -157,7 +157,7 @@
 
 (defthm pcp-of-pc
   (implies (framep frame)
-           (PCP (PC frame)))
+           (pcp (pc frame)))
   :hints (("Goal" :in-theory (enable framep pc))))
 
 (defthm operand-stackp-of-stack

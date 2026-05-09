@@ -314,7 +314,7 @@
                                                               variable-node-alist-for-dag
                                                               dag-array dag-len dag-parent-array
                                                               dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                                              (make-empty-array 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum dag))) ; nil ;the translation-alist
+                                                              (new-array1 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum dag))) ; nil ;the translation-alist
                                                               interpreted-function-alist))
                           ;;fixme are the aux data structures updated right?
                           ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))

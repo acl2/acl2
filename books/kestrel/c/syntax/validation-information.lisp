@@ -15,6 +15,7 @@
 (include-book "uid")
 (include-book "unambiguity")
 (include-book "evaluation")
+(include-book "macro-tables")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 
@@ -622,7 +623,8 @@
 
 (define subobjects-to-designor ((subobjects initer-subobjects-p)
                                 (ienv ienvp))
-  :returns (desingor? designor-optionp)
+  :returns (mv (er? maybe-msgp)
+               (desingor? designor-optionp))
   :parents (initer-subobjects)
   :short "Create a designator from an initializer subobjects fixtype object."
   :long
@@ -634,50 +636,56 @@
      This is the reason we need the implementation environment
      (to check whether the number will fit).")
    (xdoc::p
-    "A return value of @('nil') indicates a failure to convert.
-     This occurs when a natural number
-     cannot be converted into an integer constant
-     due to its size."))
-  (initer-subobjects-case
-    subobjects
-    :array-index (b* ((index-iconst?
-                       (nat-to-iconst subobjects.index ienv))
-                      ((unless index-iconst?)
-                       nil)
-                      ((mv to-iconst-failedp range-iconst?)
-                       (b* (((unless subobjects.range?)
-                             (mv nil nil))
-                            (range-cexpr?
-                             (nat-to-iconst subobjects.range? ienv)))
-                         (mv (not range-cexpr?) range-cexpr?)))
-                      ((when to-iconst-failedp)
-                       nil)
-                      (index-cexpr
-                       (make-const-expr
-                         :expr (make-expr-const
-                                 :const (const-int index-iconst?))))
-                      (range-cexpr?
-                       (and range-iconst?
-                            (make-const-expr
-                              :expr (make-expr-const
-                                      :const (const-int range-iconst?))))))
-                   (make-designor-sub
-                     :index index-cexpr
-                     :range? range-cexpr?))
-    :struct (b* (((type-struni-member member) (first subobjects.members))
-                 ((unless member.name?)
-                  nil))
-              (make-designor-dot :name member.name?))
-    :union (b* (((type-struni-member member) subobjects.first-member)
-                ((unless member.name?)
-                 nil))
-             (make-designor-dot :name member.name?))))
+    "A non-@('nil') @('erp') value indicates a failure to convert.
+     When @('erp') is @('nil'), the operation succeeded.
+     When the operation succeeded,
+     the @('designor?') return is @('nil') iff
+     the subobjects is unnamed
+     (i.e., it is an unnamed bit-field or an anonymous struct/union)."))
+  (b* (((reterr) nil))
+    (initer-subobjects-case
+      subobjects
+      :array-index (b* ((index-iconst?
+                          (nat-to-iconst subobjects.index ienv))
+                        ((unless index-iconst?)
+                         (retmsg$ "Could not convert natural ~x0 ~
+                                   into an integer constant."
+                                  subobjects.index))
+                        ((erp range-iconst?)
+                         (b* (((unless subobjects.range?)
+                               (mv nil nil))
+                              (range-cexpr?
+                               (nat-to-iconst subobjects.range? ienv))
+                              ((unless range-cexpr?)
+                               (retmsg$ "Could not convert natural ~x0 ~
+                                         into an integer constant."
+                                        subobjects.range?)))
+                           (retok range-cexpr?)))
+                        (index-cexpr
+                          (make-const-expr
+                            :expr (make-expr-const
+                                    :const (const-int index-iconst?))))
+                        (range-cexpr?
+                          (and range-iconst?
+                               (make-const-expr
+                                 :expr (make-expr-const
+                                         :const (const-int range-iconst?))))))
+                     (retok (make-designor-sub
+                              :index index-cexpr
+                              :range? range-cexpr?)))
+      :struct (b* (((type-struni-member member) (first subobjects.members)))
+                (retok (if member.name?
+                           (make-designor-dot :name member.name?)
+                         nil)))
+      :union (b* (((type-struni-member member) subobjects.first-member))
+               (retok (if member.name?
+                          (make-designor-dot :name member.name?)
+                        nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define subobjects-list-to-designors ((list initer-subobjects-listp)
-                                      (ienv ienvp)
-                                      (acc designor-listp))
+                                      (ienv ienvp))
   :guard (not (endp list))
   :returns (designors designor-listp)
   :parents (initer-subobjects-list)
@@ -687,13 +695,36 @@
    "A return value of @('nil') indicates a failure to convert.")
   (b* (((unless (mbt (not (endp list))))
         nil)
-       (designor? (subobjects-to-designor (first list) ienv))
-       ((unless designor?)
+       ((mv er? designor?)
+        (subobjects-to-designor (first list) ienv))
+       ((when er?)
+        ;; For now, we do nothing with the error message.
         nil)
-       (acc (cons designor? (designor-list-fix acc))))
+       ((unless designor?)
+        ;; An unnamed subobject cannot be the at the top of the stack.
+        nil))
     (if (endp (rest list))
-        acc
-      (subobjects-list-to-designors (rest list) ienv acc))))
+        (list designor?)
+      (subobjects-list-to-designors-loop (rest list) ienv (list designor?))))
+  :prepwork
+  ((define subobjects-list-to-designors-loop ((list initer-subobjects-listp)
+                                              (ienv ienvp)
+                                              (acc designor-listp))
+     :guard (not (endp list))
+     :returns (designors designor-listp)
+     (b* (((unless (mbt (not (endp list))))
+           nil)
+          ((mv er? designor?)
+           (subobjects-to-designor (first list) ienv))
+          ((when er?)
+           ;; For now, we do nothing with the error message.
+           nil)
+          (acc (if designor?
+                   (cons designor? (designor-list-fix acc))
+                 (designor-list-fix acc))))
+       (if (endp (rest list))
+           acc
+         (subobjects-list-to-designors-loop (rest list) ienv acc))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -709,7 +740,7 @@
   (initer-subobjects-stack-case
     stack
     :unknown nil
-    :known (subobjects-list-to-designors stack.list ienv nil)))
+    :known (subobjects-list-to-designors stack.list ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1084,10 +1115,9 @@
   (xdoc::topstring
    (xdoc::p
     "A validation table is a collection of validation information
-     for translation units and ensembles.")
+     for a single translation unit.")
    (xdoc::p
-    "The @('filepath') field stores the name of the translation unit
-     which we are validating.")
+    "The @('filepath') field stores the name of the translation unit.")
    (xdoc::p
     "Scopes are treated in a stack-like manner [C17:6.2.1].
      Thus, a validation table contains a list (i.e. stack) of scopes.
@@ -1098,24 +1128,10 @@
      and the rightmost scope is the outermost
      (i.e. the file scope [C17:6.2.1/4].)")
    (xdoc::p
-    "We also track information about identifiers with external linkage,
-     which we use for cross-checking across disjoint scopes
-     and different translation units.
-     This information accumulates
-     as we validate each translation unit in the ensemble.")
-   (xdoc::p
-    "The @('completions') field is a map of @(see type-completions).
-     This maps @(see UID)s corresponding to struct and union types
-     to their list of named members.")
-   (xdoc::p
-    "The @('next-uid') field stores the next unused "
-    (xdoc::seetopic "uid" "unique identifier")
-    "."))
+    "The @('macros') field stores the macro table."))
   ((filepath filepath)
    (scopes valid-scope-list)
-   (externals valid-externals)
-   (completions type-completions)
-   (next-uid uidp))
+   (macros macro-table))
   :pred valid-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1123,7 +1139,7 @@
 (defirrelevant irr-valid-table
   :short "An irrelevant validation table."
   :type valid-tablep
-  :body (valid-table (irr-filepath) nil nil nil (irr-uid)))
+  :body (valid-table (irr-filepath) nil (irr-macro-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1131,30 +1147,6 @@
   valid-table
   :short "Fixtype of optional validation tables."
   :pred valid-table-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-composite-with-table ((x typep)
-                                   (y typep)
-                                   (table valid-tablep)
-                                   (ienv ienvp))
-  :returns (mv (composite typep)
-               (new-table valid-tablep))
-  :short "Construct a composite @(see type) with a validation table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This wraps @(tsee type-composite),
-     extracting the @('completions') @('next-uid') from the validation table,
-     and updating the values accordingly."))
-  (b* (((valid-table table) table)
-       ((mv composite completions next-uid)
-        (type-composite x y table.completions table.next-uid ienv)))
-    (mv composite
-        (change-valid-table
-         table
-         :completions completions
-         :next-uid next-uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1424,7 +1416,9 @@
     "This is the type of the annotations that
      the validator adds to translation units.
      The information consists of
-     the final validation table for the translation unit."))
+     the final validation table for the translation unit.
+     The table @('scopes') is expected to be a singleton,
+     representing the file-scope at the end of the translation unit."))
   ((table-end valid-table))
   :pred trans-unit-infop)
 
@@ -1438,8 +1432,14 @@
     "This is the type of the annotations that
      the validator adds to translation ensembles.
      The information consists of
-     the final validation table for the translation ensemble."))
-  ((table-end valid-table))
+     the validation information related to identifiers with external linkage,
+     the map of structure and union type UIDs to their members,
+     and the next unused "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
+  ((externals valid-externals)
+   (completions type-completions)
+   (next-uid uidp))
   :pred trans-ensemble-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1585,7 +1585,8 @@
                            (trans-ensemble->units trans-ensemble))
                           (trans-ensemble-infop
                            (trans-ensemble->info
-                            trans-ensemble)))))))
+                            trans-ensemble)))))
+    :name abstract-syntax-annop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

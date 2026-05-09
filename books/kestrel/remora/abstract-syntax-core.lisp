@@ -125,7 +125,8 @@
    (type :bracket nil)
    (expr :string nil)
    (expr :capp nil)
-   (expr :bracket nil)))
+   (expr :bracket nil))
+  :name ast-corep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -167,7 +168,7 @@
              (atom-corep atom))
     :enable atom-corep)
 
-  (add-to-ruleset abstract-syntax-corep-rules
+  (add-to-ruleset ast-corep-rules
                   '(shape-corep-when-var
                     shape-corep-when-dim
                     ispace-corep-when-dim

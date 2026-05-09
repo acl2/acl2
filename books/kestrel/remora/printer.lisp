@@ -29,10 +29,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ printer
-  :parents (remora)
+  :parents (parsing-and-printing)
   :short "A pretty-printer of Remora from the abstract syntax."
   :long
   (xdoc::topstring
+   (xdoc::p "
+ @({
+ (print-prog p)
+ })
+ ")
    (xdoc::p
     "We provide a pretty-printer that turns @(see abstract-syntax) ASTs
      into Remora source text, according to the concrete syntax described
@@ -59,10 +64,7 @@
     "The Remora-specific layer (@(see expr-to-pdoc), @(see prog-to-pdoc),
      etc.) walks the AST and builds the @(tsee pdoc).  The top-level
      entry point is @(tsee print-prog), which composes the walker and
-     @(tsee layout) into a single @('prog &rarr; string') function.")
-   (xdoc::p
-    "This file is work in progress.  The @(tsee pdoc) engine is in
-     place; the AST walker is being added incrementally."))
+     @(tsee layout) into a single @('prog &rarr; string') function."))
   :order-subtopics t
   :default-parent t)
 
@@ -167,6 +169,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce size
+  :name pdoc-sizes  ; xdoc topic name (and makes pdoc-sizes-rules ruleset)
   :short "A positive size for @(tsee pdoc) values, used as a measure
           for @(tsee pdoc)-recursing functions."
   :types (pdocs)
@@ -570,6 +573,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; Flat-form string printers for dim and dim-list.  These produce the
+;; canonical compact form (single-space separators, no line breaks) that
+;; the parser accepts.  They are intended as round-trip-provable
+;; alternatives to dim-to-pdoc / dim-list-to-pdoc when pretty-printing
+;; layout flexibility is not needed.
+;;
+
+(defines dim-shape-to-string
+  :short "Render @(tsee dim) and @(tsee dim-list) values as flat strings."
+  :verify-guards :after-returns
+
+  (define dim-to-string ((d dimp))
+    :returns (s stringp)
+    (dim-case d
+      :var (str::cat "$" d.name)
+      :const (str::nat-to-dec-string d.value)
+      :add (str::cat "(+" (str::cat (dim-list-to-string d.dims) ")"))
+      :mul (str::cat "(*" (str::cat (dim-list-to-string d.dims) ")"))
+      :sub (str::cat "(-" (str::cat (dim-list-to-string d.dims) ")")))
+    :measure (dim-count d))
+
+  (define dim-list-to-string ((ds dim-listp))
+    :returns (s stringp)
+    :short "Render a @(tsee dim-list) as a flat string with each dim
+            preceded by a single space (so the empty list yields the
+            empty string, and a non-empty list looks like
+            @(' d1 d2 ...')).  Used by @(tsee dim-to-string) inside the
+            parens of @('+'), @('*'), and @('-') forms."
+    (cond ((endp ds) "")
+          (t (str::cat " "
+                       (str::cat (dim-to-string (car ds))
+                                 (dim-list-to-string (cdr ds))))))
+    :measure (dim-list-count ds)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; Shapes (mutually recursive: shape, shape-list).
 ;;
 
@@ -901,12 +940,81 @@
 (define char-lit-list-to-string ((chars char-lit-listp))
   :returns (s stringp)
   :short "Render the contents of a Remora string literal: concatenation
-          of @(tsee char-lit-to-string) over @('chars').  The wrapping
-          double quotes are added by @(tsee expr-to-pdoc) for the
-          @(':string') case."
+          of @(tsee char-lit-to-string) over @('chars').  Does NOT
+          insert empty escapes; use @(tsee string-lit-to-string) for
+          a round-trip-safe rendering of a string literal."
   (cond ((endp chars) "")
         (t (str::cat (char-lit-to-string (car chars))
                      (char-lit-list-to-string (cdr chars))))))
+
+;; ---- Disambiguation: insert "\&" empty-escapes where adjacent
+;; char-lits would otherwise be merged on re-parse. ----
+;;
+;; The Remora grammar has two sources of round-trip ambiguity:
+;;   1. num-escape is greedy (1*DIGIT, 1*OCTDIGIT, 1*HEXDIG), so
+;;      :dec "5" followed by char '7' merges to "\57".
+;;   2. ascii-escape :so is a prefix of :soh, so :so followed by 'H'
+;;      or 'h' merges to "\SOH".
+;; In both cases, the next char-lit is a :char.  Following an :escape
+;; char-lit by another :escape always begins with '\', which never
+;; extends a num-escape's digit run nor completes "SOH" after "SO".
+
+(define char-lit-first-codepoint ((cl char-litp))
+  :returns (cp natp)
+  :short "First codepoint of @('cl')'s printed form."
+  :hooks nil
+  (char-lit-case cl
+    :char (lnfix cl.code)
+    :escape #x5C))
+
+(define needs-empty-escape-between ((prev char-litp) (next char-litp))
+  :returns (yes/no booleanp)
+  :short "Whether to emit @('\\&') between @('prev') and @('next') so
+          that re-parsing recovers the same two char-lits.  Returns
+          @('t') when @('prev')'s greedy or prefix-ambiguous parse
+          would otherwise consume part of @('next')."
+  :hooks nil
+  (b* ((next-cp (char-lit-first-codepoint next)))
+    (char-lit-case prev
+      :char nil  ; non-escape consumes exactly one codepoint
+      :escape
+      (escape-case prev.escape
+        :char nil    ; \X mnemonic: 1 fixed codepoint
+        :caret nil   ; \^X: caret consumes exactly 2 codepoints
+        :ascii (ascii-escape-case prev.escape.escape
+                 :nul-to-sp
+                 ;; Only :so (code 14) has a prefix conflict (with :soh)
+                 (and (eql prev.escape.escape.code 14)
+                      (or (eql next-cp #x48)    ; 'H'
+                          (eql next-cp #x68)))  ; 'h'
+                 :del nil)
+        :num (num-escape-case prev.escape.escape
+               :dec (and (<= #x30 next-cp) (<= next-cp #x39))   ; 0-9
+               :oct (and (<= #x30 next-cp) (<= next-cp #x37))   ; 0-7
+               :hex (or (and (<= #x30 next-cp) (<= next-cp #x39))    ; 0-9
+                        (and (<= #x41 next-cp) (<= next-cp #x46))    ; A-F
+                        (and (<= #x61 next-cp) (<= next-cp #x66)))))))) ; a-f
+
+(define char-lit-list-to-string-disambig ((chars char-lit-listp))
+  :returns (s stringp)
+  :short "Render @('chars') as the contents of a string literal,
+          inserting @('\\&') between adjacent char-lits where the
+          parser would otherwise re-merge them."
+  (cond ((endp chars) "")
+        ((endp (cdr chars))
+         (char-lit-to-string (car chars)))
+        (t (str::cat
+            (char-lit-to-string (car chars))
+            (str::cat (if (needs-empty-escape-between (car chars)
+                                                       (cadr chars))
+                          "\\&" "")
+                      (char-lit-list-to-string-disambig (cdr chars)))))))
+
+(define string-lit-to-string ((chars char-lit-listp))
+  :returns (s stringp)
+  :short "Render a string literal: surround the disambig'd contents
+          with double quotes."
+  (str::cat "\"" (str::cat (char-lit-list-to-string-disambig chars) "\"")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -935,10 +1043,7 @@
                            (pdoc-concat (pdoc-line)
                                         (expr-list-to-pdoc e.exprs))))
       :frame-empty (pdoc-text "<frame-empty>")
-      :string (pdoc-text (str::cat "\""
-                                   (str::cat
-                                    (char-lit-list-to-string e.chars)
-                                    "\"")))
+      :string (pdoc-text (string-lit-to-string e.chars))
       :app (if (consp e.args)
                (pdoc-call-form (expr-to-pdoc e.fun)
                                (expr-list-to-pdoc e.args))

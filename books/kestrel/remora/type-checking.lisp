@@ -18,6 +18,8 @@
 (include-book "type-equivalence")
 (include-book "static-environments")
 
+(include-book "kestrel/fty/string-string-map-pair-result" :dir :system)
+
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/fix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -33,7 +35,7 @@
           shape-listp-when-result-not-error
           typep-when-result-not-error
           type-listp-when-result-not-error
-          stringstringmap-pairp-when-result-not-error
+          acl2::string-string-map-pairp-when-result-not-error
           type+shape-p-when-result-not-error
           type+shape-listp-when-result-not-error
           typelist+type-p-when-result-not-error
@@ -41,7 +43,7 @@
           typevarlist+type-p-when-result-not-error
           stringdimmap+stringshapemap-p-when-result-not-error
           string-type-mapp-when-result-not-error
-          stringtypemap-pairp-when-result-not-error)))
+          string-type-map-pairp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -64,21 +66,6 @@
      uncovered expressions return a @(':todo') error."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-atomp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type has the atom kind."
-  (type-case type
-             :var (type-var-case type.var :atom)
-             :base t
-             :array nil
-             :bracket nil
-             :fun t
-             :forall t
-             :pi t
-             :sigma t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -315,7 +302,7 @@
 
 (define check-type-params-and-args ((params type-var-listp)
                                     (args type-listp))
-  :returns (maps stringtypemap-pair-resultp)
+  :returns (maps string-type-map-pair-resultp)
   :short "Check whether a list of type parameters
           and a list of type arguments match."
   :long
@@ -330,28 +317,82 @@
      to the corresponding array-kinded type arguments."))
   (b* (((when (endp params))
         (if (endp args)
-            (make-stringtypemap-pair
+            (make-string-type-map-pair
              :1st nil
              :2nd nil)
           (reserr nil)))
        ((when (endp args)) (reserr nil))
-       ((ok (stringtypemap-pair maps))
+       ((ok (string-type-map-pair maps))
         (check-type-params-and-args (cdr params) (cdr args)))
        (param (car params))
        (arg (type-fix (car args))))
     (type-var-case
      param
      :atom (if (type-atomp arg)
-               (make-stringtypemap-pair
+               (make-string-type-map-pair
                 :1st (omap::update param.name arg maps.1st)
                 :2nd maps.2nd)
              (reserr nil))
      :array (if (type-atomp arg)
                 (reserr nil)
-              (make-stringtypemap-pair
+              (make-string-type-map-pair
                :1st maps.1st
                :2nd (omap::update param.name arg maps.2nd)))))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ispace-var-renaming ((vars1 ispace-var-listp)
+                                   (vars2 ispace-var-listp))
+  :returns (dim-and-shape-maps string-string-map-pair-resultp)
+  :short "Check if two lists of ispace variables match in number and sorts,
+          and if so return maps between the dimension and shape variables."
+  (b* (((when (endp vars1))
+        (if (endp vars2)
+            (make-string-string-map-pair :1st nil :2nd nil)
+          (reserr nil)))
+       ((when (endp vars2)) (reserr nil))
+       ((ok (string-string-map-pair maps))
+        (check-ispace-var-renaming (cdr vars1) (cdr vars2)))
+       (var1 (car vars1))
+       (var2 (car vars2)))
+    (ispace-var-case
+     var1
+     :dim (ispace-var-case
+           var2
+           :dim (make-string-string-map-pair
+                 :1st (omap::update var1.name var2.name maps.1st)
+                 :2nd maps.2nd)
+           :shape (reserr nil))
+     :shape (ispace-var-case
+             var2
+             :dim (reserr nil)
+             :shape (make-string-string-map-pair
+                     :1st maps.1st
+                     :2nd (omap::update var1.name var2.name maps.2nd)))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ispace-vars-in-scope-p ((vars ispace-var-setp) (senv senvp))
+  :returns (yes/no booleanp)
+  :short "Check if the ispace variables in a set are all in scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when the variables are all in the static environment."))
+  (set::subset (ispace-var-set-fix vars) (senv->ispace-vars senv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-vars-in-scope-p ((vars type-var-setp) (senv senvp))
+  :returns (yes/no booleanp)
+  :short "Check if the type variables in a set are all in scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when the variables are all in the static environment."))
+  (set::subset (type-var-set-fix vars) (senv->type-vars senv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -535,10 +576,10 @@
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (type-atomp expr.type)) (reserr nil))
-          ((unless (and (set::subset (type-free-ispace-vars expr.type)
-                                     (senv->ispace-vars senv))
-                        (set::subset (type-free-type-vars expr.type)
-                                     (senv->type-vars senv))))
+          ((unless (and (ispace-vars-in-scope-p
+                         (type-free-ispace-vars expr.type) senv)
+                        (type-vars-in-scope-p
+                         (type-free-type-vars expr.type) senv)))
            (reserr nil)))
        (make-type-array :elem expr.type
                         :shape (shape-dims (dim-const-list expr.dims))))
@@ -557,10 +598,10 @@
                                    array.shape))))
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
-          ((unless (and (set::subset (type-free-ispace-vars expr.type)
-                                     (senv->ispace-vars senv))
-                        (set::subset (type-free-type-vars expr.type)
-                                     (senv->type-vars senv))))
+          ((unless (and (ispace-vars-in-scope-p
+                         (type-free-ispace-vars expr.type) senv)
+                        (type-vars-in-scope-p
+                         (type-free-type-vars expr.type) senv)))
            (reserr nil))
           ((ok (type+shape array)) (type-match-array expr.type)))
        (make-type-array
@@ -604,12 +645,12 @@
           ((ok body-type+shape) (type-match-array body-arr-type))
           (body-atom-type (type+shape->type body-type+shape))
           (body-shape (type+shape->shape body-type+shape))
-          ((unless (and (set::subset (type-list-free-ispace-vars expr.args)
-                                     (senv->ispace-vars senv))
-                        (set::subset (type-list-free-type-vars expr.args)
-                                     (senv->type-vars senv))))
+          ((unless (and (ispace-vars-in-scope-p
+                         (type-list-free-ispace-vars expr.args) senv)
+                        (type-vars-in-scope-p
+                         (type-list-free-type-vars expr.args) senv)))
            (reserr nil))
-          ((ok (stringtypemap-pair type-maps))
+          ((ok (string-type-map-pair type-maps))
            (check-type-params-and-args vars expr.args))
           (body-atom-type-subst
            (type-subst-type-vars body-atom-type
@@ -629,8 +670,8 @@
           ((ok body-type+shape) (type-match-array body-arr-type))
           (body-atom-type (type+shape->type body-type+shape))
           (body-shape (type+shape->shape body-type+shape))
-          ((unless (set::subset (ispace-list-free-ispace-vars expr.args)
-                                (senv->ispace-vars senv)))
+          ((unless (ispace-vars-in-scope-p
+                    (ispace-list-free-ispace-vars expr.args) senv))
            (reserr nil))
           ((ok (stringdimmap+stringshapemap ispace-maps))
            (check-ispace-params-and-args vars expr.args))
@@ -656,12 +697,13 @@
           (sum-vars (ispacevarlist+type->vars sum-vars+type))
           (sum-body-type (ispacevarlist+type->type sum-vars+type))
           ((unless (= (len expr.ispaces) (len sum-vars))) (reserr nil))
-          ((ok (stringstringmap-pair renaming))
+          ((ok (string-string-map-pair renaming))
            (check-ispace-var-renaming sum-vars expr.ispaces))
           (sum-body-type-renam
            (type-rename-ispace-vars sum-body-type
                                     renaming.1st
                                     renaming.2nd))
+          (senv (senv-add-ispace-vars expr.ispaces senv))
           (senv (senv-add-var+type expr.var sum-body-type-renam senv))
           ((ok arr-type) (check-expr expr.body senv))
           ((ok arr-type+shape) (type-match-array arr-type))
@@ -718,7 +760,7 @@
     (xdoc::topstring
      (xdoc::p
       "The type of a base value
-       is independent from the static environment(s),
+       is independent from the static environment,
        and determined via separate functions.")
      (xdoc::p
       "For a term abstraction,
@@ -766,10 +808,10 @@
      (b* (((unless (no-duplicatesp-equal (var+type-list->var atom.params)))
            (reserr nil))
           (types (var+type-list->type atom.params))
-          ((unless (and (set::subset (type-list-free-ispace-vars types)
-                                     (senv->ispace-vars senv))
-                        (set::subset (type-list-free-type-vars types)
-                                     (senv->type-vars senv))))
+          ((unless (and (ispace-vars-in-scope-p
+                         (type-list-free-ispace-vars types) senv)
+                        (type-vars-in-scope-p
+                         (type-list-free-type-vars types) senv)))
            (reserr nil))
           (senv (senv-add-vars+types atom.params senv))
           ((ok type) (check-expr atom.body senv)))
@@ -777,23 +819,25 @@
      :tlambda
      (b* (((unless (no-duplicatesp-equal (type-var-list->name atom.params)))
            (reserr nil))
+          (senv (senv-add-type-vars atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-type-forall :params atom.params :body type))
      :ilambda
      (b* (((unless (no-duplicatesp-equal (ispace-var-list->name atom.params)))
            (reserr nil))
+          (senv (senv-add-ispace-vars atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-type-pi :params atom.params :body type))
      :box
-     (b* (((unless (set::subset (ispace-list-free-ispace-vars atom.ispaces)
-                                (senv->ispace-vars senv)))
+     (b* (((unless (ispace-vars-in-scope-p
+                    (ispace-list-free-ispace-vars atom.ispaces) senv))
            (reserr nil))
           ((unless (type-atomp atom.type)) (reserr nil))
           (box-type atom.type)
-          ((unless (and (set::subset (type-free-ispace-vars box-type)
-                                     (senv->ispace-vars senv))
-                        (set::subset (type-free-type-vars box-type)
-                                     (senv->type-vars senv))))
+          ((unless (and (ispace-vars-in-scope-p
+                         (type-free-ispace-vars box-type) senv)
+                        (type-vars-in-scope-p
+                         (type-free-type-vars box-type) senv)))
            (reserr nil))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))

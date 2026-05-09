@@ -823,7 +823,11 @@ the @('fault') field instead.</li>
   ///
 
   (defrule select-address-size-not-2-when-64-bit-modep
-    (not (equal 2 (select-address-size #.*64-bit-mode* p4? x86)))))
+    (not (equal 2 (select-address-size #.*64-bit-mode* p4? x86))))
+
+  (defrule select-address-size-leq-8
+    (<= (select-address-size proc-mode p4? x86) 8)
+    :rule-classes :linear))
 
 ;; ======================================================================
 

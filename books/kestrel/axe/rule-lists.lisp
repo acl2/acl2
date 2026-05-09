@@ -495,7 +495,6 @@
     repeatbit-of-if-becomes-repeatbit-of-bvif-arg2))
 
 ;; These are needed only when operations like logxor or + may appear
-;; Used in the x86/ dir.
 (defun convert-to-bv-rules ()
   (declare (xargs :guard t))
   '(bvchop-convert-arg2-to-bv-axe
@@ -536,7 +535,7 @@
     bvmod-convert-arg3-to-bv-axe
     ;bvcat-convert-arg2-to-bv-axe ; todo: these seemed to cause problems
     ;bvcat-convert-arg4-to-bv-axe ; todo: more!
-    ;slice-convert-arg3-to-bv-axe caused-problems with increments to RSP
+    slice-convert-arg3-to-bv-axe ; trying, but this caused-problems with increments to RSP
     ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
     bvsx-convert-arg3-to-bv-axe
 
@@ -567,7 +566,8 @@
     logbitp-to-getbit-equal-1 ;rename
 
     bitp-becomes-unsigned-byte-p ; since our rules use unsigned-byte-p
-    ))
+
+    loghead-becomes-bvchop))
 
 ;; TODO: Consider also the analogous rules about getbit?
 (defun bv-function-of-bvchop-rules ()
@@ -3125,7 +3125,8 @@
           (bvchop-list-rules)
           (lookup-rules) ;Sat Dec 25 23:52:09 2010
           (list-rules)
-          (logext-rules) ;move to parent?
+          (convert-to-bv-rules)
+          (logext-rules) ;move to parent? ; drop?
           (list-rules3)
           (alist-rules)
           (update-nth2-rules) ;since below we have rules to introduce update-nth2

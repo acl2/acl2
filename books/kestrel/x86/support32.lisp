@@ -735,6 +735,22 @@
                               esp
                               unsigned-byte-p))))
 
+(defthm slice-63-32-of-bvplus-64-of-esp-when-stack-segment-assumptions32
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
+                (<= k 11) ; see "for now, assuming it's at least 12 bytes" above
+                (natp k))
+           (equal (slice 63 32 (bvplus 64 k (esp x86)))
+                  0))
+  :hints (("Goal"
+           :use ((:instance acl2::slice-too-high-is-0
+                            (acl2::high 63)
+                            (acl2::low 32)
+                            (x (+ k (esp x86)))))
+           :in-theory (enable stack-segment-assumptions32
+                              esp
+                              unsigned-byte-p
+                              bvplus))))
+
 (defthm data-segment-writeable-bit-when-stack-segment-assumptions32
   (implies (stack-segment-assumptions32 stack-slots-needed x86)
            (equal (data-segment-writeable-bit *ss* x86)

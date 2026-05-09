@@ -820,13 +820,47 @@
        ((okf rest) (abs-*-char-lit (cdr trees))))
     (cons c rest)))
 
+;; ---- empty-escape and string-elem ----
+;;
+;; The grammar is
+;;   empty-escape = "\&"
+;;   string-elem  = char-lit / empty-escape
+;; An empty-escape contributes no character to the surrounding string,
+;; so abs-*-string-elem walks a tree-list and drops the empty-escape
+;; trees, abstracting the char-lit ones to char-lit AST values.
+
+(define abs-string-elem ((tree abnf::treep))
+  :returns (chars char-lit-list-resultp)
+  :short "Abstract a @('string-elem') CST to a list of @(tsee char-lit)s
+          containing either zero (for an @('empty-escape')) or one
+          (for a @('char-lit')) elements."
+  (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "string-elem"))
+       ((okf rulename?) (abnf::check-tree-nonleaf? inner)))
+    (cond ((equal rulename? "char-lit")
+           (b* (((okf c) (abs-char-lit inner)))
+             (list c)))
+          ((equal rulename? "empty-escape")
+           nil)
+          (t (reserrf (list :unexpected-string-elem-body
+                            (abnf::tree-info-for-error inner)))))))
+
+(define abs-*-string-elem ((trees abnf::tree-listp))
+  :returns (chars char-lit-list-resultp)
+  :short "Abstract @('*string-elem') by flattening: an @('empty-escape')
+          contributes 0 chars, a @('char-lit') contributes 1."
+  (b* (((when (endp trees)) nil)
+       ((okf elem) (abs-string-elem (car trees)))
+       ((okf rest) (abs-*-string-elem (cdr trees))))
+    (append elem rest)))
+
 (define abs-string-lit ((tree abnf::treep))
   :returns (chars char-lit-list-resultp)
   :short "Abstract a @('string-lit') CST to a list of @(tsee char-lit)s
-          (the chars between the surrounding @('DQUOTE')s)."
+          (the chars between the surrounding @('DQUOTE')s, with
+          @('\\&') empty escapes filtered out)."
   (b* (((okf (abnf::tree-list-tuple3 sub))
         (abnf::check-tree-nonleaf-3 tree "string-lit")))
-    (abs-*-char-lit sub.2nd)))
+    (abs-*-string-elem sub.2nd)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -936,21 +970,26 @@
     :measure (abnf::tree-count tree))
 
   ;; dim-arith has branches with 2 tree-lists: an operator and the
-  ;; *( ws dim ) repetition.  We currently only support "+"; "*" and "-"
-  ;; produce a not-yet-implemented error because the AST has no dim-mul
-  ;; or dim-sub constructors yet.
+  ;; *( ws dim ) repetition.  The operator is one of "+", "*", "-",
+  ;; producing a dim-add, dim-mul, or dim-sub respectively.
   (define abs-dim-arith ((tree abnf::treep))
     :returns (d dim-resultp)
     :short "Abstract a @('dim-arith') to a @(tsee dim)."
     (b* (((okf (abnf::tree-list-tuple2 sub))
           (abnf::check-tree-nonleaf-2 tree "dim-arith"))
          ((okf op-tree) (abnf::check-tree-list-1 sub.1st))
+         ((okf dims) (abs-*-ws-dim sub.2nd))
          (plus-pass (abnf::check-tree-ichars op-tree "+"))
-         ((when (reserrp plus-pass))
-          (reserrf (list :dim-arith-op-not-yet-implemented
-                         (abnf::tree-info-for-error op-tree))))
-         ((okf dims) (abs-*-ws-dim sub.2nd)))
-      (make-dim-add :dims dims))
+         ((unless (reserrp plus-pass))
+          (make-dim-add :dims dims))
+         (mul-pass (abnf::check-tree-ichars op-tree "*"))
+         ((unless (reserrp mul-pass))
+          (make-dim-mul :dims dims))
+         (sub-pass (abnf::check-tree-ichars op-tree "-"))
+         ((unless (reserrp sub-pass))
+          (make-dim-sub :dims dims)))
+      (reserrf (list :dim-arith-op
+                     (abnf::tree-info-for-error op-tree))))
     :measure (abnf::tree-count tree))
 
   ;; ( ws dim ) wrapper: anonymous nonleaf with 2 tree-lists (ws and dim).
@@ -1555,8 +1594,7 @@
 (fty::defresult fun-sig-info-result
   :short "Fixtype of @(tsee fun-sig-info) and errors."
   :ok fun-sig-info
-  :pred fun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred fun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1571,8 +1609,7 @@
 (fty::defresult tfun-sig-info-result
   :short "Fixtype of @(tsee tfun-sig-info) and errors."
   :ok tfun-sig-info
-  :pred tfun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred tfun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1588,8 +1625,7 @@
 (fty::defresult ifun-sig-info-result
   :short "Fixtype of @(tsee ifun-sig-info) and errors."
   :ok ifun-sig-info
-  :pred ifun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred ifun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1607,8 +1643,7 @@
 (fty::defresult at-fun-sig-info-result
   :short "Fixtype of @(tsee at-fun-sig-info) and errors."
   :ok at-fun-sig-info
-  :pred at-fun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred at-fun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1746,8 +1781,7 @@
 (fty::defresult unbox-spec-info-result
   :short "Fixtype of @(tsee unbox-spec-info) and errors."
   :ok unbox-spec-info
-  :pred unbox-spec-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred unbox-spec-info-resultp)
 
 (local (in-theory (enable unbox-spec-info-p-when-result-not-error)))
 

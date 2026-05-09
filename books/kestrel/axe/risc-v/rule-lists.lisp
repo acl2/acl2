@@ -353,8 +353,6 @@
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv rules
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
 
-     acl2::loghead-becomes-bvchop
-
      ubyte5-fix
      acl2::ubyte12-fix
      acl2::ubyte20-fix

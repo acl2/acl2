@@ -17,6 +17,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc+ parser
+  :parents (concrete-syntax parsing-and-printing)
+  :short "An executable parser for Remora."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This source file defines a parser for the Remora grammar.
+     It operates on lists of natural numbers representing
+     Unicode code point integers (excluding surrogates),
+     and produces @(tsee concrete-syntax-trees).")
+   (xdoc::p
+    "The source file is organized into three sections:")
+   (xdoc::ol
+    (xdoc::li
+     "Generation of specialized generator macros for the parser.")
+    (xdoc::li
+     "Tables of parsing functions for groups, options, and repetitions
+      that occur internally to Remora grammar rules.")
+    (xdoc::li
+     "Definitions of parsing functions,
+      most of which are calls to macros that generate the functions,
+      but some of which are hand-written
+      due to limitations in the current parser generators.")))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (local (in-theory (disable nfix)))
 
 ;; Since nfix is disabled globally, provide a rewrite rule so that
@@ -96,33 +124,6 @@
         ((unless (reserrp ,(car args)))
          (mv ,(car args) ,(cadr args))))
      ,acl2::rest-expr))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ parser
-  :parents (grammar)
-  :short "An executable parser for Remora."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a parser for the Remora grammar.
-     It operates on lists of natural numbers representing
-     Unicode code point integers (excluding surrogates).")
-   (xdoc::p
-    "The parser is defined in three sections:")
-   (xdoc::ol
-    (xdoc::li
-     "Generation of specialized generator macros for this parser.")
-    (xdoc::li
-     "Tables of parsing functions for groups, options, and repetitions
-      that occur internally to Remora grammar rules.")
-    (xdoc::li
-     "Definitions of parsing functions,
-      most of which are calls to macros that generate the functions,
-      but some of which are hand-written
-      due to limitations in the current parser generators.")))
-  :order-subtopics t
-  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -233,8 +234,8 @@
     ;; identifier: *id-continue
     "*id-continue" repetition-*-id-continue
 
-    ;; string-lit: *char-lit
-    "*char-lit" repetition-*-char-lit
+    ;; string-lit: *string-elem (= *( char-lit / empty-escape ))
+    "*string-elem" repetition-*-string-elem
 
     ;; ---- Repetitions for ws-separated lists ----
     "*( ws exp )" repetition-*-ws-exp
@@ -742,8 +743,12 @@
              (< (len rest-input) (len input)))
     :rule-classes :linear))
 
-;; string-lit = DQUOTE *char-lit DQUOTE
-(defparse-remora-*-rulename "char-lit")
+;; string-lit = DQUOTE *string-elem DQUOTE
+;; string-elem = char-lit / empty-escape
+;; empty-escape = "\&"
+(defparse-remora-rulename "empty-escape")
+(defparse-remora-rulename "string-elem")
+(defparse-remora-*-rulename "string-elem")
 (defparse-remora-rulename "string-lit")
 
 ;; ---- Type and ispace parameters ----

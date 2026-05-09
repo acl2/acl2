@@ -741,10 +741,6 @@
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv rules
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
 
-     acl2::loghead-becomes-bvchop
-
-
-
      acl2::bvchop-of-+-becomes-bvplus
      acl2::bvminus-of-bvplus-and-bvplus-same
      acl2::bvminus-of-bvplus-same

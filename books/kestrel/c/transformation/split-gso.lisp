@@ -1089,7 +1089,8 @@
               (c$::var-info->linkage
                 (c$::coerce-var-info expr.info)))
             (- (and (equal linkage ident-linkage)
-                    (raise "Global struct object ~x0 occurs in illegal
+                    (raise "SPLIT-GSO ERROR: ~
+                            Global struct object ~x0 occurs in illegal
                             expression."
                            original))))
          (expr-fix c$::expr)))
@@ -1140,13 +1141,15 @@
                                      (equal linkage ident-linkage))
                             :otherwise nil)
                   :otherwise nil))
-           (raise "Global struct object ~x0 occurs in illegal expression."
+           (raise "SPLIT-GSO ERROR: ~
+                   Global struct object ~x0 occurs in illegal expression."
                   original)
          (make-expr-unary
            :op expr.op
            :arg (expr-replace-field-access
                   expr.arg original linkage new1 new2 split-members)
-           :info nil))))))
+           :info nil))))
+    :name abstract-syntax-replace-field-access))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1533,7 +1536,7 @@
                                                      new-type2
                                                      split-members
                                                      (w state)))
-       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+       ((when erp) (er-soft+ ctx t '(_) "SPIT-GSO ERROR: ~@0" erp)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -42,8 +42,12 @@ bracket-frame   = "[" ws exp *( ws exp ) ws "]"
                   ; desugars to (frame [n] e1 ... en)
                   ; nested frames are flattened
 
-string-lit      = DQUOTE *char-lit DQUOTE
-                  ; desugars to (array [n] c1 ... cn) with char codes
+string-lit      = DQUOTE *string-elem DQUOTE
+                  ; A string-elem is either a char-lit or the empty
+                  ; escape \&, defined below.  Empty escapes contribute
+                  ; no characters; they are used to disambiguate
+                  ; adjacent escape sequences (Haskell-style).
+                  ; The whole desugars to (array [n] c1 ... cn).
 
 paren-exp       = "(" ws paren-exp-body ws ")"
 
@@ -354,20 +358,18 @@ float-lit       = 1*DIGIT "." 1*DIGIT [ exponent ]
 exponent        = ( "e" / "E" ) [ "+" / "-" ] 1*DIGIT
 
 ; String character: any character except " and \, or an escape sequence.
-; Megaparsec's L.charLiteral delegates to Haskell's Char.readLitChar,
-; whose documentation says it follows the Haskell Report grammar.
-; However, readLitChar does not handle \& (the empty escape used as
-; a string gap separator in Haskell).  Our escape-char rule reflects
-; what readLitChar (and L.charLiteral) actually accepts.
+; Modeled on Haskell's character-literal escapes as accepted by Haskell
+; Remora.  The empty escape \& is recognized at the string-element level
+; below (not as a char-lit), since \& produces no character.
 
 char-lit    = %x00-21             ; any char below "
             / %x23-5B             ; between " and \
             / %x5D-D7FF           ; between \ and surrogate range
             / %xE000-10FFFF       ; above surrogates
               ; The Haskell Report restricts literal characters in strings
-              ; to graphic characters and space, but readLitChar accepts
-              ; any non-backslash character.  The ranges above reflect the
-              ; actual behavior.
+              ; to graphic characters and space, but the Haskell Remora parser
+              ; accepts any non-backslash, non-quote character.
+              ; The ranges above reflect the actual behavior.
             / "\" escape-char
 
 escape-char     = char-escape
@@ -396,6 +398,28 @@ caret-escape    = "^" %x40-5F         ; @ A-Z [ \ ] ^ _
 num-escape      = 1*DIGIT             ; decimal (0-1114111)
                 / "o" 1*(%x30-37)     ; octal
                 / "x" 1*HEXDIG        ; hexadecimal
+
+; Empty escape: a string-gap separator producing no character.  Used
+; to disambiguate adjacent escape sequences.  For example "\5\&7" is
+; two characters --- codepoint 5 (the ENQ control character) followed
+; by the digit '7' (codepoint 55) --- whereas "\57" is the single
+; character with codepoint 57 (the digit '9').  The empty escape
+; carries no semantic content and is absorbed at parse time.
+;
+; Compatibility note: our grammar accepts \& as a string-elem in any
+; position, following the Haskell Report's lexical syntax for string
+; literals.  The Haskell Remora reference implementation parses string
+; literals with Megaparsec's charLiteral combinator, which fails on a
+; leading \&.  As a consequence, Haskell Remora rejects "\&" and "\&a"
+; but accepts "a\&", "\SOH\&", and "a\&\&b\&\&".  We accept all of
+; these.  Our printer emits \& only between adjacent char-lits that
+; would otherwise merge on re-parse (see needs-empty-escape-between in
+; printer.lisp), so output produced from our printer is parseable by
+; either implementation.
+empty-escape = "\&"
+
+; A string element is either a real char-lit or an empty escape.
+string-elem     = char-lit / empty-escape
 
 ; -------------------------------------------------------------------------
 ; Whitespace and comments

@@ -1202,19 +1202,19 @@
           '((:UD (UD-LOCK-USED))))
     (INST "LODS/B" (OP :OP #xAC)
           (ARG :OP1 '(:AL) :OP2 '(X B))
-          'NIL
+          '(X86-LODS)
           '((:UD (UD-LOCK-USED))))
     (INST "LODS/W/D/Q" (OP :OP #xAD)
           (ARG :OP1 '(:RAX) :OP2 '(X V))
-          'NIL
+          '(X86-LODS)
           '((:UD (UD-LOCK-USED))))
     (INST "SCAS/B" (OP :OP #xAE)
           (ARG :OP1 '(:AL) :OP2 '(Y B))
-          'NIL
+          '(X86-SCAS)
           '((:UD (UD-LOCK-USED))))
     (INST "SCAS/W/D/Q" (OP :OP #xAF)
           (ARG :OP1 '(:RAX) :OP2 '(Y V))
-          'NIL
+          '(X86-SCAS)
           '((:UD (UD-LOCK-USED))))
     (INST "MOV" (OP :OP #xB0)
           (ARG :OP1 '(:AL/R8L) :OP2 '(I B))

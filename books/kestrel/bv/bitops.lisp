@@ -22,6 +22,7 @@
 (include-book "bitand")
 (include-book "bitor")
 (include-book "bitxor")
+(include-book "bitnot")
 (local (include-book "bvand"))
 (local (include-book "bvor"))
 (local (include-book "rules"))
@@ -370,3 +371,9 @@
            (equal (b-xor x y)
                   (bitxor x y)))
   :hints (("Goal" :in-theory (e/d (bitxor b-xor) (bvxor-1-becomes-bitxor)))))
+
+(defthm b-not-becomes-bitnot
+  (implies (unsigned-byte-p 1 x)
+           (equal (b-not x)
+                  (bitnot x)))
+  :hints (("Goal" :in-theory (e/d (bitnot b-not) (bvxor-1-becomes-bitxor)))))

@@ -44,9 +44,8 @@
       @(tsee *remora-keywords-as-natlists*).")
     (xdoc::li
      "AST cases that the parser cannot produce are rejected.  Currently
-      these are @(':array-empty') and @(':frame-empty') of @(tsee expr),
-      and @(':mul') and @(':sub') of @(tsee dim) (until those operators
-      are added to the abstractor).")
+      these are @(':array-empty') and @(':frame-empty') of @(tsee expr)
+      (until those are added to the abstractor).")
     (xdoc::li
      "Grammar non-emptiness requirements that the AST does not encode
       via @(':require'): @(':array') atom lists, @(':frame') and
@@ -124,8 +123,6 @@
                      (expr-wf-ast-p (expr-unbox->target expr))
                      (expr-wf-ast-p (expr-unbox->body expr))))
    ;; Cases not produced by the parser.
-   (dim :mul nil)
-   (dim :sub nil)
    (expr :array-empty nil)
    (expr :frame-empty nil)
    ;; Grammar non-emptiness requirements (1*( ws ... )).
@@ -134,4 +131,5 @@
    (expr :frame (and (consp (expr-frame->exprs expr))
                      (expr-list-wf-ast-p (expr-frame->exprs expr))))
    (expr :bracket (and (consp (expr-bracket->exprs expr))
-                       (expr-list-wf-ast-p (expr-bracket->exprs expr))))))
+                       (expr-list-wf-ast-p (expr-bracket->exprs expr)))))
+  :name abstract-syntax-wf-ast-p)

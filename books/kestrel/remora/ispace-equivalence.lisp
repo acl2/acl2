@@ -66,12 +66,13 @@
   :combine and
   :override
   ((dim :mul nil)
-   (dim :sub nil)))
+   (dim :sub nil))
+  :name ispaces-addp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection addp-additional-theorems
-  :short "Theorems about the @(see abstract-syntax-addp) functions."
+  :short "Theorems about the @(see ispaces-addp) functions."
 
   (defruled dim-kind-not-mul-when-dim-addp
     (implies (dim-addp dim)
@@ -85,13 +86,13 @@
     :rule-classes :forward-chaining
     :enable dim-addp)
 
-  (add-to-ruleset abstract-syntax-addp-rules
+  (add-to-ruleset ispaces-addp-rules
                   '(dim-kind-not-mul-when-dim-addp
                     dim-kind-not-sub-when-dim-addp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable* abstract-syntax-addp-rules)))
+(local (in-theory (enable* ispaces-addp-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
