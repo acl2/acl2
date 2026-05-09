@@ -1802,6 +1802,7 @@
     bvchop-list-of-bvchop-list))
 
 ;; are these all for when the logext is too big?
+;; todo: can we rely on the convert-to-bv-rules instead (make sure those are always included)?
 (defun bv-of-logext-rules ()
   (declare (xargs :guard t))
   '(bvplus-of-logext-arg2

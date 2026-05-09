@@ -733,8 +733,8 @@
      acl2::logtail-of-logext
      ;acl2::logtail-of-bvcat
      acl2::logtail-becomes-slice-bind-free-axe
-     acl2::bvcat-of-logext-arg2
-     acl2::bvcat-of-logext-arg4
+     ;acl2::bvcat-of-logext-arg2
+     ;acl2::bvcat-of-logext-arg4
 
      ;acl2::bvcat-of-if-arg2
      ;acl2::bvcat-of-if-arg4
