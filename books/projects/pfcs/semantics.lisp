@@ -263,7 +263,15 @@
     :induct t
     :enable (omap::list-lookup
              omap::list-in
-             fep-of-lookup-when-assignment-wfp)))
+             fep-of-lookup-when-assignment-wfp))
+
+  (defruled fep-of-lookup-when-in-keys-of-assignment-wf
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg prime)
+                  (set::in var (omap::keys asg)))
+             (pfield::fep (omap::lookup var asg) prime))
+    :enable (omap::lookup
+             fep-of-cdr-of-assoc-when-assignment-wfp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
