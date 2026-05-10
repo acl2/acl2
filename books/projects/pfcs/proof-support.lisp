@@ -15,6 +15,8 @@
 
 (local (include-book "oset-lib-ext"))
 
+(local (include-book "std/basic/nfix" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -92,6 +94,12 @@
       which is directly expressed in terms of
       the satisfaction of the suitably instantiated body of the relation.")
     (xdoc::li
+     "A rule @(tsee constraint-satp-of-relation-when-nofreevars),
+      to rewrite @(tsee constraint-satp) over a relation application constraint
+      to an alternative definition @(tsee constraint-relation-nofreevars-satp),
+      which is a simpler specialization of @(tsee constraint-relation-satp)
+      applicable when there are no free variables.")
+    (xdoc::li
      "Rules that decompose @(tsee constraint-list-satp)
       into @(tsee constraint-satp) of the elements,
       specifically @(tsee constraint-list-satp-of-cons)
@@ -111,7 +119,9 @@
       performed in the body of an outer relation,
       to the satisfaction of the definition of the inner relation,
       one can use properties proved about the inner relation
-      to prove properties about the outer relation."))
+      to prove properties about the outer relation.")
+    (xdoc::li
+     "Rules to evaluated expressions in quoted constant form."))
    (xdoc::p
     "More proof rules may be added here in the future,
      but it should be clear from the list above
@@ -793,3 +803,90 @@
                                  asg
                                  p))
                                p))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection eval-expr-when-quoted
+  :short "Rules to evaluate expressions in quoted constant form."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We provide a ruleset with these rules."))
+
+  (defruled eval-expr-when-quoted-var
+    (implies (and (syntaxp (quotep expr))
+                  (assignmentp asg)
+                  (assignment-wfp asg p)
+                  (expression-case expr :var)
+                  (equal var (expression-var->name expr))
+                  (set::in var (omap::keys asg)))
+             (equal (eval-expr expr asg p)
+                    (omap::lookup var asg)))
+    :enable (eval-expr
+             omap::in-of-keys-to-assoc
+             omap::lookup))
+
+  (defruled eval-expr-when-quoted-const
+    (implies (and (syntaxp (quotep expr))
+                  (expression-case expr :const)
+                  (equal const (expression-const->value expr)))
+             (equal (eval-expr expr asg p)
+                    (mod const p)))
+    :enable (eval-expr))
+
+  (defruled eval-expr-when-quoted-neg
+    (implies (and (syntaxp (quotep expr))
+                  (expression-case expr :neg)
+                  (equal arg (expression-neg->arg expr))
+                  (equal val (eval-expr arg asg p))
+                  (pfield::fep val p))
+             (equal (eval-expr expr asg p)
+                    (pfield::neg val p)))
+    :enable eval-expr)
+
+  (defruled eval-expr-when-quoted-add
+    (implies (and (syntaxp (quotep expr))
+                  (expression-case expr :add)
+                  (equal arg1 (expression-add->arg1 expr))
+                  (equal arg2 (expression-add->arg2 expr))
+                  (equal val1 (eval-expr arg1 asg p))
+                  (equal val2 (eval-expr arg2 asg p))
+                  (pfield::fep val1 p)
+                  (pfield::fep val2 p))
+             (equal (eval-expr expr asg p)
+                    (pfield::add val1 val2 p)))
+    :enable eval-expr)
+
+  (defruled eval-expr-when-quoted-sub
+    (implies (and (syntaxp (quotep expr))
+                  (expression-case expr :sub)
+                  (equal arg1 (expression-sub->arg1 expr))
+                  (equal arg2 (expression-sub->arg2 expr))
+                  (equal val1 (eval-expr arg1 asg p))
+                  (equal val2 (eval-expr arg2 asg p))
+                  (pfield::fep val1 p)
+                  (pfield::fep val2 p))
+             (equal (eval-expr expr asg p)
+                    (pfield::sub val1 val2 p)))
+    :enable eval-expr)
+
+  (defruled eval-expr-when-quoted-mul
+    (implies (and (syntaxp (quotep expr))
+                  (expression-case expr :mul)
+                  (equal arg1 (expression-mul->arg1 expr))
+                  (equal arg2 (expression-mul->arg2 expr))
+                  (equal val1 (eval-expr arg1 asg p))
+                  (equal val2 (eval-expr arg2 asg p))
+                  (pfield::fep val1 p)
+                  (pfield::fep val2 p))
+             (equal (eval-expr expr asg p)
+                    (pfield::mul val1 val2 p)))
+    :enable eval-expr)
+
+  (def-ruleset eval-expr-when-quoted
+    '(eval-expr-when-quoted-var
+      eval-expr-when-quoted-const
+      eval-expr-when-quoted-neg
+      eval-expr-when-quoted-add
+      eval-expr-when-quoted-sub
+      eval-expr-when-quoted-mul)))
