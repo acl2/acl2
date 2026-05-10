@@ -1,0 +1,184 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains the grammar rules for preprocessing expressions
+; that are common to all the C dialects.
+; Together with the rules in the dialect-specific files
+; preprocessing-expressions-*.abnf,
+; they define the preprocessing expressions of each C dialect.
+
+; The notion of preprocessing expression is not explicitly in [C17] and [C23],
+; but it is a useful one that we introduce:
+; it consists of the expressions that can be used in #if and #elif directives.
+; We motivate the introduction of this notion as follows.
+
+; [C17] and [C23] use 'constant-expression'
+; in the grammar rules for that [C17:6.10/1] [C23:6.10.1],
+; but they include the following amendments:
+; [C17:6.10.1/1] says that the unary operator expressions
+; 'defined identifier' and 'defined ( identifier )' are also allowed;
+; [C23:6.10.2] goes further by providing grammar rules
+; for those and other expressions,
+; but without referencing such rules from the rules in [C23:6.10.1].
+; The notion of constant expression is defined in [C17:6.6] and [C23:6.6],
+; along with the more specific notion of integer constant expression,
+; which in fact [C17:6.10.1/1] and [C23:6.10.1] indicate as
+; an additional restriction on the constant expression of #if and #elif.
+
+; But there are some clarity problems with all of that.
+; The additional form 'defined identifier' does not fit
+; the grammar of constant expressions,
+; which are grammatically defined as expressions.
+; Even the 'defined ( identifier )',
+; which could be seen as a function call grammatically,
+; does not accord with the restriction that
+; constant expressions should not contain function calls [C17:6.6] [C23:6.6]
+; (they allow them in non-evaluated sub-expressions,
+; but normally the 'defined' form are evaluated during preprocessing).
+; The additional expressions allowed in [C23] but not in [C17]
+; also do not accord with the grammar and the no-function-call restrictions
+; of constant expressions.
+
+; Even leaving aside those additional expressions,
+; there is a lack of clarity in the exact definition of constant expression,
+; and whether everything in that definition is also allowed in preprocessing.
+; For instance, [C17:6.6/6] and [C23:6.6] explictly allow
+; floating constants that are arguments of casts,
+; but casts require type information, which the preprocessor does not have;
+; indeed, popular C implementations reject such casts.
+
+; Because of all the reasons above,
+; we believe that more precise and explicit grammar rules are needed
+; to describe the expressions allowed in #if and #endif during preprocessing.
+; This is our notion of preprocessing expressions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Our rules for preprocessing expressions are formulated
+; similarly to the rules for expressions (with a 'pp' prefix).
+; But they only cover a subset of those (motivated below),
+; and they add some unary expressions specific to preprocessing.
+
+; As preprocessing primary expressions,
+; we only have identifiers, preprocessing numbers, and character constants.
+; Comparing with (non-preprocessing) primary expressions:
+; we use preprocessing numbers instead of integer and floating constants
+; because the latter are preprocessing numbers during preprocessing;
+; we exclude enumeration constants
+; because they are just identifiers during preprocessing;
+; we exclude string literals because they do not have integer type;
+; we exclude generic selections because there are no types during preprocessing;
+; and we exclude GCC/Clang extensions because
+; involve concepts that do not apply to preprocessing.
+; Also note that, for C23,
+; the keywords 'true' and 'false', like all other keywords,
+; are just identifiers during preprocessing.
+
+pp-primary-expression = identifier
+                      / pp-number
+                      / character-constant
+                      / "(" pp-expression ")"
+
+; We do not have any preprocessing postfix expressions
+; because they do not have integer types, and there should be no function calls.
+
+; As preprocessing unary expressions,
+; we only have the ones with integer unary operators,
+; but not 'sizeof' and any of the others,
+; which involve concepts not present during preprocessing.
+; We also add some unary operator expressions specific to preprocessing,
+; which are defined differently for C17 and C23,
+; in the respective preprocessing-expressions-*.abnf files.
+
+pp-unary-expression = pp-primary-expression
+                    / pp-unary-operator pp-unary-expression
+                    / pp-specific-unary-expression
+
+pp-unary-operator = "+"
+                  / "-"
+                  / "~"
+                  / "!"
+
+; We do not have any preprocessing cast expressions
+; because they involve types, which are unknown during preprocessing.
+
+; The preprocessing binary expressions
+; have the same structure as the (non-preprocessing) binary expressions.
+
+pp-multiplicative-expression =
+    pp-unary-expression
+  / pp-multiplicative-expression "*" pp-unary-expression
+  / pp-multiplicative-expression "/" pp-unary-expression
+  / pp-multiplicative-expression "%" pp-unary-expression
+
+pp-additive-expression =
+    pp-multiplicative-expression
+  / pp-additive-expression "+" pp-multiplicative-expression
+  / pp-additive-expression "-" pp-multiplicative-expression
+
+pp-shift-expression =
+    pp-additive-expression
+  / pp-shift-expression "<<" pp-additive-expression
+  / pp-shift-expression ">>" pp-additive-expression
+
+pp-relational-expression =
+    pp-shift-expression
+  / pp-relational-expression "<" pp-shift-expression
+  / pp-relational-expression ">" pp-shift-expression
+  / pp-relational-expression "<=" pp-shift-expression
+  / pp-relational-expression ">=" pp-shift-expression
+
+pp-equality-expression =
+    pp-relational-expression
+  / pp-equality-expression "==" pp-relational-expression
+  / pp-equality-expression "!=" pp-relational-expression
+
+pp-and-expression =
+    pp-equality-expression
+  / pp-and-expression "&" pp-equality-expression
+
+pp-exclusive-or-expression =
+    pp-and-expression
+  / pp-exclusive-or-expression "^" pp-and-expression
+
+pp-inclusive-or-expression =
+    pp-exclusive-or-expression
+  / pp-inclusive-or-expression "|" pp-exclusive-or-expression
+
+pp-logical-and-expression =
+    pp-inclusive-or-expression
+  / pp-logical-and-expression "&&" pp-inclusive-or-expression
+
+pp-logical-or-expression =
+    pp-logical-and-expression
+  / pp-logical-or-expression "||" pp-logical-and-expression
+
+; The preprocessing conditional expressions are the same as
+; the (non-preprocessing) conditional expressions.
+; For now we omit the GCC extension that allows
+; the omissions of the second sub-expression.
+
+pp-conditional-expression =
+      pp-logical-or-expression
+    / pp-logical-or-expression "?" pp-expression ":" pp-conditional-expression
+
+; Since [C17:6.6] and [C23:6.6] grammatically define
+; constant expressions as conditional expressions,
+; we define preprocessing expressions as preprocessing conditional expressions.
+
+pp-expression = pp-conditional-expression
+
+; The following grammar rule is only in [C23:6.10.2],
+; but it also applies to C17, which describes it less formally [C17:6.10.1/1].
+
+defined-macro-expression = %s"defined" identifier
+                         / %s"defined" "(" identifier ")"
