@@ -121,7 +121,9 @@
       one can use properties proved about the inner relation
       to prove properties about the outer relation.")
     (xdoc::li
-     "Rules to evaluated expressions in quoted constant form."))
+     "Rules to evaluated expressions in quoted constant form.")
+    (xdoc::li
+     "Rules to evaluate empty and non-empty lists of expressions."))
    (xdoc::p
     "More proof rules may be added here in the future,
      but it should be clear from the list above
@@ -890,3 +892,28 @@
       eval-expr-when-quoted-add
       eval-expr-when-quoted-sub
       eval-expr-when-quoted-mul)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled eval-expr-list-of-nil
+  :short "Proof rule for evaluating the empty list of expressions."
+  (equal (eval-expr-list nil asg p) nil)
+  :enable eval-expr-list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled eval-expr-list-of-cons
+  :short "Proof rule for evaluating a @(tsee cons) list of expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This backchains to the evaluation of the first expression
+     and to the evaluation of the remaining expressions."))
+  (implies (and (equal val (eval-expr expr asg p))
+                (equal vals (eval-expr-list exprs asg p))
+                (pfield::fep val p)
+                (pfield::fe-listp vals p))
+           (equal (eval-expr-list (cons expr exprs) asg p)
+                  (cons val vals)))
+  :enable (eval-expr-list
+           acl2::not-reserrp-when-nat-listp))
