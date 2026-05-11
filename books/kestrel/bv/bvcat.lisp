@@ -1,7 +1,7 @@
 ; BV Library: Theorems about bvcat
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -427,11 +427,7 @@
                  )
             (equal (getbit k (bvcat highsize highval lowsize lowval))
                    (getbit k lowval)))
-   :hints
-   (("Goal" :in-theory (e/d (bvcat getbit slice logtail-logapp)
-                            (
-
-                             ))))))
+   :hints (("Goal" :in-theory (enable bvcat getbit slice logtail-logapp)))))
 
 (defthm getbit-of-bvcat-low-better
   (implies (and (< k lowsize)
@@ -546,8 +542,7 @@
                                     ;;bvchop
                                     logtail
                                     bvcat-recombine)
-                                   (
-                                    bvchop-of-logtail)))))
+                                   (bvchop-of-logtail)))))
 
 (defthm bvchop-of-logapp-both
   (implies (natp n2)
@@ -1042,7 +1037,7 @@
            :cases ((< (+ highsize lowsize) n)
                    (equal n lowsize)
                    )
-           :in-theory (e/d ( ;logtail
+           :in-theory (e/d (;logtail
                             bvcat
                             ;;logapp
                             zip floor-normalize-denominator
