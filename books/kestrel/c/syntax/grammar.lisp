@@ -66,6 +66,9 @@
 ; (depends-on "grammar/preprocessing-tokens-c17.abnf")
 ; (depends-on "grammar/preprocessing-tokens-c23.abnf")
 ; (depends-on "grammar/preprocessing-lexemes.abnf")
+; (depends-on "grammar/preprocessing-expressions.abnf")
+; (depends-on "grammar/preprocessing-expressions-c17.abnf")
+; (depends-on "grammar/preprocessing-expressions-c23.abnf")
 ; (depends-on "grammar/preprocessing-directives.abnf")
 ; (depends-on "grammar/preprocessing-directives-c17.abnf")
 ; (depends-on "grammar/preprocessing-directives-c23.abnf")
@@ -359,6 +362,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar preprocessing-expressions
+  "preprocessing expressions that are common to all the C dialects")
+
+(defgrammar preprocessing-expressions-c17
+  "preprocessing expressions that are specific to the C17 dialects")
+
+(defgrammar preprocessing-expressions-c23
+  "preprocessing expressions that are specific to the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defgrammar preprocessing-directives
   "preprocessing directives that are common to all the C dialects")
 
@@ -469,6 +483,11 @@
                        :c23 *grammar-preprocessing-tokens-c23*)
      ;; preprocessing lexemes:
      *grammar-preprocessing-lexemes*
+     ;; preprocessing expressions:
+     *grammar-preprocessing-expressions*
+     (c::standard-case dialect.std
+                       :c17 *grammar-preprocessing-expressions-c17*
+                       :c23 *grammar-preprocessing-expressions-c23*)
      ;; preprocessing directives:
      *grammar-preprocessing-directives*
      (c::standard-case dialect.std
@@ -486,6 +505,11 @@
   (defruled rulelist-closedp-of-grammar-for
     (abnf::rulelist-closedp (grammar-for dialect))
     :enable abnf::rulelist-closedp)
+
+  ;; The next theorem fails with the default 1000 limit.
+  ;; It is still fast (about 1.25 seconds on a fast machine),
+  ;; even with this higher limit.
+  (set-rewrite-stack-limit 2000) ; implicitly local
 
   (defruled unicode-only-grammar-for
     (abnf::rulelist-in-termset-p (grammar-for dialect)

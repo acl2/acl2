@@ -29,6 +29,10 @@
 ; The rules involving preprocessing parameters are
 ; in preprocessing-directives-c23.abnf only.
 
+; We use 'pp-expression' instead of 'constant-expression'
+; for the expressions in the #if and #elif directives.
+; See preprocessing-expressions.abnf for an explanation.
+
 preprocessing-file = [ group ]
 
 group = group-part
@@ -41,14 +45,14 @@ group-part = if-section
 
 if-section = if-group [ elif-groups ] [ else-group ] endif-line
 
-if-group = "#" %s"if" constant-expression new-line [ group ]
+if-group = "#" %s"if" pp-expression new-line [ group ]
          / "#" %s"ifdef" identifier new-line [ group ]
          / "#" %s"ifndef" identifier new-line [ group ]
 
 elif-groups = elif-group
             / elif-groups elif-group
 
-elif-group-c17 = "#" %s"elif" constant-expression new-line [ group ]
+elif-group-c17 = "#" %s"elif" pp-expression new-line [ group ]
 
 elif-group-c23 = elif-group-c17
                / "#" %s"elifdef" identifier new-line [ group ]

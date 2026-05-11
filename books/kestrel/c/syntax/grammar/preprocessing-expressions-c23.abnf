@@ -1,0 +1,48 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains the grammar rules for preprocessing expressions
+; that are specific to the C23 standard.
+; Together with the generic rules in preprocessing-expressions.abnf,
+; they form the rules for preprocessing expressions for the C23 dialects.
+; See preprocessing-expressions.abnf for
+; the rationale of preprocessing expressions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; These rules are in [C23:6.10.2].
+; (The 'express' in 'has-c-attribute-express' is as in [C23].)
+
+h-preprocessing-token = preprocessing-token ; other than >
+
+h-pp-tokens = h-preprocessing-token
+            / h-pp-tokens h-preprocessing-token
+
+header-name-tokens = string-literal
+                   / "<" h-pp-tokens ">"
+
+has-include-expression = "__has_include" "(" header-name ")"
+                       / "__has_include" "(" header-name-tokens ")"
+
+has-embed-expression =
+    "__has_embed" "(" header-name [ embed-parameter-sequence ] ")"
+  / "__has_embed" "(" header-name-tokens [ pp-balanced-token-sequence ] ")"
+
+has-c-attribute-express = "__has_c_attribute" "(" pp-tokens ")"
+
+; The following rule is not in [C23].
+; We use it connect the above expressions
+; to the other preprocessing expressions.
+
+pp-specific-unary-expression = defined-macro-expression
+                             / has-include-expression
+                             / has-c-attribute-express
