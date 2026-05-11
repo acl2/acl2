@@ -146,7 +146,7 @@
                               (natp stack-slots)
                               (natp existing-stack-slots)
                               (booleanp position-independentp))))
-  (b* (((mv erp regions) (acl2::elf64-regions-to-load parsed-elf))
+  (b* (((mv erp regions) (acl2::elf-regions-to-load parsed-elf))
        (state-var 'stat)
        ((when erp) (mv erp nil))
        ((mv erp memory-region-assumptions)
