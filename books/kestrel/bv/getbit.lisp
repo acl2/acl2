@@ -261,27 +261,19 @@
                   )))
 
 (defthm getbit-of-expt
-  (implies (and (< size2 size) ;other case?
-                (integerp size)
-                (natp size2))
-           (equal (getbit size2 (expt 2 size))
-                  0))
-  :hints (("Goal" :in-theory (enable getbit slice))))
-
-
+  (equal (getbit m (expt 2 n))
+         (if (equal (nfix m) (ifix n))
+             1
+           0))
+  :hints (("Goal" :cases ((< n 0)
+                          (and (<= 0 n) (< m 0)))
+           :in-theory (enable getbit slice))))
 
 (defthm getbit-when-n-is-negative
   (implies (< n 0)
            (equal (getbit n x)
                   (getbit 0 x)))
   :hints (("Goal" :in-theory (enable getbit))))
-
-;todo: open less to prove this?
-(defthm getbit-of-expt-2-n
-  (implies (natp n)
-           (equal (getbit n (expt 2 n)) 1))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail)
-                                  (slice-becomes-bvchop)))))
 
 (defthm getbit-of-logtail
   (implies (and (natp n)
@@ -440,7 +432,7 @@
   :hints (("Goal" :use (:instance bvchop-of-*-of-bvchop (size 1))
            :in-theory
            (e/d (getbit)
-                ( bvchop-of-*-of-bvchop)))))
+                (bvchop-of-*-of-bvchop)))))
 
 (defthm getbit-when-slice-is-known-constant
   (implies (and (equal free (slice high low x)) ;reversed the equality
@@ -475,7 +467,7 @@
                    0)))
  :hints (("Goal" :in-theory
           (e/d (getbit slice bvchop) ; todo: disable less
-               ( bvchop-of-*-of-bvchop)))))
+               (bvchop-of-*-of-bvchop)))))
 
 (defthm getbit-of-0-and-+-of-1-and-*-of-2
   (implies (integerp x)
@@ -558,15 +550,6 @@
            (equal (mod x 2)
                   (getbit 0 x)))
   :hints (("Goal" :in-theory (enable getbit bvchop))))
-
-(defthm getbit-of-expt-gen
-  (implies (and (natp m)
-                (natp n))
-           (equal (getbit m (expt 2 n))
-                  (if (equal m n)
-                      1
-                    0)))
-  :hints (("Goal" :in-theory (enable getbit slice))))
 
 (defthm getbit-of-if-two-constants
   (implies (and (syntaxp (and (quotep n)
@@ -834,3 +817,27 @@
                   (getbit n x)))
   :hints (("Goal" :use (:instance slice-of-+-of-constant-irrel (high n) (low n))
                   :in-theory (e/d (getbit) (slice-of-+-of-constant-irrel)))))
+
+;; (defthm getbit-when-not-1-stronger
+;;   (implies (not (equal (getbit n x) 1))
+;;            (equal (getbit n x)
+;;                   0))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (1))))
+
+;expensive since hung on equal
+;may only be needed for Axe
+(defthmd getbit-impossible-value
+  (implies (and (syntaxp (quotep k))
+                (not (unsigned-byte-p 1 k)))
+           (not (equal k (getbit n x)))))
+
+(defthm getbit-of-times-2
+  (implies (and (syntaxp (not (quotep x))) ;defeats acl2's bone-headed matching
+                (integerp x))
+           (equal (getbit size (* 2 x))
+                  (if (zp size)
+                      0
+                    (getbit (+ -1 size) x))))
+  :hints (("Goal" :in-theory (e/d (getbit slice)
+                                  (;logtail-equal-0 ; todo: loop with unsigned-byte-p-of-bvchop-bigger2
+                                   )))))

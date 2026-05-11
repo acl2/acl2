@@ -306,7 +306,7 @@
            (equal (bvcount size (bvcat highsize highval lowsize lowval))
                   (+ (bvcount highsize highval)
                      (bvcount lowsize lowval))))
-  :hints (("subgoal *1/4" :in-theory (e/d (bvcount) ( bvcount-of-bvchop))
+  :hints (("subgoal *1/4" :in-theory (e/d (bvcount) (bvcount-of-bvchop))
            :use (:instance bvcount-of-bvchop
                            (size (+ -1 HIGHSIZE LOWSIZE))
                            (size2 (+ -1 HIGHSIZE LOWSIZE))
