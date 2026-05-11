@@ -121,9 +121,8 @@
            (equal (+ 1 (* 2 (floor x 2)))
                   x))
   :hints (("Goal" :in-theory (e/d (bvchop mod)
-                                  (
-                                                 ;;MOD-RECOLLAPSE-LEMMA2
-                                                 ;;MOD-RECOLLAPSE-LEMMA
+                                  (;;MOD-RECOLLAPSE-LEMMA2
+                                   ;;MOD-RECOLLAPSE-LEMMA
                                    )))))
 
 (defthmd split-when-low-bit-0
@@ -131,10 +130,10 @@
                 (EQUAL 0 (BVCHOP 1 X)))
            (equal (* 2 (floor x 2))
                   x))
-  :hints (("Goal" :in-theory (e/d (bvchop mod) (
-                                                 ;;MOD-RECOLLAPSE-LEMMA2
-                                                 ;;MOD-RECOLLAPSE-LEMMA
-                                                 )))))
+  :hints (("Goal" :in-theory (e/d (bvchop mod)
+                                  (;;MOD-RECOLLAPSE-LEMMA2
+                                   ;;MOD-RECOLLAPSE-LEMMA
+                                   )))))
 
 (defthm split-when-low-bit-1-hack
   (implies (and (integerp x)
@@ -252,8 +251,7 @@
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
 
                                    BITXOR-SPLIT)
-                           (
-                            anti-slice
+                           (anti-slice
                             BVCHOP-OF-LOGTAIL
                             ;; for speed:
                             logtail-1-of-+
@@ -807,8 +805,7 @@
 ;;            (equal (bvor (expt 2 size) (bvshl (expt 2 size) x amt) (bvshr (expt 2 size) x amt2))
 ;;                   (leftrotate (expt 2 size) amt x)))
 ;;   :hints (("Goal" :in-theory (e/d (bvif myif bvplus bvshr leftrotate bvchop-of-sum-cases)
-;;                                   (
-;;                                    )))))
+;;                                   ()))))
 
 ;special case for 32 (will match)
 (defthm bvor-of-bvshl-and-bvshr-becomes-leftrotate32
@@ -1020,7 +1017,7 @@
   (implies (equal 0 (bvchop 8 x))
            (equal (bvplus 32 x (bvchop 8 y))
                   (bvcat 24 (slice 31 8 x) 8 y)))
-  :hints (("Goal" :in-theory (e/d ( ;BVPLUS-BECOMES-RIPPLE-CARRY-ADDER  ;slow! why?
+  :hints (("Goal" :in-theory (e/d (;BVPLUS-BECOMES-RIPPLE-CARRY-ADDER  ;slow! why?
                                    slice
                                    bvplus
                                    bvchop-of-sum-cases
@@ -1547,11 +1544,9 @@
   :rule-classes nil
   :hints (("Goal"
            :cases ((SIGNED-BYTE-P 32 x))
-           :in-theory (e/d ( ;logext BVCHOP-OF-SUM-CASES getbit slice
-                            ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4
-                            )
-                           (
-                            anti-slice)))))
+           :in-theory (e/d (;logext BVCHOP-OF-SUM-CASES getbit slice
+                            ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4)
+                           (anti-slice)))))
 
 (defthm cancel-from-logext-equality-helper2
   (implies (and (integerp x)
@@ -1623,7 +1618,7 @@
 ;;                 (natp x))
 ;;            (equal (* 2 x)
 ;;                   (bvmult (ceiling-of-lg free) 2 x)))
-;;   :hints (("Goal" :in-theory (e/d (bvmult)( BVMULT-OF-2-GEN)))))
+;;   :hints (("Goal" :in-theory (e/d (bvmult)(BVMULT-OF-2-GEN)))))
 ;(theory-invariant (incompatible (:definition bvmult) (:rewrite *-of-2-becomes-bvmult)))
 
 ;put this back (may need to repair it?)
@@ -1635,7 +1630,7 @@
 ;;            (equal (* 2 x)
 ;;                   ;is this as tight as we can make the mult?
 ;;                   (bvmult (ceiling-of-lg (+ 1 free)) 2 x)))
-;;   :hints (("Goal" :in-theory (e/d (bvmult)( BVMULT-OF-2-GEN)))))
+;;   :hints (("Goal" :in-theory (e/d (bvmult)(BVMULT-OF-2-GEN)))))
 
 ;; ;yuck
 ;; (defthm bvcat-hack22
@@ -1888,7 +1883,7 @@
              (expt 2 32)
            (bvchop 32 x)))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvchop-when-i-is-not-an-integer)
-                                  ( ;  plus-becomes-bvplus
+                                  (;  plus-becomes-bvplus
                                    )))))
 
 

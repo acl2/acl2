@@ -1665,7 +1665,13 @@
                     (list-lookup keys (from-lists keys2 vals2))))
     :induct (acl2::cdr-cdr-induct keys1 vals1)
     :enable (list-lookup
-             list-lookup-of-update-of-non-member)))
+             list-lookup-of-update-of-non-member))
+
+  (defrule keys-of-from-lists
+    (equal (keys (from-lists keys vals))
+           (set::mergesort keys))
+    :induct t
+    :enable set::mergesort))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

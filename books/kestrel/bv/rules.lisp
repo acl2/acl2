@@ -543,16 +543,14 @@
 ;;                 (integerp z))
 ;;            (equal (slice 31 5 (+ (bvchop 32 y) z))
 ;;                   (slice 31 5 (+ y z))))
-;;   :hints (("Goal" :in-theory (e/d (slice) (
-;;                                            LOGTAIL-EQUAL-0)))))
+;;   :hints (("Goal" :in-theory (e/d (slice) (LOGTAIL-EQUAL-0)))))
 
 ;; (defthmd slice-of-bvchop-hack6b
 ;;   (implies (and (integerp y)
 ;;                 (integerp z))
 ;;            (equal (slice 31 5 (+ z (bvchop 32 y)))
 ;;                   (slice 31 5 (+ y z))))
-;;   :hints (("Goal" :in-theory (e/d (slice) (
-;;                                            LOGTAIL-EQUAL-0)))))
+;;   :hints (("Goal" :in-theory (e/d (slice) (LOGTAIL-EQUAL-0)))))
 
 (defthm slice-of-sum-drop-bvchop
   (implies (and (< high size)
@@ -1316,16 +1314,12 @@
          (getbit 0 (lognot x)))
   :hints (("Goal"
            :use ((:instance bvchop-lognot-bvchop (n 1)))
-           :in-theory (e/d (getbit) (
-
-                                     bvchop-lognot-bvchop)))))
+           :in-theory (e/d (getbit) (bvchop-lognot-bvchop)))))
 
 ;; (defthm bvnot-equal-0-rewrite
 ;;   (equal (equal 0 (bvnot 1 x))
 ;;          (mynot (equal 0 (getbit 0 x))))
-;;   :hints (("Goal" :in-theory (e/d (bitnot) (
-;;                                         )))))
-
+;;   :hints (("Goal" :in-theory (enable bitnot))))
 
 ;;
 ;; bool-to-bit - do we translate this op to stp?
@@ -4736,8 +4730,9 @@
                       (bvlt size (bvplus size k2 (bvuminus size k1)) y)))))
   :hints (("Goal" :use (bvlt-of-bvuminus-arg2
                         bvlt-add-to-both-sides-constant-lemma-helper)
-           :in-theory (e/d (;bvlt-of-bvuminus-arg2) (
-                            bvlt-add-to-both-sides-constant-lemma-helper)))))
+           :in-theory (e/d (;bvlt-of-bvuminus-arg2
+                            )
+                            (bvlt-add-to-both-sides-constant-lemma-helper)))))
 
 ;fixme  - simplify this?
 (defthm bvlt-add-to-both-sides-constant-lemma
@@ -5513,12 +5508,10 @@
 ;;                     (if (equal (bvchop 32 x) (expt 2 31))
 ;;                         1
 ;;                       (getbit 31 x)))))
-;;   :hints (("Goal" :in-theory (e/d (bvlt bvplus
-;;                                         bvchop-of-sum-cases
-;;                                         getbit
-;;                                         slice)
-;;                                   (
-;;                                    )))))
+;;   :hints (("Goal" :in-theory (enable bvlt bvplus
+;;                                      bvchop-of-sum-cases
+;;                                      getbit
+;;                                      slice))))
 
 ;; since x>=y, x is usually not less than y+1
 (defthmd bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt
@@ -6034,3 +6027,45 @@
   (equal (bvnot size x)
          (bvminus size (bvuminus size x) 1))
   :hints (("Goal" :use bvuminus-becomes-bvplus-of-bvnot-and-1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ ;two ways to write this, but I prefer to split on x since it might be constant
+(defthmd slice-of-bvplus-cases-helper
+  (implies (natp low)
+           (equal (<= (EXPT 2 low) (+ (BVCHOP low X) (BVCHOP low Y)))
+                  (if (EQUAL 0 (BVCHOP LOW x))
+                      nil
+                    (not (bvlt low y (bvuminus low x)))
+                    )))
+  :hints (("Goal" :in-theory (e/d (bvplus slice-of-sum-cases
+                                          bvlt
+                                          bvchop-of-sum-cases
+                                          bvuminus bvplus bvminus
+                                          bvchop-when-i-is-not-an-integer
+                                          slice-when-val-is-not-an-integer)
+                                  (bvminus-becomes-bvplus-of-bvuminus)))))
+
+(defthmd slice-of-bvplus-cases
+  (implies (and (equal size (+ 1 high))
+                (<= low high)
+                (natp low)
+                (integerp high))
+           (equal (slice high low (bvplus size x y))
+                  (if (if (equal 0 (bvchop low x))
+                          t
+                        (bvlt low y (bvuminus low x)))
+                      ;;no carry:
+                      (bvplus (+ 1 high (- low))
+                              (slice high low x)
+                              (slice high low y))
+                    ;;if carry
+                    (bvplus (+ 1 high (- low))
+                            1
+                            (bvplus (+ 1 high (- low))
+                                    (slice high low x)
+                                    (slice high low y))))))
+  :hints (("Goal" :in-theory (enable bvplus slice-of-sum-cases
+                                     slice-of-bvplus-cases-helper
+                                     bvchop-when-i-is-not-an-integer
+                                     slice-when-val-is-not-an-integer))))
