@@ -1,6 +1,6 @@
 ; A transformation to combine a function's body with a wrapper
 ;
-; Copyright (C) 2014-2023 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -393,7 +393,7 @@
                               (not (eq 'quote fn))
                               (or (symbolp wrapper)
                                   (untranslated-unary-lambdap wrapper))
-                              (t/nil/auto-p function-disabled))
+                              (member-eq function-disabled '(t nil :auto)))
                   :mode :program))
   (b* ((wrld (w state))
        (fn-event (my-get-event fn wrld))
