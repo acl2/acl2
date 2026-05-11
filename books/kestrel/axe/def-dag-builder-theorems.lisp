@@ -33,6 +33,8 @@
 ;; The function should also take the 5 parts of the dag-array as arguments.
 (defun def-dag-builder-theorems-fn (call ret-spec dag-array-name dag-parent-array-name hyps hyps-everywhere hints recursivep expand dont-enable)
   (b* ((return-vals (cdr ret-spec))
+       ;; todo: check that the number of return-values is right (otherwise, we can get proof failures)
+       ;; we should also check that each thing in the ret-spec is accurate, but that is harder
        (expected-return-vals '(erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ((when (not (subsetp-eq expected-return-vals ret-spec)))
         (er hard? 'def-dag-builder-theorems-fn "Missing return values: ~x0." (set-difference-eq expected-return-vals ret-spec)))
