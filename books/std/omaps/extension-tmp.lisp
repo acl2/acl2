@@ -11,6 +11,33 @@
 (include-book "std/osets/intersect" :dir :system)
 (include-book "std/osets/top" :dir :system)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule assoc-implies-in-keys
+    (implies (assoc k x)
+             (set::in k (keys x)))
+  :enable assoc
+  :rule-classes :forward-chaining)
+
+(defrule not-assoc-implies-not-in-keys
+    (implies (not (assoc k x))
+             (not (set::in k (keys x))))
+  :enable assoc
+  :rule-classes :forward-chaining)
+
+(defrule values-of-update-when-not-in
+; Similar to values-of-update-when-not-assoc in "core"
+    (implies (not (set::in k (keys x)))
+             (equal (values (update k v x))
+                    (set::insert v (values x)))))
+
+(defrule cdr-assoc-in-values
+; Similar to in-values-when-assoc in "core"
+    (implies (assoc k x)
+             (set::in (cdr (assoc k x))
+                      (values x)))
+  :enable (assoc values)
+  :rule-classes :forward-chaining)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -166,21 +193,15 @@ Skip these for now
     (implies (injectivep x)
              (not (set::in (mv-nth 1 (head x))
                            (values (tail x)))))
-  :enable injectivep)
+  :enable injectivep
+  :rule-classes :forward-chaining)
 
 (defrule head-val-is-not-assoc-tail-when-injectivep
     (implies (and (injectivep x)
                   (assoc k (tail x)))
              (not (equal (mv-nth 1 (head x))
                          (cdr (assoc k (tail x))))))
-  :enable injectivep
-  :prep-lemmas
-  ((defrule cdr-assoc-in-values
-       ; Similar to in-values-when-assoc in "core"
-       (implies (assoc k x)
-                (set::in (cdr (assoc k x))
-                         (values x)))
-     :enable (assoc values))))
+  :enable injectivep)
 
 (defrule equal-val-implies-equal-key-when-injecctivep
     (implies (and (injectivep x)
@@ -248,16 +269,129 @@ Skip these for now
   :enable extensionality
   :rule-classes :forward-chaining)
 
-; The <- direction
+#|
+(defrule not-equal-restrict-intersect-keys-implies-not-compatiblep
+    (implies (not (equal (restrict (set::intersect (keys map0) (keys map1))
+                                                   map0)
+                         (restrict (set::intersect (keys map0) (keys map1))
+                                                   map1)))
+             (not (compatiblep map0 map1)))
+  :rule-classes :forward-chaining)
+
+(defrule not-compatiblep-tail-implies-not-compatiblep
+    (implies (not (compatiblep (tail x) y))
+             (not (compatiblep x y)))
+  :enable compatiblep-of-tail-when-compatiblep
+  :disable symmetry-of-compatiblep
+  :rule-classes :forward-chaining)
+
+(defrule insert-of-head-and-tail
+    (implies (not (set::emptyp x))
+             (equal (set::insert (set::head x)
+                                 (set::tail x))
+                    x))
+  :rule-classes :elim)
+|#
+
 (skip-proofs
+(defruled insert-intersect
+    (equal (set::insert a (set::intersect x y))
+           (set::intersect (set::insert a x) (set::insert a y)))
+  :enable set::intersect)
+)
+
+(defrule intersect-insert-when-in
+    (implies (set::in a y)
+             (equal (set::intersect (set::insert a x) y)
+                    (set::insert a (set::intersect x y))))
+  :enable insert-intersect)
+
+(defrule in-keys-tail-implies-not-head-key
+    (implies (set::in k (keys (tail x)))
+             (not (equal k (mv-nth 0 (head x)))))
+  :rule-classes :forward-chaining)
+
+(defrule restrict-insert
+    (equal (restrict (set::insert k ks) x)
+           (if (set::in k (keys x))
+               (update k (cdr (assoc k x))
+                       (restrict ks x))
+             (restrict ks x)))
+  :enable (restrict update))
+
+(skip-proofs
+(defrule equal-update-implies-equal
+    (implies (and (not (set::in k (keys x)))
+                  (not (set::in k (keys y)))
+                  (equal (update k v x)
+                         (update k v y)))
+             (equal x y))
+  :rule-classes :forward-chaining)
+)
+
+(defrule equal-update-restrict-implies-equal-restrict
+    (implies (and (not (set::in k ks))
+                  (equal (update k v (restrict ks x))
+                         (update k v (restrict ks y))))
+             (equal (restrict ks x)
+                    (restrict ks y)))
+  :enable (restrict update)
+  :use (:instance equal-update-implies-equal
+                  (x (restrict ks x)) (y (restrict ks y))))
+
+(defrule not-in-implies-not-in-intersect
+    (implies (not (set::in a x))
+             (not (set::in a (set::intersect x y)))))
+
+(defrule head-key-not-in-keys-tail
+    (implies (not (emptyp x))
+             (not (set::in (mv-nth 0 (head x))
+                           (keys (tail x))))))
+
+(defrule equal-update-implies-equal-assoc-update
+    (implies (equal (update k v1 x)
+                    (update k v2 y))
+             (equal (assoc k (update k v1 x))
+                    (assoc k (update k v2 y))))
+  :rule-classes :forward-chaining)
+
+(defrule assoc-update-key
+    (equal (assoc k (update k v x))
+           (cons k v)))
+
+(defrule equal-update-implies-equal-val
+    (implies (equal (update k v1 x)
+                    (update k v2 y))
+             (equal v1 v2))
+  :do-not-induct t
+  :use equal-update-implies-equal-assoc-update
+  :rule-classes :forward-chaining)
+
+(defrule not-equal-implies-not-equal-update
+    (implies (not (equal v1 v2))
+             (not (equal (update k v1 x)
+                         (update k v2 y)))))
+
+; The <- direction
 (defrule equal-restrict-intersect-keys-implies-compatiblep
     (implies (equal (restrict (set::intersect (keys map0) (keys map1)) map0)
                     (restrict (set::intersect (keys map0) (keys map1)) map1))
              (compatiblep map0 map1))
-  :enable (restrict compatiblep keys set::intersect-insert-X))
-)
+  :enable (
+           restrict
+           compatiblep
+           keys
+           set::intersect-insert-X
+           )
+  :disable (symmetry-of-compatiblep)
+  :hints (("subgoal *1/3.1.2'" :use (:instance equal-update-restrict-implies-equal-restrict
+                                               (k (mv-nth 0 (head map0))) (v (mv-nth 1 (head map0)))
+                                               (ks (intersect (keys (tail map0)) (keys map1)))
+                                               (x (tail map0)) (y map1))))
+  :use equal-update-restrict-implies-equal-restrict
+  :rule-classes :forward-chaining)
 
-(defrule compatiblep-is-equal-restrict-intersect-keys
+(defruled compatiblep-is-equal-restrict-intersect-keys
     (equal (compatiblep map0 map1)
            (equal (restrict (set::intersect (keys map0) (keys map1)) map0)
                   (restrict (set::intersect (keys map0) (keys map1)) map1))))
@@ -319,26 +453,29 @@ Skip these for now
 
   (defcong mequiv equal (inverse x) 1))
 
-(skip-proofs
-(defrule inverse-implies-injectivep
-    (injectivep (inverse x))
-  :enable (injectivep inverse)
-  :rule-classes :type-prescription)
-)
-
 (defrule keys-of-inverse-is-values
     (implies (injectivep x)
              (equal (keys (inverse x))
                     (values x)))
   :enable (inverse values))
 
-(skip-proofs
 (defrule values-of-inverse-is-keys
     (implies (injectivep x)
              (equal (values (inverse x))
                     (keys x)))
   :enable inverse)
-)
+
+(defrule injectivep-implies-injectivep-update
+    (implies (and (injectivep x)
+                  (not (set::in k (keys x)))
+                  (not (set::in v (values x))))
+             (injectivep (update k v x)))
+  :enable (injectivep values))
+
+(defrule inverse-implies-injectivep
+    (injectivep (inverse x))
+  :enable (injectivep inverse)
+  :rule-classes :type-prescription)
 
 (defrule assoc-of-inverse-nil-when-not-in-values
     (implies (and (injectivep x)
@@ -355,21 +492,43 @@ Skip these for now
   :enable (inverse values)
   :use equal-val-implies-equal-key-when-injecctivep)
 
-(skip-proofs
+(defrule rlookup-when-not-in-values
+    (implies (not (set::in v (values x)))
+             (not (rlookup v x)))
+  :enable (rlookup values))
+
+(defrule injectivep-implies-rlookup-first-val-tail-nil
+    (implies (injectivep x)
+             (not (rlookup (mv-nth 1 (head x))
+                           (tail x))))
+  :enable (injectivep rlookup)
+  :rule-classes :forward-chaining)
+
 (defrule assoc-of-inverse
     (implies (injectivep x)
              (equal (assoc key (inverse x))
-                    (and (rlookup key x)
+                    (and (set::in key (values x))
                          (cons key (car (rlookup key x))))))
-  :enable inverse)
-)
+  :enable (inverse rlookup values set::insert))
 
 (skip-proofs
+(defrule rlookup-update-when-not-in-keys
+    (implies (not (set::in k (keys x)))
+             (equal (rlookup val (update k v x))
+                    (if (equal val v)
+                        (set::insert k (rlookup val x))
+                      (rlookup val x))))
+  :enable (
+           rlookup
+;           update
+           ))
+)
+
 (defrule assoc-of-inverse-inverse-when-injectivep
     (implies (injectivep x)
              (equal (assoc key (inverse (inverse x)))
-                    (assoc key x))))
-)
+                    (assoc key x)))
+  :enable (injectivep inverse set::insert))
 
 (defrule inverse-inverse
     (implies (injectivep x)
@@ -378,10 +537,11 @@ Skip these for now
   :enable extensionality)
 
 (skip-proofs
- (defrule identityp-compose-inverse
-     (implies (injectivep map)
-              (identityp (compose map (inverse map))))
-   :enable (inverse compose)))
+(defrule identityp-compose-inverse
+    (implies (injectivep map)
+             (identityp (compose map (inverse map))))
+  :enable (inverse compose))
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
