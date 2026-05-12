@@ -1,6 +1,6 @@
 ; Choosing which variant of defun to use
 ;
-; Copyright (C) 2016-2023 Kestrel Institute
+; Copyright (C) 2016-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/enumerations" :dir :system)
 (include-book "std/system/fundef-disabledp" :dir :system)
 (include-book "std/system/non-executablep" :dir :system)
 (include-book "std/system/function-namep" :dir :system)
@@ -28,8 +27,8 @@
                        state)
   (declare (xargs :guard (and (function-namep old-fn (w state))
                               (definedp old-fn (w state))
-                              (t/nil/auto-p new-fn-non-executable)
-                              (t/nil/auto-p new-fn-disabled))
+                              (member-eq new-fn-non-executable '(t nil :auto))
+                              (member-eq new-fn-disabled '(t nil :auto)))
                   :stobjs state
                   :verify-guards nil ; todo: because of fundef-disabledp
                   ))

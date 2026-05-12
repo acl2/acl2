@@ -40,7 +40,7 @@
 (include-book "names")
 (include-book "kestrel/utilities/my-get-event" :dir :system)
 (include-book "verify-guards-for-defun")
-(include-book "kestrel/utilities/system/world-queries" :dir :system)
+(include-book "std/system/get-well-founded-relation" :dir :system)
 (include-book "kestrel/utilities/defmacroq" :dir :system)
 (include-book "kestrel/utilities/maybe-unquote" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
