@@ -6461,13 +6461,13 @@
          (name (cadr def))
          (ht (hcomp-ht-from-type type 'install-for-add-trip-hcomp-build)))
     (when evalp
-      (with-debug (eval def)
+      (with-debug (incf-pass2-def-time? (eval def))
                   "[~s] Eval def for ~s.~%"
                   'idfathb-1 name)
       #-(or ccl sbcl)
       (when (and (eq (car def) 'defun)
                  (default-compile-fns (w *the-live-state*)))
-        (with-debug (compile name)
+        (with-debug (incf-pass2-def-time? (compile name))
                     "[~s] Compile def for ~s.~%"
                     'idfathb-2 name)))
     (assert ht)
@@ -6566,7 +6566,7 @@
         (return-val nil))
     (when (null ht) ; e.g., including uncertified book
       (return-from install-for-add-trip-include-book
-                   (and def (with-debug (eval def)
+                   (and def (with-debug (incf-pass2-def-time? (eval def))
                                         "[~s] Eval def for ~s.~%"
                                         'ifatib-1 name))))
     (multiple-value-bind
@@ -6654,7 +6654,8 @@
                      (setf (symbol-function name) fixed-val)
                      "[~s] Set (symbol-function ~s) with fixed-val.~%"
                      'ifatib-2 name))
-                   (t (cond (def (with-debug (eval def)
+                   (t (cond (def (with-debug (incf-pass2-def-time?
+                                              (eval def))
                                              "[~s] Eval def for ~s.~%"
                                              'ifatib-3 name))
                             (t (setq return-val nil))))))))
@@ -6677,7 +6678,7 @@
             t))))
       (t ; Hash-table lookup either fails or is not used.
        (when def
-         (with-debug (eval def)
+         (with-debug (incf-pass2-def-time? (eval def))
                      "[~s] Eval def for ~s.~%"
                      'ifatib-7 def))))
      return-val)))
@@ -6705,7 +6706,7 @@
                                        nil))
    ((hcomp-build-p)
     (install-for-add-trip-hcomp-build def reclassifyingp evalp))
-   (t (with-debug (eval def)
+   (t (with-debug (incf-pass2-def-time? (eval def))
                   "[~s] Eval def for ~s.~%"
                   'ifat-1 (cadr def)))))
 
@@ -6858,11 +6859,16 @@
                 (t (let (form)
                      (cond
                       (oneify-p
-                       (let ((*1*-def (cons 'defun
-                                            (oneify-cltl-code (cadr def)
-                                                              def0
-                                                              (cdddr def)
-                                                              wrld))))
+                       (let ((*1*-def
+                              (cons 'defun
+                                    (with-debug (incf-pass2-def-time?
+                                                 (oneify-cltl-code (cadr def)
+                                                                   def0
+                                                                   (cdddr def)
+                                                                   wrld))
+                                                "[~s] (oneify ~s)~%"
+                                                'idfat-oneify
+                                                name))))
                          (setf (car tail) *1*-def)
 
 ; While it is tempting to do a declaim for a *1* function,
@@ -6908,7 +6914,7 @@
 ; of GCL (before 2.7.0), form is nil anyhow, so it's not worth spending a lot
 ; of time on this issue or having it affect how we specify evalp.
 
-                       (with-debug (eval form)
+                       (with-debug (incf-pass2-def-time? (eval form))
                                    "[~s] (eval ~s)~%"
                                    'idfat-5 form))
                      (let ((skip-reason
@@ -6927,7 +6933,8 @@
                           ((eq skip-reason 'logic)
                            (assert *hcomp-fn-ht*) ; as hcomp-build-p is non-nil
                            (when evalp
-                             (with-debug (eval (car tail))
+                             (with-debug (incf-pass2-def-time?
+                                          (eval (car tail)))
                                          "[~s] Eval def for ~s.~%"
                                          'idfat-6 (cadr (car tail))))
                            (with-debug (setf (gethash (*1*-symbol name)
@@ -6937,7 +6944,8 @@
                                         ~s.~%"
                                        'idfat-7 (*1*-symbol name)))
                           (evalp
-                           (with-debug (eval (car tail))
+                           (with-debug (incf-pass2-def-time?
+                                        (eval (car tail)))
                                        "[~s] Eval def for ~s.~%"
                                        'idfat-8 (cadr (car tail)))))
                          (setf (car tail) nil))))))))
@@ -6945,7 +6953,7 @@
          (assert evalp)
          (loop for def in defs
                when def
-               do (with-debug (eval def)
+               do (with-debug (incf-pass2-def-time? (eval def))
                               "[~s] Eval def for ~s.~%"
                               'idfat-8 (cadr def))))
         (hcomp-build-p
@@ -6956,7 +6964,7 @@
         (t
          (assert evalp)
          (loop for def in defs
-               do (with-debug (eval def)
+               do (with-debug (incf-pass2-def-time? (eval def))
                               "[~s] Eval def for ~s.~%"
                               'idfat-9 (cadr def))))))
 

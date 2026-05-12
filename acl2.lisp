@@ -2914,6 +2914,10 @@ You are using version ~s.~s.~s."
 ; See the comment in *rewrite-depth-max* about rewrite stack depth:
 ; (push :acl2-rewrite-meter *features*)
 
+; See the comment in *pass2-def-time-info* about collecting times for
+; definitions made during pass 2 of certify-book. 
+; (push :acl2-pass2-def-time-info *features*)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            PROMPTS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
