@@ -1476,15 +1476,13 @@
 (defthm equal-of-cdr-and-cons-of-nth-of-1
   (equal (equal (cdr x) (cons (nth 1 x) y))
          (and (< 1 (len x))
-              (equal (cddr x) y)))
-  :hints (("Goal" :in-theory (disable))))
+              (equal (cddr x) y))))
 
 (defthm equal-of-nthcdr-and-cons-of-nth
   (implies (natp n)
            (equal (equal (nthcdr n x) (cons (nth n x) y))
                   (and (< n (len x))
-                       (equal (nthcdr (+ 1 n) x) y))))
-  :hints (("Goal" :in-theory (disable))))
+                       (equal (nthcdr (+ 1 n) x) y)))))
 
 ;(defmacro memberp (a x) `(memberp ,a ,x))
 

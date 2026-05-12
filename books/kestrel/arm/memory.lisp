@@ -1023,8 +1023,7 @@
                 ;(integerp free)
                 )
            (equal (write-byte ad byte arm)
-                  (write-byte free byte arm)))
-  :hints (("Goal" :in-theory (enable))))
+                  (write-byte free byte arm))))
 
 (defthm write-byte-of-write-byte-same
   (equal (write-byte ad byte1 (write-byte ad byte2 arm))
@@ -1081,10 +1080,7 @@
          (if (equal (bvchop 32 addr1)
                     (bvchop 32 addr2))
              (bvchop 8 byte)
-           (read-byte addr1 arm)))
-  :hints (("Goal" :in-theory (enable))))
-
-
+           (read-byte addr1 arm))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1218,7 +1218,7 @@
 ;;                 )
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size (bvchop size x) y)))
-;;   :hints (("Goal" :in-theory (enable))))
+;;   )
 
 ;(local (in-theory (disable jvm::int-lemma0))) ;could make a cheap version with a free var
 

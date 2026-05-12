@@ -126,8 +126,7 @@
                 (natp n)
                 (armp arm))
            (equal (bvchop size (reg n arm))
-                  (reg n arm)))
-  :hints (("Goal" :in-theory (enable))))
+                  (reg n arm))))
 
 (defthm reg-of-if-arg2
   (equal (reg n (if test arm1 arm2))

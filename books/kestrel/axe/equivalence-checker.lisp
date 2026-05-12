@@ -2483,9 +2483,7 @@
                               (integerp high)
                               (<= low (+ 1 high)) ;weird?
                               (all-integer-listp value-traces)
-                              (equal (len-list target-traces) (len-list value-traces)))
-                  :guard-hints (("Goal" :in-theory (disable))) ;fixme
-                  ))
+                              (equal (len-list target-traces) (len-list value-traces)))))
   (if (endp target-traces)
       t
     (and (slice-pattern-works-on-trace high low (first target-traces) (first value-traces))
