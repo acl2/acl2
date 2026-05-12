@@ -1383,26 +1383,23 @@
                                               changep ;; no change to changep
                                               rule-alist interpreted-function-alist monitored-symbols print case-designator work-hard-when-instructedp hit-counts tries prover-depth options (+ -1 count) state)
            ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to the done-list:
-           (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           (b* (((mv erp provedp new-disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                  (get-darg-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                done-list ; will be extended with the disjuncts
-                                nil       ;negated-flg
-                                nil       ; print, todo
-                                ))
-                ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)))
-             (if provedp
+                                     nil ; print, todo
+                                     ))
+                ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
+                ((when provedp)
                  (mv (erp-nil)
                      t   ;provedp
                      t   ;changep
                      nil ;literal-nodenums
-                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
-               ;; Continue rewriting literals:
-               (rewrite-literals-for-axe-prover rest-work-list
-                                                extended-done-list
-                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                t ;; something changed
-                                                rule-alist interpreted-function-alist monitored-symbols print case-designator work-hard-when-instructedp hit-counts tries prover-depth options (+ -1 count) state)
-               )))))))
+                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)))
+             ;; Continue rewriting literals:
+             (rewrite-literals-for-axe-prover rest-work-list
+                                              (union-equal new-disjuncts done-list)
+                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                              t ;; something changed
+                                              rule-alist interpreted-function-alist monitored-symbols print case-designator work-hard-when-instructedp hit-counts tries prover-depth options (+ -1 count) state)))))))
 
  ;; can this loop? probably, if the rules loop?
  ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state).

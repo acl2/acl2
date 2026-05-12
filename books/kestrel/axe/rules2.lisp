@@ -196,26 +196,22 @@
 ;;                  (bag::unique (strip-cars pairs)))
 ;;             (equal (rkeys (set-fields ad pairs heap))
 ;;                    (set::insert ad (rkeys heap))))
-;;    :hints (("Subgoal *1/2.4" :use (
-;;                                    (:instance rkeys-of-set-fields-cases (pairs (cdr pairs)))
-
+;;    :hints (("Subgoal *1/2.4" :use ((:instance rkeys-of-set-fields-cases (pairs (cdr pairs)))
 ;;                                    )
 ;; ;          :expand (SET-FIELDS AD PAIRS HEAP)
 ;;             :in-theory (e/d (set-fields BAG::UNIQUE-OF-CONS)
-;;                             ( ;rkeys-of-set-fields-subset
+;;                             (;rkeys-of-set-fields-subset
 ;;                              SET::DOUBLE-CONTAINMENT
 ;;                              SET::PICK-A-POINT-SUBSET-STRATEGY)))
 
-;;            ("Subgoal *1/2.3" :use (
-;;          ;                          (:instance rkeys-of-set-field-cases (pair (CAAR PAIRS)) (value (CDAR PAIRS)))
-
+;;            ("Subgoal *1/2.3" :use (; (:instance rkeys-of-set-field-cases (pair (CAAR PAIRS)) (value (CDAR PAIRS)))
 ;;                                    )
 ;; ;          :expand (SET-FIELDS AD PAIRS HEAP)
 ;;             :in-theory (e/d (set-fields BAG::UNIQUE-OF-CONS)
-;;                             ( ;rkeys-of-set-fields-subset
+;;                             (;rkeys-of-set-fields-subset
 ;;                              SET::DOUBLE-CONTAINMENT
 ;;                              SET::PICK-A-POINT-SUBSET-STRATEGY)))
-;;            ("subgoal *1/2" :use ( ;(:instance rkeys-of-set-fields-cases (pairs (CDR PAIRS)))
+;;            ("subgoal *1/2" :use (;(:instance rkeys-of-set-fields-cases (pairs (CDR PAIRS)))
 ;; ;(:instance rkeys-of-set-field-cases (pair (CAAR PAIRS)) (value (CDAR PAIRS)))
 ;; ;(:instance rkeys-of-set-field-cases (pair (CAAR PAIRS)) (value (CDAR PAIRS)) (heap (SET-FIELDS AD (CDR PAIRS) HEAP)))
 ;;                                  ;(:instance rkeys-of-set-fields-cases (pairs (CDR PAIRS)) (heap (SET-FIELD AD (CAAR PAIRS) (CDAR PAIRS) HEAP)))
@@ -223,7 +219,7 @@
 ;; ;          :expand (SET-FIELDS AD PAIRS HEAP)
 ;;             :in-theory (e/d (set-fields
 ;;                              BAG::UNIQUE-OF-CONS)
-;;                             ( ;rkeys-of-set-fields-subset
+;;                             (;rkeys-of-set-fields-subset
 ;;                              ;rkeys-of-set-field-both
 ;;                              SET::DOUBLE-CONTAINMENT
 ;;                              SET::PICK-A-POINT-SUBSET-STRATEGY)))
@@ -719,9 +715,7 @@
 ;;    :hints (("Goal" ;:expand (array-ref-listp ref-list items-left nil :byte heap)
 ;;             :do-not '(generalize eliminate-destructors)
 
-;;             :expand (
-;;                      (ARRAY-REF-LISTP REF-LIST ITEMS-LEFT NIL ':BYTE HEAP)
-;;                      )
+;;             :expand ((ARRAY-REF-LISTP REF-LIST ITEMS-LEFT NIL ':BYTE HEAP))
 ;;             :in-theory (e/d (array-ref-listp) (array-ref-listp-byte-case-when-dims-nil))
 ;;             ))))
 
@@ -1024,7 +1018,7 @@
 ;;            (equal (array-row n ref (store-array-2d ref contents numrows numcols ':byte heap))
 ;;                   (bvchop-list 8 ;byte-fix-list
 ;;                                 (take numcols (nth n contents)))))
-;;   :hints (("Goal" :in-theory (e/d (array-row) ( store-array-list-when-consp array-row-recollapse))
+;;   :hints (("Goal" :in-theory (e/d (array-row) (store-array-list-when-consp array-row-recollapse))
 ;; ;          :expand (store-array-2d ref contents numrows '4 ':byte heap)
 ;;            )))
 
@@ -1090,7 +1084,7 @@
 ;;                 )
 ;;            (signed-byte-p 32 (ARRAY-ELEM-2D m n A)))
 ;;   :hints (("Goal" :use (:instance intP-NTH-FROM-intP-LIST (lst (NTH M A)))
-;;            :in-theory (e/d (ARRAY-ELEM-2D) ( ARRAY-ELEM-2D-RECOLLAPSE SIGNED-BYTE-P-NTH-FROM-BYTE-P-LIST NTH-OF-ARRAY-ROW)))))
+;;            :in-theory (e/d (ARRAY-ELEM-2D) (ARRAY-ELEM-2D-RECOLLAPSE SIGNED-BYTE-P-NTH-FROM-BYTE-P-LIST NTH-OF-ARRAY-ROW)))))
 
 ;; (defthm sbp32-of-array-elem-2d-gen
 ;;   (implies (and; (items-have-len free a)
@@ -1566,10 +1560,9 @@
 ;;                 (< n 32))
 ;;            (equal (bvchop n (sshr 32 x shiftamt))
 ;;                   (slice (+ shiftamt n -1) shiftamt x)))
-;;   :hints (("Goal" :in-theory (e/d ( sshr slice) (
-;;                                                            LOGEXT-OF-LOGTAIL ;looped
-;;                                                            LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE ;looped
-;;                                                            )))))
+;;   :hints (("Goal" :in-theory (e/d (sshr slice) (LOGEXT-OF-LOGTAIL ;looped
+;;                                                  LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE ;looped
+;;                                                  )))))
 
 ;(in-theory (disable logtail-bvchop)) ;fixme
 
@@ -1583,7 +1576,7 @@
 ;;                   (logext (+ n shiftamt (unary-- shiftamt))
 ;;                           (slice (binary-+ '-1 (binary-+ n shiftamt))
 ;;                                  shiftamt x))))
-;;   :hints (("Goal" :in-theory (e/d ( sshr slice) (bvchop-of-logtail
+;;   :hints (("Goal" :in-theory (e/d (sshr slice) (bvchop-of-logtail
 ;;                                                                               LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
 ;; ;use to prove the other one?
@@ -1595,10 +1588,9 @@
 ;;                 (< n 32))
 ;;            (equal (bvchop n (sshr 32 x shiftamt))
 ;;                   (slice (+ shiftamt n -1) shiftamt x)))
-;;   :hints (("Goal" :in-theory (e/d ( sshr slice) (
-;;                                                            LOGEXT-OF-LOGTAIL ;looped
-;;                                                            LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE ;looped
-;;                                                            )))))
+;;   :hints (("Goal" :in-theory (e/d (sshr slice) (LOGEXT-OF-LOGTAIL ;looped
+;;                                                  LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE ;looped
+;;                                                  )))))
 
 ;; (defthm logext-of-sshr
 ;;   (implies (and (natp n)
@@ -1935,7 +1927,7 @@
 ;;                       x))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;            :use (:instance split-list-hack)
-;;            :in-theory (e/d ( ;PERM-OF-CONS PERM-BECOMES-TWO-SUBBAGP-CLAIMS
+;;            :in-theory (e/d (;PERM-OF-CONS PERM-BECOMES-TWO-SUBBAGP-CLAIMS
 ;;                             ) (;LIST::EQUAL-APPEND-REDUCTION!
 ;;                                ;;LIST::EQUAL-APPEND-REDUCTION!-ALT
 ;;                                )))))
@@ -2377,7 +2369,7 @@
 ;;                           '("java.lang.Object" . "wait-set")
 ;;                           heap)))))))))
 ;;   :hints (("Goal" :in-theory (e/d ((s) ;bozo
-;;                                    jvm::INITIALIZE-ONE-DIM-ARRAY) ( s==r)))))
+;;                                    jvm::INITIALIZE-ONE-DIM-ARRAY) (s==r)))))
 
 ;this may help shrink the term size...
 ;note that this cuts the mentions of b from 2 to 1.
@@ -2473,7 +2465,7 @@
 ;;            (equal (equal (update-nth n val1 lst) (update-subrange n end (cons val2 rst) lst))
 ;;                   (and (equal val1 val2)
 ;;                        (equal lst (update-subrange (+ 1 n) end rst lst)))))
-;;   :hints (("Goal" :in-theory (e/d (list::update-nth-equal-rewrite update-subrange) ( update-nth-of-update-subrange-diff)))))
+;;   :hints (("Goal" :in-theory (e/d (list::update-nth-equal-rewrite update-subrange) (update-nth-of-update-subrange-diff)))))
 
 ;; (IMPLIES (AND (INTEGERP K)
 ;;               (NATP SIZE)
@@ -2910,14 +2902,14 @@
 ;;   (implies (natp x)
 ;;            (equal (JVM::IREM x 4)
 ;;                   (bvchop 2 x)))
-;;   :hints (("Goal" :in-theory (e/d (jvm::irem LOGAPP-0) ( TIMES-4-BECOMES-LOGAPp FLOOR-BY-4)))))
+;;   :hints (("Goal" :in-theory (e/d (jvm::irem LOGAPP-0) (TIMES-4-BECOMES-LOGAPp FLOOR-BY-4)))))
 
 ;; (defthm idiv-by-4-becomes-slice
 ;;   (implies (and (signed-byte-p 32 x)
 ;;                 (<= 0 x))
 ;;            (equal (JVM::IDIV x 4)
 ;;                   (slice 30 2 x)))
-;;   :hints (("Goal" :in-theory (e/d (jvm::idiv LOGAPP-0) ( TIMES-4-BECOMES-LOGAPp)))))
+;;   :hints (("Goal" :in-theory (e/d (jvm::idiv LOGAPP-0) (TIMES-4-BECOMES-LOGAPp)))))
 
 ;may help during backchaining...
 (defthm not-equal-when-less
@@ -3017,9 +3009,7 @@
 ;;                 (natp start))
 ;;            (equal (subrange start end (byte-fix-list lst))
 ;;                   (byte-fix-list (subrange start end lst))))
-;;   :hints (("Goal" :in-theory (e/d (subrange) (
-;;                                               anti-subrange
-;;                                               )))))
+;;   :hints (("Goal" :in-theory (e/d (subrange) (anti-subrange)))))
 
 (defthm equal-if-<-hack
   (implies (and (rationalp x)
@@ -3384,7 +3374,7 @@
 ;;                                                  JVM::HEAP)))
 ;;                   (JVM::INITIAL-ARRAY-CONTENTS TYPE JVM::INNERCOUNT)))
 ;;   :hints (("Goal" :use (:instance GET-FIELD-CONTENTS-OF-INITIALIZE-2D-ARRAY-SUB-ARRAY)
-;;            :in-theory (e/d (get-field)( GET-FIELD-CONTENTS-OF-INITIALIZE-2D-ARRAY-SUB-ARRAY)))))
+;;            :in-theory (e/d (get-field)(GET-FIELD-CONTENTS-OF-INITIALIZE-2D-ARRAY-SUB-ARRAY)))))
 
 
 

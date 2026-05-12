@@ -728,7 +728,7 @@ whose effect may be more easy to guess.</p>")
       can, stopping at the first error.  Warning: Be sure you understand how
       far the @('ld') process got and where it got stuck.  That's where you
       need to work.  One way to ensure you know how much material was loaded is
-      to use @('i-am-here').")
+      to use @(tsee i-am-here).")
 
       (xdoc::li "If you are confident that a change to a book will be accepted
       by ACL2, you can avoid the ACL2 REPL entirely and try just using <see

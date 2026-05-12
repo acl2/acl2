@@ -14,6 +14,7 @@
 (include-book "logext-def")
 (include-book "getbit-def")
 (local (include-book "logapp"))
+(local (include-book "logbitp"))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "getbit-rules"))
@@ -69,8 +70,6 @@
 ;;           (EQUAL (LOGAPP 31 (* X (LOGAPP 31 Y z)) w)
 ;;                  (LOGAPP 31 (* X Y) w)))
 ;;  :hints (("Goal" :in-theory (enable logapp bvchop))))
-
-(local (in-theory (disable logbitp)))
 
 ;; (thm
 ;;  (implies (and (integerp x)
@@ -198,15 +197,6 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (logapp bvchop) (MOD-EXPT-SPLIT)))))
 
-(defthm logbitp-when-j-is-not-integerp
-  (implies (not (integerp j))
-           (not (logbitp i j)))
-  :hints (("Goal" :in-theory (enable logbitp))))
-
-(defthm logbitp-of-0
-  (not (logbitp n 0))
-  :hints (("Goal" :in-theory (enable logbitp))))
-
 (defthm oddp-of-bvchop
   (equal (ODDP (BVCHOP n X))
          (if (not (posp n))
@@ -270,6 +260,7 @@
                                    MOD-EXPT-SPLIT ;bad?
                                    )))))
 
+; no hyps
 (defthm bvchop-of-logext-same
   (equal (bvchop size (logext size x))
          (bvchop size x))
@@ -709,7 +700,7 @@
                   (getbit n x)))
   :hints (("Goal" :cases ((integerp x))
            :in-theory (e/d (getbit slice BVCHOP-OF-LOGTAIL)
-                           ( ;LOGTAIL-BVCHOP
+                           (;LOGTAIL-BVCHOP
                             ;;BVCHOP-OF-LOGTAIL
                             )))))
 

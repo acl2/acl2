@@ -4,20 +4,16 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "REMORA")
 
-(include-book "grammar")
-(include-book "parser")
-(include-book "post-parsing")
+(include-book "concrete-syntax")
 (include-book "abstract-syntax")
-(include-book "syntax-abstraction")
-(include-book "parser-interface")
-(include-book "printer")
-(include-book "parse-directory-files") ; for testing
+(include-book "parsing-and-printing")
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
 
@@ -93,13 +89,8 @@
    (xdoc::p
     "This ACL2 library is work in progress towards building
      formalizations and tools for Remora."))
-  :order-subtopics (grammar
-                    parser
-                    post-parsing
+  :order-subtopics (concrete-syntax
                     abstract-syntax
-                    syntax-abstraction
-                    parser-interface
-                    printer
-                    parse-directory-utilities
+                    parsing-and-printing
                     static-semantics
                     dynamic-semantics))

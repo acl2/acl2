@@ -171,9 +171,8 @@
            :in-theory (disable logtail-shift-gen))))
 
 (defthm logtail-of-expt
-  (implies (and
-            (natp n)
-            (integerp size))
+  (implies (and (natp n)
+                (integerp size))
            (equal (logtail n (expt 2 size))
                   (if (<= n size)
                       (expt 2 (- size n))

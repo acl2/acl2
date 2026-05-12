@@ -16,7 +16,7 @@
 
 (acl2::controlled-configuration)
 
-(local (in-theory (enable* abstract-syntax-corep-rules)))
+(local (in-theory (enable* ast-corep-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,15 +26,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As part of desugaring, [impl] also flattens frame expressions.
-     We prefer to separate frame flattening from @(see desugaring).
-     Here we define frame flattening.")
-   (xdoc::p
-    "Although [impl] only performs frame flattening on bracket expressions,
-     the intention might actually be to perform it on all frame exrepssions.
-     Our separate formalization of frame flattening
-     operates on all frame expressions;
-     in fact, it is meant for use after desugaring."))
+    "This unnests nested frame and array expressions, under suitably conditions.
+     It could be thought of as
+     a normalizing transformation,
+     or even a desugaring transformation,
+     but it is not part of actual @(see desugaring),
+     and may not be in fact necessary for most purposes.
+     However, it is part of [impl]
+     (part of desugaring in earlier versions, but not currently),
+     and [tutorial] describes it as syntactic sugar
+     (but [tutorial] is older than [impl])."))
   :order-subtopics t
   :default-parent t)
 
@@ -76,7 +77,7 @@
      (xdoc::p
       "is turned into")
      (xdoc::codeblock
-      "(frame [a1 ... aN b1 ... bM] x11 ... xNP)")
+      "(frame [a1 ... aN b1 ... bM] x11 ... xQP)")
      (xdoc::p
       "and that an expression of the form")
      (xdoc::codeblock
@@ -87,7 +88,7 @@
      (xdoc::p
       "is turned into")
      (xdoc::codeblock
-      "(array [a1 ... aN b1 ... bM] x11 ... xNP)")
+      "(array [a1 ... aN b1 ... bM] x11 ... xQP)")
      (xdoc::p
       "More precisely, given an expression, we do the following.
        Unless the expression is a non-empty frame, we leave it unchanged.

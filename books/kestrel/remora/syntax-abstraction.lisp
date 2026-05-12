@@ -970,21 +970,26 @@
     :measure (abnf::tree-count tree))
 
   ;; dim-arith has branches with 2 tree-lists: an operator and the
-  ;; *( ws dim ) repetition.  We currently only support "+"; "*" and "-"
-  ;; produce a not-yet-implemented error because the AST has no dim-mul
-  ;; or dim-sub constructors yet.
+  ;; *( ws dim ) repetition.  The operator is one of "+", "*", "-",
+  ;; producing a dim-add, dim-mul, or dim-sub respectively.
   (define abs-dim-arith ((tree abnf::treep))
     :returns (d dim-resultp)
     :short "Abstract a @('dim-arith') to a @(tsee dim)."
     (b* (((okf (abnf::tree-list-tuple2 sub))
           (abnf::check-tree-nonleaf-2 tree "dim-arith"))
          ((okf op-tree) (abnf::check-tree-list-1 sub.1st))
+         ((okf dims) (abs-*-ws-dim sub.2nd))
          (plus-pass (abnf::check-tree-ichars op-tree "+"))
-         ((when (reserrp plus-pass))
-          (reserrf (list :dim-arith-op-not-yet-implemented
-                         (abnf::tree-info-for-error op-tree))))
-         ((okf dims) (abs-*-ws-dim sub.2nd)))
-      (make-dim-add :dims dims))
+         ((unless (reserrp plus-pass))
+          (make-dim-add :dims dims))
+         (mul-pass (abnf::check-tree-ichars op-tree "*"))
+         ((unless (reserrp mul-pass))
+          (make-dim-mul :dims dims))
+         (sub-pass (abnf::check-tree-ichars op-tree "-"))
+         ((unless (reserrp sub-pass))
+          (make-dim-sub :dims dims)))
+      (reserrf (list :dim-arith-op
+                     (abnf::tree-info-for-error op-tree))))
     :measure (abnf::tree-count tree))
 
   ;; ( ws dim ) wrapper: anonymous nonleaf with 2 tree-lists (ws and dim).
@@ -1589,8 +1594,7 @@
 (fty::defresult fun-sig-info-result
   :short "Fixtype of @(tsee fun-sig-info) and errors."
   :ok fun-sig-info
-  :pred fun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred fun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1605,8 +1609,7 @@
 (fty::defresult tfun-sig-info-result
   :short "Fixtype of @(tsee tfun-sig-info) and errors."
   :ok tfun-sig-info
-  :pred tfun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred tfun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1622,8 +1625,7 @@
 (fty::defresult ifun-sig-info-result
   :short "Fixtype of @(tsee ifun-sig-info) and errors."
   :ok ifun-sig-info
-  :pred ifun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred ifun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1641,8 +1643,7 @@
 (fty::defresult at-fun-sig-info-result
   :short "Fixtype of @(tsee at-fun-sig-info) and errors."
   :ok at-fun-sig-info
-  :pred at-fun-sig-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred at-fun-sig-info-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1780,8 +1781,7 @@
 (fty::defresult unbox-spec-info-result
   :short "Fixtype of @(tsee unbox-spec-info) and errors."
   :ok unbox-spec-info
-  :pred unbox-spec-info-resultp
-  :prepwork ((local (in-theory (enable strip-cars)))))
+  :pred unbox-spec-info-resultp)
 
 (local (in-theory (enable unbox-spec-info-p-when-result-not-error)))
 

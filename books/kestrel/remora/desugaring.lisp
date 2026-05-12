@@ -18,7 +18,7 @@
 
 (acl2::controlled-configuration)
 
-(local (in-theory (enable* abstract-syntax-corep-rules)))
+(local (in-theory (enable* ast-corep-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,10 +30,8 @@
    (xdoc::p
     "We define a desugaring transformation from all ASTs to the core ASTs.")
    (xdoc::p
-    "In [impl], this is mostly done during parsing,
-     on the fly as ASTs as constructed.
-     While [impl] also flattens frame expressions at the same time,
-     we formalize that as a separate transformation on ASTs."))
+    "In [impl], this is done during parsing,
+     on the fly as ASTs as constructed."))
   :order-subtopics t
   :default-parent t)
 
@@ -76,9 +74,11 @@
     "A bracket type is turned into an array type
      whose shape is the concatenation of the shapes.")
    (xdoc::p
-    "A string is turned into an arary expression
+    "A non-empty string is turned into an array expression
      with the length of the string as its single dimension
-     and with the characters, converted to integers, as atoms.")
+     and with the characters, converted to integers, as atoms.
+     The empty string is turned into an empty array expression
+     with the type of integers.")
    (xdoc::p
     "A combined application is turned into its constituent applications,
      also based on whether type and ispace arguments are present or not.")
@@ -102,11 +102,14 @@
    (type :bracket (make-type-array :elem (type-desugar type.elem)
                                    :shape (shape-append
                                            (shape-list-desugar type.shapes))))
-   (expr :string (make-expr-array
-                  :dims (list (len expr.chars))
-                  :atoms (atom-base-list
-                          (base-lit-int-list
-                           (char-lit-list-desugar expr.chars)))))
+   (expr :string (if (consp expr.chars)
+                     (make-expr-array
+                      :dims (list (len expr.chars))
+                      :atoms (atom-base-list
+                              (base-lit-int-list
+                               (char-lit-list-desugar expr.chars))))
+                   (make-expr-array-empty :dims (list 0)
+                                          :type (type-base (base-type-int)))))
    (expr :capp (b* ((fun (expr-desugar expr.fun))
                     (fun-targs
                      (type-list-option-case
@@ -130,7 +133,7 @@
    (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
                     (make-expr-frame :dims (list (len exprs))
                                      :exprs exprs))))
-  :name abstract-syntax-desugar)
+  :name ast-desugar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -139,72 +142,72 @@
 
   (defret-mutual shapes-corep-of-shapes-desugar
     (defret shape-corep-of-shape-desugar
-      (shape-corep fty::result)
+      (shape-corep result)
       :fn shape-desugar)
     (defret shape-list-corep-of-shape-list-desugar
-      (shape-list-corep fty::result)
+      (shape-list-corep result)
       :fn shape-list-desugar)
     :mutual-recursion shapes-desugar
     :hints (("Goal" :in-theory (enable shape-desugar shape-list-desugar))))
 
   (defret ispace-corep-of-ispace-desugar
-    (ispace-corep fty::result)
+    (ispace-corep result)
     :fn ispace-desugar
     :hints (("Goal" :in-theory (enable ispace-desugar))))
 
   (defret ispace-list-corep-of-ispace-list-desugar
-    (ispace-list-corep fty::result)
+    (ispace-list-corep result)
     :fn ispace-list-desugar
     :hints (("Goal" :induct t :in-theory (enable ispace-list-desugar))))
 
   (defret ispace-list-option-corep-of-ispace-list-option-desugar
-    (ispace-list-option-corep fty::result)
+    (ispace-list-option-corep result)
     :fn ispace-list-option-desugar
     :hints (("Goal" :in-theory (enable ispace-list-option-desugar))))
 
   (defret-mutual types-corep-of-types-desugar
     (defret type-corep-of-type-desugar
-      (type-corep fty::result)
+      (type-corep result)
       :fn type-desugar)
     (defret type-list-corep-of-type-list-desugar
-      (type-list-corep fty::result)
+      (type-list-corep result)
       :fn type-list-desugar)
     :mutual-recursion types-desugar
     :hints (("Goal" :in-theory (enable type-desugar type-list-desugar))))
 
   (defret type-option-corep-of-type-option-desugar
-    (type-option-corep fty::result)
+    (type-option-corep result)
     :fn type-option-desugar
     :hints (("Goal" :in-theory (enable type-option-desugar))))
 
   (defret var+type-corep-of-var+type-desugar
-    (var+type-corep fty::result)
+    (var+type-corep result)
     :fn var+type-desugar
     :hints (("Goal" :in-theory (enable var+type-desugar))))
 
   (defret var+type-list-corep-of-var+type-list-desugar
-    (var+type-list-corep fty::result)
+    (var+type-list-corep result)
     :fn var+type-list-desugar
     :hints (("Goal" :induct t :in-theory (enable var+type-list-desugar))))
 
   (defret-mutual exprs/atoms/binds-corep-of-exprs/atoms/binds-desugar
     (defret expr-corep-of-expr-desugar
-      (expr-corep fty::result)
+      (expr-corep result)
       :fn expr-desugar)
     (defret expr-list-corep-of-expr-list-desugar
-      (expr-list-corep fty::result)
+      (expr-list-corep result)
       :fn expr-list-desugar)
     (defret atom-corep-of-atom-desugar
-      (atom-corep fty::result)
+      (atom-corep result)
       :fn atom-desugar)
     (defret atom-list-corep-of-atom-desugar
-      (atom-list-corep fty::result)
+      (atom-list-corep result)
       :fn atom-list-desugar)
     (defret bind-corep-of-bind-desugar
-      (bind-corep fty::result)
+      (bind-corep result)
       :fn bind-desugar)
     (defret bind-list-corep-of-bind-list-desugar
-      (bind-list-corep fty::result)
+      (bind-list-corep result)
       :fn bind-list-desugar)
     :mutual-recursion exprs/atoms/binds-desugar
     :hints (("Goal" :in-theory (enable expr-desugar
@@ -215,7 +218,7 @@
                                        bind-list-desugar))))
 
   (defret prog-corep-of-prog-desugar
-    (prog-corep fty::result)
+    (prog-corep result)
     :fn prog-desugar
     :hints (("Goal" :in-theory (enable prog-desugar)))))
 
@@ -226,11 +229,11 @@
 
   (defret-mutual shapes-desugar-when-shapes-corep
     (defret shape-desugar-when-shape-corep
-      (equal fty::result (shape-fix shape))
+      (equal result (shape-fix shape))
       :hyp (shape-corep shape)
       :fn shape-desugar)
     (defret shape-list-desugar-when-shape-list-corep
-      (equal fty::result (shape-list-fix shape-list))
+      (equal result (shape-list-fix shape-list))
       :hyp (shape-list-corep shape-list)
       :fn shape-list-desugar)
     :mutual-recursion shapes-desugar
@@ -238,30 +241,30 @@
     (("Goal" :in-theory (enable shape-desugar shape-list-desugar shape-corep))))
 
   (defret ispace-desugar-when-ispace-corep
-    (equal fty::result (ispace-fix ispace))
+    (equal result (ispace-fix ispace))
     :hyp (ispace-corep ispace)
     :fn ispace-desugar
     :hints (("Goal" :in-theory (enable ispace-desugar))))
 
   (defret ispace-list-desugar-when-ispace-list-corep
-    (equal fty::result (ispace-list-fix ispace-list))
+    (equal result (ispace-list-fix ispace-list))
     :hyp (ispace-list-corep ispace-list)
     :fn ispace-list-desugar
     :hints (("Goal" :induct t :in-theory (enable ispace-list-desugar))))
 
   (defret ispace-list-option-desugar-when-ispace-list-option-corep
-    (equal fty::result (ispace-list-option-fix ispace-list-option))
+    (equal result (ispace-list-option-fix ispace-list-option))
     :hyp (ispace-list-option-corep ispace-list-option)
     :fn ispace-list-option-desugar
     :hints (("Goal" :in-theory (enable ispace-list-option-desugar))))
 
   (defret-mutual types-desugar-when-types-corep
     (defret type-desugar-when-type-corep
-      (equal fty::result (type-fix type))
+      (equal result (type-fix type))
       :hyp (type-corep type)
       :fn type-desugar)
     (defret type-list-desugar-when-type-list-corep
-      (equal fty::result (type-list-fix type-list))
+      (equal result (type-list-fix type-list))
       :hyp (type-list-corep type-list)
       :fn type-list-desugar)
     :mutual-recursion types-desugar
@@ -269,7 +272,7 @@
     (("Goal" :in-theory (enable type-desugar type-list-desugar type-corep))))
 
   (defret type-option-desugar-when-type-option-corep
-    (equal fty::result (type-option-fix type-option))
+    (equal result (type-option-fix type-option))
     :hyp (type-option-corep type-option)
     :fn type-option-desugar
     :hints (("Goal" :in-theory (enable type-option-desugar
@@ -277,40 +280,40 @@
                                        type-option-fix))))
 
   (defret var+type-desugar-when-var+type-corep
-    (equal fty::result (var+type-fix var+type))
+    (equal result (var+type-fix var+type))
     :hyp (var+type-corep var+type)
     :fn var+type-desugar
     :hints (("Goal" :in-theory (enable var+type-desugar))))
 
   (defret var+type-list-desugar-when-var+type-list-corep
-    (equal fty::result (var+type-list-fix var+type-list))
+    (equal result (var+type-list-fix var+type-list))
     :hyp (var+type-list-corep var+type-list)
     :fn var+type-list-desugar
     :hints (("Goal" :induct t :in-theory (enable var+type-list-desugar))))
 
   (defret-mutual exprs/atoms/binds-desugar-when-exprs/atoms/binds-corep
     (defret expr-desugar-when-expr-corep
-      (equal fty::result (expr-fix expr))
+      (equal result (expr-fix expr))
       :hyp (expr-corep expr)
       :fn expr-desugar)
     (defret expr-list-desugar-when-expr-list-corep
-      (equal fty::result (expr-list-fix expr-list))
+      (equal result (expr-list-fix expr-list))
       :hyp (expr-list-corep expr-list)
       :fn expr-list-desugar)
     (defret atom-desugar-when-atom-corep
-      (equal fty::result (atom-fix atom))
+      (equal result (atom-fix atom))
       :hyp (atom-corep atom)
       :fn atom-desugar)
-    (defret atom-desugar-when-atom-list-corep
-      (equal fty::result (atom-list-fix atom-list))
+    (defret atom-list-desugar-when-atom-list-corep
+      (equal result (atom-list-fix atom-list))
       :hyp (atom-list-corep atom-list)
       :fn atom-list-desugar)
     (defret bind-desugar-when-bind-corep
-      (equal fty::result (bind-fix bind))
+      (equal result (bind-fix bind))
       :hyp (bind-corep bind)
       :fn bind-desugar)
     (defret bind-list-desugar-when-bind-list-corep
-      (equal fty::result (bind-list-fix bind-list))
+      (equal result (bind-list-fix bind-list))
       :hyp (bind-list-corep bind-list)
       :fn bind-list-desugar)
     :mutual-recursion exprs/atoms/binds-desugar
@@ -323,7 +326,7 @@
                                        expr-corep))))
 
   (defret prog-desugar-when-prog-corep
-    (equal fty::result (prog-fix prog))
+    (equal result (prog-fix prog))
     :hyp (prog-corep prog)
     :fn prog-desugar
     :hints (("Goal" :in-theory (enable prog-desugar)))))

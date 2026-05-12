@@ -740,10 +740,11 @@
           (deffoldred-gen-prod-combination+theorem
             type type nil nil prod
             suffix targets extra-args default combine name fty-table)))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
            (declare (ignorable ,type))
-           :returns (result ,result)
+           :returns (,result-var ,result)
            :parents (,name)
            ,fn-body
            ,@(and (or mutrecp recp)
@@ -815,10 +816,11 @@
                 targets extra-args default combine overrides name fty-table)))
           (mv `(,type-case ,type ,@cases)
               thm-events)))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
            (declare (ignorable ,type))
-           :returns (result ,result)
+           :returns (,result-var ,result)
            :parents (,name)
            ,body
            ,@(and (or mutrecp recp)
@@ -870,9 +872,10 @@
                           :some (,base-type-suffix (,accessor ,type)
                                                    ,@extra-args-names)
                           :none ,default))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
-           :returns (result ,result)
+           :returns (,result-var ,result)
            :parents (,name)
            ,body
            ,@(and (or mutrecp recp)
@@ -997,9 +1000,10 @@
                 ,default)
                (t (,combine (,elt-type-suffix (car ,type) ,@extra-args-names)
                             (,type-suffix (cdr ,type) ,@extra-args-names)))))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
-           :returns (result ,result)
+           :returns (,result-var ,result)
            :parents (,name)
            ,body
            ,@(and (or mutrecp recp)
@@ -1128,9 +1132,10 @@
                                               ,@extra-args-names)
                             (,type-suffix (omap::tail ,type)
                                           ,@extra-args-names)))))
+       (result-var (intern-in-package-of-symbol "RESULT" suffix))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
-           :returns (result ,result)
+           :returns (,result-var ,result)
            :parents (,name)
            ,body
            ,@(and (or mutrecp recp)
@@ -1146,6 +1151,12 @@
         (acl2::packn-pos (list type-suffix '-of-update) suffix))
        (val-type-suffix-of-head-when-type-suffix
         (acl2::packn-pos (list val-type-suffix '-of-head-when- type-suffix)
+                         suffix))
+       (val-type-suffix-of-cdr-assoc-when-type-suffix
+        (acl2::packn-pos (list val-type-suffix '-of-cdr-assoc-when- type-suffix)
+                         suffix))
+       (val-type-suffix-of-lookup-when-type-suffix
+        (acl2::packn-pos (list val-type-suffix '-of-lookup-when- type-suffix)
                          suffix))
        (thm-events
         (append
@@ -1189,11 +1200,30 @@
                            (,val-type-suffix (mv-nth 1 (omap::head ,type))
                                              ,@extra-args-names))
                   :enable ,type-suffix)
+                (defruled ,val-type-suffix-of-cdr-assoc-when-type-suffix
+                  (implies (and (,recog ,type)
+                                (,type-suffix ,type ,@extra-args-names)
+                                (omap::assoc key ,type))
+                           (,val-type-suffix (cdr (omap::assoc key ,type))
+                                             ,@extra-args-names))
+                  :induct t
+                  :enable ,type-suffix)
+                (defruled ,val-type-suffix-of-lookup-when-type-suffix
+                  (implies (and (,recog ,type)
+                                (,type-suffix ,type ,@extra-args-names)
+                                (set::in key (omap::keys ,type)))
+                           (,val-type-suffix (omap::lookup key ,type)
+                                             ,@extra-args-names))
+                  :enable (omap::lookup
+                           omap::assoc-to-in-of-keys
+                           ,val-type-suffix-of-cdr-assoc-when-type-suffix))
                 (add-to-ruleset
                  ,(deffoldred-gen-ruleset-name name)
                  '(,type-suffix-of-tail
                    ,type-suffix-of-update
-                   ,val-type-suffix-of-head-when-type-suffix)))))))
+                   ,val-type-suffix-of-head-when-type-suffix
+                   ,val-type-suffix-of-cdr-assoc-when-type-suffix
+                   ,val-type-suffix-of-lookup-when-type-suffix)))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

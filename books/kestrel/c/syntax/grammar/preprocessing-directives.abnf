@@ -1,0 +1,96 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains the grammar rules for preprocessing directives
+; [C17:6.10/1] [C23:6.10.1]
+; that are common to all the C dialects.
+; Together with the rules in the dialect-specific files
+; preprocessing-directives-*.abnf,
+; they define the preprocessing directives of each C dialect.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Most of the rules are common to [C17] and [C23],
+; except for elif groups and control lines,
+; which have additional alternatives in [C23],
+; and except that [C23] adds rules involving preprocessing parameters.
+; In this file we define elif groups and control lines specific to C17 and C23,
+; which the files preprocessing-directives-*.abnf use
+; to define elif groups and control lines.
+; The rules involving preprocessing parameters are
+; in preprocessing-directives-c23.abnf only.
+
+; We use 'pp-expression' instead of 'constant-expression'
+; for the expressions in the #if and #elif directives.
+; See preprocessing-expressions.abnf for an explanation.
+
+preprocessing-file = [ group ]
+
+group = group-part
+      / group group-part
+
+group-part = if-section
+           / control-line
+           / text-line
+           / "#" non-directive
+
+if-section = if-group [ elif-groups ] [ else-group ] endif-line
+
+if-group = "#" %s"if" pp-expression new-line [ group ]
+         / "#" %s"ifdef" identifier new-line [ group ]
+         / "#" %s"ifndef" identifier new-line [ group ]
+
+elif-groups = elif-group
+            / elif-groups elif-group
+
+elif-group-c17 = "#" %s"elif" pp-expression new-line [ group ]
+
+elif-group-c23 = elif-group-c17
+               / "#" %s"elifdef" identifier new-line [ group ]
+               / "#" %s"elifndef" identifier new-line [ group ]
+
+else-group = "#" %s"else" new-line [ group ]
+
+endif-line = "#" %s"endif" new-line
+
+control-line-c17 =
+    "#" %s"include" pp-tokens new-line
+  / "#" %s"define" identifier replacement-list new-line
+  / "#" %s"define" identifier lparen [ identifier-list ] ")"
+                   replacement-list new-line
+  / "#" %s"define" identifier lparen "..." ")"
+                   replacement-list new-line
+  / "#" %s"define" identifier lparen identifier-list "," "..." ")"
+                   replacement-list new-line
+  / "#" %s"undef" identifier new-line
+  / "#" %s"line" pp-tokens new-line
+  / "#" %s"error" [ pp-tokens ] new-line
+  / "#" %s"pragma" [ pp-tokens ] new-line
+  / "#" new-line
+
+control-line-c23 = control-line-c17
+                 / "#" %s"embed" pp-tokens new-line
+                 / "#" %s"warning" pp-tokens new-line
+
+text-line = [ pp-tokens ] new-line
+
+non-directive = pp-tokens new-line
+
+lparen = "(" ; not immediately preceded by white space
+
+replacement-list = [ pp-tokens ]
+
+pp-tokens = preprocessing-token
+          / pp-tokens preprocessing-token
+
+; The rule for new line is omitted here,
+; because it is already with the rules for characters.

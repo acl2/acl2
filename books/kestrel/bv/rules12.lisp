@@ -52,7 +52,7 @@
   :hints (("Goal"
            :in-theory (e/d (;bvxor
                             )
-                           ( ;BVXOR-TRIM-ARG1 ;BVXOR-CANCEL BVXOR-CANCEL-alt BVXOR-CANCEL-cross-2
+                           (;BVXOR-TRIM-ARG1 ;BVXOR-CANCEL BVXOR-CANCEL-alt BVXOR-CANCEL-cross-2
                             ))) ;why the disables?
           ))
 
@@ -239,9 +239,8 @@
 ;;                 (natp k)
 ;;                 (natp n))
 ;;            (unsigned-byte-p n (bvplus m k x)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus ;usb-plus-from-bounds
-;;                                    ) (
-;;                                             )))))
+;;   :hints (("Goal" :in-theory (enable bvplus ; usb-plus-from-bounds
+;;                              ))))
 
 ; rules needed to prove the lemmas that result from my tool (mostly size junk)
 
