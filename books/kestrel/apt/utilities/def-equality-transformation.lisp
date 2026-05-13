@@ -47,7 +47,7 @@
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
-(include-book "kestrel/utilities/error-checking/top" :dir :system) ; for ensure-function-known-measure
+(include-book "kestrel/error-checking/ensure-function-known-measure" :dir :system)
 (include-book "kestrel/utilities/messages2" :dir :system) ;for message-string
 (include-book "kestrel/utilities/add-not-normalized-suffixes" :dir :system)
 
@@ -155,7 +155,7 @@
                                      (defun-or-mutual-recursion-formp fn-event)
                                      (function-renamingp function-renaming)
                                      (member-eq rec '(nil :single :mutual))
-                                     (t/nil/auto-p function-disabled)
+                                     (member-eq function-disabled '(t nil :auto))
                                      ;; TODO: Guards for measure, and measure-hints
                                      (fn-definedp fn (w state))
                                      (booleanp normalize))
@@ -283,7 +283,7 @@
                                      (symbol-listp target-fns)
                                      (all-fn-definedp fns (w state))
                                      (function-renamingp function-renaming)
-                                     (t/nil/auto-p function-disabled)
+                                     (member-eq function-disabled '(t nil :auto))
                                      (symbol-alistp measure-alist)
                                      (booleanp normalize))
                          :mode :program))
