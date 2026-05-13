@@ -2915,7 +2915,8 @@ You are using version ~s.~s.~s."
 ; (push :acl2-rewrite-meter *features*)
 
 ; See the comment in *pass2-def-time-info* about collecting times for
-; definitions made during pass 2 of certify-book. 
+; definitions made during pass 2 of certify-book, which is accomplished by
+; building ACL2 after uncommenting the following line.
 ; (push :acl2-pass2-def-time-info *features*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

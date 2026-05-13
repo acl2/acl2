@@ -1958,8 +1958,9 @@
 ; evaluating top-level definitions (of functions, macros, and constants) in raw
 ; Lisp during pass 2 of certify-book.  (Technical minor deviation: For defconst
 ; we time defconst-val, which is essentiall timing simple-translate-and-eval.)
-; When we certify a book after compiling with acl2-pass2-def-time-info in
-; *features*, we write to standard output a line with a four-tuple, of the form
+; When we certify a book after building ACL2 with acl2-pass2-def-time-info
+; added to *features* (see file acl2.lisp), we write to standard output a line
+; with a four-tuple, of the form
 
 ; (f1 f2 f3 b) ; @@DTIME@@
 
