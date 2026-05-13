@@ -374,15 +374,57 @@ Skip these for now
              (restrict ks x)))
   :enable (restrict update))
 
-(skip-proofs
-(defrule equal-update-different-implies-equal
+; NOTE: really would love to get rid of this rule, which means
+; coming up with a better proof plan
+(defrule assoc-update-not-k
+    (implies (and (not (set::in k (keys x)))
+                  (not (equal key k)))
+             (equal (assoc key (update k v x))
+                    (assoc key x))))
+
+(defrule equal-update-not-in-keys-and-not-equal-k-implies-equal-assoc
+    (implies (and (equal (update k v x)
+                         (update k v y))
+                  (not (set::in k (keys x)))
+                  (not (set::in k (keys y)))
+                  (not (equal key k)))
+             (equal (assoc key x)
+                    (assoc key y)))
+  :use ((:instance assoc-update-not-k
+                   (x y)))
+  :rule-classes :forward-chaining)
+
+(defrule equal-update-not-in-keys-and-equal-k-implies-equal-assoc
+    (implies (and (equal (update k v x)
+                         (update k v y))
+                  (not (set::in k (keys x)))
+                  (not (set::in k (keys y)))
+                  (equal key k))
+             (equal (assoc key x)
+                    (assoc key y)))
+  :rule-classes :forward-chaining)
+
+(defruled equal-update-not-in-keys-implies-equal-assoc
     (implies (and (equal (update k v x)
                          (update k v y))
                   (not (set::in k (keys x)))
                   (not (set::in k (keys y))))
+             (equal (assoc key x)
+                    (assoc key y)))
+  :use equal-update-not-in-keys-and-equal-k-implies-equal-assoc)
+
+(defrule equal-update-not-in-keys-implies-equal
+    (implies (and (mapp x)
+                  (mapp y)
+                  (equal (update k v x)
+                         (update k v y))
+                  (not (set::in k (keys x)))
+                  (not (set::in k (keys y))))
              (equal x y))
+  :enable extensionality
+  :use (:instance equal-update-not-in-keys-implies-equal-assoc
+                  (key (ext-equal-witness x y)))
   :rule-classes :forward-chaining)
-)
 
 (defrule equal-update-restrict-implies-equal-restrict
     (implies (and (equal (update k v (restrict ks x))
@@ -390,10 +432,9 @@ Skip these for now
                   (not (set::in k ks)))
              (equal (restrict ks x)
                     (restrict ks y)))
-  :use (:instance equal-update-different-implies-equal
+  :use (:instance equal-update-not-in-keys-implies-equal
                   (x (restrict ks x)) (y (restrict ks y)))
-  :rule-classes :forward-chaining
-)
+  :rule-classes :forward-chaining)
 
 (defrule equal-update-k-implies-equal-assoc-update-k
     (implies (equal (update k v1 x)
@@ -402,8 +443,7 @@ Skip these for now
                     (assoc k (update k v2 y))))
   :rule-classes :forward-chaining)
 
-; NOTE: really would love to get rid of this rule, which means
-; coming up with a better proof for the next rule
+; NOTE: also would love to get rid of this rule
 (defrule assoc-update-k
     (equal (assoc k (update k v x))
            (cons k v)))
@@ -553,18 +593,14 @@ Skip these for now
                          (cons key (car (rlookup key x))))))
   :enable (inverse rlookup values set::insert))
 
-(skip-proofs
 (defrule rlookup-update-when-not-in-keys
     (implies (not (set::in k (keys x)))
              (equal (rlookup val (update k v x))
                     (if (equal val v)
                         (set::insert k (rlookup val x))
                       (rlookup val x))))
-  :enable (
-           rlookup
-;           update
-           ))
-)
+  :enable rlookup
+  :expand (rlookup val (update k v x)))
 
 (defrule assoc-of-inverse-inverse
     (implies (injectivep x)
