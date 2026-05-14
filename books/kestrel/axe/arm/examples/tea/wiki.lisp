@@ -44,45 +44,46 @@
 
 ; (depends-on "wiki.arm32.elf32")
 
-;; (thm
-;;   (subregion32p '4 (bvcat '30 (slice '31 '2 (bvplus '32 '1564 base-address)) '2 '0) '7196 base-address)
-;;   )
-
-;; Lift the x86 code for the encrypt function into logic:
+;; Lift the ARM32 code for the encrypt function into logic:
 ;; Produces the DAG *tea*, with the same variables as *tea-encrypt-spec*.
-;; need to simp: (subregion32p '4 (bvcat '30 (bvplus '30 '391 (slice '31 '2 base-address)) '2 '0) '7196 base-address)
-;; (def-unrolled tea
-;;   :executable "wiki.arm32.elf32"
-;;   :target "encrypt"
-;; ;  :stack-slots 9
-;;   ;; :inputs ((v u32[2]) (k u32[4]))
-;;   ;; :output (:tuple (:mem32 (rdi x86)) ;extract v0
-;;   ;;          (:mem32 (binary-+ '4 (rdi x86)))) ;extract v1
-;;   ;; :monitor '(arm::read-when-equal-of-read-bytes
-;;   ;;            arm::read-when-equal-of-read-bytes-alt
-;;   ;;            arm::read-of-write-when-disjoint-regions32p-gen
-;;   ;;            arm::read-of-write-when-disjoint-regions32p-gen-alt
-;;   ;;            :debug)
-;;   :extra-assumptions '((unsigned-byte-p '32 base-address)
-;;                        (integerp base-address)
-;;                        ;; Introduce byte vars for v:
-;;                        (equal v0 (bvcat2 8 in0 8 in1 8 in2 8 in3))
-;;                        (equal v1 (bvcat2 8 in4 8 in5 8 in6 8 in7))
-;;                        ;; Introduce byte vars for k:
-;;                        (equal k0 (bvcat2 8 key0 8 key1 8 key2 8 key3))
-;;                        (equal k1 (bvcat2 8 key4 8 key5 8 key6 8 key7))
-;;                        (equal k2 (bvcat2 8 key8 8 key9 8 key10 8 key11))
-;;                        (equal k3 (bvcat2 8 key12 8 key13 8 key14 8 key15))
-;;                        (equal (arm::arch-version arm) 7) ; todo
-;;                        (disjoint-regions32p 8 (reg 0 arm) 400 (bvplus 32 4294966896 (reg 13 arm)))
-;;                        (disjoint-regions32p 16 (reg 1 arm) 400 (bvplus 32 4294966896 (reg 13 arm)))
-;;                        )
-;;   :produce-function nil ; we only need the dag
-;; ;  :extra-rules '(acl2::slice-of-bvplus-cases-no-split-case-no-carry-constant-version)
-;;   )
+(def-unrolled tea
+  :executable "wiki.arm32.elf32"
+  :target "encrypt"
+  ;; :inputs ((v u32[2]) (k u32[4])) ; todo: add support for this and remove some assumptions below
+  :output (:tuple
+           (:read 4 (reg 0 arm)) ;extract v0
+           (:read 4 (+ 4 (reg 0 arm))) ; extract v1
+           )
+  :extra-assumptions '((unsigned-byte-p '32 base-address)
+                       (integerp base-address)
+                       (equal (bvchop 2 base-address) 0) ; 4 byte aligned
+                       (equal (bvchop 2 (reg 14 arm)) 0) ; 4 byte aligned ; why?
+                       ;; Introduce byte vars for v:
+                       (equal (read 4 (reg 0 arm) arm) v0)
+                       (equal (read 4 (bvplus 32 4 (reg 0 arm)) arm) v1)
+                       (equal v0 (bvcat2 8 in0 8 in1 8 in2 8 in3))
+                       (equal v1 (bvcat2 8 in4 8 in5 8 in6 8 in7))
+                       ;; Introduce byte vars for k:
+                       (equal (read 4 (reg 1 arm) arm) k0)
+                       (equal (read 4 (bvplus 32 4 (reg 1 arm)) arm) k1)
+                       (equal (read 4 (bvplus 32 8 (reg 1 arm)) arm) k2)
+                       (equal (read 4 (bvplus 32 12 (reg 1 arm)) arm) k3)
+                       (equal k0 (bvcat2 8 key0 8 key1 8 key2 8 key3))
+                       (equal k1 (bvcat2 8 key4 8 key5 8 key6 8 key7))
+                       (equal k2 (bvcat2 8 key8 8 key9 8 key10 8 key11))
+                       (equal k3 (bvcat2 8 key12 8 key13 8 key14 8 key15))
+                       (equal (arm::arch-version arm) 7) ; todo
+                       ;; v0 disjoint from the area where the stack grows:
+                       (disjoint-regions32p 8 (reg 0 arm) 400 (bvplus 32 4294966896 (reg 13 arm)))
+                       ;; v1 disjoint from the area where the stack grows:
+                       (disjoint-regions32p 16 (reg 1 arm) 400 (bvplus 32 4294966896 (reg 13 arm)))
+                       ;; v0 disjoint from executable load region:
+                       (disjoint-regions32p 7196 base-address 8 (reg 0 arm)))
+  :produce-function nil ; we only need the dag
+  )
 
-;; ;; Prove the equivalence of the code and the spec:
-;; (prove-equal-with-axe *tea*
-;;                       *tea-encrypt-spec*
-;;                       :initial-rule-sets (list (make-axe-rules! (amazing-rules-bv) (w state))) ;don't bit-blast
-;;                       :tactic :rewrite)
+;; Prove the equivalence of the code and the spec:
+(prove-equal-with-axe *tea*
+                      *tea-encrypt-spec*
+                      :initial-rule-sets (list (make-axe-rules! (amazing-rules-bv) (w state))) ;don't bit-blast
+                      :tactic :rewrite)
