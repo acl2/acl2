@@ -56,14 +56,14 @@
     arm::read-when-equal-of-read-bytes
     arm::read-when-equal-of-read-bytes-alt))
 
-;; ;; sophisticated scheme for removing inner, shadowed writes
-;; (defund shadowed-write-rules32 ()
-;;   (declare (xargs :guard t))
-;;   '(write-becomes-write-of-clear-extend-axe
-;;     clear-extend-of-write-continue-axe
-;;     clear-extend-of-write-finish
-;;     clear-extend-of-write-of-clear-retract
-;;     write-of-clear-retract))
+;; sophisticated scheme for removing inner, shadowed writes
+(defund shadowed-write-rules32 ()
+  (declare (xargs :guard t))
+  '(write-becomes-write-of-clear-extend-axe
+    clear-extend-of-write-continue-axe
+    clear-extend-of-write-finish
+    clear-extend-of-write-of-clear-retract
+    write-of-clear-retract))
 
 (defun execute-function-names (mnemonics)
   (declare (xargs :guard (keyword-listp mnemonics)))
@@ -443,7 +443,7 @@
      arm::unsigned-byte-p-of-cmp-overflow
 
      )
-;   (shadowed-write-rules32)
+   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
    (acl2::unsigned-byte-p-forced-rules)
@@ -503,6 +503,8 @@
      arm::read-of-write-when-disjoint-regions32p
      arm::read-of-write-when-disjoint-regions32p-gen
      arm::read-of-write-when-disjoint-regions32p-gen-alt
+     read-of-write-when-disjoint-regions32p-gen-smt
+     read-of-write-when-disjoint-regions32p-gen-smt
 
      arm::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
      arm::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt

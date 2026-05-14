@@ -52,3 +52,67 @@
 
 (add-known-boolean armp)
 (add-known-boolean arm::conditionpassed) ; not sure if needed
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Good for subregions of corresponding, larger disjoint regions.
+(defthm read-of-write-when-disjoint-regions32p-gen-smt
+  (implies (and (disjoint-regions32p len1 start1 len2 start2) ; free vars
+
+                ;; opened form of (subregion32p n1 ad1 len1 start1):
+                (not (zp len1))
+                (< len1 4294967296 ;(expt 2 32)
+                   )
+                (axe-smt (bvlt 32 (bvminus 32 ad1 start1) len1)) ; (in-region32p ad1 len1 start1)
+                (bvle 32 n1 len1)
+                (axe-smt (bvle 32 (bvminus 32 ad1 start1) (bvminus 32 len1 n1)))
+
+                ;; opened form of (subregion32p n2 ad2 len2 start2):
+                (not (zp len2))
+                (< len2 4294967296 ;(expt 2 32)
+                   )
+                (axe-smt (bvlt 32 (bvminus 32 ad2 start2) len2)) ; (in-region32p ad2 len2 start2)
+                (bvle 32 n2 len2)
+                (axe-smt (bvle 32 (bvminus 32 ad2 start2) (bvminus 32 len2 n2)))
+
+                (integerp ad1)
+                (integerp ad2)
+                (integerp start1)
+                (integerp start2)
+                (unsigned-byte-p 32 n1)
+                (unsigned-byte-p 32 n2))
+           (equal (read n1 ad1 (write n2 ad2 val x86))
+                  (read n1 ad1 x86)))
+  :hints (("Goal" :use arm::read-of-write-when-disjoint-regions32p-gen
+                  :in-theory (e/d (subregion32p in-region32p) (arm::read-of-write-when-disjoint-regions32p-gen)))))
+
+;; This -alt version has the disjoint-regions32p hyp reordered
+(defthm read-of-write-when-disjoint-regions32p-gen-smt-alt
+  (implies (and (disjoint-regions32p len2 start2 len1 start1) ; free vars
+
+                ;; opened form of (subregion32p n1 ad1 len1 start1):
+                (not (zp len1))
+                (< len1 4294967296 ;(expt 2 32)
+                   )
+                (axe-smt (bvlt 32 (bvminus 32 ad1 start1) len1)) ; (in-region32p ad1 len1 start1)
+                (bvle 32 n1 len1)
+                (axe-smt (bvle 32 (bvminus 32 ad1 start1) (bvminus 32 len1 n1)))
+
+                ;; opened form of (subregion32p n2 ad2 len2 start2):
+                (not (zp len2))
+                (< len2 4294967296 ;(expt 2 32)
+                   )
+                (axe-smt (bvlt 32 (bvminus 32 ad2 start2) len2)) ; (in-region32p ad2 len2 start2)
+                (bvle 32 n2 len2)
+                (axe-smt (bvle 32 (bvminus 32 ad2 start2) (bvminus 32 len2 n2)))
+
+                (integerp ad1)
+                (integerp ad2)
+                (integerp start1)
+                (integerp start2)
+                (unsigned-byte-p 32 n1)
+                (unsigned-byte-p 32 n2))
+           (equal (read n1 ad1 (write n2 ad2 val x86))
+                  (read n1 ad1 x86)))
+  :hints (("Goal" :use arm::read-of-write-when-disjoint-regions32p-gen-alt
+                  :in-theory (e/d (subregion32p in-region32p) (arm::read-of-write-when-disjoint-regions32p-gen-alt)))))
