@@ -225,6 +225,10 @@
          (isetstate arm))
   :hints (("Goal" :in-theory (enable set-reg))))
 
+(defthm isetstate-of-if
+  (equal (isetstate (if test tp ep))
+         (if test (isetstate tp) (isetstate ep))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Individual status bits:
@@ -322,6 +326,10 @@
   (equal (error (set-reg n val arm))
          (error arm))
   :hints (("Goal" :in-theory (enable set-reg))))
+
+(defthm error-of-if
+  (equal (error (if test tp ep))
+         (if test (error tp) (error ep))))
 
 (defthm arch-version-of-set-reg
   (equal (arch-version (set-reg n val arm))

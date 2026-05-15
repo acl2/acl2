@@ -54,11 +54,7 @@
            (:read 4 (reg 0 arm)) ;extract v0
            (:read 4 (+ 4 (reg 0 arm))) ; extract v1
            )
-  :extra-assumptions '((unsigned-byte-p '32 base-address)
-                       (integerp base-address)
-                       (equal (bvchop 2 base-address) 0) ; 4 byte aligned
-                       (equal (bvchop 2 (reg 14 arm)) 0) ; 4 byte aligned ; why?
-                       ;; Introduce byte vars for v:
+  :extra-assumptions '(;; Introduce byte vars for v:
                        (equal (read 4 (reg 0 arm) arm) v0)
                        (equal (read 4 (bvplus 32 4 (reg 0 arm)) arm) v1)
                        (equal v0 (bvcat2 8 in0 8 in1 8 in2 8 in3))

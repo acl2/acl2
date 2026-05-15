@@ -530,6 +530,13 @@
                                   (acl2::floor-of-*-of-/-and-1) ; todo: gen?
                                   ))))
 
+(defthmd div-becomes-bvdiv
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (div x y)
+                  (acl2::bvdiv 32 x y)))
+  :hints (("Goal" :in-theory (enable acl2::bvdiv))))
+
 
 ;; For mod, we can just use the ACL2 mod.  This theorem shows that the ACL2 mod
 ;; satisfies the defining equation used for mod in the spec:
@@ -1078,6 +1085,18 @@
 ;;         (bvand 32 #xfffffffc x))
 ;;  :hints (("Goal" :in-theory (enable align bvand))))
 
+(defthm bvchop-2-of-align-of-4
+  (equal (bvchop 2 (align x 4))
+         0)
+  :hints (("Goal" :in-theory (enable align))))
+
+(defthm align-of-4-when-aligned
+  (implies (and (equal (bvchop 2 x) 0)
+                (integerp x))
+           (equal (align x 4)
+                  x))
+  :hints (("Goal" :in-theory (enable align bvchop mod))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: think about this
@@ -1125,8 +1144,7 @@
 ;; todo: add a case for Thumb
 (defun pcvalue (inst-address)
   (declare (xargs :guard (addressp inst-address)))
-  (+ 8 inst-address) ; todo: wrap?
-  )
+  (bvplus 32 8 inst-address))
 
 ;; TODO: Can return PC+4 on versions before ARMv7?
 (defund PCStoreValue (inst-address)
