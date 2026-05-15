@@ -133,14 +133,14 @@
 ;;   (equal (logand y (bvchop width x))
 ;;          (bvand width y x))
 ;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-;;            :in-theory (disable))))
+;;            )))
 
 ;; ;; subsumed?
 ;; (defthmd logand-of-bvchop-becomes-bvand-alt
 ;;   (equal (logand (bvchop width x) y)
 ;;          (bvand width y x))
 ;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-;;            :in-theory (disable))))
+;;            )))
 
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg1

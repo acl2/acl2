@@ -131,7 +131,7 @@
 (defthm msri-of-set-undef (equal (msri i (set-undef val x86)) (msri i x86)) :hints (("Goal" :in-theory (enable set-undef))))
 (defthm msri-of-set-mxcsr (equal (msri i (set-mxcsr val x86)) (msri i x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
 ;(defthm msri-of-set-ms (equal (msri i (set-ms val x86)) (msri i x86)) :hints (("Goal" :in-theory (enable set-ms))))
-(defthm msri-of-set-flag (equal (msri i (set-flag flg val x86)) (msri i x86)) :hints (("Goal" :in-theory (enable))))
+(defthm msri-of-set-flag (equal (msri i (set-flag flg val x86)) (msri i x86)))
 
 ;is this 32-bit-specific?
 (defthm segment-base-and-bounds-of-set-flag

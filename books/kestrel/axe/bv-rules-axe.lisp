@@ -253,14 +253,12 @@
 (defthmd bvmult-commutative-2-axe
   (implies (axe-syntaxp (should-commute-axe-argsp 'bvmult x y dag-array))
            (equal (bvmult size x (bvmult size y z))
-                  (bvmult size y (bvmult size x z))))
-  :hints (("Goal" :in-theory (enable))))
+                  (bvmult size y (bvmult size x z)))))
 
 (defthmd bvmult-commutative-2-increasing-axe
   (implies (axe-syntaxp (should-commute-axe-args-increasingp 'bvmult x y dag-array))
            (equal (bvmult size x (bvmult size y z))
-                  (bvmult size y (bvmult size x z))))
-  :hints (("Goal" :in-theory (enable))))
+                  (bvmult size y (bvmult size x z)))))
 
 (defthmd getbit-identity-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -314,8 +312,7 @@
 (defthmd +-commutative-2-axe
   (implies (axe-syntaxp (should-commute-axe-argsp 'binary-+ x y dag-array))
            (equal (+ x (+ y z))
-                  (+ y (+ x z))))
-  :hints (("Goal" :in-theory (enable))))
+                  (+ y (+ x z)))))
 
 (defthmd slice-too-high-is-0-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))

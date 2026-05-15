@@ -651,8 +651,7 @@
                 )
            (equal (addresses-of-array-ref-list item-list items-left dims heap)
                   (append (addresses-of-array-ref (nth (+ -1 items-left) item-list) dims heap)
-                          (addresses-of-array-ref-list item-list (+ -1 items-left) dims heap))))
-  :hints (("Goal" :in-theory (enable))))
+                          (addresses-of-array-ref-list item-list (+ -1 items-left) dims heap)))))
 
 (defthm addresses-of-array-ref-one-dim
   (implies (and (eql 1 (len dims))

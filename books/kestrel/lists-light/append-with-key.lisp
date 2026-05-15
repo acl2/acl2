@@ -1,6 +1,6 @@
 ; A tool for speeding up lookups in lists during rewriting
 ;
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2025 Kestre6 Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -55,8 +55,7 @@
 (thm
  (member-equal x (append-with-key 'y ;; causes the search for x to use the first half
                                   (append-with-key 'x (list w) (list x))
-                                  (append-with-key 'z (list y) (list z))))
- :hints (("Goal" :in-theory (disable))))
+                                  (append-with-key 'z (list y) (list z)))))
 
 
 ;; The point of these scheme is to allow using a single assumption, that can be

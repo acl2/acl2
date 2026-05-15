@@ -1,7 +1,7 @@
 ; Return the final "cdr" (an atom) of a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,5 +36,4 @@
 ;where should this go?
 (defthm equal-of-append-same-arg1
   (equal (equal x (append x y))
-         (equal y (finalcdr x)))
-  :hints (("Goal" :in-theory (enable))))
+         (equal y (finalcdr x))))

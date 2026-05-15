@@ -328,7 +328,7 @@
   (declare (xargs :guard (and (array1p 'translation-array translation-array)
                               (bounded-darg-listp args (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array))
-                  :guard-hints (("Goal" :in-theory (enable))) ;todo: make a fw-chaining rule for the dims
+                   ;todo: make a fw-chaining rule for the dims
                   ))
   (if (endp args)
       nil
@@ -443,7 +443,7 @@
   (declare (xargs :guard (and (array1p 'translation-array translation-array)
                               (bounded-darg-listp args (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array))
-                  :guard-hints (("Goal" :in-theory (enable))) ;todo: make a fw-chaining rule for the dims
+                   ;todo: make a fw-chaining rule for the dims
                   ))
   (if (endp args)
       nil
