@@ -19,6 +19,7 @@
   '(update-call-stack-height
     update-call-stack-height-aux-base
     update-call-stack-height-aux-of-if-arg1
+    stack-height-adjustment
     arm::step-opener
     arm::execute-inst-base ; requires the instruction to be known
     arm::step-of-if
@@ -111,6 +112,7 @@
             arm::mov-common
             arm::mov-register-core
             arm::nop-core
+            arm::pop-encoding-a1-core
             arm::pop-encoding-a2-core
             arm::pop-common
             arm::pop-loop-base
@@ -206,8 +208,11 @@
      arm::zeroextend
      arm::nullcheckifthumbee
      arm::pcvalue
-     arm::align ; redef?
-     arm::div
+     ;; arm::align ; redef?
+     arm::bvchop-2-of-align-of-4
+     arm::align-of-4-when-aligned
+     ;; arm::div
+     arm::div-becomes-bvdiv
      arm::memu
      arm::mema
      arm::advance-pc
@@ -262,6 +267,7 @@
      arm::error-of-set-apsr.v
      arm::error-of-set-apsr.q
      arm::error-of-write
+     arm::error-of-if
 
      arm::read-of-update-itstate
      arm::read-of-update-isetstate
@@ -297,6 +303,7 @@
      arm::isetstate-of-set-apsr.v
      arm::isetstate-of-set-apsr.q
      arm::isetstate-of-write
+     arm::isetstate-of-if
 
      arm::update-isetstate-when-equal-of-isetstate
 
