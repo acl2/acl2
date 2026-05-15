@@ -1307,8 +1307,7 @@
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp fn)
                               (bounded-darg-listp args dag-len)
-                              (nodenum-type-alistp known-nodenum-type-alist))
-                  :guard-hints (("Goal" :in-theory (enable))))
+                              (nodenum-type-alistp known-nodenum-type-alist)))
            (ignore dag-len))
   (case fn
     (not (and (= 1 (len args))

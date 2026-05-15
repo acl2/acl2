@@ -1301,7 +1301,7 @@
 ;;                  (integerp highval))
 ;;             (equal (signed-byte-p n (logapp lowsize lowval highval))
 ;;                    (signed-byte-p (- n lowsize) highval)))
-;;    :hints (("Goal" :in-theory (enable))))
+;;    )
 
 ;; (defthm bvxor-1-equal-0
 ;;   (equal (equal (bvxor 1 x y) 0)
@@ -1956,7 +1956,7 @@
                (integerp y))
           (equal (bvchop 32 (+ x (* 2 (logext 31 y))))
                  (bvchop 32 (+ x (* 2 y)))))
- :hints (("Goal"; :in-theory (disable)
+ :hints (("Goal"
           :use (;(:instance BVCHOP-+-BVCHOP (J (* 2 Y)) (I X) (SIZE 32))
                 ))))
 

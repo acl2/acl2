@@ -193,9 +193,7 @@
 (local
  (defthm cancel-hack
   (equal (< (+ a b c) c)
-         (< (+ a b) 0))
-  :hints (("Goal" :in-theory (enable)))))
-
+         (< (+ a b) 0))))
 
 ;; FIXME What version of the JVM spec should we target?
 

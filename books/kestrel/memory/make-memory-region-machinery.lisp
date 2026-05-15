@@ -457,14 +457,12 @@
          (defthm ,(acl2::pack-in-package pkg 'not- in-regionp-name '-when- disjoint-regionsp-name '-one)
            (implies (and (,disjoint-regionsp-name len1 start1 len2 start2)
                          (,in-regionp-name ad len1 start1))
-                    (not (,in-regionp-name ad len2 start2)))
-           :hints (("Goal" :in-theory (enable))))
+                    (not (,in-regionp-name ad len2 start2))))
 
          (defthm ,(acl2::pack-in-package pkg 'not- in-regionp-name '-when- disjoint-regionsp-name '-two)
            (implies (and (,disjoint-regionsp-name len1 start1 len2 start2)
                          (,in-regionp-name ad len2 start2))
-                    (not (,in-regionp-name ad len1 start1)))
-           :hints (("Goal" :in-theory (enable))))
+                    (not (,in-regionp-name ad len1 start1))))
 
          ;; If they are disjoint, no address is in both.
          (defthm ,(acl2::pack-in-package pkg 'not-in-both-when- disjoint-regionsp-name)
