@@ -1999,6 +1999,15 @@ ACL2 from scratch.")
                   *my-most-positive-double-float*)
                (error () 0.0d0))
               'double-float))
+
+; For GCL on no-sigfpe machines, avoid getting an error at unexpected times
+; later by flushing out the error now.
+
+     #+(and gcl no-sigfpe)
+     (progn (ignore-errors (si::flush-floating-point-exceptions
+                            nil nil (lambda nil nil)))
+            t)
+
      #+sbcl
      (member :overflow
              (cadr (member :traps

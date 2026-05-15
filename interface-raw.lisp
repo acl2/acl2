@@ -9614,10 +9614,15 @@
 ; already know that an error is signalled on overflow for other Lisps that host
 ; ACL2; see break-on-overflow-and-nan.
 
-  #-(or allegro lispworks)
+  #-(or allegro lispworks (and gcl no-sigfpe))
   (declare (ignore op))
-  #-(or allegro lispworks)
+  #-(or allegro lispworks (and gcl no-sigfpe))
   form
+; Camm Maguire suggestion:
+  #+(and gcl no-sigfpe)
+  `(let ((result ,form))
+      (si::flush-floating-point-exceptions ',op (list ,@(cdr form)))
+      result)
   #+allegro
   `(let ((result ,form))
      (when (excl:exceptional-floating-point-number-p result)
