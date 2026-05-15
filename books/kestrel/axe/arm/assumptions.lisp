@@ -150,8 +150,9 @@
   (b* (((mv erp regions) (acl2::elf-regions-to-load parsed-elf))
        (state-var 'arm)
        ((when erp) (mv erp nil))
+       (base-var 'base-address)
        ((mv erp memory-region-assumptions)
-        (assumptions-for-memory-regions32 regions 'base-address ; not used yet
+        (assumptions-for-memory-regions32 regions base-var ; not used yet
                                           state-var
                                           `(reg '13 ,state-var) ; the stack pointer
                                           stack-slots
@@ -160,8 +161,12 @@
                                           nil))
        ((when erp) (mv erp nil))
        (standard-assumptions `((equal (error ,state-var) 'nil)
-                               (equal (isetstate arm) ',*InstrSet_ARM*) ; todo: set this the way a loader would, or at least make this an option
+                               (equal (isetstate ,state-var) ',*InstrSet_ARM*) ; todo: set this the way a loader would, or at least make this an option
                                ;; (stat32p ,state-var)
+                               (unsigned-byte-p '32 ,base-var)
+                               (integerp ,base-var)
+                               (equal (bvchop '2 ,base-var) '0) ; 4 byte aligned
+                               (equal (bvchop '2 (reg '14 ,state-var)) '0) ; 4 byte aligned, thumb bit clear
                                )) ; todo: what else?
        )
     (mv nil ; no error
