@@ -18,7 +18,7 @@
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
 
-(defstub error-wrapper (* * arm) => *)
+(defstub error-wrapper (* *) => *)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,25 +27,42 @@
 ;; height and returns decrease it.  We stop symbolic execution when the
 ;; relative height goes negative.
 
+;; (defstub stub (x) t)
+;; (defstub stub2 (x y) t)
+
+;; Adjustmust to the stack height for instr (+ 1 for call, -1 for return)
+(defund stack-height-adjustment (instr)
+  (declare (xargs :guard (and (unsigned-byte-p 32 instr) ; todo: use a recognizer
+                              )
+                  :guard-hints (("Goal" :in-theory (enable arm32-decode)))
+                  ))
+  (mv-let (erp mnemonic args) ;; where ARGS is an alist from field names
+    (arm::arm32-decode instr)
+    (if erp
+        (ifix (error-wrapper "Can't decode instr." instr))
+      (case mnemonic
+        (:bl ; todo: blx
+         ;; We consider every BL to be a subroutine call since it saves the return address in the LR
+         1)
+        ;; TODO: Add checks.  For now, we assume every BX is a return
+        ;; TODO: Add support for other return idioms, including moving to the PC and
+        ;; popping values into a register set that includes the PC is a return:
+        ((:pop-encoding-a1 :ldm/ldmia/ldmfd)
+         (if (equal 1 (getbit 15 (lookup-eq 'arm::register_list args)))
+             -1
+           0))
+        ;; This is a return (todo: what if the register is not LR?):
+        (:bx -1)
+        (otherwise 0)))))
+
 ;; This is separate so we can prevent opening it when INSTR is not a constant.
 (defund update-call-stack-height-aux (instr call-stack-height arm)
   (declare (xargs :guard (and (unsigned-byte-p 32 instr) ; todo: use a recognizer
                               (integerp call-stack-height))
-                  :stobjs arm))
-  (mv-let (erp mnemonic args) ;; where ARGS is an alist from field names
-      (arm::arm32-decode instr)
-    (declare (ignore args)) ; for now
-    (if erp
-        (error-wrapper "Can't decode instr." instr arm)
-      (case mnemonic
-        (:bl ; todo: blx
-         ;; We consider every BL to be a subroutine call since it saves the return address in the LR
-         (+ 1 call-stack-height))
-        ;; TODO: Add checks.  For now, we assume every BX is a return
-        ;; TODO: Add support for other return idioms, including moving to the PC and popping values into a register set that includes the PC
-        (:bx
-         (+ -1 call-stack-height))
-        (otherwise call-stack-height)))))
+                  :stobjs arm)
+           (ignore arm) ; todo
+           )
+  (+ (stack-height-adjustment instr) call-stack-height))
 
 ;; Open only when we can determine the instruction
 (defopeners update-call-stack-height-aux :hyps ((syntaxp (quotep instr))))
