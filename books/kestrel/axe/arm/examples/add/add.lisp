@@ -26,10 +26,7 @@
     :executable "add.elf32-musl-static"
     ;; extract the return value (the sum), which by convention is in register a0:
     :output :r0
-    :extra-assumptions '((unsigned-byte-p '32 base-address)  ; todo: automate
-                         (integerp base-address)             ; todo: automate
-                         (equal '0 (bvchop 2 (reg '14 arm))) ; todo: automate
-                         ;; name the inputs:
+    :extra-assumptions '(;; name the inputs:
                          (equal (reg 0 arm) x)
                          (equal (reg 1 arm) y)))
 
