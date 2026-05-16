@@ -46,7 +46,8 @@
    (xdoc::p
     "The vector and norm infrastructure is inherited from
      @('books/workshops/2018/kwan-greenstreet/'),
-     which is why ACL2(r) is required (see @('cert_param: (uses-acl2r)')).")
+     which is why ACL2(r) is required (the books are marked
+     @('uses-acl2r') in their build certification parameters).")
    (xdoc::p
     "The reference companion paper is:")
    (xdoc::p
