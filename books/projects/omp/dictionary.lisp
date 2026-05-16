@@ -98,7 +98,7 @@
   (xdoc::topstring
    (xdoc::p
     "@($\\|v\\| = 1$) iff @($\\|v\\|^2 = 1$) since the norm is
-     nonnegative.  Squaring lets us avoid @(see sqrt)."))
+     nonnegative.  Squaring lets us avoid @('sqrt')."))
   (and (vectorp v dim)
        (equal (norm^2 v) 1)))
 

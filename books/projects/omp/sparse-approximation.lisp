@@ -63,7 +63,7 @@
     "Both norm comparisons (@($\\|x - \\Phi c\\|_2 \\le \\epsilon$) and
      \"minimize @($\\|x - \\Phi c\\|_2$)\") are stated via their
      squares, which is equivalent over nonnegative reals and keeps us
-     free of @(see sqrt).  Where the textbook says \"tolerance
+     free of @('sqrt').  Where the textbook says \"tolerance
      @($\\epsilon$)\", we parameterize by @($\\epsilon^2$) (named
      @('eps-sq')) for the same reason."))
   :order-subtopics t
