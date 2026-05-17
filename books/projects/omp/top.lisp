@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ omp
-  :parents (acl2::projects acl2::kestrel-books)
+  :parents (acl2::projects)
   :short "An ACL2(r) library for OMP (Orthogonal Matching Pursuit)."
   :long
   (xdoc::topstring
