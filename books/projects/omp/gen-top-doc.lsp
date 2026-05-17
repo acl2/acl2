@@ -33,6 +33,11 @@
 
 (include-book "top")
 (include-book "xdoc/top" :dir :system)
+;; archive-preprocess-topics resolves @(def? ...), @(tsee ...), and similar
+;; preprocessor forms against the live ACL2(r) world, so the generated
+;; top-doc.lisp ships baked HTML for those sections even when loaded into
+;; a standard ACL2 world where our functions don't exist.
+(include-book "xdoc/archive" :dir :system)
 
 ;; Trust tag for the file-I/O calls below; the resulting top-doc.lisp is a
 ;; plain-data artifact and contains no ttag.
@@ -109,6 +114,25 @@
         (t (let ((state (write-topic (car topics) chan state)))
              (write-topics (cdr topics) chan state)))))
 
+;; Preprocess our topics so that @(def? ...) and similar markers resolve
+;; against the live ACL2(r) world.  Mirrors archive-xdoc-store from
+;; xdoc/archive.lisp, which manipulates xdoc-get-event-table around the
+;; archive-preprocess-topics call.
+(defun preprocess-omp-topics (topics state)
+  (declare (xargs :mode :program :stobjs state))
+  (b* ((prev-event-table
+        (and (acl2::boundp-global 'xdoc::xdoc-get-event-table state)
+             (list (acl2::f-get-global 'xdoc::xdoc-get-event-table state))))
+       (state (acl2::f-put-global 'xdoc::xdoc-get-event-table
+                                  (xdoc::make-get-event*-table (w state) nil)
+                                  state))
+       ((mv preproc state) (xdoc::archive-preprocess-topics topics state nil))
+       (state (if prev-event-table
+                  (acl2::f-put-global 'xdoc::xdoc-get-event-table
+                                      (car prev-event-table) state)
+                (acl2::makunbound-global 'xdoc::xdoc-get-event-table state))))
+    (mv preproc state)))
+
 (defun generate-top-doc (state)
   (declare (xargs :mode :program :stobjs state))
   (mv-let (chan state)
@@ -117,11 +141,12 @@
      ((null chan)
       (mv "Could not open top-doc.lisp for writing." :error state))
      (t
-      (let* ((state (acl2::princ$ *header* chan state))
-             (all   (xdoc::get-xdoc-table (w state)))
-             (ours  (sort-topics (keep-omp-topics all)))
-             (state (write-topics ours chan state))
-             (state (acl2::close-output-channel chan state)))
+      (b* ((state (acl2::princ$ *header* chan state))
+           (all   (xdoc::get-xdoc-table (w state)))
+           (ours  (sort-topics (keep-omp-topics all)))
+           ((mv preproc state) (preprocess-omp-topics ours state))
+           (state (write-topics preproc chan state))
+           (state (acl2::close-output-channel chan state)))
         (mv nil :ok state))))))
 
 ;; Run the generator.  Print-control globals are widened so that long

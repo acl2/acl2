@@ -24,9 +24,22 @@
 </dl></box>
 
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|ATOM-AT|)
-@(def? |OMP|::|UNIT-ATOM-P-OF-ATOM-AT|)
-@(def? |OMP|::|VECTORP-OF-ATOM-AT|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>atom-at</srclink></p>@({(defun atom-at (i d)
+  (declare (xargs :guard (natp i)))
+  (declare (xargs :guard (true-listp d)))
+  (let ((__function__ 'atom-at))
+    (declare (ignorable __function__))
+    (nth (nfix i) d)))})
+<p><b>Theorem: </b><srclink>unit-atom-p-of-atom-at</srclink></p>@({(defthm unit-atom-p-of-atom-at
+  (implies (and (dictionaryp d dim)
+                (natp i)
+                (< i (n-atoms d)))
+           (unit-atom-p (atom-at i d) dim)))})
+<p><b>Theorem: </b><srclink>vectorp-of-atom-at</srclink></p>@({(defthm vectorp-of-atom-at
+  (implies (and (dictionaryp d dim)
+                (natp i)
+                (< i (n-atoms d)))
+           (vectorp (atom-at i d) dim)))})
 ")
 
 
@@ -42,15 +55,29 @@
 <p>The support-size check is dimension-agnostic, so @($\\mathit{dim}$)
      is not threaded in here; the @('(dictionaryp d dim)') precondition
      is established by callers.</p><p>The c-shape predicates stay in the body (not the guard) for the
-     same reason as in @(tsee tolerance-feasiblep):
-     @(tsee budget-residual-lower-boundp) universally quantifies over
+     same reason as in <tt><see topic=\"OMP____TOLERANCE-FEASIBLEP\">@(sym |TOLERANCE-FEASIBLEP|)</see></tt>:
+     <tt><see topic=\"OMP____BUDGET-RESIDUAL-LOWER-BOUNDP\">@(sym |BUDGET-RESIDUAL-LOWER-BOUNDP|)</see></tt> universally quantifies over
      candidates @('c2') and calls @('(budget-feasiblep c2 d k)') on
      the witness.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|BUDGET-FEASIBLEP|)
-@(def? |OMP|::|BOOLEANP-OF-BUDGET-FEASIBLEP|)
-@(def? |OMP|::|REAL-LISTP-WHEN-BUDGET-FEASIBLEP|)
-@(def? |OMP|::|LEN-WHEN-BUDGET-FEASIBLEP|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>budget-feasiblep</srclink></p>@({(defun budget-feasiblep (c d k)
+  (declare (xargs :guard (natp k)))
+  (let ((__function__ 'budget-feasiblep))
+    (declare (ignorable __function__))
+    (and (real-listp c)
+         (equal (len c) (n-atoms d))
+         (k-sparsep c k))))})
+<p><b>Theorem: </b><srclink>booleanp-of-budget-feasiblep</srclink></p>@({(defthm booleanp-of-budget-feasiblep
+  (b* ((ok (budget-feasiblep c d k)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
+<p><b>Theorem: </b><srclink>real-listp-when-budget-feasiblep</srclink></p>@({(defthm real-listp-when-budget-feasiblep
+  (implies (budget-feasiblep c d k)
+           (real-listp c))
+  :rule-classes (:rewrite :forward-chaining))})
+<p><b>Theorem: </b><srclink>len-when-budget-feasiblep</srclink></p>@({(defthm len-when-budget-feasiblep
+  (implies (budget-feasiblep c d k)
+           (equal (len c) (n-atoms d))))})
 ")
 
 
@@ -70,8 +97,18 @@
 </dl></box>
 
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|BUDGET-OPTIMALP|)
-@(def? |OMP|::|BOOLEANP-OF-BUDGET-OPTIMALP|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>budget-optimalp</srclink></p>@({(defun budget-optimalp (c d dim x k)
+  (declare (xargs :guard (and (natp dim) (natp k))))
+  (declare (xargs :guard (and (vectorp x dim)
+                              (dictionaryp d dim))))
+  (let ((__function__ 'budget-optimalp))
+    (declare (ignorable __function__))
+    (and (budget-feasiblep c d k)
+         (budget-residual-lower-boundp c d dim x k))))})
+<p><b>Theorem: </b><srclink>booleanp-of-budget-optimalp</srclink></p>@({(defthm booleanp-of-budget-optimalp
+  (b* ((ok (budget-optimalp c d dim x k)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -83,15 +120,21 @@
 
   :long 
 "<p>This does <b>not</b> require @($c$) itself to be feasible -- see
-     @(tsee budget-optimalp) for the predicate that adds feasibility.</p><p>The @('implies') form is auto-translated to @('if') in the
-     function body by @(see define-sk) (see @(see
-     std::define-sk-implies-handling)), so guard verification of
-     @(tsee residual-norm^2) on the unconstrained witness @('c2')
+     <tt><see topic=\"OMP____BUDGET-OPTIMALP\">@(sym |BUDGET-OPTIMALP|)</see></tt> for the predicate that adds feasibility.</p><p>The @('implies') form is auto-translated to @('if') in the
+     function body by <see topic=\"STD____DEFINE-SK\">@(sym |DEFINE-SK|)</see> (see <see topic=\"STD____DEFINE-SK-IMPLIES-HANDLING\">@(sym |STD|::|DEFINE-SK-IMPLIES-HANDLING|)</see>), so guard verification of
+     <tt><see topic=\"OMP____RESIDUAL-NORM_E52\">@(sym |RESIDUAL-NORM^2|)</see></tt> on the unconstrained witness @('c2')
      case-splits on @('(budget-feasiblep c2 d k)') being true.  The
      @('-necc') rewrite still reads with @('implies').</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|BUDGET-RESIDUAL-LOWER-BOUNDP-NECC|)
-@(def? |OMP|::|BOOLEANP-OF-BUDGET-RESIDUAL-LOWER-BOUNDP|)
+<h3>Definitions and Theorems</h3><p><b>Theorem: </b><srclink>budget-residual-lower-boundp-necc</srclink></p>@({(defthm budget-residual-lower-boundp-necc
+  (implies (budget-residual-lower-boundp c d dim x k)
+           (implies (budget-feasiblep c2 d k)
+                    (<= (residual-norm^2 x c d dim)
+                        (residual-norm^2 x c2 d dim)))))})
+<p><b>Theorem: </b><srclink>booleanp-of-budget-residual-lower-boundp</srclink></p>@({(defthm booleanp-of-budget-residual-lower-boundp
+  (b* ((ok (budget-residual-lower-boundp c d dim x k)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -104,8 +147,14 @@
   :long 
 "
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|COMPLETE-DICTIONARY-P-NECC|)
-@(def? |OMP|::|BOOLEANP-OF-COMPLETE-DICTIONARY-P|)
+<h3>Definitions and Theorems</h3><p><b>Theorem: </b><srclink>complete-dictionary-p-necc</srclink></p>@({(defthm complete-dictionary-p-necc
+  (implies (complete-dictionary-p d dim)
+           (implies (vectorp v dim)
+                    (in-spanp v d dim))))})
+<p><b>Theorem: </b><srclink>booleanp-of-complete-dictionary-p</srclink></p>@({(defthm booleanp-of-complete-dictionary-p
+  (b* ((ok (complete-dictionary-p d dim)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -113,10 +162,10 @@
   :parents (OMP)
   :short "Dictionaries of unit-norm atoms in a real Hilbert space."
   :long 
-"<p>This library is only available in <see topic=\"@(url acl2::real)\">ACL2(r)</see>.</p><p>This book contains a formalization of dictionaries, including
+"<p>This library is only available in <see topic=\"COMMON-LISP____REAL\">ACL2(r)</see>.</p><p>This book contains a formalization of dictionaries, including
      notions of completeness, redundancy, and frames.</p><p>A dictionary is a finite indexed family of unit-norm vectors in
      @($\\mathcal{H} = \\mathbb{R}^d$).  We represent an atom as a
-     @(see real-listp) of length @($d$) (matching the conventions of
+     <see topic=\"ACL2____REAL-LISTP\">@(sym |REAL-LISTP|)</see> of length @($d$) (matching the conventions of
      @('books/workshops/2018/kwan-greenstreet/')) and a dictionary as
      the list of its atoms in some fixed enumeration -- the column
      view of the matrix @($\\Phi \\in \\mathbb{R}^{d \\times N}$),
@@ -127,7 +176,7 @@
       equivalent to @($\\|v\\| = 1$)).</li></ul><p>A dictionary is intentionally <b>not</b> required to be a basis,
      linearly independent, or orthonormal.  The matrix view stacking
      atoms as columns gives @($\\Phi \\in \\mathbb{R}^{d \\times N}$)
-     where @($N = $) @(tsee n-atoms) and each column has unit
+     where @($N = $) <tt><see topic=\"OMP____N-ATOMS\">@(sym |N-ATOMS|)</see></tt> and each column has unit
      @($\\ell_2$) norm.  When @($d \\le N$) (the overcomplete /
      redundant case) the dictionary can still be complete; this is
      the regime @('OMP') targets.</p>")
@@ -137,7 +186,7 @@
   :parents (DICTIONARY)
   :short 
 "Recognize a dictionary of @($\\mathbb{R}^{\\mathit{dim}}$):
-          a true-list of @(tsee unit-atom-p)s of that dimension."
+          a true-list of <tt><see topic=\"OMP____UNIT-ATOM-P\">@(sym |UNIT-ATOM-P|)</see></tt>s of that dimension."
 
   :long 
 "<box><dl>
@@ -147,31 +196,53 @@
 </dl></box>
 
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|DICTIONARYP|)
-@(def? |OMP|::|BOOLEANP-OF-DICTIONARYP|)
-@(def? |OMP|::|DICTIONARYP-OF-CONS|)
-@(def? |OMP|::|DICTIONARYP-FORWARD-TO-TRUE-LISTP|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>dictionaryp</srclink></p>@({(defun dictionaryp (d dim)
+  (declare (xargs :guard (natp dim)))
+  (let ((__function__ 'dictionaryp))
+    (declare (ignorable __function__))
+    (cond ((atom d) (null d))
+          (t (and (unit-atom-p (car d) dim)
+                  (dictionaryp (cdr d) dim))))))})
+<p><b>Theorem: </b><srclink>booleanp-of-dictionaryp</srclink></p>@({(defthm booleanp-of-dictionaryp
+  (b* ((ok (dictionaryp d dim)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
+<p><b>Theorem: </b><srclink>dictionaryp-of-cons</srclink></p>@({(defthm dictionaryp-of-cons
+  (equal (dictionaryp (cons a d) dim)
+         (and (unit-atom-p a dim)
+              (dictionaryp d dim))))})
+<p><b>Theorem: </b><srclink>dictionaryp-forward-to-true-listp</srclink></p>@({(defthm dictionaryp-forward-to-true-listp
+  (implies (dictionaryp d dim)
+           (true-listp d))
+  :rule-classes :forward-chaining)})
 ")
 
 
 (defxdoc FRAME-FOR-H-P
   :parents (DICTIONARY)
   :short 
-"Existential form of @(tsee framep): @($d$) is a frame for
+"Existential form of <tt><see topic=\"OMP____FRAMEP\">@(sym |FRAMEP|)</see></tt>: @($d$) is a frame for
           @($\\mathcal{H} = \\mathbb{R}^{\\mathit{dim}}$) for some pair
           of bounds."
 
   :long 
-"<p>The @(see and) short-circuits on the witness type-checks before
-     reaching @(tsee framep), so guard verification can discharge
+"<p>The <see topic=\"COMMON-LISP____AND\">@(sym |AND|)</see> short-circuits on the witness type-checks before
+     reaching <tt><see topic=\"OMP____FRAMEP\">@(sym |FRAMEP|)</see></tt>, so guard verification can discharge
      @('framep')'s @('(realp a)') and @('(realp b)') in the
      then-branch.  Semantically this matches the existential without
      the type-checks: @('framep') already returns @('nil') when @($a$)
      or @($b$) isn't real, since @('<') coerces non-numbers to @($0$)
      and the @('(< 0 a)') / @('(<= a b)') tests fail.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|FRAME-FOR-H-P-SUFF|)
-@(def? |OMP|::|BOOLEANP-OF-FRAME-FOR-H-P|)
+<h3>Definitions and Theorems</h3><p><b>Theorem: </b><srclink>frame-for-h-p-suff</srclink></p>@({(defthm frame-for-h-p-suff
+  (implies (and (realp a)
+                (realp b)
+                (framep d dim a b))
+           (frame-for-h-p d dim)))})
+<p><b>Theorem: </b><srclink>booleanp-of-frame-for-h-p</srclink></p>@({(defthm booleanp-of-frame-for-h-p
+  (b* ((ok (frame-for-h-p d dim)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -187,15 +258,23 @@
   :long 
 "<p>Over the reals, @($|\\langle x, D(i) \\rangle|^2 = \\langle x,
      D(i) \\rangle^2$).  This predicate alone does not constrain @($A$)
-     and @($B$) to be positive or ordered -- @(tsee framep) layers the
+     and @($B$) to be positive or ordered -- <tt><see topic=\"OMP____FRAMEP\">@(sym |FRAMEP|)</see></tt> layers the
      @($0 < A \\le B$) requirement on top.</p><p>The @('implies') form is auto-translated to @('if') in the
-     function body by @(see define-sk) (see @(see
-     std::define-sk-implies-handling)), giving us guard verification
+     function body by <see topic=\"STD____DEFINE-SK\">@(sym |DEFINE-SK|)</see> (see <see topic=\"STD____DEFINE-SK-IMPLIES-HANDLING\">@(sym |STD|::|DEFINE-SK-IMPLIES-HANDLING|)</see>), giving us guard verification
      under @('(vectorp x dim)') while preserving @('implies') in the
      @('-necc') theorem for a usable rewrite rule.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|FRAME-INEQUALITY-P-NECC|)
-@(def? |OMP|::|BOOLEANP-OF-FRAME-INEQUALITY-P|)
+<h3>Definitions and Theorems</h3><p><b>Theorem: </b><srclink>frame-inequality-p-necc</srclink></p>@({(defthm frame-inequality-p-necc
+  (implies (frame-inequality-p d dim a b)
+           (implies (vectorp x dim)
+                    (and (<= (* a (norm^2 x))
+                             (sum-sq-inner-products x d))
+                         (<= (sum-sq-inner-products x d)
+                             (* b (norm^2 x)))))))})
+<p><b>Theorem: </b><srclink>booleanp-of-frame-inequality-p</srclink></p>@({(defthm booleanp-of-frame-inequality-p
+  (b* ((ok (frame-inequality-p d dim a b)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -203,7 +282,7 @@
   :parents (DICTIONARY)
   :short 
 "A frame with explicit bounds @($A$) and @($B$): a dictionary
-          satisfying the @(see frame-inequality-p) with
+          satisfying the <see topic=\"OMP____FRAME-INEQUALITY-P\">@(sym |FRAME-INEQUALITY-P|)</see> with
           @($0 < A \\le B < \\infty$)."
 
   :long 
@@ -216,11 +295,21 @@
 </dl></box>
 <p>The standard mathematical definition does not require strict
      redundancy -- e.g. an orthonormal basis is a (tight) frame with
-     @($A = B = 1$).  Use @(tsee redundant-dictionary-p) alongside
+     @($A = B = 1$).  Use <tt><see topic=\"OMP____REDUNDANT-DICTIONARY-P\">@(sym |REDUNDANT-DICTIONARY-P|)</see></tt> alongside
      @('framep') when the strictly redundant case is wanted.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|FRAMEP|)
-@(def? |OMP|::|BOOLEANP-OF-FRAMEP|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>framep</srclink></p>@({(defun framep (d dim a b)
+  (declare (xargs :guard (and (natp dim) (realp a) (realp b))))
+  (let ((__function__ 'framep))
+    (declare (ignorable __function__))
+    (and (dictionaryp d dim)
+         (< 0 a)
+         (<= a b)
+         (frame-inequality-p d dim a b))))})
+<p><b>Theorem: </b><srclink>booleanp-of-framep</srclink></p>@({(defthm booleanp-of-framep
+  (b* ((ok (framep d dim a b)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -233,12 +322,19 @@
 
   :long 
 "<p>The first two conjuncts inside the @('exists') establish the
-     coefficient-vector shape that @(tsee linear-combo) needs from
+     coefficient-vector shape that <tt><see topic=\"OMP____LINEAR-COMBO\">@(sym |LINEAR-COMBO|)</see></tt> needs from
      @('coeffs'), and the outer guard supplies the dictionary
-     precondition; @(see and) short-circuits give the rest.</p>
+     precondition; <see topic=\"COMMON-LISP____AND\">@(sym |AND|)</see> short-circuits give the rest.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|IN-SPANP-SUFF|)
-@(def? |OMP|::|BOOLEANP-OF-IN-SPANP|)
+<h3>Definitions and Theorems</h3><p><b>Theorem: </b><srclink>in-spanp-suff</srclink></p>@({(defthm in-spanp-suff
+  (implies (and (real-listp coeffs)
+                (equal (len coeffs) (n-atoms d))
+                (equal (linear-combo coeffs d dim) v))
+           (in-spanp v d dim)))})
+<p><b>Theorem: </b><srclink>booleanp-of-in-spanp</srclink></p>@({(defthm booleanp-of-in-spanp
+  (b* ((ok (in-spanp v d dim)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -252,13 +348,20 @@
 
 </dl></box>
 <p>@($\\Sigma_k$) is the set of @($k$)-sparse coefficient vectors
-     in @($\\mathbb{R}^N$).</p><p>Like @(tsee support-size), this is left polymorphic -- non-real
+     in @($\\mathbb{R}^N$).</p><p>Like <tt><see topic=\"OMP____SUPPORT-SIZE\">@(sym |SUPPORT-SIZE|)</see></tt>, this is left polymorphic -- non-real
      entries pass through as zero -- so the @($\\mathbb{R}^N$) domain
-     constraint is enforced one level up in @(tsee budget-feasiblep),
+     constraint is enforced one level up in <tt><see topic=\"OMP____BUDGET-FEASIBLEP\">@(sym |BUDGET-FEASIBLEP|)</see></tt>,
      which conjoins @('(real-listp c)') before testing sparsity.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|K-SPARSEP|)
-@(def? |OMP|::|BOOLEANP-OF-K-SPARSEP|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>k-sparsep</srclink></p>@({(defun k-sparsep (c k)
+  (declare (xargs :guard (natp k)))
+  (let ((__function__ 'k-sparsep))
+    (declare (ignorable __function__))
+    (<= (support-size c) (nfix k))))})
+<p><b>Theorem: </b><srclink>booleanp-of-k-sparsep</srclink></p>@({(defthm booleanp-of-k-sparsep
+  (b* ((ok (k-sparsep c k)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -280,13 +383,38 @@
 <p>Guard verification needs @('len-of-linear-combo') below to
      discharge @('vec-+')'s @('(= (len vec1) (len vec2))') guard, so
      we define this with @(':verify-guards nil') and run
-     @(tsee verify-guards) inside @('///') after the length lemma is
+     <tt><see topic=\"ACL2____VERIFY-GUARDS\">@(sym |VERIFY-GUARDS|)</see></tt> inside @('///') after the length lemma is
      established.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|LINEAR-COMBO|)
-@(def? |OMP|::|REAL-LISTP-OF-LINEAR-COMBO|)
-@(def? |OMP|::|LEN-OF-LINEAR-COMBO|)
-@(def? |OMP|::|VECTORP-OF-LINEAR-COMBO|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>linear-combo</srclink></p>@({(defun linear-combo (coeffs d dim)
+  (declare (xargs :guard (and (real-listp coeffs) (natp dim))))
+  (declare (xargs :guard (and (real-listp coeffs)
+                              (dictionaryp d dim)
+                              (equal (len coeffs) (n-atoms d)))))
+  (let ((__function__ 'linear-combo))
+    (declare (ignorable __function__))
+    (cond ((or (atom coeffs) (atom d))
+           (zero-vec dim))
+          (t (vec-+ (scalar-* (car coeffs) (car d))
+                    (linear-combo (cdr coeffs)
+                                  (cdr d)
+                                  dim))))))})
+<p><b>Theorem: </b><srclink>real-listp-of-linear-combo</srclink></p>@({(defthm real-listp-of-linear-combo
+  (b* ((v (linear-combo coeffs d dim)))
+    (real-listp v))
+  :rule-classes :rewrite)})
+<p><b>Theorem: </b><srclink>len-of-linear-combo</srclink></p>@({(defthm len-of-linear-combo
+  (implies (and (real-listp coeffs)
+                (dictionaryp d dim)
+                (equal (len coeffs) (n-atoms d)))
+           (equal (len (linear-combo coeffs d dim))
+                  (nfix dim))))})
+<p><b>Theorem: </b><srclink>vectorp-of-linear-combo</srclink></p>@({(defthm vectorp-of-linear-combo
+  (implies (and (real-listp coeffs)
+                (dictionaryp d dim)
+                (equal (len coeffs) (n-atoms d)))
+           (vectorp (linear-combo coeffs d dim)
+                    dim)))})
 ")
 
 
@@ -298,26 +426,32 @@
   <dt>Signature</dt><dt><code>(n-atoms d) &rarr; n</code></dt><dt>Returns</dt><dd><tt>n</tt> &mdash; <color rgb='#606060'>Type @('(natp n)').</color></dd>
 
 </dl></box>
-<p>Kept enabled because it is just an alias for @(see len) on a
+<p>Kept enabled because it is just an alias for <see topic=\"ACL2____LEN\">@(sym |LEN|)</see> on a
      dictionary; downstream arithmetic and guards see the underlying
-     @(see len) form directly.</p>
+     <see topic=\"ACL2____LEN\">@(sym |LEN|)</see> form directly.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|N-ATOMS|)
-@(def? |OMP|::|NATP-OF-N-ATOMS|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>n-atoms</srclink></p>@({(defun n-atoms (d)
+  (declare (xargs :guard t))
+  (let ((__function__ 'n-atoms))
+    (declare (ignorable __function__))
+    (len d)))})
+<p><b>Theorem: </b><srclink>natp-of-n-atoms</srclink></p>@({(defthm natp-of-n-atoms
+  (b* ((n (n-atoms d))) (natp n))
+  :rule-classes :type-prescription)})
 ")
 
 
 (defxdoc OMP
-  :parents (ACL2::PROJECTS ACL2::KESTREL-BOOKS)
+  :parents (ACL2::PROJECTS)
   :short "An ACL2(r) library for OMP (Orthogonal Matching Pursuit)."
   :long 
-"<p>This library is only available in <see topic=\"@(url acl2::real)\">ACL2(r)</see>.</p><p>@('OMP') is a greedy algorithm for sparse approximation:
+"<p>This library is only available in <see topic=\"COMMON-LISP____REAL\">ACL2(r)</see>.</p><p>@('OMP') is a greedy algorithm for sparse approximation:
      given a signal @($x \\in \\mathbb{R}^d$),
      a dictionary @($D$) of @($N$) unit-norm atoms in @($\\mathbb{R}^d$),
      and a sparsity budget @($k$),
      find a coefficient vector @($c \\in \\mathbb{R}^N$) with at most
      @($k$) nonzero entries that minimizes @($\\|x - \\Phi c\\|_2$),
-     where @($\\Phi$) is the matrix whose columns are the atoms of @($D$).</p><p>The library is structured in two layers:</p><ul><li>@(see dictionary) -- dictionaries, completeness, redundancy, and frames.</li><li>@(see sparse-approximation) -- the two standard problem
+     where @($\\Phi$) is the matrix whose columns are the atoms of @($D$).</p><p>The library is structured in two layers:</p><ul><li><see topic=\"OMP____DICTIONARY\">@(sym |DICTIONARY|)</see> -- dictionaries, completeness, redundancy, and frames.</li><li><see topic=\"OMP____SPARSE-APPROXIMATION\">@(sym |SPARSE-APPROXIMATION|)</see> -- the two standard problem
       formulations (tolerance-constrained and budget-constrained)
       and their optimality predicates.</li></ul><p>The vector and norm infrastructure is inherited from
      @('books/workshops/2018/kwan-greenstreet/'),
@@ -341,8 +475,16 @@
 </dl></box>
 
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|PARSEVAL-FRAMEP|)
-@(def? |OMP|::|BOOLEANP-OF-PARSEVAL-FRAMEP|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>parseval-framep</srclink></p>@({(defun parseval-framep (d dim)
+  (declare (xargs :guard (natp dim)))
+  (declare (xargs :guard (dictionaryp d dim)))
+  (let ((__function__ 'parseval-framep))
+    (declare (ignorable __function__))
+    (tight-framep d dim 1)))})
+<p><b>Theorem: </b><srclink>booleanp-of-parseval-framep</srclink></p>@({(defthm booleanp-of-parseval-framep
+  (b* ((ok (parseval-framep d dim)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -364,8 +506,16 @@
      @($N - d$).  This is the regime where one chooses a representation
      by a minimality criterion -- typically sparsity, as in @('OMP').</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|REDUNDANT-DICTIONARY-P|)
-@(def? |OMP|::|BOOLEANP-OF-REDUNDANT-DICTIONARY-P|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>redundant-dictionary-p</srclink></p>@({(defun redundant-dictionary-p (d dim)
+  (declare (xargs :guard (natp dim)))
+  (let ((__function__ 'redundant-dictionary-p))
+    (declare (ignorable __function__))
+    (and (dictionaryp d dim)
+         (> (n-atoms d) (nfix dim)))))})
+<p><b>Theorem: </b><srclink>booleanp-of-redundant-dictionary-p</srclink></p>@({(defthm booleanp-of-redundant-dictionary-p
+  (b* ((ok (redundant-dictionary-p d dim)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -384,10 +534,35 @@
 </dl></box>
 
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|RESIDUAL|)
-@(def? |OMP|::|REAL-LISTP-OF-RESIDUAL|)
-@(def? |OMP|::|LEN-OF-RESIDUAL|)
-@(def? |OMP|::|VECTORP-OF-RESIDUAL|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>residual</srclink></p>@({(defun residual (x c d dim)
+  (declare (xargs :guard (natp dim)))
+  (declare (xargs :guard (and (real-listp x)
+                              (equal (len x) (nfix dim))
+                              (real-listp c)
+                              (dictionaryp d dim)
+                              (equal (len c) (n-atoms d)))))
+  (let ((__function__ 'residual))
+    (declare (ignorable __function__))
+    (vec-+ x
+           (scalar-* -1 (linear-combo c d dim)))))})
+<p><b>Theorem: </b><srclink>real-listp-of-residual</srclink></p>@({(defthm real-listp-of-residual
+  (b* ((r (residual x c d dim)))
+    (real-listp r))
+  :rule-classes :rewrite)})
+<p><b>Theorem: </b><srclink>len-of-residual</srclink></p>@({(defthm len-of-residual
+  (implies (and (real-listp x)
+                (equal (len x) (nfix dim))
+                (real-listp c)
+                (dictionaryp d dim)
+                (equal (len c) (n-atoms d)))
+           (equal (len (residual x c d dim))
+                  (nfix dim))))})
+<p><b>Theorem: </b><srclink>vectorp-of-residual</srclink></p>@({(defthm vectorp-of-residual
+  (implies (and (vectorp x dim)
+                (real-listp c)
+                (dictionaryp d dim)
+                (equal (len c) (n-atoms d)))
+           (vectorp (residual x c d dim) dim)))})
 ")
 
 
@@ -404,9 +579,23 @@
      comparing 2-norms, since @('norm^2') is monotone in the norm for
      nonnegative values.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|RESIDUAL-NORM^2|)
-@(def? |OMP|::|REALP-OF-RESIDUAL-NORM^2|)
-@(def? |OMP|::|NONNEG-OF-RESIDUAL-NORM^2|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>residual-norm^2</srclink></p>@({(defun residual-norm^2 (x c d dim)
+  (declare (xargs :guard (natp dim)))
+  (declare (xargs :guard (and (real-listp x)
+                              (equal (len x) (nfix dim))
+                              (real-listp c)
+                              (dictionaryp d dim)
+                              (equal (len c) (n-atoms d)))))
+  (let ((__function__ 'residual-norm^2))
+    (declare (ignorable __function__))
+    (norm^2 (residual x c d dim))))})
+<p><b>Theorem: </b><srclink>realp-of-residual-norm^2</srclink></p>@({(defthm realp-of-residual-norm^2
+  (b* ((s (residual-norm^2 x c d dim)))
+    (realp s))
+  :rule-classes :type-prescription)})
+<p><b>Theorem: </b><srclink>nonneg-of-residual-norm^2</srclink></p>@({(defthm nonneg-of-residual-norm^2
+  (<= 0 (residual-norm^2 x c d dim))
+  :rule-classes ((:rewrite) (:linear)))})
 ")
 
 
@@ -415,7 +604,7 @@
   :short 
 "The sparse approximation problem and its two standard formulations."
   :long 
-"<p>This library is only available in <see topic=\"@(url acl2::real)\">ACL2(r)</see>.</p><p>Fix a signal @($x \\in \\mathcal{H} = \\mathbb{R}^d$), a
+"<p>This library is only available in <see topic=\"COMMON-LISP____REAL\">ACL2(r)</see>.</p><p>Fix a signal @($x \\in \\mathcal{H} = \\mathbb{R}^d$), a
      dictionary @($D$) with @($N$) atoms (in matrix view, @($\\Phi
      \\in \\mathbb{R}^{d \\times N}$)), a sparsity budget @($k \\in
      \\mathbb{N}$) with @($k \\ll N$), and a tolerance @($\\epsilon
@@ -423,13 +612,13 @@
      forms:</p><ol><li><b>Tolerance-constrained.</b>
       Minimize @($\\|c\\|_0$) over @($c \\in \\mathbb{R}^N$) subject
       to @($\\|x - \\Phi c\\|_2 \\le \\epsilon$).
-      See @(tsee tolerance-feasiblep) and @(tsee tolerance-optimalp).</li><li><b>Budgeted (sparsity-constrained).</b>
+      See <tt><see topic=\"OMP____TOLERANCE-FEASIBLEP\">@(sym |TOLERANCE-FEASIBLEP|)</see></tt> and <tt><see topic=\"OMP____TOLERANCE-OPTIMALP\">@(sym |TOLERANCE-OPTIMALP|)</see></tt>.</li><li><b>Budgeted (sparsity-constrained).</b>
       Minimize @($\\|x - \\Phi c\\|_2$) over @($c \\in \\mathbb{R}^N$)
       subject to @($\\|c\\|_0 \\le k$).
-      See @(tsee budget-feasiblep) and @(tsee budget-optimalp).</li></ol><p>Here @($\\|c\\|_0 := |\\{i : c_i \\neq 0\\}|$) is the size of the
+      See <tt><see topic=\"OMP____BUDGET-FEASIBLEP\">@(sym |BUDGET-FEASIBLEP|)</see></tt> and <tt><see topic=\"OMP____BUDGET-OPTIMALP\">@(sym |BUDGET-OPTIMALP|)</see></tt>.</li></ol><p>Here @($\\|c\\|_0 := |\\{i : c_i \\neq 0\\}|$) is the size of the
      <b>support</b> of @($c$) -- the so-called \"@($\\ell_0$) norm\",
      which fails homogeneity and so is not a norm in the topological
-     sense.  We call it @(tsee support-size) below to avoid the abuse.</p><p>Geometrically, @($\\Sigma_k = \\{c \\in \\mathbb{R}^N : \\|c\\|_0
+     sense.  We call it <tt><see topic=\"OMP____SUPPORT-SIZE\">@(sym |SUPPORT-SIZE|)</see></tt> below to avoid the abuse.</p><p>Geometrically, @($\\Sigma_k = \\{c \\in \\mathbb{R}^N : \\|c\\|_0
      \\le k\\}$) is a finite union of @($k$)-dimensional coordinate
      subspaces of @($\\mathbb{R}^N$), not itself a linear space.
      Form (1) minimizes the nonconvex objective @($\\|c\\|_0$) over a
@@ -462,9 +651,23 @@
      each @('(dot x (car d))') call sees real-listp args of equal
      length.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|SUM-SQ-INNER-PRODUCTS|)
-@(def? |OMP|::|REALP-OF-SUM-SQ-INNER-PRODUCTS|)
-@(def? |OMP|::|NONNEG-OF-SUM-SQ-INNER-PRODUCTS|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>sum-sq-inner-products</srclink></p>@({(defun sum-sq-inner-products (x d)
+  (declare (xargs :guard (real-listp x)))
+  (declare (xargs :guard (dictionaryp d (len x))))
+  (let ((__function__ 'sum-sq-inner-products))
+    (declare (ignorable __function__))
+    (cond ((atom d) 0)
+          (t (+ (let ((ip (dot x (car d)))) (* ip ip))
+                (sum-sq-inner-products x (cdr d)))))))})
+<p><b>Theorem: </b><srclink>realp-of-sum-sq-inner-products</srclink></p>@({(defthm realp-of-sum-sq-inner-products
+  (b* ((s (sum-sq-inner-products x d)))
+    (realp s))
+  :rule-classes :type-prescription)})
+<p><b>Theorem: </b><srclink>nonneg-of-sum-sq-inner-products</srclink></p>@({(defthm nonneg-of-sum-sq-inner-products
+  (implies (and (real-listp x)
+                (dictionaryp d (len x)))
+           (<= 0 (sum-sq-inner-products x d)))
+  :rule-classes ((:rewrite) (:linear)))})
 ")
 
 
@@ -479,13 +682,24 @@
   <dt>Signature</dt><dt><code>(support-size c) &rarr; n</code></dt><dt>Returns</dt><dd><tt>n</tt> &mdash; <color rgb='#606060'>Type @('(natp n)').</color></dd>
 
 </dl></box>
-<p>Same value whether or not @($c$) is a @(see real-listp), but the
+<p>Same value whether or not @($c$) is a <see topic=\"ACL2____REAL-LISTP\">@(sym |REAL-LISTP|)</see>, but the
      intended domain is real coefficient vectors.  Non-real entries
      pass through as zero (i.e., they do not contribute to the
      count).</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|SUPPORT-SIZE|)
-@(def? |OMP|::|NATP-OF-SUPPORT-SIZE|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>support-size</srclink></p>@({(defun support-size (c)
+  (declare (xargs :guard t))
+  (let ((__function__ 'support-size))
+    (declare (ignorable __function__))
+    (cond ((atom c) 0)
+          (t (+ (if (and (realp (car c))
+                         (not (equal (car c) 0)))
+                    1
+                  0)
+                (support-size (cdr c)))))))})
+<p><b>Theorem: </b><srclink>natp-of-support-size</srclink></p>@({(defthm natp-of-support-size
+  (b* ((n (support-size c))) (natp n))
+  :rule-classes :type-prescription)})
 ")
 
 
@@ -501,10 +715,18 @@
 </dl></box>
 <p>When additionally @($A = 1$), this is a Parseval frame: every
      @($x$) satisfies @($\\|x\\|^2 = \\sum_i \\langle x, D(i)
-     \\rangle^2$).  See @(tsee parseval-framep).</p>
+     \\rangle^2$).  See <tt><see topic=\"OMP____PARSEVAL-FRAMEP\">@(sym |PARSEVAL-FRAMEP|)</see></tt>.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|TIGHT-FRAMEP|)
-@(def? |OMP|::|BOOLEANP-OF-TIGHT-FRAMEP|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>tight-framep</srclink></p>@({(defun tight-framep (d dim a)
+  (declare (xargs :guard (and (natp dim) (realp a))))
+  (declare (xargs :guard (dictionaryp d dim)))
+  (let ((__function__ 'tight-framep))
+    (declare (ignorable __function__))
+    (framep d dim a a)))})
+<p><b>Theorem: </b><srclink>booleanp-of-tight-framep</srclink></p>@({(defthm booleanp-of-tight-framep
+  (b* ((ok (tight-framep d dim a)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -523,11 +745,25 @@
 </dl></box>
 <p>The c-shape predicates (@('(real-listp c)') and the length
      constraint) stay in the body, not the guard, because
-     @(tsee tolerance-supp-lower-boundp) universally quantifies over
+     <tt><see topic=\"OMP____TOLERANCE-SUPP-LOWER-BOUNDP\">@(sym |TOLERANCE-SUPP-LOWER-BOUNDP|)</see></tt> universally quantifies over
      candidate vectors and calls this on each witness.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|TOLERANCE-FEASIBLEP|)
-@(def? |OMP|::|BOOLEANP-OF-TOLERANCE-FEASIBLEP|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>tolerance-feasiblep</srclink></p>@({(defun tolerance-feasiblep (c d dim x eps-sq)
+  (declare (xargs :guard (and (natp dim) (realp eps-sq))))
+  (declare (xargs :guard (and (vectorp x dim)
+                              (dictionaryp d dim))))
+  (let ((__function__ 'tolerance-feasiblep))
+    (declare (ignorable __function__))
+    (and (real-listp c)
+         (equal (len c) (n-atoms d))
+         (realp eps-sq)
+         (<= 0 eps-sq)
+         (<= (residual-norm^2 x c d dim)
+             eps-sq))))})
+<p><b>Theorem: </b><srclink>booleanp-of-tolerance-feasiblep</srclink></p>@({(defthm booleanp-of-tolerance-feasiblep
+  (b* ((ok (tolerance-feasiblep c d dim x eps-sq)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -547,27 +783,44 @@
 </dl></box>
 
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|TOLERANCE-OPTIMALP|)
-@(def? |OMP|::|BOOLEANP-OF-TOLERANCE-OPTIMALP|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>tolerance-optimalp</srclink></p>@({(defun tolerance-optimalp (c d dim x eps-sq)
+  (declare (xargs :guard (and (natp dim) (realp eps-sq))))
+  (declare (xargs :guard (and (vectorp x dim)
+                              (dictionaryp d dim))))
+  (let ((__function__ 'tolerance-optimalp))
+    (declare (ignorable __function__))
+    (and (tolerance-feasiblep c d dim x eps-sq)
+         (tolerance-supp-lower-boundp c d dim x eps-sq))))})
+<p><b>Theorem: </b><srclink>booleanp-of-tolerance-optimalp</srclink></p>@({(defthm booleanp-of-tolerance-optimalp
+  (b* ((ok (tolerance-optimalp c d dim x eps-sq)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
 (defxdoc TOLERANCE-SUPP-LOWER-BOUNDP
   :parents (SPARSE-APPROXIMATION)
   :short 
-"@(tsee support-size) of @($c$) is a lower bound on the
+"<tt><see topic=\"OMP____SUPPORT-SIZE\">@(sym |SUPPORT-SIZE|)</see></tt> of @($c$) is a lower bound on the
           supports of all tolerance-feasible candidates."
 
   :long 
 "<p>This does <b>not</b> require @($c$) itself to be feasible -- a
      vector with @('support-size 0') trivially witnesses it.  See
-     @(tsee tolerance-optimalp) for the optimality predicate that
-     adds feasibility.</p><p>The guard mirrors @(tsee tolerance-feasiblep)'s full guard (after
-     @(see define) adds the formal-type guards): @('(natp dim)') and
+     <tt><see topic=\"OMP____TOLERANCE-OPTIMALP\">@(sym |TOLERANCE-OPTIMALP|)</see></tt> for the optimality predicate that
+     adds feasibility.</p><p>The guard mirrors <tt><see topic=\"OMP____TOLERANCE-FEASIBLEP\">@(sym |TOLERANCE-FEASIBLEP|)</see></tt>'s full guard (after
+     <see topic=\"ACL2____DEFINE\">@(sym |DEFINE|)</see> adds the formal-type guards): @('(natp dim)') and
      @('(realp eps-sq)') in addition to the dictionary shape.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|TOLERANCE-SUPP-LOWER-BOUNDP-NECC|)
-@(def? |OMP|::|BOOLEANP-OF-TOLERANCE-SUPP-LOWER-BOUNDP|)
+<h3>Definitions and Theorems</h3><p><b>Theorem: </b><srclink>tolerance-supp-lower-boundp-necc</srclink></p>@({(defthm tolerance-supp-lower-boundp-necc
+  (implies (tolerance-supp-lower-boundp c d dim x eps-sq)
+           (implies (tolerance-feasiblep c2 d dim x eps-sq)
+                    (<= (support-size c)
+                        (support-size c2)))))})
+<p><b>Theorem: </b><srclink>booleanp-of-tolerance-supp-lower-boundp</srclink></p>@({(defthm booleanp-of-tolerance-supp-lower-boundp
+  (b* ((ok (tolerance-supp-lower-boundp c d dim x eps-sq)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -583,8 +836,16 @@
 <p>@($\\|v\\| = 1$) iff @($\\|v\\|^2 = 1$) since the norm is
      nonnegative.  Squaring lets us avoid @('sqrt').</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|UNIT-ATOM-P|)
-@(def? |OMP|::|BOOLEANP-OF-UNIT-ATOM-P|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>unit-atom-p</srclink></p>@({(defun unit-atom-p (v dim)
+  (declare (xargs :guard (natp dim)))
+  (let ((__function__ 'unit-atom-p))
+    (declare (ignorable __function__))
+    (and (vectorp v dim)
+         (equal (norm^2 v) 1))))})
+<p><b>Theorem: </b><srclink>booleanp-of-unit-atom-p</srclink></p>@({(defthm booleanp-of-unit-atom-p
+  (b* ((ok (unit-atom-p v dim)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
 ")
 
 
@@ -598,14 +859,26 @@
 
 </dl></box>
 <p>The two conjuncts are exposed as rewrites in the @('///')
-     section so callers (e.g. @(tsee unit-atom-p)) can discharge
+     section so callers (e.g. <tt><see topic=\"OMP____UNIT-ATOM-P\">@(sym |UNIT-ATOM-P|)</see></tt>) can discharge
      guards like @('(real-listp v)') from @('(vectorp v dim)')
      without enabling @('vectorp') by hand.</p>
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|VECTORP|)
-@(def? |OMP|::|BOOLEANP-OF-VECTORP|)
-@(def? |OMP|::|REAL-LISTP-WHEN-VECTORP|)
-@(def? |OMP|::|LEN-WHEN-VECTORP|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>vectorp</srclink></p>@({(defun vectorp (v dim)
+  (declare (xargs :guard (natp dim)))
+  (let ((__function__ 'vectorp))
+    (declare (ignorable __function__))
+    (and (real-listp v)
+         (equal (len v) (nfix dim)))))})
+<p><b>Theorem: </b><srclink>booleanp-of-vectorp</srclink></p>@({(defthm booleanp-of-vectorp
+  (b* ((ok (vectorp v dim)))
+    (booleanp ok))
+  :rule-classes :rewrite)})
+<p><b>Theorem: </b><srclink>real-listp-when-vectorp</srclink></p>@({(defthm real-listp-when-vectorp
+  (implies (vectorp v dim) (real-listp v))
+  :rule-classes (:rewrite :forward-chaining))})
+<p><b>Theorem: </b><srclink>len-when-vectorp</srclink></p>@({(defthm len-when-vectorp
+  (implies (vectorp v dim)
+           (equal (len v) (nfix dim))))})
 ")
 
 
@@ -620,10 +893,20 @@
 </dl></box>
 
 
-<h3>Definitions and Theorems</h3>@(def? |OMP|::|ZERO-VEC|)
-@(def? |OMP|::|REAL-LISTP-OF-ZERO-VEC|)
-@(def? |OMP|::|LEN-OF-ZERO-VEC|)
-@(def? |OMP|::|VECTORP-OF-ZERO-VEC|)
+<h3>Definitions and Theorems</h3><p><b>Function: </b><srclink>zero-vec</srclink></p>@({(defun zero-vec (dim)
+  (declare (xargs :guard (natp dim)))
+  (let ((__function__ 'zero-vec))
+    (declare (ignorable __function__))
+    (if (zp dim)
+        nil
+      (cons 0 (zero-vec (- dim 1))))))})
+<p><b>Theorem: </b><srclink>real-listp-of-zero-vec</srclink></p>@({(defthm real-listp-of-zero-vec
+  (b* ((v (zero-vec dim))) (real-listp v))
+  :rule-classes :rewrite)})
+<p><b>Theorem: </b><srclink>len-of-zero-vec</srclink></p>@({(defthm len-of-zero-vec
+  (equal (len (zero-vec dim)) (nfix dim)))})
+<p><b>Theorem: </b><srclink>vectorp-of-zero-vec</srclink></p>@({(defthm vectorp-of-zero-vec
+  (vectorp (zero-vec dim) dim))})
 ")
 
 
