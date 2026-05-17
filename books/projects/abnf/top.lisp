@@ -19,6 +19,10 @@
 (include-book "parsing-tools/top")
 (include-book "examples/top")
 (include-book "tree-utilities")
+;; These packages are mentioned in the doc below:
+(include-book "kestrel/c/portcullis" :dir :system)
+(include-book "kestrel/java/portcullis" :dir :system)
+(include-book "kestrel/yul/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
