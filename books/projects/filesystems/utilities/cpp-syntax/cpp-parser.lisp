@@ -370,90 +370,630 @@
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Template Parameter
+;; Parse: Type Specifier
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-cpp-template-param ((parstate parstatep))
+;; Helper: parse the suffix (pointer / reference) after a base type spec
+(define parse-cpp-type-spec-suffix ((base cpp-type-spec-p)
+                                    (base-span spanp)
+                                    (parstate parstatep))
   :returns (mv erp
-               (param cpp-template-param-p)
+               (spec cpp-type-spec-p)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a single C++ template parameter."
+  :short "Parse optional pointer/reference suffixes after a base type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Parses either a type parameter (@('typename T') or @('class T'))
-     or a non-type parameter (@('int N')).")
-   (xdoc::p
-    "Type parameters: the @('typename') or @('class') keyword is followed
-     by an optional identifier (the parameter name).
-     We read one more token; if it is an identifier (not a comma or @('>'))
-     we take it as the parameter name.  Otherwise we put it back.")
-   (xdoc::p
-    "Non-type parameters: the type is given as a single identifier
-     followed by the parameter name identifier.
-     This simplified parsing handles only the common case @('int N')."))
-  (b* (((reterr) (irr-cpp-template-param) (irr-span) parstate)
-       ((erp first-token? first-span parstate) (read-token parstate))
-       ;; Type parameter introduced by 'typename' or 'class'
-       ((when (token-cpp-template-type-kw-p first-token?))
-        (b* (;; Determine whether this is 'typename' or 'class'
-             (typenamep (token-cpp-kw-p first-token? "typename"))
-             ;; Optionally read parameter name
-             ((erp name-token? name-span parstate) (read-token parstate))
-             ((when (and name-token?
-                         (token-case name-token? :ident)
-                         ;; Not ',' or '>' which would end the parameter list
-                         (not (token-punctuatorp name-token? ","))
-                         (not (token-punctuatorp name-token? ">"))))
-              ;; The name-token is the parameter name
-              (b* ((name-ident (token-ident->ident name-token?))
-                   (span (make-span :start (span->start first-span)
-                                    :end   (span->end name-span))))
-                (retok (make-cpp-template-param-type
-                        :typenamep typenamep
-                        :name name-ident)
-                       span parstate)))
-             ;; No parameter name — put back the token we just read
-             (parstate (if name-token? (unread-token parstate) parstate)))
-          (retok (make-cpp-template-param-type :typenamep typenamep :name nil)
-                 first-span parstate)))
-       ;; Non-type parameter: expect 'type-name param-name'
-       ;; For the simplified case, we expect two identifiers.
-       ((unless (and first-token? (token-case first-token? :ident)))
-        (reterr-msg :where (span->start first-span)
-                    :expected "template parameter (typename/class T or type name N)"
-                    :found first-token?
-                    :extra nil))
-       (type-ident (token-ident->ident first-token?))
-       ((erp name-token? name-span parstate) (read-token parstate))
-       ((unless (and name-token? (token-case name-token? :ident)))
-        (reterr-msg :where (span->start name-span)
-                    :expected "parameter name identifier after type in non-type template parameter"
-                    :found name-token?
-                    :extra nil))
-       (param-ident (token-ident->ident name-token?))
-       (span (make-span :start (span->start first-span)
-                        :end   (span->end name-span))))
-    (retok (make-cpp-template-param-nontype :type-name type-ident
-                                            :param-name param-ident)
-           span parstate))
+    "After parsing the base of a type, peek for @('*'), @('&'), or @('&&').
+     If @('*'), also check for @('const') after it."))
+  (b* (((reterr) (irr-cpp-type-spec) (irr-span) parstate)
+       ;; Peek at the next token
+       ((erp peek-token? peek-span parstate) (read-token parstate))
+       ;; Pointer: *
+       ((when (token-punctuatorp peek-token? "*"))
+        (b* (;; Check for 'const' after '*'
+             ((erp const-tok? const-span parstate) (read-token parstate))
+             (constp (token-keywordp const-tok? "const"))
+             (parstate (if (and const-tok? (not constp))
+                           (unread-token parstate)
+                         parstate))
+             (end-span (if constp const-span peek-span))
+             (span (make-span :start (span->start base-span)
+                              :end   (span->end end-span))))
+          (retok (make-cpp-type-spec-pointer :pointee (cpp-type-spec-fix base)
+                                             :constp constp)
+                 span parstate)))
+       ;; Reference: & or &&
+       ((when (token-punctuatorp peek-token? "&&"))
+        (b* ((span (make-span :start (span->start base-span)
+                              :end   (span->end peek-span))))
+          (retok (make-cpp-type-spec-rref :base (cpp-type-spec-fix base))
+                 span parstate)))
+       ((when (token-punctuatorp peek-token? "&"))
+        (b* ((span (make-span :start (span->start base-span)
+                              :end   (span->end peek-span))))
+          (retok (make-cpp-type-spec-lref :base (cpp-type-spec-fix base))
+                 span parstate)))
+       ;; No suffix — put back and return base
+       (parstate (if peek-token? (unread-token parstate) parstate)))
+    (retok (cpp-type-spec-fix base) (span-fix base-span) parstate))
 
   ///
 
-  (defret parsize-of-parse-cpp-template-param-uncond
+  (defret parsize-of-parse-cpp-type-spec-suffix-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Main recursive type-spec parser.
+;; The mutual recursion between type-spec parsing and template argument
+;; list parsing is handled via defines with two-nats-measure.
+;; parse-cpp-type-spec-one (rank 1) parses a single type-spec;
+;; parse-cpp-type-spec-arg-list-rest (rank 0) parses comma-separated
+;; template args until '>'.  mbt assertions capture parsize decrease
+;; for cross-calls; :verify-guards :after-returns defers guard proofs
+;; so defret lemmas are available.
+
+(defines parse-cpp-type-spec-mutual
+  :parents (parser)
+
+  ;; parse-cpp-type-spec-one: parse a single type-spec without suffix.
+  ;; Reads: [const/volatile] ident [:: ident]* [< args >]
+  ;; Does NOT handle pointer/reference suffixes (those are added by caller).
+  (define parse-cpp-type-spec-one ((parstate parstatep))
+    :returns (mv erp
+                 (spec cpp-type-spec-p)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :measure (two-nats-measure (parsize parstate) 1)
+    :verify-guards nil
+    (b* (((reterr) (irr-cpp-type-spec) (irr-span) parstate)
+         ;; Read the first token
+         ((erp tok? tok-span parstate) (read-token parstate))
+         ;; const qualifier
+         ((when (token-keywordp tok? "const"))
+          (b* (((erp inner inner-span parstate) (parse-cpp-type-spec-one parstate))
+               (span (make-span :start (span->start tok-span)
+                                :end   (span->end inner-span))))
+            (retok (make-cpp-type-spec-const-qual :base inner)
+                   span parstate)))
+         ;; volatile qualifier
+         ((when (token-cpp-kw-p tok? "volatile"))
+          (b* (((erp inner inner-span parstate) (parse-cpp-type-spec-one parstate))
+               (span (make-span :start (span->start tok-span)
+                                :end   (span->end inner-span))))
+            (retok (make-cpp-type-spec-volatile-qual :base inner)
+                   span parstate)))
+         ;; Must be an identifier
+         ((unless (and tok? (token-case tok? :ident)))
+          (reterr-msg :where (span->start tok-span)
+                      :expected "type name identifier"
+                      :found tok?
+                      :extra nil))
+         (id (token-ident->ident tok?))
+         (base (make-cpp-type-spec-name :id id))
+         ;; Check for '::' (qualified name)
+         ((erp sep-token? & parstate) (read-token parstate))
+         ((when (token-punctuatorp sep-token? "::"))
+          ;; Qualified: parse the inner part recursively
+          (b* (((erp inner inner-span parstate) (parse-cpp-type-spec-one parstate))
+               (span (make-span :start (span->start tok-span)
+                                :end   (span->end inner-span))))
+            (retok (make-cpp-type-spec-qualified :scope id :inner inner)
+                   span parstate)))
+         ;; Put back the non-'::' token
+         (parstate (if sep-token? (unread-token parstate) parstate))
+         ;; Check for '<' (template instantiation)
+         ((erp angle-token? & parstate) (read-token parstate))
+         ((when (token-punctuatorp angle-token? "<"))
+          ;; Template instantiation: parse args until '>'
+          ;; Check for empty '<>'
+          (b* (((erp empty-check? empty-span parstate) (read-token parstate))
+               ((when (token-punctuatorp empty-check? ">"))
+                ;; Empty template args: T<>
+                (b* ((span (make-span :start (span->start tok-span)
+                                      :end   (span->end empty-span))))
+                  (retok (make-cpp-type-spec-template-inst :template base
+                                                            :args nil)
+                         span parstate)))
+               ;; Not empty — put back and parse first arg
+               (parstate (if empty-check? (unread-token parstate) parstate))
+               (psize (parsize parstate))
+               ((erp first-arg & parstate) (parse-cpp-type-spec-one parstate))
+               ((unless (mbt (<= (parsize parstate) psize)))
+                (reterr :impossible))
+               ;; Parse remaining args (rank 0 < 1, parsize <=)
+               ((erp args close-span parstate)
+                (parse-cpp-type-spec-arg-list-rest (list first-arg) parstate))
+               (span (make-span :start (span->start tok-span)
+                                :end   (span->end close-span))))
+            (retok (make-cpp-type-spec-template-inst :template base
+                                                      :args args)
+                   span parstate)))
+         ;; No '<' — put back and return simple name
+         (parstate (if angle-token? (unread-token parstate) parstate)))
+      (retok base tok-span parstate)))
+
+  ;; Recursive helper: parse comma-separated type specs for template args.
+  ;; Starts AFTER the first type arg has been parsed (passed in `acc`).
+  ;; Continues until '>' is consumed.
+  (define parse-cpp-type-spec-arg-list-rest ((acc cpp-type-spec-listp)
+                                              (parstate parstatep))
+    :returns (mv erp
+                 (args cpp-type-spec-listp)
+                 (close-span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :measure (two-nats-measure (parsize parstate) 0)
+    :verify-guards nil
+    (b* (((reterr) nil (irr-span) parstate)
+         ;; Peek: ',' or '>'
+         ((erp sep-token? sep-span parstate) (read-token parstate))
+         ;; '>' ends the argument list
+         ((when (token-punctuatorp sep-token? ">"))
+          (retok (cpp-type-spec-list-fix acc) sep-span parstate))
+         ;; Must be ','
+         ((unless (token-punctuatorp sep-token? ","))
+          (reterr-msg :where (span->start sep-span)
+                      :expected "',' or '>' in template argument list"
+                      :found sep-token?
+                      :extra nil))
+         ;; Parse the next type arg (rank 1 > 0, but parsize decreased)
+         (psize (parsize parstate))
+         ((erp arg & parstate) (parse-cpp-type-spec-one parstate))
+         ((unless (mbt (<= (parsize parstate) psize)))
+          (reterr :impossible))
+         ;; Recurse
+         ((erp result close-span parstate)
+          (parse-cpp-type-spec-arg-list-rest (append (cpp-type-spec-list-fix acc)
+                                                      (list arg))
+                                              parstate)))
+      (retok result close-span parstate)))
+
+  ///
+
+  (defthm-parse-cpp-type-spec-mutual-flag parsize-of-parse-cpp-type-spec-mutual-uncond
+    (defthm parsize-of-parse-cpp-type-spec-one-uncond
+      (<= (parsize (mv-nth 3 (parse-cpp-type-spec-one parstate)))
+          (parsize parstate))
+      :rule-classes :linear
+      :flag parse-cpp-type-spec-one)
+    (defthm parsize-of-parse-cpp-type-spec-arg-list-rest-uncond
+      (<= (parsize (mv-nth 3 (parse-cpp-type-spec-arg-list-rest acc parstate)))
+          (parsize parstate))
+      :rule-classes :linear
+      :flag parse-cpp-type-spec-arg-list-rest)
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
+                                       c$::parsize-of-unread-token
+                                       parse-cpp-type-spec-one
+                                       parse-cpp-type-spec-arg-list-rest))))
+
+  (defthm-parse-cpp-type-spec-mutual-flag parsize-of-parse-cpp-type-spec-mutual-cond
+    (defthm parsize-of-parse-cpp-type-spec-one-cond
+      (implies (not (mv-nth 0 (parse-cpp-type-spec-one parstate)))
+               (< (parsize (mv-nth 3 (parse-cpp-type-spec-one parstate)))
+                  (parsize parstate)))
+      :rule-classes :linear
+      :flag parse-cpp-type-spec-one)
+    (defthm parsize-of-parse-cpp-type-spec-arg-list-rest-cond
+      (implies (not (mv-nth 0 (parse-cpp-type-spec-arg-list-rest acc parstate)))
+               (< (parsize (mv-nth 3 (parse-cpp-type-spec-arg-list-rest acc parstate)))
+                  (parsize parstate)))
+      :rule-classes :linear
+      :flag parse-cpp-type-spec-arg-list-rest)
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
+                                       c$::parsize-of-unread-token
+                                       parse-cpp-type-spec-one
+                                       parse-cpp-type-spec-arg-list-rest))))
+
+  (verify-guards parse-cpp-type-spec-one
+    :hints (("Goal" :in-theory (enable c$::parsize-of-unread-token)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Non-recursive entry point for parsing a type specifier.
+(define parse-cpp-type-spec ((parstate parstatep))
+  :returns (mv erp
+               (spec cpp-type-spec-p)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse a C++ type specifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Parses a C++ type specifier: an optional @('const')/@('volatile') prefix,
+     followed by an identifier (possibly qualified via @('::')
+     or template-instantiated via @('< ... >')),
+     followed by optional pointer (@('*')), lvalue reference (@('&')),
+     or rvalue reference (@('&&')) suffixes.")
+   (xdoc::p
+    "Nested template arguments using @('>>') as two closing angles
+     are a known limitation; the lexer produces @('>>') as a single
+     token, so @('vector<vector<int>>') will not parse correctly."))
+  (b* (((reterr) (irr-cpp-type-spec) (irr-span) parstate)
+       ;; Parse the base type (no suffix)
+       ((erp base base-span parstate) (parse-cpp-type-spec-one parstate))
+       ;; Parse optional suffix
+       ((erp result result-span parstate)
+        (parse-cpp-type-spec-suffix base base-span parstate)))
+    (retok result result-span parstate))
+
+  ///
+
+  (defret parsize-of-parse-cpp-type-spec-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-parse-cpp-template-param-cond
+  (defret parsize-of-parse-cpp-type-spec-cond
     (implies (not erp)
              (< (parsize new-parstate)
                 (parsize parstate)))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Template Parameter List
+;; Parse: Typed Parameter
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-cpp-param ((parstate parstatep))
+  :returns (mv erp
+               (param cpp-param-p)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse a single C++ typed function parameter."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Parses a type specifier followed by an optional parameter name.
+     The name is taken if the next token is an identifier that is
+     not @(',') or @(')') (which end the parameter)."))
+  (b* (((reterr) (irr-cpp-param) (irr-span) parstate)
+       ;; Parse the type
+       ((erp type-spec type-span parstate) (parse-cpp-type-spec parstate))
+       ;; Optional: parameter name
+       ((erp name-token? name-span parstate) (read-token parstate))
+       (name-p (and name-token?
+                    (token-case name-token? :ident)
+                    (not (token-punctuatorp name-token? ","))
+                    (not (token-punctuatorp name-token? ")"))
+                    (not (token-punctuatorp name-token? ">"))))
+       (param-name (if name-p (token-ident->ident name-token?) nil))
+       (end-span (if name-p name-span type-span))
+       (parstate (if (and name-token? (not name-p))
+                     (unread-token parstate)
+                   parstate))
+       (span (make-span :start (span->start type-span)
+                        :end   (span->end end-span))))
+    (retok (make-cpp-param :type type-spec :name param-name)
+           span parstate))
+
+  ///
+
+  (defret parsize-of-parse-cpp-param-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-cpp-param-cond
+    (implies (not erp)
+             (< (parsize new-parstate)
+                (parsize parstate)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Parse: Parameter List
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recursive helper: parse remaining params after the first, separated by ','
+(define parse-cpp-param-list-rest ((parstate parstatep))
+  :returns (mv erp
+               (params cpp-param-listp)
+               (close-span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :measure (parsize parstate)
+  :parents nil
+  (b* (((reterr) nil (irr-span) parstate)
+       ;; Peek at the next token: ',' or ')'
+       ((erp sep-token? sep-span parstate) (read-token parstate))
+       ;; ')' ends the param list
+       ((when (token-punctuatorp sep-token? ")"))
+        (retok nil sep-span parstate))
+       ;; Must be ','
+       ((unless (token-punctuatorp sep-token? ","))
+        (reterr-msg :where (span->start sep-span)
+                    :expected "',' or ')' in parameter list"
+                    :found sep-token?
+                    :extra nil))
+       ;; Parse next param
+       ((erp param & parstate) (parse-cpp-param parstate))
+       ;; Recurse
+       ((erp rest close-span parstate) (parse-cpp-param-list-rest parstate)))
+    (retok (cons param rest) close-span parstate))
+
+  ///
+
+  (defret parsize-of-parse-cpp-param-list-rest-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal"
+             :induct (parse-cpp-param-list-rest parstate)
+             :in-theory (enable parsize-of-parse-cpp-param-cond))))
+
+  (defret parsize-of-parse-cpp-param-list-rest-cond
+    (implies (not erp)
+             (< (parsize new-parstate)
+                (parsize parstate)))
+    :rule-classes :linear
+    :hints (("Goal"
+             :induct (parse-cpp-param-list-rest parstate)
+             :in-theory (enable parsize-of-parse-cpp-param-cond)))))
+
+;; Non-recursive entry: parse params after '(' until ')'.
+;; The caller has already consumed the '(' token.
+(define parse-cpp-param-list ((parstate parstatep))
+  :returns (mv erp
+               (params cpp-param-listp)
+               (close-span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse a C++ parameter list (contents between @('(') and @(')'))."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Expects the @('(') to have been already consumed.
+     Reads typed parameters separated by @(',') until @(')').
+     Returns the parameter list and the span of the closing @(')')."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ;; Check for empty parameter list: immediate ')'
+       ((erp tok? tok-span parstate) (read-token parstate))
+       ((when (token-punctuatorp tok? ")"))
+        (retok nil tok-span parstate))
+       ;; Not empty — put back and parse first param
+       ((unless tok?)
+        (reterr-msg :where (span->start tok-span)
+                    :expected "')' or parameter in parameter list"
+                    :found tok?
+                    :extra nil))
+       (parstate (unread-token parstate))
+       ;; Parse first param
+       ((erp first-param & parstate) (parse-cpp-param parstate))
+       ;; Parse remaining params (or closing ')')
+       ((erp rest-params close-span parstate)
+        (parse-cpp-param-list-rest parstate)))
+    (retok (cons first-param rest-params) close-span parstate))
+
+  ///
+
+  (defret parsize-of-parse-cpp-param-list-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-cpp-param-list-cond
+    (implies (not erp)
+             (< (parsize new-parstate)
+                (parsize parstate)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Parse: Template Parameter and Template Parameter List
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Mutual recursion: parse-cpp-template-param calls
+;; parse-cpp-template-param-list-rest (for template template params),
+;; and parse-cpp-template-param-list-rest calls parse-cpp-template-param.
+;; Uses defines with two-nats-measure to handle this.
+
+(defines parse-cpp-template-param-mutual
+  :parents (parser)
+
+  (define parse-cpp-template-param ((parstate parstatep))
+    :returns (mv erp
+                 (param cpp-template-param-p)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :measure (two-nats-measure (parsize parstate) 0)
+    :verify-guards nil
+    :short "Parse a single C++ template parameter."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Parses a type parameter (@('typename T') or @('class T')),
+       a non-type parameter (@('int N') or @('const T* ptr')),
+       or a template template parameter
+       (@('template<typename> class Container')).")
+     (xdoc::p
+      "Type parameters: the @('typename') or @('class') keyword is followed
+       by an optional identifier (the parameter name).")
+     (xdoc::p
+      "Non-type parameters: parsed via @(tsee parse-cpp-type-spec) for the type,
+       followed by a mandatory parameter name identifier.")
+     (xdoc::p
+      "Template template parameters: @('template') followed by @('< params >'),
+       then @('typename') or @('class'), and an optional name."))
+    (b* (((reterr) (irr-cpp-template-param) (irr-span) parstate)
+         ((erp first-token? first-span parstate) (read-token parstate))
+         ;; Template template parameter: starts with 'template'
+         ((when (token-cpp-kw-p first-token? "template"))
+          (b* (;; Read '<'
+               ((erp open-token? open-span parstate) (read-token parstate))
+               ((unless (token-punctuatorp open-token? "<"))
+                (reterr-msg :where (span->start open-span)
+                            :expected "'<' after 'template' in template template parameter"
+                            :found open-token?
+                            :extra nil))
+               ;; Check for empty '<>'
+               ((erp peek-token? peek-span parstate) (read-token parstate))
+               ((when (token-punctuatorp peek-token? ">"))
+                ;; Empty template params — read 'typename'/'class' + optional name
+                (b* (((erp kw-token? & parstate) (read-token parstate))
+                     ((unless (token-cpp-template-type-kw-p kw-token?))
+                      (reterr-msg :where (span->start first-span)
+                                  :expected "'typename' or 'class' after template<>"
+                                  :found kw-token?
+                                  :extra nil))
+                     ((erp name-token? name-span parstate) (read-token parstate))
+                     (name-p (and name-token?
+                                  (token-case name-token? :ident)
+                                  (not (token-punctuatorp name-token? ","))
+                                  (not (token-punctuatorp name-token? ">"))))
+                     (param-name (if name-p (token-ident->ident name-token?) nil))
+                     (end-span (if name-p name-span peek-span))
+                     (parstate (if (and name-token? (not name-p))
+                                   (unread-token parstate)
+                                 parstate))
+                     (span (make-span :start (span->start first-span)
+                                      :end   (span->end end-span))))
+                  (retok (make-cpp-template-param-template-template
+                          :params nil
+                          :name   param-name)
+                         span parstate)))
+               ;; Not empty — put back and parse params
+               (parstate (if peek-token? (unread-token parstate) parstate))
+               (psize (parsize parstate))
+               ((erp inner-params & parstate)
+                (parse-cpp-template-param-list-rest open-span parstate))
+               ((unless (mbt (<= (parsize parstate) psize)))
+                (reterr :impossible))
+               ;; Read 'typename' or 'class'
+               ((erp kw-token? & parstate) (read-token parstate))
+               ((unless (token-cpp-template-type-kw-p kw-token?))
+                (reterr-msg :where (span->start first-span)
+                            :expected "'typename' or 'class' after template<...>"
+                            :found kw-token?
+                            :extra nil))
+               ;; Optional name
+               ((erp name-token? name-span parstate) (read-token parstate))
+               (name-p (and name-token?
+                            (token-case name-token? :ident)
+                            (not (token-punctuatorp name-token? ","))
+                            (not (token-punctuatorp name-token? ">"))))
+               (param-name (if name-p (token-ident->ident name-token?) nil))
+               (end-span (if name-p name-span first-span))
+               (parstate (if (and name-token? (not name-p))
+                             (unread-token parstate)
+                           parstate))
+               (span (make-span :start (span->start first-span)
+                                :end   (span->end end-span))))
+            (retok (make-cpp-template-param-template-template
+                    :params inner-params
+                    :name   param-name)
+                   span parstate)))
+         ;; Type parameter introduced by 'typename' or 'class'
+         ((when (token-cpp-template-type-kw-p first-token?))
+          (b* ((typenamep (token-cpp-kw-p first-token? "typename"))
+               ((erp name-token? name-span parstate) (read-token parstate))
+               ((when (and name-token?
+                           (token-case name-token? :ident)
+                           (not (token-punctuatorp name-token? ","))
+                           (not (token-punctuatorp name-token? ">"))))
+                (b* ((name-ident (token-ident->ident name-token?))
+                     (span (make-span :start (span->start first-span)
+                                      :end   (span->end name-span))))
+                  (retok (make-cpp-template-param-type
+                          :typenamep typenamep
+                          :name name-ident)
+                         span parstate)))
+               (parstate (if name-token? (unread-token parstate) parstate)))
+            (retok (make-cpp-template-param-type :typenamep typenamep :name nil)
+                   first-span parstate)))
+         ;; Non-type parameter: parse type specifier + name
+         ;; Put back the first token so parse-cpp-type-spec can read it
+         ((unless (and first-token? (token-case first-token? :ident)))
+          (reterr-msg :where (span->start first-span)
+                      :expected "template parameter (typename/class T, type name N, or template<...>)"
+                      :found first-token?
+                      :extra nil))
+         (parstate (unread-token parstate))
+         ((erp type-spec & parstate) (parse-cpp-type-spec parstate))
+         ;; Parameter name (mandatory for non-type)
+         ((erp name-token? name-span parstate) (read-token parstate))
+         ((unless (and name-token? (token-case name-token? :ident)))
+          (reterr-msg :where (span->start name-span)
+                      :expected "parameter name after type in non-type template parameter"
+                      :found name-token?
+                      :extra nil))
+         (param-ident (token-ident->ident name-token?))
+         (span (make-span :start (span->start first-span)
+                          :end   (span->end name-span))))
+      (retok (make-cpp-template-param-nontype :type type-spec
+                                              :param-name param-ident)
+             span parstate)))
+
+  (define parse-cpp-template-param-list-rest ((open-span spanp)
+                                               (parstate parstatep))
+    :returns (mv erp
+                 (params cpp-template-param-listp)
+                 (close-span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :measure (two-nats-measure (parsize parstate) 1)
+    :verify-guards nil
+    :parents nil
+    (b* (((reterr) nil (irr-span) parstate)
+         ;; Parse one parameter
+         (psize (parsize parstate))
+         ((erp param & parstate) (parse-cpp-template-param parstate))
+         ((unless (mbt (<= (parsize parstate) psize)))
+          (reterr :impossible))
+         ;; Peek at the next token: ',' or '>'
+         ((erp sep-token? sep-span parstate) (read-token parstate))
+         ;; End of list
+         ((when (token-punctuatorp sep-token? ">"))
+          (retok (list param) sep-span parstate))
+         ;; More parameters after ','
+         ((unless (token-punctuatorp sep-token? ","))
+          (reterr-msg :where (span->start sep-span)
+                      :expected "',' or '>' in template parameter list"
+                      :found sep-token?
+                      :extra nil))
+         ;; Recurse
+         ((erp rest-params close-span parstate)
+          (parse-cpp-template-param-list-rest open-span parstate)))
+      (retok (cons param rest-params) close-span parstate)))
+
+  ///
+
+  (defthm-parse-cpp-template-param-mutual-flag parsize-of-parse-cpp-template-param-mutual-uncond
+    (defthm parsize-of-parse-cpp-template-param-uncond
+      (<= (parsize (mv-nth 3 (parse-cpp-template-param parstate)))
+          (parsize parstate))
+      :rule-classes :linear
+      :flag parse-cpp-template-param)
+    (defthm parsize-of-parse-cpp-template-param-list-rest-uncond
+      (<= (parsize (mv-nth 3 (parse-cpp-template-param-list-rest open-span parstate)))
+          (parsize parstate))
+      :rule-classes :linear
+      :flag parse-cpp-template-param-list-rest)
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
+                                       c$::parsize-of-unread-token
+                                       parse-cpp-template-param
+                                       parse-cpp-template-param-list-rest))))
+
+  (defthm-parse-cpp-template-param-mutual-flag parsize-of-parse-cpp-template-param-mutual-cond
+    (defthm parsize-of-parse-cpp-template-param-cond
+      (implies (not (mv-nth 0 (parse-cpp-template-param parstate)))
+               (< (parsize (mv-nth 3 (parse-cpp-template-param parstate)))
+                  (parsize parstate)))
+      :rule-classes :linear
+      :flag parse-cpp-template-param)
+    (defthm parsize-of-parse-cpp-template-param-list-rest-cond
+      (implies (not (mv-nth 0 (parse-cpp-template-param-list-rest open-span parstate)))
+               (< (parsize (mv-nth 3 (parse-cpp-template-param-list-rest open-span parstate)))
+                  (parsize parstate)))
+      :rule-classes :linear
+      :flag parse-cpp-template-param-list-rest)
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
+                                       c$::parsize-of-unread-token
+                                       parse-cpp-template-param
+                                       parse-cpp-template-param-list-rest))))
+
+  (verify-guards parse-cpp-template-param
+    :hints (("Goal" :in-theory (enable c$::parsize-of-unread-token)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Parse: Template Parameter List (non-recursive entry point)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-cpp-template-param-list ((parstate parstatep))
@@ -492,58 +1032,17 @@
                       :end   (span->end close-span))
            parstate))
 
-  :prepwork
-  ((define parse-cpp-template-param-list-rest ((open-span spanp)
-                                               (parstate parstatep))
-     :returns (mv erp
-                  (params cpp-template-param-listp)
-                  (close-span spanp)
-                  (new-parstate parstatep :hyp (parstatep parstate)))
-     :measure (parsize parstate)
-     :parents nil
-     (b* (((reterr) nil (irr-span) parstate)
-          ;; Parse one parameter
-          ((erp param & parstate) (parse-cpp-template-param parstate))
-          ;; Peek at the next token: ',' or '>'
-          ((erp sep-token? sep-span parstate) (read-token parstate))
-          ;; End of list
-          ((when (token-punctuatorp sep-token? ">"))
-           (retok (list param) sep-span parstate))
-          ;; More parameters after ','
-          ((unless (token-punctuatorp sep-token? ","))
-           (reterr-msg :where (span->start sep-span)
-                       :expected "',' or '>' in template parameter list"
-                       :found sep-token?
-                       :extra nil))
-          ;; Recurse
-          ((erp rest-params close-span parstate)
-           (parse-cpp-template-param-list-rest open-span parstate)))
-       (retok (cons param rest-params) close-span parstate))
-
-     ///
-
-     (defret parsize-of-parse-cpp-template-param-list-rest-uncond
-       (<= (parsize new-parstate)
-           (parsize parstate))
-       :rule-classes :linear
-       :hints (("Goal"
-                :induct (parse-cpp-template-param-list-rest open-span parstate)
-                :in-theory (enable parsize-of-parse-cpp-template-param-cond))))
-
-     (defret parsize-of-parse-cpp-template-param-list-rest-cond
-       (implies (not erp)
-                (< (parsize new-parstate)
-                   (parsize parstate)))
-       :rule-classes :linear
-       :hints (("Goal"
-                :induct (parse-cpp-template-param-list-rest open-span parstate)
-                :in-theory (enable parsize-of-parse-cpp-template-param-cond))))))
-
   ///
 
   (defret parsize-of-parse-cpp-template-param-list-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-cpp-template-param-list-cond
+    (implies (not erp)
+             (< (parsize new-parstate)
+                (parsize parstate)))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -661,52 +1160,49 @@
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Base Specifier (Phase 2)
+;; Parse: Base Specifier
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Helper: parse one base specifier: [access-spec] class-name
+;; Helper: parse one base specifier: [access-spec] class-type-spec
 (define parse-cpp-base-specifier ((parstate parstatep))
   :returns (mv erp
                (spec cpp-base-specifier-p)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a single C++ base class specifier: @('[access] class-name')."
+  :short "Parse a single C++ base class specifier: @('[access] type-spec')."
   :long
   (xdoc::topstring
    (xdoc::p
     "Parses an optional access specifier (@('public'), @('private'),
-     or @('protected')) followed by the base class name identifier.
+     or @('protected')) followed by the base class type specifier.
      If no access specifier is present, defaults to @('public')."))
   (b* (((reterr) (irr-cpp-base-specifier) (irr-span) parstate)
-       ;; Read the first token — may be an access specifier or the class name
+       ;; Read the first token — may be an access specifier or start of type
        ((erp first-token? first-span parstate) (read-token parstate))
        ;; Check if the first token is an access specifier
        ((when (token-cpp-access-spec-p first-token?))
         (b* ((access (token-to-cpp-access-spec first-token?))
-             ;; Read the class name
-             ((erp name-token? name-span parstate) (read-token parstate))
-             ((unless (and name-token? (token-case name-token? :ident)))
-              (reterr-msg :where (span->start name-span)
-                          :expected "class name identifier in base specifier"
-                          :found name-token?
-                          :extra nil))
-             (class-name (token-ident->ident name-token?))
+             ;; Parse the class type specifier
+             ((erp class-type class-span parstate)
+              (parse-cpp-type-spec parstate))
              (span (make-span :start (span->start first-span)
-                              :end   (span->end name-span))))
+                              :end   (span->end class-span))))
           (retok (make-cpp-base-specifier :access access
-                                          :class-name class-name)
+                                          :class-name class-type)
                  span parstate)))
-       ;; No access specifier — first token must be the class name
-       ((unless (and first-token? (token-case first-token? :ident)))
+       ;; No access specifier — first token starts the class type
+       ;; Put it back and parse the type specifier
+       ((unless first-token?)
         (reterr-msg :where (span->start first-span)
                     :expected "access specifier or class name in base specifier"
                     :found first-token?
                     :extra nil))
-       (class-name (token-ident->ident first-token?)))
+       (parstate (unread-token parstate))
+       ((erp class-type class-span parstate) (parse-cpp-type-spec parstate)))
     ;; Default access: public
     (retok (make-cpp-base-specifier :access (cpp-access-spec-public)
-                                    :class-name class-name)
-           first-span parstate))
+                                    :class-name class-type)
+           class-span parstate))
 
   ///
 
@@ -722,7 +1218,7 @@
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Base Clause (Phase 2)
+;; Parse: Base Clause
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Forward declare the rest helper inside parse-cpp-base-clause's prepwork.
@@ -816,7 +1312,7 @@
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Member Access Label (Phase 2)
+;; Parse: Member Access Label
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-cpp-member-access-label ((parstate parstatep))
@@ -859,90 +1355,82 @@
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Parameter Count Helpers (Phase 2)
+;; Parse: Noexcept Specifier
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recursive helper: scan from the first non-'(' token until ')',
-;; counting comma-separated parameters.
-(define parse-cpp-param-count-rest ((acc natp) (parstate parstatep))
+(define parse-cpp-noexcept-spec ((parstate parstatep))
   :returns (mv erp
-               (count natp)
-               (close-span spanp)
+               (spec cpp-noexcept-spec-p)
+               (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :measure (parsize parstate)
-  :parents nil
-  :short "Continue scanning parameters after the first token has been seen."
-  (b* (((reterr) 0 (irr-span) parstate)
-       ((erp tok? tok-span parstate) (read-token parstate))
-       ;; ')' ends the param list
-       ((when (token-punctuatorp tok? ")"))
-        (retok (nfix acc) tok-span parstate))
-       ;; ',' separates parameters
-       ((when (token-punctuatorp tok? ","))
-        (parse-cpp-param-count-rest (1+ (nfix acc)) parstate))
-       ;; Any other token: keep scanning
-       ((unless tok?)
-        (reterr-msg :where (span->start tok-span)
-                    :expected "')' to close parameter list"
-                    :found tok?
-                    :extra nil)))
-    (parse-cpp-param-count-rest (nfix acc) parstate))
-
-  ///
-
-  (defret parsize-of-parse-cpp-param-count-rest-uncond
-    (<= (parsize new-parstate) (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal"
-             :induct (parse-cpp-param-count-rest acc parstate)
-             :in-theory (enable c$::parsize-of-read-token-cond))))
-
-  (defret parsize-of-parse-cpp-param-count-rest-cond
-    (implies (not erp)
-             (< (parsize new-parstate) (parsize parstate)))
-    :rule-classes :linear
-    :hints (("Goal"
-             :induct (parse-cpp-param-count-rest acc parstate)
-             :in-theory (enable c$::parsize-of-read-token-cond)))))
-
-;; Non-recursive entry point: consume tokens from after '(' until ')'.
-(define parse-cpp-param-count ((parstate parstatep))
-  :returns (mv erp
-               (count natp)
-               (close-span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :parents nil
-  :short "Scan past parameters to @(')') counting comma-separated parameters."
-  (b* (((reterr) 0 (irr-span) parstate)
-       ;; Peek at the first token inside '('
-       ((erp tok? tok-span parstate) (read-token parstate))
-       ;; Empty param list: immediate ')'
-       ((when (token-punctuatorp tok? ")"))
-        (retok 0 tok-span parstate))
-       ;; End of file
-       ((unless tok?)
-        (reterr-msg :where (span->start tok-span)
-                    :expected "')' or parameter tokens in parameter list"
-                    :found tok?
+  :short "Parse a C++ @('noexcept') specifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reads the @('noexcept') keyword.
+     If the next token is @('('), reads a constant expression and @(')'),
+     returning an @(':expr') noexcept spec.
+     Otherwise, returns a @(':bare') noexcept spec.")
+   (xdoc::p
+    "Inside the parentheses, @('true')/@('false') produce a
+     @(tsee cpp-const-expr-bool), and an identifier produces a
+     @(tsee cpp-const-expr-ident)."))
+  (b* (((reterr) (irr-cpp-noexcept-spec) (irr-span) parstate)
+       ;; Read 'noexcept'
+       ((erp noex-token? noex-span parstate) (read-token parstate))
+       ((unless (token-cpp-noexcept-p noex-token?))
+        (reterr-msg :where (span->start noex-span)
+                    :expected "'noexcept' keyword"
+                    :found noex-token?
                     :extra nil))
-       ;; At least one parameter; scan the rest
-       ((erp rest-count close-span parstate)
-        (parse-cpp-param-count-rest 1 parstate)))
-    (retok rest-count close-span parstate))
+       ;; Peek for '('
+       ((erp paren-token? & parstate) (read-token parstate))
+       ((when (not (token-punctuatorp paren-token? "(")))
+        ;; Bare 'noexcept'
+        (b* ((parstate (if paren-token? (unread-token parstate) parstate)))
+          (retok (cpp-noexcept-spec-bare) noex-span parstate)))
+       ;; Read the expression token: 'true', 'false', or an identifier
+       ((erp expr-token? expr-span parstate) (read-token parstate))
+       ((mv const-expr ok)
+        (cond ((token-keywordp expr-token? "true")
+               (mv (make-cpp-const-expr-bool :value t) t))
+              ((token-keywordp expr-token? "false")
+               (mv (make-cpp-const-expr-bool :value nil) t))
+              ((and expr-token? (token-case expr-token? :ident))
+               (mv (make-cpp-const-expr-ident
+                    :name (token-ident->ident expr-token?)) t))
+              (t (mv (irr-cpp-const-expr) nil))))
+       ((unless ok)
+        (reterr-msg :where (span->start expr-span)
+                    :expected "'true', 'false', or identifier in noexcept()"
+                    :found expr-token?
+                    :extra nil))
+       ;; Read ')'
+       ((erp close-token? close-span parstate) (read-token parstate))
+       ((unless (token-punctuatorp close-token? ")"))
+        (reterr-msg :where (span->start close-span)
+                    :expected "')' after noexcept(expr)"
+                    :found close-token?
+                    :extra nil))
+       (span (make-span :start (span->start noex-span)
+                        :end   (span->end close-span))))
+    (retok (make-cpp-noexcept-spec-expr :value const-expr) span parstate))
 
   ///
 
-  (defret parsize-of-parse-cpp-param-count-uncond
-    (<= (parsize new-parstate) (parsize parstate))
+  (defret parsize-of-parse-cpp-noexcept-spec-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-parse-cpp-param-count-cond
+  (defret parsize-of-parse-cpp-noexcept-spec-cond
     (implies (not erp)
-             (< (parsize new-parstate) (parsize parstate)))
+             (< (parsize new-parstate)
+                (parsize parstate)))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Member Field or Method (Phase 2)
+;; Parse: Member Field or Method
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-cpp-member-field-or-method ((parstate parstatep))
@@ -950,17 +1438,18 @@
                (decl cpp-member-decl-p)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a simplified C++ member field or method declaration."
+  :short "Parse a C++ member field or method declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "Parses a member declaration of the form:
-     @('[virtual] [static|mutable] type-ident name-ident [( ... )] [const] [noexcept] [= 0] ;').")
+     @('[virtual] [static|mutable] type-spec name [( params )] [const] [noexcept[(expr)]] [= 0] ;').")
    (xdoc::p
     "Strategy: read optional qualifiers (@('virtual'), @('static'), @('mutable')),
-     then the type identifier, then the member name identifier.
+     then the type specifier via @(tsee parse-cpp-type-spec),
+     then the member name identifier.
      Peek at the next token: if @('('), it is a method; otherwise it is a field.
-     For methods, scan past @('...') to @(')') counting parameters,
+     For methods, parse typed parameters via @(tsee parse-cpp-param-list),
      then check for @('const'), @('noexcept'), and @('= 0') before the @(';')."))
   (b* (((reterr) (irr-cpp-member-decl) (irr-span) parstate)
        ;; Read first token — may be a qualifier or type
@@ -974,17 +1463,21 @@
        ;; --- Detect 'static' or 'mutable' ---
        (staticp (token-cpp-kw-p t1? "static"))
        (mutablep (and (not staticp) (token-cpp-kw-p t1? "mutable")))
+       ;; If we found static/mutable, we need to put back t1? and parse type spec
+       ;; Otherwise t1? is the start of the type
        ((erp t1? t1-span parstate)
         (if (or staticp mutablep)
             (read-token parstate)
           (mv nil t1? t1-span parstate)))
-       ;; --- Type identifier ---
+       ;; --- Type specifier ---
+       ;; Put back the token so parse-cpp-type-spec can read it
        ((unless (and t1? (token-case t1? :ident)))
         (reterr-msg :where (span->start t1-span)
-                    :expected "type identifier in member declaration"
+                    :expected "type specifier in member declaration"
                     :found t1?
                     :extra nil))
-       (type-ident (token-ident->ident t1?))
+       (parstate (unread-token parstate))
+       ((erp type-spec & parstate) (parse-cpp-type-spec parstate))
        ;; --- Member name ---
        ((erp name-token? name-span parstate) (read-token parstate))
        ((unless (and name-token? (token-case name-token? :ident)))
@@ -1008,26 +1501,31 @@
              (span (make-span :start (span->start t1-span)
                               :end   (span->end semi-span))))
           (retok (make-cpp-member-decl-field
-                  :type-name  type-ident
+                  :type-name  type-spec
                   :field-name name-ident
                   :staticp    staticp
                   :mutablep   mutablep)
                  span parstate)))
        ;; --- METHOD case: peek-token? = '(' ---
-       ;; Scan tokens until matching ')'; count comma-separated params
-       ((erp num-params & parstate) (parse-cpp-param-count parstate))
+       ;; Parse typed parameter list
+       ((erp params & parstate) (parse-cpp-param-list parstate))
        ;; Check for 'const'
        ((erp const-token? & parstate) (read-token parstate))
        (const-qualp (token-keywordp const-token? "const"))
        (parstate (if (and const-token? (not const-qualp))
                      (unread-token parstate)
                    parstate))
-       ;; Check for 'noexcept'
+       ;; Check for 'noexcept' — if present, parse full noexcept spec
        ((erp noexcept-token? & parstate) (read-token parstate))
        (noexcept-p (token-cpp-noexcept-p noexcept-token?))
-       (parstate (if (and noexcept-token? (not noexcept-p))
-                     (unread-token parstate)
-                   parstate))
+       (parstate (if noexcept-token? (unread-token parstate) parstate))
+       ((erp noexcept-raw & parstate)
+        (if noexcept-p
+            (parse-cpp-noexcept-spec parstate)
+          (mv nil (irr-cpp-noexcept-spec) (irr-span) parstate)))
+       (noexcept-spec (if noexcept-p
+                          (cpp-noexcept-spec-option-some noexcept-raw)
+                        nil))
        ;; Check for '= 0' (pure virtual): read '=' first
        ((erp eq-token? & parstate) (read-token parstate))
        ;; If we got '=', read the next token to check for integer '0'
@@ -1043,7 +1541,7 @@
         (cond
          (pure-virtualp parstate)
          ((token-punctuatorp eq-token? "=")
-          ;; Had '=' but zero-token? was not an integer: put both back
+          ;; Had '=' but zero-token? was not a constant: put both back
           (let* ((parstate (if zero-token? (unread-token parstate) parstate))
                  (parstate (unread-token parstate)))
             parstate))
@@ -1060,11 +1558,12 @@
        (span (make-span :start (span->start t1-span)
                         :end   (span->end semi-span))))
     (retok (make-cpp-member-decl-method
-            :return-type   type-ident
+            :return-type   type-spec
             :method-name   name-ident
-            :num-params    num-params
+            :params        params
             :virtualp      virtualp
             :const-qualp   const-qualp
+            :noexcept-spec noexcept-spec
             :pure-virtualp pure-virtualp
             :staticp       staticp)
            span parstate))
@@ -1085,7 +1584,7 @@
                                        c$::parsize-of-unread-token)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Member Declaration Item (Phase 2)
+;; Parse: Member Declaration Item
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-cpp-member-decl-item ((parstate parstatep))
@@ -1139,7 +1638,7 @@
                                 c$::parsize-of-unread-token)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Member Declaration List Body (Phase 2)
+;; Parse: Member Declaration List Body
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-cpp-member-decl-list-body ((parstate parstatep))
@@ -1182,7 +1681,7 @@
                                 c$::parsize-of-unread-token)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Class Specifier (Phase 2)
+;; Parse: Class Specifier
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-cpp-class-specifier ((parstate parstatep))
@@ -1276,73 +1775,7 @@
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Noexcept Specifier (Phase 2)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define parse-cpp-noexcept-spec ((parstate parstatep))
-  :returns (mv erp
-               (spec cpp-noexcept-spec-p)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a C++ @('noexcept') specifier: @('noexcept') or @('noexcept(true/false)')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Reads the @('noexcept') keyword.
-     If the next token is @('('), reads @('true') or @('false') and @(')'),
-     returning a @(':constant') noexcept spec.
-     Otherwise, returns a @(':bare') noexcept spec."))
-  (b* (((reterr) (irr-cpp-noexcept-spec) (irr-span) parstate)
-       ;; Read 'noexcept'
-       ((erp noex-token? noex-span parstate) (read-token parstate))
-       ((unless (token-cpp-noexcept-p noex-token?))
-        (reterr-msg :where (span->start noex-span)
-                    :expected "'noexcept' keyword"
-                    :found noex-token?
-                    :extra nil))
-       ;; Peek for '('
-       ((erp paren-token? & parstate) (read-token parstate))
-       ((when (not (token-punctuatorp paren-token? "(")))
-        ;; Bare 'noexcept'
-        (b* ((parstate (if paren-token? (unread-token parstate) parstate)))
-          (retok (cpp-noexcept-spec-bare) noex-span parstate)))
-       ;; Read 'true' or 'false'
-       ((erp bool-token? bool-span parstate) (read-token parstate))
-       ((mv value ok)
-        (cond ((token-keywordp bool-token? "true")  (mv t t))
-              ((token-keywordp bool-token? "false") (mv nil t))
-              (t (mv nil nil))))
-       ((unless ok)
-        (reterr-msg :where (span->start bool-span)
-                    :expected "'true' or 'false' in noexcept()"
-                    :found bool-token?
-                    :extra nil))
-       ;; Read ')'
-       ((erp close-token? close-span parstate) (read-token parstate))
-       ((unless (token-punctuatorp close-token? ")"))
-        (reterr-msg :where (span->start close-span)
-                    :expected "')' after noexcept(bool)"
-                    :found close-token?
-                    :extra nil))
-       (span (make-span :start (span->start noex-span)
-                        :end   (span->end close-span))))
-    (retok (make-cpp-noexcept-spec-constant :value value) span parstate))
-
-  ///
-
-  (defret parsize-of-parse-cpp-noexcept-spec-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-cpp-noexcept-spec-cond
-    (implies (not erp)
-             (< (parsize new-parstate)
-                (parsize parstate)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Exception Handler Header (Phase 2)
+;; Parse: Exception Handler Header
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-cpp-exception-handler-header ((parstate parstatep))
@@ -1350,12 +1783,13 @@
                (handler cpp-exception-handler-p)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a C++ catch clause header: @('catch ( type-name [param-name] )')."
+  :short "Parse a C++ catch clause header: @('catch ( type-spec [param-name] )')."
   :long
   (xdoc::topstring
    (xdoc::p
     "Parses the @('catch') keyword (arriving as an identifier token)
-     followed by @('('), the exception type identifier,
+     followed by @('('), the exception type specifier via
+     @(tsee parse-cpp-type-spec),
      an optional parameter name identifier, and @(')').")
    (xdoc::p
     "The body of the catch clause (the @('{...}') block) is NOT parsed."))
@@ -1374,14 +1808,8 @@
                     :expected "'(' after 'catch'"
                     :found open-token?
                     :extra nil))
-       ;; Read exception type name
-       ((erp type-token? type-span parstate) (read-token parstate))
-       ((unless (and type-token? (token-case type-token? :ident)))
-        (reterr-msg :where (span->start type-span)
-                    :expected "exception type identifier in catch clause"
-                    :found type-token?
-                    :extra nil))
-       (type-ident (token-ident->ident type-token?))
+       ;; Parse exception type specifier
+       ((erp type-spec & parstate) (parse-cpp-type-spec parstate))
        ;; Optional: parameter name
        ((erp name-token? & parstate) (read-token parstate))
        (name-p (and name-token?
@@ -1400,7 +1828,7 @@
                     :extra nil))
        (span (make-span :start (span->start catch-span)
                         :end   (span->end close-span))))
-    (retok (make-cpp-exception-handler :type-name  type-ident
+    (retok (make-cpp-exception-handler :type-name  type-spec
                                        :param-name param-name)
            span parstate))
 
@@ -1418,7 +1846,7 @@
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Exception Handler List (Phase 2)
+;; Parse: Exception Handler List
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-cpp-exception-handler-list ((parstate parstatep))
@@ -1461,7 +1889,7 @@
                                 c$::parsize-of-unread-token)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Module Declaration Header (Phase 2)
+;; Parse: Module Declaration Header
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-cpp-module-decl-header ((parstate parstatep))
@@ -1547,7 +1975,7 @@
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse: Import Declaration Header (Phase 2)
+;; Parse: Import Declaration Header
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-cpp-import-decl-header ((parstate parstatep))

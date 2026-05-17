@@ -2,10 +2,17 @@
 ;
 ; This book defines abstract syntax trees (ASTs) for C++ constructs:
 ; - Access specifiers (public, private, protected)
-; - Template parameters (type and non-type)
+; - Constant expressions (minimal, for noexcept)
+; - Noexcept specifiers
+; - Type specifiers (recursive: name, qualified, template-inst, pointer, ref, const)
+; - Typed parameters and parameter lists
+; - Template parameters (type, non-type, and template-template)
 ; - Class keys (class/struct) and class specifiers
 ; - Namespace definitions
 ; - Operator function identifiers
+; - Exception handlers
+; - Module and import declarations
+; - Coroutine keyword kinds
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -15,6 +22,7 @@
 (include-book "kestrel/c/syntax/abstract-syntax-irrelevants" :dir :system)
 
 (include-book "centaur/fty/deftypes" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
 (local (include-book "std/lists/len" :dir :system))
@@ -28,16 +36,19 @@
   (xdoc::topstring
    (xdoc::p
     "We define fixtypes for the C++ constructs that our extension supports:
-     access specifiers, template parameters, class specifiers,
-     namespace definitions, and operator function identifiers.")
+     access specifiers, type specifiers, typed parameters,
+     template parameters, class specifiers,
+     namespace definitions, operator function identifiers,
+     exception handlers, module/import declarations, and coroutine keywords.")
    (xdoc::p
     "These fixtypes use the existing C$ abstract syntax types
      (such as @(tsee c$::ident)) as building blocks.")
    (xdoc::p
-    "Type representations are simplified for Phase 1:
-     types in field and method declarations are represented
-     as @(tsee c$::ident) values (just the type name identifier).
-     Full C++ type parsing is deferred to a later phase."))
+    "Type specifiers are represented structurally via @(tsee cpp-type-spec),
+     which supports simple names, qualified names, template instantiations,
+     pointers, references, and cv-qualifiers.
+     Nested template arguments using @('>>') as two closing angles
+     are a known parsing limitation (not an AST limitation)."))
   :order-subtopics t
   :default-parent t)
 
@@ -68,38 +79,193 @@
   :body (cpp-access-spec-public))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Template Parameters
+;; Constant Expressions (minimal, for noexcept)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum cpp-template-param
-  :short "Fixtype of C++ template parameters (simplified)."
+(fty::deftagsum cpp-const-expr
+  :short "Fixtype of minimal C++ constant expressions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A C++ template parameter is either a type parameter or a non-type
-     parameter [C++23:13.2].")
+    "A minimal constant expression type used in @('noexcept(expr)')
+     specifications [C++23:7.7].
+     We support boolean literals and named constants (identifiers).")
    (xdoc::p
-    "A @(':type') parameter is introduced by @('typename') or @('class'),
-     with an optional name (the parameter name) and an optional default type.
-     We represent the optional name as a @(tsee c$::ident-option).")
+    "The @(':bool') variant represents @('true') or @('false').")
    (xdoc::p
-    "A @(':nontype') parameter consists of a type (simplified here as
-     a @(tsee c$::ident) naming the type) and a mandatory parameter name.
-     For example, @('int N') or @('size_t Size').
-     Full non-type parameter support (pointer types, references, etc.)
-     is deferred.")
-   (xdoc::p
-    "Template template parameters (parameters that are themselves templates)
-     are not yet supported."))
-  (:type
-   ;; A type parameter introduced by 'typename' (typenamep = t) or 'class' (= nil).
-   ((typenamep bool)              ; t = 'typename', nil = 'class'
-    (name      ident-option)))   ; optional parameter name (e.g., T)
-  (:nontype
-   ((type-name ident)            ; simplified: type as an identifier (e.g., int)
-    (param-name ident)))         ; parameter name (e.g., N)
-  :pred cpp-template-param-p
+    "The @(':ident') variant represents a named constant or
+     constexpr variable reference."))
+  (:bool ((value bool)))
+  (:ident ((name ident)))
+  :pred cpp-const-expr-p
   :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-cpp-const-expr
+  :short "An irrelevant C++ constant expression."
+  :type cpp-const-expr-p
+  :body (make-cpp-const-expr-bool :value nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Noexcept Specifiers
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum cpp-noexcept-spec
+  :short "Fixtype of C++ noexcept specifiers [C++23:14.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @('noexcept') specifier on a function declaration.
+     The bare form @('noexcept') is equivalent to @('noexcept(true)').
+     The @(':expr') variant represents @('noexcept(expr)') where the
+     expression is a @(tsee cpp-const-expr)."))
+  (:bare ())
+  (:expr ((value cpp-const-expr)))
+  :pred cpp-noexcept-spec-p
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-cpp-noexcept-spec
+  :short "An irrelevant C++ noexcept specifier."
+  :type cpp-noexcept-spec-p
+  :body (cpp-noexcept-spec-bare))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption cpp-noexcept-spec-option
+  cpp-noexcept-spec
+  :short "Fixtype of optional C++ noexcept specifiers."
+  :pred cpp-noexcept-spec-option-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Type Specifiers
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes cpp-type-spec-types
+  :short "Mutually recursive fixtypes for C++ type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A C++ type specifier represents the structure of a type expression.
+     Types can be simple names, qualified names (@('A::B')),
+     template instantiations (@('vector<int>')),
+     pointers, references, and cv-qualified types [C++23:9.2]."))
+
+  (fty::deftagsum cpp-type-spec
+    :short "Fixtype of C++ type specifiers."
+    (:name ((id ident)))
+    (:qualified ((scope ident) (inner cpp-type-spec)))
+    (:template-inst ((template cpp-type-spec)
+                     (args cpp-type-spec-list)))
+    (:pointer ((pointee cpp-type-spec) (constp bool)))
+    (:lref ((base cpp-type-spec)))
+    (:rref ((base cpp-type-spec)))
+    (:const-qual ((base cpp-type-spec)))
+    (:volatile-qual ((base cpp-type-spec)))
+    :pred cpp-type-spec-p
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deflist cpp-type-spec-list
+    :short "Fixtype of lists of C++ type specifiers."
+    :elt-type cpp-type-spec
+    :true-listp t
+    :elementp-of-nil nil
+    :pred cpp-type-spec-listp
+    :measure (two-nats-measure (acl2-count x) 0)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-cpp-type-spec
+  :short "An irrelevant C++ type specifier."
+  :type cpp-type-spec-p
+  :body (make-cpp-type-spec-name :id (c$::irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Typed Parameters
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod cpp-param
+  :short "Fixtype of C++ typed parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A function parameter consisting of a type specifier
+     and an optional parameter name [C++23:9.3.4.6]."))
+  ((type cpp-type-spec)
+   (name ident-option))
+  :pred cpp-param-p
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-cpp-param
+  :short "An irrelevant C++ parameter."
+  :type cpp-param-p
+  :body (make-cpp-param :type (irr-cpp-type-spec) :name nil))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist cpp-param-list
+  :short "Fixtype of lists of C++ typed parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A list of @(tsee cpp-param) values representing
+     a function parameter list."))
+  :elt-type cpp-param
+  :true-listp t
+  :elementp-of-nil nil
+  :pred cpp-param-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Template Parameters
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes cpp-template-param-types
+  :short "Mutually recursive fixtypes for C++ template parameters."
+
+  (fty::deftagsum cpp-template-param
+    :short "Fixtype of C++ template parameters."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A C++ template parameter is a type parameter, a non-type parameter,
+       or a template template parameter [C++23:13.2].")
+     (xdoc::p
+      "A @(':type') parameter is introduced by @('typename') or @('class'),
+       with an optional name.")
+     (xdoc::p
+      "A @(':nontype') parameter has a type specifier and a parameter name,
+       e.g., @('int N') or @('const T* ptr').")
+     (xdoc::p
+      "A @(':template-template') parameter is itself a template,
+       e.g., @('template<typename> class Container')."))
+    (:type
+     ((typenamep bool)
+      (name      ident-option)))
+    (:nontype
+     ((type      cpp-type-spec)
+      (param-name ident)))
+    (:template-template
+     ((params cpp-template-param-list)
+      (name   ident-option)))
+    :pred cpp-template-param-p
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deflist cpp-template-param-list
+    :short "Fixtype of lists of C++ template parameters."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A list of @(tsee cpp-template-param) values,
+       representing the parameter list in @('template < ... >')."))
+    :elt-type cpp-template-param
+    :true-listp t
+    :elementp-of-nil nil
+    :pred cpp-template-param-listp
+    :measure (two-nats-measure (acl2-count x) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -107,20 +273,6 @@
   :short "An irrelevant C++ template parameter."
   :type cpp-template-param-p
   :body (make-cpp-template-param-type :typenamep t :name nil))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist cpp-template-param-list
-  :short "Fixtype of lists of C++ template parameters."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A list of @(tsee cpp-template-param) values,
-     representing the parameter list in @('template < ... >')."))
-  :elt-type cpp-template-param
-  :true-listp t
-  :elementp-of-nil nil
-  :pred cpp-template-param-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Class Specifiers
@@ -141,18 +293,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod cpp-base-specifier
-  :short "Fixtype of C++ base class specifiers (simplified)."
+  :short "Fixtype of C++ base class specifiers."
   :long
   (xdoc::topstring
    (xdoc::p
     "A base class specifier appears in the @(':') clause after the class name:
      @('class D : public B').
-     We capture the access specifier and the base class name [C++23:11.7].")
+     We capture the access specifier and the base class type [C++23:11.7].")
    (xdoc::p
-    "Virtual base classes (@('virtual public B')) and base classes
-     named via qualified names or template instantiations are not yet supported."))
-  ((access     cpp-access-spec)    ; public, private, or protected
-   (class-name ident))             ; base class name (simplified: just an ident)
+    "The base class is represented as a @(tsee cpp-type-spec),
+     supporting qualified names (@('public ns::Base'))
+     and template instantiations (@('public Base<int>'))."))
+  ((access     cpp-access-spec)
+   (class-name cpp-type-spec))
   :pred cpp-base-specifier-p
   :layout :fulltree)
 
@@ -163,7 +316,7 @@
   :type cpp-base-specifier-p
   :body (make-cpp-base-specifier
          :access (cpp-access-spec-public)
-         :class-name (c$::irr-ident)))
+         :class-name (irr-cpp-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -195,39 +348,35 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum cpp-member-decl
-  :short "Fixtype of C++ class member declarations (simplified)."
+  :short "Fixtype of C++ class member declarations."
   :long
   (xdoc::topstring
    (xdoc::p
     "A member declaration in a class body is one of:
      an access specifier label (@('public:')),
      a field declaration (@('int x;')),
-     or a method declaration (@('void foo();')).
+     or a method declaration (@('void foo(int a, double b) const noexcept;')).
      [C++23:11.4].")
    (xdoc::p
-    "This is a simplified representation.
-     Type specifiers are reduced to single @(tsee c$::ident) values;
-     parameter lists are reduced to a count;
-     initializers and default arguments are omitted.
-     A richer representation is deferred to a later phase."))
+    "Type specifiers are represented as @(tsee cpp-type-spec) values.
+     Parameter lists are represented as @(tsee cpp-param-list) values.
+     Initializers and default arguments are omitted."))
   (:access
-   ;; An access specifier label: 'public:' or 'private:' or 'protected:'
    ((spec cpp-access-spec)))
   (:field
-   ;; A data member: 'int x;'
-   ((type-name  ident)        ; simplified type representation
-    (field-name ident)        ; member name
-    (staticp    bool)          ; 'static' storage class?
-    (mutablep   bool)))        ; 'mutable' qualifier?
+   ((type-name  cpp-type-spec)
+    (field-name ident)
+    (staticp    bool)
+    (mutablep   bool)))
   (:method
-   ;; A member function: 'void foo(int a, double b) const;'
-   ((return-type  ident)      ; simplified return type
-    (method-name  ident)      ; member function name
-    (num-params   nat)         ; number of parameters (simplified)
-    (virtualp     bool)        ; 'virtual'?
-    (const-qualp  bool)        ; 'const' qualifier after ')'?
-    (pure-virtualp bool)       ; '= 0' (pure virtual)?
-    (staticp      bool)))      ; 'static'?
+   ((return-type   cpp-type-spec)
+    (method-name   ident)
+    (params        cpp-param-list)
+    (virtualp      bool)
+    (const-qualp   bool)
+    (noexcept-spec cpp-noexcept-spec-option)
+    (pure-virtualp bool)
+    (staticp       bool)))
   :pred cpp-member-decl-p
   :layout :fulltree)
 
@@ -421,45 +570,20 @@
   :body (make-cpp-operator-function-id :op (cpp-operator-kind-plus)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Noexcept Specifiers (Phase 2)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum cpp-noexcept-spec
-  :short "Fixtype of C++ noexcept specifiers (simplified) [C++23:14.5]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A @('noexcept') specifier on a function declaration.
-     The bare form @('noexcept') is equivalent to @('noexcept(true)').
-     We also represent @('noexcept(true)') and @('noexcept(false)').
-     General constant expressions in @('noexcept(expr)') are not yet supported."))
-  (:bare ())
-  (:constant ((value bool)))
-  :pred cpp-noexcept-spec-p
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-cpp-noexcept-spec
-  :short "An irrelevant C++ noexcept specifier."
-  :type cpp-noexcept-spec-p
-  :body (cpp-noexcept-spec-bare))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Exception Handlers (Phase 2)
+;; Exception Handlers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod cpp-exception-handler
-  :short "Fixtype of C++ exception handler headers (simplified) [C++23:14.4]."
+  :short "Fixtype of C++ exception handler headers [C++23:14.4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "The header of a @('catch') clause: @('catch ( SomeType e )').
-     We capture the exception type (as a simplified @(tsee c$::ident))
+     We capture the exception type as a @(tsee cpp-type-spec)
      and the optional parameter name.
      The body of the catch clause is not captured here."))
-  ((type-name  ident)         ; exception type (simplified)
-   (param-name ident-option)) ; optional parameter name
+  ((type-name  cpp-type-spec)
+   (param-name ident-option))
   :pred cpp-exception-handler-p
   :layout :fulltree)
 
@@ -469,7 +593,7 @@
   :short "An irrelevant C++ exception handler."
   :type cpp-exception-handler-p
   :body (make-cpp-exception-handler
-         :type-name (c$::irr-ident)
+         :type-name (irr-cpp-type-spec)
          :param-name nil))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -482,7 +606,7 @@
   :pred cpp-exception-handler-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Module Declarations (Phase 2)
+;; Module Declarations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum cpp-module-decl
@@ -508,7 +632,7 @@
   :body (cpp-module-decl-private))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Import Declarations (Phase 2)
+;; Import Declarations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod cpp-import-decl
@@ -531,7 +655,7 @@
   :body (make-cpp-import-decl :name (c$::irr-ident) :exportp nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Coroutine Keyword Kinds (Phase 2)
+;; Coroutine Keyword Kinds
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum cpp-coroutine-kw-kind
