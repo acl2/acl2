@@ -10,6 +10,7 @@
 (include-book "cpp-abstract-syntax")
 (include-book "cpp-token-utilities")
 (include-book "cpp-parser")
+(include-book "cpp-expr-parser")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

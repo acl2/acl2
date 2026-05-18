@@ -345,101 +345,11 @@
   :elementp-of-nil nil
   :pred cpp-base-specifier-listp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum cpp-member-decl
-  :short "Fixtype of C++ class member declarations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A member declaration in a class body is one of:
-     an access specifier label (@('public:')),
-     a field declaration (@('int x;')),
-     or a method declaration (@('void foo(int a, double b) const noexcept;')).
-     [C++23:11.4].")
-   (xdoc::p
-    "Type specifiers are represented as @(tsee cpp-type-spec) values.
-     Parameter lists are represented as @(tsee cpp-param-list) values.
-     Initializers and default arguments are omitted."))
-  (:access
-   ((spec cpp-access-spec)))
-  (:field
-   ((type-name  cpp-type-spec)
-    (field-name ident)
-    (staticp    bool)
-    (mutablep   bool)))
-  (:method
-   ((return-type   cpp-type-spec)
-    (method-name   ident)
-    (params        cpp-param-list)
-    (virtualp      bool)
-    (const-qualp   bool)
-    (noexcept-spec cpp-noexcept-spec-option)
-    (pure-virtualp bool)
-    (staticp       bool)))
-  :pred cpp-member-decl-p
-  :layout :fulltree)
-
 ;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist cpp-member-decl-list
-  :short "Fixtype of lists of C++ class member declarations."
-  :elt-type cpp-member-decl
-  :true-listp t
-  :elementp-of-nil nil
-  :pred cpp-member-decl-listp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-cpp-member-decl
-  :short "An irrelevant C++ member declaration."
-  :type cpp-member-decl-p
-  :body (cpp-member-decl-access (cpp-access-spec-public)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod cpp-class-specifier
-  :short "Fixtype of C++ class specifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A class specifier introduces a class type [C++23:11.2]:
-     @('class Foo : public Bar { public: int x; void foo(); }').")
-   (xdoc::p
-    "The @(':key') field is @('class') or @('struct').")
-   (xdoc::p
-    "The @(':name') field is the optional class name
-     (@('nil') for anonymous classes).")
-   (xdoc::p
-    "The @(':template-params') field holds the template parameter list
-     if this class is a class template
-     (@('template < ... > class Foo');
-     empty list if not a template).")
-   (xdoc::p
-    "The @(':base') field is the list of base class specifiers
-     (empty list means no base classes).
-     Multiple inheritance is supported by having multiple entries.")
-   (xdoc::p
-    "The @(':members') field is the list of member declarations."))
-  ((key             cpp-class-key)
-   (name            ident-option)
-   (template-params cpp-template-param-list)
-   (base            cpp-base-specifier-list)
-   (members         cpp-member-decl-list))
-  :pred cpp-class-specifier-p
-  :layout :fulltree)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-cpp-class-specifier
-  :short "An irrelevant C++ class specifier."
-  :type cpp-class-specifier-p
-  :body (make-cpp-class-specifier
-         :key (cpp-class-key-class)
-         :name nil
-         :template-params nil
-         :base nil          ; empty base-specifier-list
-         :members nil))
+;; cpp-member-decl, cpp-member-decl-list, and cpp-class-specifier
+;; are defined AFTER the cpp-expr-stmt-types deftypes block below,
+;; because the :method variant of cpp-member-decl carries an optional
+;; cpp-block-item-list as the inline method body.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Namespace Definitions
@@ -678,3 +588,342 @@
   :short "An irrelevant C++ coroutine keyword kind."
   :type cpp-coroutine-kw-kind-p
   :body (cpp-coroutine-kw-kind-return))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Assignment Operators
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum cpp-assign-op
+  :short "Fixtype of C++ assignment operators [C++23:7.6.19]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The 11 assignment operators in C++ (simple and compound).
+     We keep them separate from @(tsee c$::binop) to avoid conflating
+     the assignment operator @('=') with the @('=') token used elsewhere."))
+  (:simple ())   ; =
+  (:add ())      ; +=
+  (:sub ())      ; -=
+  (:mul ())      ; *=
+  (:div ())      ; /=
+  (:rem ())      ; %=
+  (:bitand ())   ; &=
+  (:bitor ())    ; |=
+  (:bitxor ())   ; ^=
+  (:lshift ())   ; <<=
+  (:rshift ())   ; >>=
+  :pred cpp-assign-op-p
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-cpp-assign-op
+  :short "An irrelevant C++ assignment operator."
+  :type cpp-assign-op-p
+  :body (cpp-assign-op-simple))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Expressions, Statements, Block Items, and Catch Clauses (mutually recursive)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes cpp-expr-stmt-types
+  :short "Mutually recursive fixtypes for C++ expressions, statements,
+          block items, and catch clauses."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These types are mutually recursive because:
+     a @(tsee cpp-expr) lambda has a @(tsee cpp-block-item-list) body;
+     a @(tsee cpp-stmt) compound has a @(tsee cpp-block-item-list);
+     a @(tsee cpp-block-item) carries either a @(tsee cpp-stmt) or a
+     declaration with an optional @(tsee cpp-expr) initializer;
+     a @(tsee cpp-stmt) try has a @(tsee cpp-catch-clause-list);
+     a @(tsee cpp-catch-clause) has a @(tsee cpp-block-item-list) body.")
+   (xdoc::p
+    "Optional sub-components are represented with a @('-p bool') flag
+     and a value field (rather than option types), since option types
+     defined inside a @('deftypes') block introduce complications.
+     For optional sub-statements we use distinct tagsum variants
+     (e.g., @(':if-then') vs @(':if-else'), @(':return-void') vs
+     @(':return-expr'))."))
+
+  ;;;;;;;;;;;;;;;;;;;;
+  ;; Expressions
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum cpp-expr
+    :short "Fixtype of C++ expressions."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Covers C++ expressions across all 14 precedence levels."))
+    ;; Primary
+    (:ident ((name ident)))
+    (:const ((value c$::const)))
+    (:string ((value c$::stringlit-list)))
+    (:this ())
+    (:paren ((inner cpp-expr)))
+    (:scoped ((scope ident) (inner cpp-expr)))
+    ;; Postfix
+    (:arrsub ((array cpp-expr) (index cpp-expr)))
+    (:call ((fun cpp-expr) (args cpp-expr-list)))
+    (:member ((object cpp-expr) (name ident)))
+    (:memberp ((object cpp-expr) (name ident)))
+    (:postinc ((arg cpp-expr)))
+    (:postdec ((arg cpp-expr)))
+    ;; C++ casts
+    (:static-cast ((type cpp-type-spec) (arg cpp-expr)))
+    (:dynamic-cast ((type cpp-type-spec) (arg cpp-expr)))
+    (:reinterpret-cast ((type cpp-type-spec) (arg cpp-expr)))
+    (:const-cast ((type cpp-type-spec) (arg cpp-expr)))
+    (:typeid-expr ((arg cpp-expr)))
+    (:typeid-type ((type cpp-type-spec)))
+    ;; Unary
+    (:preinc ((arg cpp-expr)))
+    (:predec ((arg cpp-expr)))
+    (:unary ((op c$::unop) (arg cpp-expr)))
+    (:sizeof-expr ((arg cpp-expr)))
+    (:sizeof-type ((type cpp-type-spec)))
+    (:new ((type cpp-type-spec) (args cpp-expr-list)))
+    (:delete ((arg cpp-expr) (arrayp bool)))
+    (:rethrow ())
+    (:throw-expr ((arg cpp-expr)))
+    (:co-await ((arg cpp-expr)))
+    (:c-cast ((type cpp-type-spec) (arg cpp-expr)))
+    ;; Binary
+    (:binary ((op c$::binop) (lhs cpp-expr) (rhs cpp-expr)))
+    (:assign ((op cpp-assign-op) (lhs cpp-expr) (rhs cpp-expr)))
+    ;; Ternary
+    (:cond ((test cpp-expr) (then cpp-expr) (else cpp-expr)))
+    ;; Comma
+    (:comma ((lhs cpp-expr) (rhs cpp-expr)))
+    ;; Lambda (no capture list)
+    (:lambda ((params cpp-param-list) (body cpp-block-item-list)))
+    :pred cpp-expr-p
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deflist cpp-expr-list
+    :short "Fixtype of lists of C++ expressions."
+    :elt-type cpp-expr
+    :true-listp t
+    :elementp-of-nil nil
+    :pred cpp-expr-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;
+  ;; Block items
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum cpp-block-item
+    :short "Fixtype of C++ block items (statements or local declarations)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For the @(':decl') variant, @('init-p') is @('t') iff an initializer
+       is present.  When @('init-p') is @('nil') the @('init') field is
+       still well-typed but is ignored.")
+     (xdoc::p
+      "The @(':empty') variant is a structural base case for the
+       mutually recursive deftypes block; it is not produced by the parser."))
+    (:empty ())
+    (:stmt ((stmt cpp-stmt)))
+    (:decl ((type cpp-type-spec)
+            (name ident)
+            (init-p bool)
+            (init cpp-expr)))
+    :pred cpp-block-item-p
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deflist cpp-block-item-list
+    :short "Fixtype of lists of C++ block items."
+    :elt-type cpp-block-item
+    :true-listp t
+    :elementp-of-nil nil
+    :pred cpp-block-item-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;
+  ;; Statements
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum cpp-stmt
+    :short "Fixtype of C++ statements."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We use distinct variants for optional sub-statements/expressions
+       (e.g., @(':if-then') vs @(':if-else'), @(':return-void') vs
+       @(':return-expr')) instead of option types inside a deftypes block.
+       For the @('for') family, we use boolean presence flags for the
+       three optional sub-clauses."))
+    (:compound ((body cpp-block-item-list)))
+    (:expr-void ())
+    (:expr-stmt ((e cpp-expr)))
+    (:if-then ((test cpp-expr) (then cpp-stmt)))
+    (:if-else ((test cpp-expr) (then cpp-stmt) (else cpp-stmt)))
+    (:switch ((target cpp-expr) (body cpp-stmt)))
+    (:while ((test cpp-expr) (body cpp-stmt)))
+    (:dowhile ((body cpp-stmt) (test cpp-expr)))
+    (:for-expr ((init-e-p bool) (init-e cpp-expr)
+                (test-e-p bool) (test-e cpp-expr)
+                (next-e-p bool) (next-e cpp-expr)
+                (body cpp-stmt)))
+    (:for-decl ((type cpp-type-spec) (name ident)
+                (init-p bool) (init cpp-expr)
+                (test-p bool) (test cpp-expr)
+                (next-p bool) (next cpp-expr)
+                (body cpp-stmt)))
+    (:for-range ((type cpp-type-spec) (name ident)
+                 (range cpp-expr) (body cpp-stmt)))
+    (:goto ((label ident)))
+    (:continue ())
+    (:break ())
+    (:return-void ())
+    (:return-expr ((e cpp-expr)))
+    (:rethrow ())
+    (:throw-stmt ((e cpp-expr)))
+    (:try ((body cpp-block-item-list)
+           (handlers cpp-catch-clause-list)))
+    (:labeled ((label ident) (s cpp-stmt)))
+    (:caselbl ((e cpp-expr) (s cpp-stmt)))
+    (:default ((s cpp-stmt)))
+    :pred cpp-stmt-p
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;
+  ;; Catch clauses
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod cpp-catch-clause
+    :short "Fixtype of C++ catch clauses (with bodies)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Combines the header (@(tsee cpp-exception-handler)) with a body."))
+    ((handler cpp-exception-handler)
+     (body cpp-block-item-list))
+    :pred cpp-catch-clause-p
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deflist cpp-catch-clause-list
+    :short "Fixtype of lists of C++ catch clauses."
+    :elt-type cpp-catch-clause
+    :true-listp t
+    :elementp-of-nil nil
+    :pred cpp-catch-clause-listp
+    :measure (two-nats-measure (acl2-count x) 0)))
+
+;;;;;;;;;;;;;;;;;;;;
+;; Irrelevant values for the mutually recursive types
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-cpp-expr
+  :short "An irrelevant C++ expression."
+  :type cpp-expr-p
+  :body (cpp-expr-this))
+
+(defirrelevant irr-cpp-stmt
+  :short "An irrelevant C++ statement."
+  :type cpp-stmt-p
+  :body (cpp-stmt-expr-void))
+
+(defirrelevant irr-cpp-block-item
+  :short "An irrelevant C++ block item."
+  :type cpp-block-item-p
+  :body (make-cpp-block-item-stmt :stmt (cpp-stmt-expr-void)))
+
+(defirrelevant irr-cpp-catch-clause
+  :short "An irrelevant C++ catch clause."
+  :type cpp-catch-clause-p
+  :body (make-cpp-catch-clause
+         :handler (irr-cpp-exception-handler)
+         :body nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Class Member Declarations (moved here to reference cpp-block-item-list)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum cpp-member-decl
+  :short "Fixtype of C++ class member declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A member declaration in a class body is one of:
+     an access specifier label (@('public:')),
+     a field declaration (@('int x;')),
+     or a method declaration (@('void foo(int a, double b) const noexcept;')
+     possibly with an inline body).
+     [C++23:11.4].")
+   (xdoc::p
+    "For the @(':method') variant, @('body-p') is @('t') iff the method has
+     an inline body @('{ ... }').  When @('body-p') is @('nil') the
+     @('body') field is the empty list."))
+  (:access
+   ((spec cpp-access-spec)))
+  (:field
+   ((type-name  cpp-type-spec)
+    (field-name ident)
+    (staticp    bool)
+    (mutablep   bool)))
+  (:method
+   ((return-type   cpp-type-spec)
+    (method-name   ident)
+    (params        cpp-param-list)
+    (virtualp      bool)
+    (const-qualp   bool)
+    (noexcept-spec cpp-noexcept-spec-option)
+    (pure-virtualp bool)
+    (staticp       bool)
+    (body-p        bool)
+    (body          cpp-block-item-list)))
+  :pred cpp-member-decl-p
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist cpp-member-decl-list
+  :short "Fixtype of lists of C++ class member declarations."
+  :elt-type cpp-member-decl
+  :true-listp t
+  :elementp-of-nil nil
+  :pred cpp-member-decl-listp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-cpp-member-decl
+  :short "An irrelevant C++ member declaration."
+  :type cpp-member-decl-p
+  :body (cpp-member-decl-access (cpp-access-spec-public)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod cpp-class-specifier
+  :short "Fixtype of C++ class specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A class specifier introduces a class type [C++23:11.2]:
+     @('class Foo : public Bar { public: int x; void foo(); }')."))
+  ((key             cpp-class-key)
+   (name            ident-option)
+   (template-params cpp-template-param-list)
+   (base            cpp-base-specifier-list)
+   (members         cpp-member-decl-list))
+  :pred cpp-class-specifier-p
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-cpp-class-specifier
+  :short "An irrelevant C++ class specifier."
+  :type cpp-class-specifier-p
+  :body (make-cpp-class-specifier
+         :key (cpp-class-key-class)
+         :name nil
+         :template-params nil
+         :base nil
+         :members nil))

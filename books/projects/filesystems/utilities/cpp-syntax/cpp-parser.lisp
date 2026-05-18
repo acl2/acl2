@@ -1565,7 +1565,9 @@
             :const-qualp   const-qualp
             :noexcept-spec noexcept-spec
             :pure-virtualp pure-virtualp
-            :staticp       staticp)
+            :staticp       staticp
+            :body-p        nil
+            :body          nil)
            span parstate))
 
   ///
