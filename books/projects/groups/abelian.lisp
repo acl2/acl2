@@ -60,7 +60,7 @@
 (defun max-ord-aux (g n)
   (if (zp n)
       1
-    (if (elt-of-ord n g)
+    (if (find-elt-of-ord n g)
         n
       (max-ord-aux g (1- n)))))
 

@@ -11,12 +11,12 @@
 ;; Then, outside of the encapsulation, I can prove additional lemmas for those 4 top-level books as the
 ;; need arises.
 
-(encapsulate ()
-	     
 (local (include-book "support/groups"))
 
+(encapsulate ()
+	     
 ;;---------------------------------------------------------------------------------------------------
-;; Fimite Groups
+;; Finite Groups
 ;;---------------------------------------------------------------------------------------------------
 
 ;; An mxn matrix is a proper list of m proper lists of length n:
@@ -130,24 +130,24 @@
 
 ;; Left inverse:
 
-(defun inv-aux (x l g)
+(defun find-inv-aux (x l g)
   (if (consp l)
       (if (equal (op (car l) x g) (e g))
-          (car l)
-	(inv-aux x (cdr l) g))
+          (list (car l))
+	(find-inv-aux x (cdr l) g))
     ()))
 
-(defund inv (x g)
-  (inv-aux x (elts g) g))
+(defun find-inv (x g)
+  (find-inv-aux x (elts g) g))
 
-;; The inverse property is checked by a search of (elts g), returning a counterexample or NIL.
-;; Thus, we are assuming that NIL is never an element of a group:
+(defund inv (x g)
+  (car (find-inv x g)))
 
 (defun check-inverses (l g)
   (if (consp l)
-      (if (inv (car l) g)
+      (if (find-inv (car l) g)
           (check-inverses (cdr l) g)
-	(car l))
+	(list (car l)))
     ()))
 
 (defun inv-cex (g) (check-inverses (elts g) g))
@@ -160,7 +160,6 @@
   (and (posp (order g))
        (matrixp g (order g) (order g))
        (dlistp (elts g))
-       (not (in () g))
        (closedp g)
        (assocp g)
        (inversesp g)))
@@ -172,10 +171,6 @@
 (defthm dlistp-elts
   (implies (groupp g)
            (dlistp (elts g))))
-
-(defthm non-nil-elts
-  (implies (groupp g)
-           (not (in () g))))
 
 (defthm in-e-g
   (implies (groupp g)
@@ -267,10 +262,9 @@
 
 (defthm not-inv-cex
   (implies (and (dlistp (elts g))
-                (not (in () g))
                 (not (inversesp g)))
-	   (and (in (inv-cex g) g)
-	        (implies (in y g) (not (equal (op y (inv-cex g) g) (e g)))))))
+	   (and (in (car (inv-cex g)) g)
+	        (implies (in y g) (not (equal (op y (car (inv-cex g)) g) (e g)))))))
 			
 ;; Abelian groups:
 
@@ -538,7 +532,6 @@
   (local (defun ginv (x) x))
   (defthm consp-glist (consp (glist)))
   (defthm dlistp-glist (dlistp (glist)))
-  (defthm g-non-nil (not (member-equal () (glist))))
   (defthm g-identity
     (implies (member-equal x (glist))
              (equal (gop (car (glist)) x)
@@ -744,10 +737,6 @@
   (implies (posp n)
            (dlistp (ninit n))))
 
-(defthm ninit-non-nil
-  (implies (posp n)
-           (not (member-equal () (ninit n)))))
-
 (defthm car-ninit
   (implies (posp n)
            (equal (car (ninit n)) 0)))
@@ -829,10 +818,6 @@
   (implies (posp n)
            (dlistp (rel-primes n))))
 
-(defthm rel-primes-non-nil
-  (implies (posp n)
-           (not (member-equal () (rel-primes n)))))
-
 (defthm car-rel-primes
   (implies (posp n)
            (equal (car (rel-primes n)) 1)))
@@ -910,17 +895,13 @@
 ;; The other prerequisites of defgroup are automatically proved by defsubgroup.
 
 (defmacro defsubgroup (name args grp cond elts)
-  (let ((non-nil-name (intern$ (concatenate 'string (symbol-name name) "-NON-NIL") "DM"))
-        (identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "DM"))
+  (let ((identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "DM"))
         (assoc-name (intern$ (concatenate 'string (symbol-name name) "-ASSOC") "DM"))
         (inverse-name (intern$ (concatenate 'string (symbol-name name) "-INVERSE") "DM"))
         (subgroupp-name (intern$ (concatenate 'string "SUBGROUPP-" (symbol-name name)) "DM"))
 	(cond (if (symbolp grp) `(and (groupp ,grp) ,cond) cond))
 	(args (if (symbolp grp) (append args (list grp)) args)))
     `(encapsulate ()
-       (local-defthm ,non-nil-name
-         (implies ,cond (not (member-equal () ,elts)))
-	 :hints (("Goal" :use ((:instance member-sublist (x ()) (l ,elts) (m (elts ,grp)))))))
        (local-defthm ,identity-name
          (implies (and ,cond (member-equal x ,elts))
 	          (equal (op (car ,elts) x ,grp) x)))
@@ -1011,20 +992,22 @@
 
 ;; Search for an element of g that does not commute with a:
 
-(defun cent-cex-aux (a l g)
+(defun find-cent-cex-aux (a l g)
   (if (consp l)
       (if (equal (op a (car l) g) (op (car l) a g))
-          (cent-cex-aux a (cdr l) g)
-	(car l))
+          (find-cent-cex-aux a (cdr l) g)
+	(list (car l)))
     ()))
 
-(defund cent-cex (a g) (cent-cex-aux a (elts g) g))
+(defun find-cent-cex (a g) (find-cent-cex-aux a (elts g) g))
+
+(defun cent-cex (a g) (car (find-cent-cex a g)))
 
 ; Ordered list of elements of g that commute with all elements:
 
 (defun cent-elts-aux (l g)
   (if (consp l)
-      (if (cent-cex (car l) g)
+      (if (find-cent-cex (car l) g)
           (cent-elts-aux (cdr l) g)
 	(cons (car l) (cent-elts-aux (cdr l) g)))
 	
@@ -1210,10 +1193,6 @@
 (defthm consp-powers
   (implies (and (groupp g) (in a g))
            (consp (powers a g))))
-
-(defthm powers-non-nil
-  (implies (and (groupp g) (in a g))
-           (not (member-equal () (powers a g)))))
 
 (defthm dlistp-powers
   (implies (and (groupp g) (in a g))
@@ -1418,7 +1397,7 @@
                 (in x g))
 	   (member (lcoset x h g) (lcosets h g))))
 
-;; lcosets are distinct and non-nil:
+;; lcosets are distinct:
 
 (defthm member-member-list
   (implies (and (consp x) (member x l))
@@ -1427,10 +1406,6 @@
 (defthm dlistp-lcosets
   (implies (subgroupp h g)
            (dlistp (lcosets h g))))
-
-(defthm lcosets-non-nil
-  (implies (subgroupp h g)
-           (not (member-equal () (lcosets h g)))))
 
 ;; The length of (append-list (lcosets h g)):
 
@@ -1697,10 +1672,6 @@
   (implies (normalp h g)
            (dlistp (qlist h g))))
 
-(defthm qlist-non-nil
-  (implies (normalp h g)
-           (not (member-equal () (qlist h g)))))
-
 ;; The quotient group operation and inverse operator:
 
 (defun qop (x y h g)
@@ -1787,19 +1758,21 @@
 
 ;; The witness function:
 
-(defun elt-of-ord-aux (l n g)
+(defun find-elt-of-ord-aux (l n g)
   (if (consp l)
       (if (= (ord (car l) g) n)
-          (car l)
-	(elt-of-ord-aux (cdr l) n g))
+          (list (car l))
+	(find-elt-of-ord-aux (cdr l) n g))
     ()))
 
-(defun elt-of-ord (n g) (elt-of-ord-aux (elts g) n g))
+(defun find-elt-of-ord (n g) (find-elt-of-ord-aux (elts g) n g))
+
+(defun elt-of-ord (n g) (car (find-elt-of-ord n g)))
 
 (defthm elt-of-ord-ord
   (implies (and (groupp g)
                 (natp n)
-                (elt-of-ord n g))
+                (find-elt-of-ord n g))
 	   (and (in (elt-of-ord n g) g)
 	        (equal (ord (elt-of-ord n g) g)
 		       n))))
@@ -1809,7 +1782,7 @@
                 (natp n)
 		(in x g)
 		(= (ord x g) n))
-           (elt-of-ord n g)))
+           (find-elt-of-ord n g)))
 
 ;; If there is an element of order divisible by n then there is an element of order n:
 
@@ -1818,7 +1791,7 @@
                 (posp n)
 		(in x g)
 		(divides n (ord x g)))
-	   (elt-of-ord n g)))
+	   (find-elt-of-ord n g)))
 
 ;; A consequence of lagrange and euclid:
 
@@ -1827,7 +1800,7 @@
                 (abelianp g)
                 (primep p)
 		(divides p (order g))
-                (not (elt-of-ord p g))
+                (not (find-elt-of-ord p g))
 		(in a g))
 	   (divides p (order (quotient g (cyclic a g))))))
 
@@ -1851,8 +1824,8 @@
 (defthm lift-elt-of-ord
   (implies (and (normalp h g)
                 (posp m)
-                (elt-of-ord m (quotient g h)))
-           (elt-of-ord m g)))
+                (find-elt-of-ord m (quotient g h)))
+           (find-elt-of-ord m g)))
 
 (defun cauchy-abelian-induction (g)
   (declare (xargs :measure (order g)))
@@ -1900,6 +1873,13 @@
 (defthm conj-in-conjs
   (implies (and (groupp g) (in x g) (in a g))
            (member-equal (conj x a g) (conjs x g))))
+
+(defthm in-own-conjs
+  (implies (and (groupp g) (in x g))
+           (member-equal x (conjs x g)))
+  :hints (("Goal" :in-theory (disable conj-in-conjs)
+                  :expand ((conj x (e g) g))
+                  :use ((:instance conj-in-conjs (a (e g)))))))
 
 ;; Given a member y of that list, we would like to find the conjugator that put it there,
 ;; i.e., the element a such that y = (conj x a g):
@@ -2117,24 +2097,26 @@
 
 ;; Search for a non-central group element the centralizer of which has order divisible by p:
 
-(defun find-elt-aux (l g p)
+(defun find-cauchy-elt-aux (l g p)
   (if (consp l)
       (if (and (not (in (car l) (center g)))
                (divides p (order (centralizer (car l) g))))
-	  (car l)
-	(find-elt-aux (cdr l) g p))
+	  (list (car l))
+	(find-cauchy-elt-aux (cdr l) g p))
     ()))
 
-(defund find-elt (g p) (find-elt-aux (elts g) g p))
+(defun find-cauchy-elt (g p) (find-cauchy-elt-aux (elts g) g p))
+
+(defun cauchy-elt (g p) (car (find-cauchy-elt g p)))
 
 ;; If such an element exists, then since it in not in the center, the order of its centralizer is
 ;; less than that of g:
 
-(defthmd find-elt-centralizer
+(defthmd cauchy-elt-centralizer
   (implies (and (groupp g)
                 (primep p)
-                (find-elt g p))
-	   (let ((cent (centralizer (find-elt g p) g)))
+                (find-cauchy-elt g p))
+	   (let ((cent (centralizer (cauchy-elt g p) g)))
 	     (and (subgroupp cent g)
 	          (< (order cent) (order g))
 		  (divides p (order cent))))))
@@ -2142,11 +2124,11 @@
 ;; Assume that p divides the order of g.  If no such element exists, then the length of every nontrivial
 ;; cojugacy class is divisible by p, and according to the class equation, so is the order of the center:
 
-(defthm find-elt-center
+(defthm cauchy-elt-center
   (implies (and (groupp g)
                 (primep p)
 		(divides p (order g))
-                (null (find-elt g p)))
+                (null (find-cauchy-elt g p)))
 	   (divides p (order (center g)))))
 
 ;; Clearly, if any subgroup of g has an element of order p, then so does g:
@@ -2160,18 +2142,16 @@
   (implies (and (groupp g)
                 (natp n)
 		(subgroupp h g)
-		(elt-of-ord n h))
-	   (elt-of-ord n g)))
+		(find-elt-of-ord n h))
+	   (find-elt-of-ord n g)))
 
 ;; The theorem follows by induction:
 
-(defun cauchy-induction (g p)
-  (declare (xargs :measure (order g)))
-  (if (and (groupp g)
-           (primep p)
-	   (find-elt g p))
-      (cauchy-induction (centralizer (find-elt g p) g) p)
-    t))
+(defthm cauchy-lemma
+  (implies (and (groupp g)
+                (primep p)
+		(divides p (order g)))
+	   (find-elt-of-ord p g)))
 
 (defthmd cauchy
   (implies (and (groupp g)
@@ -2221,7 +2201,8 @@
 	     (and (natp i) (< i m)
 		  (natp j) (< j n)
 		  (not (equal (nth j (nth i x)) (nth j (nth i y)))))))
-  :hints (("Goal" :use (diff-row-diff
+  :hints (("Goal" :in-theory (disable diff-member-diff)
+		  :use (diff-row-diff
 			(:instance nth-row (i (diff-member x y)))
 			(:instance nth-row (i (diff-member x y)) (x y))
 			(:instance diff-member-diff (x (nth (diff-member x y) x)) (y (nth (diff-member x y) y)))))))
@@ -2288,7 +2269,9 @@
 		(member-equal b y))
 	   (equal (op x y (quotient g h))
 	          (lcoset (op a b g) h g)))
-  :hints (("Goal" :use (op-qop
+  :hints (("Goal" :in-theory (disable op-qop)
+		  :use (op-qop
+			(:instance member-lcoset-qlist-iff (x (qop x y h g)))
                         (:instance lcoset-member-lcoset (x (op a b g)) (c (qop x y h g)))))))
 
 (defthmd normalp-reverse
@@ -2297,13 +2280,15 @@
 		(in y g)
 		(in (op x y g) h))
 	   (in (op y x g) h))
-  :hints (("Goal" :in-theory (enable conj)
+  :hints (("Goal" :in-theory (e/d (conj) (inv normalp-conj))
                   :use ((:instance normalp-conj (x (op x y g)) (y (inv x g)))
 		        (:instance group-assoc (x (inv x g)) (y x) (z y))))))
 
 (defthmd sublistp-elts-quotient-lcosets
   (implies (normalp h g)
-           (sublistp (elts (quotient g h)) (lcosets h g))))
+           (sublistp (elts (quotient g h)) (lcosets h g)))
+  :hints (("Goal" :use ((:instance scex1-lemma (l (qlist h g)) (m (lcosets h g)))
+                        (:instance member-lcoset-qlist-iff (x (scex1 (qlist h g) (lcosets h g))))))))
 
 (in-theory (disable qlist))
 
@@ -2321,7 +2306,8 @@
 		(member-equal a x))
 	   (equal (inv x (quotient g h))
 	          (lcoset (inv a g) h g)))
-  :hints (("Goal" :use (sublistp-elts-quotient-lcosets
+  :hints (("Goal" :expand ((qinv x h g))
+                  :use (sublistp-elts-quotient-lcosets
                         (:instance normalp-reverse (x (inv (car x) g)) (y a))
                         (:instance lcosets-cars (c x))
 			(:instance sublistp-lcoset-g (x (car x)))
@@ -2334,7 +2320,8 @@
                 (subgroupp k g)
 		(sublistp (elts h) (elts k)))
 	   (subgroupp h k))
-  :hints (("Goal" :use ((:instance not-subgroupp-cex (g k))))))
+  :hints (("Goal" :in-theory (disable not-subgroupp-cex)
+                  :use ((:instance not-subgroupp-cex (g k))))))
 
 (defthmd subgroupp-transitive
   (implies (and (subgroupp h k) (subgroupp k g)) (subgroupp h g))
@@ -2401,8 +2388,9 @@
   (implies (and (subgroupp h g)
                 (in a h))
 	   (equal (ord a h) (ord a g)))
-  :hints (("Goal" :in-theory (e/d (divides) (ord-power))
-                  :use ((:instance ord-power (n (ord a h)))
+  :hints (("Goal" :in-theory (e/d (divides) (ord<=order ord-power))
+                  :use ((:instance ord<=order (g h))
+		        (:instance ord-power (n (ord a h)))
                         (:instance ord-power (g h) (n (ord a g)))))))
 
 (defthmd equal-lcoset-lcoset-e
@@ -2448,21 +2436,24 @@
 	                (:instance power+ (n (index (cadr (abelianp-cex (cyclic a g))) (powers a g)))
 	                                  (m (index (car (abelianp-cex (cyclic a g))) (powers a g))))))))
 
+(defund find-group-gen (g)
+  (find-elt-of-ord (order g) g))
+
 (defund group-gen (g)
   (elt-of-ord (order g) g))
 
 (defthmd order-group-gen
   (implies (and (groupp g)
-                (group-gen g))
+                (find-group-gen g))
 	   (and (in (group-gen g) g)
 	        (equal (ord (group-gen g) g)
 		       (order g))))
-  :hints (("Goal" :in-theory (enable group-gen)
+  :hints (("Goal" :in-theory (enable find-group-gen group-gen)
                   :use ((:instance elt-of-ord-ord (n (order g)))))))
 
 (defund cyclicp (g)
   (and (groupp g)
-       (group-gen g)))
+       (find-group-gen g)))
 
 ;; Once we have defined isomorphism, we shall prove that if (cyclicp g), then (cyclic (group-gen g) g)
 ;; is isomorphic to g.  For now, we have this:
@@ -2471,7 +2462,7 @@
   (implies (cyclicp g)
 	   (equal (order (cyclic (group-gen g) g))
 		  (order g)))
-  :hints (("Goal" :in-theory (enable group-gen cyclicp)
+  :hints (("Goal" :in-theory (enable find-group-gen group-gen cyclicp)
                   :use ((:instance elt-of-ord-ord (n (order g)))
                         (:instance order-ord (a (group-gen g)))))))
 
@@ -2487,7 +2478,7 @@
   (implies (and (groupp g)
                 (in a g))
 	   (cyclicp (cyclic a g)))
-  :hints (("Goal" :in-theory (e/d (group-gen cyclicp) (power-member))
+  :hints (("Goal" :in-theory (e/d (find-group-gen group-gen cyclicp) (power-member))
                   :expand ((power a 1 g))
                   :use ((:instance ord-elt-of-ord (g (cyclic a g)) (n (ord a g)) (x a))
 		        (:instance power-member (n 1))
@@ -2496,7 +2487,7 @@
 (defthm cyclicp-groupp
   (implies (cyclicp g)
            (and (groupp g)
-	        (group-gen g)))
+	        (find-group-gen g)))
   :hints (("Goal" :in-theory (enable cyclicp))))
 
 (defthmd permp-cyclic
@@ -2522,10 +2513,10 @@
 		        (:instance ord-aux>=n (n 2))))))
 
 (local-defthmd cadr-not-e
-  (implies (groupp g)
+  (implies (and (groupp g) (> (order g) 1))
            (not (equal (cadr (elts g)) (e g))))
-  :hints (("Goal" :in-theory (e/d (e) (in-e-g dlistp-elts non-nil-elts))
-                  :use (in-e-g dlistp-elts non-nil-elts))))
+  :hints (("Goal" :in-theory (e/d (e order) (in-e-g dlistp-elts))
+                  :use (in-e-g dlistp-elts))))
 
 ;; Since this requires ord-divides-order, it should go into ../quotients.lisp:
 
@@ -2533,7 +2524,7 @@
   (implies (and (groupp g)
 		(primep (order g)))
 	   (cyclicp g))
-  :hints (("Goal" :in-theory (e/d (e group-gen cyclicp) (non-nil-elts))
+  :hints (("Goal" :in-theory (enable e find-group-gen group-gen cyclicp)
                   :use (cadr-not-e
 		        (:instance ord-elt-of-ord (x (cadr (elts g))) (n (order g)))
                         (:instance primep-no-divisor (p (order g)) (d (ord (cadr (elts g)) g)))
@@ -2563,7 +2554,6 @@
 	          (inv (power x n g) g)))
   :hints (("Subgoal *1/2" :use ((:instance prod-inv (x (power x (1- n) g)) (y x))
                                 (:instance power+ (a x) (n (1- n)) (m 1))))))
-
 
 (local-defthmd power-lcm
   (implies (and (groupp g)
@@ -2824,6 +2814,8 @@
 	        (equal (conjs (car c) g) c)
 	        (not (in (car c) (center g)))))
   :hints (("Goal" :use (conjs-list-cars
+                        (:instance in-own-conjs (x (car c)))
+                        (:instance center-conjs-list (c (car c)))
                         (:instance member-append-list (x (car c)) (l c) (m (conjs-list g)))))))
 
 (local-defthmd center-p-group-3
@@ -3145,6 +3137,8 @@
 	        (not (equal (cadr (elts h)) (e g)))))
   :hints (("Goal" :in-theory (e/d (e) (dlistp-elts subgroup-e))
                   :use (subgroup-e order-1-trivial
+		        (:instance order-pos (g h))
+		        (:instance cadr-not-e (g h))		        
 		        (:instance dlistp-elts (g h))))))
 
 (defthmd iff-trivial-order-1
@@ -3193,11 +3187,10 @@
 	   (and (consp (intersection-equal (elts h) (elts k)))
 		(equal (car (intersection-equal (elts h) (elts k))) (e g))))
   :hints (("Goal" :expand ((intersection-equal (elts h) (elts k)))
-	          :in-theory (e/d (e) (subgroup-e in-e-g non-nil-elts))
-		  :use (in-e-g non-nil-elts subgroup-e
-		        (:instance non-nil-elts (g h))
+	          :in-theory (e/d (e) (consp-groupp subgroup-e in-e-g))
+		  :use (in-e-g subgroup-e
+		        (:instance consp-groupp (g k))
 			(:instance in-e-g (g h))
-		        (:instance non-nil-elts (g k))
 			(:instance in-e-g (g k))
 		        (:instance subgroup-e (h k))))))
 
@@ -3358,10 +3351,12 @@
 	   (and (consp (append-elts h))
 	        (equal (car (append-elts h))
 		       (e g))))
-  :hints (("Goal" :in-theory (e/d (e append-elts) (non-nil-elts))
+  :hints (("Goal" :in-theory (e/d (e qe append-elts) (consp-groupp))
                   :expand ((APPEND-LIST (CAR H))
 		           (APPEND (CAR (CAR H)) (APPEND-LIST (CDR (CAR H)))))
-		  :use (non-nil-elts in-e-g order-pos
+		  :use (in-e-g order-pos consp-groupp
+		        (:instance consp-groupp (g h))
+		        (:instance order-pos (g h))
 		        (:instance subgroup-e (g (quotient g n)))
 		        (:instance car-qe (h n))))))
 
@@ -3475,13 +3470,6 @@
   :hints (("Goal" :use (append-elts-inv-1 member-append-elts sublistp-append-elts
                         (:instance member-append-elts (x (inv x g)))
 			(:instance inv-quotient-lcoset (h n) (x (lcoset x n g)) (a x))))))
-
-(defthm append-elts-non-nil
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (not (member-equal () (append-elts h))))
-  :hints (("Goal" :in-theory (disable non-nil-elts)
-                  :use (non-nil-elts sublistp-append-elts))))                        
 
 (local (in-theory (enable sublistp-append-elts)))
 

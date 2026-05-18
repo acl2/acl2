@@ -128,7 +128,8 @@
   (implies (group-list-p l)
            (equal (car (group-tuples l))
 		  (e-list l)))
-  :hints (("Goal" :in-theory (enable e))))
+  :hints (("Goal" :in-theory (enable e))
+	  ("Subgoal *1/2" :use ((:instance consp-groupp (g (car l)))))))
 
 (defthm member-e-list--group-tuples
   (implies (group-list-p l)
@@ -1017,7 +1018,8 @@
   (implies (and (subgroupp h g)
                 (subgroupp k g))
 	   (dlistp (append-list (lift-cosets h k g))))
-  :hints (("Goal" :use (dlistp-lift-cosets))))
+  :hints (("Goal" :use (dlistp-lift-cosets)
+		  :in-theory (enable DISJOINTP-PAIRWISE-SUBLISTP))))
 
 ;; The length of (lift-cosets h k g) is the length of (lcosets (group-intersection h k g) h),
 ;; which is (/ (order h) (order (intersect-groups h k g)))  Since the length of each member 

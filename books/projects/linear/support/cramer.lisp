@@ -203,7 +203,7 @@
   :hints (("Goal" :use (nth-col-mat-4
                         (:instance row-fmat-scalar-mul (m n) (n 1) (c (fdet a n)) (a (col-mat x)))))))
 
-(local-defthm col-0-col-mat
+(local-defthm col-mat-col-0
   (implies (and (posp n) (flistnp b n))
            (equal (col 0 (col-mat b)) b))
   :hints (("Goal" :in-theory (enable fmatp col-mat row-mat)

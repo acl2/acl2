@@ -1202,5 +1202,94 @@
 ;; Otherwise, the entries of x corresponding to the indices in (lead-inds aq) are determined
 ;; by the entries corresponding to (free-inds aq n).  Thus, there is a unique solution
 ;; corresponding to every assignment of values to the latter set of entries, and hence an
-;; infinite number of solutions.  We shall revisit this result later in connection with the
-;; vector space of solutions of a homogeneous system of equations.
+;; infinite number of solutions.
+
+;;---------------------------------------------
+
+;; The system of equations (fmat* a (col-mat x)) = (col-mat b) is said to be homogeneous if all entries of b are 0.
+;; The solutions of a homogeneous system may be characterized as follows:
+
+(defund sol0p (x a)
+  (and (flistnp x (len (car a)))
+       (solutionp x a (flistn0 (len a)))))
+
+;; In this case, the set of solutions is closed under addition and scalar multiplication:
+
+(defthmd sol0p-fadd
+  (implies (and (posp m) (posp n) (fmatp a m n)
+                (sol0p x a)
+		(sol0p y a))
+	   (sol0p (flist-add x y) a)))
+
+(defthmd sol0p-scalar-mul
+  (implies (and (posp m) (posp n) (fmatp a m n)
+                (sol0p x a)
+		(fp c))
+	   (sol0p (flist-scalar-mul c x) a)))
+
+;; Clearly, a homogeneous system admits the trivial solution and is therefore solvable.  The test for a solution
+;; reduces to the following:
+
+(defun sol0-test-aux (x aq l f k)
+  (if (zp k)
+      t
+    (and (equal (nth (nth (1- k) l) x)
+                (f- (fdot-select f (nth (1- k) aq) x)))
+	 (sol0-test-aux x aq l f (1- k)))))
+
+(defund sol0-test (x a n)
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (lead-inds (lead-inds aq))
+         (free-inds (free-inds aq n)))
+    (sol0-test-aux x aq lead-inds free-inds q)))
+  
+(defthmd linear-equations-homogeneous-case
+  (implies (and (fmatp a m n) (posp m) (posp n) (flistnp x n))
+           (iff (sol0p x a)
+                (sol0-test x a n))))
+
+;; Eventually, we shall examine the solution set of a homogeneous system as a vector space.  Here we merely
+;; observe the existence of a nontrivial solution in the case m < n, a result that is needed in our 
+;; formalization of galois theory.
+
+;; We construct a solution that has a 1 at every free index:
+
+(defun flistn1 (n)
+  (if (zp n)
+      ()
+    (cons (f1) (flistn1 (1- n)))))
+
+(defun gen-sol0-aux (aq l f n k)
+  (if (posp k)
+      (append (gen-sol0-aux aq l f n (1- k))
+              (list (if (member (1- k) l)
+	                (f- (fdot-select f (nth (index (1- k) l) aq) (flistn1 n)))
+		      (f1))))
+    ()))
+
+(defund gen-sol0 (a n)
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+	 (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (gen-sol0-aux aq l f n n)))
+
+(defthmd sol0p-gen-sol0
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+           (sol0p (gen-sol0 a n) a)))
+
+(defthmd gen-sol0-nontrivial
+  (implies (and (fmatp a m n) (posp m) (posp n) (> n m))
+           (not (flist0p (gen-sol0 a n)))))
+
+(defun-sk nontrivial-sol0p (a)
+  (exists (x)
+    (and (not (flist0p x))
+         (sol0p x a))))
+
+(defthmd exists-sol0p
+  (implies (and (posp m) (posp n) (> n m) (fmatp a m n))
+           (nontrivial-sol0p a)))

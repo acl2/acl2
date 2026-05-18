@@ -241,8 +241,6 @@
            (equal (act x s (a) (agrp))
 	          (aact x s)))		  )
 
-(in-theory (disable a (a)))
-
 (defthm actionp-a
   (actionp (a) (agrp)))
 
@@ -440,6 +438,13 @@
 	   (equal (orbit r a g) (orbit s a g)))
   :hints (("Goal" :in-theory (enable permp)
                   :use (permp-orbit-orbit (:instance ordp-equal (g a) (x (orbit r a g)) (y (orbit s a g)))))))
+
+(defthmd member-orbit-member-act-orbit
+  (implies (and (actionp a g)
+                (member-equal s (dom a))
+		(member-equal r (orbit s a g))
+		(in x g))
+	   (member-equal (act x r a g) (orbit s a g))))
 
 ;; Distinct orbits are disjoint:
 
@@ -683,11 +688,6 @@
   (implies (and (subgroupp h g)
 		(in a g))
 	   (sublistp (conj-sub-list h a g) (elts g))))
-
-(defthm conj-sub-list-non-nil
-  (implies (and (subgroupp h g)
-		(in a g))
-	   (not (member-equal () (conj-sub-list h a g)))))
 
 (defthmd member-conj-sub-list
   (implies (and (subgroupp h g)
