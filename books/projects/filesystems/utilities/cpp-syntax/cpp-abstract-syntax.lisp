@@ -684,6 +684,7 @@
     (:unary ((op c$::unop) (arg cpp-expr)))
     (:sizeof-expr ((arg cpp-expr)))
     (:sizeof-type ((type cpp-type-spec)))
+    (:alignof-type ((type cpp-type-spec)))
     (:new ((type cpp-type-spec) (args cpp-expr-list)))
     (:delete ((arg cpp-expr) (arrayp bool)))
     (:rethrow ())
