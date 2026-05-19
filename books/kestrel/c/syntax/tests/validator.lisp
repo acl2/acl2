@@ -1133,6 +1133,10 @@ void foo () {
 ")
 
 (test-valid
+  "unsigned char hello_world[] = \"Hello World!\";
+")
+
+(test-valid
   "struct s { int x; };
    struct s arr[10] = {[0] = {.x = 1}, [1] = {.x = 2}};
 ")
@@ -1594,3 +1598,174 @@ void main(void) {
 
 struct foo bar;
 ")
+
+(test-valid
+  "char str[32] = { \"hello\" };
+")
+
+(test-valid
+  "struct foo_s {
+  float x;
+  int : 5;
+  float y;
+} foo = { 0.0, 1.0 };
+")
+
+(test-valid
+  "struct foo_s { int x; };
+
+void f(void) {
+  struct foo_s foo;
+  struct bar_s {
+    float x;
+    int : 5;
+    struct foo_s y;
+  } bar = { 0.0, foo };
+}
+")
+
+(test-valid
+  "char f(void) {
+  return (char []){\"bar\"}[0];
+}
+")
+
+(test-valid
+  "int x;
+
+void f(void) {
+  x = (int){42};
+}
+")
+
+(test-valid
+  "struct foo_s { int x; };
+
+struct bar_s {
+  float x;
+  int : 5;
+  struct foo_s y;
+};
+
+int f(void) {
+  struct foo_s foo;
+  return (struct bar_s){ 0.0, foo }.y.x;
+}
+")
+
+;; The anonymous struct in this example is in fact undefined behavior.
+;; We allow it here, treating it as an unnamed member.
+;; GCC and Clang both choose to reject the program.
+(test-valid
+  "struct foo_s { int x; };
+
+struct bar_s {
+  float x;
+  struct {
+    int : 5;
+    int : 3;
+  };
+  struct foo_s y;
+};
+
+int f(void) {
+  struct foo_s foo;
+  return (struct bar_s){ 0.0, foo }.y.x;
+}
+")
+
+;; Struct with two scalar members, undesignated list initializer.
+(test-valid
+  "struct s { int x; int y; } a = { 1, 2 };
+")
+
+;; Union initialized via its first member (no designator).
+(test-valid
+  "union u { int x; float y; } a = { 42 };
+")
+
+;; Union initialized via a named member designator.
+(test-valid
+  "union u { int x; float y; } a = { .y = 3.14f };
+")
+
+;; Flat list init of an array of structs (implicit subobject traversal).
+(test-valid
+  "struct s { int x; int y; };
+struct s arr[2] = { 1, 2, 3, 4 };
+")
+
+;; Static-storage local variable initialized with a list.
+(test-valid
+  "void f(void) {
+  static int a[2] = { 1, 2 };
+}
+")
+
+;; Designator names a field that does not exist in the struct.
+(test-valid-fail
+  "struct s { int x; } a = { .y = 42 };
+")
+
+;; Scalar initialized with a list containing more than one element.
+(test-valid-fail
+  "int x = { 1, 2 };
+")
+
+;; Struct with one member initialized with a two-element list.
+(test-valid-fail
+  "struct s { int x; } a = { 1, 2 };
+")
+
+;; Struct with two members initialized with a one-element list.
+(test-valid
+  "struct s { int x; int y; } a = { 1 };
+")
+
+;; File-scope struct variable initialized from another struct object
+;; (requires auto storage duration, but file scope is static).
+(test-valid-fail
+  "struct s { int x; };
+struct s g;
+struct s h = g;
+")
+
+;; Static-local struct initialized from a struct object
+;; (same constraint as above).
+(test-valid-fail
+  "struct s { int x; };
+void f(void) {
+  struct s a;
+  static struct s b = a;
+}
+")
+
+(test-valid
+  "struct myStruct {
+  int a;
+  int b : 4;
+  union { int c; int d; };
+  _Bool e;
+  int : 4;
+  unsigned long int f;
+};
+
+static struct myStruct my = { 1, 1, 1, 1, 1 };
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (my-declon (ext-declon-declon->declon
+                          (trans-item-declon->declon (second items))))
+             (my-init-declor (car (declon-declon->declors my-declon)))
+             (initer (init-declor->initer? my-init-declor))
+             (desiniters (initer-list->elems initer)))
+          (and (equal (desiniter-info->designors (desiniter->info (first desiniters)))
+                      (list (designor-dot (ident "a"))))
+               (equal (desiniter-info->designors (desiniter->info (second desiniters)))
+                      (list (designor-dot (ident "b"))))
+               (equal (desiniter-info->designors (desiniter->info (third desiniters)))
+                      (list (designor-dot (ident "c"))))
+               (equal (desiniter-info->designors (desiniter->info (fourth desiniters)))
+                      (list (designor-dot (ident "e"))))
+               (equal (desiniter-info->designors (desiniter->info (fifth desiniters)))
+                      (list (designor-dot (ident "f")))))))

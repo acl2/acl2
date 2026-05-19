@@ -760,9 +760,9 @@
 (defund empty-dag-array (slack-amount)
   (declare (xargs :guard (and (posp slack-amount)
                               (<= slack-amount *max-1d-array-length*))))
-  (mv (make-empty-array 'dag-array slack-amount)
+  (mv (new-array1 'dag-array slack-amount)
       0
-      (make-empty-array 'dag-parent-array slack-amount)
+      (new-array1 'dag-parent-array slack-amount)
       nil ; empty-dag-constant-alist ; todo: name that notion
       (empty-dag-variable-alist)))
 

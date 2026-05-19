@@ -1307,8 +1307,7 @@
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp fn)
                               (bounded-darg-listp args dag-len)
-                              (nodenum-type-alistp known-nodenum-type-alist))
-                  :guard-hints (("Goal" :in-theory (enable))))
+                              (nodenum-type-alistp known-nodenum-type-alist)))
            (ignore dag-len))
   (case fn
     (not (and (= 1 (len args))
@@ -2056,7 +2055,7 @@
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (integer-listp-when-nat-listp) (natp))))))
   (b* (;; Array to track which nodes we've considered as we go through the disjuncts (disjuncts may have nodes in common):
-       (handled-node-array (make-empty-array 'handled-node-array (+ 1 (max-nodenum-in-possibly-negated-nodenums disjuncts))))
+       (handled-node-array (new-array1 'handled-node-array (+ 1 (max-nodenum-in-possibly-negated-nodenums disjuncts))))
        ;; Decide which disjuncts to include in the query and which nodes under them to translate / cut:
        ;; TODO: What if a node is shallow in one disjunct and deep in another?  How should we treat it?
        ((mv erp disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)

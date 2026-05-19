@@ -545,3 +545,13 @@
 
 (defthm-axe-basic implies-1 (implies x x) :rule-classes nil)
 (must-fail (defthm-axe-basic implies-2 (implies x y) :rule-classes nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this works (without calling STP), because the assumptions are processed using the known-booleans stored in the state
+(deftest
+  (defthm-axe-basic new-test-1
+    (implies (and (unsigned-byte-p 3 x)
+                  (unsigned-byte-p 4 y))
+             (equal (unsigned-byte-p 3 x)
+                    (unsigned-byte-p 4 y)))))

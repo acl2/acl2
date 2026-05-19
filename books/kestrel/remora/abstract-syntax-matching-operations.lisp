@@ -42,10 +42,10 @@
 
 (define type-match-array ((type typep))
   :returns (type+shape type+shape-resultp)
-  :short "Check if a type is an array type,
-          returning its inner type and shape if successful."
+  :short "Check if an array type is an @(':array') summand,
+          returning its elements' atom type and its shape if successful."
   (if (type-case type :array)
-      (make-type+shape :type (type-array->type type)
+      (make-type+shape :type (type-array->elem type)
                        :shape (type-array->shape type))
     (reserr nil)))
 
@@ -53,8 +53,9 @@
 
 (define type-list-match-array ((types type-listp))
   :returns (types+shapes type+shape-list-resultp)
-  :short "Check if all the types in a list are array types,
-          returning the list of their inner types and shapes if successful."
+  :short "Check if all the array types in a list are @(':array') summands,
+          returning the list of their elements' atom types and its shapes
+          if successful."
   (b* (((when (endp types)) nil)
        ((ok type+shape) (type-match-array (car types)))
        ((ok types+shapes) (type-list-match-array (cdr types))))
@@ -72,8 +73,8 @@
 
 (define type-match-fun ((type typep))
   :returns (in+out typelist+type-resultp)
-  :short "Check if a type is a function type,
-          returning its input and output types if successful."
+  :short "Check if an atom type is a function type,
+          returning its input and output array types if successful."
   (if (type-case type :fun)
       (make-typelist+type :types (type-fun->in type)
                           :type (type-fun->out type))
@@ -82,32 +83,35 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-forall ((type typep))
-  :returns (vars+type kindedvarlist+type-resultp)
-  :short "Check if a type is a universal type,
-          returning its kinded variable list and body type if successful."
+  :returns (vars+type typevarlist+type-resultp)
+  :short "Check if an atom type is a universal type,
+          returning its type parameter variables and body array type
+          if successful."
   (if (type-case type :forall)
-      (make-kindedvarlist+type :vars (type-forall->vars type)
-                               :type (type-forall->type type))
+      (make-typevarlist+type :vars (type-forall->params type)
+                             :type (type-forall->body type))
     (reserr nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-product ((type typep))
-  :returns (params+type ispaceparamlist+type-resultp)
-  :short "Check if a type is a product type,
-          returning its ispace parameters and body type if successful."
+  :returns (vars+type ispacevarlist+type-resultp)
+  :short "Check if an atom type is a product type,
+          returning its ispace parameter variables and body array type
+          if successful."
   (if (type-case type :pi)
-      (make-ispaceparamlist+type :params (type-pi->params type)
-                                 :type (type-pi->type type))
+      (make-ispacevarlist+type :vars (type-pi->params type)
+                               :type (type-pi->body type))
     (reserr nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-match-sum ((type typep))
-  :returns (params+type ispaceparamlist+type-resultp)
+  :returns (vars+type ispacevarlist+type-resultp)
   :short "Check if a type is a sum type,
-          returning its ispace parameters and body type if successful."
+          returning its ispace parameter variables and body array type
+          if successful."
   (if (type-case type :sigma)
-      (make-ispaceparamlist+type :params (type-sigma->params type)
-                                 :type (type-sigma->type type))
+      (make-ispacevarlist+type :vars (type-sigma->params type)
+                               :type (type-sigma->body type))
     (reserr nil)))

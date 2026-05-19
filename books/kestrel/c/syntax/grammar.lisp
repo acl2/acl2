@@ -35,6 +35,7 @@
 ; (depends-on "grammar/identifiers.abnf")
 ; (depends-on "grammar/identifiers-c17.abnf")
 ; (depends-on "grammar/identifiers-c23.abnf")
+; (depends-on "grammar/identifier-lists.abnf")
 ; (depends-on "grammar/universal-character-names.abnf")
 ; (depends-on "grammar/integer-constants.abnf")
 ; (depends-on "grammar/integer-constants-c17.abnf")
@@ -47,6 +48,7 @@
 ; (depends-on "grammar/floating-constants-c17-gcc.abnf")
 ; (depends-on "grammar/floating-constants-c23-gcc.abnf")
 ; (depends-on "grammar/enumeration-constants.abnf")
+; (depends-on "grammar/encoding-prefixes.abnf")
 ; (depends-on "grammar/character-constants.abnf")
 ; (depends-on "grammar/character-constants-c17.abnf")
 ; (depends-on "grammar/character-constants-c23.abnf")
@@ -64,6 +66,12 @@
 ; (depends-on "grammar/preprocessing-tokens-c17.abnf")
 ; (depends-on "grammar/preprocessing-tokens-c23.abnf")
 ; (depends-on "grammar/preprocessing-lexemes.abnf")
+; (depends-on "grammar/preprocessing-expressions.abnf")
+; (depends-on "grammar/preprocessing-expressions-c17.abnf")
+; (depends-on "grammar/preprocessing-expressions-c23.abnf")
+; (depends-on "grammar/preprocessing-directives.abnf")
+; (depends-on "grammar/preprocessing-directives-c17.abnf")
+; (depends-on "grammar/preprocessing-directives-c23.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -236,6 +244,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar identifier-lists "lists of identifiers")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defgrammar universal-character-names "universal character names")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -275,6 +287,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar enumeration-constants "enumeration constants")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar encoding-prefixes "encoding prefixes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -346,6 +362,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar preprocessing-expressions
+  "preprocessing expressions that are common to all the C dialects")
+
+(defgrammar preprocessing-expressions-c17
+  "preprocessing expressions that are specific to the C17 dialects")
+
+(defgrammar preprocessing-expressions-c23
+  "preprocessing expressions that are specific to the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar preprocessing-directives
+  "preprocessing directives that are common to all the C dialects")
+
+(defgrammar preprocessing-directives-c17
+  "preprocessing directives that are specific to the C17 dialects")
+
+(defgrammar preprocessing-directives-c23
+  "preprocessing directives that are specific to the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -388,6 +426,8 @@
      (c::standard-case dialect.std
                        :c17 *grammar-identifiers-c17*
                        :c23 *grammar-identifiers-c23*)
+     ;; identifier lists:
+     *grammar-identifier-lists*
      ;; universal character names:
      *grammar-universal-character-names*
      ;; integer constants:
@@ -407,6 +447,10 @@
                    (if dialect.gcc
                        *grammar-floating-constants-c23-gcc*
                      *grammar-floating-constants-c23-nogcc*)))
+     ;; enumeration constants:
+     *grammar-enumeration-constants*
+     ;; encoding prefixes:
+     *grammar-encoding-prefixes*
      ;; character-constants:
      *grammar-character-constants*
      (c::standard-case dialect.std
@@ -415,8 +459,6 @@
      (if (or dialect.gcc dialect.clang)
          *grammar-simple-escapes-ext*
        *grammar-simple-escapes-std*)
-     ;; enumeration constants:
-     *grammar-enumeration-constants*
      ;; constants:
      (c::standard-case dialect.std
                        :c17 *grammar-constants-c17*
@@ -441,6 +483,16 @@
                        :c23 *grammar-preprocessing-tokens-c23*)
      ;; preprocessing lexemes:
      *grammar-preprocessing-lexemes*
+     ;; preprocessing expressions:
+     *grammar-preprocessing-expressions*
+     (c::standard-case dialect.std
+                       :c17 *grammar-preprocessing-expressions-c17*
+                       :c23 *grammar-preprocessing-expressions-c23*)
+     ;; preprocessing directives:
+     *grammar-preprocessing-directives*
+     (c::standard-case dialect.std
+                       :c17 *grammar-preprocessing-directives-c17*
+                       :c23 *grammar-preprocessing-directives-c23*)
      ;; rest (TODO: modularize):
      *grammar-rest*))
 
@@ -453,6 +505,11 @@
   (defruled rulelist-closedp-of-grammar-for
     (abnf::rulelist-closedp (grammar-for dialect))
     :enable abnf::rulelist-closedp)
+
+  ;; The next theorem fails with the default 1000 limit.
+  ;; It is still fast (about 1.25 seconds on a fast machine),
+  ;; even with this higher limit.
+  (set-rewrite-stack-limit 2000) ; implicitly local
 
   (defruled unicode-only-grammar-for
     (abnf::rulelist-in-termset-p (grammar-for dialect)

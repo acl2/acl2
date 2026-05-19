@@ -197,7 +197,7 @@
 ;;                 (natp size1))
 ;;            (equal (trim size1 (bvdiv size2 x y))
 ;;                   (bvdiv size1 x y)))
-;;   :hints (("Goal" :in-theory (enable))))
+;;   )
 
 (defthm trim-of-bvif
   (implies (and (<= size1 size2)

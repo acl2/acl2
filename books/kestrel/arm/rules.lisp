@@ -384,3 +384,22 @@
   :hints (("Goal" :in-theory (enable addwithcarry uint))))
 
 ; (defstub foo (x y) t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; or we could make a version of acl2::getbit-identity-axe that "knows" about these function
+(defthm getbit-0-of-cmp-carry
+  (equal (getbit 0 (cmp-carry x y))
+         (cmp-carry x y)))
+
+(defthm getbit-0-of-cmp-zero
+  (equal (getbit 0 (cmp-zero x y))
+         (cmp-zero x y)))
+
+(defthm getbit-0-of-cmp-sign
+  (equal (getbit 0 (cmp-sign x y))
+         (cmp-sign x y)))
+
+(defthm getbit-0-of-cmp-overflow
+  (equal (getbit 0 (cmp-overflow x y))
+         (cmp-overflow x y)))

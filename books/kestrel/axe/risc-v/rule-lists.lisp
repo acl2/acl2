@@ -123,8 +123,6 @@
      subregion32p-of-1-arg1     ;; trying
      disjoint-regions32p-of-1-and-1 ; trying
 
-     acl2::equal-of-bvplus-constant-and-constant-alt
-     acl2::equal-of-bvplus-constant-and-constant
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1
@@ -153,7 +151,6 @@
      not-in-region32p-when-disjoint-regions32p-special
      ;; not-in-region32p-when-disjoint-regions32p-one ; looped -- why?
      ;; not-in-region32p-when-disjoint-regions32p-two
-     acl2::bvlt-of-1
      ;acl2::bvlt-of-bvplus-constant-and-constant-gen ; bad?
      bvlt-of-read-and-constant
 
@@ -348,15 +345,13 @@
      acl2::logtail-of-logext
      ;acl2::logtail-of-bvcat
      acl2::logtail-becomes-slice-bind-free-axe
-     acl2::bvcat-of-logext-arg2
-     acl2::bvcat-of-logext-arg4
+;     acl2::bvcat-of-logext-arg2
+;     acl2::bvcat-of-logext-arg4
 
      ;acl2::bvcat-of-if-arg2
      ;acl2::bvcat-of-if-arg4
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv rules
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
-
-     acl2::loghead-becomes-bvchop
 
      ubyte5-fix
      acl2::ubyte12-fix

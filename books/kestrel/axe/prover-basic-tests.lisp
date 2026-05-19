@@ -1,6 +1,6 @@
 ; Tests of the basic prover.
 ;
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,3 +36,5 @@
   (must-fail (prove-implication-with-basic-prover '((1 natp 0) (0 . x)) '((1 natp 0) (0 . y))
                                                   :rule-lists (list '(implies)) ;todo
                                                   )))
+
+;; Note that tests of prover-basic-clause-processor are in defthm-axe-basic-tests.lisp

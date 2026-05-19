@@ -443,8 +443,7 @@
 (defthm new-ad-not-equal-something-in-dom-2
   (implies (set::in xx (dom heap))
            (equal (equal xx (new-ad (dom heap)))
-                  nil))
-  :hints (("goal" :in-theory (enable))))
+                  nil)))
 
 ;label the crucial property of new-ad
 

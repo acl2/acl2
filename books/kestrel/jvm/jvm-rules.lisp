@@ -515,7 +515,7 @@
 ;;            :expand (array-refp (nth 0 ads)
 ;;                                (list numcols)
 ;;                                type heap)
-;;            :in-theory (enable))))
+;;            )))
 
 (defthm g-of-set-field-both
   (equal (G AD1 (SET-FIELD AD2 pair val heap))
@@ -1248,9 +1248,7 @@
   (implies (and (<= 2147483647 k)
                 (array-refp ref (cons dim nil) type heap))
            (not (< k (LEN (GET-FIELD ref (array-contents-pair) heap)))))
-  :hints (("Goal"
-           :expand ((ARRAY-REFP REF (LIST DIM) TYPE HEAP))
-           :in-theory (enable))))
+  :hints (("Goal" :expand ((ARRAY-REFP REF (LIST DIM) TYPE HEAP)))))
 
 ;todo: drop the (equal .. t) phrasing.
 (defthm len-of-get-field-contents-bound-other

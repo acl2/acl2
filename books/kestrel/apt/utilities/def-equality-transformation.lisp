@@ -40,14 +40,14 @@
 (include-book "names")
 (include-book "kestrel/utilities/my-get-event" :dir :system)
 (include-book "verify-guards-for-defun")
-(include-book "kestrel/utilities/system/world-queries" :dir :system)
+(include-book "std/system/get-well-founded-relation" :dir :system)
 (include-book "kestrel/utilities/defmacroq" :dir :system)
 (include-book "kestrel/utilities/maybe-unquote" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
-(include-book "kestrel/utilities/error-checking/top" :dir :system) ; for ensure-function-known-measure
+(include-book "kestrel/error-checking/ensure-function-known-measure" :dir :system)
 (include-book "kestrel/utilities/messages2" :dir :system) ;for message-string
 (include-book "kestrel/utilities/add-not-normalized-suffixes" :dir :system)
 
@@ -146,7 +146,7 @@
                                     rec
                                     function-disabled ; whether to disable the new function
                                     measure ; either :auto or an (untranslated) term
-                                    measure-hints ; either :auto or a list of hints like (("Goal" :in-theory (enable car-cons)))
+                                    measure-hints ; either nil or :auto or a list of hints like (("Goal" :in-theory (enable car-cons)))
                                     normalize
                                     state ; in general, we may need state
                                     )
@@ -155,7 +155,7 @@
                                      (defun-or-mutual-recursion-formp fn-event)
                                      (function-renamingp function-renaming)
                                      (member-eq rec '(nil :single :mutual))
-                                     (t/nil/auto-p function-disabled)
+                                     (member-eq function-disabled '(t nil :auto))
                                      ;; TODO: Guards for measure, and measure-hints
                                      (fn-definedp fn (w state))
                                      (booleanp normalize))
@@ -206,19 +206,22 @@
                             (if (not (translatable-termp measure wrld))
                                 (er hard ',apply-to-defun-name "Measure, ~x0, is not a recognized term." measure)
                               (replace-xarg-in-declares :measure measure declares)))))
-              ;; Handle the (termination) :hints xarg:
+              ;; Handle the :hints xarg (measure-hints):
               (measure-enables ',measure-enables)
               (declares (if (not rec)
-                            declares ; no termination since not recursive
+                            declares ; no termination proof since not recursive
                           ;; single or mutual recursion:
-                          (replace-xarg-in-declares
-                           :hints
-                           (if (eq :auto measure-hints)
-                               `(("Goal" :in-theory ',measure-enables
-                                         ;; ACL2 automatically replaces the old functions with the new ones in this:
-                                         :use (:instance (:termination-theorem ,fn))))
-                             measure-hints)
-                           declares)))
+                          (if (equal :none measure-hints)
+                              (remove-xarg-in-declares :hints declares)
+                            (replace-xarg-in-declares
+                              :hints
+                              (if (eq :auto measure-hints)
+                                  `(("Goal" :in-theory ',measure-enables
+                                     ;; ACL2 automatically replaces the old functions with the new ones in this:
+                                     :use (:instance (:termination-theorem ,fn))))
+                                ;; put in the explicitly supplied hints:
+                                measure-hints)
+                              declares))))
               ;; Handle the :stobjs xarg:
               (declares (set-stobjs-in-declares-to-match declares fn wrld))
               ;; Handle the :type-prescription xarg:
@@ -283,7 +286,7 @@
                                      (symbol-listp target-fns)
                                      (all-fn-definedp fns (w state))
                                      (function-renamingp function-renaming)
-                                     (t/nil/auto-p function-disabled)
+                                     (member-eq function-disabled '(t nil :auto))
                                      (symbol-alistp measure-alist)
                                      (booleanp normalize))
                          :mode :program))
@@ -297,14 +300,14 @@
                                            ,@transform-specific-arg-names
                                            fn-event function-renaming :mutual function-disabled
                                            (lookup-eq fn measure-alist)
-                                           (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                           (if firstp measure-hints :none) ; attach measure hints to only the first function
                                            normalize
                                            state)
                    ;; Just copy the function and update rec calls:
                    ;; (For copy-function only, this happens to be the same as the branch above.)
                    (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
                                            (lookup-eq fn measure-alist)
-                                           (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                           (if firstp measure-hints :none) ; attach measure hints to only the first function
                                            normalize
                                            state)))
                 ((mv new-defuns rest-info)

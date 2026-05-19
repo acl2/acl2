@@ -188,6 +188,8 @@
             x86isa::ror-spec-32
             ror-spec-64-alt-def ; x86isa::ror-spec-64
 
+            x86isa::blsi
+
             x86isa::x86-operand-to-xmm/mem
 
             x86isa::simd-add-spec-base-1 x86isa::simd-add-spec-base-2 x86isa::simd-add-spec-unroll
@@ -1225,7 +1227,12 @@
     ;;todo: not x86-specific
     acl2::integerp-of-logext
     acl2::signed-byte-p-of-logext
-    acl2::integerp-of--))
+    acl2::integerp-of--
+
+    integerp-of-tzcnt
+    natp-of-tzcnt
+    tzcnt ; these help make tzcnt amenable to SMT
+    ))
 
 ;move?
 (defund arith-to-bv-rules ()
@@ -1263,7 +1270,6 @@
     ;;            acl2::bvplus-of-logxor-arg1                     ; introduce bvxor
     ;;            acl2::bvxor-of-logxor-arg2                      ; introduce bvxor
 
-    acl2::loghead-becomes-bvchop
     ;;acl2::bvchop-of-lognot-becomes-bvnot ; now handled by convert-to-bv machinery
     ;;acl2::bvchop-of-logand-becomes-bvand ; now handled by convert-to-bv machinery
     ;;acl2::bvchop-of-logior-becomes-bvor
@@ -2286,7 +2292,6 @@
 
 ;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
-;; todo: should this include core-rules-bv (see below)?
 (defund lifter-rules-common ()
   (declare (xargs :guard t))
   (append (read-over-write-rules-common) ; todo: don't use all these?
@@ -3616,7 +3621,8 @@
     bvchop-of-decrement-esp-hack
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
-    slice-63-32-of-+-of-esp-when-stack-segment-assumptions32
+    slice-63-32-of-+-of-esp-when-stack-segment-assumptions32 ; drop since we have the rule just below?
+    slice-63-32-of-bvplus-64-of-esp-when-stack-segment-assumptions32
     bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop ; todo: involved in loops!
     ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound
@@ -5847,7 +5853,6 @@
     ;;rflagsbits->af-of-myif
     ;;rflagsbits->af-of-if
 
-    ;; acl2::equal-of-constant-and-bvuminus
     ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
     ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
     ;; acl2::bvif-of-myif-arg3 ; introduces bvif
@@ -5900,8 +5905,6 @@
     acl2::slice-of-bvand-of-constant
     ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
     acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
-    acl2::equal-of-bvplus-constant-and-constant
-    acl2::equal-of-bvplus-constant-and-constant-alt
     ;; acl2::getbit-of-lognot ; now handled by convert-to-bv machinery
     acl2::bvif-of-if-constants-nil-nonnil
     acl2::bvif-of-if-constants-nonnil-nil
@@ -6291,8 +6294,6 @@
      ;; read-when-program-at-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
-     acl2::equal-of-bvplus-constant-and-constant
-     acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::mod-of-+-of-constant
      xr-of-if
 

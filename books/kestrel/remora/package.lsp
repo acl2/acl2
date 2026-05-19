@@ -22,27 +22,53 @@
                                        check-type
                                        function
                                        functionp
+                                       prog
                                        sort
                                        termp
                                        type
-                                       typep))
-                  '(bool
+                                       typep
+                                       value
+                                       values))
+                  '(all-equalp
+                    bool
+                    change-string-string-map-quadruple
                     defmacro+
                     defxdoc+
+                    enable*
+                    impossible
                     int
                     lnfix
+                    make-string-string-map-pair
+                    make-string-string-map-quadruple
                     nat
                     nat-list
                     nat-list-fix
+                    nat-list-resultp
+                    nat-list-listp
+                    nat-list-list-resultp
+                    nats=>string
                     prefixp
+                    str-fix
+                    string=>nats
                     string-setp
-                    string-string-map
                     string-string-mapp
                     string-string-map-fix
+                    string-string-map-pair
+                    string-string-map-pair-resultp
+                    string-string-map-quadruple
+                    string-string-map-quadruple-resultp
+                    fty::ok
+                    fty::okf
                     fty::patbind-ok
+                    fty::patbind-okf
                     fty::reserr
                     fty::reserrf
                     fty::reserrf-push
                     fty::reserrp
+                    std::define-sk
                     std::defret-mutual
+                    std::defval
+                    str::dec-digit-char-list
+                    str::hex-digit-char-list
+                    str::oct-digit-char-list
                     str::string-list)))

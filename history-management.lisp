@@ -1944,6 +1944,102 @@
                   (f-get-global 'inhibit-output-lst state))
        (= (car (get-timer 'proof-tree-time state)) 0)))
 
+#+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+(defparameter *pass2-def-time-info*
+
+; NOTE: Similar statistics-gathering code may be found for feature
+; :acl2-rewrite-meter.  If we are tempted to add a third such block of
+; statistics-gathering code, it might be good instead to add them all in a
+; uniform manner rather than having a distinct statistics-gathering mechanism
+; for each.
+
+; This mechanism is somewhat analogous to the one conditioned on
+; #+acl2-rewrite-meter, but here it is for recording the total time spent
+; evaluating top-level definitions (of functions, macros, and constants) in raw
+; Lisp during pass 2 of certify-book.  (Technical minor deviation: For defconst
+; we time defconst-val, which is essentiall timing simple-translate-and-eval.)
+; When we certify a book after building ACL2 with acl2-pass2-def-time-info
+; added to *features* (see file acl2.lisp), we write to standard output a line
+; with a four-tuple, of the form
+
+; (f1 f2 f3 b) ; @@DTIME@@
+
+; where b is the full-book-name for the book being certified and f1, f2, and f3
+; are floating-point numbers with four digits after the decimal point, as
+; follows: f1 is a percentage (f2/f3)*100, where f2 is the definitional pass2
+; time recorded as described above and f3 is the total certification time.
+; We can then collect all those stats into a single file as follows.
+
+; First, execute the following Unix command, in the acl2-sources directory:
+
+;   fgrep -h --include='*.out*' -r '@@DTIME@@' books > pass2-def-stats.lsp
+
+; Then start ACL2 in the main ACL2 directory and evaluate the following forms,
+; to create file pass2-def-report.txt, which should be self-explanatory.
+
+;   (value :q) ; drop into raw Lisp
+;   (load "books/system/report-timings.lsp")
+;   (report-timings "pass2-def-stats.lsp" "pass2-def-report.txt")
+
+; By default, the tuples from pass2-def-stats.lsp are written to
+; pass2-def-report.txt in increasing order based on the lexicographic order of
+; the values in positions 0, 1, and 2 of each tuple.  That default can be made
+; explicit with an optional argument specifying that lexicographic order:
+
+;   (report-timings "pass2-def-stats.lsp" "pass2-def-report.txt" '(0 1 2))
+
+; If you want a different order, just permute the list (0 1 2).  For example,
+; argument '(2 1 0) specifies that the order is based first on the value in
+; position 2, then position 1, and then position 0.
+
+; More on the implementation's use of *pass2-def-time-info*:
+
+; This variable's value is either nil or a vector #(v0 v1 v2), where:
+; - v0 is nil initially, but is a natural number when in the include-book pass
+;   of certify-book, representing the total time spent evaluating or compiling
+;   definitions;
+; - v1 is the full-book-name for the book under certification;
+; - v2 records the total time spent in the current certify-book.
+
+; A tags-search for pass2-def-time will show how *pass2-def-time-info* is
+; updated.  In summary: it is nil globally and bound to #(nil nil nil) upon
+; entry to certify-book-fn, and its first component is set to 0 early in
+; certify-book-step-3+ so that times can be accumulated into it during the
+; include-book pass of certify-book.  However, early in include-book-fn1 it is
+; bound to nil unless include-book is being performed on behalf of
+; certify-book, so that subsidiary include-books during that include-book pass
+; do not contribute to the time accumulated into the first element of
+; *pass2-def-time-info*.  Otherwise, that binding of *pass2-def-time-info* in
+; include-book-fn1 is to itself, which is really a no-op since updates to
+; components of that variable are destructive.
+
+  nil)
+
+(defmacro incf-pass2-def-time? (form &optional multiple-values-p)
+
+; Form should return a single value.  If we need this macro to be applied when
+; form returns multiple values, we should replace prog1 below by
+; multiple-value-prog1.
+
+  #+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+  (let ((time (gensym)))
+    `(cond ((and *pass2-def-time-info*
+                 (svref *pass2-def-time-info* 0))
+            (let ((,time (get-internal-time)))
+              (,(if multiple-values-p 'our-multiple-value-prog1 'prog1)
+               ,form
+                (let ((,time (- (get-internal-time) ,time)))
+                  (with-debug (incf (svref *pass2-def-time-info* 0)
+                                    ,time)
+                              "Incrementing by ~s~%"
+                              (float (/ ,time
+                                        internal-time-units-per-second)))))))
+           (t ,form)))
+  #-(and (not acl2-loop-only) acl2-pass2-def-time-info)
+  (declare (ignore multiple-values-p))
+  #-(and (not acl2-loop-only) acl2-pass2-def-time-info)
+  form)
+
 (defun print-time-summary (state)
 
 ; Print the time line, e.g.,
@@ -1984,6 +2080,9 @@
                                       (car (get-timer 'proof-tree-time
                                                       state))))
                 (other-time (car (get-timer 'other-time state))))
+            #+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+            (when *pass2-def-time-info*
+              (setf (svref *pass2-def-time-info* 2) total-time))
             (io? summary nil state
                  (total-time prove-time print-time proof-tree-time other-time)
                  (let ((channel (proofs-co state)))
@@ -3044,7 +3143,7 @@
                            (f-get-global 'connected-book-directory state)
                            (cdr ctx)
                            state))
-                (filename (concatenate 'string bookname ".lisp")))
+                (filename (concatenate 'string bookname ".rstats")))
            (with-open-file
              (str filename
                   :direction :output
@@ -3195,7 +3294,28 @@
                         #+acl2-par
                         (erase-acl2p-checkpoints-for-summary state)
                         state)))
-              (f-put-global 'proof-tree nil state)))))
+              (f-put-global 'proof-tree nil state)
+              #+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+              (progn
+                (when (and (eq (car ctx) 'certify-book)
+                           *pass2-def-time-info* ; always true?
+; The following can be false when certify-book fails quickly.
+                           (natp (svref *pass2-def-time-info* 0))
+; The following has been nil for run-script books.
+                           (svref *pass2-def-time-info* 2))
+                  (let ((*print-pretty* nil) ; avoid line breaks
+                        (def-time (/ (svref *pass2-def-time-info* 0)
+                                     internal-time-units-per-second))
+                        (total-time (svref *pass2-def-time-info* 2)))
+                    (format (get-output-stream-from-channel (proofs-co state))
+                            "(~,4f ~,4f ~,4f ~s) ; @@DTIME@@~%"
+                            (float (if (= total-time 0.0)
+                                       0.0 ; fair enough, avoiding div by 0
+                                     (* 100 (/ def-time total-time))))
+                            (float def-time)
+                            (float total-time)
+                            (svref *pass2-def-time-info* 1))))
+                state)))))
          (if make-event-save-event-data-p
 
 ; One could argue that it is inefficient to make the calls of put-event-data

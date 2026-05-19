@@ -495,7 +495,6 @@
     repeatbit-of-if-becomes-repeatbit-of-bvif-arg2))
 
 ;; These are needed only when operations like logxor or + may appear
-;; Used in the x86/ dir.
 (defun convert-to-bv-rules ()
   (declare (xargs :guard t))
   '(bvchop-convert-arg2-to-bv-axe
@@ -536,7 +535,7 @@
     bvmod-convert-arg3-to-bv-axe
     ;bvcat-convert-arg2-to-bv-axe ; todo: these seemed to cause problems
     ;bvcat-convert-arg4-to-bv-axe ; todo: more!
-    ;slice-convert-arg3-to-bv-axe caused-problems with increments to RSP
+    slice-convert-arg3-to-bv-axe ; trying, but this caused-problems with increments to RSP
     ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
     bvsx-convert-arg3-to-bv-axe
 
@@ -567,7 +566,8 @@
     logbitp-to-getbit-equal-1 ;rename
 
     bitp-becomes-unsigned-byte-p ; since our rules use unsigned-byte-p
-    ))
+
+    loghead-becomes-bvchop))
 
 ;; TODO: Consider also the analogous rules about getbit?
 (defun bv-function-of-bvchop-rules ()
@@ -814,8 +814,8 @@
      ;; bvplus-of-0-arg3 ; in case we are not commuting constants forward ; todo: enable
      bvplus-of-ifix-arg2
      bvplus-of-ifix-arg3
-     equal-of-bvplus-constant-and-constant
-     equal-of-bvplus-constant-and-constant-alt
+     equal-of-constant-and-bvplus-of-constant
+     equal-of-bvplus-of-constant-and-constant
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
@@ -865,6 +865,9 @@
      bitnot-of-ifix
      equal-of-0-and-bitnot
      equal-of-1-and-bitnot
+
+     bitnot-of-bitxor-of-1
+     bitxor-of-1-and-bitnot
 
      bvand-of-myif-arg1
      bvand-of-myif-arg2
@@ -1017,6 +1020,7 @@
      bvif-of-getbit-arg3
      bvif-of-getbit-arg4
 
+     bvlt-of-1
      not-bvlt-self
      bvlt-of-ifix-arg2
      bvlt-of-ifix-arg3
@@ -1145,6 +1149,8 @@
      ;;bvif-trim-constant-arg2
 
      bvuminus-of-bvuminus
+     equal-of-bvuminus-and-constant
+     equal-of-constant-and-bvuminus
 
      bvlt-of-bvif-arg2-safe
      bvlt-of-bvif-arg3-safe
@@ -1796,6 +1802,7 @@
     bvchop-list-of-bvchop-list))
 
 ;; are these all for when the logext is too big?
+;; todo: can we rely on the convert-to-bv-rules instead (make sure those are always included)?
 (defun bv-of-logext-rules ()
   (declare (xargs :guard t))
   '(bvplus-of-logext-arg2
@@ -2335,8 +2342,6 @@
     bvlt-of-bvmult-6-5-20-alt
     bvlt-trim-arg1-axe-all ; drop?
     bvlt-trim-arg2-axe-all ; drop?
-    equal-of-bvplus-constant-and-constant
-    equal-of-bvplus-constant-and-constant-alt
     bvlt-of-bvplus-of-bvcat-of-slice-sha1
     bvlt-of-bvif-same-1
     unsigned-byte-p-of-bvplus-of-1-sha1 ;would it fire with a free var for the 31?
@@ -3120,7 +3125,8 @@
           (bvchop-list-rules)
           (lookup-rules) ;Sat Dec 25 23:52:09 2010
           (list-rules)
-          (logext-rules) ;move to parent?
+          (convert-to-bv-rules)
+          (logext-rules) ;move to parent? ; drop?
           (list-rules3)
           (alist-rules)
           (update-nth2-rules) ;since below we have rules to introduce update-nth2
@@ -3517,7 +3523,6 @@
              commutativity-2-of-+-when-constant
              rationalp-of--
              rationalp-+
-             bvlt-of-1
              max
              bvchop-of-times-of-/-32
              integerp-of-1-times-1/32

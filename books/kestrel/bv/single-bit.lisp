@@ -59,12 +59,12 @@
            :in-theory (e/d (;bitxor
                             ) (bvxor-1-becomes-bitxor)))))
 
-;; for when we are not just choosing a the normal form (either (bitnot x) or (bitxor 1 x)).
+;; for when we are not enforcing a normal form (either (bitnot x) or (bitxor 1 x)).
 (defthm bitnot-of-bitxor-of-1
   (equal (bitnot (bitxor 1 x))
          (getbit 0 x)))
 
-;; for when we are not just choosing a the normal form (either (bitnot x) or (bitxor 1 x)).
+;; for when we are not enforcing a normal form (either (bitnot x) or (bitxor 1 x)).
 (defthm bitxor-of-1-and-bitnot
   (equal (bitxor 1 (bitnot x))
          (getbit 0 x)))

@@ -1,7 +1,7 @@
 ; Merging a DAG into another
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -80,13 +80,13 @@
            (max-nodes-needed (+ dag1-len dag2-len)) ;fixme allow some slack space?
            (new-size (min *max-1d-array-length* max-nodes-needed))
            ;; make dag2 into an array:
-           (dag-array (make-into-array-with-len 'dag-array dag2 new-size))
+           (dag-array (alist-to-array1-with-len 'dag-array dag2 new-size))
            ;; make aux structures for dag2:
            ((mv dag-parent-array dag-constant-alist dag-variable-alist)
             (make-dag-indices 'dag-array dag-array 'dag-parent-array dag2-len))
            ;;now merge in the nodes from dag1:
            (rev-dag1 (reverse dag1))
-           (renaming-array (make-empty-array 'renaming-array dag1-len)) ;will rename nodes in dag1 to nodes in the merged dag
+           (renaming-array (new-array1 'renaming-array dag1-len)) ;will rename nodes in dag1 to nodes in the merged dag
            ((mv erp renaming-array dag-array dag-len & & & ;dag-parent-array dag-constant-alist dag-variable-alist ;todo: return these things?
                 )
               ;todo: the checks here on whether the array needs to be expanded will always fail:
@@ -199,8 +199,8 @@
 ;;          (larger-dag (if (< dag1-len dag2-len) dag2 dag1))
 ;;          (larger-dag-len (max dag1-len dag2-len)) ;just do len of larger-dag?
 ;;          (smaller-dag-len (min dag1-len dag2-len)) ;just do len of smaller-dag?
-;;          (dag-array (make-empty-array 'dag-array max-nodes-needed))
-;;          (dag-parent-array (make-empty-array 'dag-parent-array max-nodes-needed))
+;;          (dag-array (new-array1 'dag-array max-nodes-needed))
+;;          (dag-parent-array (new-array1 'dag-parent-array max-nodes-needed))
 ;;          (dag-constant-alist (empty-alist))
 ;;          (dag-variable-alist (empty-alist)))
 ;;     (mv-let (dag-array dag-parent-array dag-constant-alist dag-variable-alist) ;we know what the dag-len will be
@@ -212,7 +212,7 @@
 ;;                                     dag-variable-alist)
 ;;             (let* (;;then merge in the smaller dag:
 ;;                    (rev-smaller-dag (reverse smaller-dag))
-;;                    (renaming-array (make-empty-array 'renaming-array smaller-dag-len)) ;will rename nodes in the smaller dag to nodes in the merged dag
+;;                    (renaming-array (new-array1 'renaming-array smaller-dag-len)) ;will rename nodes in the smaller dag to nodes in the merged dag
 ;;                    )
 ;;               (mv-let (renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                       (merge-nodes-into-dag-array rev-smaller-dag

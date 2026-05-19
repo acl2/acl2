@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax-structural-operations")
 
+(include-book "kestrel/fty/deffold-reduce" :dir :system)
+
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (acl2::controlled-configuration)
@@ -27,11 +29,11 @@
     "The static semantics of Remora involves
      the equivalence of ispaces used in types,
      which in turn determines the equivalence of types.
-     Currently ispace equivalence in Remora is decidable,
-     but the language may evolve towards undecidability.")
+     If we restrict dimensions to not use multiplication and subtraction,
+     but only addition, then ispace equivalence in Remora is decidable,
+     as described in [thesis].")
    (xdoc::p
-    "The current (decidable) equivalence of ispaces
-     is described in [arxiv] and [thesis],
+    "[thesis] describes the decidable equivalence of ispaces
      in terms of normalization of ispaces:
      two ispaces are equivalent iff they normalize to the same ispace.
      We plan to formalize this notion at a higher level,
@@ -40,9 +42,57 @@
      We start by defining high-level executable code
      to normalize ispaces,
      and then define ispace equivalence based on that.
-     We plan to verify the correctness of this normalization code."))
+     We plan to verify the correctness of this normalization code.")
+   (xdoc::p
+    "We also plan to formalize a more general notion of equivalence,
+     also involving multiplication and subtraction of dimensions,
+     without necessarily requiring decidability.
+     Indeed, Remora was planned to evolve towards undecidability,
+     in order to capture stronger constraints via types."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce addp
+  :short "Check if a dimension or shape or ispace or a list thereof
+          only contains addition, no multiplication or subtraction."
+  :types (dims
+          shapes
+          ispace
+          ispace-list)
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((dim :mul nil)
+   (dim :sub nil))
+  :name ispaces-addp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection addp-additional-theorems
+  :short "Theorems about the @(see ispaces-addp) functions."
+
+  (defruled dim-kind-not-mul-when-dim-addp
+    (implies (dim-addp dim)
+             (not (equal (dim-kind dim) :mul)))
+    :rule-classes :forward-chaining
+    :enable dim-addp)
+
+  (defruled dim-kind-not-sub-when-dim-addp
+    (implies (dim-addp dim)
+             (not (equal (dim-kind dim) :sub)))
+    :rule-classes :forward-chaining
+    :enable dim-addp)
+
+  (add-to-ruleset ispaces-addp-rules
+                  '(dim-kind-not-mul-when-dim-addp
+                    dim-kind-not-sub-when-dim-addp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (enable* ispaces-addp-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,6 +154,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (define flatten-add-in-dim ((dim dimp))
+    :guard (dim-addp dim)
     :returns (new-dim dimp)
     :parents (ispace-equivalence flatten-add-in-dims)
     :short "Flatten all the nested additions in a dimension."
@@ -124,12 +175,15 @@
      dim
      :var (dim-var dim.name)
      :const (dim-const dim.value)
-     :add (dim-add (flatten-add-in-dim-list dim.dims t)))
+     :add (dim-add (flatten-add-in-dim-list dim.dims t))
+     :mul (prog2$ (impossible) (dim-var "irrelevant"))
+     :sub (prog2$ (impossible) (dim-var "irrelevant")))
     :measure (dim-count dim))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define flatten-add-in-dim-list ((dims dim-listp) (addp booleanp))
+    :guard (dim-list-addp dims)
     :returns (new-dims dim-listp)
     :parents (ispace-equivalence flatten-add-in-dims)
     :short "Flatten all the nested additions in a list of dimensions,
@@ -158,7 +212,19 @@
 
   ///
 
-  (fty::deffixequiv-mutual flatten-add-in-dims))
+  (fty::deffixequiv-mutual flatten-add-in-dims)
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual dim-addp-of-flatten-add-in-dims
+    (defret dim-addp-of-flatten-add-in-dim
+      (dim-addp new-dim)
+      :hyp (dim-addp dim)
+      :fn flatten-add-in-dim)
+    (defret dim-list-addp-of-flatten-add-in-dim-list
+      (dim-list-addp new-dims)
+      :hyp (dim-list-addp dims)
+      :fn flatten-add-in-dim-list)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -212,6 +278,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-add-in-dim ((dim dimp))
+  :guard (dim-addp dim)
   :returns (new-dim dimp)
   :short "Normalize additions in a dimension."
   :long
@@ -230,11 +297,14 @@
    :add (b* ((dims (normalize-add-dims dim.dims))
              ((when (endp dims)) (dim-const 0)) ; no dimensions
              ((when (endp (cdr dims))) (car dims))) ; one dimension
-          (dim-add dims)))) ; two or more dimensions
+          (dim-add dims)) ; two or more dimensions
+   :mul (prog2$ (impossible) (dim-var "irrelevant"))
+   :sub (prog2$ (impossible) (dim-var "irrelevant"))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-add-in-dim-list ((dims dim-listp))
+  :guard (dim-list-addp dims)
   :returns (new-dims dim-listp)
   :short "Normalize additions in a list of dimensions."
   (cond ((endp dims) nil)
@@ -244,6 +314,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-dim ((dim dimp))
+  :guard (dim-addp dim)
   :returns (new-dim dimp)
   :short "Normalize a dimension."
   :long
@@ -255,6 +326,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-dim-list ((dims dim-listp))
+  :guard (dim-list-addp dims)
   :returns (new-dims dim-listp)
   :short "Normalize a list of dimensions."
   (cond ((endp dims) nil)
@@ -269,6 +341,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (define normalize-dims-in-shape ((shape shapep))
+    :guard (shape-addp shape)
     :returns (new-shape shapep)
     :parents (ispace-equivalence normalize-dims-in-shapes)
     :short "Normalize dimensions in a shape."
@@ -284,6 +357,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (define normalize-dims-in-shape-list ((shapes shape-listp))
+    :guard (shape-list-addp shapes)
     :returns (new-shapes shape-listp)
     :parents (ispace-equivalence normalize-dims-in-shapes)
     :short "Normalize dimensions in a list of shapes."
@@ -433,6 +507,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-shape ((shape shapep))
+  :guard (shape-addp shape)
   :returns (new-shape shapep)
   :short "Normalize a shape."
   :long
@@ -454,6 +529,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the case iff they normalize to the same shape."))
-  (equal (normalize-shape shape1)
-         (normalize-shape shape2)))
+    "This is the case iff they only use addition
+     and they normalize to the same shape."))
+  (and (shape-addp shape1)
+       (shape-addp shape2)
+       (equal (normalize-shape shape1)
+              (normalize-shape shape2))))

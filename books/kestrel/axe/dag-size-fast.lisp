@@ -1,7 +1,7 @@
 ; More tools to compute DAG sizes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -132,7 +132,7 @@
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (< (top-nodenum-of-dag dag) *max-1d-array-length*))))
   (make-size-array-for-rev-dag-aux (reverse-list dag)
-                                   (make-empty-array 'size-array (+ 1 (top-nodenum-of-dag dag)))))
+                                   (new-array1 'size-array (+ 1 (top-nodenum-of-dag dag)))))
 
 (local
   (defthm size-arrayp-of-make-size-array-for-dag

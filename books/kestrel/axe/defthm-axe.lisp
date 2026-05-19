@@ -19,6 +19,8 @@
 (include-book "prover")
 
 ;; Returns an event.
+;; Attemtps to prove Goal using axe-prover-clause-processor with the supplied options.
+;; TODO: Make a version that only uses the clause-processor when stable.
 (defun defthm-axe-fn (name term rules rule-lists remove-rules counterexample monitor rule-classes print state)
   (declare (xargs :guard (and (rule-item-listp rules)
                               (rule-item-list-listp rule-lists)

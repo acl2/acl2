@@ -482,9 +482,8 @@
 ;;                          (bvchop n x))
 ;;                  (bvchop n x)))
 ;;  :hints (("Goal" :in-theory (e/d (logeqv logorc1 ;lognot-of-logior-back
-;;                                           lognot-of-logand
-;;                                          ) (
-;;                                             lognot-of-logior)))))
+;;                                           lognot-of-logand)
+;;                                  (lognot-of-logior)))))
 
 ;does trim apply to repeatbit?
 
@@ -1219,7 +1218,7 @@
 ;;                 )
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size (bvchop size x) y)))
-;;   :hints (("Goal" :in-theory (enable))))
+;;   )
 
 ;(local (in-theory (disable jvm::int-lemma0))) ;could make a cheap version with a free var
 
@@ -1533,11 +1532,9 @@
 ;;                                            LIST::UPDATE-NTH-EQUAL-REWRITE
 ;;                                            LIST::NTH-OF-CONS
 ;;                                            bv-array-clear)
-;;                            (
-;;                             EQUAL-CONS-CASES2-ALT-BETTER ;new
+;;                            (EQUAL-CONS-CASES2-ALT-BETTER ;new
 ;;                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-;;                             BVCHOP-LIST-OF-TAKE
-;;                             )))))
+;;                             BVCHOP-LIST-OF-TAKE)))))
 
 (defthm bv-array-write-equal-rewrite-alt
   (implies (and (natp esize)

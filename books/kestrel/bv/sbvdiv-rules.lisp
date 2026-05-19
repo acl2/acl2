@@ -1,7 +1,7 @@
 ; Rules about sbvdiv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -130,7 +130,7 @@
                                    sbvlt
                                    bvchop-identity
                                    truncate-becomes-floor
-                                   ) ( ;UNSIGNED-BYTE-P-RESOLVER
+                                   ) (;UNSIGNED-BYTE-P-RESOLVER
                                    ;<-Y-*-Y-X
                                    ;MOD-BOUNDED-BY-MODULUS
                                    my-FLOOR-upper-BOUND
@@ -160,7 +160,7 @@
            :in-theory (e/d (sbvdiv bvdiv logapp bvuminus bvminus sbvlt
                                    bvchop-reduce-when-top-bit-known
                                    truncate-becomes-floor-gen)
-                           ( floor-of-minus-and-minus
+                           (floor-of-minus-and-minus
                              ;floor-minus
                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                              ;<-Y-*-Y-X
@@ -256,7 +256,7 @@
                                    bvchop-reduce-when-top-bit-known
                                    truncate-becomes-floor-other
                                    FLOOR-MINUS-ARG2-lemma)
-                           ( floor-of-minus-and-minus
+                           (floor-of-minus-and-minus
                              FLOOR-OF---ARG1
                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                              my-FLOOR-upper-BOUND
@@ -321,7 +321,7 @@
                             bvchop-of-sum-cases
                             ;BVCHOP-WHEN-TOP-BIT-0-WIDEN ; in rules.lisp
                             )
-                           ( ;BVCHOP-IDENTITY
+                           (;BVCHOP-IDENTITY
                             ;;todo: clean these up:
                             BVCHOP-TIMES-CANCEL-BETTER-ALT
                             BVCHOP-TIMES-CANCEL-BETTER

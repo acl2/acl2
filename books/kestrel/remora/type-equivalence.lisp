@@ -12,6 +12,9 @@
 
 (include-book "abstract-syntax-variable-operations")
 (include-book "ispace-equivalence")
+(include-book "fresh-variables")
+
+(include-book "kestrel/fty/string-string-map-quadruple-result" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
@@ -21,7 +24,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable stringstringmap-pairp-when-result-not-error)))
+(local
+ (in-theory (enable acl2::string-string-map-quadruplep-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,137 +36,214 @@
   (xdoc::topstring
    (xdoc::p
     "The static semantics of Remora involves
-     the equivalence of types.
-     Currently type equivalence in Remora is decidable,
-     but the language may evolve towards undecidability.")
+     the equivalence of types, which involves the equivalence of ispaces.
+     The latter is discussed in @(see ispace-equivalence).")
    (xdoc::p
-    "The current (decidable) equivalence of types
-     is described in [arxiv] and [thesis],
-     in terms of inference rules
-     that involve the semantic equivalence of ispaces;
-     the latter is defined in terms of normalization
-     (see @(see ispace-equivalence)).
-     We plan to formalize type equivalence,
-     both at a high level and as executable code.
-     For now we provide something that is mostly a placeholder."))
+    "Like for ispace equivalence,
+     we plan to define a high-level notion of type equivalence
+     that accommodates undecidability.
+     But we start with an executable version
+     that has the same restriction as decidable ispace equivalence,
+     namely that dimension arithmetic is confined to addition only."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-ispace-param-renaming ((params1 ispace-param-listp)
-                                     (params2 ispace-param-listp))
-  :returns (dim-and-shape-maps stringstringmap-pair-resultp)
-  :short "Check if two lists of ispace parameters match in number and sorts,
-          and if so return maps between the dimension and shape variables."
-  (b* (((when (endp params1))
-        (if (endp params2)
-            (make-stringstringmap-pair :1st nil :2nd nil)
+(define fresh-ispace-var-renaming ((vars1 ispace-var-listp)
+                                   (vars2 ispace-var-listp)
+                                   (used ispace-var-setp))
+  :returns (renams string-string-map-quadruple-resultp)
+  :short "Generate fresh variable renamings for two lists of ispace variables,
+          ensuring that the two lists match in number and sorts."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when encountering two product or sum type,
+     which need to be checked for equivalence.
+     As in the rules in Figure 4.9 of [thesis],
+     we need to rename the bound variables in the bodies of both types
+     to use the same fresh names,
+     so that we can proceed to check the equivalence of the bodies.
+     The @('used') variable set passed to this function
+     is the one of the variables to avoid;
+     it is suitably set by the callers.")
+   (xdoc::p
+    "If successful, this function returns four renaming maps:
+     one for the dimension variables in @('vars1'),
+     one for the shape variables in @('vars1'),
+     one for the dimension variables in @('vars2'), and
+     one for the shape variables in @('vars');
+     in that order.
+     While [thesis] only shows two renamings,
+     one for @($x\\ldots$) (our @('vars1')) and
+     one for @($x'\\ldots$) (our @('vars')),
+     we split each into two, for dimension and shape variables,
+     which are distinct in our formalization.")
+   (xdoc::p
+    "As we generate each fresh variable,
+     we add it to the set of the variables to avoid."))
+  (b* (((when (endp vars1))
+        (if (endp vars2)
+            (make-string-string-map-quadruple :1st nil :2nd nil :3rd nil :4th nil)
           (reserr nil)))
-       ((when (endp params2)) (reserr nil))
-       ((ok (stringstringmap-pair maps))
-        (check-ispace-param-renaming (cdr params1) (cdr params2)))
-       (param1 (car params1))
-       (param2 (car params2)))
-    (ispace-param-case
-     param1
-     :dim (ispace-param-case
-           param2
-           :dim (make-stringstringmap-pair
-                 :1st (omap::update param1.name param2.name maps.1st)
-                 :2nd maps.2nd)
+       ((when (endp vars2)) (reserr nil))
+       (var1 (car vars1))
+       (var2 (car vars2))
+       (used (ispace-var-set-fix used)))
+    (ispace-var-case
+     var1
+     :dim (ispace-var-case
+           var2
+           :dim (b* (((ispace-var-dim var) (fresh-dim-ispace-var used))
+                     ((ok (string-string-map-quadruple maps))
+                      (fresh-ispace-var-renaming (cdr vars1)
+                                                 (cdr vars2)
+                                                 (set::insert var used))))
+                  (change-string-string-map-quadruple
+                   maps
+                   :1st (omap::update var1.name var.name maps.1st)
+                   :3rd (omap::update var2.name var.name maps.3rd)))
            :shape (reserr nil))
-     :shape (ispace-param-case
-             param2
+     :shape (ispace-var-case
+             var2
              :dim (reserr nil)
-             :shape (make-stringstringmap-pair
-                     :1st maps.1st
-                     :2nd (omap::update param1.name param2.name maps.2nd)))))
+             :shape (b* (((ispace-var-shape var) (fresh-shape-ispace-var used))
+                         ((ok (string-string-map-quadruple maps))
+                          (fresh-ispace-var-renaming (cdr vars1)
+                                                     (cdr vars2)
+                                                     (set::insert var used))))
+                      (change-string-string-map-quadruple
+                       maps
+                       :2nd (omap::update var1.name var.name maps.2nd)
+                       :4th (omap::update var2.name var.name maps.4th))))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fresh-type-var-renaming ((vars1 type-var-listp)
+                                 (vars2 type-var-listp)
+                                 (used type-var-setp))
+  :returns (renams string-string-map-quadruple-resultp)
+  :short "Generate fresh variable renamings for two lists of type variables,
+          ensuring that the two lists match in number and sorts."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when encountering two product or sum type,
+     which need to be checked for equivalence.
+     As in the rules in Figure 4.9 of [thesis],
+     we need to rename the bound variables in the bodies of both types
+     to use the same fresh names,
+     so that we can proceed to check the equivalence of the bodies.
+     The @('used') variable set passed to this function
+     is the one of the variables to avoid;
+     it is suitably set by the callers.")
+   (xdoc::p
+    "If successful, this function returns four renaming maps:
+     one for the atom variables in @('vars1'),
+     one for the array variables in @('vars1'),
+     one for the atom variables in @('vars2'), and
+     one for the array variables in @('vars');
+     in that order.
+     While [thesis] only shows two renamings,
+     one for @($x\\ldots$) (our @('vars1')) and
+     one for @($x'\\ldots$) (our @('vars')),
+     we split each into two, for atom and array variables,
+     which are distinct in our formalization.")
+   (xdoc::p
+    "As we generate each fresh variable,
+     we add it to the set of the variables to avoid."))
+  (b* (((when (endp vars1))
+        (if (endp vars2)
+            (make-string-string-map-quadruple :1st nil :2nd nil :3rd nil :4th nil)
+          (reserr nil)))
+       ((when (endp vars2)) (reserr nil))
+       (var1 (car vars1))
+       (var2 (car vars2))
+       (used (type-var-set-fix used)))
+    (type-var-case
+     var1
+     :atom (type-var-case
+            var2
+            :atom (b* (((type-var-atom var) (fresh-atom-type-var used))
+                       ((ok (string-string-map-quadruple maps))
+                        (fresh-type-var-renaming (cdr vars1)
+                                                 (cdr vars2)
+                                                 (set::insert var used))))
+                    (change-string-string-map-quadruple
+                     maps
+                     :1st (omap::update var1.name var.name maps.1st)
+                     :3rd (omap::update var2.name var.name maps.3rd)))
+            :array (reserr nil))
+     :array (type-var-case
+             var2
+             :atom (reserr nil)
+             :array (b* (((type-var-array var) (fresh-array-type-var used))
+                         ((ok (string-string-map-quadruple maps))
+                          (fresh-type-var-renaming (cdr vars1)
+                                                   (cdr vars2)
+                                                   (set::insert var used))))
+                      (change-string-string-map-quadruple
+                       maps
+                       :2nd (omap::update var1.name var.name maps.2nd)
+                       :4th (omap::update var2.name var.name maps.4th))))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines types-renamep
-  :short "Check if two types or lists or types are the same modulo renaming."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "There are three independent renamings:
-     one for dimension variables,
-     one for shape variables,
-     and one for type variables.
-     These are modeled as maps from strings to strings,
-     which should be injective
-     in well-formed types according to inference rules;
-     we may explicate injectivity as guards and invariants at some point.
-     The three renaming maps contain all the variables in scope;
-     we should explicate this invariant at some point;
-     some variables may be associated to themselves (i.e. not renamed)
-     in the renaming maps."))
+(defines types-equivp
+  :short "Check if two types or lists of types are equivalent."
 
-  (define type-renamep ((type1 typep)
-                        (type2 typep)
-                        (dim-renaming string-string-mapp)
-                        (shape-renaming string-string-mapp)
-                        (type-renaming string-string-mapp))
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define type-equivp ((type1 typep) (type2 typep))
     :returns (yes/no booleanp)
-    :parents (type-equivalence types-renamep)
-    :short "Check if two types are the same modulo renaming."
+    :parents (type-equivalence types-equivp)
+    :short "Check if two types are equivalent."
     :long
     (xdoc::topstring
      (xdoc::p
-      "The two types must be in the same fixtype summand:
-       two variables, or two base types, etc.")
+      "The two types must be in the same fixtype summand
+       (two variables, or two base types, etc.),
+       except that one may be an array type and the other a bracket type.")
      (xdoc::p
-      "In the case of two variables,
-       since the renaming contains all the variables in scope,
-       we check that the first and second variables
-       are associated in the renaming map.")
+      "In the case of two variables or two base types, they must be identical.
+       Note that the renaming to (the same) fresh variables happens
+       before reaching the variables.")
      (xdoc::p
-      "In the case of two base types,
-       they must be identical, because they do not contain variables.")
-     (xdoc::p
-      "In the case of two array types,
-       we recursively check the equality modulo renaming of the atom types.
-       For the shapes,
-       first we apply the dimension and shape variable renaming
-       to the first shape,
-       and then we check equivalence with the second shape.
-       Shape equivalence is defined not modulo renaming,
-       so we must apply the renaming prior to checking shape equivalence.")
+      "In the case of two array or bracket types,
+       we recursively check the equivalence of the element types
+       and the equivalence of the shapes.")
      (xdoc::p
       "In the case of two function types,
-       we recursively check the equality modulo renaming
+       we recursively check the equivalence
        of the input and output types.")
      (xdoc::p
       "In the case of two universal types,
-       we check that they have the same number of bound variables,
-       and we form a map between their bound variables,
-       with which we update the existing type variable renaming map;
-       this update may overwrite some previous associations,
-       in line with the fact that the bound variables
-       may hide outer variables.
-       We then check that the two inner types are equal
-       modulo the updated renamings.")
+       we use @(tsee fresh-type-var-renaming) to check that
+       they have the same number and kinds of bound variables,
+       forming renaming maps to fresh variables,
+       which we apply to the bodies of the types,
+       which we then compare for equivalence.
+       The fresh variables must not be in any of the two types:
+       so we set the set of variables to avoid to
+       all the (free and bound) variables in the two types.")
      (xdoc::p
       "In the case of two product types or two sum types,
-       we use a separate function to check that
-       they have the same number and sorte of bound variables,
-       forming two maps between their bound variables,
-       one for dimension variables and one for shape variables,
-       with which we update the existing variable renaming maps;
-       this update may overwrite some previous associations,
-       in line with the fact that the bound variables
-       may hide outer variables.
-       We then check that the two inner types are equal
-       modulo the updated renamings."))
+       we use @(tsee fresh-ispace-var-renaming) to check that
+       they have the same number and sorts of bound variables,
+       forming renaming maps to fresh variables,
+       which we apply to the bodies of the types,
+       which we then compare for equivalence.
+       The fresh variables must not be in any of the two types:
+       so we set the set of variables to avoid to
+       all the (free and bound) variables in the two types."))
     (type-case
      type1
      :var (type-case
            type2
-           :var (b* ((type-renaming (string-string-map-fix type-renaming)))
-                  (equal (omap::assoc type1.name type-renaming)
-                         (cons type1.name type2.name)))
+           :var (equal type1.var type2.var)
            :otherwise nil)
      :base (type-case
             type2
@@ -170,152 +251,108 @@
             :otherwise nil)
      :array (type-case
              type2
-             :array (and (type-renamep type1.type
-                                       type2.type
-                                       dim-renaming
-                                       shape-renaming
-                                       type-renaming)
-                         (b* ((renamed-shape1
-                               (shape-rename-ispace-vars type1.shape
-                                                         dim-renaming
-                                                         shape-renaming)))
-                           (shape-equivp renamed-shape1 type2.shape)))
+             :array (and (type-equivp type1.elem type2.elem)
+                         (shape-equivp type1.shape type2.shape))
+             :bracket (and (type-equivp type1.elem type2.elem)
+                           (shape-equivp type1.shape
+                                         (shape-append type2.shapes)))
              :otherwise nil)
+     :bracket (type-case
+               type2
+               :array (and (type-equivp type1.elem type2.elem)
+                           (shape-equivp (shape-append type1.shapes)
+                                         type2.shape))
+               :bracket (and (type-equivp type1.elem type2.elem)
+                             (shape-equivp (shape-append type1.shapes)
+                                           (shape-append type2.shapes)))
+               :otherwise nil)
      :fun (type-case
            type2
-           :fun (and (type-list-renamep type1.in
-                                        type2.in
-                                        dim-renaming
-                                        shape-renaming
-                                        type-renaming)
-                     (type-renamep type1.out
-                                   type2.out
-                                   dim-renaming
-                                   shape-renaming
-                                   type-renaming))
+           :fun (and (type-list-equivp type1.in type2.in)
+                     (type-equivp type1.out type2.out))
            :otherwise nil)
      :forall (type-case
               type2
-              :forall (and (equal (len type1.vars) (len type2.vars))
-                           (b* ((bound-map (omap::from-lists
-                                            (kinded-var-list->var type1.vars)
-                                            (kinded-var-list->var type2.vars)))
-                                (type-renaming
-                                 (omap::update*
-                                  bound-map
-                                  (string-string-map-fix type-renaming))))
-                             (type-renamep type1.type
-                                           type2.type
-                                           dim-renaming
-                                           shape-renaming
-                                           type-renaming)))
+              :forall (b* ((used (set::union (type-all-type-vars type1)
+                                             (type-all-type-vars type2)))
+                           (maps (fresh-type-var-renaming type1.params
+                                                          type2.params
+                                                          used))
+                           ((when (reserrp maps)) nil)
+                           ((string-string-map-quadruple maps) maps)
+                           (body1 (type-rename-type-vars type1.body
+                                                         maps.1st
+                                                         maps.2nd))
+                           (body2 (type-rename-type-vars type2.body
+                                                         maps.3rd
+                                                         maps.4th)))
+                        (type-equivp body1 body2))
               :otherwise nil)
      :pi (type-case
           type2
-          :pi (b* ((maps (check-ispace-param-renaming type1.params
-                                                      type2.params))
+          :pi (b* ((used (set::union (type-all-ispace-vars type1)
+                                     (type-all-ispace-vars type2)))
+                   (maps (fresh-ispace-var-renaming type1.params
+                                                    type2.params
+                                                    used))
                    ((when (reserrp maps)) nil)
-                   ((stringstringmap-pair maps) maps)
-                   (dim-renaming (omap::update*
-                                  maps.1st
-                                  (string-string-map-fix dim-renaming)))
-                   (shape-renaming (omap::update*
-                                    maps.2nd
-                                    (string-string-map-fix shape-renaming))))
-                (type-renamep type1.type
-                              type2.type
-                              dim-renaming
-                              shape-renaming
-                              type-renaming))
+                   ((string-string-map-quadruple maps) maps)
+                   (body1 (type-rename-ispace-vars type1.body
+                                                   maps.1st
+                                                   maps.2nd))
+                   (body2 (type-rename-ispace-vars type2.body
+                                                   maps.3rd
+                                                   maps.4th)))
+                (type-equivp body1 body2))
           :otherwise nil)
      :sigma (type-case
              type2
-             :sigma (b* ((maps (check-ispace-param-renaming type1.params
-                                                            type2.params))
+             :sigma (b* ((used (set::union (type-all-ispace-vars type1)
+                                           (type-all-ispace-vars type2)))
+                         (maps (fresh-ispace-var-renaming type1.params
+                                                          type2.params
+                                                          used))
                          ((when (reserrp maps)) nil)
-                         ((stringstringmap-pair maps) maps)
-                         (dim-renaming (omap::update*
-                                        maps.1st
-                                        (string-string-map-fix dim-renaming)))
-                         (shape-renaming (omap::update*
-                                          maps.2nd
-                                          (string-string-map-fix
-                                           shape-renaming))))
-                      (type-renamep type1.type
-                                    type2.type
-                                    dim-renaming
-                                    shape-renaming
-                                    type-renaming))
+                         ((string-string-map-quadruple maps) maps)
+                         (body1 (type-rename-ispace-vars type1.body
+                                                         maps.1st
+                                                         maps.2nd))
+                         (body2 (type-rename-ispace-vars type2.body
+                                                         maps.3rd
+                                                         maps.4th)))
+                      (type-equivp body1 body2))
              :otherwise nil))
     :measure (+ (type-count type1) (type-count type2)))
 
-  (define type-list-renamep ((types1 type-listp)
-                             (types2 type-listp)
-                             (dim-renaming string-string-mapp)
-                             (shape-renaming string-string-mapp)
-                             (type-renaming string-string-mapp))
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define type-list-equivp ((types1 type-listp) (types2 type-listp))
     :returns (yes/no booleanp)
-    :parents (type-equivalence types-renamep)
+    :parents (type-equivalence types-equivp)
     :short "Check if two lists of types are the same modulo renaming."
     (or (and (endp types1)
              (endp types2))
         (and (consp types1)
              (consp types2)
-             (type-renamep (car types1)
-                           (car types2)
-                           dim-renaming
-                           shape-renaming
-                           type-renaming)
-             (type-list-renamep (cdr types1)
-                                (cdr types2)
-                                dim-renaming
-                                shape-renaming
-                                type-renaming)))
+             (type-equivp (car types1) (car types2))
+             (type-list-equivp (cdr types1) (cdr types2))))
     :measure (+ (type-list-count types1) (type-list-count types2))
 
     ///
 
-    (defrule same-len-when-type-list-renamep
-      (implies (type-list-renamep
-                types1 types2 dim-renaming shape-renaming type-renaming)
+    (defrule same-len-when-type-list-equivp
+      (implies (type-list-equivp types1 types2)
                (equal (len types1) (len types2)))
       :rule-classes :forward-chaining
       :hints (("Goal"
                :induct (acl2::cdr-cdr-induct types1 types2)
                :in-theory (enable acl2::atom)))))
 
-  ///
-
-  (fty::deffixequiv-mutual types-renamep))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-equivp ((type1 typep) (type2 typep))
-  :returns (yes/no booleanp)
-  :short "Check if two types are equivalent."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the case when they are equal modulo no renamings."))
-  (type-renamep type1 type2 nil nil nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-list-equivp ((types1 type-listp) (types2 type-listp))
-  :returns (yes/no booleanp)
-  :short "Check if two lists of types are equivalent."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the case when they are equal modulo no renamings."))
-  (type-list-renamep types1 types2 nil nil nil)
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ///
 
-  (defrule same-len-when-type-list-equivp
-    (implies (type-list-equivp types1 types2)
-             (equal (len types1) (len types2)))
-    :rule-classes :forward-chaining))
+  (fty::deffixequiv-mutual types-equivp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

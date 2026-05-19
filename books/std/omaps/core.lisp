@@ -1,6 +1,6 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,11 +16,16 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "misc/total-order" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "tools/rulesets" :dir :system))
+
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration :tau t :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -150,23 +155,26 @@
   ///
 
   (defrule mapp-compound-recognizer
-    (if (omap::mapp map)
+    (if (mapp map)
         (true-listp map)
       (not (equal map nil)))
     :rule-classes :compound-recognizer
     :induct t
-    :enable omap::mapp)
+    :enable mapp)
 
   (defruled setp-when-mapp
     (implies (mapp x)
              (set::setp x))
     :rule-classes (:rewrite :forward-chaining)
+    :induct t
     :enable (set::setp << lexorder))
 
   (defruled alistp-when-mapp
     (implies (mapp x)
              (alistp x))
-    :rule-classes (:rewrite :forward-chaining)))
+    :rule-classes (:rewrite :forward-chaining)
+    :induct t
+    :enable alistp))
 
 ; This breaks the omap abstraction,
 ; so it is local to this file (not exported by the omaps library).
@@ -435,6 +443,7 @@
 (define update (key val (map mapp))
   :returns (map1 mapp
                  :hints (("Goal"
+                          :induct t
                           :in-theory (enable mapp mfix emptyp head tail))))
   :short "Set a key to a value in an omap."
   :long
@@ -482,12 +491,14 @@
   (defrule update-same
     (equal (update key val1 (update key val2 map))
            (update key val1 map))
+    :induct t
     :enable (head tail emptyp mfix mapp))
 
   (defrule update-different
     (implies (not (equal key1 key2))
              (equal (update key1 val1 (update key2 val2 map))
                     (update key2 val2 (update key1 val1 map))))
+    :induct t
     :enable (head tail emptyp mfix mapp))
 
   (defrule update-when-emptyp
@@ -517,7 +528,7 @@
            (cond ((emptyp map) (mv key val))
                  ((<< (mv-nth 0 (head map)) key) (head map))
                  (t (mv key val))))
-    :enable (update head tail))
+    :enable (update head tail mfix mapp emptyp))
 
   (defruled head-key-of-update
     (equal (mv-nth 0 (head (update key val map)))
@@ -632,7 +643,7 @@
 
   (defcong mequiv equal (update* new old) 1
     :hints (("Goal" :induct t
-                    :in-theory (enable update*))))
+                    :in-theory (enable update* emptyp))))
 
   (defcong mequiv equal (update* new old) 2
     :hints (("Goal" :induct t
@@ -646,7 +657,8 @@
   (defrule update*-when-right-emptyp
     (implies (emptyp old)
              (equal (update* new old)
-                    (mfix new)))))
+                    (mfix new)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -669,7 +681,7 @@
 
   (defcong mequiv equal (delete key map) 2
     :hints (("Goal" :induct t
-                    :in-theory (enable delete))))
+                    :in-theory (enable delete emptyp))))
 
   (defrule delete-when-emptyp
     (implies (emptyp map)
@@ -701,7 +713,8 @@
   (defrule delete*-when-right-emptyp
     (implies (emptyp map)
              (equal (delete* keys map)
-                    nil))))
+                    nil))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -725,7 +738,7 @@
 
   (defcong mequiv equal (assoc key map) 2
     :hints (("Goal" :induct t
-                    :in-theory (enable assoc))))
+                    :in-theory (enable assoc emptyp))))
 
   (defrule assoc-of-mfix
     (equal (assoc key (mfix map))
@@ -752,6 +765,7 @@
     (implies (not (emptyp map))
              (< (acl2-count (assoc key map))
                 (acl2-count map)))
+    :induct t
     :enable (mv-nth
              head
              emptyp
@@ -764,18 +778,21 @@
            (if (equal key1 key)
                (cons key val)
              (assoc key1 map)))
+    :induct t
     :enable (update head tail emptyp mfix mapp))
 
   (defrule assoc-of-update*
     (equal (assoc key (update* map1 map2))
            (or (assoc key map1)
                (assoc key map2)))
+    :induct t
     :enable update*)
 
   (defrule update-of-cdr-of-assoc-when-assoc
     (implies (assoc k m)
              (equal (update k (cdr (assoc k m)) m)
-                    m)))
+                    m))
+    :induct t)
 
   (defruled head-key-minimal
     (implies (<< key (mv-nth 0 (head map)))
@@ -1050,7 +1067,8 @@
   (defrule lookup*-when-right-emptyp
     (implies (emptyp map)
              (equal (lookup* keys map)
-                    nil))))
+                    nil))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1155,7 +1173,7 @@
 
   (defcong mequiv equal (rlookup val map) 2
     :hints (("Goal" :induct t
-                    :in-theory (enable rlookup))))
+                    :in-theory (enable rlookup emptyp))))
 
   (defrule rlookup-when-emptyp
     (implies (emptyp map)
@@ -1189,7 +1207,8 @@
   (defrule rlookup*-when-right-emptyp
     (implies (emptyp map)
              (equal (rlookup* vals map) nil))
-    :rule-classes (:rewrite :type-prescription)))
+    :rule-classes (:rewrite :type-prescription)
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1217,7 +1236,9 @@
   (defrule restrict-when-left-emptyp
     (implies (set::emptyp keys)
              (equal (restrict keys map) nil))
-    :rule-classes (:rewrite :type-prescription))
+    :rule-classes (:rewrite :type-prescription)
+    :induct t
+    :enable set::emptyp)
 
   (defrule restrict-when-right-emptyp
     (implies (emptyp map)
@@ -1227,24 +1248,29 @@
   (defruled assoc-of-restrict
     (equal (assoc key (restrict keys map))
            (and (set::in key keys)
-                (assoc key map))))
+                (assoc key map)))
+    :induct t)
 
   (defruled assoc-of-restrict-when-in-keys
     (implies (set::in key keys)
              (equal (assoc key (restrict keys map))
-                    (assoc key map)))))
+                    (assoc key map)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define keys ((map mapp))
   :returns (keys set::setp
-                 :hints (("Goal" :in-theory (enable mfix mapp set::setp))))
+                 :hints (("Goal"
+                          :induct t
+                          :in-theory (enable mfix mapp set::setp))))
   :short "Oset of the keys of an omap."
   (cond ((emptyp map) nil)
         (t (mv-let (key val)
                (head map)
              (declare (ignore val))
              (set::insert key (keys (tail map))))))
+  :verify-guards :after-returns
 
   ///
 
@@ -1265,16 +1291,19 @@
 
   (defruled keys-iff-not-emptyp
     (iff (keys map)
-         (not (emptyp map))))
+         (not (emptyp map)))
+    :induct t)
 
   (defruled assoc-to-in-of-keys
     (iff (assoc key map)
          (set::in key (keys map)))
+    :induct t
     :enable assoc)
 
   (defruled in-of-keys-to-assoc
     (equal (set::in key (keys map))
            (and (assoc key map) t))
+    :induct t
     :enable assoc)
 
   (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
@@ -1283,6 +1312,7 @@
   (defruled in-of-keys-to-assoc-under-iff
     (iff (set::in key (keys map))
          (assoc key map))
+    :induct t
     :enable assoc)
 
   (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
@@ -1291,11 +1321,14 @@
   (defrule assoc-when-in-of-keys-forward-chaining
     (implies (set::in key (keys map))
              (assoc key map))
-    :rule-classes :forward-chaining)
+    :rule-classes :forward-chaining
+    :induct t
+    :enable emptyp)
 
   (defrule set-emptyp-of-keys
     (equal (set::emptyp (keys map))
-           (emptyp map)))
+           (emptyp map))
+    :induct t)
 
   (defruled list-in-to-subset-keys
     (iff (list-in keys map)
@@ -1308,12 +1341,14 @@
   (defruled in-keys-when-assoc-forward
     (implies (assoc key map)
              (set::in key (keys map)))
-    :rule-classes :forward-chaining)
+    :rule-classes :forward-chaining
+    :induct t)
 
   (defruled in-keys-when-assoc-is-cons
     (implies (equal (assoc a m)
                     (cons a b))
-             (set::in a (keys m))))
+             (set::in a (keys m)))
+    :induct t)
 
   (defrule keys-of-update
     (equal (keys (update key val m))
@@ -1324,6 +1359,7 @@
   (defrule keys-of-update*
     (equal (keys (update* new old))
            (set::union (keys new) (keys old)))
+    :induct t
     :enable update*)
 
   (defrule keys-of-restrict
@@ -1335,15 +1371,18 @@
     ((defrule lemma1
        (implies (set::in x (keys (restrict keys map)))
                 (set::in x (keys map)))
+       :induct t
        :enable restrict)
      (defrule lemma2
        (implies (set::in x (keys (restrict keys map)))
                 (set::in x keys))
+       :induct t
        :enable restrict)
      (defrule lemma3
        (implies (and (set::in x (keys map))
                      (set::in x keys))
                 (set::in x (keys (restrict keys map))))
+       :induct t
        :enable restrict)))
 
   (defrule head-key-not-in-keys-of-tail
@@ -1377,12 +1416,14 @@
   (defruled in-values-when-assoc
     (implies (equal (assoc a m)
                     (cons a b))
-             (set::in b (values m))))
+             (set::in b (values m)))
+    :induct t)
 
   (defrule values-of-update-when-not-assoc
     (implies (not (consp (assoc key map)))
              (equal (values (update key val map))
-                    (set::insert val (values map))))))
+                    (set::insert val (values map))))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1422,7 +1463,8 @@
 
   (defrule compatiblep-when-right-emptyp
     (implies (emptyp map2)
-             (compatiblep map1 map2))))
+             (compatiblep map1 map2))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1506,7 +1548,8 @@
                     (or (<= (fix c) 0)
                         (and (not (emptyp map))
                              (>= (size (tail map))
-                                 (1- c)))))))
+                                 (1- c))))))
+    :enable fix)
 
   (defruled unfold-gt-size-const
     (implies (syntaxp (quotep c))
@@ -1515,6 +1558,7 @@
                         (and (not (emptyp map))
                              (> (size (tail map))
                                 (1- c))))))
+    :enable fix
     :use lemma
     :prep-lemmas
     ((defrule lemma
@@ -1523,7 +1567,8 @@
                          (> (size (tail map))
                             (1- c))))
                 (> (size map) c))
-       :rule-classes nil)))
+       :rule-classes nil
+       :enable fix)))
 
   (defrule equal-of-omap-size-and-0
     (equal (equal (size map) 0)
@@ -1559,6 +1604,7 @@
      will be in the resulting omap."))
   (cond ((endp keys) nil)
         (t (update (car keys) (car vals) (from-lists (cdr keys) (cdr vals)))))
+  :verify-guards :after-returns
 
   ///
 
@@ -1581,20 +1627,22 @@
              (equal (from-lists keys vals)
                     (from-lists keys-equiv vals)))
     :rule-classes :congruence
+    :induct t
     :enable list-equiv
-    :use (from-lists-of-true-list-fix-1
-          (:instance from-lists-of-true-list-fix-1
-                     (keys keys-equiv))))
+    :hints ('(:use (from-lists-of-true-list-fix-1
+                    (:instance from-lists-of-true-list-fix-1
+                               (keys keys-equiv))))))
 
   (defrule list-equiv-implies-equal-from-lists-2
     (implies (list-equiv vals vals-equiv)
              (equal (from-lists keys vals)
                     (from-lists keys vals-equiv)))
     :rule-classes :congruence
+    :induct t
     :enable list-equiv
-    :use (from-lists-of-true-list-fix-1
-          (:instance from-lists-of-true-list-fix-1
-                     (vals vals-equiv))))
+    :hints ('(:use (from-lists-of-true-list-fix-1
+                    (:instance from-lists-of-true-list-fix-1
+                               (vals vals-equiv))))))
 
   (defruled list-lookup-of-from-lists-of-append-first
     (implies (and (equal (len keys1) (len vals1))
@@ -1617,7 +1665,13 @@
                     (list-lookup keys (from-lists keys2 vals2))))
     :induct (acl2::cdr-cdr-induct keys1 vals1)
     :enable (list-lookup
-             list-lookup-of-update-of-non-member)))
+             list-lookup-of-update-of-non-member))
+
+  (defrule keys-of-from-lists
+    (equal (keys (from-lists keys vals))
+           (set::mergesort keys))
+    :induct t
+    :enable set::mergesort))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1632,7 +1686,9 @@
      will be in the resulting omap.
      This is consistent with the shadowing of alists."))
   (cond ((endp alist) nil)
-        (t (update (caar alist) (cdar alist) (from-alist (cdr alist))))))
+        (t (update (caar alist) (cdar alist) (from-alist (cdr alist)))))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

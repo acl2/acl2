@@ -30,21 +30,20 @@
                        (nat-listp
                         natp
                         dag-exprp
-                           ;;list::len-when-at-most-1
+                        ;;list::len-when-at-most-1
                         all-natp-when-not-consp
                         all-<-when-not-consp
                         darg-listp-when-not-consp
-                           ;; for speed:
+                        ;; for speed:
                         all-<=-when-not-consp
                         all-<-transitive-free
                         not-<-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp-2
                         <=-of-nth-when-all-<= ;disable globally?
                         rational-listp
                         strip-cdrs
-                        ifix ; avoid case splits
+                        ifix                   ; avoid case splits
                         rational-listp maxelem ;prevent inductions
-                        not-<-of-nth-when-all-<
-                        ))))
+                        not-<-of-nth-when-all-<))))
 
 ;; Do not remove.  These justify the ifixing of constants below
 (thm (equal (bitxor (ifix x) y) (bitxor x y)))
@@ -158,8 +157,8 @@
                            (= 2 (len (dargs expr))))
                       ;; "Expand" node1 (it is a bitxor, and we know it is not shared):
                       ;; We remove it but add both its args, thus preserving the xor of the constant and the worklist
-                      (b* ((darg1 (first (dargs expr)))
-                           (darg2 (second (dargs expr)))
+                      (b* ((darg1 (darg1 expr))
+                           (darg2 (darg2 expr))
                            (worklist1 (rest worklist1)) ; remove node1
                            ;; Handle darg1:
                            ((mv worklist1 constant1)

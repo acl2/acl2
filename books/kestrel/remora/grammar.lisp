@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ grammar
-  :parents (remora)
+  :parents (concrete-syntax parsing-and-printing)
   :short "ABNF grammar of Remora."
   :long
   (xdoc::topstring
@@ -36,7 +36,30 @@
      so the non-ASCII operators that Remora accepts
      (&lambda;, &rarr;, &forall;, &Pi;, &Sigma;)
      are referenced in the grammar via numeric value notation
-     (e.g. @('%x03BB') for &lambda;)."))
+     (e.g. @('%x03BB') for &lambda;).")
+   (xdoc::p
+    "The grammar enforces sort and kind discipline syntactically,
+     rather than as a separate context-sensitive layer.
+     Sigil prefixes distinguish the variants:")
+   (xdoc::ul
+    (xdoc::li
+     "@('$x') is a dimension variable; @('@x') is a shape variable.
+      The @('ispace-var') rule has these as two alternatives, and the
+      @('dim') and @('shape') non-terminals are separate.")
+    (xdoc::li
+     "@('&x') is an atom-type variable; @('*x') is an array-type
+      variable.  The @('type-var') rule has these as two alternatives,
+      and @('atom-type-var') and @('array-type-var') are separate
+      non-terminals."))
+   (xdoc::p
+    "This corresponds to Fig 5 (sorting rules, &Theta;) and Fig 6
+     (kinding rules, &Delta;) of the [arxiv] paper, but encoded
+     structurally so that a downstream type checker can recover
+     sort and kind from each variable's syntactic shape &mdash;
+     no separate &Theta;/&Delta; context is needed.  This choice
+     matches [impl] and differs from [arxiv] and [thesis], which
+     use a flat surface syntax and rely on the context machinery
+     to assign sorts and kinds."))
   :order-subtopics t
   :default-parent t)
 

@@ -19,6 +19,7 @@
   '(update-call-stack-height
     update-call-stack-height-aux-base
     update-call-stack-height-aux-of-if-arg1
+    stack-height-adjustment
     arm::step-opener
     arm::execute-inst-base ; requires the instruction to be known
     arm::step-of-if
@@ -54,16 +55,18 @@
     arm::read-when-equal-of-read-bytes-and-subregion32p
     arm::read-when-equal-of-read-bytes-and-subregion32p-alt
     arm::read-when-equal-of-read-bytes
-    arm::read-when-equal-of-read-bytes-alt))
+    arm::read-when-equal-of-read-bytes-alt
+    read-when-equal-of-read-bytes-smt
+    read-when-equal-of-read-bytes-smt-alt))
 
-;; ;; sophisticated scheme for removing inner, shadowed writes
-;; (defund shadowed-write-rules32 ()
-;;   (declare (xargs :guard t))
-;;   '(write-becomes-write-of-clear-extend-axe
-;;     clear-extend-of-write-continue-axe
-;;     clear-extend-of-write-finish
-;;     clear-extend-of-write-of-clear-retract
-;;     write-of-clear-retract))
+;; sophisticated scheme for removing inner, shadowed writes
+(defund shadowed-write-rules32 ()
+  (declare (xargs :guard t))
+  '(write-becomes-write-of-clear-extend-axe
+    clear-extend-of-write-continue-axe
+    clear-extend-of-write-finish
+    clear-extend-of-write-of-clear-retract
+    write-of-clear-retract))
 
 (defun execute-function-names (mnemonics)
   (declare (xargs :guard (keyword-listp mnemonics)))
@@ -81,7 +84,8 @@
 (defund instruction-semantic-functions ()
   (declare (xargs :guard t))
   (append (set-difference-eq (semantic-functions-for-mnemonics)
-                             '(arm::execute-cmp-immediate
+                             '(;; These are replaced below by the -alt rules:
+                               arm::execute-cmp-immediate
                                arm::execute-cmp-register
                                arm::execute-cmp-register-shifted-register
                                arm::execute-cmn-immediate
@@ -101,12 +105,14 @@
             arm::cmp-immediate-argsp
             arm::cmp-register-argsp
             arm::cmp-register-shifted-register-argsp
-            )
-          '(arm::bl-blx-common ; todo: package for the functions
+
+            ;; Additional rules needed for the instruction semantics:
+            arm::bl-blx-common ; todo: add some of these to the A package?
             arm::blx-core
             arm::mov-common
             arm::mov-register-core
             arm::nop-core
+            arm::pop-encoding-a1-core
             arm::pop-encoding-a2-core
             arm::pop-common
             arm::pop-loop-base
@@ -192,6 +198,8 @@
      arm::gt-condition-constant-opener
      arm::le-condition-constant-opener
 
+     arm::addwithcarry-constant-opener ; more?
+     arm::sint-constant-opener
 
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
@@ -200,8 +208,11 @@
      arm::zeroextend
      arm::nullcheckifthumbee
      arm::pcvalue
-     arm::align ; redef?
-     arm::div
+     ;; arm::align ; redef?
+     arm::bvchop-2-of-align-of-4
+     arm::align-of-4-when-aligned
+     ;; arm::div
+     arm::div-becomes-bvdiv
      arm::memu
      arm::mema
      arm::advance-pc
@@ -256,6 +267,7 @@
      arm::error-of-set-apsr.v
      arm::error-of-set-apsr.q
      arm::error-of-write
+     arm::error-of-if
 
      arm::read-of-update-itstate
      arm::read-of-update-isetstate
@@ -291,6 +303,7 @@
      arm::isetstate-of-set-apsr.v
      arm::isetstate-of-set-apsr.q
      arm::isetstate-of-write
+     arm::isetstate-of-if
 
      arm::update-isetstate-when-equal-of-isetstate
 
@@ -441,13 +454,9 @@
      arm::unsigned-byte-p-of-cmp-overflow
 
      )
-;   (shadowed-write-rules32)
+   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
-   ;; bv rules:
-   '(acl2::bitnot-of-bitxor-of-1 ; move to core-rules-bv
-     acl2::bitxor-of-1-and-bitnot ; move to core-rules-bv
-     )
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
@@ -505,6 +514,8 @@
      arm::read-of-write-when-disjoint-regions32p
      arm::read-of-write-when-disjoint-regions32p-gen
      arm::read-of-write-when-disjoint-regions32p-gen-alt
+     read-of-write-when-disjoint-regions32p-gen-smt
+     read-of-write-when-disjoint-regions32p-gen-smt
 
      arm::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
      arm::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
@@ -519,8 +530,6 @@
      arm::subregion32p-of-1-arg1     ;; trying
      arm::disjoint-regions32p-of-1-and-1 ; trying
 
-     acl2::equal-of-bvplus-constant-and-constant-alt
-     acl2::equal-of-bvplus-constant-and-constant
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1
@@ -548,7 +557,6 @@
      not-in-region32p-when-disjoint-regions32p-special
      ;; not-in-region32p-when-disjoint-regions32p-one ; looped -- why?
      ;; not-in-region32p-when-disjoint-regions32p-two
-     acl2::bvlt-of-1
      ;acl2::bvlt-of-bvplus-constant-and-constant-gen ; bad?
      bvlt-of-read-and-constant
 
@@ -738,17 +746,13 @@
      acl2::logtail-of-logext
      ;acl2::logtail-of-bvcat
      acl2::logtail-becomes-slice-bind-free-axe
-     acl2::bvcat-of-logext-arg2
-     acl2::bvcat-of-logext-arg4
+     ;acl2::bvcat-of-logext-arg2
+     ;acl2::bvcat-of-logext-arg4
 
      ;acl2::bvcat-of-if-arg2
      ;acl2::bvcat-of-if-arg4
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv rules
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
-
-     acl2::loghead-becomes-bvchop
-
-
 
      acl2::bvchop-of-+-becomes-bvplus
      acl2::bvminus-of-bvplus-and-bvplus-same
@@ -771,7 +775,12 @@
      acl2::mod-becomes-bvchop-when-power-of-2p
 
      myif ; always expand to IF
-     )))
+     bvcat-of-slice-of-0-when-low-bits-0 ; to handle alignment
+
+     arm::getbit-0-of-cmp-carry
+     arm::getbit-0-of-cmp-zero
+     arm::getbit-0-of-cmp-sign
+     arm::getbit-0-of-cmp-overflow)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -783,3 +792,7 @@
 
 ;; split before trying to open if the state is an IF:
 (acl2::set-axe-rule-priority run-until-return-aux-of-if-arg2 -1)
+
+;; try these rules late:
+(set-axe-rule-priority read-when-equal-of-read-bytes-smt 1)
+(set-axe-rule-priority read-when-equal-of-read-bytes-smt-alt 1)

@@ -219,7 +219,7 @@
                               (fn-definedp fn (w state))
                               (params-to-drop-alistp params-to-drop-alist)
                               (function-renamingp function-renaming)
-                              (t/nil/auto-p function-disabled)
+                              (member-eq function-disabled '(t nil :auto))
                               (member-eq untranslate '(t nil :macros :nice)))
                   :mode :program ; because we call untranslate
                   ))
@@ -295,7 +295,7 @@
                               (all-fn-definedp fns (w state))
                               (params-to-drop-alistp params-to-drop-alist)
                               (function-renamingp function-renaming)
-                              (t/nil/auto-p function-disabled)
+                              (member-eq function-disabled '(t nil :auto))
                               (member-eq untranslate '(t nil :macros :nice)))
                   :mode :program ; because we call untranslate
                   ))
@@ -440,7 +440,7 @@
                   :guard (and (symbolp fn)
                               (booleanp build-wrapper)
                               (booleanp theorem-disabled)
-                              (t/nil/auto-p function-disabled)
+                              (member-eq function-disabled '(t nil :auto))
                               (or (symbolp param-or-params-to-drop)
                                   (symbol-listp param-or-params-to-drop))
                               (fn-definedp fn (w state))
