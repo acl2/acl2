@@ -602,7 +602,7 @@
                  (equal (alen1 'candidate-deps-array candidate-deps-array)
                         (+ 1 max-relevant-nodenum)))
             (candidate-deps-arrayp 'candidate-deps-array (mark-all-relevant-vars subst-candidates max-relevant-nodenum candidate-deps-array)))
-   :hints ( ;("subgoal *1/4" :cases ((consp (CDR SUBST-CANDIDATES))))
+   :hints (;("subgoal *1/4" :cases ((consp (CDR SUBST-CANDIDATES))))
            ("Goal" :do-not '(generalize eliminate-destructors) :in-theory (enable mark-all-relevant-vars STRIP-CARS)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1274,7 +1274,7 @@
            (subst-candidates (if (all-consp (strip-cadrs subst-candidates)) ;check whether all the equated things are constants ;todo optimize
                                  ;; Special case: All vars are equated to constants, so we don't need the deps array and can substitute them all at once:
                                  subst-candidates
-                               (let ( ;; Find a set of candidates that can be substituted together (may find none due to self deps)
+                               (let (;; Find a set of candidates that can be substituted together (may find none due to self deps)
                                      (candidate-deps-array (populate-candidate-deps-array subst-candidates var-ordering dag-array dag-len dag-variable-alist)))
                                  (find-simultaneous-subst-candidates subst-candidates candidate-deps-array var-node-ordering nil nil nil)))))
         (if (not subst-candidates)
@@ -1445,7 +1445,7 @@
                               (booleanp changep-acc))
                   :measure (len literal-nodenums)
                   :guard-hints (("Goal" :in-theory (enable rationalp-when-natp)))))
-  (b* ( ;; Always crunch if we can.  This is important for performance, since populate-candidate-deps-array is expensive and works best if there are no extra nodes in the dag.
+  (b* (;; Always crunch if we can.  This is important for performance, since populate-candidate-deps-array is expensive and works best if there are no extra nodes in the dag.
        (crunchp (and (= prover-depth 0) ;; can't crunch if prover-depth > 0 since that would change existing nodes
                      (consp literal-nodenums) ;;can't crunch if no nodenums (can this happen?)
                      ))

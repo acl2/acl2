@@ -371,7 +371,7 @@
                                   (bvchop lowsize lowval))))))))
   :hints (("Goal" :use ((:instance BVCAT-NUMERIC-BOUND (k (EXPT 2 (+ LOWSIZE HIGHSIZE))))
                         <-of-bvcat-alt-helper)
-           :in-theory (e/d (UNSIGNED-BYTE-P)(<-OF-BVCAT <-of-bvcat-alt-helper)))))
+           :in-theory (e/d (UNSIGNED-BYTE-P) (<-OF-BVCAT <-of-bvcat-alt-helper)))))
 
 (defthm bvlt-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize))

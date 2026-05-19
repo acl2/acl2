@@ -223,7 +223,7 @@
 ;;   (declare (xargs :guard (pseudo-termp term)
 ;;                   :guard-hints (("Goal" ;:do-not '(generalize eliminate-destructors)
 ;;                                  :in-theory (e/d (;pseudo-termp-hack LIST::LEN-POS-REWRITE
-;;                                                   ) ( ;CAR-BECOMES-NTH-OF-0 consp-cdr
+;;                                                   ) (;CAR-BECOMES-NTH-OF-0 consp-cdr
 ;;                                                      3-cdrs
 ;;                                                      ))))))
 ;;   (if (not (consp term)) ;must be a variable

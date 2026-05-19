@@ -1,7 +1,7 @@
 ; Material on clearing parts of a heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -149,7 +149,7 @@
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (set-difference-theories
                        (enable clear-field)
-                       '( SET-TO-NIL-EQUAL-CLEAR-FIELD)))))
+                       '(SET-TO-NIL-EQUAL-CLEAR-FIELD)))))
 
 ;what if the ads differ?
 (defthm clear-field-of-set-fields
@@ -229,14 +229,14 @@
                 (not (equal pair a)))
            (clr a (g ad heap)))
   :hints (("Goal" :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil (a1 pair) (value val) (a2 a) (val (g ad heap)))
-           :in-theory (e/d (get-field) ( g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
+           :in-theory (e/d (get-field) (g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
 
 (defthm clr-non-nil-when-get-field-2
   (implies (and (get-field ad pair heap)
                 (not (equal pair a)))
            (clr a (g ad heap)))
   :hints (("Goal" :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil (a1 pair) (value (get-field ad pair heap)) (a2 a) (val (g ad heap)))
-           :in-theory (e/d (get-field) ( g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
+           :in-theory (e/d (get-field) (g-iff-gen clr-non-nil-when-g-of-some-other-address-is-non-nil)))))
 
 (defthm clr-non-nil-when-get-class
   (implies (and (equal (get-class ad heap) val)

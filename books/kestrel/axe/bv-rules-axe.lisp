@@ -1110,7 +1110,7 @@
 ;;             :use (:instance sum-bound-lemma)
 ;; ;          :expand (UNSIGNED-BYTE-P SIZE (+ X Y))
 ;;             :in-theory (e/d (BVPLUS UNSIGNED-BYTE-P
-;;                                     ) ( ;max
+;;                                     ) (;max
 ;;                                     sum-bound-lemma))))
 
 (defthmd bvplus-tighten-hack2
@@ -1130,7 +1130,7 @@
             :in-theory (e/d (BVPLUS UNSIGNED-BYTE-P
                                     SLICE-TOO-HIGH-IS-0
                                     expt-of-+
-                                    ) ( ;max
+                                    ) (;max
                                     sum-bound-lemma)))))
 
 ;free var rule from usb to integerp of the index?

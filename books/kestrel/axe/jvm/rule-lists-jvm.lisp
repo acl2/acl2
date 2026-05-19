@@ -49,7 +49,7 @@
 ;; Rules about new addresses
 (defun new-ad-rules ()
   (declare (xargs :guard t))
-  '( ;;rules to simplidy sets of new addresses (could instead unroll n-new-ads?)
+  '(;;rules to simplidy sets of new addresses (could instead unroll n-new-ads?)
     insert-of-new-ad-of-insert-of-nth-new-ad ;new
     insert-of-nth-new-ad-of-insert-of-nth-new-ad
     insert-of-next-ad-onto-union-of-dom-and-n-new-adsalt-better
@@ -1591,14 +1591,14 @@
 ;todo: add jvm to the name
 (defun phase-1-rules ()
   (declare (xargs :guard t))
-  (set-difference-equal (append '( ;bvshl ;this makes things much bigger
+  (set-difference-equal (append '(;bvshl ;this makes things much bigger
                                   )
                                 (amazing-rules-spec-and-dag)
                                 (map-rules)
                                 (jvm-semantics-rules)
                                 (jvm-simplification-rules)
                                 (run-until-return-from-stack-height-rules-smart))
-                        '(                ;;BVOR-WITH-SMALL-ARG2
+                        '(;;BVOR-WITH-SMALL-ARG2
                           getbit-of-bvxor ;new
                           bvplus-commutative-axe
                           bvplus-commutative-2-axe
@@ -1616,14 +1616,14 @@
   (list (make-rule-alist! (phase-1-rules)
                           (w state))
         ;; here's what gets turned on here (BVPLUS-COMMUTATIVE-AXE BVPLUS-COMMUTATIVE-2-AXE BVPLUS-ASSOCIATIVE BVUMINUS-OF-BVPLUS GETBIT-OF-BVXOR BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT BVASHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT):
-        (make-rule-alist! (set-difference-equal (append '( ;bvshl ;this makes things much bigger
+        (make-rule-alist! (set-difference-equal (append '(;bvshl ;this makes things much bigger
                                                           )
                                                         (amazing-rules-spec-and-dag)
                                                         (map-rules)
                                                         (jvm-semantics-rules)
                                                         (jvm-simplification-rules)
                                                         (run-until-return-from-stack-height-rules-smart))
-                                                '( ;BVOR-WITH-SMALL-ARG2
+                                                '(;BVOR-WITH-SMALL-ARG2
                                                   ;;GETBIT-OF-BVXOR
                                                   ;;BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT
                                                   ;;BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT

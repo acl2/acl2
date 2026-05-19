@@ -1268,7 +1268,7 @@
                 (darg-listp (strip-cdrs alist)))
            (myquotep (cdr (assoc-equal form alist))))
   :hints (("Goal" :use (:instance DARGP-OF-CDR-OF-ASSOC-EQUAL-WHEN-DARG-LISTP-OF-STRIP-CDRS (var form))
-           :in-theory (e/d (dargp) ( ;dargp-of-cdr-of-assoc-equal
+           :in-theory (e/d (dargp) (;dargp-of-cdr-of-assoc-equal
                                     DARGP-OF-CDR-OF-ASSOC-EQUAL-WHEN-DARG-LISTP-OF-STRIP-CDRS
                                     dargp-when-equal-of-quote-and-car-cheap)))))
 

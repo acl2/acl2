@@ -1,7 +1,7 @@
 ; bv-array rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -102,7 +102,7 @@
   :hints (("Goal"
            :in-theory (e/d (bv-array-clear-range
                             subrange-of-cons)
-                                  ( ;list::equal-append-reduction!
+                                  (;list::equal-append-reduction!
                                    cons-onto-repeat
                                    )))))
 
@@ -117,7 +117,7 @@
                   (bv-array-clear-range width len 0 high (cons '0 data))))
   :hints (("Goal" ;:expand ((bv-array-clear-range width len 1 high (cons 0 data)))
            :in-theory (e/d (bv-array-clear-range subrange-of-cons subrange cdr-take-plus-1)
-                           ( ;list::equal-append-reduction!
+                           (;list::equal-append-reduction!
                             cons-onto-repeat
                             nthcdr-of-take-becomes-subrange
                             cdr-of-take-becomes-subrange-better
@@ -140,7 +140,7 @@
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (BV-ARRAY-CLEAR-RANGE WIDTH LEN LOW HIGH DATA)
            :in-theory (e/d (bv-array-clear-range subrange-of-cons consp-of-cdr equal-of-append)
-                                  ( ;list::equal-append-reduction!
+                                  (;list::equal-append-reduction!
                                    cons-onto-repeat
                                    ;LIST::LEN-POS-REWRITE
                                    )))))

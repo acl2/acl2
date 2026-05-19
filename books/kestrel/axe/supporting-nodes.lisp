@@ -517,7 +517,7 @@
                     ;;(pseudo-dagp-aux dag-acc (car (car dag-acc)))
                     )
            :in-theory (e/d (build-reduced-dag-with-name ; pseudo-dagp-aux
-                            ) (                ;dag-exprp
+                            ) (;dag-exprp
                             )))))
 
 (defthm consp-of-mv-nth-0-of-build-reduced-dag-with-name-alt
@@ -531,7 +531,7 @@
                                               dag-len translation-array dag-acc)
            :expand ((pseudo-dagp-aux dag-acc -1))
            :in-theory (e/d (build-reduced-dag-with-name ; pseudo-dagp-aux
-                            ) (                ;dag-exprp
+                            ) (;dag-exprp
                                )))))
 
 (defthm natp-of-car-of-car-of-mv-nth-0-of-build-reduced-dag-with-name
@@ -546,7 +546,7 @@
                                               dag-len translation-array dag-acc)
            :expand ((pseudo-dagp-aux dag-acc -1))
            :in-theory (e/d (build-reduced-dag-with-name ; pseudo-dagp-aux
-                            ) (                ;dag-exprp
+                            ) (;dag-exprp
                             )))))
 
 (defthm pseudo-dagp-of-mv-nth-0-of-build-reduced-dag-with-name

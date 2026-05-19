@@ -507,7 +507,7 @@
                           (get-field ad pair heap)))
           :hints (("goal" :in-theory (set-difference-theories
                                       (enable set-fields)
-                                      '( set-fields-collect-2))))))
+                                      '(set-fields-collect-2))))))
 
  (local (defthm get-field-of-set-fields-2
           (implies (memberp pair (strip-cars bindings))
@@ -1011,17 +1011,11 @@
 ;;   :rule-classes ((:rewrite :match-free :all))
 ;;   :hints (("Goal" :in-theory (enable bound-in-heap get-field))))
 
-
-
-
-
-
 ;; ;kill?
 ;; (local (defthm new-ad-not-bound-helper3
 ;;        (implies (sets::subset bound-adrs bound-adrs2)
 ;;                 (not (sets::in (new-ad-aux bound-adrs2 current-try) bound-adrs)))
-;;        :hints (
-;;                ("Goal" :in-theory (disable NEW-AD-NOT-BOUND-HELPER2)
+;;        :hints (("Goal" :in-theory (disable NEW-AD-NOT-BOUND-HELPER2)
 ;;                 :use (:instance new-ad-not-bound-helper2
 ;;                                        (ad-set bound-adrs2))))))
 

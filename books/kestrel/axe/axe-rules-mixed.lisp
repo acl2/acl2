@@ -91,7 +91,7 @@
            (equal (+ x (- y))
                   (bvplus xsize x (bvuminus xsize y))))
   :hints (("Goal" :use ((:instance minus-becomes-bv (free xsize)))
-           :in-theory (e/d (unsigned-byte-p-forced) ( minus-becomes-bv)))))
+           :in-theory (e/d (unsigned-byte-p-forced) (minus-becomes-bv)))))
 
 ;rename
 (defthmd plus-of-minus-becomes-bv-dag-alt
@@ -248,7 +248,7 @@
                   (if (equal x 0) (+ -1 y) (+ y (bvplus xsize -1 x)))))
   :hints (("Goal" :use (:instance +-of-minus-1-and-bv2 (free xsize))
            :in-theory (e/d (unsigned-byte-p-forced natp ;yuck
-                                                   ) ( +-of-minus-1-and-bv2)))))
+                                                   ) (+-of-minus-1-and-bv2)))))
 
 (defthmd <-of-+-of-minus-becomes-bvlt
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))

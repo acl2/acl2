@@ -50,7 +50,7 @@
   (if (not (axe-prover-args-okay clause hints))
       (prog2$ (hard-error 'axe-prover "Bad inputs.  clause: ~x0.  hints: ~x1." (acons #\0 clause (acons #\1 hints nil)))
               (mv (erp-t) (list clause) state))
-    (b* ( ;(state (make-temp-dir state)) ;maybe delay until needed?
+    (b* (;(state (make-temp-dir state)) ;maybe delay until needed?
          ;;(supplied-id (g :id hints))
          ;;(goal-spec (if supplied-id (string-for-tilde-@-clause-id-phrase supplied-id) "unknown"))
 ;           (unroll (g :unroll hints))         ;format?

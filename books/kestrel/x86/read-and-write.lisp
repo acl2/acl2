@@ -77,14 +77,14 @@
   (implies (and (signed-byte-p 48 x)
                 (natp x))
            (not (< (bvchop 48 x) x)))
-  :hints (("Goal" :cases ((< x 0)(equal x 0))
+  :hints (("Goal" :cases ((< x 0) (equal x 0))
            :in-theory (enable signed-byte-p))))
 
 (defthmd <-of-bvchop-when-signed-byte-p-2
   (implies (and (signed-byte-p 48 x)
                 (not (natp x)))
            (not (< (bvchop 48 x) x)))
-  :hints (("Goal" :cases ((< x 0)(equal x 0))
+  :hints (("Goal" :cases ((< x 0) (equal x 0))
            :in-theory (enable signed-byte-p))))
 
 (defthm <-of-bvchop-when-signed-byte-p
@@ -2646,8 +2646,7 @@
            :in-theory (e/d (write-alt !memi
                             ACL2::BVCHOP-PLUS-1-SPLIT
                             ACL2::BVCHOP-OF-SUM-CASES)
-                           (
-                            x86isa::xw-of-xw-both
+                           (x86isa::xw-of-xw-both
                             x86isa::xw-of-xw-diff
                             X86ISA::XW-XW-INTRA-FIELD-ARRANGE-WRITES))
            :expand ((:free (addr val x86) (WRITE 1 ADDR VAL X86))

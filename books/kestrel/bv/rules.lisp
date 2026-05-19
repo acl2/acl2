@@ -122,7 +122,7 @@
            (equal (bvchop n (* k x))
                   (* k (bvchop (- n (+ -1 (integer-length k))) x))))
   :hints (("Goal" ;:use (:instance bvchop-shift-gen (m (+ -1 (integer-length k))))
-           :in-theory (e/d (power-of-2p)(;bvchop-shift-gen
+           :in-theory (e/d (power-of-2p) (;bvchop-shift-gen
                                          )))))
 
 (defthm equal-of-slice-and-constant-extend-when-bvchop-known
@@ -978,7 +978,7 @@
   (implies (rationalp x)
            (equal (< (- x) x)
                   (< 0 x)))
-  :hints (("Goal" :cases ((equal x 0)(< x 0)))))
+  :hints (("Goal" :cases ((equal x 0) (< x 0)))))
 
 (defthm ubp8-logtail16
    (equal (unsigned-byte-p 8 (logtail 16 x))
@@ -2455,7 +2455,7 @@
 (defthm bvmod-of-bvmult-of-expt-constant-version
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
-                (posp k) ;;)(natp k) ?
+                (posp k) ;;(natp k) ?
                 (natp size))
            (equal (bvmod size (bvmult size k x) k)
                   0))
@@ -4753,7 +4753,7 @@
 
                           (bvlt size (bvplus size k2 (bvuminus size k1)) y)
                         nil)))))
-  :hints (("Goal" :use (:instance bvlt-add-to-both-sides-constant-lemma-helper2 (k2 (ifix k2))(k1 (ifix k1)))
+  :hints (("Goal" :use (:instance bvlt-add-to-both-sides-constant-lemma-helper2 (k2 (ifix k2)) (k1 (ifix k1)))
            :in-theory (e/d (BVLT-OF-0-ARG2)
                            (bvlt-add-to-both-sides-constant-lemma-helper2)))))
 
@@ -5337,7 +5337,7 @@
                      (expt 2 (+ -1 n))
                      )))
   :rule-classes nil
-  :hints (("Goal" :cases ((< k 0)(< 0 k))
+  :hints (("Goal" :cases ((< k 0) (< 0 k))
            :in-theory (e/d (signed-byte-p getbit slice bvchop-of-logtail logtail bvchop UNSIGNED-BYTE-P)
                            (MOD-EXPT-SPLIT
                             logtail-becomes-slice-bind-free)))))

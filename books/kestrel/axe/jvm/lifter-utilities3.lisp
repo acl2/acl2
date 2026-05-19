@@ -1,7 +1,7 @@
 ; Even more utilities supporting the lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -133,7 +133,7 @@
        ((mv erp result state)
         (simp-dag
          dag
-         :rules (append '( ;bool-fix ;looped?
+         :rules (append '(;bool-fix ;looped?
                           ;;BOOL-FIX-WHEN-BOOLEANP
                           ;;jvm::in-of-rkeys-when-g
                           ;;jvm::in-of-rkeys-when-g-rev
@@ -144,7 +144,7 @@
                         ;;(rule-list-1001)
                         )
          :monitor (append monitored-rules
-                          '( ;JVM::LOOKUP-FIELD-BASE-3
+                          '(;JVM::LOOKUP-FIELD-BASE-3
                             ;;jvm::in-of-rkeys-when-g
                             ;;jvm::in-of-rkeys-when-g-rev
                             ))

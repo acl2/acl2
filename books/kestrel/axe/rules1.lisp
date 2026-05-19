@@ -198,8 +198,8 @@
 ;;                            (size size)
 ;;                            (x (bvcat highsize highval lowsize lowval))
 ;;                            (y x))
-;;            :in-theory (e/d ( ;bvmult
-;;                             ) (  BVMULT-OF-BVCHOP-arg3)))))
+;;            :in-theory (e/d (;bvmult
+;;                             ) (BVMULT-OF-BVCHOP-arg3)))))
 
 ;; (defthm bvmult-8-27-blast
 ;;   (equal (bvmult 8 27 (getbit n x))
@@ -656,7 +656,7 @@
                             ;bvplus-opener
                             subrange
                             )
-                           ( ;EQUAL-*-/-1
+                           (;EQUAL-*-/-1
                             array-reduction-when-top-bit-is-irrelevant-helper
                             firstn bv-array-read))
            :use (:instance array-reduction-when-top-bit-is-irrelevant-helper
@@ -666,7 +666,7 @@
 ;;  (IMPLIES (< INDEX 0)
 ;;           (EQUAL (GETBIT 0 INDEX)
 ;;                  0))
-;;  :hints (("Goal" :in-theory (e/d (getbit) ( )))))
+;;  :hints (("Goal" :in-theory (e/d (getbit) ()))))
 
 ;; ;yuck?
 ;; (defthmd myif-of-constant-lists
@@ -1203,7 +1203,7 @@
                                                   BVCHOP-WHEN-I-IS-NOT-AN-INTEGER
                                                   update-nth-when-equal-of-nth
                                                   )
-                                  ( ;take-of-bvchop-list
+                                  (;take-of-bvchop-list
                                    )))))
 
 ;; ;just use a trim rule?
@@ -1517,7 +1517,7 @@
 ;;                        (:instance equal-of-lens-when-equal-of-clear-nths
 ;;                                   (x (cdr lst)) (y (cdr rhs))
 ;;                                   (n (+ -1 key))))
-;;                       :expand ( ;(LEN LST)
+;;                       :expand (;(LEN LST)
 ;;     ;(LEN cdr)
 ;;                                (ALL-UNSIGNED-BYTE-P ESIZE LST)
 ;;                                (ALL-UNSIGNED-BYTE-P ESIZE RHS))

@@ -50,7 +50,7 @@
 (defthm run-of-nil
   (equal (run nil s)
          s)
-  :hints (("Goal" :in-theory (e/d (run)( step)))))
+  :hints (("Goal" :in-theory (e/d (run) (step)))))
 
 (defthm run-of-cons
   (equal (run (cons th sched) s)

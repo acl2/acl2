@@ -412,7 +412,7 @@
 
 (defund region-rules ()
   (declare (xargs :guard t))
-  '( ;; WARNING: Keep in sync with the list for 64 bits below
+  '(;; WARNING: Keep in sync with the list for 64 bits below
     in-region48p-cancel-constants-1-1+
     in-region48p-cancel-constants-1+-1
     in-region48p-cancel-constants-1+-1+
@@ -556,7 +556,7 @@
 ;; Most of these are for the new normal form (fault, etc.)
 (defund read-over-write-rules-common ()
   (declare (xargs :guard t))
-  '( ; rule to intro app-view?
+  '(; rule to intro app-view?
     x86isa::app-view-of-xw ; needed?
     app-view-of-set-flag
     ;; app-view-of-set-ms ;; we don't want to continue once a branch has a call of set-ms
@@ -1352,7 +1352,7 @@
 ;todo: classify these
 (defund x86-bv-rules ()
   (declare (xargs :guard t))
-  '( ;acl2::bvlt-of-0-arg3 ;todo: more like this?
+  '(;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
     ;; acl2::logext-of-bvplus-64 ;somewhat unusual
 
@@ -1895,7 +1895,7 @@
 ;; for 32-bit mode, without :stop-pcs
 (defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
-  '(    ;; newer scheme, 32-bit:
+  '(;; newer scheme, 32-bit:
     run-until-return32
     run-until-esp-is-above-opener-axe ; not for IFs
     run-until-esp-is-above-base-axe ; not for IFs
@@ -5747,7 +5747,7 @@
 ;;             unsigned-byte-p-64-of-xr-of-rgf
 ;;             )
 ;; ;;more:
-;;  ( mv-nth-1-of-add-to-*sp-positive-offset
+;;  (mv-nth-1-of-add-to-*sp-positive-offset
 ;;             mv-nth-1-of-add-to-*sp-gen-special
 ;;             read-from-segment-of-write-to-segment-same
 ;;             read-from-segment-of-write-to-segment-irrel

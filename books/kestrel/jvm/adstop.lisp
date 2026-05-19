@@ -1,7 +1,7 @@
 ; Yet more material on addresses
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -119,7 +119,7 @@
            (equal (MEMBERP (NEW-AD DOM)
                                  (N-new-ads2 N DOM))
                   t))
-  :hints (("Goal" :in-theory (e/d (N-NEW-ADS-BECOMES-N-NEW-ADS2)( IN-OF-NEW-AD-AND-N-NEW-ADS IN-OF-NEW-AD-AND-N-NEW-ADS NEW-AD-NOT-MEMBERP-OF-NEW-ADS MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP NEW-AD-NOT-MEMBERP-OF-NEW-ADS-SLICE))
+  :hints (("Goal" :in-theory (e/d (N-NEW-ADS-BECOMES-N-NEW-ADS2) (IN-OF-NEW-AD-AND-N-NEW-ADS IN-OF-NEW-AD-AND-N-NEW-ADS NEW-AD-NOT-MEMBERP-OF-NEW-ADS MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP NEW-AD-NOT-MEMBERP-OF-NEW-ADS-SLICE))
           :use (:instance IN-OF-NEW-AD-AND-N-NEW-ADS (ads dom))))
 )
 
@@ -153,7 +153,7 @@
    (EQUAL
     (NEW-AD (SET::UNION (LIST::|2SET| (N-new-ads2 N DOM)) DOM))
     (NTH-NEW-AD (+ 1 N) DOM)))
-  :hints (("Goal" :in-theory (e/d (N-NEW-ADS-BECOMES-N-NEW-ADS2)( IN-OF-NEW-AD-AND-N-NEW-ADS IN-OF-NEW-AD-AND-N-NEW-ADS NEW-AD-NOT-MEMBERP-OF-NEW-ADS MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP NEW-AD-NOT-MEMBERP-OF-NEW-ADS-SLICE NEW-AD-OF-UNION-DOM-AND-N-NEW-ADSalt))
+  :hints (("Goal" :in-theory (e/d (N-NEW-ADS-BECOMES-N-NEW-ADS2) (IN-OF-NEW-AD-AND-N-NEW-ADS IN-OF-NEW-AD-AND-N-NEW-ADS NEW-AD-NOT-MEMBERP-OF-NEW-ADS MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP NEW-AD-NOT-MEMBERP-OF-NEW-ADS-SLICE NEW-AD-OF-UNION-DOM-AND-N-NEW-ADSalt))
           :use NEW-AD-OF-UNION-DOM-AND-N-NEW-ADSalt)))
 
 (DEFTHM INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
@@ -211,7 +211,7 @@
            (equal (MEMBERP AD (N-new-ads2 N DOM))
                   nil))
   :hints (("Goal" :use NOT-MEMBERP-N-NEW-ADS2
-           :in-theory (e/d (n-new-ads-becomes-n-new-ads2) (  NOT-MEMBERP-N-NEW-ADS2 NOT-MEMBERP-N-NEW-ADS)))))
+           :in-theory (e/d (n-new-ads-becomes-n-new-ads2) (NOT-MEMBERP-N-NEW-ADS2 NOT-MEMBERP-N-NEW-ADS)))))
 
 
 (defthm N-NEW-ADS2-AUX-of-0
@@ -320,7 +320,7 @@
   :hints (("Goal"
            :do-not '(generalize eliminate-destructors)
             :induct (N-NEW-ADS2-AUX N CT DOM)
-           :expand ( ;(n-new-ads2-aux (+ m n) 0 dom)
+           :expand (;(n-new-ads2-aux (+ m n) 0 dom)
 
                     (N-NEW-ADS2-AUX N CT DOM)
                     (N-NEW-ADS2-AUX (+ M N) CT DOM)
@@ -329,7 +329,7 @@
                                           ;N-NEW-ADS2-AUX
                                           (:induction n-new-ads2-aux)
                                           )
-                           ( ;subrange-rewrite
+                           (;subrange-rewrite
                             SET::UNION
                             )))))
 
@@ -573,7 +573,7 @@
                   (list::2set (n-new-ads2 high dom))))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (new-ads-slice UNION-OF-2SET-AND-2SET-BACK)
-                                  ( ;LIST::EQUAL-APPEND-REDUCTION!-ALT LIST::APPEND-TAKE-NTHCDR LIST::EQUAL-APPEND-REDUCTION!
+                                  (;LIST::EQUAL-APPEND-REDUCTION!-ALT LIST::APPEND-TAKE-NTHCDR LIST::EQUAL-APPEND-REDUCTION!
                                    UNION-OF-2SET-AND-2SET))
            :use (:instance APPEND-OF-TAKE-AND-NTHCDR-2 (l (N-NEW-ADS2 HIGH DOM))
                            (n (+ -1 low))))))

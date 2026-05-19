@@ -1186,7 +1186,7 @@
 ;;             (nodenum (find-nodenum-of-si-dag-to-replace dag dag-var-array))) ;fixme is it possible that this value won't be a word or array?
 ;;        (if (not nodenum) ;;we didn't find a subdag that depends on only si
 ;;            (mv dag param-new-val-alist-acc param-initial-val-alist replacement-alist param-count state)
-;;          (let ( ;(expr (lookup nodenum dag))
+;;          (let (;(expr (lookup nodenum dag))
 ;;                )
 ;;            (let* ((si-dag (get-subdag nodenum dag))
 ;;                   (dummy nil ;(cw "Si-expr dag:~% ~X01~%" si-dag nil)
@@ -1485,7 +1485,7 @@
 ;; ;;this includes all the exception branches:
 ;; (defun run-arbitrary-loop-iteration (state-dag-at-loop-header loop-pcs extra-rules arbitrary-iteration-assumptions
 ;;                                                               invariant-conjuncts state)
-;;   (let* ( ;;we start by running as far as we can:
+;;   (let* (;;we start by running as far as we can:
 ;;          (arbitrary-iteration-dag
 ;;           (prog2$ (cw "Symbolically executing an arbitrary loop iteration.  Running as far as we can.~%") ;fixme print assumptions and invariant-conjuncts
 ;;                   (simplify-term
@@ -1664,7 +1664,7 @@
 ;;                          ;; Prove that the invariant holds over an arbitary loop iteration:
 ;;                          ;; Simplify the one-rep DAG using the invariant
 ;;                          (let*
-;;                              ( ;;we now simplify the continuation-assumption using the invariant, or it may not fire
+;;                              (;;we now simplify the continuation-assumption using the invariant, or it may not fire
 ;;                               ;; fixme make sure this is sound
 ;;                               (test-dag (simplify-dag
 ;;                                          test-dag
@@ -1953,7 +1953,7 @@
 ;;                                                  nil
 ;;                                                  param-count)
 ;;                                 ;;check here that only new vars are in fixed-up-new-value-alist
-;;                                   (let* ( ;(all-changed-vars (strip-cars fixed-up-new-value-alist))
+;;                                   (let* (;(all-changed-vars (strip-cars fixed-up-new-value-alist))
 ;;                                          (si-expr-varnums (strip-cdrs var-to-si-expr-alist))
 ;; ;     (all-vars (append all-changed-vars si-expr-varnums))
 ;;                                          )
@@ -2028,7 +2028,7 @@
 ;;                                             (make-axe-rules
 ;;                                              (append (jvm-semantics-rules)
 ;;                                                      (jvm-simplification-rules)
-;;                                                      (amazing-rules-spec-and-dag)(map-rules))
+;;                                                      (amazing-rules-spec-and-dag) (map-rules))
 ;;                                              (w state))) ;fixme where else might we need these assumptions?
 ;;                                     :assumptions si-hyps)))
 ;;      (if (not (quotep call-stack-less-than-flg))
@@ -2041,7 +2041,7 @@
 ;;            (mv t state-dag)
 ;;          ;;We have not exited.
 ;;          ;;So see if we can just execute past the loop (because it doesn't execute at all):
-;;          (let* ( ;figure out which loop we are in:
+;;          (let* (;figure out which loop we are in:
 ;;                 (loop-loop-designator-from-state (safe-unquote2 'skip-loops-that-dont-execute
 ;;                                                                       (simplify-dag
 ;;                                                                        (wrap-term-around-dag '(loop-designator-from-state s)
@@ -2128,7 +2128,7 @@
 ;;           ;;if so, we are done!
 ;;           (list state-dag loop-defuns-and-theorems-acc generated-rules (+ -1 loop-count))
 ;;         ;;otherwise, we are at a real loop header, so decompile the loop, and repeat
-;;         (let* ( ;(dummy2 (cw "State at loop header: ~x0~%" state-at-loop-header-dag))
+;;         (let* (;(dummy2 (cw "State at loop header: ~x0~%" state-at-loop-header-dag))
 ;;                (loop-loop-designator-from-state (safe-unquote2 'decompile-loops-aux
 ;;                                                                      (simplify-dag
 ;;                                                                       (wrap-term-around-dag '(loop-designator-from-state s)
@@ -4609,7 +4609,7 @@
        ((when erp) (mv erp nil state)))
     (simp-dag dag2
               :rule-alist *state-component-extraction-axe-rule-alist*
-              ;; (append (amazing-rules-spec-and-dag)(map-rules)
+              ;; (append (amazing-rules-spec-and-dag) (map-rules)
               ;;         (map-rules) ;needed to push IFs, or we could open up JVM::thread-top-frame, JVM::CALL-STACK, etc.
               ;;         (jvm-semantics-rules)
               ;;         (jvm-simplification-rules))
@@ -4910,7 +4910,7 @@
    (declare (xargs :mode :program
                    :stobjs state
                    :guard (<= 1 loop-depth)))
-   (b* ( ;; Decompile the loop body completely, including any nested loops and subroutine calls, assuming the candidate invars:
+   (b* (;; Decompile the loop body completely, including any nested loops and subroutine calls, assuming the candidate invars:
         ((mv erp state-var-dag) (dagify-term state-var))
         ((when erp) (mv erp nil nil nil nil nil nil nil nil nil state))
         ((mv erp body-dag ;what vars might be in this?  can assumptions introduce vars other than state-var?
@@ -5051,7 +5051,7 @@
    (declare (xargs :mode :program :stobjs state :guard (<= 1 loop-depth)))
 ;fffixme - what if we can resolve the loop test? might save a whole lot of work? (maybe only if the loop does not execute)
 ;did this check on the old decompiler - best way to tell is to just try running through the loop.
-   (b* ( ;; Extract the method-info:
+   (b* (;; Extract the method-info:
         ((mv erp method-info state)
          (quick-simp-composed-term-and-dag `(jvm::method-info (jvm::thread-top-frame (th) replace-me)) 'replace-me loop-top-state-dag
                                            :rule-alist *state-component-extraction-axe-rule-alist*
@@ -6046,7 +6046,7 @@
           dag-to-run
           :rule-alists rule-alists
           :interpreted-function-alist interpreted-function-alist ;Thu Jul 29 02:45:04 2010
-          :monitor (append '( ;; get-class-of-inner-array-2d
+          :monitor (append '(;; get-class-of-inner-array-2d
                              ;;RUN-UNTIL-EXIT-SEGMENT-OR-HIT-LOOP-HEADER-OPENER-2;;
                              ;;RUN-UNTIL-EXIT-SEGMENT-OR-HIT-LOOP-HEADER-OPENER-1;;
                              ;;JVM::INVOKE-STATIC-INITIALIZER-FOR-NEXT-CLASS-BASE
@@ -6185,7 +6185,7 @@
                    :guard (and (pseudo-term-listp hyps) ;TODO add more to the guard
                                ;(invariant-alistp (g :invariant-alist options) state) ;TODO: Make a decompiler-optionsp?
                                )))
-   (b* ( ;; Get the stack-height (we do this once, outside of decompile-code-segment-aux):
+   (b* (;; Get the stack-height (we do this once, outside of decompile-code-segment-aux):
         ((mv erp stack-height-dag state)
          (quick-simp-composed-term-and-dag `(stack-height state-var) 'state-var state-dag
                                            ;;pass in ifns?
@@ -6437,7 +6437,7 @@
                           (natp print-interval) ; todo: allow nil?
                           )
                   :mode :program))
-  (b* ( ;; Check whether an identical call to the lifter has already been done:
+  (b* (;; Check whether an identical call to the lifter has already been done:
        ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Check inputs (TODO: What other checks should we do here?):

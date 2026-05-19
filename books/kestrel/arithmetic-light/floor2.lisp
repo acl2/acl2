@@ -340,7 +340,7 @@
 ;;  (implies (posp n)
 ;;           (equal (equal (mod (floor n 4) 16) 0)  ;;says that n mod 64 is in [0,3]??
 ;;                  (< (mod n 64) 4)))
-;;  :hints (("Goal" :in-theory (e/d (mod)(MOD-=-0 MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
+;;  :hints (("Goal" :in-theory (e/d (mod) (MOD-=-0 MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
 ;;                                                 FLOOR-=-X/Y
 ;;                                                 FLOOR-WHEN-DIVISIBLE)))))
 

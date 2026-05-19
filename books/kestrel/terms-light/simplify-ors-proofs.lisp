@@ -1,6 +1,6 @@
 ; Proofs about simplify-ors
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -96,12 +96,12 @@
 (defthm-flag-simplify-ors
   (defthm termp-of-simplify-ors
     (implies (and (termp term w)
-                  (arities-okp '((if . 3)(not . 1)) w))
+                  (arities-okp '((if . 3) (not . 1)) w))
              (termp (simplify-ors term iffp) w))
     :flag simplify-ors)
   (defthm termp-of-simplify-ors-lst
     (implies (and (term-listp terms w)
-                  (arities-okp '((if . 3)(not . 1)) w))
+                  (arities-okp '((if . 3) (not . 1)) w))
              (term-listp (simplify-ors-lst terms) w))
     :flag simplify-ors-lst)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -128,13 +128,13 @@
 ;; Follows easily from termp and logic-fnsp proofs.
 (defthm logic-termp-of-simplify-ors
   (implies (and (logic-termp term w)
-                (arities-okp '((if . 3)(not . 1)) w))
+                (arities-okp '((if . 3) (not . 1)) w))
            (logic-termp (simplify-ors term iffp) w)))
 
 ;; Follows easily from term-listp and logic-fns-listp proofs.
 (defthm logic-term-listp-of-simplify-ors
   (implies (and (logic-term-listp terms w)
-                (arities-okp '((if . 3)(not . 1)) w))
+                (arities-okp '((if . 3) (not . 1)) w))
            (logic-term-listp (simplify-ors-lst terms) w)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

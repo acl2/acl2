@@ -374,7 +374,7 @@
 ;todo: what about shift operators?  we need an official list of BV ops
 (defun unsigned-byte-p-rules ()
   (declare (xargs :guard t))
-  '( ;; todo: add more?
+  '(;; todo: add more?
     unsigned-byte-p-of-bvchop
     unsigned-byte-p-of-bvcat-all-cases ;todo name
     unsigned-byte-p-of-bvcat ;todo drop?

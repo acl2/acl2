@@ -102,7 +102,7 @@
 ;;            (all-myquotep (mv-nth 1 (sublis-var-and-eval-lst alist l interpreted-function-alist))))
 ;;   :hints (("subgoal *1/1"
 ;; ;           :use (:instance pseudo-termp-of-sublis-var-and-eval (form (car l)))
-;;            :in-theory (e/d ( ;consp-of-cdr-when-pseudo-termp
+;;            :in-theory (e/d (;consp-of-cdr-when-pseudo-termp
 ;;                             ) (
 ;;                             ;pseudo-termp-of-sublis-var-and-eval
 ;;                             )))
@@ -1605,7 +1605,7 @@
  ;;               (cw "Clause miter literals:~%")
  ;;               ;; (print-array 'dag-array dag-array dag-len)
  ;;               (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
- ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
+ ;;               (let* (;;fixme or we could use a worklist starting with literal-nodenums..
  ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
  ;;                                                                                 (+ 1 (maxelem literal-nodenums))))
  ;;                      (rec-fn-nodenums (filter-rec-fn-nodes2 (+ -1 dag-len) 'dag-array dag-array 'tag-array-for-prove-clause-miter tag-array-for-prove-clause-miter state))
@@ -1956,8 +1956,8 @@
           (mv (erp-nil) :proved state)
         (b* ((- (cw "Note: The DAG was the constant nil.")))
           (mv (erp-nil) :failed state)))
-    (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
-;          (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
+    (b* (;; (dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
+         ;; (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
          ;; Load the DAG nodes into an array:
          (dag-array (make-dag-into-array 'dag-array dag 0)) ; todo: use nonzero slack?
          (top-nodenum (top-nodenum dag))

@@ -709,7 +709,7 @@
                               (equal dag-len (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 dag-len) translation-array))
                   :guard-hints (("Goal" :in-theory (enable integer-listp-rewrite all-rationalp-when-all-natp all-integerp-when-all-natp all-natp-when-nat-listp)))))
-  (b* ( ;; Extract the xor leaves of this node from the old-dag:
+  (b* (;; Extract the xor leaves of this node from the old-dag:
        ((mv nodenum-leaves combined-constant)
         (bitxor-nest-leaves-aux (list nodenum) 'normalize-xors-old-array dag-array dag-len nil 0) ;;TODO: consider this: (bitxor-nest-leaves-for-node nodenum 'normalize-xors-old-array dag-array)
         )
@@ -876,7 +876,7 @@
 ;; ;dag-lst should not be a quotep or empty
 ;; ;returns either a new dag-lst whose top node is equal to the top node of DAG-LST, or a quotep equal to the top node of DAG-LST
 ;; (defun simplify-bitxors (dag-lst print)
-;;   (let* ( ;;convert dag-lst to an array:
+;;   (let* (;;convert dag-lst to an array:
 ;;          (dag-len (len dag-lst))
 ;;          (top-nodenum (top-nodenum dag-lst))
 ;;          (dag-array-name 'simplify-bitxors-array)

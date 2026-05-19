@@ -1,6 +1,6 @@
 ; Rules for lifting R1CSes into logic (with Axe)
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -270,7 +270,7 @@
 ;;                (unsigned-byte-p 32 x)
 ;;                (unsigned-byte-p 32 k))
 ;;           (<= (- x y) 1))
-;;  :hints (("Goal" :use ( (:instance ACL2::split-bv (x x) (n 32) (m 1))
+;;  :hints (("Goal" :use ((:instance ACL2::split-bv (x x) (n 32) (m 1))
 ;;                         (:instance ACL2::split-bv (x k) (n 32) (m 1))
 ;;                         )
 ;;           :in-theory (disable ACL2::BVCAT-OF-SLICE-AND-X-ADJACENT
@@ -291,9 +291,9 @@
                         (:instance ACL2::split-bv (x k) (n 32) (m 1)))
            :cases ((equal 0 (acl2::getbit 0 x)))
            :in-theory (e/d (acl2::bvcat acl2::logapp)
-                           ( ACL2::BVCAT-OF-SLICE-AND-X-ADJACENT
-                             ACL2::BVCAT-EQUAL-REWRITE-ALT
-                             ACL2::BVCAT-EQUAL-REWRITE)))))
+                           (acl2::bvcat-of-slice-and-x-adjacent
+                            acl2::bvcat-equal-rewrite-alt
+                            acl2::bvcat-equal-rewrite)))))
 
 (defthm bitp-of-add-of-even-constant
   (implies (and (unsigned-byte-p 32 x)

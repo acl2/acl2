@@ -44,7 +44,7 @@
                               (symbol-listp remove-rules)
                               (symbol-listp default-rules)
                               )))
-  (b* ( ;; ((when (and (not (eq :auto rules))
+  (b* (;; ((when (and (not (eq :auto rules))
        ;;             (not (eq :auto rule-lists))))
        ;;  (er hard? 'choose-rules ":rules and :rule-lists should not both be given.")
        ;;  (mv (erp-t) nil))

@@ -487,8 +487,7 @@
                                    acl2::getbit-of-+
                                    acl2::bvchop-when-top-bit-1-cheap
                                    bvchop-when-signed-byte-p-one-more-and-negative-linear)
-                                  (
-                                   acl2::bvchop-identity-cheap
+                                  (acl2::bvchop-identity-cheap
                                    acl2::bvchop-identity
                                    acl2::bvcat-of-bvchop-low ;looped
                                    acl2::slice-of-bvchop-low ;looped
@@ -618,8 +617,7 @@
 ;;                               n
 ;;                               (+ -1 (expt 2 n)))))
 ;;  :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::REPEATBIT)
-;;                                  (
-;;                                   ACL2::BVCAT-OF-+-LOW ;looped
+;;                                  (ACL2::BVCAT-OF-+-LOW ;looped
 ;;                                   )))))
 
 ;; ;a bunch of 0's followed by a bunch of 1's
@@ -634,8 +632,7 @@
 ;;                               n
 ;;                               (+ -1 (expt 2 n)))))
 ;;  :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::REPEATBIT)
-;;                                  (
-;;                                   ACL2::BVCAT-OF-+-LOW ;looped
+;;                                  (ACL2::BVCAT-OF-+-LOW ;looped
 ;;                                   )))))
 
 

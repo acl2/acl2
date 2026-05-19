@@ -286,7 +286,7 @@
            (equal (floor (mod x 64) (expt 2 n))
                   (mod (floor x (expt 2 n))
                        (* 64 (/ (expt 2 n))))))
-  :hints (("Goal" :in-theory (e/d (mod)(multiple-idioms-for-multiple
+  :hints (("Goal" :in-theory (e/d (mod) (multiple-idioms-for-multiple
                                          mod-of-floor-is-0-when-multiple
                                          ;mod-x-i*j-of-positives
                                          ;mod-recollapse-lemma
@@ -1493,7 +1493,7 @@
 
 ;; (defthmd usb3-cases
 ;;   (equal (unsigned-byte-p 3 x)
-;;          (or (equal x 0)(equal x 1)(equal x 2)(equal x 3)(equal x 4)(equal x 5)(equal x 6)(equal x 7))))
+;;          (or (equal x 0) (equal x 1) (equal x 2) (equal x 3) (equal x 4) (equal x 5) (equal x 6) (equal x 7))))
 
 ;(in-theory (enable floor-when-multiple)) ;drop?
 
@@ -1506,8 +1506,8 @@
 
 (defthmd usb4-cases
   (equal (unsigned-byte-p 4 x)
-         (or (equal x 0)(equal x 1)(equal x 2)(equal x 3)(equal x 4)(equal x 5)(equal x 6)(equal x 7)
-             (equal x 8)(equal x 9)(equal x 10)(equal x 11)(equal x 12)(equal x 13)(equal x 14)(equal x 15))))
+         (or (equal x 0) (equal x 1) (equal x 2) (equal x 3) (equal x 4) (equal x 5) (equal x 6) (equal x 7)
+             (equal x 8) (equal x 9) (equal x 10) (equal x 11) (equal x 12) (equal x 13) (equal x 14) (equal x 15))))
 
 ;; (defthm bvlt-of-bvcat-trim
 ;;   (equal (bvlt 31 z (bvcat 2 x 30 y))
@@ -1670,8 +1670,8 @@
 (defthmd bvlt-16-split
   (implies (UNSIGNED-BYTE-P 31 x)
            (equal (BVLT 31 16 x)
-                  (not (or (equal x 0)(equal x 1)(equal x 2)(equal x 3)(equal x 4)(equal x 5)(equal x 6)(equal x 7)
-                           (equal x 8)(equal x 9)(equal x 10)(equal x 11)(equal x 12)(equal x 13)(equal x 14)(equal x 15) (equal x 16)))))
+                  (not (or (equal x 0) (equal x 1) (equal x 2) (equal x 3) (equal x 4) (equal x 5) (equal x 6) (equal x 7)
+                           (equal x 8) (equal x 9) (equal x 10) (equal x 11) (equal x 12) (equal x 13) (equal x 14) (equal x 15) (equal x 16)))))
   :hints (("Goal" :in-theory (enable bvuminus32-when-usb31 bvlt))))
 
 
@@ -7198,7 +7198,7 @@
            (equal (+ x (- y))
                   (bvplus (+ 1 (lg x)) x (bvuminus (+ 1 (lg x)) y))))
   :hints (("Goal" :use (:instance minus-becomes-bv (free (+ 1 (lg x))))
-           :in-theory (e/d (lg)(minus-becomes-bv)))))
+           :in-theory (e/d (lg) (minus-becomes-bv)))))
 
 ;gen
 (defthm another-bound-hack-for-sha1
@@ -12074,7 +12074,7 @@
            (equal (equal 0 (getbit 1 x))
                   (not (equal 2 (bvchop 6 x)))))
   :hints (("Goal"
-           :cases ((equal 0 (bvchop 6 x))(equal 1 (bvchop 6 x)))
+           :cases ((equal 0 (bvchop 6 x)) (equal 1 (bvchop 6 x)))
            :in-theory (enable bvlt getbit))))
 
 ;Mon Jul 19 21:42:27 2010
@@ -12332,7 +12332,7 @@
                                      REWRITE-<-WHEN-SIZES-DONT-MATCH2))))
 
 (defthm equal-of-0-and-+-of-minus-2
-  (implies (and (acl2-numberp x)(acl2-numberp y))
+  (implies (and (acl2-numberp x) (acl2-numberp y))
            (equal (equal 0 (+ (- x) y))
                   (equal x y))))
 
@@ -12560,7 +12560,7 @@
                 (natp n))
            (equal (unsigned-byte-p n (ceiling-of-lg x))
                   (<= x (expt 2 (+ -1 (expt 2 n))))))
-  :hints (("Goal" :cases ((equal 1 x)(equal 0 x))
+  :hints (("Goal" :cases ((equal 1 x) (equal 0 x))
            :in-theory (enable ceiling-of-lg unsigned-byte-p posp))))
 
 (defthm aesccbhack1
@@ -12572,7 +12572,7 @@
            (equal (bvlt 3 4 (ceiling-of-lg x))
                   (bvlt 8 16 x)
                   ))
-  :hints (("Goal" :cases ((equal 1 x)(equal 0 x))
+  :hints (("Goal" :cases ((equal 1 x) (equal 0 x))
            :in-theory (e/d (bvlt ceiling-of-lg unsigned-byte-p posp)
                            (<-of-+-of-minus-and-constant ;yuck?
                             )))))

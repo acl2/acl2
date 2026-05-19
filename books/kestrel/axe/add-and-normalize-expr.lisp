@@ -89,7 +89,7 @@
              (consp (cdr simplified-args)) ; for guards
              )
         ;;it's a bitxor. note that since the args are simplified, if they are bitxor nests they are *normalized* bitxor nests
-        (b* ( ;; get xors from arg1 (TODO: Consider memoizing):
+        (b* (;; get xors from arg1 (TODO: Consider memoizing):
              ((mv arg1-constant arg1-leaves-increasing)
               (leaves-of-normalized-bitxor-nest (first simplified-args) dag-array dag-len))
              ;; get xors from arg2 (TODO: Consider memoizing):

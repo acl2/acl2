@@ -60,7 +60,7 @@
      (let ((previous-binding (assoc-eq term alist)))
        (if previous-binding
            ;; If there's a previous binding for the variable, it must match the current item:
-           ;;( what if it was bound to a quotep and now we have the nodenum of the quotep - better to always inline?)
+           ;; (what if it was bound to a quotep and now we have the nodenum of the quotep - better to always inline?)
            (if (equal (cdr previous-binding) nodenum-or-quotep)
                alist
              :fail)

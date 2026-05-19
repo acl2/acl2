@@ -172,7 +172,7 @@
                            (ads (set::delete CURRENT-TRY ADS))
                            (current-try (+ 1 current-try))))
           ("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (new-ad-aux) ( ;DELETE-FROM-SET-IS-JUST-REMOVE
+           :in-theory (e/d (new-ad-aux) (;DELETE-FROM-SET-IS-JUST-REMOVE
                                          )))))
 
 ;The key property of NEW-AD.
@@ -572,7 +572,7 @@
                 (natp current-try))
            (equal (new-ad-aux (set::insert (new-ad ads) ads) current-try)
                   (new-ad-aux ads (+ 1 (new-ad ads)))))
-  :hints (("Goal" :in-theory (e/d (new-ad) ( new-ad-aux-of-insert-helper new-ad-aux-of-insert-bound NEW-AD-AUX-<=-NEW-AD-AUX-WHEN-SUBSET))
+  :hints (("Goal" :in-theory (e/d (new-ad) (new-ad-aux-of-insert-helper new-ad-aux-of-insert-bound NEW-AD-AUX-<=-NEW-AD-AUX-WHEN-SUBSET))
            :use (new-ad-aux-of-insert-helper
                  (:instance advance-current-try3 (ads (SET::INSERT (NEW-AD ADS) ADS))  (lo current-try) (current-try (NEW-AD ADS)))
 ;                 (:instance advance-current-try (ads (SET::INSERT (NEW-AD ADS) ADS))
@@ -592,7 +592,7 @@
   (equal (new-ad (set::insert (new-ad ads) ads))
          (new-ad-aux ads (+ 1 (new-ad ads))))
   :hints (("Goal" :use (:instance new-ad-aux-of-insert-of-new-ad-aux (current-try 0))
-           :in-theory (e/d (new-ad)( new-ad-aux-of-insert-of-new-ad-aux)))))
+           :in-theory (e/d (new-ad) (new-ad-aux-of-insert-of-new-ad-aux)))))
 
 
 ;; (thm
@@ -617,8 +617,7 @@
                 (natp current-try))
            (equal (n-new-ads2-aux n current-try (set::insert (new-ad ads) ads))
                   (cdr (n-new-ads2-aux (+ 1 n) current-try ads))))
-  :hints (
-          ("Goal"                                               ;:cases ((zp n))
+  :hints (("Goal"                                               ;:cases ((zp n))
            :do-not '(generalize eliminate-destructors)
 ;           :do-not-induct t
            :expand ((N-NEW-ADS2-AUX (+ 1 N)
@@ -713,7 +712,7 @@
   :hints (("Subgoal *1/2" :cases ((equal m n)))
           ("Subgoal *1/1" :in-theory (enable equal-of-new-ad-aux-and-new-ads))
           ("Goal"
-           :expand ( ;(NTH (+ -1 M) (N-NEW-ADS2-AUX N 0 ADS))
+           :expand (;(NTH (+ -1 M) (N-NEW-ADS2-AUX N 0 ADS))
                     (N-NEW-ADS2-AUX N 0 ADS)
 ;                   (N-NEW-ADS2-AUX N (+ 1 (NEW-AD-AUX ADS 0)) ADS)
                     )
@@ -824,7 +823,7 @@
   :hints (("Goal" :induct (N-NEW-ADS-AUX-n-induct N1 ADS n2)
            :expand (N-NEW-ADS-AUX N2 ADS)
            :in-theory (e/d (N-NEW-ADS-AUX)
-                           ( ;NTH-OF-CONS-SAFE
+                           (;NTH-OF-CONS-SAFE
                             )))))
 
 ;; (defthm nth-of-n-new-ads2-aux
@@ -837,9 +836,8 @@
 ;;   :hints (("Goal" ;:induct (N-NEW-ADS-AUX-n-induct N1 ADS n2)
 ;; ;           :expand (N-NEW-ADS-AUX N2 ADS)
 ;;            :in-theory (e/d (N-NEW-ADS2-AUX)
-;;                            ( ;NTH-OF-CONS-SAFE
+;;                            (;NTH-OF-CONS-SAFE
 ;;                             )))))
-
 
 (defthmd n-new-ads-becomes-n-new-ads2-helper
   (implies (natp n)
@@ -854,13 +852,12 @@
            :in-theory (e/d (recharacterize-nth-new-ad ;LIST::EQUAL-APPEND-REDUCTION!
                             equal-of-append
                             equal-of-cons
-                            ) ( ;LIST::NTH-OF-CONS
-                            N-NEW-ADS-AUX
-                            ))
-           )
+                            )
+                           (;LIST::NTH-OF-CONS
+                            N-NEW-ADS-AUX)))
           ("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (    ;LIST::CAR-APPEND LIST::CDR-APPEND
-                            ) ( ;N-NEW-ADS-AUX
+           :in-theory (e/d (;LIST::CAR-APPEND LIST::CDR-APPEND
+                            ) (;;N-NEW-ADS-AUX
                                ;;LIST::NTH-OF-CONS
                             )))))
 

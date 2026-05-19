@@ -1618,7 +1618,7 @@
 ;;                 (natp x))
 ;;            (equal (* 2 x)
 ;;                   (bvmult (ceiling-of-lg free) 2 x)))
-;;   :hints (("Goal" :in-theory (e/d (bvmult)(BVMULT-OF-2-GEN)))))
+;;   :hints (("Goal" :in-theory (e/d (bvmult) (BVMULT-OF-2-GEN)))))
 ;(theory-invariant (incompatible (:definition bvmult) (:rewrite *-of-2-becomes-bvmult)))
 
 ;put this back (may need to repair it?)
@@ -1630,7 +1630,7 @@
 ;;            (equal (* 2 x)
 ;;                   ;is this as tight as we can make the mult?
 ;;                   (bvmult (ceiling-of-lg (+ 1 free)) 2 x)))
-;;   :hints (("Goal" :in-theory (e/d (bvmult)(BVMULT-OF-2-GEN)))))
+;;   :hints (("Goal" :in-theory (e/d (bvmult) (BVMULT-OF-2-GEN)))))
 
 ;; ;yuck
 ;; (defthm bvcat-hack22
@@ -2149,7 +2149,7 @@
            (equal (unsigned-byte-p size (* k x))
                   (and (natp size)
                        (equal 0 x))))
-  :hints (("Goal" :cases ((< k (* k x))(= k (* k x)))
+  :hints (("Goal" :cases ((< k (* k x)) (= k (* k x)))
            :in-theory (enable unsigned-byte-p))))
 
 (defthm unsigned-byte-p-of-*-of-constant

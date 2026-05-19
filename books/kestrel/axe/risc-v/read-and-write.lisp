@@ -1460,7 +1460,7 @@
                 )
            (equal (read n1 addr1 (write-byte addr2 byte stat))
                   (read n1 addr1 stat)))
-  :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
+  :hints (;("subgoal *1/2" :cases ((equal n1 1)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (read n1 addr1 stat)
            :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases  bvuminus bvminus equal-of-read-and-read-when-bvchops-agree ifix)
