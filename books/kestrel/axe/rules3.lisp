@@ -408,8 +408,7 @@
                 (integerp x)
                 (integerp high))
            (equal (< x high)
-                  (<= x (+ -4 high))))
-  :hints (("Goal" :in-theory (enable))))
+                  (<= x (+ -4 high)))))
 
 ;; ;the rule logext-bounds is bad
 ;; (defthm logext-bounds-better
@@ -895,7 +894,7 @@
 ;;                 (natp size))
 ;;            (equal (bvplus size x y)
 ;;                   (bvplus size free y)))
-;;   :hints (("Goal" :in-theory (enable))))
+;;   )
 
 ;; (defthm bvplus-when-bvchop-known-subst
 ;;   (implies (and (equal (bvchop size x) free)
@@ -903,7 +902,7 @@
 ;;                 (natp size))
 ;;            (equal (bvplus size y x)
 ;;                   (bvplus size y free)))
-;;   :hints (("Goal" :in-theory (enable))))
+;;   )
 
 ;this is the same as bvlt-of-bvplus-same?
 (defthm bvlt-of-bvplus-same2
@@ -2783,7 +2782,7 @@
            :use (:instance split-with-bvcat (x x) (hs 1) (ls 2))
            :in-theory (enable bvlt unsigned-byte-p bvchop-of-sum-cases bvplus bvcat logapp))))
 
-;(in-theory (enable  )) ;now drop bvlt-5-16-+-4?
+;;now drop bvlt-5-16-+-4?
 
 (in-theory (enable sbvdiv-when-both-positive))
 
@@ -4913,7 +4912,7 @@
 ;; (thm
 ;;  (equal (sbvlt 32 (bvplus 32 k x) j)
 ;;         (sbvlt 32 x (bvminus 32 j k)))
-;;  :hints (("Goal" :in-theory (disable))))
+;;  )
 
 
 ;this is the loop that zeros out the low 16 bytes of the array...
@@ -6165,8 +6164,7 @@
                 (not (equal 0 j))
                 (integerp j))
            (equal (MOD (* j i) j)
-                  0))
-  :hints (("Goal" :in-theory (enable))))
+                  0)))
 
 (defthm SBVMODDOWN-of-bvmult-same-32-5-5-5
   (implies (and (bvle 5 x 6)

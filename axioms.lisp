@@ -14367,6 +14367,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-fncall-meta ; *metafunction-context*
     ld-loop ; *ld-level*
     print-summary ; dmr-flush
+    #+acl2-pass2-def-time-info print-time-summary ; *pass2-def-time-info*
 ; WARNING: See chk-logic-subfunctions before removing ev from this list!
     ev ; *ev-shortcut-okp*
     ev-lst ; *ev-shortcut-okp*
@@ -14463,6 +14464,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     add-global-stobj remove-global-stobj
     translate-stobj-type-to-guard
     chk-acceptable-defuns-redundancy
+    #+acl2-rewrite-meter initialize-summary-accumulators
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -14695,6 +14697,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     df<-fn
     df=-fn
     df/=-fn
+    #+acl2-rewrite-meter rewrite-stack-limit
     ))
 
 (defconst *initial-macros-with-raw-code*
@@ -14800,6 +14803,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-current-package
     ec-call
     swap-stobjs
+    #+acl2-rewrite-meter zero-depthp
+    #+acl2-pass2-def-time-info incf-pass2-def-time?
+    with-debug
     ))
 
 (defun untouchable-marker (mac)
@@ -24138,6 +24144,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
 (progn
 
+; NOTE: Similar statistics-gathering code may be found for feature
+; :acl2-pass2-def-time-info.  If we are tempted to add a third such block of
+; statistics-gathering code, it might be good instead to add them all in a
+; uniform manner rather than having a distinct statistics-gathering mechanism
+; for each.
+
 ; Here we provide a mechanism for checking the maximum stack depth attained by
 ; the rewrite nest, while at the same time turning off the rewrite-stack depth
 ; limit check.
@@ -24148,7 +24160,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; executing the following Unix command, where DIR is the acl2-sources
 ; directory:
 
-; find DIR/books -name '*.rstats' -exec cat {} \; > rewrite-depth-stats.lisp
+; find DIR/books -name '*.rstats' -exec cat {} \; > rewrite-depth-stats.lsp
 
 (defparameter *rewrite-depth-max* 0)     ; records max depth per event
 (defparameter *rewrite-depth-alist* nil) ; records max depth per book
@@ -24156,10 +24168,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 )
 
 ; We might as well include code here for analyzing the resulting file
-; rewrite-depth-stats.lisp (see comment above).  We comment out this code since
+; rewrite-depth-stats.lsp (see comment above).  We comment out this code since
 ; it will not be used very often.
 
-; (include-book "books/misc/file-io")
+; (include-book "misc/file-io" :dir :system)
 ;
 ; (defun collect-rstats-1 (filename alist acc)
 ;
@@ -24187,7 +24199,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;
 ; (defun collect-rstats (infile outfile state)
 ;
-; ; Each object in infile as the form (filename . alist), where alist has
+; ; Each object in infile has the form (filename . alist), where alist has
 ; ; elements of the form (event-name . n), where n is the rewrite stack depth
 ; ; required for event-name.  We write out outfile, which contains a single form
 ; ; whose elements are of the form ((filename . event-name) . n).  the cdr of

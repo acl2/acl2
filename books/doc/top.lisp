@@ -274,6 +274,9 @@
   (include-book "centaur/aig/top-doc" :dir :system)
   (include-book "std/util/termhints" :dir :system)
 
+  ;; Auto-generated from ACL2(r) (see projects/omp/gen-top-doc.lsp)
+  (include-book "projects/omp/top-doc" :dir :system)
+
   ;; omitted from gl
   (include-book "centaur/misc/outer-local" :dir :system)
 

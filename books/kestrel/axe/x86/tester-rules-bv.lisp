@@ -450,8 +450,7 @@
                     else)
                   (if (sbvlt size k x)
                       t
-                    else)))
-  :hints (("Goal" :in-theory (disable))))
+                    else))))
 
 ;; arises in array indexing -- try without this
 (defthm logext-of-+-of-bvplus-same-size
@@ -482,7 +481,7 @@
 ;;                (signed-byte-p 48 y))
 ;;           (equal (equal (bvchop 48 x) (bvchop 48 y))
 ;;                  (equal x y)))
-;;  :hints (("Goal" :in-theory (enable ))))
+;;  )
 
 ;; for when we have to disable the executable-counterpart
 ;; todo: doesn't limit-expt handle this?

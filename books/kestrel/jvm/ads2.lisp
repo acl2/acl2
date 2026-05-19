@@ -450,7 +450,7 @@
 
 ;; (DEFUN ind2 (ADS CURRENT-TRY CURRENT-TRY2)
 ;;   (DECLARE (XARGS :MEASURE (SET::CARDINALITY ADS)
-;;                   :HINTS (("goal" :IN-THEORY (DISABLE)))))
+;;                   ))
 ;;   (IF (or (NOT (SET::IN CURRENT-TRY ADS))
 ;;           (NOT (SET::IN CURRENT-TRY2 ADS)))
 ;;       (list CURRENT-TRY current-try2)

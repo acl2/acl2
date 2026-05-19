@@ -65,7 +65,6 @@
   (declare (xargs :guard (and (true-listp l) ;why?
                               (all-consp l)
                               (all-cdrs-rationalp l))
-                  :hints (("Goal" :in-theory (enable )))
                   :verify-guards nil ;done below
                   ))
   (cond ((atom (cdr l)) l)

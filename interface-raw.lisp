@@ -6461,13 +6461,13 @@
          (name (cadr def))
          (ht (hcomp-ht-from-type type 'install-for-add-trip-hcomp-build)))
     (when evalp
-      (with-debug (eval def)
+      (with-debug (incf-pass2-def-time? (eval def))
                   "[~s] Eval def for ~s.~%"
                   'idfathb-1 name)
       #-(or ccl sbcl)
       (when (and (eq (car def) 'defun)
                  (default-compile-fns (w *the-live-state*)))
-        (with-debug (compile name)
+        (with-debug (incf-pass2-def-time? (compile name))
                     "[~s] Compile def for ~s.~%"
                     'idfathb-2 name)))
     (assert ht)
@@ -6566,7 +6566,7 @@
         (return-val nil))
     (when (null ht) ; e.g., including uncertified book
       (return-from install-for-add-trip-include-book
-                   (and def (with-debug (eval def)
+                   (and def (with-debug (incf-pass2-def-time? (eval def))
                                         "[~s] Eval def for ~s.~%"
                                         'ifatib-1 name))))
     (multiple-value-bind
@@ -6654,7 +6654,8 @@
                      (setf (symbol-function name) fixed-val)
                      "[~s] Set (symbol-function ~s) with fixed-val.~%"
                      'ifatib-2 name))
-                   (t (cond (def (with-debug (eval def)
+                   (t (cond (def (with-debug (incf-pass2-def-time?
+                                              (eval def))
                                              "[~s] Eval def for ~s.~%"
                                              'ifatib-3 name))
                             (t (setq return-val nil))))))))
@@ -6677,7 +6678,7 @@
             t))))
       (t ; Hash-table lookup either fails or is not used.
        (when def
-         (with-debug (eval def)
+         (with-debug (incf-pass2-def-time? (eval def))
                      "[~s] Eval def for ~s.~%"
                      'ifatib-7 def))))
      return-val)))
@@ -6705,7 +6706,7 @@
                                        nil))
    ((hcomp-build-p)
     (install-for-add-trip-hcomp-build def reclassifyingp evalp))
-   (t (with-debug (eval def)
+   (t (with-debug (incf-pass2-def-time? (eval def))
                   "[~s] Eval def for ~s.~%"
                   'ifat-1 (cadr def)))))
 
@@ -6858,11 +6859,16 @@
                 (t (let (form)
                      (cond
                       (oneify-p
-                       (let ((*1*-def (cons 'defun
-                                            (oneify-cltl-code (cadr def)
-                                                              def0
-                                                              (cdddr def)
-                                                              wrld))))
+                       (let ((*1*-def
+                              (cons 'defun
+                                    (with-debug (incf-pass2-def-time?
+                                                 (oneify-cltl-code (cadr def)
+                                                                   def0
+                                                                   (cdddr def)
+                                                                   wrld))
+                                                "[~s] (oneify ~s)~%"
+                                                'idfat-oneify
+                                                name))))
                          (setf (car tail) *1*-def)
 
 ; While it is tempting to do a declaim for a *1* function,
@@ -6908,7 +6914,7 @@
 ; of GCL (before 2.7.0), form is nil anyhow, so it's not worth spending a lot
 ; of time on this issue or having it affect how we specify evalp.
 
-                       (with-debug (eval form)
+                       (with-debug (incf-pass2-def-time? (eval form))
                                    "[~s] (eval ~s)~%"
                                    'idfat-5 form))
                      (let ((skip-reason
@@ -6927,7 +6933,8 @@
                           ((eq skip-reason 'logic)
                            (assert *hcomp-fn-ht*) ; as hcomp-build-p is non-nil
                            (when evalp
-                             (with-debug (eval (car tail))
+                             (with-debug (incf-pass2-def-time?
+                                          (eval (car tail)))
                                          "[~s] Eval def for ~s.~%"
                                          'idfat-6 (cadr (car tail))))
                            (with-debug (setf (gethash (*1*-symbol name)
@@ -6937,7 +6944,8 @@
                                         ~s.~%"
                                        'idfat-7 (*1*-symbol name)))
                           (evalp
-                           (with-debug (eval (car tail))
+                           (with-debug (incf-pass2-def-time?
+                                        (eval (car tail)))
                                        "[~s] Eval def for ~s.~%"
                                        'idfat-8 (cadr (car tail)))))
                          (setf (car tail) nil))))))))
@@ -6945,7 +6953,7 @@
          (assert evalp)
          (loop for def in defs
                when def
-               do (with-debug (eval def)
+               do (with-debug (incf-pass2-def-time? (eval def))
                               "[~s] Eval def for ~s.~%"
                               'idfat-8 (cadr def))))
         (hcomp-build-p
@@ -6956,7 +6964,7 @@
         (t
          (assert evalp)
          (loop for def in defs
-               do (with-debug (eval def)
+               do (with-debug (incf-pass2-def-time? (eval def))
                               "[~s] Eval def for ~s.~%"
                               'idfat-9 (cadr def))))))
 
@@ -9592,6 +9600,76 @@
           explanation, or contact the ACL2 implementors."
          ans))))
 
+(defmacro df-signal? (form op)
+
+; Form should return a single numeric value in ACL2.  We ensure that if there
+; is no error then the result is truly a floating-point number that represents
+; a rational number -- not an infinity or NaN.  Actually we don't need to worry
+; about NaN in guard-verified code; it's simple to include that test in Allegro
+; CL with a documented function (rather than just testing against
+; #.*infinity-double* and #.*negative-infinity-double*), so we do so, but we
+; don't bother testing for Nan in LispWorks.
+
+; We return form unchanged in other than Allegro CL and LispWorks, because we
+; already know that an error is signalled on overflow for other Lisps that host
+; ACL2; see break-on-overflow-and-nan.
+
+  #-(or allegro lispworks (and gcl no-sigfpe))
+  (declare (ignore op))
+  #-(or allegro lispworks (and gcl no-sigfpe))
+  form
+; Camm Maguire suggestion:
+  #+(and gcl no-sigfpe)
+  `(let ((result ,form))
+      (si::flush-floating-point-exceptions ',op (list ,@(cdr form)))
+      result)
+  #+allegro
+  `(let ((result ,form))
+     (when (excl:exceptional-floating-point-number-p result)
+       (error "Floating-point exception for a call of ~s"
+              ',op))
+     result)
+  #+lispworks
+  `(let ((result ,form))
+     (when (or (= result +1D++0) (= result -1D++0))
+       (error "Floating-point overflow for a call of ~s"
+              ',op))
+     result))
+
+(defun check-fp-signals ()
+
+; Here we do a partial check, which we hope is actually sufficiently complete,
+; that the combination of df-signal? and break-on-overflow-and-nan is
+; sufficient to avoid letting bad values like NaN be returned by fp operations.
+
+; It would be more polite to do this check much earlier, perhaps before
+; compiling ACL2 but certainly before LDing its source code.  But that would
+; require moving the definition of df-signal? to a less natural place --
+; probably easy to do, but we fully expect this check to succeed anyhow.
+
+  (flet ((err-fn (form val)
+           (format t "This Lisp is unsuitable for ACL2, because~%~
+                      evaluation of the form ~s was expected~%~
+                      to produce an error but instead it produced the~%~
+                      value ~s.  You may want to notify the ACL2~%`
+                      implementors of this error message, with~%~
+                      information about your Lisp implementation~%~
+                      and platform."
+                   form val)))
+    (let* ((tmp1 (ignore-errors
+; The eval wrapper below avoids a compiler warning about constant folding.
+                   (df-signal? (eval '(/ 0.0 0.0)) /))) ; invalid
+           (tmp2 (ignore-errors
+                   (df-signal? (eval '(/ 1.0 zero)) /))) ; division by 0
+           (tmp3 (ignore-errors
+                   (df-signal? (eval '(expt 2.0 10000.0)) expt)))) ; overflow
+      (when tmp1 (err-fn '(df/ 0 0) tmp1))
+      (when tmp2 (err-fn '(df/ 1 0) tmp2))
+      (when tmp3 (err-fn '(df-expt 2 10000) tmp3))
+      (when (or tmp1 tmp2 tmp3)
+        (exit-with-build-error
+         "Build failed as noted above.")))))
+
 (defun-one-output check-acl2-initialization ()
   (check-built-in-constants)
   (check-out-instantiablep (w *the-live-state*))
@@ -9602,6 +9680,7 @@
        "The initial ACL2 world does not satisfy plist-worldp-with-formals!"))
   (check-slashable)
   (check-some-builtins-for-executability)
+  (check-fp-signals)
   nil)
 
 (defun set-initial-cbd ()
