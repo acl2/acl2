@@ -95,8 +95,9 @@
    (xdoc::p
     "The @(':ident') variant represents a named constant or
      constexpr variable reference."))
-  (:bool ((value bool)))
+  (:bool  ((value bool)))
   (:ident ((name ident)))
+  (:int   ((iconst c$::iconst)))
   :pred cpp-const-expr-p
   :layout :fulltree)
 
@@ -352,40 +353,38 @@
 ;; cpp-block-item-list as the inline method body.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Namespace Definitions
+;; Namespace Kinds
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum cpp-namespace-def
-  :short "Fixtype of C++ namespace definition headers (simplified)."
+(fty::deftagsum cpp-namespace-kind
+  :short "Fixtype of C++ namespace kinds (named, anonymous, or nested)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A namespace definition begins with the @('namespace') keyword
-     followed by an optional name [C++23:9.8].")
-   (xdoc::p
-    "We capture the header (the kind and name) separately from the body,
-     since the body is a sequence of declarations that may recursively
-     contain further C++ constructs.
-     The body itself is not captured here.")
-   (xdoc::p
-    "Three kinds are supported:
-     named (@('namespace Foo { ... }')),
-     anonymous (@('namespace { ... }')),
-     and nested (C++17: @('namespace A::B::C { ... }'))."))
+    "The kind of a namespace definition header [C++23:9.8]:
+     named (@('namespace Foo')),
+     anonymous (@('namespace')),
+     or nested (C++17: @('namespace A::B::C')).
+     This is the header-only component; the body is in @(tsee cpp-namespace-def)."))
   (:named
    ((name ident)))               ; e.g., Foo
   (:anonymous ())                ; namespace { ... }
   (:nested
-   ((names ident-listp)))         ; e.g., (A B C) for 'namespace A::B::C'
-  :pred cpp-namespace-def-p
+   ((names c$::ident-list)))          ; e.g., (A B C) for 'namespace A::B::C'
+  :pred cpp-namespace-kind-p
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-cpp-namespace-def
-  :short "An irrelevant C++ namespace definition."
-  :type cpp-namespace-def-p
-  :body (cpp-namespace-def-anonymous))
+(defirrelevant irr-cpp-namespace-kind
+  :short "An irrelevant C++ namespace kind."
+  :type cpp-namespace-kind-p
+  :body (cpp-namespace-kind-anonymous))
+
+;; Note: cpp-namespace-def (the full namespace definition with body) is
+;; defined later in the fty::deftypes cpp-top-level-types block at the
+;; end of this file, because it is mutually recursive with
+;; cpp-top-level-decl and cpp-top-level-decl-list.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Operator Function Identifiers
@@ -623,6 +622,42 @@
   :body (cpp-assign-op-simple))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Lambda Captures (defined before cpp-expr-stmt-types, no cpp-expr dependency)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum cpp-capture
+  :short "Fixtype of C++ lambda capture clauses [C++23:7.5.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A single capture in a lambda capture list.
+     We support the six syntactic forms:
+     @('[=]') (default by-value), @('[&]') (default by-reference),
+     @('[x]') (named by-value), @('[&x]') (named by-reference),
+     @('[this]'), and @('[*this]') (C++17).
+     Init-captures (@('[x = expr]')) are not yet supported."))
+  (:default-val ())                 ; [=]
+  (:default-ref ())                 ; [&]
+  (:by-value    ((name ident)))     ; [x]
+  (:by-ref      ((name ident)))     ; [&x]
+  (:this        ())                 ; [this]
+  (:star-this   ())                 ; [*this]
+  :pred cpp-capture-p
+  :layout :fulltree)
+
+(fty::deflist cpp-capture-list
+  :short "Fixtype of lists of C++ lambda captures."
+  :elt-type cpp-capture
+  :true-listp t
+  :elementp-of-nil nil
+  :pred cpp-capture-listp)
+
+(defirrelevant irr-cpp-capture
+  :short "An irrelevant C++ lambda capture."
+  :type cpp-capture-p
+  :body (cpp-capture-default-val))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Expressions, Statements, Block Items, and Catch Clauses (mutually recursive)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -698,8 +733,10 @@
     (:cond ((test cpp-expr) (then cpp-expr) (else cpp-expr)))
     ;; Comma
     (:comma ((lhs cpp-expr) (rhs cpp-expr)))
-    ;; Lambda (no capture list)
-    (:lambda ((params cpp-param-list) (body cpp-block-item-list)))
+    ;; Lambda
+    (:lambda ((captures cpp-capture-list)
+              (params   cpp-param-list)
+              (body     cpp-block-item-list)))
     :pred cpp-expr-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
@@ -848,6 +885,89 @@
 ;; Class Member Declarations (moved here to reference cpp-block-item-list)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;;;;;;;;;;;;;;;;;;;
+;; Enumerators and Enum Declarations
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod cpp-enumerator
+  :short "Fixtype of a single C++ enumerator [C++23:9.7.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A single enumerator in an enum body.  If @('value-p') is @('t'),
+     @('value') holds the explicitly specified constant expression."))
+  ((name    ident)
+   (value-p bool)
+   (value   cpp-const-expr))
+  :pred cpp-enumerator-p
+  :layout :fulltree)
+
+(fty::deflist cpp-enumerator-list
+  :short "Fixtype of lists of C++ enumerators."
+  :elt-type cpp-enumerator
+  :true-listp t
+  :elementp-of-nil nil
+  :pred cpp-enumerator-listp)
+
+(defirrelevant irr-cpp-enumerator
+  :short "An irrelevant C++ enumerator."
+  :type cpp-enumerator-p
+  :body (make-cpp-enumerator
+         :name    (c$::irr-ident)
+         :value-p nil
+         :value   (irr-cpp-const-expr)))
+
+(fty::defprod cpp-enum-decl
+  :short "Fixtype of C++ enum declarations [C++23:9.7.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An enum declaration: @('enum [class|struct] [name] [: base-type] { body }').
+     @('classp') is @('t') for @('enum class') or @('enum struct').
+     @('name') is @('nil') for anonymous enums.
+     @('base-p') is @('t') iff an explicit base type is given."))
+  ((classp  bool)
+   (name    ident-option)
+   (base-p  bool)
+   (base    cpp-type-spec)
+   (body    cpp-enumerator-list))
+  :pred cpp-enum-decl-p
+  :layout :fulltree)
+
+(defirrelevant irr-cpp-enum-decl
+  :short "An irrelevant C++ enum declaration."
+  :type cpp-enum-decl-p
+  :body (make-cpp-enum-decl
+         :classp nil
+         :name   nil
+         :base-p nil
+         :base   (irr-cpp-type-spec)
+         :body   nil))
+
+;;;;;;;;;;;;;;;;;;;;
+;; Using Declarations
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum cpp-using-decl
+  :short "Fixtype of C++ using declarations [C++23:9.9]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @('using') declaration at class or namespace scope.
+     The @(':alias') variant is a type alias: @('using Name = TypeSpec;').
+     The @(':name') variant imports a name: @('using ns::Foo;'),
+     represented as a @(tsee cpp-type-spec)."))
+  (:alias ((alias ident)
+           (type  cpp-type-spec)))   ; using Alias = Type;
+  (:name  ((name  cpp-type-spec)))   ; using ns::Foo;
+  :pred cpp-using-decl-p
+  :layout :fulltree)
+
+(defirrelevant irr-cpp-using-decl
+  :short "An irrelevant C++ using declaration."
+  :type cpp-using-decl-p
+  :body (make-cpp-using-decl-name :name (irr-cpp-type-spec)))
+
 (fty::deftagsum cpp-member-decl
   :short "Fixtype of C++ class member declarations."
   :long
@@ -881,6 +1001,10 @@
     (staticp       bool)
     (body-p        bool)
     (body          cpp-block-item-list)))
+  (:using-decl
+   ((decl cpp-using-decl)))
+  (:enum-decl
+   ((def cpp-enum-decl)))
   :pred cpp-member-decl-p
   :layout :fulltree)
 
@@ -928,3 +1052,93 @@
          :template-params nil
          :base nil
          :members nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Top-Level Declarations, Namespace Definitions, and Translation Units
+;; (mutually recursive: namespace-def contains top-level-decl-list, and
+;;  top-level-decl can be a namespace-def)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftypes cpp-top-level-types
+  :short "Mutually recursive fixtypes for C++ top-level declarations
+          and namespace definitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These types are mutually recursive because a @(tsee cpp-namespace-def)
+     has a @(tsee cpp-top-level-decl-list) body, and a
+     @(tsee cpp-top-level-decl) may be a @(tsee cpp-namespace-def)."))
+
+  (fty::defprod cpp-namespace-def
+    :short "Fixtype of C++ namespace definitions (with body) [C++23:9.8]."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A complete namespace definition: kind, optional @('inline') qualifier,
+       and the body as a list of top-level declarations."))
+    ((kind    cpp-namespace-kind)
+     (inlinep bool)
+     (body    cpp-top-level-decl-list))
+    :pred cpp-namespace-def-p
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deftagsum cpp-top-level-decl
+    :short "Fixtype of C++ top-level declarations."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A top-level declaration that can appear in a namespace or translation
+       unit: a namespace definition, class definition, using declaration,
+       enum definition, or an empty declaration (@(';'))."))
+    (:namespace-def ((def  cpp-namespace-def)))
+    (:class-def     ((def  cpp-class-specifier)))
+    (:using-decl    ((decl cpp-using-decl)))
+    (:enum-def      ((def  cpp-enum-decl)))
+    (:empty         ())
+    :pred cpp-top-level-decl-p
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 1))
+
+  (fty::deflist cpp-top-level-decl-list
+    :short "Fixtype of lists of C++ top-level declarations."
+    :elt-type cpp-top-level-decl
+    :true-listp t
+    :elementp-of-nil nil
+    :pred cpp-top-level-decl-listp
+    :measure (two-nats-measure (acl2-count x) 0)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-cpp-namespace-def
+  :short "An irrelevant C++ namespace definition."
+  :type cpp-namespace-def-p
+  :body (make-cpp-namespace-def
+         :kind    (cpp-namespace-kind-anonymous)
+         :inlinep nil
+         :body    nil))
+
+(defirrelevant irr-cpp-top-level-decl
+  :short "An irrelevant C++ top-level declaration."
+  :type cpp-top-level-decl-p
+  :body (cpp-top-level-decl-empty))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Translation Units
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod cpp-translation-unit
+  :short "Fixtype of C++ translation units."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A translation unit is the top-level compilation unit [C++23:5].
+     It is represented as a list of top-level declarations."))
+  ((decls cpp-top-level-decl-list))
+  :pred cpp-translation-unit-p
+  :layout :fulltree)
+
+(defirrelevant irr-cpp-translation-unit
+  :short "An irrelevant C++ translation unit."
+  :type cpp-translation-unit-p
+  :body (make-cpp-translation-unit :decls nil))

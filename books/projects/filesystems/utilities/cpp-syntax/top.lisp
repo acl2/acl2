@@ -11,6 +11,7 @@
 (include-book "cpp-token-utilities")
 (include-book "cpp-parser")
 (include-book "cpp-expr-parser")
+(include-book "cpp-top-level-parser")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
