@@ -523,8 +523,8 @@
 ;;                   (BV-ARRAY-READ SIZE LEN INDEX LST)))
 ;;   :HINTS
 ;;   (("Goal" :cases ((< INDEX (LEN LST)))
-;;     :IN-THEORY (E/d (BVCHOP-WHEN-I-IS-NOT-AN-INTEGER
-;;                        BV-ARRAY-READ) ()))))
+    ;; :IN-THEORY (enable BVCHOP-WHEN-I-IS-NOT-AN-INTEGER
+    ;;                    BV-ARRAY-READ))))
 
 ;; Chops down the index if needed
 (defthm bv-array-read-when-index-is-too-high

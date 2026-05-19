@@ -132,8 +132,7 @@
 ;;   (implies (posp size)
 ;;            (equal (evenp (bvchop size x))
 ;;                   (equal 0 (getbit 0 x))))
-;;   :hints (("Goal" :in-theory (e/d (bvchop EVENP-BECOMES-EQUAL-OF-0-AND-MOD getbit)
-;;                                   ()))))
+;;   :hints (("Goal" :in-theory (enable bvchop EVENP-BECOMES-EQUAL-OF-0-AND-MOD getbit))))
 
 (defthm bvcount-bound
   (implies (natp size)
@@ -194,10 +193,9 @@
 ;;   :hints (("Goal" :induct (bvcount size x)
 ;;            :in-theory (enable bvcount))))
 
-;;   :hints (("Goal" ;:expand ((LOGCOUNT (BVCHOP SIZE X)))
-;;            :in-theory (e/d (slice bvplus BVCHOP-OF-LOGTAIL floor-by-2
-;;                                   bvcount)
-;;                            ()))))
+  ;; :hints (("Goal" ;:expand ((LOGCOUNT (BVCHOP SIZE X)))
+  ;;          :in-theory (enable slice bvplus BVCHOP-OF-LOGTAIL floor-by-2
+  ;;                                 bvcount))))
 
 ;; (defthmd bvcount-unroll2
 ;;   (implies (posp size)

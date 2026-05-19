@@ -1835,8 +1835,7 @@
              ;;splitting on nodenum (which is not a call of NOT):
              ;;instead of proving the clause C, we will prove both (or (not nodenum) C) and (or nodenum C)
              ;;can we somehow avoid this saving? copy to a new array? ;change rewrite-literals-for-axe-prover to not destroy existing nodes?!
-             (b* (
-                  ;;(saved-dag-array dag-array) ;(saved-dag-alist (array-to-alist 'dag-array dag-array dag-len)) ;don't convert to an alist?  just restore later by making the old value of dag-array the new  under-the-hood value?  same for parents array?
+             (b* (;;(saved-dag-array dag-array) ;(saved-dag-alist (array-to-alist 'dag-array dag-array dag-len)) ;don't convert to an alist?  just restore later by making the old value of dag-array the new  under-the-hood value?  same for parents array?
                   ;;(saved-dag-len dag-len)
                   ;;(saved-dag-parent-array dag-parent-array) ;(saved-dag-parent-alist (array-to-alist 'dag-parent-array dag-parent-array dag-len))
                   ;;(saved-dag-constant-alist dag-constant-alist)

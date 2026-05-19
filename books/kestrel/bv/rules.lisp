@@ -1564,7 +1564,7 @@
 ;;                 (INTEGERP HIGH))
 ;;            (EQUAL (SLICE HIGH LOW X)
 ;;                   0))
-;;   :HINTS (("Goal" :IN-THEORY (E/d (SLICE natp) ()))))
+;;   :HINTS (("Goal" :IN-THEORY (enable SLICE natp))))
 
 (defthm slice-of-bvchop-low-gen-better
   (implies (and (natp high)
@@ -2397,8 +2397,7 @@
   (implies (posp k)
            (equal (getbit (+ -1 (integer-length k)) k)
                   1))
-  :hints (("Goal" :in-theory (e/d (getbit slice bvchop-identity)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit slice bvchop-identity))))
 
 ;bvand-of-constant-when-power-of-2p should usually be enough
 (defthmd bvand-of-expt
@@ -2706,7 +2705,7 @@
            (equal (equal x y)
                   (equal (logtail 1 x) (logtail 1 y))))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 1 1 nil nil)))
-  :hints (("Goal" :in-theory (e/d (logtail getbit bvchop) ()))))
+  :hints (("Goal" :in-theory (enable logtail getbit bvchop))))
 
 
 ;should always bit blast as a last resort?
@@ -3943,7 +3942,7 @@
                          (BVCHOP N (- FREE)))
                   (EQUAL (BVCHOP N X)
                          (BVCHOP N FREE))))
-  :hints (("Goal" :in-theory (e/d (bvchop) ()))))
+  :hints (("Goal" :in-theory (enable bvchop))))
 
 ;do we need this?
 (DEFTHMd BVCHOP-SUM-SUBST-minus
@@ -4251,7 +4250,7 @@
                   (if (equal (bvchop size n) (+ -1 (expt 2 size)))
                       0
                     (+ 1 (bvchop size n)))))
-  :hints (("Goal" :in-theory (e/d (bvchop mod-sum-cases) ()))))
+  :hints (("Goal" :in-theory (enable bvchop mod-sum-cases))))
 
 (defthm bvchop-reduce-when-all-but-top-bit-known
   (implies (and (equal (bvchop 31 x) free)

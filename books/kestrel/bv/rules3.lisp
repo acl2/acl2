@@ -112,8 +112,7 @@
                 (integerp x))
            (equal (* 2 (BVCHOP (+ -1 N) x))
                   (bvchop n (* 2 x))))
-  :hints (("Goal" :in-theory (e/d (bvchop mod-expt-split)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvchop mod-expt-split))))
 
 (defthmd split-when-low-bit-1
   (implies (and (INTEGERP X)
@@ -804,8 +803,7 @@
 ;;                 (unsigned-byte-p size amt2))
 ;;            (equal (bvor (expt 2 size) (bvshl (expt 2 size) x amt) (bvshr (expt 2 size) x amt2))
 ;;                   (leftrotate (expt 2 size) amt x)))
-;;   :hints (("Goal" :in-theory (e/d (bvif myif bvplus bvshr leftrotate bvchop-of-sum-cases)
-;;                                   ()))))
+;;   :hints (("Goal" :in-theory (enable bvif myif bvplus bvshr leftrotate bvchop-of-sum-cases))))
 
 ;special case for 32 (will match)
 (defthm bvor-of-bvshl-and-bvshr-becomes-leftrotate32
@@ -1948,7 +1946,7 @@
 ;; (defthm bvplus-of-bvcat
 ;;   (equal (bvplus 16 x (bvcat 24 y 8 0))
 ;;          (bvplus 16 x (bvcat 8 y 8 0)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+;;   :hints (("Goal" :in-theory (enable bvplus))))
 
 ;gen!
 ;; (defthm bvplus-of-bvshl-becomes-bvcat

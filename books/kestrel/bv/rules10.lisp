@@ -1,7 +1,7 @@
 ; More rules about bit vectors
 ;
 ; Copyright (C) 2017-2021 Kestrel Technology, LLC
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -196,8 +196,7 @@
 ;; (defthm mod-of-bvchop-and-2
 ;;   (equal (mod (bvchop 63 x) 2)
 ;;          (getbit 0 x))
-;;   :hints (("Goal" :in-theory (e/d (bvchop getbit)
-;;                                   ()))))
+;;   :hints (("Goal" :in-theory (enable bvchop getbit))))
 
 ;move to an arith library
 (defthm <-of-constant-when-<-of-constant-integer

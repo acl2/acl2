@@ -1028,8 +1028,7 @@
                 (x86p x86))
            (equal (write-to-segment n eff-addr1 seg-reg val1 (write-byte-to-segment eff-addr2 seg-reg val2 x86))
                   (write-to-segment n eff-addr1 seg-reg val1 x86)))
-  :hints (
-          ("Goal" :induct (write-to-segment n eff-addr1 seg-reg val1 x86)
+  :hints (("Goal" :induct (write-to-segment n eff-addr1 seg-reg val1 x86)
            :in-theory (e/d (sep-eff-addr-ranges-swap
                             write-to-segment
                             unsigned-byte-p)

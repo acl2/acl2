@@ -728,8 +728,7 @@
 ;; to XW, WRITE, and SET-FLAG (todo: update this comment).
 (defund state-rules ()
   (declare (xargs :guard t))
-  '(
-    force ;todo: think about this, could only open force on a constant arg
+  '(force ;todo: think about this, could only open force on a constant arg
     ;x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
     ;; Flags:
@@ -2112,8 +2111,7 @@
 
 (defund canonical-rules-bv ()
   (declare (xargs :guard t))
-  '(
-    ;; these are for the full, 64-bit address space:
+  '(;; these are for the full, 64-bit address space:
     ;; WARNING: Keep in sync with the list for 48 bits above
     in-region64p-of-bvchop-arg1
     in-region64p-of-bvchop-arg3

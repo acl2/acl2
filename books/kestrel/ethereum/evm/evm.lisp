@@ -1319,8 +1319,7 @@
          (old-num-bytes (+ (stack-item 0 mu) 1)))
     (if (< 32 old-num-bytes) ;; no effect (exactly 32 also has no effect, but let's include it in the other case)
         (stack-item 1 mu)
-      (let* (
-             ;; This is index of the sign bit of the value in (stack-item 0 mu),
+      (let* (;; This is index of the sign bit of the value in (stack-item 0 mu),
              ;; which is presumably less than 256-bits wide.
 ;             (t-var (- 256 (* 8 old-num-bytes))) ;; "t" ;; this can be at most 248 (the sign bit of the least significant byte), if it is 0 there is no effect
  ;            (sign-bit (- 256 t-var)) ;using our standard numbering system

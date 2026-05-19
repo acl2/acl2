@@ -45,9 +45,8 @@
            (< x (- (expt 2 n))))
   :rule-classes (:rewrite ;:linear
                  )
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail
-                                          floor-when-negative-and-small)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit slice logtail
+                                     floor-when-negative-and-small))))
 
 (defthmd high-slice-when-negative
   (implies (and (< x 0)
@@ -231,8 +230,7 @@
                   (boolor (bvlt highsize x (slice (+ -1 size) lowsize k))
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize y k)))))
-  :hints (("Goal" :in-theory (e/d (bvlt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;; below we further restrict to x or y being constant
 (defthm bvlt-of-bvcat-arg2-constant
@@ -382,8 +380,7 @@
                   (boolor (bvlt highsize (slice (+ -1 size) lowsize k) x)
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize k y)))))
-  :hints (("Goal" :in-theory (e/d (bvlt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;; below we further restrict to x or y being constant
 (defthm bvlt-of-bvcat-arg3-constant

@@ -4205,8 +4205,7 @@
 ;;                   :measure (len l)
 ;;                   :hints (("Goal" :use ((:instance len-of-evens-tail-bound (acc nil))
 ;;                                         (:instance len-of-evens-tail-bound (l (cdr l)) (acc nil)))
-;;                            :expand (
-;;                                    ; (EVENS-TAIL (CONS L1 L2) NIL)
+;;                            :expand ( ; (EVENS-TAIL (CONS L1 L2) NIL)
 ;;                                     )
 ;;                            :in-theory (disable len-of-evens-tail-bound)))
 ;;                   ))
@@ -5824,9 +5823,7 @@
 ;;                                                                              nil 0 state)
 ;;                                    (if erp (mv t nil nil state)
 ;;                                      (let*
-;;                                          (
-;;
-;;                                           ;;this has the original params put in for any unchanged RVs:
+;;                                          (;;this has the original params put in for any unchanged RVs:
 ;;                                           (simplified-exit-test-body-of-fn-pushed-back
 ;;                                            (replace-in-term2 simplified-exit-test-body-of-fn
 ;;                                                           subst-alist-for-unchanged))
@@ -9794,32 +9791,32 @@
                                            `((equal ,duplicate-numcdrs-formal ,numcdrs-formal))
                                            update-dags-agree-defthm-names interpreted-function-alist :brief state))
            ;;fixme consider defining functions to capture the exit, base, and update dags (would need to open them up in the proof below)
-           (state (submit-events-brief `(
-                                   (skip-proofs ;fixme pull out the pattern of making a fn given the dags for each piece?
-                                    (defun ,new-fn (,@new-formals)
-                                      (declare (ignorable ,duplicate-numcdrs-formal) (xargs :normalize nil))
-                                      (if ,new-exit-test-expr
-                                          ,new-base-case-expr
-                                        (,new-fn ,@new-update-exprs))))
+           (state (submit-events-brief
+                    `((skip-proofs ;fixme pull out the pattern of making a fn given the dags for each piece?
+                        (defun ,new-fn (,@new-formals)
+                          (declare (ignorable ,duplicate-numcdrs-formal) (xargs :normalize nil))
+                          (if ,new-exit-test-expr
+                              ,new-base-case-expr
+                            (,new-fn ,@new-update-exprs))))
 
-                                   (defthm ,defthm-name
-                                     (equal (,fn ,@formals)
-                                            (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil))))
-                                     :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                                              :induct (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil)))
-                                              :expand ((,fn ,@formals)
-                                                       (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil))))
-                                              :in-theory (union-theories '(,fn ,new-fn) (theory 'minimal-theory)))
-                                             (if stable-under-simplificationp ;better way to do this (we don't know what the goal names will be)?
-                                                 '(:use (,@update-expansion-defthm-names
-                                                         (:instance ,increment-dags-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
-                                                         (:instance ,exit-test-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
-                                                         (:instance ,base-case-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
-                                                         ,@(cons-onto-all :instance (cons-all-onto update-dags-agree-defthm-names
-                                                                                                   `((,duplicate-numcdrs-formal ,numcdrs-formal))))
-                                                         )
-                                                        :do-not '(generalize eliminate-destructors))
-                                               nil))))
+                      (defthm ,defthm-name
+                        (equal (,fn ,@formals)
+                               (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil))))
+                        :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                                 :induct (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil)))
+                                 :expand ((,fn ,@formals)
+                                          (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil))))
+                                 :in-theory (union-theories '(,fn ,new-fn) (theory 'minimal-theory)))
+                                (if stable-under-simplificationp ;better way to do this (we don't know what the goal names will be)?
+                                    '(:use (,@update-expansion-defthm-names
+                                            (:instance ,increment-dags-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
+                                            (:instance ,exit-test-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
+                                            (:instance ,base-case-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
+                                            ,@(cons-onto-all :instance (cons-all-onto update-dags-agree-defthm-names
+                                                                                      `((,duplicate-numcdrs-formal ,numcdrs-formal))))
+                                            )
+                                      :do-not '(generalize eliminate-destructors))
+                                  nil))))
                                  state))
            ;; (- (cw "~x0 ~x1" defun defthm))
            )
@@ -12127,8 +12124,7 @@
                   :stobjs state)
            ;; (ignore assumptions interpreted-function-alist rewriter-rule-alist monitored-symbols)
            )
-  (b* (
-       ;; ;; First try to simplify the equality of the node and the constant:
+  (b* (;; ;; First try to simplify the equality of the node and the constant:
        ;; ;; TODO: This step seems slow and maybe not worth it for a pure node
        ;; (- (cw "Making the equality and rewriting (but only the top node).~%"))
        ;; ;;ffixme should we instead call the dag prover here, in case the assumptions are not simplified?

@@ -666,7 +666,7 @@
 ;;  (IMPLIES (< INDEX 0)
 ;;           (EQUAL (GETBIT 0 INDEX)
 ;;                  0))
-;;  :hints (("Goal" :in-theory (e/d (getbit) ()))))
+;;  :hints (("Goal" :in-theory (enable getbit))))
 
 ;; ;yuck?
 ;; (defthmd myif-of-constant-lists

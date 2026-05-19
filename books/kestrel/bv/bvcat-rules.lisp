@@ -457,8 +457,7 @@
   (implies (natp n)
            (equal (bvmult n 2 x)
                   (bvcat (+ -1 n) x 1 0)))
-  :hints (("Goal" :in-theory (e/d (bvmult slice getbit bvcat)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvmult slice getbit bvcat))))
 
 
 ;; TODO: organize this stuff:
@@ -528,7 +527,7 @@
   :hints (("Goal" :cases ((and (integerp z) (integerp y))
                           (and (integerp z) (not (integerp y)))
                           (and (not (integerp z)) (integerp y)))
-           :in-theory (e/d (bvcat) ()))))
+           :in-theory (enable bvcat))))
 
 ;move
 (DEFTHM BVCAT-SLICE-SLICE-SAME-2

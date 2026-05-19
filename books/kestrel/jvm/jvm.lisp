@@ -347,7 +347,7 @@
                 ;(not (method-abstractp (method-info (top-frame (binding th (thread-table s))))))
                 )
            (method-programp (current-program th s)))
-  :hints (("Goal" :in-theory (e/d (current-program) ()))))
+  :hints (("Goal" :in-theory (enable current-program))))
 
 ;move
 (defthm memberp-of-0-and-strip-cars-when-method-programp
@@ -400,8 +400,7 @@
            (jvm-statep (throw-exception objectref objectref-class th s)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
                   :cases ((call-stack-non-emptyp th s))
-                  :in-theory (e/d (current-program throw-exception)
-                                  ()))))
+                  :in-theory (enable current-program throw-exception))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
