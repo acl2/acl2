@@ -6,25 +6,28 @@
 (include-book "compatiblep")
 (include-book "submap")
 (include-book "update")
+(include-book "delete")
 
 (include-book "std/osets/cardinality" :dir :system)
 (include-book "std/osets/intersect" :dir :system)
-(include-book "std/osets/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; move to core
 (defrule assoc-implies-in-keys
     (implies (assoc k x)
              (set::in k (keys x)))
   :enable assoc
   :rule-classes :forward-chaining)
 
+; move to core
 (defrule not-assoc-implies-not-in-keys
     (implies (not (assoc k x))
              (not (set::in k (keys x))))
   :enable assoc
   :rule-classes :forward-chaining)
 
+; consider editing values-of-update-when-not-assoc
 (defrule values-of-update-when-not-in
 ; Similar to values-of-update-when-not-assoc in "core"
     (implies (not (set::in k (keys x)))
@@ -45,34 +48,18 @@
   :enable (set::emptyp set::in set::head)
   :rule-classes :forward-chaining)
 
+; move to core
 (defrule cardinality-values-<=-keys
     (<= (set::cardinality (values x))
         (set::cardinality (keys x)))
   :enable (keys values set::insert-cardinality)
   :rule-classes :linear)
 
-(defruled subset-insert-intersect-1
-    (set::subset (set::insert a (set::intersect x y))
-                 (set::intersect (set::insert a x) (set::insert a y)))
-  :enable set::pick-a-point-subset-strategy)
-
-(defruled subset-insert-intersect-2
-    (set::subset (set::intersect (set::insert a x) (set::insert a y))
-                 (set::insert a (set::intersect x y)))
-  :enable set::pick-a-point-subset-strategy)
-
-(defruled insert-intersect
-    (equal (set::insert a (set::intersect x y))
-           (set::intersect (set::insert a x) (set::insert a y)))
-  :enable (set::double-containment
-           subset-insert-intersect-1
-           subset-insert-intersect-2))
-
 (defrule intersect-insert-when-in
     (implies (set::in a y)
              (equal (set::intersect (set::insert a x) y)
                     (set::insert a (set::intersect x y))))
-  :enable insert-intersect)
+  :enable set::expensive-rules)
 
 (defrule not-in-intersect-when-not-in
     (implies (not (set::in a x))
@@ -102,7 +89,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define compose ((x mapp) (y mapp))
-  :returns (map1 mapp)
+  :returns (map mapp)
   (if (emptyp y)
       nil
       (mv-let (key val) (head y)
@@ -126,14 +113,15 @@
                       (cdr (assoc (cdr (assoc key y)) x)))))
   :enable compose)
 
-(defrule assoc-of-compose-associativity
+(defruledl assoc-of-compose-associativity
     (equal (assoc key (compose (compose x y) z))
            (assoc key (compose x (compose y z)))))
 
 (defrule compose-associativity
     (equal (compose (compose x y) z)
            (compose x (compose y z)))
-  :enable extensionality)
+  :enable (assoc-of-compose-associativity
+           extensionality))
 
 #|
 Skip these for now
@@ -152,46 +140,64 @@ Skip these for now
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+; remove mapp
 (define identityp ((x mapp))
   :returns (yes/no booleanp)
-  (and (mapp x)
-       (or (emptyp x)
-           (mv-let (key val) (head x)
-             (and (equal key val)
-                  (identityp (tail x))))))
+  (or (emptyp x)
+      (mv-let (key val) (head x)
+        (and (equal key val)
+             (identityp (tail x)))))
   
-  ///)
+  ///
 
-(defrule identityp-implies-mapp
-    (implies (identityp x)
-             (mapp x))
-  :enable identityp
-  :rule-classes :forward-chaining)
+  (defcong mequiv equal (identityp x) 1))
 
-(defruled identityp-implies-equal-keys-values
+(defruled values-is-keys-when-identityp
     (implies (identityp x)
              (equal (values x)
                     (keys x)))
   :enable (identityp values keys)
-  :rule-classes :forward-chaining)
+  :rule-classes (:rewrite :forward-chaining))
 
 (defrule assoc-of-identityp
-    (implies (identityp x)
+    (implies (and (identityp x)
+                  (assoc key x))
              (equal (assoc key x)
-                    (and (set::in key (keys x))
-                         (cons key key))))
+                    (cons key key)))
   :enable identityp)
 
-(defruled equal-when-identityp-and-equal-keys
+(defrule equal-keys-and-not-assoc-X-implies-not-assoc-Y
+    (implies (and (equal (keys x) (keys y))
+                  (not (assoc key x)))
+             (not (assoc key y)))
+  :enable assoc-to-in-of-keys
+  :rule-classes :forward-chaining) 
+
+(defruled equal-assoc-when-identityp-and-equal-keys
     (implies (and (identityp x)
                   (identityp y)
                   (equal (keys x)
                          (keys y)))
+             (equal (assoc key x)
+                    (assoc key y)))
+  :enable (assoc-to-in-of-keys)
+  :cases ((assoc key x)))
+
+(defruled equal-when-identityp-and-equal-keys
+    (implies (and (identityp x)
+                  (identityp y)
+                  (mapp x)
+                  (mapp y)
+                  (equal (keys x)
+                         (keys y)))
              (equal x y))
   :enable extensionality
+  :use (:instance equal-assoc-when-identityp-and-equal-keys
+                  (key (ext-equal-witness x y)))
   :rule-classes :forward-chaining)
 
-(defruled assoc-of-compose-is-restrict-when-args2-identityp
+(defruledl assoc-of-compose-is-restrict-when-args2-identityp
     (implies (identityp id-y)
              (equal (assoc key (compose x id-y))
                     (assoc key (restrict (keys id-y) x))))
@@ -204,16 +210,18 @@ Skip these for now
   :enable (assoc-of-compose-is-restrict-when-args2-identityp
            extensionality))
 
-(defrule assoc-of-self-compose-is-self-when-identityp
+(defruledl assoc-of-self-compose-is-self-when-identityp
     (implies (identityp x)
              (equal (assoc key (compose x x))
                     (assoc key x))))
 
 (defrule self-compose-is-self-when-identityp
-    (implies (identityp map)
-             (equal (compose map map)
-                    map))
-  :enable extensionality)
+    (implies (and (identityp x)
+                  (mapp x))
+             (equal (compose x x)
+                    x))
+  :enable (extensionality
+           assoc-of-self-compose-is-self-when-identityp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,7 +267,7 @@ Skip these for now
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Copied from Alessandro
-(define injectivep ((map mapp))
+(define injectivep ((x mapp))
   :returns (yes/no booleanp)
   :short "Check if an omap is injective."
   :long
@@ -271,22 +279,22 @@ Skip these for now
      a non-empty map if injective iff
      the value of its first key is not among the values of the tail of the map,
      and the tail of the map is itself injective."))
-  (and (mapp map)
-       (or (emptyp map)
-           (b* (((mv & val) (head map)))
-             (and (not (set::in val (values (tail map))))
-                  (injectivep (tail map))))))
-  ///)
+  (mbe :logic
+       (or (emptyp x)
+           (b* (((mv & val) (head x)))
+             (and (not (set::in val (values (tail x))))
+                  (injectivep (tail x)))))
+       :exec (equal (set::cardinality (keys x))
+                    (set::cardinality (values x))))
+  :verify-guards nil
 
-(defrule injectivep-implies-mapp
-    (implies (injectivep x)
-             (mapp x))
-  :enable injectivep
-  :rule-classes :forward-chaining)
+  ///
+
+  (defcong mequiv equal (injectivep x) 1))
 
 (defrule injectivep-implies-injectivep-tail
-    (implies (and (not (emptyp x))
-                  (injectivep x))
+    (implies (and (injectivep x)
+                  (not (emptyp x)))
              (injectivep (tail x)))
   :enable injectivep
   :rule-classes :forward-chaining)
@@ -323,30 +331,40 @@ Skip these for now
   :rule-classes :forward-chaining)
 
 (defrule equal-cardinality-keys-values-implies-injectivep
-    (implies (and (mapp x)
-                  (equal (set::cardinality (keys x))
-                         (set::cardinality (values x))))
+    (implies (equal (set::cardinality (keys x))
+                    (set::cardinality (values x)))
              (injectivep x))
   :enable (injectivep keys values set::insert-cardinality)
   :rule-classes :forward-chaining)
 
 (defruled injectivep-is-equal-cardinality-keys-values
-    (implies (mapp x)
-             (equal (injectivep x)
-                    (equal (set::cardinality (keys x))
-                           (set::cardinality (values x))))))
+    (equal (injectivep x)
+           (equal (set::cardinality (keys x))
+                  (set::cardinality (values x)))))
+
+(defruled cardinality-keys-values-is-equal-injectivep
+    (equal (equal (set::cardinality (keys x))
+                  (set::cardinality (values x)))
+           (injectivep x)))
+
+(verify-guards injectivep
+    :hints (("goal" 
+             :in-theory 
+             (enable injectivep
+                     cardinality-keys-values-is-equal-injectivep))))
 
 (defruled identityp-implies-equal-cardinality-keys-values
     (implies (identityp x)
              (equal (set::cardinality (keys x))
                     (set::cardinality (values x))))
-  :enable identityp-implies-equal-keys-values
+  :enable values-is-keys-when-identityp
   :rule-classes :forward-chaining)
 
 (defrule identityp-implies-injectivep
     (implies (identityp x)
              (injectivep x))
-  :enable identityp-implies-equal-cardinality-keys-values)
+  :enable injectivep-is-equal-cardinality-keys-values
+  :use values-is-keys-when-identityp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -358,7 +376,6 @@ Skip these for now
                                        map1))))
   :enable assoc-of-restrict)
 
-; The -> direction
 (defrule compatiblep-implies-equal-restrict-intersect-keys
     (implies (compatiblep map0 map1)
              (equal (restrict (set::intersect (keys map0) (keys map1)) map0)
@@ -368,21 +385,13 @@ Skip these for now
 
 (defrule restrict-of-insert
     (equal (restrict (set::insert k ks) x)
-           (if (set::in k (keys x))
+           (if (assoc k x)
                (update k (cdr (assoc k x))
                        (restrict ks x))
              (restrict ks x)))
-  :enable (restrict update))
+  :enable restrict)
 
-; NOTE: really would love to get rid of this rule, which means
-; coming up with a better proof plan
-(defrule assoc-update-not-k
-    (implies (and (not (set::in k (keys x)))
-                  (not (equal key k)))
-             (equal (assoc key (update k v x))
-                    (assoc key x))))
-
-(defrule equal-update-not-in-keys-and-not-equal-k-implies-equal-assoc
+(defrule equal-update-not-in-keys-and-not-equal-K-implies-equal-assoc
     (implies (and (equal (update k v x)
                          (update k v y))
                   (not (set::in k (keys x)))
@@ -390,11 +399,12 @@ Skip these for now
                   (not (equal key k)))
              (equal (assoc key x)
                     (assoc key y)))
-  :use ((:instance assoc-update-not-k
-                   (x y)))
+  :use ((:instance assoc-of-update
+                   (key1 key) (key k) 
+                   (val v) (map y)))
   :rule-classes :forward-chaining)
 
-(defrule equal-update-not-in-keys-and-equal-k-implies-equal-assoc
+(defrule equal-update-not-in-keys-and-equal-K-implies-equal-assoc
     (implies (and (equal (update k v x)
                          (update k v y))
                   (not (set::in k (keys x)))
@@ -411,7 +421,7 @@ Skip these for now
                   (not (set::in k (keys y))))
              (equal (assoc key x)
                     (assoc key y)))
-  :use equal-update-not-in-keys-and-equal-k-implies-equal-assoc)
+  :use equal-update-not-in-keys-and-equal-K-implies-equal-assoc)
 
 (defrule equal-update-not-in-keys-implies-equal
     (implies (and (mapp x)
@@ -436,23 +446,23 @@ Skip these for now
                   (x (restrict ks x)) (y (restrict ks y)))
   :rule-classes :forward-chaining)
 
-(defrule equal-update-k-implies-equal-assoc-update-k
+(defrule equal-update-K-implies-equal-assoc-update-K
     (implies (equal (update k v1 x)
                     (update k v2 y))
              (equal (assoc k (update k v1 x))
                     (assoc k (update k v2 y))))
   :rule-classes :forward-chaining)
 
-; NOTE: also would love to get rid of this rule
-(defrule assoc-update-k
-    (equal (assoc k (update k v x))
-           (cons k v)))
-
 (defrule equal-update-implies-equal-val
     (implies (equal (update k v1 x)
                     (update k v2 y))
              (equal v1 v2))
-  :use equal-update-k-implies-equal-assoc-update-k
+  :use ((:instance assoc-of-update
+                   (key1 k) (key k)
+                   (val v1) (map x))
+        (:instance assoc-of-update
+                   (key1 k) (key k)
+                   (val v2) (map y)))
   :rule-classes :forward-chaining)
 
 (defrule not-equal-update-when-not-equal-val
@@ -460,28 +470,78 @@ Skip these for now
              (not (equal (update k v1 x)
                          (update k v2 y)))))
 
-; The <- direction
+(defruled lemma0
+  (implies (equal (update key val x)
+                  y)
+           (and (mapp y)
+                (assoc key y)
+                (equal (cdr (assoc key y)) val)
+                (equal (delete key x)
+                       (delete key y))))
+  :use ((:instance extensionality
+                   (x (delete key x))
+                   (y (delete key y)))))
+
+(defrule cons-of-key-and-cdr-assoc
+  (equal (cons key (cdr (assoc key map)))
+         (if (assoc key map)
+             (assoc key map)
+           (cons key nil)))
+  :induct t
+  :enable assoc)
+
+(defruled lemma1
+  (implies (and (mapp y)
+                (assoc key1 y)
+                (equal (cdr (assoc key1 y)) val)
+                (equal (delete key1 x)
+                       (delete key1 y)))
+           (equal (assoc key2 (update key1 val x))
+                  (assoc key2 y)))
+  :use ((:instance assoc-of-delete
+                   (x key2)
+                   (y key1)
+                   (map x))
+        (:instance assoc-of-delete
+                   (x key2)
+                   (y key1)
+                   (map y)))
+  :disable assoc-of-delete)
+
+(defruled lemma2
+  (implies (and (mapp y)
+                (assoc key y)
+                (equal (cdr (assoc key y)) val)
+                (equal (delete key x)
+                       (delete key y)))
+           (equal (update key val x) y))
+  :enable lemma1
+  :use ((:instance extensionality
+                   (x (update key val x)))))
+
+(defrule equal-of-update-becomes-equal-of-delete
+  (equal (equal (update key val x) y)
+         (and (mapp y)
+              (assoc key y)
+              (equal (cdr (assoc key y)) val)
+              (equal (delete key x)
+                     (delete key y))))
+  :use (lemma1 lemma2))
+
 (defrule equal-restrict-intersect-keys-implies-compatiblep
-    (implies (equal (restrict (set::intersect (keys map0) (keys map1)) map0)
-                    (restrict (set::intersect (keys map0) (keys map1)) map1))
-             (compatiblep map0 map1))
-  :enable (
-           restrict
+    (implies (equal (restrict (set::intersect (keys x) (keys y)) x)
+                    (restrict (set::intersect (keys x) (keys y)) y))
+             (compatiblep x y))
+  :enable (restrict
            compatiblep
-           keys
            set::intersect-insert-X
-           )
-  :disable (symmetry-of-compatiblep)
-  :hints (("subgoal *1/3.1.2'" :use (:instance equal-update-restrict-implies-equal-restrict
-                                               (k (mv-nth 0 (head map0))) (v (mv-nth 1 (head map0)))
-                                               (ks (intersect (keys (tail map0)) (keys map1)))
-                                               (x (tail map0)) (y map1))))
+           assoc-of-restrict)
   :rule-classes :forward-chaining)
 
 (defruled compatiblep-is-equal-restrict-intersect-keys
-    (equal (compatiblep map0 map1)
-           (equal (restrict (set::intersect (keys map0) (keys map1)) map0)
-                  (restrict (set::intersect (keys map0) (keys map1)) map1))))
+    (equal (compatiblep x y)
+           (equal (restrict (set::intersect (keys x) (keys y)) x)
+                  (restrict (set::intersect (keys x) (keys y)) y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -528,8 +588,8 @@ Skip these for now
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define inverse ((x mapp))
-  :returns (map1 mapp)
-  (if (or (emptyp x) (not (injectivep x)))
+  :returns (map mapp)
+  (if (emptyp x)
       nil
       (mv-let (key val)
           (head x)
@@ -541,10 +601,14 @@ Skip these for now
   (defcong mequiv equal (inverse x) 1))
 
 (defrule keys-of-inverse-is-values
-    (implies (injectivep x)
-             (equal (keys (inverse x))
-                    (values x)))
+    (equal (keys (inverse x))
+           (values x))
   :enable (inverse values))
+
+(defrule values-of-inverse-is-subset-keys
+    (set::subset (values (inverse x))
+                 (keys x))
+  :enable inverse)
 
 (defrule values-of-inverse-is-keys
     (implies (injectivep x)
@@ -590,7 +654,7 @@ Skip these for now
     (implies (injectivep x)
              (equal (assoc key (inverse x))
                     (and (set::in key (values x))
-                         (cons key (car (rlookup key x))))))
+                         (cons key (car (rlookup key x)))))) ; switch car to set::head
   :enable (inverse rlookup values set::insert))
 
 (defrule rlookup-update-when-not-in-keys
