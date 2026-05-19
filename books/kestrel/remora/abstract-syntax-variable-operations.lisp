@@ -69,6 +69,10 @@
      involving not only ispace and type variables,
      but also term variables.")
    (xdoc::p
+    "The current substitution and renaming operations
+     do not check for variable capture.
+     We plan to add that soon.")
+   (xdoc::p
     "We need to double-check, and possibly revise,
      the treatment of the boxing and unboxing constructs."))
   :order-subtopics t
