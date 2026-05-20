@@ -1507,7 +1507,7 @@
                                 (and (type-case type-to-arg :void)
                                      (not
                                       (type-case type-to-param :function))))))
-                     (expr-null-pointer-constp arg type-arg)))
+                     (expr-null-pointer-constp arg type-arg ienv)))
             (and (type-case type-param :bool)
                  (type-case type-arg :pointer)))
         (valid-prototype-args (rest types-param)
@@ -1915,7 +1915,7 @@
                                      (or (ienv->gcc/clang ienv)
                                          (not (type-case type-to1
                                                          :function)))))))
-                     (expr-null-pointer-constp expr-arg2 type2)))
+                     (expr-null-pointer-constp expr-arg2 type2 ienv)))
             (and (type-case type1 :bool)
                  (type-case type2 :pointer)))
         (retok)
@@ -2121,7 +2121,7 @@
                                           type-to1 type-to2 completions ienv))))
                            (and (ienv->gcc/clang ienv)
                                 (expr-null-pointer-constp
-                                 (expr-binary->arg1 expr) type1)
+                                 (expr-binary->arg1 expr) type1 ienv)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
@@ -2143,9 +2143,9 @@
                                                  (not (type-case type-to1
                                                                  :function))))))
                                  (expr-null-pointer-constp
-                                  (expr-binary->arg2 expr) type2))
+                                  (expr-binary->arg2 expr) type2 ienv))
                            (and (expr-null-pointer-constp
-                                 (expr-binary->arg1 expr) type1)
+                                 (expr-binary->arg1 expr) type1 ienv)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
@@ -2342,11 +2342,13 @@
               (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
        ((when (and (type-case type2 :pointer)
-                   (expr-null-pointer-constp (expr-cond->else expr) type3)))
+                   (expr-null-pointer-constp
+                     (expr-cond->else expr) type3 ienv)))
         (retok (type-fix type2) (vstate-fix vstate)))
        ((when (and (type-case type3 :pointer)
                    (expr-cond->then expr)
-                   (expr-null-pointer-constp (expr-cond->then expr) type2)))
+                   (expr-null-pointer-constp
+                     (expr-cond->then expr) type2 ienv)))
         (retok (type-fix type3) (vstate-fix vstate)))
        ((when (and (type-case type2 :pointer)
                    (type-case type3 :pointer)
