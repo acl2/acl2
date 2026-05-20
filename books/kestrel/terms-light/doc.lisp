@@ -23,7 +23,7 @@
    <see topic='@(url pseudo-termp)'>pseudo-terms</see>.  The functions are
    intended as small reusable building blocks for tools that operate on
    already-translated ACL2 terms — APT-style transformations, verified
-   rewriters, code generators (e.g., @(see acl2::atc)), and term-walking
+   rewriters, code generators (e.g., @(see c::atc)), and term-walking
    utilities in general.</p>
 
    <p>The library is intentionally minimal: each book introduces a focused
