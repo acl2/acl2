@@ -1373,7 +1373,7 @@
      (xdoc::p
       "We recursively disambiguate sub-expressions,
        and other sub-entities (e.g. generic associations, type names),
-       following the recursive structure of the types.")
+       following the recursive structure of the fixtypes.")
      (xdoc::p
       "We call a separate function to disambiguate
        an ambiguous @('sizeof') or @('_Alignof') expression.
