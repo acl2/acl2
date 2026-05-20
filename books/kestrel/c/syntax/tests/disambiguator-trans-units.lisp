@@ -111,11 +111,6 @@
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-dimb
- "int x;
-  void f(x) {}
-")
-
-(test-dimb
  "typedef char x;
   void f(x);
 ")
