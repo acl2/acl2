@@ -520,7 +520,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This should be guarded by @(tsee subst-ispace-vars-no-capture-p),
+    "This should be guarded by @(tsee ast-subst-ispace-vars-no-capture-p),
      but currently @(tsee fty::deffold-map) does not support such guards.
      One should call the @(tsee ast-subst-type-vars-no-capture-p) predicates
      prior to applying these substitution operations, for the time being."))
@@ -574,7 +574,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This should be guarded by @(tsee subst-type-vars-no-capture-p),
+    "This should be guarded by @(tsee ast-subst-type-vars-no-capture-p),
      but currently @(tsee fty::deffold-map) does not support such guards.
      One should call the @(tsee ast-subst-type-vars-no-capture-p) predicates
      prior to applying these substitution operations, for the time being."))
@@ -613,6 +613,118 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deffold-reduce renam-ispace-vars-no-capture-p
+  :short "Check that renaming free ispace variables in ASTs
+          does not result in variable capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The renaming consists of two maps,
+     one for dimension variables and one for shape variables,
+     as in @(tsee ast-rename-ispace-vars).")
+   (xdoc::p
+    "At each ispace-binding construct,
+     we remove the bound variables from the domain of the renaming
+     (since they do not get renamed under the binder)
+     and we check that those bound variables do not appear
+     among the omap values of the resulting (restricted) renaming.
+     We then recurse into the body of the binder
+     with the restricted renaming.")
+   (xdoc::p
+    "This is a conservative check:
+     it does not depend on which keys of the renaming
+     are actually free in the body of each binder."))
+  :types (shapes
+          ispace
+          ispace-list
+          types)
+  :extra-args ((dim-renam string-string-mapp)
+               (shape-renam string-string-mapp))
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((type :pi
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars type.params))
+              (dim-renam (omap::delete* bound-dim-vars
+                                        (string-string-map-fix dim-renam)))
+              (shape-renam (omap::delete* bound-shape-vars
+                                          (string-string-map-fix shape-renam))))
+           (and (set::emptyp
+                 (set::intersect
+                  (set::mergesort type.params)
+                  (set::union (omap::values dim-renam)
+                              (omap::values shape-renam))))
+                (type-renam-ispace-vars-no-capture-p type.body
+                                                     dim-renam
+                                                     shape-renam))))
+   (type :sigma
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars type.params))
+              (dim-renam (omap::delete* bound-dim-vars
+                                        (string-string-map-fix dim-renam)))
+              (shape-renam (omap::delete* bound-shape-vars
+                                          (string-string-map-fix shape-renam))))
+           (and (set::emptyp
+                 (set::intersect
+                  (set::mergesort type.params)
+                  (set::union (omap::values dim-renam)
+                              (omap::values shape-renam))))
+                (type-renam-ispace-vars-no-capture-p type.body
+                                                     dim-renam
+                                                     shape-renam)))))
+  :name ast-renam-ispace-vars-no-capture-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce renam-type-vars-no-capture-p
+  :short "Check that renaming type variables in ASTs
+          does not result in variable capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The renaming consists of two maps,
+     one for atom-kind type variables and one for array-kind type variables,
+     as in @(tsee ast-renam-type-vars).")
+   (xdoc::p
+    "At each type-binding construct,
+     we remove the bound variables from the domain of the renaming
+     (since they do not get renamed under the binder)
+     and we check that those bound parameters do not appear
+     among the omap values of the resulting (restricted) renaming.
+     We then recurse into the body of the binder
+     with the restricted renaming.")
+   (xdoc::p
+    "This is a conservative check:
+     it does not depend on which keys of the renaming
+     are actually free in the body of each binder."))
+  :types (types)
+  :extra-args ((atom-renam string-type-mapp)
+               (array-renam string-type-mapp))
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((type :forall
+         (b* (((mv bound-atom-vars bound-array-vars)
+               (atom/array-names-of-type-vars type.params))
+              (atom-renam (omap::delete* bound-atom-vars
+                                         (string-type-map-fix atom-renam)))
+              (array-renam (omap::delete* bound-array-vars
+                                          (string-type-map-fix array-renam))))
+           (and (set::emptyp
+                 (set::intersect
+                  (set::mergesort type.params)
+                  (set::union (omap::values atom-renam)
+                              (omap::values array-renam))))
+                (type-renam-type-vars-no-capture-p type.body
+                                                   atom-renam
+                                                   array-renam)))))
+  :name ast-renam-type-vars-no-capture-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-map rename-dim-vars
   :short "Rename dimension variables in ASTs."
   :long
@@ -635,6 +747,13 @@
 
 (fty::deffold-map rename-ispace-vars
   :short "Rename free ispace variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should be guarded by @(tsee ast-renam-ispace-vars-no-capture-p),
+     but currently @(tsee fty::deffold-map) does not support such guards.
+     One should call the @(tsee ast-renam-type-vars-no-capture-p) predicates
+     prior to applying these renaming operations, for the time being."))
   :types (shapes
           ispace
           ispace-list
@@ -704,6 +823,13 @@
 
 (fty::deffold-map rename-type-vars
   :short "Rename free type variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should be guarded by @(tsee ast-renam-type-vars-no-capture-p),
+     but currently @(tsee fty::deffold-map) does not support such guards.
+     One should call the @(tsee ast-renam-type-vars-no-capture-p) predicates
+     prior to applying these substitution operations, for the time being."))
   :types (types)
   :extra-args ((atom-renam string-string-mapp)
                (array-renam string-string-mapp))
