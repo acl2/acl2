@@ -85,7 +85,9 @@
    (xdoc::p
     "A bracket expression is turned into a frame expression
      with a single dimension that is the number of sub-expressions,
-     and the sub-expressions as arguments."))
+     and the sub-expressions as arguments.
+     Bracket expressions are never empty in concrete syntax;
+     we should carry that invariant to the AST here."))
   :types (shapes
           ispace
           ispace-list
