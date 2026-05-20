@@ -1769,3 +1769,16 @@ static struct myStruct my = { 1, 1, 1, 1, 1 };
                       (list (designor-dot (ident "e"))))
                (equal (desiniter-info->designors (desiniter->info (fifth desiniters)))
                       (list (designor-dot (ident "f")))))))
+
+;; Valid null pointer constants
+(test-valid
+  "int * a = 0;
+int * b = (void *)0;
+int * c = (void *)(1 - 1);
+int * d = 1 - 1;
+")
+
+;; Not a valid null pointer constant (expression does not evaluate to 0).
+(test-valid-fail
+  "int * x = 2 - 1;
+")
