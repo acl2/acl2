@@ -43,12 +43,6 @@ lexeme = token
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing Directives [C17:6.10] [C17:A.3]
-
-on-off-switch = %s"ON" / %s"OFF" / %s"DEFAULT"
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Expressions [C17:A.2.1]
 
 ; As a temporary C23 extension,
