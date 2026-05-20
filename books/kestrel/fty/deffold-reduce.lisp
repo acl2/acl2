@@ -1058,6 +1058,7 @@
                          (and (,type-suffix ,type ,@extra-args-names)
                               (,elt-type-suffix ,type-elem ,@extra-args-names)))
                   :enable (rcons
+                           ,type-suffix-when-atom
                            ,type-suffix-of-append
                            ,type-suffix-of-cons))
                 (defruled ,elt-type-suffix-of-car-when-type-suffix
@@ -1098,7 +1099,16 @@
     "This is as described in @(tsee deffold-reduce).")
    (xdoc::p
     "The @('mutrecp') flag says whether
-     this omap type is part of a mutually recursive clique."))
+     this omap type is part of a mutually recursive clique.")
+   (xdoc::p
+    "To find the fixtype of the keys of the omap (@('key-type') in the code),
+     which we use as variable name in some generated theorems,
+     we need to special-case the "
+    (xdoc::seetopic "fty::basetypes" "base fixtypes")
+    ", which do not appear in the FTY table.
+     We omit the @('maybe-...') fixtypes because
+     we are moving towards a postfix @('...-option') naming scheme,
+     as done with other derived types."))
   (b* ((type (flexomap->name omap))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
@@ -1115,7 +1125,19 @@
        (key-type (or (and key-info
                           (fty::flextype->name key-info))
                      (case key-recog
+                       (acl2-numberp 'acl2::acl2-number)
+                       (acl2::any-p 'acl2::any)
+                       (bitp 'bit)
+                       (booleanp 'acl2::bool)
+                       (characterp 'character)
                        (integerp 'acl2::int)
+                       (natp 'acl2::nat)
+                       (posp 'acl2::pos)
+                       (rationalp 'rational)
+                       (stringp 'string)
+                       (symbolp 'symbol)
+                       (acl2::true-p 'acl2::true)
+                       (true-listp 'acl2::true-list)
                        (t (raise "Not supported yet: key-recog.")))))
        (val-recog (flexomap->val-type omap))
        ((unless (symbolp val-recog))

@@ -505,7 +505,10 @@
        and we apply it to the body atom type
        to obtain the atom type of the resulting array type,
        whose shape is obtained by concatenating
-       the function shape to the body shape.")
+       the function shape to the body shape.
+       We check that the substitution cannot result in variable capture:
+       type checking fails if that check fails;
+       we should instead rename the bound variables to avoid the capture.")
      (xdoc::p
       "For an ispace application,
        first we check the function expression,
@@ -527,7 +530,10 @@
        to obtain the atom type of the resulting array type,
        whose shape is obtained by concatenating
        the function shape to
-       the result of applying the same substitution to the body shape.")
+       the result of applying the same substitution to the body shape.
+       We check that the substitution cannot result in variable capture:
+       type checking fails if that check fails;
+       we should instead rename the bound variables to avoid the capture.")
      (xdoc::p
       "For an unboxing expression,
        first we check that the ispace variables have no duplicate names.
@@ -652,6 +658,10 @@
            (reserr nil))
           ((ok (string-type-map-pair type-maps))
            (check-type-params-and-args vars expr.args))
+          ((unless (type-subst-type-vars-no-capture-p body-atom-type
+                                                      type-maps.1st
+                                                      type-maps.2nd))
+           (reserr nil))
           (body-atom-type-subst
            (type-subst-type-vars body-atom-type
                                  type-maps.1st
@@ -675,6 +685,10 @@
            (reserr nil))
           ((ok (stringdimmap+stringshapemap ispace-maps))
            (check-ispace-params-and-args vars expr.args))
+          ((unless (type-subst-ispace-vars-no-capture-p body-atom-type
+                                                        ispace-maps.dim-map
+                                                        ispace-maps.shape-map))
+           (reserr nil))
           (body-atom-type-subst
            (type-subst-ispace-vars body-atom-type
                                    ispace-maps.dim-map
@@ -699,6 +713,10 @@
           ((unless (= (len expr.ispaces) (len sum-vars))) (reserr nil))
           ((ok (string-string-map-pair renaming))
            (check-ispace-var-renaming sum-vars expr.ispaces))
+          ((unless (type-rename-ispace-vars-no-capture-p sum-body-type
+                                                         renaming.1st
+                                                         renaming.2nd))
+           (reserr nil))
           (sum-body-type-renam
            (type-rename-ispace-vars sum-body-type
                                     renaming.1st
@@ -799,7 +817,10 @@
        we apply those substitutions;
        the resulting type must be equivalent to
        the type of the body expression of the box.
-       The type of the boxing atom is the sum type."))
+       The type of the boxing atom is the sum type.
+       We check that the substitution cannot result in variable capture:
+       type checking fails if that check fails;
+       we should instead rename the bound variables to avoid the capture."))
     (atom-case
      atom
      :base
@@ -844,6 +865,10 @@
           (body-type (ispacevarlist+type->type vars+type))
           ((ok (stringdimmap+stringshapemap maps))
            (check-ispace-params-and-args vars atom.ispaces))
+          ((unless (type-subst-ispace-vars-no-capture-p body-type
+                                                        maps.dim-map
+                                                        maps.shape-map))
+           (reserr nil))
           (body-type-subst
            (type-subst-ispace-vars body-type
                                    maps.dim-map
