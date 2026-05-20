@@ -460,54 +460,14 @@
   (xdoc::topstring
    (xdoc::p
     "The initial disambiguation table consists of a single scope,
-     which is the file scope.")
-   (xdoc::p
-    "If the C dialect does not have any extensions,
+     which is the file scope.
+     If the C dialect does not have any extensions,
      the initial file scope is empty.
      Otherwise, we initialize the file scope with some @(see built-ins).
      For now we only add some built-ins
      that we have observed in some preprocessed files.
      We should revisit this, adding all the @(see built-ins),
      with clear and accurate references.")
-   (xdoc::p
-    "If GCC/Clang extensions are enabled,
-     we also add entries for certain built-in variables
-     corresponding to the x86 registers, i.e. @('__eax') etc.
-     We could not find those documented in the GCC manual,
-     but we found them in practical code.
-     Experiments suggest that these variables are somewhat restricted in usage.
-     The normal pattern seems to be something like")
-   (xdoc::codeblock
-    "unsigned long __eax = __eax;")
-   (xdoc::p
-    "after which one can use @('__eax') as a regular variable.
-     However, without the declaration above,
-     @('__eax') cannot be used as a regular variable.
-     This is odd, because the validity of the declaration above
-     presupposes that @('__eax') is already in scope.
-     It is not clear why such a declaration is needed in the first place.
-     To add to the strangeness,
-     one can change the above initializer to @('__eax + 1')
-     (and presumably other similar expressions)
-     and the compiler accepts it.")
-   (xdoc::p
-    "However, none of this matters for the disambiguator,
-     which does not need to validate the code,
-     and is only required to return correct results
-     only if the code is indeed valid
-     (even though validity is checked after disambiguation).
-     We add these special variables to the initial disambiguation table,
-     so that declarations such as the one above
-     do not cause an error during disambiguation.
-     The declaration itself is handled by the disambiguator
-     by overriding any preceding entry with the same name
-     (see @(tsee dimb-add-ident)),
-     so after a declaration like the one above
-     @('__eax') is still in the table, with the right kind,
-     and can be used as an expression in scope.
-     However, note that these variables only make sense on an x86 platform:
-     we should refine our GCC/Clang flag with
-     a richer description of the C implementation.")
    (xdoc::p
     "The macro table is the initial one for the given dialect."))
   (b* ((table (list nil))
