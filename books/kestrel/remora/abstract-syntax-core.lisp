@@ -82,8 +82,8 @@
     "(let ((fun (f (x Int)) <f-body>)) <let-body>)")
    (xdoc::p
     "which omits the optional result type of @('f'),
-     first we need to turn the binding into a value one
-     (because lambda expressions do not have ``nested'' functions")
+     first we need to turn the function binding into a value binding
+     (because lambda expressions do not have ``nested'' functions)")
    (xdoc::codeblock
     "(let ((val f (fn ((x Int)) <f-body>))) <let-body>)")
    (xdoc::p
