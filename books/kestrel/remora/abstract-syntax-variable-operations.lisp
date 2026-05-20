@@ -70,8 +70,11 @@
      but also term variables.")
    (xdoc::p
     "The current substitution and renaming operations
-     do not check for variable capture.
-     We plan to add that soon.")
+     do not check for variable capture,
+     either statically (i.e. in the guard) or dynamically.
+     However, we provide predicates to check that no variable is captured.
+     See the specific documentation of the substitution and renaming operations
+     for more details.")
    (xdoc::p
     "We need to double-check, and possibly revise,
      the treatment of the boxing and unboxing constructs."))
