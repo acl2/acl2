@@ -1058,6 +1058,7 @@
                          (and (,type-suffix ,type ,@extra-args-names)
                               (,elt-type-suffix ,type-elem ,@extra-args-names)))
                   :enable (rcons
+                           ,type-suffix-when-atom
                            ,type-suffix-of-append
                            ,type-suffix-of-cons))
                 (defruled ,elt-type-suffix-of-car-when-type-suffix
