@@ -1251,7 +1251,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There are two kinds of direct function declarators,
+    "In C17 (but not in C23),
+     there are two kinds of direct function declarators,
      both in the grammar and in the abstract syntax:
      one has a non-empty list of parameter declarations
      optionally followed by ellipsis;
@@ -2261,14 +2262,15 @@
      (xdoc::p
       "The first case is when we need to turn it into a @(':function-names').
        This happens when the following conditions hold:
-       (i) the @('fundefp') flag is set,
+       (i) the standard is C17;
+       (ii) the @('fundefp') flag is set,
        i.e. the declarator is one of a function definition;
-       (ii) there are no parameters or the @('declsp') flag is set
+       (iii) there are no parameters or the @('declsp') flag is set
        (the latter condition means that
        there are declarations between parameters and body,
        which according to [C17:6.9.1/6] and [C17:6.9.1/5]
        happens exactly when there are one or more names as parameters);
-       (iii) this is the innermost @(':function-params')
+       (iv) this is the innermost @(':function-params')
        (the reason for this is explained below).
        Besides turning the @(':function-params') into a @(':function-names'),
        we also push a new scope for the function parameters and body.
@@ -2359,10 +2361,13 @@
        :function-params
        (b* (((erp new-dirdeclor ident dstate)
              (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate))
-            ((when (and fundefp
+            ((when (and (c::standard-case
+                         (c::dialect->std (ienv->dialect (dstate->ienv dstate)))
+                         :c17)
+                        fundefp
                         ;; Strangely, if we swap the following two conjuncts,
                         ;; which would be our preferred order,
-                        ;; consistently with the sequence (i) (ii) (iii)
+                        ;; consistently with the sequence (i) (ii) (iii) (iv)
                         ;; in the documentation above,
                         ;; we get a failure with the flag function
                         ;; that DEFINES generates for the :RETURNS.
