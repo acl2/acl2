@@ -713,9 +713,9 @@
           ((unless (= (len expr.ispaces) (len sum-vars))) (reserr nil))
           ((ok (string-string-map-pair renaming))
            (check-ispace-var-renaming sum-vars expr.ispaces))
-          ((unless (type-renam-ispace-vars-no-capture-p sum-body-type
-                                                        renaming.1st
-                                                        renaming.2nd))
+          ((unless (type-rename-ispace-vars-no-capture-p sum-body-type
+                                                         renaming.1st
+                                                         renaming.2nd))
            (reserr nil))
           (sum-body-type-renam
            (type-rename-ispace-vars sum-body-type

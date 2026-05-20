@@ -616,7 +616,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deffold-reduce renam-ispace-vars-no-capture-p
+(fty::deffold-reduce rename-ispace-vars-no-capture-p
   :short "Check that renaming free ispace variables in ASTs
           does not result in variable capture."
   :long
@@ -659,9 +659,9 @@
                   (set::mergesort type.params)
                   (set::union (omap::values dim-renam)
                               (omap::values shape-renam))))
-                (type-renam-ispace-vars-no-capture-p type.body
-                                                     dim-renam
-                                                     shape-renam))))
+                (type-rename-ispace-vars-no-capture-p type.body
+                                                      dim-renam
+                                                      shape-renam))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
                (dim/shape-names-of-ispace-vars type.params))
@@ -674,14 +674,14 @@
                   (set::mergesort type.params)
                   (set::union (omap::values dim-renam)
                               (omap::values shape-renam))))
-                (type-renam-ispace-vars-no-capture-p type.body
-                                                     dim-renam
-                                                     shape-renam)))))
-  :name ast-renam-ispace-vars-no-capture-p)
+                (type-rename-ispace-vars-no-capture-p type.body
+                                                      dim-renam
+                                                      shape-renam)))))
+  :name ast-rename-ispace-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deffold-reduce renam-type-vars-no-capture-p
+(fty::deffold-reduce rename-type-vars-no-capture-p
   :short "Check that renaming type variables in ASTs
           does not result in variable capture."
   :long
@@ -689,7 +689,7 @@
    (xdoc::p
     "The renaming consists of two maps,
      one for atom-kind type variables and one for array-kind type variables,
-     as in @(tsee ast-renam-type-vars).")
+     as in @(tsee ast-rename-type-vars).")
    (xdoc::p
     "At each type-binding construct,
      we remove the bound variables from the domain of the renaming
@@ -721,10 +721,10 @@
                   (set::mergesort type.params)
                   (set::union (omap::values atom-renam)
                               (omap::values array-renam))))
-                (type-renam-type-vars-no-capture-p type.body
-                                                   atom-renam
-                                                   array-renam)))))
-  :name ast-renam-type-vars-no-capture-p)
+                (type-rename-type-vars-no-capture-p type.body
+                                                    atom-renam
+                                                    array-renam)))))
+  :name ast-rename-type-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -753,9 +753,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This should be guarded by @(tsee ast-renam-ispace-vars-no-capture-p),
+    "This should be guarded by @(tsee ast-rename-ispace-vars-no-capture-p),
      but currently @(tsee fty::deffold-map) does not support such guards.
-     One should call the @(tsee ast-renam-type-vars-no-capture-p) predicates
+     One should call the @(tsee ast-rename-type-vars-no-capture-p) predicates
      prior to applying these renaming operations, for the time being."))
   :types (shapes
           ispace
@@ -829,9 +829,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This should be guarded by @(tsee ast-renam-type-vars-no-capture-p),
+    "This should be guarded by @(tsee ast-rename-type-vars-no-capture-p),
      but currently @(tsee fty::deffold-map) does not support such guards.
-     One should call the @(tsee ast-renam-type-vars-no-capture-p) predicates
+     One should call the @(tsee ast-rename-type-vars-no-capture-p) predicates
      prior to applying these substitution operations, for the time being."))
   :types (types)
   :extra-args ((atom-renam string-string-mapp)
