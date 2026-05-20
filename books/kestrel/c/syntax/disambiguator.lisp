@@ -104,11 +104,11 @@
      we can re-classify from an identifier expression to an enumeration constant
      (this is the first of the ambiguities listed above).
      In essence, we need a symbol table of identifiers;
-     not a full one that would be needed to check the full validity of the code,
+     not a full one that as needed to check the full validity of the code,
      but one with sufficient information to disambiguate.
      We need to take into account the scoping rules of C of course,
      since the same identifier
-     may have different meaning in different scopes.
+     may have different meanings in different scopes.
      We call these symbol tables `disambiguation tables'.")
    (xdoc::p
     "We use "
@@ -154,7 +154,7 @@
     "| #include F.h   |"
     "+----------------+")
    (xdoc::p
-    "The @('x * y;') from @('F.c') results is disambiguated
+    "The @('x * y;') from @('F.c') is disambiguated
      into different constructs in @('G.c') and @('H.c'),
      namely an expression statement vs. a declaration.
      (This code is invalid, but it can be made valid with a few changes;
@@ -210,11 +210,6 @@
 (fty::defoption dimb-kind-option
   dimb-kind
   :short "Fixtype of optional kinds of identifiers in disambiguation tables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Kinds of identifiers in disambiguation tables
-     are defined in @(tsee dimb-kind)."))
   :pred dimb-kind-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -341,7 +336,7 @@
    (xdoc::p
     "It is an internal error if the table is empty;
      it should never be empty.
-     We should replace this with guards and proofs.")
+     We should replace this run-time check with guards and proofs.")
    (xdoc::p
     "We remove the top scope, via @(tsee cdr).
      Recall that the stack top is on the left;
@@ -389,7 +384,7 @@
    (xdoc::p
     "It is an internal error if the table is empty;
      it should never be empty.
-     We should replace this with guards and proofs.")
+     We should replace this run-time check with guards and proofs.")
    (xdoc::p
     "We add the identifier to the innermost (i.e. top) scope.
      If the identifier is already in the innermost scope,
@@ -464,58 +459,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The disambiguation table consists of a single scope,
-     which is the file scope.")
-   (xdoc::p
-    "The macro table is the initial one for the given dialect.")
-   (xdoc::p
-    "If the C dialect does not have any extensions,
-     the initial disambiguation table is empty.
-     Otherwise, we initialize the disambiguation table
-     with some @(see built-ins).
+    "The initial disambiguation table consists of a single scope,
+     which is the file scope.
+     If the C dialect does not have any extensions,
+     the initial file scope is empty.
+     Otherwise, we initialize the file scope with some @(see built-ins).
      For now we only add some built-ins
      that we have observed in some preprocessed files.
      We should revisit this, adding all the @(see built-ins),
      with clear and accurate references.")
    (xdoc::p
-    "If GCC/Clang extensions are enabled,
-     we also add entries for certain built-in variables
-     corresponding to the x86 registers, i.e. @('__eax') etc.
-     We could not find those documented in the GCC manual,
-     but we found them in practical code.
-     Experiments suggest that these variables are somewhat restricted in usage.
-     The normal pattern seems to be something like")
-   (xdoc::codeblock
-    "unsigned long __eax = __eax;")
-   (xdoc::p
-    "after which one can use @('__eax') as a regular variable.
-     However, without the declaration above,
-     @('__eax') cannot be used as a regular variable.
-     This is odd, because the validity of the declaration above
-     presupposes that @('__eax') is already in scope.
-     It is not clear why such a declaration is needed in the first place.
-     To add to the strangeness,
-     one can change the above initializer to @('__eax + 1')
-     (and presumably other similar expressions)
-     and the compiler accepts it.")
-   (xdoc::p
-    "However, none of this matters for the disambiguator,
-     which does not need to validate the code,
-     and is only required to return correct results
-     only if the code is indeed valid
-     (even though validity is checked after disambiguation).
-     We add these special variables to the initial disambiguation table,
-     so that declarations such as the one above
-     do not cause an error during disambiguation.
-     The declaration itself is handled by the disambiguator
-     by overriding any preceding entry with the same name
-     (see @(tsee dimb-add-ident)),
-     so after a declaration like the one above
-     @('__eax') is still in the table, with the right kind,
-     and can be used as an expression in scope.
-     However, note that these variables only make sense on an x86 platform:
-     we should refine our GCC/Clang flag with
-     a richer description of the C implementation."))
+    "The macro table is the initial one for the given dialect."))
   (b* ((table (list nil))
        (dialect (ienv->dialect ienv))
        (macros (macro-init dialect))
@@ -1419,7 +1373,7 @@
      (xdoc::p
       "We recursively disambiguate sub-expressions,
        and other sub-entities (e.g. generic associations, type names),
-       following the recursive structure of the types.")
+       following the recursive structure of the fixtypes.")
      (xdoc::p
       "We call a separate function to disambiguate
        an ambiguous @('sizeof') or @('_Alignof') expression.
