@@ -378,6 +378,123 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deffold-reduce subst-ispace-vars-no-capture-p
+  :short "Check that substituting free ispace variables in ASTs
+          does not result in variable capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The substitution consists of two maps,
+     one for dimension variables and one for shape variables,
+     as in @(tsee ast-subst-ispace-vars).")
+   (xdoc::p
+    "At each ispace-binding construct,
+     we remove the bound variables from the domain of the substitution
+     (since they do not get substituted under the binder)
+     and we check that those bound parameters do not appear
+     among the free ispace variables of the values
+     of the resulting (restricted) substitution.
+     We then recurse into the body of the binder
+     with the restricted substitution.")
+   (xdoc::p
+    "This is a conservative check:
+     it does not depend on which keys of the substitution
+     are actually free in the body of each binder."))
+  :types (shapes
+          ispace
+          ispace-list
+          types)
+  :extra-args ((dim-subst string-dim-mapp)
+               (shape-subst string-shape-mapp))
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((type :pi
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars type.params))
+              (dim-subst (omap::delete* bound-dim-vars
+                                        (string-dim-map-fix dim-subst)))
+              (shape-subst (omap::delete* bound-shape-vars
+                                          (string-shape-map-fix shape-subst))))
+           (and (set::emptyp
+                 (set::intersect
+                  (set::mergesort type.params)
+                  (set::union
+                   (string-dim-map-free-ispace-vars dim-subst)
+                   (string-shape-map-free-ispace-vars shape-subst))))
+                (type-subst-ispace-vars-no-capture-p type.body
+                                                     dim-subst
+                                                     shape-subst))))
+   (type :sigma
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars type.params))
+              (dim-subst (omap::delete* bound-dim-vars
+                                        (string-dim-map-fix dim-subst)))
+              (shape-subst (omap::delete* bound-shape-vars
+                                          (string-shape-map-fix shape-subst))))
+           (and (set::emptyp
+                 (set::intersect
+                  (set::mergesort type.params)
+                  (set::union
+                   (string-dim-map-free-ispace-vars dim-subst)
+                   (string-shape-map-free-ispace-vars shape-subst))))
+                (type-subst-ispace-vars-no-capture-p type.body
+                                                     dim-subst
+                                                     shape-subst)))))
+  :name ast-subst-ispace-vars-no-capture-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce subst-type-vars-no-capture-p
+  :short "Check that substituting type variables in ASTs
+          does not result in variable capture."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The substitution consists of two maps,
+     one for atom-kind type variables and one for array-kind type variables,
+     as in @(tsee ast-subst-type-vars).")
+   (xdoc::p
+    "At each type-binding construct,
+     we remove the bound variables from the domain of the substitution
+     (since they do not get substituted under the binder)
+     and we check that those bound parameters do not appear
+     among the free type variables of the values
+     of the resulting (restricted) substitution.
+     We then recurse into the body of the binder
+     with the restricted substitution.")
+   (xdoc::p
+    "This is a conservative check:
+     it does not depend on which keys of the substitution
+     are actually free in the body of each binder."))
+  :types (types)
+  :extra-args ((atom-subst string-type-mapp)
+               (array-subst string-type-mapp))
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((type :forall
+         (b* (((mv bound-atom-vars bound-array-vars)
+               (atom/array-names-of-type-vars type.params))
+              (atom-subst (omap::delete* bound-atom-vars
+                                         (string-type-map-fix atom-subst)))
+              (array-subst (omap::delete* bound-array-vars
+                                          (string-type-map-fix array-subst))))
+           (and (set::emptyp
+                 (set::intersect
+                  (set::mergesort type.params)
+                  (set::union
+                   (string-type-map-free-type-vars atom-subst)
+                   (string-type-map-free-type-vars array-subst))))
+                (type-subst-type-vars-no-capture-p type.body
+                                                   atom-subst
+                                                   array-subst)))))
+  :name ast-subst-type-vars-no-capture-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-map subst-dim-vars
   :short "Substitute free dimension variables in ASTs."
   :long
