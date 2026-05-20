@@ -1,0 +1,25 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains the grammar rules for standard pragmas
+; [C17:6.10.6/2] [C23:6.10.8]
+; that are common to all the C dialects.
+; Only [C23] has an explicit grammar rule for a 'standard-pragma' nonterminal,
+; while [C17] just lists the alternatives;
+; however, we use an explicit grammar rule for C17 too.
+; Together with the rules in the dialect-specific files
+; standard-pragmas-*.abnf,
+; they define the standard pragmas of each C dialect.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+on-off-switch = %s"ON" / %s"OFF" / %s"DEFAULT"

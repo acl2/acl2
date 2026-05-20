@@ -1,0 +1,25 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains the grammar rules for standard pragmas
+; that are specific to the C17 standard [C17:6.10.6/2].
+; Although [C17] does not have an explicit grammar rule for standard pragmas,
+; but instead just lists the alternatives,
+; [C23] has an explicit rule, so we do the same for C17.
+; Together with the generic rules in standard-pragmas.abnf,
+; they form the rules for standard pragmas for the C17 dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+standard-pragma = "#" %s"pragma" %s"STDC" %s"FP_CONTRACT" on-off-switch
+                / "#" %s"pragma" %s"STDC" %s"FENV_ACCESS" on-off-switch
+                / "#" %s"pragma" %s"STDC" %s"CX_LIMITED_RANGE" on-off-switch
