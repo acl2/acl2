@@ -516,7 +516,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map subst-ispace-vars
-  :short "Substitute free ispace (i.e. dimension and shape) variables in ASTs."
+  :short "Substitute free ispace variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should be guarded by @(tsee subst-ispace-vars-no-capture-p),
+     but currently @(tsee fty::deffold-map) does not support such guards.
+     One should call the @(tsee ast-subst-type-vars-no-capture-p) predicates
+     prior to applying these substitution operations, for the time being."))
   :types (shapes
           ispace
           ispace-list
@@ -563,7 +570,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map subst-type-vars
-  :short "Substitute free (atom-kind and array-kind) type variables in ASTs."
+  :short "Substitute free type variables in ASTs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should be guarded by @(tsee subst-type-vars-no-capture-p),
+     but currently @(tsee fty::deffold-map) does not support such guards.
+     One should call the @(tsee ast-subst-type-vars-no-capture-p) predicates
+     prior to applying these substitution operations, for the time being."))
   :types (types)
   :extra-args ((atom-subst string-type-mapp)
                (array-subst string-type-mapp))
@@ -620,7 +634,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-ispace-vars
-  :short "Rename free ispace (i.e. dimension and shape) variables in ASTs."
+  :short "Rename free ispace variables in ASTs."
   :types (shapes
           ispace
           ispace-list
@@ -689,7 +703,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-type-vars
-  :short "Rename free (atom-kind and array-kind) type variables in ASTs."
+  :short "Rename free type variables in ASTs."
   :types (types)
   :extra-args ((atom-renam string-string-mapp)
                (array-renam string-string-mapp))
