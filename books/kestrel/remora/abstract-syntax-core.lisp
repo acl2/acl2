@@ -59,7 +59,10 @@
       because they are expressible as simpler applications.")
     (xdoc::li
      "Bracket expressions,
-      because they are expressible as array expressions."))
+      because they are expressible as array expressions.")
+    (xdoc::li
+     "Function bindings,
+      because they are expressible as value bindings."))
    (xdoc::p
     "Perhaps surprisingly, we do not exclude @('let') expressions,
      although it seems that they should be reducible to
@@ -97,10 +100,7 @@
      This can be known via type checking,
      but the desugaring transformation is just a syntactic one.")
    (xdoc::p
-    "We could at least exclude the combined function bindings from the core
-     (i.e. the @(':cfun') summand of @(tsee bind)),
-     but we defer this whole issue for now.
-     The Remora syntax is likely to evolve
+    "The Remora syntax is likely to evolve
      towards requiring fewer type annotations,
      e.g. in lambda expressions,
      which could resolve the issue described above."))
@@ -125,7 +125,12 @@
    (type :bracket nil)
    (expr :string nil)
    (expr :capp nil)
-   (expr :bracket nil))
+   (expr :bracket nil)
+   (bind :fun nil)
+   ;; TODO: (bind :tfun nil)
+   ;; TODO: (bind :ifun nil)
+   ;; TODO: (bind :cfun nil)
+   )
   :name ast-corep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -168,6 +173,11 @@
              (atom-corep atom))
     :enable atom-corep)
 
+  (defruled not-bind-corep-when-fun
+    (implies (equal (bind-kind bind) :fun)
+             (not (bind-corep bind)))
+    :enable bind-corep)
+
   (add-to-ruleset ast-corep-rules
                   '(shape-corep-when-var
                     shape-corep-when-dim
@@ -175,4 +185,5 @@
                     type-corep-when-var
                     type-corep-when-base
                     expr-corep-when-var
-                    atom-corep-when-base)))
+                    atom-corep-when-base
+                    not-bind-corep-when-fun)))
