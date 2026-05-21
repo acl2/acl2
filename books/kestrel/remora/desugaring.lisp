@@ -159,10 +159,9 @@
                                 (out-type type?.val))
                              (make-type-fun :in in-types :out out-type))
                      :none nil))
-                   (lambda-atom
-                    (make-atom-lambda :params params
-                                      :body expr))
-                   (lambda-expr (expr-atom lambda-atom)))
+                   (lambda-expr
+                    (expr-atom (make-atom-lambda :params params
+                                                 :body expr))))
                 (make-bind-val :var bind.var
                                :type? lambda-type?
                                :expr lambda-expr)))
@@ -174,10 +173,9 @@
                       :some (make-type-forall :params bind.params
                                               :body type?.val)
                       :none nil))
-                    (lambda-atom
-                     (make-atom-tlambda :params bind.params
-                                        :body expr))
-                    (lambda-expr (expr-atom lambda-atom)))
+                    (lambda-expr
+                     (expr-atom (make-atom-tlambda :params bind.params
+                                                   :body expr))))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
@@ -189,10 +187,9 @@
                       :some (make-type-pi :params bind.params
                                           :body type?.val)
                       :none nil))
-                    (lambda-atom
-                     (make-atom-ilambda :params bind.params
-                                        :body expr))
-                    (lambda-expr (expr-atom lambda-atom)))
+                    (lambda-expr
+                     (expr-atom (make-atom-ilambda :params bind.params
+                                                   :body expr))))
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
