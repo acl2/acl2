@@ -155,9 +155,8 @@
                    (lambda-type?
                     (type-option-case
                      type?
-                     :some (b* ((in-types (var+type-list->type params))
-                                (out-type type?.val))
-                             (make-type-fun :in in-types :out out-type))
+                     :some (make-type-fun :in (var+type-list->type params)
+                                          :out type?.val)
                      :none nil))
                    (lambda-expr
                     (expr-atom (make-atom-lambda :params params
