@@ -48,7 +48,7 @@
                 (natp len)
                 (natp high))
            (equal (bv-array-clear-range size len 0 high (cons a b))
-                  (bv-array-clear-range size len 0 high (cons '0 b))))
+                  (bv-array-clear-range size len 0 high (cons 0 b))))
   :hints (("Goal"
            :expand ((bv-array-clear-range size len 0 high (cons a b)))
            :in-theory (enable bv-array-clear-range subrange-of-cons))))
@@ -113,8 +113,8 @@
                 (equal len (+ 1 (len data)))
                 (natp high)
                 (natp width))
-           (equal (bv-array-clear-range width len 1 high (cons '0 data))
-                  (bv-array-clear-range width len 0 high (cons '0 data))))
+           (equal (bv-array-clear-range width len 1 high (cons 0 data))
+                  (bv-array-clear-range width len 0 high (cons 0 data))))
   :hints (("Goal" ;:expand ((bv-array-clear-range width len 1 high (cons 0 data)))
            :in-theory (e/d (bv-array-clear-range subrange-of-cons subrange cdr-take-plus-1)
                            (;list::equal-append-reduction!
@@ -136,7 +136,7 @@
                   (if (zp low)
                       (bv-array-clear-range width (+ -1 len) 0 (+ -1 high) (cdr data))
                     (bv-array-clear-range width (+ -1 len) (+ -1 low) (+ -1 high) (cdr data)))))
-  :hints (("subgoal *1/2" :cases ((< HIGH (BINARY-+ '2 LOW))))
+  :hints (("subgoal *1/2" :cases ((< HIGH (BINARY-+ 2 LOW))))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (BV-ARRAY-CLEAR-RANGE WIDTH LEN LOW HIGH DATA)
            :in-theory (e/d (bv-array-clear-range subrange-of-cons consp-of-cdr equal-of-append)
@@ -266,7 +266,7 @@
                 (all-unsigned-byte-p 8 data)
                 (prefixp x data)
                 (natp len))
-           (equal (prefixp x (bv-array-write '8 len (len x) val data))
+           (equal (prefixp x (bv-array-write 8 len (len x) val data))
                   t))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use (:instance ALL-UNSIGNED-BYTE-P-OF-TRUE-LIST-FIX

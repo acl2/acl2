@@ -857,7 +857,7 @@
                 (natp end)
                 (natp start)
                 (natp n))
-           (equal (BV-ARRAY-READ esize '128 n (UPDATE-SUBRANGE start end vals lst))
+           (equal (BV-ARRAY-READ esize 128 n (UPDATE-SUBRANGE start end vals lst))
                   (BV-ARRAY-READ esize (+ 1 end (- start)) (+ N (- START)) vals)))
   :hints (("Goal" :in-theory (e/d (bv-array-read unsigned-byte-p-of-integer-length-gen ceiling-of-lg)
                                   (unsigned-byte-p-of-+-of-minus-alt
@@ -1625,7 +1625,7 @@
 
 ;; (thm
 ;;  (implies (integerp x)
-;;           (equal (< (JVM::IDIV x '4) '0)
+;;           (equal (< (JVM::IDIV x 4) 0)
 ;;                  (< x -4)))
 ;;  :hints (("Goal" :in-theory (enable JVM::IDIV))))
 
@@ -1793,8 +1793,8 @@
 ;;   (implies (and (natp index)
 ;;                 (< index 64)
 ;;                 )
-;;            (equal (nth2 '6 index (bv-array-write '16 '64 index2 val array))
-;;                   (bv-array-read '16 '64 index (bv-array-write '16 '64 index2 val array))))
+;;            (equal (nth2 6 index (bv-array-write 16 64 index2 val array))
+;;                   (bv-array-read 16 64 index (bv-array-write 16 64 index2 val array))))
 ;;   :hints (("Goal" :in-theory (enable ;BV-ARRAY-READ
 ;;                               nth2))))
 

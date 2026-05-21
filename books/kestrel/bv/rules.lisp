@@ -5837,7 +5837,7 @@
 
 ;todo: drop
 (defthmd unsigned-byte-p-of-bvchop-bigger
-  (equal (unsigned-byte-p '31 (bvchop '32 x))
+  (equal (unsigned-byte-p 31 (bvchop 32 x))
          (bvlt 32 x 2147483648))
   :hints (("Goal" :in-theory (enable bvlt))))
 

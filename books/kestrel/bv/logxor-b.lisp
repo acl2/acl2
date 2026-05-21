@@ -41,7 +41,7 @@
          (bvchop n (lognot i)))
   :hints (("Goal" :in-theory (enable lognot))))
 
-;bozo FLOOR-MINUS-ERIC-BETTER looped on      (FLOOR '0 (EXPT '2 N))
+;bozo FLOOR-MINUS-ERIC-BETTER looped on      (FLOOR 0 (EXPT 2 N))
 (defthm logtail-of-logxor
   (equal (logtail n (logxor i j))
          (logxor (logtail n i)

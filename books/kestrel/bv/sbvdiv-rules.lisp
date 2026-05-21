@@ -197,7 +197,7 @@
   (IMPLIES (AND (FORCE (RATIONALP X))
                 (RATIONALP Y1)
                 (RATIONALP Y2)
-                (NOT (EQUAL '0 (+ Y1 y2))))
+                (NOT (EQUAL 0 (+ Y1 y2))))
            (EQUAL (FLOOR X (+ (- y1) Y2))
                   (IF (INTEGERP (* X (/ (- y1 y2))))
                       (- (FLOOR X (- y1 y2)))
@@ -309,7 +309,7 @@
                     0)))
   :hints (("Goal" :cases ((equal y1 0)
                           (and (not (equal y1 0))
-                               (EQUAL (BVCHOP (+ '-1 SIZE) X) '0)))
+                               (EQUAL (BVCHOP (+ -1 SIZE) X) 0)))
            :in-theory (e/d (;SBVDIV-WHEN-BOTH-POSITIVE
                             sbvlt
                             bvdiv
