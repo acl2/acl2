@@ -536,7 +536,9 @@
        we should instead rename the bound variables to avoid the capture.")
      (xdoc::p
       "For an unboxing expression,
-       first we check that the ispace variables have no duplicate names.
+       first we check that the ispace variables have no duplicates;
+       two variables with the same name but different sorts
+       (one dimension and one shape) count as distinct.
        We check the target expression,
        which must be an array type of a sum type.
        In [arxiv] and [thesis],
@@ -701,7 +703,7 @@
         :shape (shape-append (list fun-shape body-shape-subst))))
      :capp (reserr :todo)
      :unbox
-     (b* (((unless (no-duplicatesp-equal (ispace-var-list->name expr.ispaces)))
+     (b* (((unless (no-duplicatesp-equal expr.ispaces))
            (reserr nil))
           ((ok target-arr-type) (check-expr expr.target senv))
           ((ok target-arr-type+shape) (type-match-array target-arr-type))
@@ -793,14 +795,18 @@
        and its input types are the ones of the bound variables.")
      (xdoc::p
       "For a type abstraction,
-       first we check that there are no duplicate bound variable names.
+       first we check that there are no duplicate bound variables;
+       two variables with the same name but different kinds
+       (one atom and one array) count as distinct.
        We check the body of the abstraction in the extended environment.
        The resulting type is the body of the universal type
        that is the type of the abstraction,
        whose bound variables are the same as the abstraction.")
      (xdoc::p
       "For an ispace abstraction,
-       first we check that there are no duplicate bound variable names.
+       first we check that there are no duplicate bound variables;
+       two variables with the same name but different sorts
+       (one dimension and one shape) count as distinct.
        We check the body of the abstraction.
        The resulting type is the body of the product type
        that is the type of the abstraction,
@@ -838,13 +844,13 @@
           ((ok type) (check-expr atom.body senv)))
        (make-type-fun :in types :out type))
      :tlambda
-     (b* (((unless (no-duplicatesp-equal (type-var-list->name atom.params)))
+     (b* (((unless (no-duplicatesp-equal atom.params))
            (reserr nil))
           (senv (senv-add-type-vars atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-type-forall :params atom.params :body type))
      :ilambda
-     (b* (((unless (no-duplicatesp-equal (ispace-var-list->name atom.params)))
+     (b* (((unless (no-duplicatesp-equal atom.params))
            (reserr nil))
           (senv (senv-add-ispace-vars atom.params senv))
           ((ok type) (check-expr atom.body senv)))

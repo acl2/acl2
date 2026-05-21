@@ -73,11 +73,11 @@
      one for the dimension variables in @('vars1'),
      one for the shape variables in @('vars1'),
      one for the dimension variables in @('vars2'), and
-     one for the shape variables in @('vars');
+     one for the shape variables in @('vars2');
      in that order.
      While [thesis] only shows two renamings,
      one for @($x\\ldots$) (our @('vars1')) and
-     one for @($x'\\ldots$) (our @('vars')),
+     one for @($x'\\ldots$) (our @('vars2')),
      we split each into two, for dimension and shape variables,
      which are distinct in our formalization.")
    (xdoc::p
@@ -144,11 +144,11 @@
      one for the atom variables in @('vars1'),
      one for the array variables in @('vars1'),
      one for the atom variables in @('vars2'), and
-     one for the array variables in @('vars');
+     one for the array variables in @('vars2');
      in that order.
      While [thesis] only shows two renamings,
      one for @($x\\ldots$) (our @('vars1')) and
-     one for @($x'\\ldots$) (our @('vars')),
+     one for @($x'\\ldots$) (our @('vars2')),
      we split each into two, for atom and array variables,
      which are distinct in our formalization.")
    (xdoc::p
@@ -242,7 +242,7 @@
      (xdoc::p
       "Since we are renaming (ispace and type) variables to fresh ones,
        we do not call the predicates to check for variable capture.
-       Once we add those preeicates as guards of the renaming operations,
+       Once we add those predicates as guards of the renaming operations,
        we will get a proof obligation showing that
        the renamings indeed cause no capture."))
     (type-case
