@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "nat-list-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,4 +22,4 @@
    (xdoc::p
     "These are used in the Remora library but are more general,
      and should be moved to more general libraries eventually."))
-  :order-subtopics ())
+  :order-subtopics (nat-list-operations))
