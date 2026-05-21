@@ -43,7 +43,7 @@
      define values as subsets of expressions and atoms,
      namely the ones that cannot be further reduced.
      While we could follow the same approach here,
-     instead we start with defining instead separate fixtypes for values.")
+     instead we start by defining separate fixtypes for values.")
    (xdoc::p
     "This separation seems a bit cleaner,
      also given the higher level of detail of our formalization
@@ -57,7 +57,7 @@
      The difference is even more pronounced for floats.")
    (xdoc::p
     "Nonetheless, if we discover that it is more convenient
-     to define as subsets of expressions and atoms,
+     to define values as subsets of expressions and atoms,
      we will switch to that approach."))
   :order-subtopics t
   :default-parent t)
@@ -80,7 +80,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes type-values
-  :short "Fixtypes of type values and lists of types of values."
+  :short "Fixtypes of type values and lists of type values."
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,7 +99,7 @@
        or a function type with input and output type values,
        or a universal, product, or sum type.
        The latter three categories of types do not use type values in bodies,
-       but they have the full type ASTS,
+       but they have the full type ASTs,
        because the bindings ``shield'' the body,
        like common lambda abstractions."))
     (:base ((type base-type)))
@@ -134,7 +134,7 @@
    (xdoc::p
     "[thesis] does not pin down the details of integer values,
      leaving them abstract.
-     [impl] use Haskell's @('Int'),
+     [impl] uses Haskell's @('Int'),
      which consists of fixed-precision integers with at least 30 bits.")
    (xdoc::p
     "We do not yet know the definite intention for integer in Remora,
