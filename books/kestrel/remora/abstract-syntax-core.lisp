@@ -68,8 +68,8 @@
     "Perhaps surprisingly, we do not exclude @('let') expressions,
      although it seems that they should be reducible to
      applications of lambda abstractions.
-     Abstractly, @($\\mathbf{let}\\ x = a\\ \\mathbf{in}\\ b$)
-     is equivalent to @($(\\lambda x.\\ b)\\ a$).
+     Abstractly, @($(\\mathbf{let}\\ x = a\\ \\mathbf{in}\\ b)$)
+     is equivalent to @($((\\lambda x.\\ b)\\ a)$).
      However, if we attempt to perform that transformation
      on Remora's @('let') expressions,
      we run into the issue that,
@@ -86,8 +86,8 @@
     "(let ((fun (f (x Int)) <f-body>)) <let-body>)")
    (xdoc::p
     "which omits the optional result type of @('f'),
-     first we need to turn the function binding into a value binding
-     (because lambda expressions do not have ``nested'' functions)")
+     first we turn the function binding into a value binding
+     (which is part of our current desugaring)")
    (xdoc::codeblock
     "(let ((val f (fn ((x Int)) <f-body>))) <let-body>)")
    (xdoc::p
@@ -101,10 +101,30 @@
      This can be known via type checking,
      but the desugaring transformation is just a syntactic one.")
    (xdoc::p
-    "The Remora syntax is likely to evolve
+    "The issue could be avoided by doing beta reduction as part of desugaring.
+     That is, abstractly,
+     instead of turning @($(\\mathbf{let}\\ x = a\\ \\mathbf{in}\\ b)$)
+     into @($((\\lambda x.\\ b)\\ a)$),
+     we could turn that directly into @($b[x/a]$),
+     where that notation means that we substitute
+     each free occurrence of @($x$) in @($b$) with @($a$).
+     However, substitution may need to rename bound variables to avoid capture,
+     and our current "
+    (xdoc::seetopic "abstract-syntax-variable-operations"
+                    "substitution operations")
+    " do not do that yet.
+     We plan to extend them to rename bound variables to avoid capture,
+     but the fact remains that beta reduction adds conceptual complexity,
+     partly due to the fact that there are many ways
+     to rename bound variables to avoid capture;
+     It is much simpler to generate an application of a lambda abstraction.")
+   (xdoc::p
+    "For now we keep @('let')s in the core.
+     Note that the Remora syntax is likely to evolve
      towards requiring fewer type annotations,
      e.g. in lambda expressions,
-     which could resolve the issue described above."))
+     which could resolve the issue described above,
+     i.e. it may allow us to produce applications of lambda expressions."))
   :types (shapes
           ispace
           ispace-list
