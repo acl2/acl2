@@ -13,13 +13,11 @@
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-well-formed")
 
-(include-book "std/strings/top" :dir :system)
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "unicode/utf8-encode" :dir :system)
 
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
-(local (include-book "std/lists/top" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;; (acl2::controlled-configuration) is intentionally not used here:
