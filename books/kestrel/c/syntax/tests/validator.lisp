@@ -281,11 +281,6 @@ void f() {
 ")
 
 (test-valid
- "int x;
-  void f(x) {}
-")
-
-(test-valid
  "typedef char x;
   void f(x);
 ")

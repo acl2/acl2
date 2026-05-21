@@ -104,11 +104,11 @@
      we can re-classify from an identifier expression to an enumeration constant
      (this is the first of the ambiguities listed above).
      In essence, we need a symbol table of identifiers;
-     not a full one that would be needed to check the full validity of the code,
+     not a full one that as needed to check the full validity of the code,
      but one with sufficient information to disambiguate.
      We need to take into account the scoping rules of C of course,
      since the same identifier
-     may have different meaning in different scopes.
+     may have different meanings in different scopes.
      We call these symbol tables `disambiguation tables'.")
    (xdoc::p
     "We use "
@@ -154,7 +154,7 @@
     "| #include F.h   |"
     "+----------------+")
    (xdoc::p
-    "The @('x * y;') from @('F.c') results is disambiguated
+    "The @('x * y;') from @('F.c') is disambiguated
      into different constructs in @('G.c') and @('H.c'),
      namely an expression statement vs. a declaration.
      (This code is invalid, but it can be made valid with a few changes;
@@ -210,11 +210,6 @@
 (fty::defoption dimb-kind-option
   dimb-kind
   :short "Fixtype of optional kinds of identifiers in disambiguation tables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Kinds of identifiers in disambiguation tables
-     are defined in @(tsee dimb-kind)."))
   :pred dimb-kind-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -341,7 +336,7 @@
    (xdoc::p
     "It is an internal error if the table is empty;
      it should never be empty.
-     We should replace this with guards and proofs.")
+     We should replace this run-time check with guards and proofs.")
    (xdoc::p
     "We remove the top scope, via @(tsee cdr).
      Recall that the stack top is on the left;
@@ -389,7 +384,7 @@
    (xdoc::p
     "It is an internal error if the table is empty;
      it should never be empty.
-     We should replace this with guards and proofs.")
+     We should replace this run-time check with guards and proofs.")
    (xdoc::p
     "We add the identifier to the innermost (i.e. top) scope.
      If the identifier is already in the innermost scope,
@@ -464,58 +459,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The disambiguation table consists of a single scope,
-     which is the file scope.")
-   (xdoc::p
-    "The macro table is the initial one for the given dialect.")
-   (xdoc::p
-    "If the C dialect does not have any extensions,
-     the initial disambiguation table is empty.
-     Otherwise, we initialize the disambiguation table
-     with some @(see built-ins).
+    "The initial disambiguation table consists of a single scope,
+     which is the file scope.
+     If the C dialect does not have any extensions,
+     the initial file scope is empty.
+     Otherwise, we initialize the file scope with some @(see built-ins).
      For now we only add some built-ins
      that we have observed in some preprocessed files.
      We should revisit this, adding all the @(see built-ins),
      with clear and accurate references.")
    (xdoc::p
-    "If GCC/Clang extensions are enabled,
-     we also add entries for certain built-in variables
-     corresponding to the x86 registers, i.e. @('__eax') etc.
-     We could not find those documented in the GCC manual,
-     but we found them in practical code.
-     Experiments suggest that these variables are somewhat restricted in usage.
-     The normal pattern seems to be something like")
-   (xdoc::codeblock
-    "unsigned long __eax = __eax;")
-   (xdoc::p
-    "after which one can use @('__eax') as a regular variable.
-     However, without the declaration above,
-     @('__eax') cannot be used as a regular variable.
-     This is odd, because the validity of the declaration above
-     presupposes that @('__eax') is already in scope.
-     It is not clear why such a declaration is needed in the first place.
-     To add to the strangeness,
-     one can change the above initializer to @('__eax + 1')
-     (and presumably other similar expressions)
-     and the compiler accepts it.")
-   (xdoc::p
-    "However, none of this matters for the disambiguator,
-     which does not need to validate the code,
-     and is only required to return correct results
-     only if the code is indeed valid
-     (even though validity is checked after disambiguation).
-     We add these special variables to the initial disambiguation table,
-     so that declarations such as the one above
-     do not cause an error during disambiguation.
-     The declaration itself is handled by the disambiguator
-     by overriding any preceding entry with the same name
-     (see @(tsee dimb-add-ident)),
-     so after a declaration like the one above
-     @('__eax') is still in the table, with the right kind,
-     and can be used as an expression in scope.
-     However, note that these variables only make sense on an x86 platform:
-     we should refine our GCC/Clang flag with
-     a richer description of the C implementation."))
+    "The macro table is the initial one for the given dialect."))
   (b* ((table (list nil))
        (dialect (ienv->dialect ienv))
        (macros (macro-init dialect))
@@ -1291,25 +1245,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-params-to-names ((params param-declon-listp)
-                              (fundefp booleanp)
-                              (dstate dstatep))
-  :returns (mv (yes/no booleanp) (names ident-listp))
-  :short "Disambiguate a list of parameter declarations to a list of names,
-          if appropriate."
+(define dimb-params-to-names ((params param-declon-listp))
+  :returns (mv (erp maybe-msgp) (names ident-listp))
+  :short "Disambiguate a list of parameter declarations to a list of names."
   :long
   (xdoc::topstring
    (xdoc::p
-    "There are two kinds of direct function declarators,
+    "In C17 (but not in C23),
+     there are two kinds of direct function declarators,
      both in the grammar and in the abstract syntax:
-     one has a (non-empty) list of parameter declarations
+     one has a non-empty list of parameter declarations
      optionally followed by ellipsis;
      the other has a possibly empty list of names.")
    (xdoc::p
     "The second kind is allowed to be non-empty only if
      the function declarator is part of a function definition
-     [C17:6.7.6.3/3].
-     This is indicated by the flag @('fundefp') passed to this ACL2 function.")
+     [C17:6.7.6.3/3].")
    (xdoc::p
     "The parser always creates the first kind,
      because a name, which is an identifier, is syntactically ambiguous:
@@ -1319,64 +1270,34 @@
      it creates an empty list of parameter declarations,
      because this needs to be disambiguated anyhow.")
    (xdoc::p
-    "This ACL2 function checks whether
-     a possibly empty list of parameter declarations
-     should in fact be a list of names.
-     This is the case when either the list is empty,
-     or the @('fundefp') flag is @('t') and
-     every parameter declaration consists of
-     a single type specifier consisting of a @('typedef') name,
-     but that identifier does not identify a @('typedef') name in scope.
-     This means that, for example, if we have two identifiers @('x') and @('y'),
-     one of which is a @('typedef') name but the other one is not,
-     the re-classification to names fails.
-     [C17:6.7.6.3/11] says that @('typedef') names have priority,
-     but strictly speaking it mentions only parameter declarations,
-     not also identifier lists;
-     nonetheless, some simple experiments with GCC show that
-     this priority of @('typedef') names also applies to
-     the choice between parameter declarations and identifier lists,
-     and not just within parameter declarations
-     (this aspect is dealt with elsewhere,
-     in the code to disambiguate parameter declarations).
-     So, in the example above with @('x') and @('y'),
-     the code is in fact invalid.")
-   (xdoc::p
-    "This ACL2 function returns a boolean saying whether
-     the parameter declarations are re-classified into names,
-     and in this case it also returns the list of names, which may be empty.
-     If the check fails for any element of the list,
-     the re-classification fails,
-     and the caller will do its own processing and disambiguation
-     of the (non-empty) list of parameter declarations,
-     which will then remain parameter declarations (not names)
-     after that processing and disambiguation."))
-  (b* (((when (endp params)) (mv t nil))
-       ((unless fundefp) (mv nil nil)))
-    (dimb-params-to-names-loop params dstate))
-
-  :prepwork
-  ((define dimb-params-to-names-loop ((params param-declon-listp)
-                                      (dstate dstatep))
-     :returns (mv (yes/no booleanp) (names ident-listp))
-     :parents nil
-     (b* (((when (endp params)) (mv t nil))
-          (param (car params))
-          ((unless (param-declor-case (param-declon->declor param) :none))
-           (mv nil nil))
-          (declspecs (param-declon->specs param))
-          ((unless (and (consp declspecs) (endp (cdr declspecs))))
-           (mv nil nil))
-          (declspec (car declspecs))
-          ((unless (decl-spec-case declspec :typespec)) (mv nil nil))
-          (tyspec (decl-spec-typespec->spec declspec))
-          ((unless (type-spec-case tyspec :typedef)) (mv nil nil))
-          (ident (type-spec-typedef->name tyspec))
-          (kind? (dimb-lookup-ident ident dstate))
-          ((when (equal kind? (dimb-kind-typedef))) (mv nil nil))
-          ((mv yes/no names) (dimb-params-to-names-loop (cdr params) dstate))
-          ((unless yes/no) (mv nil nil)))
-       (mv t (cons ident names))))))
+    "This ACL2 function is called when, in a function definition,
+     the list of parameter declarations must be turned into a list of names.
+     Thus, we return an error if the re-classification fails."))
+  (b* (((reterr) nil)
+       ((when (endp params)) (retok nil))
+       (param (car params))
+       ((unless (param-declor-case (param-declon->declor param) :none))
+        (retmsg$ "The parameter declaration ~x0 ~
+                  cannot be re-classified as an identifier."
+                 (param-declon-fix param)))
+       (declspecs (param-declon->specs param))
+       ((unless (and (consp declspecs) (endp (cdr declspecs))))
+        (retmsg$ "The parameter declaration ~x0 ~
+                  cannot be re-classified as an identifier."
+                 (param-declon-fix param)))
+       (declspec (car declspecs))
+       ((unless (decl-spec-case declspec :typespec))
+        (retmsg$ "The parameter declaration ~x0 ~
+                  cannot be re-classified as an identifier."
+                 (param-declon-fix param)))
+       (tyspec (decl-spec-typespec->spec declspec))
+       ((unless (type-spec-case tyspec :typedef))
+        (retmsg$ "The parameter declaration ~x0 ~
+                  cannot be re-classified as an identifier."
+                 (param-declon-fix param)))
+       (ident (type-spec-typedef->name tyspec))
+       ((erp names) (dimb-params-to-names (cdr params))))
+    (retok (cons ident names))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1419,7 +1340,7 @@
      (xdoc::p
       "We recursively disambiguate sub-expressions,
        and other sub-entities (e.g. generic associations, type names),
-       following the recursive structure of the types.")
+       following the recursive structure of the fixtypes.")
      (xdoc::p
       "We call a separate function to disambiguate
        an ambiguous @('sizeof') or @('_Alignof') expression.
@@ -2226,7 +2147,9 @@
 
   (define dimb-declor ((declor declorp)
                        (fundefp booleanp)
+                       (declsp booleanp)
                        (dstate dstatep))
+    :guard (or fundefp (not declsp))
     :returns (mv (erp maybe-msgp)
                  (new-declor declorp)
                  (ident identp)
@@ -2249,19 +2172,26 @@
        which also gives us the identifier,
        and then we re-add the pointer part.")
      (xdoc::p
-      "The @('fundefp') flag is @('t')
-       when this function is called
-       to disambiguate the declarator of a function definition.")
+      "The @('fundefp') flag says whether
+       the declarator is that of a function definition;
+       if that flag is @('t'),
+       the @('declsp') flag says whether
+       the function definition includes declarations or not.
+       (The flag @('declsp') is @('nil') if the @('fundefp') flag is @('nil'),
+       but @('declsp') is not used in this case.)
+       These flags are used to decide whether
+       a @(':function-params') direct declarator
+       must be turned into a @(':function-names') direct declarator.")
      (xdoc::p
-      "We also pass the @('fundefp') flag to @(tsee dimb-dirdeclor).
+      "We pass @('fundefp') and @('declsp') to @(tsee dimb-dirdeclor).
        The reason is that, after peeling off the pointers,
        which refine the return result of the function,
        the direct declarator is still expected to be for a function,
-       and we have not disambiguated the parameters yet."))
+       and we have not worked on the parameters yet."))
     (b* (((reterr) (irr-declor) (irr-ident) (irr-dstate))
          ((declor declor) declor)
          ((erp new-dirdeclor ident dstate)
-          (dimb-dirdeclor declor.direct fundefp dstate)))
+          (dimb-dirdeclor declor.direct fundefp declsp dstate)))
       (retok (make-declor :pointers declor.pointers
                           :direct new-dirdeclor)
              ident
@@ -2283,15 +2213,12 @@
       "As with similar disambiguation functions,
        this lifts @(tsee dimb-declor) to optional declarators.
        Since the declarator may be absent,
-       we also generalize the returned identifier to be an optional one.")
-     (xdoc::p
-      "This function does not take a @('fundefp') flag
-       because optional declarators are not used in function parameters."))
+       we also generalize the returned identifier to be an optional one."))
     (b* (((reterr) nil nil (irr-dstate)))
       (declor-option-case
        declor?
        :some (b* (((erp new-declor? ident dstate)
-                   (dimb-declor declor?.val nil dstate)))
+                   (dimb-declor declor?.val nil nil dstate)))
                (retok new-declor? ident dstate))
        :none (retok nil nil (dstate-fix dstate))))
     :measure (declor-option-count declor?))
@@ -2300,7 +2227,9 @@
 
   (define dimb-dirdeclor ((dirdeclor dirdeclorp)
                           (fundefp booleanp)
+                          (declsp booleanp)
                           (dstate dstatep))
+    :guard (or fundefp (not declsp))
     :returns (mv (erp maybe-msgp)
                  (new-dirdeclor dirdeclorp)
                  (ident identp)
@@ -2317,9 +2246,6 @@
        The actual addition to the disambiguation table
        is performed outside this function.")
      (xdoc::p
-      "The meaning of the @('fundefp') flag passed as input is
-       the same as in @(tsee dimb-declor): see that function's documentation.")
-     (xdoc::p
       "We recursively disambiguate the inner declarator and direct declarator,
        from which we obtain the identifier.
        We also recursively disambiguate any expressions in array declarators.")
@@ -2332,35 +2258,42 @@
        We push a new scope, for uniformity with the treatment
        described in the next paragraph.")
      (xdoc::p
-      "For a @(':function-params'),
-       first we attempt to turn it into a @(':function-names'), if applicable.
-       We pass @('fundefp') to @(tsee dimb-params-to-names),
-       which indicates whether the parameters in question
-       are for a function definition or not.
-       If this flag is @('t'),
-       and this is the innermost @(':function-params')
-       (see explanation later),
-       we push a new scope for the function parameters and body,
-       but it will be the declarations between the parameter names and the body
-       that will populate the newly pushed scope.
-       If this flag is @('nil'),
-       we do not push a new scope,
-       because it just means that the list of parameters is empty,
-       but they are not the parameters of a function definition;
-       it is just a function prototype with no parameters.")
+      "For a @(':function-params'), there are two cases.")
      (xdoc::p
-      "If we cannot turn the @(':function-params') into a @(':function-names'),
-       we push a new scope for the parameters,
-       and we disambiguate the parameters (which adds them to the new scope).
-       Then, if @('fundefp') is @('t')
-       and this is the innermost @(':function-params')
-       (see explanation later),
-       we leave the previously pushed scope in the disambiguation table,
-       so it is available for the body of the function;
-       otherwise, we pop that scope.")
+      "The first case is when we need to turn it into a @(':function-names').
+       This happens when the following conditions hold:
+       (i) the standard is C17;
+       (ii) the @('fundefp') flag is set,
+       i.e. the declarator is one of a function definition;
+       (iii) there are no parameters or the @('declsp') flag is set
+       (the latter condition means that
+       there are declarations between parameters and body,
+       which according to [C17:6.9.1/6] and [C17:6.9.1/5]
+       happens exactly when there are one or more names as parameters);
+       (iv) this is the innermost @(':function-params')
+       (the reason for this is explained below).
+       Besides turning the @(':function-params') into a @(':function-names'),
+       we also push a new scope for the function parameters and body.
+       The scope will be populated by the declarations
+       between the declarator and the body of the function definition
+       (possibly none, if the list of parameters was empty).
+       We also ensure that there is no ellipsis in this case,
+       because otherwise we would be masking erroneous code.")
      (xdoc::p
-      "The reason for the @(tsee dirdeclor-has-params-p)
-       can be seen from the example function definition")
+      "The second case happens when
+       any of the three conditions above does not hold.
+       We push a new scope for the parameters,
+       and we disambiguate the parameters.
+       Then we pop the scope,
+       unless @('fundefp') is @('t')
+       and this is the innermost @(':function-params'),
+       because in this case we must leave the scope open
+       for the body of the function definition.")
+     (xdoc::p
+      "The check (iii) mentioned above
+       is performed via @(tsee dirdeclor-has-params-p).
+       The need for this check can be seen
+       from the example function definition")
      (xdoc::codeblock
       "void (*f(float x, double y))(int z) {"
       "  ..."
@@ -2387,13 +2320,13 @@
               (dstate-fix dstate))
        :paren
        (b* (((erp new-declor ident dstate)
-             (dimb-declor dirdeclor.inner fundefp dstate)))
+             (dimb-declor dirdeclor.inner fundefp declsp dstate)))
          (retok (dirdeclor-paren new-declor)
                 ident
                 dstate))
        :array
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate))
             ((erp new-expr? dstate) (dimb-expr-option dirdeclor.size? dstate)))
          (retok (make-dirdeclor-array :declor new-dirdeclor
                                       :qualspecs dirdeclor.qualspecs
@@ -2402,7 +2335,7 @@
                 dstate))
        :array-static1
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate))
             ((erp new-expr dstate) (dimb-expr dirdeclor.size dstate)))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
@@ -2411,7 +2344,7 @@
                 dstate))
        :array-static2
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate))
             ((erp new-expr dstate) (dimb-expr dirdeclor.size dstate)))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
@@ -2420,24 +2353,38 @@
                 dstate))
        :array-star
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate)))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
                                            :qualspecs dirdeclor.qualspecs)
                 ident
                 dstate))
        :function-params
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
-            ((mv yes/no names)
-             (dimb-params-to-names dirdeclor.params fundefp dstate))
-            ((when yes/no)
-             (retok (make-dirdeclor-function-names :declor new-dirdeclor
-                                                   :names names)
-                    ident
-                    (if (and fundefp
-                             (not (dirdeclor-has-params-p dirdeclor.declor)))
-                        (dimb-push-scope dstate)
-                      dstate)))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate))
+            ((when (and (c::standard-case
+                         (c::dialect->std (ienv->dialect (dstate->ienv dstate)))
+                         :c17)
+                        fundefp
+                        ;; Strangely, if we swap the following two conjuncts,
+                        ;; which would be our preferred order,
+                        ;; consistently with the sequence (i) (ii) (iii) (iv)
+                        ;; in the documentation above,
+                        ;; we get a failure with the flag function
+                        ;; that DEFINES generates for the :RETURNS.
+                        (not (dirdeclor-has-params-p new-dirdeclor))
+                        (or (endp dirdeclor.params)
+                            declsp)))
+             (b* (((when dirdeclor.ellipsis)
+                   (retmsg$ "The declarator ~x0 is invalid, ~
+                             because it must be disambiguated to ~
+                             one with function parameter names, ~
+                             but it also contains an ellipsis."
+                            (dirdeclor-fix dirdeclor)))
+                  ((erp names) (dimb-params-to-names dirdeclor.params)))
+               (retok (make-dirdeclor-function-names :declor new-dirdeclor
+                                                     :names names)
+                      ident
+                      (dimb-push-scope dstate))))
             (dstate (dimb-push-scope dstate))
             ((erp new-params dstate)
              (dimb-param-declon-list dirdeclor.params dstate))
@@ -2452,13 +2399,11 @@
                 dstate))
        :function-names
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate)))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate)))
          (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
                 ident
-                (if fundefp
-                    (dimb-push-scope dstate)
-                  dstate)))))
+                (dimb-push-scope dstate)))))
     :measure (dirdeclor-count dirdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2674,7 +2619,7 @@
        the identifier is also added to the disambiguation table.")
      (xdoc::p
       "Note that we call @(tsee dimb-declor)
-       with @('nil') as the @('fundefp') flag,
+       with @('nil') as the @('fundefp') and @('declsp') flags,
        because the declarator passed to that function
        is for a parameter, not for a defined function."))
     (b* (((reterr) (irr-param-declor) (irr-dstate)))
@@ -2682,7 +2627,7 @@
        paramdeclor
        :nonabstract
        (b* (((erp new-declor ident dstate)
-             (dimb-declor paramdeclor.declor nil dstate))
+             (dimb-declor paramdeclor.declor nil nil dstate))
             (dstate (dimb-add-ident ident (dimb-kind-objfun) dstate)))
          (retok (make-param-declor-nonabstract :declor new-declor :info nil)
                 dstate))
@@ -2945,13 +2890,14 @@
        The kind comes from the preceding declaration specifiers,
        and is passed to this function.")
      (xdoc::p
-      "We pass @('nil') as the @('fundefp') flag
+      "We pass @('nil') as the @('fundefp') and @('declsp') flags
        to @(tsee dimb-declor),
        because an initializer declarator is not
        the declarator of a defined function."))
     (b* (((reterr) (irr-init-declor) (irr-dstate))
          ((init-declor ideclor) ideclor)
-         ((erp new-declor ident dstate) (dimb-declor ideclor.declor nil dstate))
+         ((erp new-declor ident dstate)
+          (dimb-declor ideclor.declor nil nil dstate))
          (dstate (dimb-add-ident ident kind dstate))
          ((erp new-initer? dstate) (dimb-initer-option ideclor.initer? dstate)))
       (retok (make-init-declor :declor new-declor
@@ -3435,14 +3381,14 @@
        besides the disambiguated declarator or abstract declarator.")
      (xdoc::p
       "In the call of @(tsee dimb-declor)
-       we pass @('nil') as the @('fundefp') flag,
+       we pass @('nil') as the @('fundefp') and @('declsp') flag,
        because if we are disambiguating a declarator or abstract declarator,
        it means that we are disambiguating a parameter declarator,
        and not the declarator of a defined function."))
     (b* (((reterr) (irr-declor/absdeclor) nil (irr-dstate))
          ((amb-declor/absdeclor declor/absdeclor) declor/absdeclor)
          ((mv erp-declor new-declor ident dstate-declor)
-          (dimb-declor declor/absdeclor.declor nil dstate))
+          (dimb-declor declor/absdeclor.declor nil nil dstate))
          ((mv erp-absdeclor new-absdeclor dstate-absdeclor)
           (dimb-absdeclor declor/absdeclor.absdeclor dstate)))
       (if erp-declor
@@ -3784,14 +3730,15 @@
      which in valid code must be @(':objfun'),
      but we do not check this explicitly.")
    (xdoc::p
-    "Then we process the declarator,
+    "We process the declarator,
      passing @('t') as the @('fundefp') flag,
-     because we are processing the declarator of a defined function.
+     because we are processing the declarator of a function definition.
+     The @('declsp') flag is determined from
+     the presence or absence of declarations between parameter and body.
      In valid code, this declarator will contain a function declarator
      with either parameter declarations or identifiers,
      after it has been processed.
-     Because of the @('fundefp') flag set to @('t'),
-     the disambiguation state returned from @(tsee dimb-declor)
+     The disambiguation state returned from @(tsee dimb-declor)
      should contain a newly pushed scope for the function definition.
      But this may not be the case in invalid code,
      so we check that this is the case explicitly here;
@@ -3846,7 +3793,7 @@
         (dimb-decl-spec-list fundef.specs (dimb-kind-objfun) dstate))
        (nscopes (len (dstate->table dstate))) ; for checking it below
        ((erp new-declor ident dstate)
-        (dimb-declor fundef.declor t dstate))
+        (dimb-declor fundef.declor t (consp fundef.declons) dstate))
        ((unless (= (len (dstate->table dstate)) (1+ nscopes)))
         (retmsg$ "The function definition ~x0 is invalid, ~
                   because the disambiguation dstate after the declarator ~

@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Grant Jurgensen (grant@kestrel.edu)
+; Contributing Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -193,21 +194,38 @@
   :short "A partial list of variables built-in to GCC."
   :long
   (xdoc::topstring
-    (xdoc::p
-     "This list is likely incomplete.
-      New built-ins are generally added on demand
-      as they are encountered in real programs.")
-    (xdoc::p
-      "This list contains variables corresponding to certain x86 registers.
-       We could not find mention of these variables in the GCC manual,
-       but they have been observed in practical code.
-       See @(tsee dimb-filepath-trans-unit-map)
-       for further discussion of these variables.")
-    (xdoc::p
-      "We also include @('latent_entropy').
-       This variable was observed in the preprocessed output
-       of a kernel module
-       This is presumably introduced by the ``latent entropy'' GCC plugin."))
+   (xdoc::p
+    "This list is likely incomplete.
+     New built-ins are generally added on demand
+     as they are encountered in real programs.")
+   (xdoc::p
+    "This list contains variables corresponding to certain x86 registers.
+     We could not find mention of these variables in the GCC manual,
+     but they have been observed in practical code.
+     Experiments suggest that these variables are somewhat restricted in usage.
+     The normal pattern seems to be something like")
+   (xdoc::codeblock
+    "unsigned long __eax = __eax;")
+   (xdoc::p
+    "after which one can use @('__eax') as a regular variable.
+     However, without the declaration above,
+     @('__eax') cannot be used as a regular variable.
+     This is odd, because the validity of the declaration above
+     presupposes that @('__eax') is already in scope.
+     It is not clear why such a declaration is needed in the first place.
+     To add to the strangeness,
+     one can change the above initializer to @('__eax + 1')
+     (and presumably other similar expressions)
+     and the compiler accepts it.
+     Nonetheless, we need to regard these as built-in variables.
+     These variables only make sense on an x86 platform:
+     we should refine our implementation environments with
+     a richer description of the C implementation.")
+   (xdoc::p
+    "We also include @('latent_entropy').
+     This variable was observed in the preprocessed output
+     of a kernel module
+     This is presumably introduced by the ``latent entropy'' GCC plugin."))
   (list (ident "__eax")
         (ident "__ebp")
         (ident "__ebx")

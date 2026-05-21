@@ -6,7 +6,7 @@
 
 ;;------------------------------------------------------------------------------------------------------------------
 
-;; If h is a p-subgroup of g and p divides (subgroup-index p (normalizer h g)), then h is a proper
+;; If h is a p-subgroup of g and p divides (subgroup-index h (normalizer h g)), then h is a proper
 ;; subgroup of a p-subgroup of g, which may be constructed by first applying cauchy's theorem
 ;; to construct a subgroup of (quotient (normalizer h g) h) or order p and then lifting it to g:
 
@@ -19,7 +19,7 @@
 (local-defthmd order-extend-p-subgroup-1
   (implies (and (subgroupp h g)
 		(posp n)
-		(elt-of-ord n (quotient (normalizer h g) h)))
+		(find-elt-of-ord n (quotient (normalizer h g) h)))
            (let ((cyc (cyclic (elt-of-ord n (quotient (normalizer h g) h)) (quotient (normalizer h g) h))))
 	     (and (subgroupp cyc (quotient (normalizer h g) h))
 	          (equal (order cyc) n))))
@@ -28,12 +28,12 @@
 (defthmd order-extend-p-subgroup
   (implies (and (subgroupp h g)
 		(posp n)
-		(elt-of-ord n (quotient (normalizer h g) h)))
+		(find-elt-of-ord n (quotient (normalizer h g) h)))
 	   (let ((k (extend-p-subgroup h g n)))
 	     (and (subgroupp h k)
 	          (subgroupp k g)
 		  (equal (order k) (* n (order h))))))
-  :hints (("Goal" :in-theory (e/d (extend-p-subgroup) (subgroupp-lift))
+  :hints (("Goal" :in-theory (e/d (extend-p-subgroup) (quotient-elts subgroupp-lift))
                   :use (order-extend-p-subgroup-1 normalizer-normp
 		        (:instance subgroupp-transitive (h (extend-p-subgroup h g n)) (k (normalizer h g)))
                         (:instance lift-subgroup (g (normalizer h g))
@@ -56,10 +56,12 @@
 	        (< (order h) (order g))
 	        (< (order h) (order (extend-p-subgroup h g p)))))
   :hints (("Goal" :nonlinearp t
+		  :in-theory (disable find-elt-of-ord cauchy-lemma)
 		  :use (normalizer-normp
                         (:instance order-pos (g h))
 			(:instance order-extend-p-subgroup (n p))
                         (:instance cauchy (g (quotient (normalizer h g) h)))
+			(:instance cauchy-lemma (g (quotient (normalizer h g) h)))
 			(:instance subgroup-order-<= (h (extend-p-subgroup h g p)))))))
 
 (defun sylow-subgroup-aux (h g p)
@@ -84,6 +86,7 @@
                           :use (normalizer-normp
 			        (:instance order-extend-p-subgroup (n p))
                                 (:instance cauchy (g (quotient (normalizer h g) h)))
+                                (:instance cauchy-lemma (g (quotient (normalizer h g) h)))
 				(:instance powerp*p (n (order h)))))))
 
 (defthm trivial-p-groupp
@@ -199,9 +202,10 @@
 	    (not (equal (ord (lcoset x c (normalizer c g)) (quotient (normalizer c g) c))
 	                1)))
   :hints (("Goal" :expand ((power (lcoset x c (normalizer c g)) 1 (quotient (normalizer c G) C)))
+		  :in-theory (enable qop)
                   :use ((:instance normalizer-normp (h c))
 			(:instance equal-lcoset-lcoset-e (h c) (g (normalizer c g)))
-			(:instance ord-power (a (lcoset x c (normalizer c g))) (g (quotient (normalizer c g) c)))
+			(:instance ord-power (n p) (a (lcoset x c (normalizer c g))) (g (quotient (normalizer c g) c)))
 			(:instance subgroupp-normalizer (h c))))))
 
 (defthmd in-normalizer-in-c-5

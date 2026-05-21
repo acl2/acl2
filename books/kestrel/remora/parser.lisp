@@ -239,11 +239,9 @@
 
     ;; ---- Repetitions for ws-separated lists ----
     "*( ws exp )" repetition-*-ws-exp
-    "1*( ws exp )" repetition-1*-ws-exp
     "*( ws type-exp )" repetition-*-ws-type-exp
     "*( ws ispace )" repetition-*-ws-ispace
     "*( ws atom )" repetition-*-ws-atom
-    "1*( ws atom )" repetition-1*-ws-atom
     "*( ws pat )" repetition-*-ws-pat
     "*( ws bind )" repetition-*-ws-bind
     "*( ws dim )" repetition-*-ws-dim
@@ -1585,19 +1583,13 @@
     (b* (((pok< tree-kw) (abnf::parse-ichars "array" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-sl) (parse-shape-lit input))
-         ((pok tree-ws2) (parse-ws input))
-         ;; 1*( ws atom ): need at least one
-         ((pok tree-ws3) (parse-ws input))
-         ((pok< tree-a1) (parse-atom input))
+         ;; *( ws atom )
          ((pok trees-more) (parse-*-ws-atom input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "array-exp")
            :branches (list (list tree-kw)
                            (list tree-ws1)
                            (list tree-sl)
-                           (list tree-ws2)
-                           (cons (abnf::make-tree-nonleaf :rulename? nil
-                                  :branches (list (list tree-ws3) (list tree-a1)))
-                                 trees-more)))
+                           trees-more))
           input))
     :measure (two-nats-measure (len input) 24))
 
@@ -1607,19 +1599,13 @@
     (b* (((pok< tree-kw) (abnf::parse-ichars "frame" input))
          ((pok tree-ws1) (parse-ws input))
          ((pok< tree-sl) (parse-shape-lit input))
-         ((pok tree-ws2) (parse-ws input))
-         ;; 1*( ws exp )
-         ((pok tree-ws3) (parse-ws input))
-         ((pok< tree-e1) (parse-exp input))
+         ;; *( ws exp )
          ((pok trees-more) (parse-*-ws-exp input)))
       (mv (abnf::make-tree-nonleaf :rulename? (abnf::rulename "frame-exp")
            :branches (list (list tree-kw)
                            (list tree-ws1)
                            (list tree-sl)
-                           (list tree-ws2)
-                           (cons (abnf::make-tree-nonleaf :rulename? nil
-                                  :branches (list (list tree-ws3) (list tree-e1)))
-                                 trees-more)))
+                           trees-more))
           input))
     :measure (two-nats-measure (len input) 23))
 

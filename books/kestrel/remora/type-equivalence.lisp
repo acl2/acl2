@@ -238,7 +238,13 @@
        which we then compare for equivalence.
        The fresh variables must not be in any of the two types:
        so we set the set of variables to avoid to
-       all the (free and bound) variables in the two types."))
+       all the (free and bound) variables in the two types.")
+     (xdoc::p
+      "Since we are renaming (ispace and type) variables to fresh ones,
+       we do not call the predicates to check for variable capture.
+       Once we add those preeicates as guards of the renaming operations,
+       we will get a proof obligation showing that
+       the renamings indeed cause no capture."))
     (type-case
      type1
      :var (type-case
