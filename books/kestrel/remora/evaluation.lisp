@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "dynamic-environments")
+(include-book "nat-list-operations")
 
 (include-book "kestrel/fty/nat-result" :dir :system)
 
@@ -76,7 +77,8 @@
        there must be at least one operand;
        if there is one operand, it is negated;
        if there are two or more operands,
-       we subtract all the ones after the first from the first."))
+       we subtract all the ones after the first from the first.
+       If the subtraction result is negative, it is an error."))
     (dim-case
      dim
      :var (b* ((var+val (omap::assoc (ispace-var-dim dim.name)
@@ -86,12 +88,15 @@
                ((unless (ispace-value-case val :dim)) (reserr nil)))
             (ispace-value-dim->val val))
      :const dim.val
-     :add (b* (((ok &) (eval-dim-list dim.dims denv)))
-            (reserr :todo))
-     :mul (b* (((ok &) (eval-dim-list dim.dims denv)))
-            (reserr :todo))
-     :sub (b* (((ok &) (eval-dim-list dim.dims denv)))
-            (reserr :todo)))
+     :add (b* (((ok nats) (eval-dim-list dim.dims denv)))
+            (nat-list-sum nats))
+     :mul (b* (((ok nats) (eval-dim-list dim.dims denv)))
+            (nat-list-product nats))
+     :sub (b* (((ok nats) (eval-dim-list dim.dims denv))
+               ((unless (consp nats)) (reserr nil))
+               (sub (nat-list-subtraction nats))
+               ((unless (natp sub)) (reserr nil)))
+            sub))
     :measure (dim-count dim))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -114,9 +119,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ///
+  :verify-guards :after-returns
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ///
 
   (fty::deffixequiv-mutual eval-dims))
 
