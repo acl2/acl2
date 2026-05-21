@@ -181,7 +181,21 @@
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
-   ;; TODO: (bind :ifun ...)
+   (bind :ifun (b* ((type? (type-option-desugar bind.type?))
+                    (expr (expr-desugar bind.expr))
+                    (lambda-type?
+                     (type-option-case
+                      type?
+                      :some (make-type-pi :params bind.params
+                                          :body type?.val)
+                      :none nil))
+                    (lambda-atom
+                     (make-atom-ilambda :params bind.params
+                                        :body expr))
+                    (lambda-expr (expr-atom lambda-atom)))
+                 (make-bind-val :var bind.var
+                                :type? lambda-type?
+                                :expr lambda-expr)))
    ;; TODO: (bind :cfun ...)
    )
   :name ast-desugar)

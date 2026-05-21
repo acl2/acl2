@@ -62,7 +62,8 @@
       because they are expressible as array expressions.")
     (xdoc::li
      "Function bindings,
-      because they are expressible as value bindings."))
+      because they are expressible as value bindings
+      (to lambda abstractions)."))
    (xdoc::p
     "Perhaps surprisingly, we do not exclude @('let') expressions,
      although it seems that they should be reducible to
@@ -128,7 +129,7 @@
    (expr :bracket nil)
    (bind :fun nil)
    (bind :tfun nil)
-   ;; TODO: (bind :ifun nil)
+   (bind :ifun nil)
    ;; TODO: (bind :cfun nil)
    )
   :name ast-corep)
@@ -183,6 +184,11 @@
              (not (bind-corep bind)))
     :enable bind-corep)
 
+  (defruled not-bind-corep-when-ifun
+    (implies (equal (bind-kind bind) :ifun)
+             (not (bind-corep bind)))
+    :enable bind-corep)
+
   (add-to-ruleset ast-corep-rules
                   '(shape-corep-when-var
                     shape-corep-when-dim
@@ -192,4 +198,5 @@
                     expr-corep-when-var
                     atom-corep-when-base
                     not-bind-corep-when-fun
-                    not-bind-corep-when-tfun)))
+                    not-bind-corep-when-tfun
+                    not-bind-corep-when-ifun)))
