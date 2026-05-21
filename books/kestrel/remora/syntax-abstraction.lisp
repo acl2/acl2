@@ -945,7 +945,7 @@
       (case (len treess)
         (1 (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "dim"))
                 ((okf nat) (abs-decimal inner)))
-             (make-dim-const :value nat)))
+             (make-dim-const :val nat)))
         (2 (b* (((okf (abnf::tree-list-tuple2 sub))
                  (abnf::check-tree-list-list-2 treess))
                 ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))

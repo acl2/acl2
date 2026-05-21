@@ -174,7 +174,7 @@
     (dim-case
      dim
      :var (dim-var dim.name)
-     :const (dim-const dim.value)
+     :const (dim-const dim.val)
      :add (dim-add (flatten-add-in-dim-list dim.dims t))
      :mul (prog2$ (impossible) (dim-var "irrelevant"))
      :sub (prog2$ (impossible) (dim-var "irrelevant")))
@@ -248,7 +248,7 @@
        (dim (car dims))
        ((mv sum new-dims) (factor-consts-in-add-dims (cdr dims))))
     (if (dim-case dim :const)
-        (mv (+ (dim-const->value dim) sum) new-dims)
+        (mv (+ (dim-const->val dim) sum) new-dims)
       (mv sum (cons (dim-fix dim) new-dims))))
   :verify-guards :after-returns)
 
@@ -293,7 +293,7 @@
   (dim-case
    dim
    :var (dim-var dim.name)
-   :const (dim-const dim.value)
+   :const (dim-const dim.val)
    :add (b* ((dims (normalize-add-dims dim.dims))
              ((when (endp dims)) (dim-const 0)) ; no dimensions
              ((when (endp (cdr dims))) (car dims))) ; one dimension
