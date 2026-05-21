@@ -196,8 +196,41 @@
                  (make-bind-val :var bind.var
                                 :type? lambda-type?
                                 :expr lambda-expr)))
-   ;; TODO: (bind :cfun ...)
-   )
+   (bind :cfun (b* ((params (var+type-list-desugar bind.params))
+                    (type (type-desugar bind.type))
+                    (expr (expr-desugar bind.expr))
+                    (lambda-type
+                     (make-type-fun :in (var+type-list->type params)
+                                    :out type))
+                    (lambda-expr
+                     (expr-atom
+                      (make-atom-lambda :params params
+                                        :body expr)))
+                    ((mv ilambda-lambda-type
+                         ilambda-lambda-expr)
+                     (ispace-var-list-option-case
+                      bind.iparams?
+                      :some (mv (make-type-pi :params bind.iparams?.val
+                                              :body lambda-type)
+                                (expr-atom
+                                 (make-atom-ilambda :params bind.iparams?.val
+                                                    :body lambda-expr)))
+                      :none (mv lambda-type
+                                lambda-expr)))
+                    ((mv tlambda-ilambda-lambda-type
+                         tlambda-ilambda-lambda-expr)
+                     (type-var-list-option-case
+                      bind.tparams?
+                      :some (mv (make-type-forall :params bind.tparams?.val
+                                                  :body ilambda-lambda-type)
+                                (expr-atom
+                                 (make-atom-tlambda :params bind.tparams?.val
+                                                    :body ilambda-lambda-expr)))
+                      :none (mv ilambda-lambda-type
+                                ilambda-lambda-expr))))
+                 (make-bind-val :var bind.var
+                                :type? tlambda-ilambda-lambda-type
+                                :expr tlambda-ilambda-lambda-expr))))
   :name ast-desugar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
