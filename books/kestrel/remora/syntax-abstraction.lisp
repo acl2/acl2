@@ -1882,33 +1882,27 @@
       (make-expr-app :fun fun :args args))
     :measure (abnf::tree-count tree))
 
-  ;; array-exp = "array" ws shape-lit ws 1*( ws atom )
+  ;; array-exp = "array" ws shape-lit *( ws atom )
   (define abs-array-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract an @('array-exp') to an @(tsee expr) @(':array')."
-    (b* (((okf (abnf::tree-list-tuple5 sub))
-          (abnf::check-tree-nonleaf-5 tree "array-exp"))
+    (b* (((okf (abnf::tree-list-tuple4 sub))
+          (abnf::check-tree-nonleaf-4 tree "array-exp"))
          ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf dims) (abs-shape-lit sl-tree))
-         ((okf atoms) (abs-*-ws-atom sub.5th))
-         ((unless (consp atoms))
-          (reserrf (list :array-exp-empty
-                         (abnf::tree-info-for-error tree)))))
+         ((okf atoms) (abs-*-ws-atom sub.4th)))
       (make-expr-array :dims dims :atoms atoms))
     :measure (abnf::tree-count tree))
 
-  ;; frame-exp = "frame" ws shape-lit ws 1*( ws exp )
+  ;; frame-exp = "frame" ws shape-lit *( ws exp )
   (define abs-frame-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract a @('frame-exp') to an @(tsee expr) @(':frame')."
-    (b* (((okf (abnf::tree-list-tuple5 sub))
-          (abnf::check-tree-nonleaf-5 tree "frame-exp"))
+    (b* (((okf (abnf::tree-list-tuple4 sub))
+          (abnf::check-tree-nonleaf-4 tree "frame-exp"))
          ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf dims) (abs-shape-lit sl-tree))
-         ((okf exprs) (abs-*-ws-exp sub.5th))
-         ((unless (consp exprs))
-          (reserrf (list :frame-exp-empty
-                         (abnf::tree-info-for-error tree)))))
+         ((okf exprs) (abs-*-ws-exp sub.4th)))
       (make-expr-frame :dims dims :exprs exprs))
     :measure (abnf::tree-count tree))
 
@@ -2242,8 +2236,7 @@
 
   (define abs-*-ws-atom ((trees abnf::tree-listp))
     :returns (as atom-list-resultp)
-    :short "Abstract @('*( ws atom )') (or @('1*( ws atom )')) to an
-            @(tsee atom-list)."
+    :short "Abstract @('*( ws atom )') to an @(tsee atom-list)."
     (b* (((when (endp trees)) nil)
          ((okf a) (abs-ws-atom (car trees)))
          ((okf rest) (abs-*-ws-atom (cdr trees))))

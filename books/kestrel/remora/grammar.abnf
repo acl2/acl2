@@ -60,9 +60,9 @@ paren-exp-body  = array-exp
                 / at-app-exp         ; @f sugar
                 / app-exp            ; [SC3] must be last
 
-array-exp       = "array" ws shape-lit ws 1*( ws atom )
+array-exp       = "array" ws shape-lit *( ws atom )
 
-frame-exp       = "frame" ws shape-lit ws 1*( ws exp )
+frame-exp       = "frame" ws shape-lit *( ws exp )
 
 app-exp         = exp *( ws exp )      ; [SC1]
                   ; (f e1 ... en): first exp is the function
