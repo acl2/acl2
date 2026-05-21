@@ -12,6 +12,7 @@
 
 (include-book "dynamic-values")
 (include-book "dynamic-environments")
+(include-book "evaluation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,4 +27,5 @@
      We plan to formalize those inference rules as directly as possible,
      but we will start by providing an executable interpreter."))
   :order-subtopics (dynamic-values
-                    dynamic-environments))
+                    dynamic-environments
+                    evaluation))
