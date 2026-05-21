@@ -66,47 +66,34 @@
       (to lambda abstractions)."))
    (xdoc::p
     "Perhaps surprisingly, we do not exclude @('let') expressions,
-     although it seems that they should be reducible to
-     applications of lambda abstractions.
-     Abstractly, @($(\\mathbf{let}\\ x = a\\ \\mathbf{in}\\ b)$)
+     although one might expect that they should be reducible to
+     applications of lambda abstractions:
+     abstractly, @($(\\mathbf{let}\\ x = a\\ \\mathbf{in}\\ b)$)
      is equivalent to @($((\\lambda x.\\ b)\\ a)$).
      However, if we attempt to perform that transformation
-     on Remora's @('let') expressions,
-     we run into the issue that,
-     for the function bindings @(':fun'), @(':tfun'), and @(':ifun'),
-     the result type is optional (see @(tsee bind)).
-     This means that, if we attempt to turn those bindings
-     into associations of lambda expressions to expression variables,
-     we may not know the type of those expression variables,
-     which is required in the outer lambda expression
-     that we are trying to generate by desugaring.")
-   (xdoc::p
-    "For example, given")
+     on Remora's @('let val') expressions,
+     we run into the issue that the type is optional,
+     but a lambda abstration in Remora always needs a parameter type.
+     For example, given")
    (xdoc::codeblock
-    "(let ((fun (f (x Int)) <f-body>)) <let-body>)")
+    "(let ((val x a)) b)")
    (xdoc::p
-    "which omits the optional result type of @('f'),
-     first we turn the function binding into a value binding
-     (which is part of our current desugaring)")
+    "where the optional type is omitted, we would need to turn that into")
    (xdoc::codeblock
-    "(let ((val f (fn ((x Int)) <f-body>))) <let-body>)")
-   (xdoc::p
-    "and then we can attempt to produce the application")
-   (xdoc::codeblock
-    "((fn ((f ?)) <let-body>) (fn ((x Int)) <f-body>))")
+    "((fn ((x ?)) b) a)")
    (xdoc::p
     "but, as signified by the @('?'), which is a required type,
-     we do not know which function type to use:
-     we have its (only) input type @('Int'), but not its output type.
+     we do not know which type to use.
      This can be known via type checking,
-     but the desugaring transformation is just a syntactic one.")
+     but the desugaring transformation is just a syntactic one,
+     at least for now.")
    (xdoc::p
     "The issue could be avoided by doing beta reduction as part of desugaring.
-     That is, abstractly,
+     That is, speaking abstractly again,
      instead of turning @($(\\mathbf{let}\\ x = a\\ \\mathbf{in}\\ b)$)
      into @($((\\lambda x.\\ b)\\ a)$),
      we could turn that directly into @($b[x/a]$),
-     where that notation means that we substitute
+     by which we mean substituting
      each free occurrence of @($x$) in @($b$) with @($a$).
      However, substitution may need to rename bound variables to avoid capture,
      and our current "
@@ -124,7 +111,15 @@
      towards requiring fewer type annotations,
      e.g. in lambda expressions,
      which could resolve the issue described above,
-     i.e. it may allow us to produce applications of lambda expressions."))
+     i.e. it may allow us to produce applications of lambda expressions.")
+   (xdoc::p
+    "Note that we desugar the four function bindings to value bindings.")
+   (xdoc::p
+    "We could also desugar ispace and type bindings
+     to applications of ispace and type lambda abstractions,
+     since their parameters are just ispace and type variables,
+     which do not require anything extra (like types for term variables).
+     We plan to work on that soon."))
   :types (shapes
           ispace
           ispace-list
