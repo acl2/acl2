@@ -27,13 +27,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define nat-list-sum ((nats nat-listp))
+  :returns (sum natp)
+  :short "Sum of a list of zero or more natural numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is 0 if the list is empty."))
+  (cond ((endp nats) 0)
+        (t (+ (lnfix (car nats)) (nat-list-sum (cdr nats))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define nat-list-product ((nats nat-listp))
   :returns (product natp)
   :short "Product of a list of zero or more natural numbers."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "This is used to calculate the number of elements of an array or frame.")
    (xdoc::p
     "This is 1 if the list is empty."))
   (cond ((endp nats) 1)
@@ -50,3 +60,21 @@
     (iff (equal product 0)
          (member-equal 0 (nat-list-fix nats)))
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nat-list-subtraction ((nats nat-listp))
+  :guard (consp nats)
+  :returns (subtraction integerp)
+  :short "Subtraction of a list of one or more natural numbers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is defined as in Common Lisp:
+     there must not be zero operands;
+     if there is one operand, it is negated;
+     if there are two or more operands,
+     the ones after the first are all subtracted from the first."))
+  (cond ((endp nats) (prog2$ (impossible) 0))
+        ((endp (cdr nats)) (- (lnfix (car nats))))
+        (t (- (lnfix (car nats)) (nat-list-sum (cdr nats))))))
