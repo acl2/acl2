@@ -135,7 +135,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection abstract-syntax-corep-additional-theorems
+(defsection ast-corep-additional-theorems
   :short "Additional theorems about the core AST predicates."
 
   (defruled shape-corep-when-var
