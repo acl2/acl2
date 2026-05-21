@@ -154,7 +154,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-digit-to-nat ((tree abnf::treep))
-  :returns (nat acl2::nat-resultp :hints (("Goal" :in-theory (enable natp))))
+  :returns (nat nat-resultp :hints (("Goal" :in-theory (enable natp))))
   :short "Abstract a @('digit') to a natural number."
   (b* (((okf nat) (abnf::check-tree-nonleaf-num-range tree "digit" #x30 #x39)))
     (- nat #x30))
@@ -172,7 +172,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-*-digit-to-nat-aux ((trees abnf::tree-listp) (acc natp))
-  :returns (nat acl2::nat-resultp)
+  :returns (nat nat-resultp)
   :parents (abs-decimal)
   :short "Big-endian accumulation of a digit list."
   (b* (((when (endp trees)) (lnfix acc))
@@ -187,7 +187,7 @@
     :hints (("Goal" :induct t))))
 
 (define abs-decimal ((tree abnf::treep))
-  :returns (nat acl2::nat-resultp)
+  :returns (nat nat-resultp)
   :short "Abstract a @('decimal') to a natural number."
   (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree "decimal"))
        ((unless (consp trees))
@@ -202,7 +202,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-ws-decimal ((tree abnf::treep))
-  :returns (n acl2::nat-resultp)
+  :returns (n nat-resultp)
   :short "Abstract a @('( ws decimal )') wrapper to a natural number."
   (b* (((okf (abnf::tree-list-tuple2 sub))
         (abnf::check-tree-nonleaf-2 tree nil))
