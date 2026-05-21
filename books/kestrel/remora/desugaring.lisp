@@ -166,7 +166,21 @@
                 (make-bind-val :var bind.var
                                :type? lambda-type?
                                :expr lambda-expr)))
-   ;; TODO: (bind :tfun ...)
+   (bind :tfun (b* ((type? (type-option-desugar bind.type?))
+                    (expr (expr-desugar bind.expr))
+                    (lambda-type?
+                     (type-option-case
+                      type?
+                      :some (make-type-forall :params bind.params
+                                              :body type?.val)
+                      :none nil))
+                    (lambda-atom
+                     (make-atom-tlambda :params bind.params
+                                        :body expr))
+                    (lambda-expr (expr-atom lambda-atom)))
+                 (make-bind-val :var bind.var
+                                :type? lambda-type?
+                                :expr lambda-expr)))
    ;; TODO: (bind :ifun ...)
    ;; TODO: (bind :cfun ...)
    )

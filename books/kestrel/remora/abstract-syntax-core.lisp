@@ -127,7 +127,7 @@
    (expr :capp nil)
    (expr :bracket nil)
    (bind :fun nil)
-   ;; TODO: (bind :tfun nil)
+   (bind :tfun nil)
    ;; TODO: (bind :ifun nil)
    ;; TODO: (bind :cfun nil)
    )
@@ -178,6 +178,11 @@
              (not (bind-corep bind)))
     :enable bind-corep)
 
+  (defruled not-bind-corep-when-tfun
+    (implies (equal (bind-kind bind) :tfun)
+             (not (bind-corep bind)))
+    :enable bind-corep)
+
   (add-to-ruleset ast-corep-rules
                   '(shape-corep-when-var
                     shape-corep-when-dim
@@ -186,4 +191,5 @@
                     type-corep-when-base
                     expr-corep-when-var
                     atom-corep-when-base
-                    not-bind-corep-when-fun)))
+                    not-bind-corep-when-fun
+                    not-bind-corep-when-tfun)))
