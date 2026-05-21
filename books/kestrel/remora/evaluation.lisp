@@ -78,7 +78,9 @@
        if there is one operand, it is negated;
        if there are two or more operands,
        we subtract all the ones after the first from the first.
-       If the subtraction result is negative, it is an error."))
+       If the subtraction result is negative, it is an error;
+       this suggests that it may not be useful to allow
+       subtractions of a single dimension operand."))
     (dim-case
      dim
      :var (b* ((var+val (omap::assoc (ispace-var-dim dim.name)
@@ -127,4 +129,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: evaluation functions
+; TODO: more evaluation functions
