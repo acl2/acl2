@@ -97,12 +97,7 @@
     (xdoc::seetopic "parser" "the parser")
     " to ASTs (abstract syntax trees) defined as "
     (xdoc::seetopic "abstract-syntax-trees" "fixtypes")
-    ".")
-   (xdoc::p
-    "This is the first slice of the abstraction: it covers identifiers,
-     decimals, base values, base types, type variables, ispace variables,
-     and the @('dim')/@('shape')/@('ispace') cluster.  Types and expressions
-     remain to be added."))
+    "."))
   :order-subtopics t
   :default-parent t)
 
