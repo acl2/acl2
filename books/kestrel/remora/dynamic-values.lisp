@@ -71,7 +71,7 @@
    (xdoc::p
     "This is like a normalized ground form of ispace ASTs:
      if there are no free variables,
-     a dimension can be reduced to a natural numbers,
+     a dimension can be reduced to a natural number,
      and a shape can be reduced to a list of natural numbers."))
   (:dim ((val nat)))
   (:shape ((val nat-list)))
