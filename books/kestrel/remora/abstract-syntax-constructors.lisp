@@ -116,7 +116,8 @@
   :short "Construct a shape term from
           a string denoting a dimension or shape variable,
           or a natural number denoting a dimension,
-          or a dimension addition term,
+          or a dimension arithmetic term
+          (@(tsee dim+), @(tsee dim*), or @(tsee dim-)),
           or some other term that is left unchanged."
   :long
   (xdoc::topstring
@@ -128,7 +129,8 @@
              (#\$ `(shape-dims (list (dim-var ,name))))
              (#\@ `(shape-var ,name)))))
         ((natp dim/shape) `(shape-dims (list (dim-const ,dim/shape))))
-        ((and (consp dim/shape) (eq (car dim/shape) 'dim+))
+        ((and (consp dim/shape)
+              (member-eq (car dim/shape) '(dim+ dim* dim-)))
          `(shape-dims (list ,dim/shape)))
         (t dim/shape)))
 
