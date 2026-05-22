@@ -1,5 +1,6 @@
 (in-package "OMAP")
 
+; NOTE: make local
 (include-book "core")
 (include-book "assoc")
 (include-book "extensionality")
@@ -8,12 +9,13 @@
 (include-book "update")
 (include-book "delete")
 
+; NOTE: use osets/top
 (include-book "std/osets/cardinality" :dir :system)
 (include-book "std/osets/intersect" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; move to core
+; move to assoc
 (defrule in-of-cdr-assoc-and-values-when-assoc
     (implies (assoc k x)
              (set::in (cdr (assoc k x))
@@ -28,6 +30,9 @@
   :rule-classes :linear)
 
 ; move to osets
+; NOTE: remove set:: when can
+; NOTE: keep local and disabled for now
+; NOTE: make general, without implies
 (defrule intersect-of-insert-when-in
     (implies (set::in a y)
              (equal (set::intersect (set::insert a x) y)
@@ -40,6 +45,7 @@
              (not (equal k (mv-nth 0 (head x))))))
 
 ; move to core with the next theorem
+; NOTE: use set::emptyp
 (defruled rlookup-to-in-of-values
     (iff (rlookup v x)
          (set::in v (values x)))
@@ -60,6 +66,7 @@
 
 (define compose ((x mapp) (y mapp))
   :returns (map mapp)
+  :parents (omaps)
   :short "Compose two omaps as functions."
   :long
   (xdoc::topstring-p
@@ -97,6 +104,7 @@
 
 (define identityp ((x mapp))
   :returns (yes/no booleanp)
+  :parents (omaps)
   :short "Check if an omap is an identity map."
   :long
   (xdoc::topstring-p
@@ -201,8 +209,10 @@
     (implies (and (identityp-sk x)
                   (mapp x))
              (identityp x))
-  :hints ('(:use (:instance identityp-sk-necc
-                            (k (mv-nth 0 (head x))))))
+  :use (:instance identityp-sk-necc
+                            (k (mv-nth 0 (head x))))
+;  :hints ('(:use (:instance identityp-sk-necc
+;                            (k (mv-nth 0 (head x))))))
   :enable (identityp
            identityp-sk-of-tail-when-identityp-sk))
 
@@ -231,6 +241,7 @@
 
 ; Copied from Alessandro
 (define injectivep ((x mapp))
+  :parents (omaps)
   :returns (yes/no booleanp)
   :short "Check if an omap is injective."
   :long
@@ -407,6 +418,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-values ((values set::setp) (x mapp))
+  :parents (omaps)
   :returns (map mapp)
   :short "Restrict an omap to entries whose value is in a given set."
   :long
@@ -455,6 +467,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define inverse ((x mapp))
+  :parents (omaps)
   :returns (map mapp)
   :short "Compute the inverse of an omap."
   :long
@@ -489,8 +502,6 @@
 ; NOTE: might want to prove something stronger than
 ; values-of-update-when-not-assoc
 
-#|
-
 (skip-proofs
 (defruled l1
     (implies (set::in v (values (delete k x)))
@@ -500,13 +511,12 @@
 (skip-proofs
 (defrule values-of-update
     (equal (values (update k v x))
-           (insert v (values (delete k x)))))
+           (set::insert v (values (delete k x))))
+  :enable (values delete))
 )
 
-|#
-
 (skip-proofs
-(defrule cardinality-of-keys-and-values-when-injectivep-and-not-in-values
+(defruledl cardinality-of-keys-and-values-when-injectivep-and-not-in-values
     (implies (and (injectivep x)
                   (not (set::in v (values x))))
              (equal (set::cardinality (keys (update k v x)))
@@ -553,13 +563,11 @@
   :enable (inverse values)
   :use equal-val-implies-equal-key-when-injectivep)
 
-(defrule injectivep-implies-rlookup-first-val-tail-nil
+(defrule injectivep-implies-not-rlookup-head-val-tail
     (implies (injectivep x)
              (not (rlookup (mv-nth 1 (head x))
                            (tail x))))
-  :enable rlookup-to-in-of-values
-;  :rule-classes :forward-chaining
-  )
+  :enable rlookup-to-in-of-values)
 
 (defrule assoc-of-inverse
     (implies (injectivep x)
@@ -568,7 +576,7 @@
                          (cons k (set::head (rlookup k x))))))
   :enable (inverse rlookup values set::insert set::head))
 
-(defrule rlookup-update-when-not-assoc
+(defrule rlookup-of-update-when-not-assoc
     (implies (not (assoc k x))
              (equal (rlookup v2 (update k v1 x))
                     (if (equal v2 v1)
