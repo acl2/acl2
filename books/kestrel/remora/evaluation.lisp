@@ -11,16 +11,17 @@
 (in-package "REMORA")
 
 (include-book "dynamic-environments")
-(include-book "nat-list-operations")
+(include-book "integer-list-operations")
 
-(include-book "kestrel/fty/nat-result" :dir :system)
+(include-book "kestrel/fty/integer-result" :dir :system)
+(include-book "kestrel/fty/integer-list-result" :dir :system)
 
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable acl2::natp-when-result-not-error
-                          acl2::nat-listp-when-result-not-error)))
+(local (in-theory (enable acl2::integerp-when-result-not-error
+                          acl2::integer-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,15 +49,16 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-dim ((dim dimp) (denv denvp))
-    :returns (nat nat-resultp)
+    :returns (int integer-resultp)
     :parents (evaluation eval-dims)
     :short "Evaluate a dimension."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If successful, we return a natural number,
-       which can be readily embedded into an ispace value,
-       but a natural number is more precise.")
+      "If successful, we return an integer.
+       The integer may be negative,
+       which we allow in intermediate calculations over dimensions,
+       but not as top-level dimensions, which must be non-negative.")
      (xdoc::p
       "A variable is looked up in the environment:
        it must be present and have an associated ispace dimension value.
@@ -70,17 +72,14 @@
       "A constant evaluates to itself.")
      (xdoc::p
       "For arithmetic expressions, first we evaluate the operands,
-       then we combine the natural numbers according to the operation.
+       then we combine the integers according to the operation.
        This is obvious for addition and multiplication,
        where the result is 0 or 1 if there are no operands.
        For subtraction, Remora follows Common Lisp:
        there must be at least one operand;
        if there is one operand, it is negated;
        if there are two or more operands,
-       we subtract all the ones after the first from the first.
-       If the subtraction result is negative, it is an error;
-       this suggests that it may not be useful to allow
-       subtractions of a single dimension operand."))
+       we subtract all the ones after the first from the first."))
     (dim-case
      dim
      :var (b* ((var+val (omap::assoc (ispace-var-dim dim.name)
@@ -90,33 +89,31 @@
                ((unless (ispace-value-case val :dim)) (reserr nil)))
             (ispace-value-dim->val val))
      :const dim.val
-     :add (b* (((ok nats) (eval-dim-list dim.dims denv)))
-            (nat-list-sum nats))
-     :mul (b* (((ok nats) (eval-dim-list dim.dims denv)))
-            (nat-list-product nats))
-     :sub (b* (((ok nats) (eval-dim-list dim.dims denv))
-               ((unless (consp nats)) (reserr nil))
-               (sub (nat-list-subtraction nats))
-               ((unless (natp sub)) (reserr nil)))
+     :add (b* (((ok ints) (eval-dim-list dim.dims denv)))
+            (integer-list-sum ints))
+     :mul (b* (((ok ints) (eval-dim-list dim.dims denv)))
+            (integer-list-product ints))
+     :sub (b* (((ok ints) (eval-dim-list dim.dims denv))
+               ((unless (consp ints)) (reserr nil))
+               (sub (integer-list-subtraction ints)))
             sub))
     :measure (dim-count dim))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define eval-dim-list ((dims dim-listp) (denv denvp))
-    :returns (nats nat-list-resultp)
+    :returns (ints integer-list-resultp)
     :parents (evaluation eval-dims)
     :short "Evaluate a list of dimensions."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If successful, we return a list of natural numbers,
-       which can be readily embedded into a list of ispace values,
-       but a list of natural numbers is more precise."))
+      "If successful, we return a list of integers,
+       which are the results of evaluating each dimension in turn."))
     (b* (((when (endp dims)) nil)
-         ((ok nat) (eval-dim (car dims) denv))
-         ((ok nats) (eval-dim-list (cdr dims) denv)))
-      (cons nat nats))
+         ((ok int) (eval-dim (car dims) denv))
+         ((ok ints) (eval-dim-list (cdr dims) denv)))
+      (cons int ints))
     :measure (dim-list-count dims))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
