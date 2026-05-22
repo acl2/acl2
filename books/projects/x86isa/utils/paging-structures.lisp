@@ -63,8 +63,7 @@
      Tables 5-15 through 5-20,
      Figure 5-11.")
    (xdoc::p
-    "For now we only model structures for 4-level paging,
-     and only ordinary paging (i.e. not HLAT paging).
+    "For now we only model structures for 4-level paging.
      As mentioned in
      Intel Manual, Mar 2026, Vol. 3A, Section 5.1.1, footnote 1,
      this paging mode was previously called `IA-32e paging':
@@ -99,7 +98,9 @@
    (a bitp)                 ;; Accessed
    (d bitp)                 ;; Dirty
    (ps bitp)                ;; Page size
-   (res1 4bits)             ;; Ignored
+   (res1 3bits)             ;; Ignored (bits 10:8)
+   (r bitp)                 ;; Ignored for ordinary paging;
+                            ;; restart for HLAT paging
    (reference-addr 40bits)  ;; Address of inferior paging table
    (res2 11bits)            ;; Ignored and/or Reserved
    (xd bitp))               ;; Execute Disable
@@ -121,7 +122,8 @@
    (a bitp)      ;; Accessed (whether entry has been used for LA translation)
    (res1 bitp)   ;; Ignored
    (ps bitp)     ;; Page size (must be 0)
-   (res2 4bits)  ;; Ignored (bits 11:8, including R bit 11)
+   (res2 3bits)  ;; Ignored (bits 10:8)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
    (pdpt 40bits) ;; Address of page-directory pointer table (bits 51:12, any M)
    (res3 11bits) ;; Ignored (bits 62:52)
    (xd bitp))    ;; If IA32_EFER.NXE = 1, execute disable;
@@ -145,7 +147,8 @@
    (d bitp)      ;; Dirty (whether referenced page was written)
    (ps bitp)     ;; Page size (Must be 1 for 1GB pages)
    (g bitp)      ;; Global translation
-   (res1 3bits)  ;; Ignored (bits 11:9, including R bit 11)
+   (res1 2bits)  ;; Ignored (bits 10:9)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
    (pat bitp)    ;; PAT
    (res2 17bits) ;; Reserved (bits 29:13)
    (page 22bits) ;; Address of 1GB page (bits 51:30, any M)
@@ -170,12 +173,12 @@
    (a bitp)      ;; Accessed (whether this entry has been used for LA translation)
    (res1 bitp)   ;; Ignored
    (ps bitp)     ;; Page size (must be 0)
-   (res2 4bits)  ;; Ignored (bits 11:8, including R bit 11)
+   (res2 3bits)  ;; Ignored (bits 10:8)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
    (pd 40bits)   ;; Address of 4K-aligned page directory (bits 52:12, any M)
    (res3 11bits) ;; Ignored (bits 62:52)
    (xd bitp))    ;; If IA32_EFER.NXE = 1, execute disable;
                  ;; otherwise reserved (must be 0)
-
   :msb-first nil
   :inline t)
 
@@ -195,7 +198,8 @@
    (d bitp)      ;; Dirty (whether referenced page was written)
    (ps bitp)     ;; Page size (Must be 1 for 2MB pages)
    (g bitp)      ;; Global translation
-   (res1 3bits)  ;; Ignored (bits 11:9, including R bit 11)
+   (res1 2bits)  ;; Ignored (bits 10:9)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
    (pat bitp)    ;; PAT
    (res2 8bits)  ;; Reserved (bits 20:13)
    (page 31bits) ;; Address of the 2MB page (bits 51-21, any M)
@@ -221,7 +225,8 @@
    (a bitp)      ;; Accessed
    (res1 bitp)   ;; Ignored
    (ps bitp)     ;; Page size (must be 0)
-   (res2 4bits)  ;; Ignored (bits 11:8, including R bit 11)
+   (res2 3bits)  ;; Ignored (bits 10:8)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
    (pt 40bits)   ;; Address of the 4K-aligned page table (bits 51:12, any M)
    (res3 11bits) ;; Ignored (bits 62:52)
    (xd bitp)     ;; If IA32_EFER.NXE = 1, execute disable;
@@ -237,20 +242,21 @@
    :rule-classes nil))
 
 (defbitstruct ia32e-pte-4K-pageBits ; Table 5-20
-  ((p bitp)        ;; Present
-   (r/w bitp)      ;; Read/write
-   (u/s bitp)      ;; User/supervisor
-   (pwt bitp)      ;; Page-level Write-Through
-   (pcd bitp)      ;; Page-level Cache-Disable
-   (a bitp)        ;; Accessed
-   (d bitp)        ;; Dirty (whether referenced page was written)
-   (pat bitp)      ;; PAT
-   (g bitp)        ;; Global translation
-   (res1 3bits)    ;; Ignored (bits 11:9, including R bit 11)
-   (page 40bits)   ;; Address of the 4K page (bits 51:12, any M)
-   (res2 11bits)   ;; Ignored (bits 62:52, including protection key)
-   (xd bitp)       ;; If IA32_EFER.NXE = 1, execute disable;
-                   ;; otherwise reserved (must be 0)
+  ((p bitp)      ;; Present
+   (r/w bitp)    ;; Read/write
+   (u/s bitp)    ;; User/supervisor
+   (pwt bitp)    ;; Page-level Write-Through
+   (pcd bitp)    ;; Page-level Cache-Disable
+   (a bitp)      ;; Accessed
+   (d bitp)      ;; Dirty (whether referenced page was written)
+   (pat bitp)    ;; PAT
+   (g bitp)      ;; Global translation
+   (res1 2bits)  ;; Ignored (bits 10:9)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
+   (page 40bits) ;; Address of the 4K page (bits 51:12, any M)
+   (res2 11bits) ;; Ignored (bits 62:52, including protection key)
+   (xd bitp)     ;; If IA32_EFER.NXE = 1, execute disable;
+                 ;; otherwise reserved (must be 0)
    )
   :msb-first nil
   :inline t)
