@@ -5589,13 +5589,15 @@
               :VEX '(:0F :128 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPD-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPD"
           (OP :OP #xF50
               :VEX '(:0F :256 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPD-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPS"
           (OP :OP #xF50
               :VEX '(:0F :128 :WIG)
