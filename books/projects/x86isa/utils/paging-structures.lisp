@@ -49,11 +49,9 @@
 
 (defsection paging-bitstructs
   :parents (structures)
-  :short "<b>Bitstructs related to the paging data structures</b>"
-
+  :short "Bitstructs related to the paging data structures."
   :long "<p>Source: Intel Manual, Dec'23, Vol. 3A, Tables 4-14 through 4-19,
-  Figure 4-11)</p>"
-  )
+  Figure 4-11)</p>")
 
 (local (xdoc::set-default-parents paging-bitstructs))
 
