@@ -97,10 +97,10 @@
   :short "Definitions of commonly used constants and some functions to
   convert between @('natp') and @('integerp'), etc."
 
-  :long "<p>Definitions of constants (of the form @('2^W')) and
-functions/macros grouped in @('ruleset')s of the following form are defined
-(where @('W') is at least a two-digit natural number; @('8') is represented as
-@('08')):</p>
+  :long "<p>Definitions of constants (of the form @('2^W'), where @('W') is the
+plain decimal natural number) and functions/macros grouped in @('ruleset')s of
+the following form are defined (where in the function/macro names @('W') is
+zero-padded to at least two digits, so @('8') is represented as @('08')):</p>
 
 <ul>
 
