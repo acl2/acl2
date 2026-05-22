@@ -5577,7 +5577,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:SSE))
           (ARG :OP1 '(G Y) :OP2 '(U PS))
-          'NIL
+          '(X86-MOVMSKPS-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
     (INST "MOVMSKPD"
           (OP :OP #xF50 :PFX :66 :FEAT '(:SSE2))

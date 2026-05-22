@@ -1357,3 +1357,69 @@
 
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; MOVMSKPS
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-movmskps-sse
+
+  :parents (two-byte-opcodes)
+
+  :short "MOVMSKPS: extract packed single precision floating-point sign mask."
+
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the SSE variant."))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* (;; Index of source register.
+       ((the (unsigned-byte 4) xmm-index) (reg-index reg rex-byte #.*r*))
+
+       ;; Index of destination register.
+       ((the (unsigned-byte 4) reg-index) (reg-index r/m rex-byte #.*b*))
+
+       ;; Collect sign bits.
+       ((the (unsigned-byte 128) src) (xmmi-size 16 xmm-index x86))
+       (sign0 (logbit 31 src))
+       (sign1 (logbit 63 src))
+       (sign2 (logbit 95 src))
+       (sign3 (logbit 127 src))
+
+       ;; Form value to put into destination.
+       ((the (unsigned-byte 4) dst)
+        (acl2::logappn 1 sign0
+                       1 sign1
+                       1 sign2
+                       1 sign3))
+
+       ;; Write the value into the destination.
+       ;; We use 64 bits as the operand size, for the following reasons.
+       ;; In 64-bit mode, that is the default size,
+       ;; as stated in the manual page for MOVMSKPS;
+       ;; and there is no way to override it,
+       ;; because the operand-size-override prefix 66h
+       ;; is used as mandatory prefix for MOVMSKPD.
+       ;; In fact, overriding would have no effect,
+       ;; because writing a 32-bit operand into a GPR in 64-bit mode
+       ;; zeroes the high 32 bits
+       ;; (Intel manual, Mar 2026, Vol 1, Sec 3.4.1.1),
+       ;; which in this case is the same as zero-extending
+       ;; the 4 bits with the signs to 64 bits.
+       ;; In 32-bit mode, the upper 32 bits are undefined,
+       ;; but, as reasoned in the documentation for our WR32 function,
+       ;; it is adequate to zero those upper 32 bits
+       ;; when writing the lower 32 bits;
+       ;; the upper 32 bits can be made undefined
+       ;; upon switching from 32-bit mode to 64-bit mode.
+       (x86 (wr64 reg-index dst x86)))
+
+    x86))
