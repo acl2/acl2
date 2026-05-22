@@ -57,7 +57,7 @@
     "In the loop that attempts to generate a fresh variable:
      @('a') is the variable generated in the current iteration,
      which is still in the set of variables to avoid,
-     so that we need to do another loop iteratino;
+     so that we need to do another loop iteration;
      @('y') is the difference between the set to avoid
      and the variables generated so far, excluding @('a');
      and @('x') is obtained by removing @('a') from @('y').
@@ -83,8 +83,14 @@
   (xdoc::topstring
    (xdoc::p
     "In concrete syntax,
-     the variable has the form @('$<i>'), where @('<i>') is the index.
-     This is a legal identifier in Remora (see ABNF grammar).
+     the variable would have the form @('$<i>'), where @('<i>') is the index.
+     Technically this is not a legal identifier in Remora,
+     because the ABNF grammar's @('id-start') rule excludes digits;
+     the AST, however, accepts any string for the variable name,
+     so the value we build here is well-formed at the AST level
+     but would fail @(tsee valid-identifier-string-p)
+     and could not be printed back to parseable source.
+     We plan to generate grammatically legal identifiers soon.
      A key property is that it is an injective mapping:
      different indices yield different variables."))
   (ispace-var-dim (str::nat-to-dec-string (lnfix index)))
@@ -249,8 +255,14 @@
   (xdoc::topstring
    (xdoc::p
     "In concrete syntax,
-     the variable has the form @('@<i>'), where @('<i>') is the index.
-     This is a legal identifier in Remora (see ABNF grammar).
+     the variable would have the form @('@<i>'), where @('<i>') is the index.
+     Technically this is not a legal identifier in Remora,
+     because the ABNF grammar's @('id-start') rule excludes digits;
+     the AST, however, accepts any string for the variable name,
+     so the value we build here is well-formed at the AST level
+     but would fail @(tsee valid-identifier-string-p)
+     and could not be printed back to parseable source.
+     We plan to generate grammatically legal identifiers soon.
      A key property is that it is an injective mapping:
      different indices yield different variables."))
   (ispace-var-shape (str::nat-to-dec-string (lnfix index)))
@@ -418,8 +430,14 @@
   (xdoc::topstring
    (xdoc::p
     "In concrete syntax,
-     the variable has the form @('&<i>'), where @('<i>') is the index.
-     This is a legal identifier in Remora (see ABNF grammar).
+     the variable would have the form @('&<i>'), where @('<i>') is the index.
+     Technically this is not a legal identifier in Remora,
+     because the ABNF grammar's @('id-start') rule excludes digits;
+     the AST, however, accepts any string for the variable name,
+     so the value we build here is well-formed at the AST level
+     but would fail @(tsee valid-identifier-string-p)
+     and could not be printed back to parseable source.
+     We plan to generate grammatically legal identifiers soon.
      A key property is that it is an injective mapping:
      different indices yield different variables."))
   (type-var-atom (str::nat-to-dec-string (lnfix index)))
@@ -584,8 +602,14 @@
   (xdoc::topstring
    (xdoc::p
     "In concrete syntax,
-     the variable has the form @('*<i>'), where @('<i>') is the index.
-     This is a legal identifier in Remora (see ABNF grammar).
+     the variable would have the form @('*<i>'), where @('<i>') is the index.
+     Technically this is not a legal identifier in Remora,
+     because the ABNF grammar's @('id-start') rule excludes digits;
+     the AST, however, accepts any string for the variable name,
+     so the value we build here is well-formed at the AST level
+     but would fail @(tsee valid-identifier-string-p)
+     and could not be printed back to parseable source.
+     We plan to generate grammatically legal identifiers soon.
      A key property is that it is an injective mapping:
      different indices yield different variables."))
   (type-var-array (str::nat-to-dec-string (lnfix index)))
@@ -614,7 +638,7 @@
      all the failed attempts at generating a fresh variable.")
    (xdoc::p
     "Membership and subset reduce to index comparison;
-     the injectivity of @(tsee type-var-atom-with-index) is needed here.
+     the injectivity of @(tsee type-var-array-with-index) is needed here.
      This function is also injective."))
   (b* (((when (zp index)) nil)
        (index (1- index)))
