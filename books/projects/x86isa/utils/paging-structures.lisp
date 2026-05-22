@@ -90,19 +90,34 @@
   ;; reference-addr, the address of the mapped page is contained in
   ;; different-sized fields for each paging structure.
 
+  ;; Note that the d, ps, res1, and res2 fields
+  ;; are not common to all the paging structures,
+  ;; as indicated in the comments next to them.
+  ;; It could be appropriate to:
+  ;; - rename d to d/res
+  ;; - rename ps to ps/pat
+  ;; - split res1 into g/res for bit 8 and res1 for bits 10:9
+  ;; - split res2 into res2 for bits 58:52 and pkey/res for bits 63:59
+  ;; We may do that at some point,
+  ;; but the current names,
+  ;; although not fully descriptive,
+  ;; may be adequate for the current uses of this structure.
+
   ((p bitp)                 ;; Page present
    (r/w bitp)               ;; Read/Write
    (u/s bitp)               ;; User/supervisor
    (pwt bitp)               ;; Page-level Write-Through
    (pcd bitp)               ;; Page-level Cache-Disable
    (a bitp)                 ;; Accessed
-   (d bitp)                 ;; Dirty
-   (ps bitp)                ;; Page size
-   (res1 3bits)             ;; Ignored (bits 10:8)
+   (d bitp)                 ;; Dirty (or ignored)
+   (ps bitp)                ;; Page size (or PAT)
+   (res1 3bits)             ;; Ignored (bits 10:8),
+                            ;; or global translation in bit 8
    (r bitp)                 ;; Ignored for ordinary paging;
                             ;; restart for HLAT paging
    (reference-addr 40bits)  ;; Address of inferior paging table
-   (res2 11bits)            ;; Ignored and/or Reserved
+   (res2 11bits)            ;; Ignored (bits 62:52),
+                            ;; or protection key in bits 62:59
    (xd bitp))               ;; Execute Disable
   :msb-first nil
   :inline t)
