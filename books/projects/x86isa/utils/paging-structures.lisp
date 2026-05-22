@@ -63,7 +63,8 @@
      Tables 5-15 through 5-20,
      Figure 5-11.")
    (xdoc::p
-    "For now we only model structures for 4-level paging.
+    "For now we only model structures for 4-level paging,
+     and only ordinary paging (i.e. not HLAT paging).
      As mentioned in
      Intel Manual, Mar 2026, Vol. 3A, Section 5.1.1, footnote 1,
      this paging mode was previously called `IA-32e paging':
@@ -111,20 +112,20 @@
         (unsigned-byte-p 64 x))
    :rule-classes nil))
 
-(defbitstruct ia32e-pml4eBits
+(defbitstruct ia32e-pml4eBits ; Table 5-15
   ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
    (pcd bitp)    ;; Page-level Cache-Disable
-   (a bitp)      ;; Accessed (whether this entry has been used for LA translation)
+   (a bitp)      ;; Accessed (whether entry has been used for LA translation)
    (res1 bitp)   ;; Ignored
-   (ps bitp)     ;; Page size (Must be zero)
-   (res2 4bits)  ;; Ignored
-   (pdpt 40bits) ;; Address of page-directory pointer table
-   (res3 11bits) ;; Ignored and/or Reserved
-   (xd bitp))    ;; If IA32_EFER.NXE = 1, Execute disable;
-                 ;; otherwise 0 (reserved)
+   (ps bitp)     ;; Page size (must be 0)
+   (res2 4bits)  ;; Ignored (bits 11:8, including R bit 11)
+   (pdpt 40bits) ;; Address of page-directory pointer table (bits 51:12, any M)
+   (res3 11bits) ;; Ignored and/or Reserved (bits 62:52)
+   (xd bitp))    ;; If IA32_EFER.NXE = 1, execute disable;
+                 ;; otherwise reserved (must be 0)
   :msb-first nil
   :inline t)
 
@@ -134,26 +135,25 @@
         (unsigned-byte-p 64 x))
    :rule-classes nil))
 
-(defbitstruct ia32e-pdpte-1GB-pageBits
+(defbitstruct ia32e-pdpte-1GB-pageBits ; Table 5-16
   ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
    (pcd bitp)    ;; Page-level Cache-Disable
-   (a bitp)      ;; Accessed (whether this entry has been used for LA translation)
-   (d bitp)      ;; Dirty (whether s/w has written to the 1 GB page referenced by this entry)
+   (a bitp)      ;; Accessed (whether entry has been used for LA translation)
+   (d bitp)      ;; Dirty (whether referenced 1 GB page was written)
    (ps bitp)     ;; Page size (Must be 1 for 1GB pages)
    (g bitp)      ;; Global translation
-   (res1 3bits)  ;; Ignored
+   (res1 3bits)  ;; Ignored (bits 11:9, including R bit 11)
    (pat bitp)    ;; PAT
-   (res2 17bits) ;; Reserved
-   (page 22bits) ;; Address of 1 GB page
-   (res3 11bits) ;; Ignored and/or Reserved
+   (res2 17bits) ;; Reserved (bits 29:13)
+   (page 22bits) ;; Address of 1 GB page (bits 51:30, any M)
+   (res3 11bits) ;; Ignored and/or Reserved (bits 58:52, including protection key)
    (xd bitp))    ;; If IA32_EFER.NXE = 1, Execute disable;
                  ;; otherwise 0 (reserved)
   :msb-first nil
-  :inline t
-  )
+  :inline t)
 
 (local
  (defthm ia32e-pdpte-1GB-page-layout-ok
