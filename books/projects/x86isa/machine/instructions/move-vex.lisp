@@ -680,3 +680,104 @@
 
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; VMOVMSKPS
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-vmovmskps-vex
+
+  :parents (two-byte-opcodes)
+
+  :short "VMOVMSKPS: extract packed single precision floating-point sign mask."
+
+  :long
+  (xdoc::topstring
+   (xdoc::codeblock
+    "VEX.128.0F.WIG 50 /r   VMOVMSKPS reg, xmm2"
+    "VEX.256.0F.WIG 50 /r   VMOVMSKPS reg, ymm2")
+   (xdoc::p
+    "This is the VEX variant."))
+
+  :modr/m t
+
+  :vex t
+
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* (;; Index of source register.
+       ((the (unsigned-byte 4) xmm/ymm-index) (reg-index reg rex-byte #.*r*))
+
+       ;; Index of destination register.
+       ((the (unsigned-byte 4) reg-index) (reg-index r/m rex-byte #.*b*))
+
+       ;; The operand size is determined by VEX.L, regardless of processor mode.
+       ((the (integer 16 32) operand-size)
+        (if (equal (vex->l vex-prefixes) 1)
+            32
+          16))
+
+       ;; Source operand.
+       ((the (unsigned-byte 256) src)
+        (zmmi-size operand-size xmm/ymm-index x86))
+
+       ;; Calculate value to store into destination register,
+       ;; in two different ways based on operand size.
+       ((the (unsigned-byte 8) dst)
+
+        (if (= operand-size 16)
+
+            (b* ((sign0 (logbit 31 src))
+                 (sign1 (logbit 63 src))
+                 (sign2 (logbit 95 src))
+                 (sign3 (logbit 127 src)))
+              (acl2::logappn 1 sign0
+                             1 sign1
+                             1 sign2
+                             1 sign3))
+
+          (b* ((sign0 (logbit 31 src))
+               (sign1 (logbit 63 src))
+               (sign2 (logbit 95 src))
+               (sign3 (logbit 127 src))
+               (sign4 (logbit 159 src))
+               (sign5 (logbit 191 src))
+               (sign6 (logbit 223 src))
+               (sign7 (logbit 255 src)))
+            (acl2::logappn 1 sign0
+                           1 sign1
+                           1 sign2
+                           1 sign3
+                           1 sign4
+                           1 sign5
+                           1 sign6
+                           1 sign7))))
+
+       ;; Write the value into the destination.
+       ;; We use 64 bits as the operand size, for the following reasons.
+       ;; In 64-bit mode, that is the default size,
+       ;; as stated in the manual page for VMOVMSKPS;
+       ;; and there is no way to override it,
+       ;; because the operand-size-override prefix 66h
+       ;; is used as mandatory prefix for VMOVMSKPD.
+       ;; In fact, overriding would have no effect,
+       ;; because writing a 32-bit operand into a GPR in 64-bit mode
+       ;; zeroes the high 32 bits
+       ;; (Intel manual, Mar 2026, Vol 1, Sec 3.4.1.1),
+       ;; which in this case is the same as zero-extending
+       ;; the 4 bits with the signs to 64 bits.
+       ;; In 32-bit mode, the upper 32 bits are undefined,
+       ;; but, as reasoned in the documentation for our WR32 function,
+       ;; it is adequate to zero those upper 32 bits
+       ;; when writing the lower 32 bits;
+       ;; the upper 32 bits can be made undefined
+       ;; upon switching from 32-bit mode to 64-bit mode.
+       (x86 (wr64 reg-index dst x86)))
+
+    x86))
