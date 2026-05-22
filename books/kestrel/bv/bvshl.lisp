@@ -1,7 +1,7 @@
 ; Bit-vector Left shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -212,4 +212,12 @@
                 (integerp shift-amount))
            (equal (bvshl size x shift-amount)
                   0))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+(defthmd bvchop-of-expt-becomes-bvshl
+  (implies (natp i)
+           (equal (bvchop 32 (expt 2 i))
+                  (if (< i 32)
+                      (bvshl 32 1 i)
+                    0)))
   :hints (("Goal" :in-theory (enable bvshl))))
