@@ -112,7 +112,7 @@
      (xdoc::p
       "If successful, we return a list of natural numbers,
        which can be readily embedded into a list of ispace values,
-       but a list of natural numbers if more precise."))
+       but a list of natural numbers is more precise."))
     (b* (((when (endp dims)) nil)
          ((ok nat) (eval-dim (car dims) denv))
          ((ok nats) (eval-dim-list (cdr dims) denv)))
