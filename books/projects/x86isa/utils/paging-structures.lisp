@@ -152,7 +152,8 @@
    (pat bitp)    ;; PAT
    (res2 17bits) ;; Reserved (bits 29:13)
    (page 22bits) ;; Address of 1GB page (bits 51:30, any M)
-   (res3 11bits) ;; Ignored (bits 62:52, including protection key)
+   (res3 7bits)  ;; Ignored (bits 58:52)
+   (pkey 4bits)  ;; Protection key
    (xd bitp))    ;; If IA32_EFER.NXE = 1, execute disable;
                  ;; otherwise reserved (must be 0)
   :msb-first nil
@@ -203,7 +204,8 @@
    (pat bitp)    ;; PAT
    (res2 8bits)  ;; Reserved (bits 20:13)
    (page 31bits) ;; Address of the 2MB page (bits 51-21, any M)
-   (res3 11bits) ;; Ignored (bits 62:52, including protection key)
+   (res3 7bits)  ;; Ignored (bits 58:52)
+   (pkey 4bits)  ;; Protection key
    (xd bitp)     ;; If IA32_EFER.NXE = 1, execute disable;
                  ;; otherwise reserved (must be 0)
    )
@@ -254,7 +256,8 @@
    (res1 2bits)  ;; Ignored (bits 10:9)
    (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
    (page 40bits) ;; Address of the 4K page (bits 51:12, any M)
-   (res2 11bits) ;; Ignored (bits 62:52, including protection key)
+   (res3 7bits)  ;; Ignored (bits 58:52)
+   (pkey 4bits)  ;; Protection key
    (xd bitp)     ;; If IA32_EFER.NXE = 1, execute disable;
                  ;; otherwise reserved (must be 0)
    )
