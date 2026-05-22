@@ -5582,7 +5582,7 @@
     (INST "MOVMSKPD"
           (OP :OP #xF50 :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          'NIL
+          '(X86-MOVMSKPD-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "VMOVMSKPD"
           (OP :OP #xF50
