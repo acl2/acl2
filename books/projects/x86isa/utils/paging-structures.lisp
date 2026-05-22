@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,10 +36,14 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author:
+; Alessandro Coglio   <www.alessandrocoglio.info>
 
 (in-package "X86ISA")
 
 (include-book "basic-structs")
+
+(include-book "xdoc/constructors" :dir :system)
 
 ;; We do these once, here, to avoid each defbitstruct below doing them locally:
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -50,8 +55,21 @@
 (defsection paging-bitstructs
   :parents (structures)
   :short "Bitstructs related to the paging data structures."
-  :long "<p>Source: Intel Manual, Dec'23, Vol. 3A, Tables 4-14 through 4-19,
-  Figure 4-11)</p>")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Source:
+     Intel Manual, Mar 2026, Vol. 3A,
+     Tables 5-15 through 5-20,
+     Figure 5-11.")
+   (xdoc::p
+    "For now we only model structures for 4-level paging.
+     As mentioned in
+     Intel Manual, Mar 2026, Vol. 3A, Section 5.1.1, footnote 1,
+     this paging mode was previously called `IA-32e paging':
+     this is why the names of the bitstructs below start with @('ia32e').
+     We may want to update these names at some point,
+     perhaps when we add structures for the other paging three modes.")))
 
 (local (xdoc::set-default-parents paging-bitstructs))
 
