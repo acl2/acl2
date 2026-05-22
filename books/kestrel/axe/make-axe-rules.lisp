@@ -258,7 +258,7 @@
                               (eq 'dag-array (car (last formals)))))
            ((when (and fn-uses-dagp
                        (not (eq 'dag-array (car (last args))))))
-            (er hard? 'process-axe-syntaxp-function-application "Error in rule ~x0: Final arg in ~x1 must be ~x2." rule-symbol expr 'acl2::dag-array)
+            (er hard? 'process-axe-syntaxp-function-application "Error in rule ~x0: Final arg in ~x1 must be ~x2." rule-symbol expr 'dag-array)
             *nil* ; just some pseudo-term (irrelevant)
             )
            (args-to-store (if fn-uses-dagp
@@ -336,7 +336,7 @@
                           (eq 'dag-array (car (last formals)))))
        ((when (and fn-uses-dagp
                    (not (eq 'dag-array (car (last args))))))
-        (er hard? 'process-axe-bind-free-function-application "Error in rule ~x0: Final arg in ~x1 must be ~x2." rule-symbol expr 'acl2::dag-array)
+        (er hard? 'process-axe-bind-free-function-application "Error in rule ~x0: Final arg in ~x1 must be ~x2." rule-symbol expr 'dag-array)
         (mv :bad-axe-bind-free nil))
        (args-to-store (if fn-uses-dagp
                           (butlast args 1)

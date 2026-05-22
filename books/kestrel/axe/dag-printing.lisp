@@ -36,7 +36,7 @@
                   :stobjs state))
   (let ((quotep (quotep dag-or-quotep)))
     (if (or quotep
-            (and (not (acl2::len-at-least 1152921504606846974 dag-or-quotep)) ; not too big to call dag-size
+            (and (not (len-at-least 1152921504606846974 dag-or-quotep)) ; not too big to call dag-size
                  (if maybe-actual-size
                      (<= maybe-actual-size max-size)
                    (<= (dag-size dag-or-quotep) max-size))))
