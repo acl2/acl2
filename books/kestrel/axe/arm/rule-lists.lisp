@@ -402,7 +402,7 @@
      arm::mv-nth-1-of-lsl_c-becomes-getbit
      arm::lsl-becomes-bvshl ; arm::lsl
 
-     ;; right shifts;
+     ;; right shifts:
      arm::mv-nth-0-of-lsr_c-becomes-bvshr ; arm::lsr_c
      arm::mv-nth-1-of-lsr_c-becomes-getbit
      arm::lsr-becomes-bvshr ; arm::lsr

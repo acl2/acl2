@@ -35,7 +35,7 @@
            )
      (let ((fn (ffn-symb tree)))
        (if (eq fn 'quote)
-           ;; a quoted constant;
+           ;; a quoted constant:
            (and (= 1 (len (fargs tree)))
                 (true-listp (fargs tree)))
          ;; the application of a function symbol or lambda to args that are axe trees:
@@ -370,7 +370,7 @@
                 (< tree bound)))
      (let ((fn (ffn-symb tree)))
        (if (eq fn 'quote)
-           ;; a quoted constant;
+           ;; a quoted constant:
            (and (= 1 (len (fargs tree)))
                 (true-listp (fargs tree)))
          ;; the application of a function symbol or lambda to args that are axe trees:
