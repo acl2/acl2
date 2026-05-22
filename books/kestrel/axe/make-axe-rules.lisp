@@ -403,7 +403,7 @@
                           (call-of 'if core-term)
                           (equal *t* (farg2 core-term))
                           (equal *nil* (farg3 core-term)))))
-              (b* ( ;; We attempt to convert the syntaxp hyp into an axe-syntaxp hyp (this only works for some hyps)
+              (b* (;; We attempt to convert the syntaxp hyp into an axe-syntaxp hyp (this only works for some hyps)
                    ((mv erp hyp)
                     (make-axe-syntaxp-hyp-for-synp-expr (farg1 (unquote (farg3 hyp))) bound-vars rule-symbol hyp))
                    ((when erp) (mv erp *unrelievable-hyps* bound-vars)))
@@ -789,7 +789,7 @@
    (implies (and (consp x)
                  (pseudo-termp term))
             (not (member-equal x (fns-in-term term))))
-   :hints (("Goal" :use ( symbol-listp-of-fns-in-term)
+   :hints (("Goal" :use (symbol-listp-of-fns-in-term)
             :in-theory (disable symbol-listp-of-fns-in-term)))))
 
 ;move
@@ -1434,7 +1434,7 @@
                               (symbol-alistp rule-classes)
                               (symbol-listp known-boolean-fns)
                               (plist-worldp wrld))))
-  (b* ( ;; Split the rule into conclusion and hyps:
+  (b* (;; Split the rule into conclusion and hyps:
        ((mv erp hyps conc)
         (hyps-and-conc-for-axe-rule theorem-body rule-symbol))
        ((when erp) (mv erp nil))

@@ -305,13 +305,11 @@
 (defthm not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
   (not (sbvlt 64 (sbvdiv 64 (bvsx 64 32 x) 2) -2147483648))
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
-           :in-theory (e/d (sbvlt sbvdiv bvsx bvlt logext-cases bvcat logapp
-                                  truncate-becomes-floor-gen
-                                  getbit-of-+
-                                  bvplus
-                                  bvchop-of-sum-cases)
-                           ( ;disable
-                            )))))
+           :in-theory (enable sbvlt sbvdiv bvsx bvlt logext-cases bvcat logapp
+                              truncate-becomes-floor-gen
+                              getbit-of-+
+                              bvplus
+                              bvchop-of-sum-cases))))
 
 ;todo: also prove for slice and logtail
 (defthm getbit-of-*-of-1/2

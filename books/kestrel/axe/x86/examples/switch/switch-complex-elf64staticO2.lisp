@@ -116,7 +116,7 @@
              (global-counter-val u32))
     :output :rax
     :extra-assumptions '((canonical-address-p$inline global-counter-addr))
-    :monitor '( ;acl2::bv-array-read-shorten-when-in-first-half
+    :monitor '(;acl2::bv-array-read-shorten-when-in-first-half
 ;acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
                )
     :stack-slots 10)

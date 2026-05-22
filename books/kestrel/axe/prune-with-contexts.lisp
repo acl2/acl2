@@ -39,11 +39,11 @@
 ;;                 (<= size *max-1d-array-length*))
 ;;            (wf-dagp 'dag-array
 ;;                     (new-array1 'dag-array size)
-;;                     '0
+;;                     0
 ;;                     'dag-parent-array
 ;;                     ;; or rewrite this call (note the 0):
 ;;                     (make-dag-parent-array-with-name2
-;;                      '0
+;;                      0
 ;;                      'dag-array
 ;;                      (new-array1 'dag-array size)
 ;;                      'dag-parent-array)

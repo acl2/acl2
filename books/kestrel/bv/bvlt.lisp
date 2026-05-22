@@ -1,7 +1,7 @@
 ; Rules about BVLT
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -835,10 +835,9 @@
                 (natp size)
                 )
            (not (BVLT size x k)))
-  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   bvchop-of-sum-cases
-                                   bvplus)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     bvchop-of-sum-cases
+                                     bvplus))))
 
 (defthm bvlt-when-not-bvlt-one-more
   (implies (and (syntaxp (quotep const)) ;new

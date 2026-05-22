@@ -1,7 +1,7 @@
 ; Mixed theorems about bvminus
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,14 +21,12 @@
 (defthm bvminus-of-1-and-getbit-of-0-arg2
   (equal (bvminus 1 (getbit 0 x) y)
          (bvminus 1 x y))
-  :hints (("Goal" :in-theory (e/d (getbit)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit))))
 
 (defthm bvminus-of-1-and-getbit-of-0-arg3
   (equal (bvminus 1 x (getbit 0 y))
          (bvminus 1 x y))
-  :hints (("Goal" :in-theory (e/d (getbit)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit))))
 
 (defthm bvminus-subst-arg1-constant
   (implies (and (syntaxp (not (quotep x)))

@@ -630,7 +630,7 @@
                                     all-assumptions
                                     rule-alist
                                     nil known-booleans nil nil nil nil nil
-                                    (append '( ;xr-wb-in-app-view
+                                    (append '(;xr-wb-in-app-view
                                               )
                                             rules-to-monitor)
                                     *no-warn-ground-functions*
@@ -2156,7 +2156,7 @@
                           extra-rules ; rules to enable
                           remove-rules
                           rules-to-monitor ; rules to monitor
-                          loop-alist ; maps loop headers (PC offsets relative to base-address) to lists of PC offsets ( relative to base-address) in the corresponding loops
+                          loop-alist ; maps loop headers (PC offsets relative to base-address) to lists of PC offsets (relative to base-address) in the corresponding loops
                           measure-alist
                           base-name
                           lifter-rules
@@ -2241,7 +2241,7 @@
        ;; Not an IF, so test whether we have exited the segment:
        ;; TODO: Begin by comparing the stack height?
        (b* (((mv erp exitedp state)
-             (b* ( ;; Extract the PC:
+             (b* (;; Extract the PC:
                   (- (cw "(Checking the PC.)~%"))
                   (- (cw "(State term is ~x0)~%" state-term))
                   ((mv erp state-dag)
@@ -2429,7 +2429,7 @@
  ;; hit the loop header again?).  !! For now, this assumes that the code
  ;; segment being lifted is at the start of the routine, preceding the
  ;; routine's single loop.  We always step the state at least once.
- (defun lift-code-segment ( ;initial-state-dag ;over the var x86_0 and perhaps other vars representing inputs (see the Essay on Variables) -- always just the initial-state-dag in var form?
+ (defun lift-code-segment (;initial-state-dag ;over the var x86_0 and perhaps other vars representing inputs (see the Essay on Variables) -- always just the initial-state-dag in var form?
                            loop-depth ;0 if not in a loop, yet, 1 for the body of the first loop (2 or greater for the body of a nested loop)
                            generated-events
                            next-loop-num
@@ -2568,7 +2568,7 @@
            (ignore produce-theorem ; todo
                    non-executable ; todo
                    ))
-  (b* ( ;; Check whether this call to the lifter has already been made:
+  (b* (;; Check whether this call to the lifter has already been made:
        ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Check the lifted-name argument:

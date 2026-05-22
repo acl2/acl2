@@ -267,7 +267,7 @@
                   (bvchop-list element-size lst)))
   :hints (("Goal" :in-theory (e/d (bv-array-write bv-array-read update-nth2
                                                   ;list::update-nth-equal-rewrite
-                                                  BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) ( ;take-of-bvchop-list
+                                                  BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (;take-of-bvchop-list
                                                   NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
                                                   ;;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                                                   )))))
