@@ -117,7 +117,7 @@
        multiplications of zero or more dimensions,
        and subtractions of zero or more dimensions."))
     (:var ((name string)))
-    (:const ((value nat)))
+    (:const ((val nat)))
     (:add ((dims dim-list)))
     (:mul ((dims dim-list)))
     (:sub ((dims dim-list)))

@@ -73,7 +73,7 @@
      However, if we attempt to perform that transformation
      on Remora's @('let val') expressions,
      we run into the issue that the type is optional,
-     but a lambda abstration in Remora always needs a parameter type.
+     but a lambda abstraction in Remora always needs a parameter type.
      For example, given")
    (xdoc::codeblock
     "(let ((val x a)) b)")

@@ -97,12 +97,7 @@
     (xdoc::seetopic "parser" "the parser")
     " to ASTs (abstract syntax trees) defined as "
     (xdoc::seetopic "abstract-syntax-trees" "fixtypes")
-    ".")
-   (xdoc::p
-    "This is the first slice of the abstraction: it covers identifiers,
-     decimals, base values, base types, type variables, ispace variables,
-     and the @('dim')/@('shape')/@('ispace') cluster.  Types and expressions
-     remain to be added."))
+    "."))
   :order-subtopics t
   :default-parent t)
 
@@ -159,7 +154,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-digit-to-nat ((tree abnf::treep))
-  :returns (nat acl2::nat-resultp :hints (("Goal" :in-theory (enable natp))))
+  :returns (nat nat-resultp :hints (("Goal" :in-theory (enable natp))))
   :short "Abstract a @('digit') to a natural number."
   (b* (((okf nat) (abnf::check-tree-nonleaf-num-range tree "digit" #x30 #x39)))
     (- nat #x30))
@@ -177,7 +172,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-*-digit-to-nat-aux ((trees abnf::tree-listp) (acc natp))
-  :returns (nat acl2::nat-resultp)
+  :returns (nat nat-resultp)
   :parents (abs-decimal)
   :short "Big-endian accumulation of a digit list."
   (b* (((when (endp trees)) (lnfix acc))
@@ -192,7 +187,7 @@
     :hints (("Goal" :induct t))))
 
 (define abs-decimal ((tree abnf::treep))
-  :returns (nat acl2::nat-resultp)
+  :returns (nat nat-resultp)
   :short "Abstract a @('decimal') to a natural number."
   (b* (((okf trees) (abnf::check-tree-nonleaf-1 tree "decimal"))
        ((unless (consp trees))
@@ -207,7 +202,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abs-ws-decimal ((tree abnf::treep))
-  :returns (n acl2::nat-resultp)
+  :returns (n nat-resultp)
   :short "Abstract a @('( ws decimal )') wrapper to a natural number."
   (b* (((okf (abnf::tree-list-tuple2 sub))
         (abnf::check-tree-nonleaf-2 tree nil))
@@ -950,7 +945,7 @@
       (case (len treess)
         (1 (b* (((okf inner) (abnf::check-tree-nonleaf-1-1 tree "dim"))
                 ((okf nat) (abs-decimal inner)))
-             (make-dim-const :value nat)))
+             (make-dim-const :val nat)))
         (2 (b* (((okf (abnf::tree-list-tuple2 sub))
                  (abnf::check-tree-list-list-2 treess))
                 ((okf sigil-tree) (abnf::check-tree-list-1 sub.1st))
