@@ -311,7 +311,7 @@ constants and functions; it also proves some associated lemmas.</p>")
 
 (define trunc
   ;; We prefer using trunc in function definitions.
-  ((n :type (integer 0 *))
+  ((n :type (integer 0 *)) ; n is in bytes
    (x :type integer))
   :inline t
   :no-function t
@@ -322,7 +322,7 @@ constants and functions; it also proves some associated lemmas.</p>")
     (4  (n32 x))
     (8  (n64 x))
     (16 (n128 x))
-    (t (part-select x :low 0 :width n))))
+    (t (part-select x :low 0 :width (* 8 n)))))
 
 ;; ----------------------------------------------------------------------
 
