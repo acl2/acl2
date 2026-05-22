@@ -180,8 +180,7 @@
 (defthm bvchop-of-bvplus
   (implies (and (<= size1 size2)
                 (natp size1)
-                (natp size2)
-                )
+                (natp size2))
            (equal (bvchop size1 (bvplus size2 y z))
                   (bvplus size1 y z)))
   :hints (("Goal" :in-theory (enable bvplus))))
@@ -365,8 +364,7 @@
                 (integerp y))
            (equal (bvplus size x y)
                   (+ x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (;
-                                            )))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 ;; x plus 1 is greater than x unless the addition overflows or x is just wider than size.
 ;todo: gen the 1.
