@@ -112,7 +112,7 @@
    :rule-classes nil))
 
 (defbitstruct ia32e-pml4eBits
-  ((p bitp)      ;; Page present (must be 1)
+  ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
@@ -135,7 +135,7 @@
    :rule-classes nil))
 
 (defbitstruct ia32e-pdpte-1GB-pageBits
-  ((p bitp)      ;; Page present (must be 1)
+  ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
@@ -162,7 +162,7 @@
    :rule-classes nil))
 
 (defbitstruct ia32e-pdpte-pg-dirBits
-  ((p bitp)      ;; Page present (must be 1)
+  ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
@@ -186,7 +186,7 @@
    :rule-classes nil))
 
 (defbitstruct ia32e-pde-2MB-pageBits
-  ((p bitp)      ;; Page present (must be 1)
+  ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
@@ -212,7 +212,7 @@
    :rule-classes nil))
 
 (defbitstruct ia32e-pde-pg-tableBits
-  ((p bitp)      ;; Page present (must be 1)
+  ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
@@ -237,7 +237,7 @@
    :rule-classes nil))
 
 (defbitstruct ia32e-pte-4K-pageBits
-  ((p bitp)        ;; Page present (must be 1)
+  ((p bitp)        ;; Present
    (r/w bitp)      ;; Read/write
    (u/s bitp)      ;; User/supervisor
    (pwt bitp)      ;; Page-level Write-Through
