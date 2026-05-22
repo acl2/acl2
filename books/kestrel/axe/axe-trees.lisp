@@ -210,7 +210,7 @@
                   ))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :hints (("Goal" :in-theory (e/d (axe-treep)
-                                  ( ;; for speed:
+                                  (;; for speed:
                                    equal-of-len-and-0)))))
 
 ;todo: prove from the above
@@ -582,7 +582,7 @@
                 )
            (bounded-axe-treep (nth n args) bound))
   :hints (("Goal" :expand (bounded-axe-tree-listp args bound2)
-           :in-theory (e/d (bounded-axe-tree-listp (:i nth)) ( ;nth-of-cdr
+           :in-theory (e/d (bounded-axe-tree-listp (:i nth)) (;nth-of-cdr
                                                              )))))
 
 (defthm bounded-axe-tree-listp-of-append

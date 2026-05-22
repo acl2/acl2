@@ -242,7 +242,7 @@
   :hints (("Goal" :cases (;messy
                           (not (integerp final-size))
                           (< final-size 0)
-;                          (< EXT-SIZE (+ '1 FINAL-SIZE))
+;                          (< EXT-SIZE (+ 1 FINAL-SIZE))
                           (equal 0 ext-size)
                           )
            :use (:instance BVCHOP-OF-LOGAPP-BIGGER

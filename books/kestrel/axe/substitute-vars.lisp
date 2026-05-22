@@ -338,7 +338,7 @@
                               (booleanp changep-acc))
                   :measure (len literal-nodenums)
                   :guard-hints (("Goal" :in-theory (enable rationalp-when-natp)))))
-  (b* ( ;; Try to subst a var.  TODO: Allow this to evaluate ground terms that arise when substituting.
+  (b* (;; Try to subst a var.  TODO: Allow this to evaluate ground terms that arise when substituting.
        ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (substitute-a-var literal-nodenums literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
        ((when erp) (mv erp nil changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))

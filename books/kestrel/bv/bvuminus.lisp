@@ -194,8 +194,7 @@
   (equal (bvuminus 1 x)
          (getbit 0 x))
   :hints (("Goal" :cases ((equal 0 x) (equal 1 x))
-           :in-theory (e/d (bvuminus getbit)
-                           ()))))
+           :in-theory (enable bvuminus getbit))))
 
 ;can loop
 ;restrict to constant width?

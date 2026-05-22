@@ -1,7 +1,7 @@
 ; Misc utilities
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,12 +18,12 @@
   (implies (not (set::in item set))
            (perm (set::2list (set::insert item set))
                  (cons item (set::2list set))))
-  :hints (("Goal" :expand ( ;(SET::INSERT ITEM SET)
+  :hints (("Goal" :expand (;(SET::INSERT ITEM SET)
                            (SET::2LIST (SET::INSERT ITEM SET))
                            )
-           :in-theory (e/d ( ;(:induction set::insert)
+           :in-theory (e/d (;(:induction set::insert)
                             )
-                           ( ;PERM-OF-CONS PERM-OF-CONS-MEMBERP-CASE
+                           (;PERM-OF-CONS PERM-OF-CONS-MEMBERP-CASE
 ;SET::USE-WEAK-INSERT-INDUCTION
                             )))))
 
@@ -32,13 +32,13 @@
         (if (set::in item set)
             (set::2list set)
           (cons item (set::2list set))))
-  :hints (("Goal" :expand ( ;(SET::INSERT ITEM SET)
+  :hints (("Goal" :expand (;(SET::INSERT ITEM SET)
                            (SET::2LIST (SET::INSERT ITEM SET))
                            )
-           :in-theory (e/d ( ;(:induction set::insert)
+           :in-theory (e/d (;(:induction set::insert)
                             )
-                           ( ;PERM-OF-CONS PERM-OF-CONS-MEMBERP-CASE
-;SET::USE-WEAK-INSERT-INDUCTION
+                           (;PERM-OF-CONS PERM-OF-CONS-MEMBERP-CASE
+                            ;;SET::USE-WEAK-INSERT-INDUCTION
                             )))))
 
 ;; (thm

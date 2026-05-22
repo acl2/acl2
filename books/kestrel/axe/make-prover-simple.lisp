@@ -150,7 +150,7 @@
 ;;   (implies (and (equal (len x) free)
 ;;                 (syntaxp (quotep free)))
 ;;            (equal (consp x) (< 0 free)))
-;;   :hints (("Goal" :in-theory (e/d ((:i len)) ( ;len-of-cdr
+;;   :hints (("Goal" :in-theory (e/d ((:i len)) (;len-of-cdr
 ;;                                               )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3157,7 +3157,7 @@
                                        (stringp case-designator)
                                        (natp prover-depth)
                                        (simple-prover-optionsp options))
-                           :guard-hints (("Goal" :in-theory (e/d ( ;dag-function-call-exprp
+                           :guard-hints (("Goal" :in-theory (e/d (;dag-function-call-exprp
                                                                   dag-function-call-exprp-redef
                                                                   all-myquotep-when-darg-listp
                                                                   consp-of-cdr
@@ -4809,7 +4809,7 @@
          ;;               (cw "Clause miter literals:~%")
          ;;               ;; (print-array 'dag-array dag-array dag-len)
          ;;               (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
-         ;;               (let* ( ;;fixme or we could use a worklist starting with literal-nodenums..
+         ;;               (let* (;;fixme or we could use a worklist starting with literal-nodenums..
          ;;                      (tag-array-for-prove-clause-miter (tag-supporters-of-nodes-with-name literal-nodenums 'dag-array dag-array 'tag-array-for-prove-clause-miter
          ;;                                                                                 (+ 1 (maxelem literal-nodenums))))
          ;;                      (rec-fn-nodenums (filter-rec-fn-nodes2 (+ -1 dag-len) 'dag-array dag-array 'tag-array-for-prove-clause-miter tag-array-for-prove-clause-miter state))
@@ -5752,7 +5752,7 @@
          ;;                  (mv (erp-nil) :proved)
          ;;                (b* ((- (cw "Note: The DAG was the constant nil.")))
          ;;                  (mv (erp-nil) :failed)))
-         ;;            (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
+         ;;            (b* (;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
          ;; ;          (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
          ;;                 (dag-array (alist-to-array1 'dag-array dag))
          ;;                 (top-nodenum (top-nodenum-of-dag dag))

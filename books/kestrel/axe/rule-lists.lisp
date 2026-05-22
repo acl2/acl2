@@ -374,7 +374,7 @@
 ;todo: what about shift operators?  we need an official list of BV ops
 (defun unsigned-byte-p-rules ()
   (declare (xargs :guard t))
-  '( ;; todo: add more?
+  '(;; todo: add more?
     unsigned-byte-p-of-bvchop
     unsigned-byte-p-of-bvcat-all-cases ;todo name
     unsigned-byte-p-of-bvcat ;todo drop?
@@ -1878,8 +1878,7 @@
 
 ;; ;these are now all/mostly related to 2d arrays?
 ;; (defconst *misc-rules*
-;;   '(
-;;     ;; SLICE-OF-BVCAT-HACK-GEN-BETTER
+;;   '(;; SLICE-OF-BVCAT-HACK-GEN-BETTER
 
 ;; ;    get-rid-of-logtail ;bbozo drop me! we need a more systematic way to get rid of logtail? or does it not appear?
 
@@ -2042,8 +2041,7 @@
 ;fixme do i ever see logtail?
 (defun more-rules-yuck ()
   (declare (xargs :guard t))
-  '(
-;    bvand-logtail-arg1 ;trying without these (logtail now never appears?) Thu Mar  3 01:55:15 2011
+  '(; bvand-logtail-arg1 ;trying without these (logtail now never appears?) Thu Mar  3 01:55:15 2011
 ;    bvand-logtail-arg2
 ;    bvor-logtail-arg1
 ;    bvor-logtail-arg2
