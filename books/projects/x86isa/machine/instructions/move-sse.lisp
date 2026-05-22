@@ -1372,6 +1372,8 @@
 
   :long
   (xdoc::topstring
+   (xdoc::codeblock
+    "NP 0F 50 /r   MOVMSKPS reg, xmm")
    (xdoc::p
     "This is the SSE variant."))
 
