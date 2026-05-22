@@ -1377,9 +1377,9 @@
    (xdoc::p
     "This is the SSE variant."))
 
-  :returns (x86 x86p :hyp (x86p x86))
-
   :modr/m t
+
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
