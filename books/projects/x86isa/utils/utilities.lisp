@@ -138,7 +138,7 @@ functions/macros grouped in @('ruleset')s of the following form are defined
 
 <li>@('iW-to-nW') belongs to @('iw-to-nw-defs') ruleset.
 @({
-    (define iW-to-Nw ((x iWp :type (signed-byte W)))
+    (define iW-to-nW ((x iWp :type (signed-byte W)))
         (mbe :logic (loghead W x)
              :exec (if (>= x 0) x (+ x 2^W))))
 })</li>
