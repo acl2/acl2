@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "dynamic-environments")
+(include-book "nat-list-operations")
 (include-book "integer-list-operations")
 
 (include-book "kestrel/fty/integer-result" :dir :system)
@@ -21,7 +22,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable acl2::integerp-when-result-not-error
-                          acl2::integer-listp-when-result-not-error)))
+                          acl2::integer-listp-when-result-not-error
+                          acl2::nat-listp-when-result-not-error
+                          acl2::nat-list-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,11 +43,6 @@
 
 (defines eval-dims
   :short "Evaluate dimensions and lists of dimensions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The evaluation is with respect to a dynamic environment,
-     of which we only need the map from ispace variables to ispace values."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,7 +63,7 @@
        We plan to introduce a notion of well-formed dynamic environments,
        which will include the fact that ispace dimension variables
        have ispace dimension values associated to them
-       (the plain map just associated ispace values to ispace variables);
+       (the plain map just associates ispace values to ispace variables);
        we plan to use well-formedness as a guard of this function,
        which will obviate the need for that check on the ispace value.")
      (xdoc::p
@@ -126,4 +124,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: more evaluation functions
+(defines eval-shapes
+  :short "Evaluate shapes and lists of shapes."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-shape ((shape shapep) (denv denvp))
+    :returns (nats nat-list-resultp)
+    :parents (evaluation eval-shapes)
+    :short "Evaluate a shape."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If successful, we return a list of naturals,
+       which are the dimensions that form the shape.")
+     (xdoc::p
+      "A variable is looked up in the environment:
+       it must be present and have an associated ispace shape value.
+       We plan to introduce a notion of well-formed dynamic environments,
+       which will include the fact that ispace shape variables
+       have ispace shape values associated to them
+       (the plain map just associates ispace values to ispace variables);
+       we plan to use well-formedness as a guard of this function,
+       which will obviate the need for that check on the ispace value.")
+     (xdoc::p
+      "For a shape consisting of a single dimension,
+       we evaluate the dimension,
+       we ensure it is non-negative,
+       and we return a singleton list with it.")
+     (xdoc::p
+      "For a shape consisting of a list of dimensions,
+       we evaluate the dimensions,
+       we ensure that are non-negative,
+       and we return their list.")
+     (xdoc::p
+      "For a concatenation,
+       we recursively evaluate the sub-shapes,
+       obtaining a list of lists of naturals,
+       and then we concatenate all the lists.")
+     (xdoc::p
+      "A splice is treated the same as a concatenation,
+       since the two constructs are in fact equivalent."))
+    (shape-case
+     shape
+     :var (b* ((var+val (omap::assoc (ispace-var-shape shape.name)
+                                     (denv->ispace-vars denv)))
+               ((unless var+val) (reserr nil))
+               (val (cdr var+val))
+               ((unless (ispace-value-case val :shape)) (reserr nil)))
+            (ispace-value-shape->val val))
+     :dim (b* (((ok int) (eval-dim shape.dim denv))
+               ((unless (natp int)) (reserr nil)))
+            (list int))
+     :dims (b* (((ok ints) (eval-dim-list shape.dims denv))
+                ((unless (nat-listp ints)) (reserr nil)))
+             ints)
+     :append (b* (((ok natss) (eval-shape-list shape.shapes denv)))
+               (nat-append-all natss))
+     :splice (b* (((ok natss) (eval-shape-list shape.shapes denv)))
+               (nat-append-all natss)))
+    :measure (shape-count shape))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-shape-list ((shapes shape-listp) (denv denvp))
+    :returns (natss nat-list-list-resultp)
+    :parents (evaluation eval-shapes)
+    :short "Evaluate a list of shapes."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If successful, we return a list of lists of naturals,
+       which are the results of evaluating each shape in turn."))
+    (b* (((when (endp shapes)) nil)
+         ((ok nats) (eval-shape (car shapes) denv))
+         ((ok natss) (eval-shape-list (cdr shapes) denv)))
+      (cons nats natss))
+    :measure (shape-list-count shapes))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual eval-shapes))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: continue
