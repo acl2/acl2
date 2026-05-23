@@ -17,6 +17,56 @@
 (include-book "cpp-member-full")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Dotted Module Name Helper
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-cpp-module-name-rest ((parstate parstatep))
+  :returns (mv erp
+               (segs c$::ident-listp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse optional @('.ident') segments of a dotted C++ module name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Called after reading the first identifier of a module/import name.
+     Repeatedly peeks for a @('.') token; if found, reads it and the
+     following identifier, appending it to the result.
+     Returns the list of additional identifier segments (not the first one).
+     For example, for @('std.core'), called after reading @('std'),
+     this returns @('(list core)')."))
+  :measure (parsize parstate)
+  :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
+                                     c$::parsize-of-read-token-uncond
+                                     c$::parsize-of-unread-token)))
+  (b* (((reterr) nil parstate)
+       (psize (parsize parstate))
+       ;; Peek for '.'
+       ((erp dot? & parstate) (read-token parstate))
+       ;; If not '.', put it back and return nothing (success, empty list)
+       ((unless (token-punctuatorp dot? "."))
+        (b* ((parstate (if dot? (unread-token parstate) parstate)))
+          (retok nil parstate)))
+       ;; Got '.', now read the next identifier (parstate is past the dot)
+       ((erp seg? & parstate) (read-token parstate))
+       ;; If not an ident, put back what we got (dot stays consumed) and return
+       ((unless (and seg? (token-case seg? :ident)))
+        (b* ((parstate (if seg? (unread-token parstate) parstate)))
+          (retok nil parstate)))
+       (seg (token-ident->ident seg?))
+       ;; Assert measure decrease for ACL2 termination
+       ((unless (mbt (< (parsize parstate) psize)))
+        (retok (list seg) parstate))
+       ;; Recurse for more '.ident' segments
+       ((erp rest parstate) (parse-cpp-module-name-rest parstate)))
+    (retok (cons seg rest) parstate))
+  ///
+  (defret parsize-of-parse-cpp-module-name-rest-uncond
+    (<= (parsize new-parstate) (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-uncond
+                                       c$::parsize-of-unread-token)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Top-Level Declarations (mutually recursive with namespace definitions)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,9 +109,54 @@
     :verify-guards nil
     (b* (((reterr) (irr-cpp-top-level-decl) (irr-span) parstate)
          ((erp tok? tok-span parstate) (read-token parstate))
-         ;; 'namespace' → full namespace definition
+         ;; 'namespace' → namespace alias or namespace definition
+         ;; Disambiguate by peeking: namespace NAME = ... → alias
          ((when (token-cpp-kw-p tok? "namespace"))
-          (b* ((parstate (unread-token parstate))
+          (b* (((erp name? & parstate) (read-token parstate))
+               ;; If name? is an ident, peek further for '='
+               ((when (and name? (token-case name? :ident)))
+                (b* ((alias-name (token-ident->ident name?))
+                     ((erp eq? & parstate) (read-token parstate))
+                     ;; If '=' found → namespace alias
+                     ((when (token-punctuatorp eq? "="))
+                      (b* (((erp first-id? first-span parstate) (read-token parstate))
+                           ((unless (and first-id? (token-case first-id? :ident)))
+                            (reterr-msg :where (span->start first-span)
+                                        :expected "qualified name after '=' in namespace alias"
+                                        :found first-id?
+                                        :extra nil))
+                           (first-id (token-ident->ident first-id?))
+                           ;; Parse optional :: rest of qualified name
+                           ((erp sep? & parstate) (read-token parstate))
+                           ((mv rest-names parstate)
+                            (if (token-punctuatorp sep? "::")
+                                (b* (((mv erp2 rest & parstate)
+                                      (parse-cpp-nested-namespace-names parstate)))
+                                  (if erp2 (mv nil parstate) (mv rest parstate)))
+                              (b* ((parstate (if sep? (unread-token parstate) parstate)))
+                                (mv nil parstate))))
+                           ((erp semi? semi-span parstate) (read-token parstate))
+                           ((unless (token-punctuatorp semi? ";"))
+                            (reterr-msg :where (span->start semi-span)
+                                        :expected "';' after namespace alias definition"
+                                        :found semi?
+                                        :extra nil))
+                           (span (make-span :start (span->start tok-span)
+                                            :end   (span->end semi-span))))
+                        (retok (make-cpp-top-level-decl-namespace-alias
+                                :decl (make-cpp-namespace-alias
+                                       :name alias-name
+                                       :target (cons first-id rest-names)))
+                               span parstate)))
+                     ;; Not an alias: restore all peeked tokens and call namespace-full
+                     (parstate (if eq? (unread-token parstate) parstate))
+                     (parstate (unread-token parstate)) ; put name? back
+                     (parstate (unread-token parstate)) ; put namespace back
+                     ((erp ns-def ns-span parstate) (parse-cpp-namespace-full parstate)))
+                  (retok (make-cpp-top-level-decl-namespace-def :def ns-def) ns-span parstate)))
+               ;; name? is not an ident (e.g., '{' or EOF): restore and call namespace-full
+               (parstate (if name? (unread-token parstate) parstate))
+               (parstate (unread-token parstate)) ; put namespace back
                ((erp ns-def ns-span parstate) (parse-cpp-namespace-full parstate)))
             (retok (make-cpp-top-level-decl-namespace-def :def ns-def) ns-span parstate)))
          ;; 'class' or 'struct' → class specifier
@@ -76,7 +171,7 @@
                ((erp decl decl-span parstate) (parse-cpp-using-decl parstate)))
             (retok (make-cpp-top-level-decl-using-decl :decl decl) decl-span parstate)))
          ;; 'enum' → enum declaration
-         ((when (token-cpp-kw-p tok? "enum"))
+         ((when (token-keywordp tok? "enum"))
           (b* ((parstate (unread-token parstate))
                ((erp def def-span parstate) (parse-cpp-enum-decl parstate)))
             (retok (make-cpp-top-level-decl-enum-def :def def) def-span parstate)))
@@ -121,6 +216,145 @@
                                 :end   (span->end semi-span))))
             (retok (make-cpp-top-level-decl-static-assert
                     :cond cond-e :msg-p msg-p :msg msg)
+                   span parstate)))
+         ;; 'module' → module declaration
+         ((when (token-cpp-kw-p tok? "module"))
+          (b* (((erp next? next-span parstate) (read-token parstate))
+               ((when (and next? (token-case next? :ident)))
+                ;; module NAME ;  (NAME may be dotted, e.g. 'std.core')
+                (b* ((first-id (token-ident->ident next?))
+                     ((erp rest-segs parstate) (parse-cpp-module-name-rest parstate))
+                     (name (cons first-id rest-segs))
+                     ((erp semi? semi-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp semi? ";"))
+                      (reterr-msg :where (span->start semi-span)
+                                  :expected "';' after module declaration"
+                                  :found semi?
+                                  :extra nil))
+                     (span (make-span :start (span->start tok-span)
+                                      :end   (span->end semi-span))))
+                  (retok (make-cpp-top-level-decl-module-decl
+                          :decl (make-cpp-module-decl-named :name name :exportp nil))
+                         span parstate)))
+               ((when (token-punctuatorp next? ":"))
+                ;; module : private ;
+                (b* (((erp priv? priv-span parstate) (read-token parstate))
+                     ((unless (token-cpp-kw-p priv? "private"))
+                      (reterr-msg :where (span->start priv-span)
+                                  :expected "'private' after 'module :'"
+                                  :found priv?
+                                  :extra nil))
+                     ((erp semi? semi-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp semi? ";"))
+                      (reterr-msg :where (span->start semi-span)
+                                  :expected "';' after 'module : private'"
+                                  :found semi?
+                                  :extra nil))
+                     (span (make-span :start (span->start tok-span)
+                                      :end   (span->end semi-span))))
+                  (retok (make-cpp-top-level-decl-module-decl
+                          :decl (cpp-module-decl-private))
+                         span parstate))))
+            (reterr-msg :where (span->start next-span)
+                        :expected "module name or ':' after 'module'"
+                        :found next?
+                        :extra nil)))
+         ;; 'import' → import declaration
+         ((when (token-cpp-kw-p tok? "import"))
+          (b* (((erp name-tok? name-span parstate) (read-token parstate))
+               ((unless (and name-tok? (token-case name-tok? :ident)))
+                (reterr-msg :where (span->start name-span)
+                            :expected "module name after 'import'"
+                            :found name-tok?
+                            :extra nil))
+               (first-id (token-ident->ident name-tok?))
+               ((erp rest-segs parstate) (parse-cpp-module-name-rest parstate))
+               (name (cons first-id rest-segs))
+               ((erp semi? semi-span parstate) (read-token parstate))
+               ((unless (token-punctuatorp semi? ";"))
+                (reterr-msg :where (span->start semi-span)
+                            :expected "';' after import declaration"
+                            :found semi?
+                            :extra nil))
+               (span (make-span :start (span->start tok-span)
+                                :end   (span->end semi-span))))
+            (retok (make-cpp-top-level-decl-import-decl
+                    :decl (make-cpp-import-decl :name name :exportp nil))
+                   span parstate)))
+         ;; 'export' → export module or export import
+         ((when (token-cpp-kw-p tok? "export"))
+          (b* (((erp next? next-span parstate) (read-token parstate))
+               ;; 'export module NAME ;'
+               ((when (token-cpp-kw-p next? "module"))
+                (b* (((erp mod-name? mod-span parstate) (read-token parstate))
+                     ((unless (and mod-name? (token-case mod-name? :ident)))
+                      (reterr-msg :where (span->start mod-span)
+                                  :expected "module name after 'export module'"
+                                  :found mod-name?
+                                  :extra nil))
+                     (first-id (token-ident->ident mod-name?))
+                     ((erp rest-segs parstate) (parse-cpp-module-name-rest parstate))
+                     (name (cons first-id rest-segs))
+                     ((erp semi? semi-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp semi? ";"))
+                      (reterr-msg :where (span->start semi-span)
+                                  :expected "';' after 'export module NAME'"
+                                  :found semi?
+                                  :extra nil))
+                     (span (make-span :start (span->start tok-span)
+                                      :end   (span->end semi-span))))
+                  (retok (make-cpp-top-level-decl-module-decl
+                          :decl (make-cpp-module-decl-named :name name :exportp t))
+                         span parstate)))
+               ;; 'export import NAME ;'
+               ((when (token-cpp-kw-p next? "import"))
+                (b* (((erp imp-name? imp-span parstate) (read-token parstate))
+                     ((unless (and imp-name? (token-case imp-name? :ident)))
+                      (reterr-msg :where (span->start imp-span)
+                                  :expected "module name after 'export import'"
+                                  :found imp-name?
+                                  :extra nil))
+                     (first-id (token-ident->ident imp-name?))
+                     ((erp rest-segs parstate) (parse-cpp-module-name-rest parstate))
+                     (name (cons first-id rest-segs))
+                     ((erp semi? semi-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp semi? ";"))
+                      (reterr-msg :where (span->start semi-span)
+                                  :expected "';' after 'export import NAME'"
+                                  :found semi?
+                                  :extra nil))
+                     (span (make-span :start (span->start tok-span)
+                                      :end   (span->end semi-span))))
+                  (retok (make-cpp-top-level-decl-import-decl
+                          :decl (make-cpp-import-decl :name name :exportp t))
+                         span parstate))))
+            (reterr-msg :where (span->start next-span)
+                        :expected "'module' or 'import' after 'export'"
+                        :found next?
+                        :extra nil)))
+         ;; 'template' → explicit template specialization: template<> DECL
+         ((when (token-cpp-kw-p tok? "template"))
+          (b* ((psize (parsize parstate)) ; captured after consuming 'template'
+               ((erp lt? lt-span parstate) (read-token parstate))
+               ((unless (token-punctuatorp lt? "<"))
+                (reterr-msg :where (span->start lt-span)
+                            :expected "'<' after 'template' (only template<> explicit specialization supported)"
+                            :found lt?
+                            :extra nil))
+               ((erp gt? gt-span parstate) (read-token parstate))
+               ((unless (token-punctuatorp gt? ">"))
+                (reterr-msg :where (span->start gt-span)
+                            :expected "'>' after 'template <' (empty template argument list)"
+                            :found gt?
+                            :extra nil))
+               ;; MBT: '<' and '>' consumed; parsize strictly decreased from psize
+               ((unless (mbt (< (parsize parstate) psize)))
+                (reterr :impossible))
+               ((erp inner-decl inner-span parstate)
+                (parse-cpp-top-level-decl parstate))
+               (span (make-span :start (span->start tok-span)
+                                :end   (span->end inner-span))))
+            (retok (make-cpp-top-level-decl-template-specialization :decl inner-decl)
                    span parstate)))
          ;; ';' → empty declaration
          ((when (token-punctuatorp tok? ";"))
@@ -370,12 +604,14 @@
              :in-theory (enable c$::parsize-of-read-token-cond
                                 c$::parsize-of-read-token-uncond
                                 c$::parsize-of-unread-token
+                                parsize-of-parse-cpp-module-name-rest-uncond
                                 parsize-of-parse-cpp-namespace-def-header-uncond
                                 parsize-of-parse-cpp-class-specifier-full-uncond
                                 parsize-of-parse-cpp-using-decl-uncond
                                 parsize-of-parse-cpp-type-spec-uncond
                                 parsize-of-parse-cpp-enum-decl-uncond
-                                parsize-of-parse-cpp-member-field-or-method-uncond))))
+                                parsize-of-parse-cpp-member-field-or-method-uncond
+                                parsize-of-parse-cpp-nested-namespace-names-uncond))))
 
   (defthm-parse-cpp-top-level-mutual-flag
     parsize-of-parse-cpp-top-level-mutual-cond
@@ -403,6 +639,7 @@
              :in-theory (enable c$::parsize-of-read-token-cond
                                 c$::parsize-of-read-token-uncond
                                 c$::parsize-of-unread-token
+                                parsize-of-parse-cpp-module-name-rest-uncond
                                 parsize-of-parse-cpp-namespace-def-header-uncond
                                 parsize-of-parse-cpp-class-specifier-full-uncond
                                 parsize-of-parse-cpp-class-specifier-full-cond
@@ -415,7 +652,9 @@
                                 parsize-of-parse-cpp-member-field-or-method-uncond
                                 parsize-of-parse-cpp-member-field-or-method-cond
                                 parsize-of-parse-cpp-type-spec-uncond
-                                parsize-of-parse-cpp-type-spec-cond))))
+                                parsize-of-parse-cpp-type-spec-cond
+                                parsize-of-parse-cpp-nested-namespace-names-uncond
+                                parsize-of-parse-cpp-nested-namespace-names-cond))))
 
   (verify-guards parse-cpp-top-level-decl
     :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond

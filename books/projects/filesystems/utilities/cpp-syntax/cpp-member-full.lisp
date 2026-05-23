@@ -206,10 +206,12 @@
        (parstate (unread-token parstate))
        ((erp type-spec & parstate) (parse-cpp-type-spec parstate))
        ((erp name? name-span parstate) (read-token parstate))
-       ;; If next is '(' (no separate name), it's a constructor/destructor
+       ;; If next is '(' (no separate name), it's a constructor/destructor.
+       ;; '(' (name?) is already consumed; parse-cpp-member-ctor-or-dtor-full
+       ;; expects the '(' to be consumed since it calls parse-cpp-param-list
+       ;; which expects '(' to have been consumed already.
        ((when (token-punctuatorp name? "("))
-        (b* ((parstate (unread-token parstate)) ; put back '('
-             ((erp decl decl-span parstate)
+        (b* (((erp decl decl-span parstate)
               (parse-cpp-member-ctor-or-dtor-full
                type-spec virtualp staticp destructorp
                explicitp constexprp inlinep t1-span parstate)))
@@ -224,17 +226,71 @@
        ((erp peek? & parstate) (read-token parstate))
        ;; Field case: not followed by '('
        ((when (not (token-punctuatorp peek? "(")))
-        (b* ((parstate (if peek? (unread-token parstate) parstate))
-             ((erp semi? semi-span parstate) (read-token parstate))
-             ((unless (token-punctuatorp semi? ";"))
-              (reterr-msg :where (span->start semi-span)
-                          :expected "';' after field declaration"
-                          :found semi?
-                          :extra nil))
+        (b* (;; Check for optional array suffix: '[' [size] ']'
+             ;; Handles 'T arr[N];' and 'T arr[];' member field declarations.
+             ((erp final-type semi-span parstate)
+              (if (not (token-punctuatorp peek? "["))
+                  ;; No array: put peek? back, read ';'
+                  (b* ((parstate (if peek? (unread-token parstate) parstate))
+                       ((erp semi? semi-span parstate) (read-token parstate))
+                       ((unless (token-punctuatorp semi? ";"))
+                        (reterr-msg :where (span->start semi-span)
+                                    :expected "';' after field declaration"
+                                    :found semi?
+                                    :extra nil)))
+                    (retok type-spec semi-span parstate))
+                ;; Array: peek? = '[' is consumed; parse size then ']', then ';'
+                (b* (((erp sz? sz-span parstate) (read-token parstate))
+                     ((when (token-punctuatorp sz? "]"))
+                      ;; T[] — unsized array
+                      (b* (((erp semi? semi-span parstate) (read-token parstate))
+                           ((unless (token-punctuatorp semi? ";"))
+                            (reterr-msg :where (span->start semi-span)
+                                        :expected "';' after array field"
+                                        :found semi?
+                                        :extra nil)))
+                        (retok (make-cpp-type-spec-array
+                                :element type-spec
+                                :size-p nil
+                                :size (irr-cpp-const-expr))
+                               semi-span parstate)))
+                     ;; Size must be an integer constant or identifier
+                     ((unless (or (and sz? (token-case sz? :ident))
+                                  (and sz? (token-case sz? :const)
+                                       (c$::const-case
+                                        (c$::token-const->const sz?) :int))))
+                      (reterr-msg :where (span->start sz-span)
+                                  :expected "integer constant or identifier as array size"
+                                  :found sz?
+                                  :extra nil))
+                     (size-expr
+                      (if (token-case sz? :const)
+                          (make-cpp-const-expr-int
+                           :iconst (c$::const-int->iconst
+                                    (c$::token-const->const sz?)))
+                        (make-cpp-const-expr-ident
+                         :name (token-ident->ident sz?))))
+                     ((erp rb? rb-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp rb? "]"))
+                      (reterr-msg :where (span->start rb-span)
+                                  :expected "']' after array size"
+                                  :found rb?
+                                  :extra nil))
+                     ((erp semi? semi-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp semi? ";"))
+                      (reterr-msg :where (span->start semi-span)
+                                  :expected "';' after array field declaration"
+                                  :found semi?
+                                  :extra nil)))
+                  (retok (make-cpp-type-spec-array
+                          :element type-spec
+                          :size-p t
+                          :size size-expr)
+                         semi-span parstate))))
              (span (make-span :start (span->start t1-span)
                               :end   (span->end semi-span))))
           (retok (make-cpp-member-decl-field
-                  :type-name  type-spec
+                  :type-name  final-type
                   :field-name name-ident
                   :staticp    staticp
                   :mutablep   mutablep

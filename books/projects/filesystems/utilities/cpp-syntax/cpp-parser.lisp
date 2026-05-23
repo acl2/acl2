@@ -490,6 +490,13 @@
 
 (defines parse-cpp-type-spec-mutual
   :parents (parser)
+  ;; Hint for the auto-generated return-type flag lemma: expand the two
+  ;; functions once at Goal (where the induction is set up), then disable
+  ;; their definitions so they are not re-expanded in every subgoal.
+  :returns-hints (("Goal" :in-theory (e/d () (parse-cpp-type-spec-one
+                                              parse-cpp-type-spec-arg-list-rest))
+                   :expand ((parse-cpp-type-spec-one parstate)
+                            (parse-cpp-type-spec-arg-list-rest acc parstate))))
 
   ;; parse-cpp-type-spec-one: parse a single type-spec without suffix.
   ;; Reads: [const/volatile] ident [:: ident]* [< args >]
@@ -518,11 +525,65 @@
                                 :end   (span->end inner-span))))
             (retok (make-cpp-type-spec-volatile-qual :base inner)
                    span parstate)))
-         ;; C17 keyword type names (int, void, char, unsigned, etc.)
+         ;; C17 keyword type names: greedily consume combinable type keywords
+         ;; to support 'unsigned int', 'long long', 'unsigned long long', etc.
          ((when (and tok? (token-case tok? :keyword)))
-          (b* ((id (c$::make-ident :unwrap (token-keyword->keyword tok?)))
+          (b* ((kw1 (token-keyword->keyword tok?))
+               ;; Try to read a second combinable type keyword
+               ((erp k2? k2-span parstate) (read-token parstate))
+               ((mv kw-str kw-end-span parstate)
+                (if (not (and k2? (token-case k2? :keyword)
+                              (member-equal (token-keyword->keyword k2?)
+                                            '("unsigned" "signed" "short" "long"
+                                              "int" "char" "double" "float"))))
+                    ;; No second combinable keyword: put k2? back, single keyword
+                    (b* ((parstate (if k2? (unread-token parstate) parstate)))
+                      (mv kw1 tok-span parstate))
+                  ;; Two-keyword combination: 'unsigned int', 'long long', etc.
+                  (b* ((kw2 (token-keyword->keyword k2?))
+                       ;; Try a third keyword
+                       ((mv erp3 k3? k3-span parstate) (read-token parstate))
+                       ((mv kw-str kw-end-span parstate)
+                        (if (not (and (not erp3) k3? (token-case k3? :keyword)
+                                      (member-equal (token-keyword->keyword k3?)
+                                                    '("unsigned" "signed" "short" "long"
+                                                      "int" "char" "double" "float"))))
+                            ;; Two keywords only: put k3? back
+                            (b* ((parstate (if (and (not erp3) k3?)
+                                              (unread-token parstate) parstate)))
+                              (mv (string-append kw1 (string-append " " kw2))
+                                  k2-span parstate))
+                          ;; Three-keyword combination: 'unsigned long long', etc.
+                          (b* ((kw3 (token-keyword->keyword k3?))
+                               ;; Try a fourth keyword
+                               ((mv erp4 k4? k4-span parstate) (read-token parstate))
+                               ((mv kw-str kw-end-span parstate)
+                                (if (not (and (not erp4) k4? (token-case k4? :keyword)
+                                              (member-equal (token-keyword->keyword k4?)
+                                                            '("unsigned" "signed" "short" "long"
+                                                              "int" "char" "double" "float"))))
+                                    ;; Three keywords only: put k4? back
+                                    (b* ((parstate (if (and (not erp4) k4?)
+                                                      (unread-token parstate) parstate)))
+                                      (mv (string-append kw1
+                                            (string-append " "
+                                              (string-append kw2
+                                                (string-append " " kw3))))
+                                          k3-span parstate))
+                                  ;; Four keywords: 'unsigned long long int'
+                                  (mv (string-append kw1
+                                        (string-append " "
+                                          (string-append kw2
+                                            (string-append " "
+                                              (string-append kw3
+                                                (string-append " "
+                                                  (token-keyword->keyword k4?)))))))
+                                      k4-span parstate))))
+                            (mv kw-str kw-end-span parstate)))))
+                    (mv kw-str kw-end-span parstate))))
+               (id (c$::make-ident :unwrap kw-str))
                (base (make-cpp-type-spec-name :id id))
-               ;; Check for '::' (qualified name after keyword type)
+               ;; Check for '::' after the full (possibly multi-keyword) type
                ((erp sep? & parstate) (read-token parstate))
                ((when (token-punctuatorp sep? "::"))
                 (b* (((erp inner inner-span parstate) (parse-cpp-type-spec-one parstate))
@@ -530,8 +591,10 @@
                                       :end   (span->end inner-span))))
                   (retok (make-cpp-type-spec-qualified :scope id :inner inner)
                          span parstate)))
-               (parstate (if sep? (unread-token parstate) parstate)))
-            (retok base tok-span parstate)))
+               (parstate (if sep? (unread-token parstate) parstate))
+               (span (make-span :start (span->start tok-span)
+                                :end   (span->end kw-end-span))))
+            (retok base span parstate)))
          ;; Must be an identifier
          ((unless (and tok? (token-case tok? :ident)))
           (reterr-msg :where (span->start tok-span)
@@ -561,7 +624,8 @@
                             :extra nil))
                (span (make-span :start (span->start tok-span)
                                 :end   (span->end rp-span))))
-            (retok (make-cpp-type-spec-decltype :arg (token-ident->ident inner?))
+            (retok (make-cpp-type-spec-decltype
+                    :arg (make-cpp-expr-ident :name (token-ident->ident inner?)))
                    span parstate)))
          (base (make-cpp-type-spec-name :id id))
          ;; Check for '::' (qualified name)
@@ -654,10 +718,11 @@
           (parsize parstate))
       :rule-classes :linear
       :flag parse-cpp-type-spec-arg-list-rest)
-    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
-                                       c$::parsize-of-unread-token
-                                       parse-cpp-type-spec-one
-                                       parse-cpp-type-spec-arg-list-rest))))
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-uncond
+                                        c$::parsize-of-read-token-cond
+                                        c$::parsize-of-unread-token)
+             :expand ((parse-cpp-type-spec-one parstate)
+                      (parse-cpp-type-spec-arg-list-rest acc parstate)))))
 
   (defthm-parse-cpp-type-spec-mutual-flag parsize-of-parse-cpp-type-spec-mutual-cond
     (defthm parsize-of-parse-cpp-type-spec-one-cond
@@ -673,9 +738,10 @@
       :rule-classes :linear
       :flag parse-cpp-type-spec-arg-list-rest)
     :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
-                                       c$::parsize-of-unread-token
-                                       parse-cpp-type-spec-one
-                                       parse-cpp-type-spec-arg-list-rest))))
+                                        c$::parsize-of-read-token-uncond
+                                        c$::parsize-of-unread-token)
+             :expand ((parse-cpp-type-spec-one parstate)
+                      (parse-cpp-type-spec-arg-list-rest acc parstate)))))
 
   (verify-guards parse-cpp-type-spec-one
     :hints (("Goal" :in-theory (enable c$::parsize-of-unread-token)))))
@@ -2084,7 +2150,13 @@
   (defret parsize-of-parse-cpp-member-field-or-method-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-uncond
+                                       c$::parsize-of-unread-token
+                                       parsize-of-parse-cpp-type-spec-uncond
+                                       parsize-of-parse-cpp-param-list-uncond
+                                       parsize-of-parse-cpp-noexcept-spec-uncond)
+             :expand ((parse-cpp-member-field-or-method parstate)))))
 
   (defret parsize-of-parse-cpp-member-field-or-method-cond
     (implies (not erp)
@@ -2092,7 +2164,12 @@
                 (parsize parstate)))
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
-                                       c$::parsize-of-unread-token)))))
+                                       c$::parsize-of-read-token-uncond
+                                       c$::parsize-of-unread-token
+                                       parsize-of-parse-cpp-type-spec-cond
+                                       parsize-of-parse-cpp-param-list-cond
+                                       parsize-of-parse-cpp-noexcept-spec-cond)
+             :expand ((parse-cpp-member-field-or-method parstate))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parse: Member Declaration Item
@@ -2516,7 +2593,7 @@
         (b* ((name-ident (token-ident->ident next-token?))
              (span (make-span :start (span->start start-span)
                               :end   (span->end next-span))))
-          (retok (make-cpp-module-decl-named :name name-ident
+          (retok (make-cpp-module-decl-named :name (list name-ident)
                                              :exportp exportp)
                  span parstate)))
        ;; No name and not ':', put back next token
@@ -2528,7 +2605,7 @@
         (retok (cpp-module-decl-private) next-span parstate)))
     ;; 'export module;' — no name
     (retok (make-cpp-module-decl-named
-            :name    (c$::irr-ident)
+            :name    nil
             :exportp t)
            next-span parstate))
 
@@ -2586,7 +2663,7 @@
        (name-ident (token-ident->ident name-token?))
        (span (make-span :start (span->start first-span)
                         :end   (span->end name-span))))
-    (retok (make-cpp-import-decl :name    name-ident
+    (retok (make-cpp-import-decl :name    (list name-ident)
                                  :exportp exportp)
            span parstate))
 
