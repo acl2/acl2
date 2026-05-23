@@ -39,7 +39,12 @@
      access specifiers, type specifiers, typed parameters,
      template parameters, class specifiers,
      namespace definitions, operator function identifiers,
-     exception handlers, module/import declarations, and coroutine keywords.")
+     lambda capture lists, exception handlers,
+     module/import declarations, coroutine constructs,
+     member declarations (fields, methods, using-aliases, enums, access labels),
+     method name identifiers (@('cpp-member-name') with destructor
+     and conversion-function variants), top-level declarations
+     (including @('static_assert')), and translation units.")
    (xdoc::p
     "These fixtypes use the existing C$ abstract syntax types
      (such as @(tsee c$::ident)) as building blocks.")
@@ -165,6 +170,8 @@
     (:rref ((base cpp-type-spec)))
     (:const-qual ((base cpp-type-spec)))
     (:volatile-qual ((base cpp-type-spec)))
+    (:decltype ((arg ident)))
+    (:array ((element cpp-type-spec) (size-p bool) (size cpp-const-expr)))
     :pred cpp-type-spec-p
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -477,6 +484,28 @@
   :short "An irrelevant C++ operator function identifier."
   :type cpp-operator-function-id-p
   :body (make-cpp-operator-function-id :op (cpp-operator-kind-plus)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Member Names
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum cpp-member-name
+  :short "Fixtype of C++ member names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A member name can be a simple identifier, a destructor name (@('~T')),
+     a conversion function id, or an operator function id."))
+  (:simple     ((id         c$::ident)))
+  (:destructor ((class-name c$::ident)))
+  (:conversion ((target-type cpp-type-spec)))
+  (:operator   ((op cpp-operator-function-id)))
+  :pred cpp-member-name-p)
+
+(defirrelevant irr-cpp-member-name
+  :short "An irrelevant C++ member name."
+  :type cpp-member-name-p
+  :body (make-cpp-member-name-simple :id (c$::irr-ident)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Exception Handlers
@@ -827,6 +856,9 @@
     (:labeled ((label ident) (s cpp-stmt)))
     (:caselbl ((e cpp-expr) (s cpp-stmt)))
     (:default ((s cpp-stmt)))
+    (:co-yield ((e cpp-expr)))
+    (:co-return-void ())
+    (:co-return-expr ((e cpp-expr)))
     :pred cpp-stmt-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
@@ -880,6 +912,35 @@
   :body (make-cpp-catch-clause
          :handler (irr-cpp-exception-handler)
          :body nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Constructor Initializer Lists
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod cpp-ctor-init-item
+  :short "Fixtype of a single constructor initializer item."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "One member-initializer in a constructor initializer list:
+     @('name(args)') or @('name{args}') [C++23:11.10.2]."))
+  ((name   c$::ident)
+   (bracep bool)
+   (args   cpp-expr-list))
+  :pred cpp-ctor-init-item-p
+  :layout :fulltree)
+
+(fty::deflist cpp-ctor-init-list
+  :short "Fixtype of lists of constructor initializer items."
+  :elt-type cpp-ctor-init-item
+  :true-listp t
+  :elementp-of-nil nil
+  :pred cpp-ctor-init-listp)
+
+(defirrelevant irr-cpp-ctor-init-item
+  :short "An irrelevant constructor initializer item."
+  :type cpp-ctor-init-item-p
+  :body (make-cpp-ctor-init-item :name (c$::irr-ident) :bracep nil :args nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Class Member Declarations (moved here to reference cpp-block-item-list)
@@ -989,22 +1050,42 @@
    ((type-name  cpp-type-spec)
     (field-name ident)
     (staticp    bool)
-    (mutablep   bool)))
+    (mutablep   bool)
+    (constexprp bool)))
   (:method
-   ((return-type   cpp-type-spec)
-    (method-name   ident)
-    (params        cpp-param-list)
-    (virtualp      bool)
-    (const-qualp   bool)
-    (noexcept-spec cpp-noexcept-spec-option)
-    (pure-virtualp bool)
-    (staticp       bool)
-    (body-p        bool)
-    (body          cpp-block-item-list)))
+   ((return-type     cpp-type-spec)
+    (method-id       cpp-member-name)
+    (params          cpp-param-list)
+    (virtualp        bool)
+    (const-qualp     bool)
+    (noexcept-spec   cpp-noexcept-spec-option)
+    (pure-virtualp   bool)
+    (staticp         bool)
+    (body-p          bool)
+    (body            cpp-block-item-list)
+    (destructorp     bool)
+    (explicitp       bool)
+    (constexprp      bool)
+    (inlinep         bool)
+    (ctor-init-p     bool)
+    (ctor-init-list  cpp-ctor-init-list)))
   (:using-decl
    ((decl cpp-using-decl)))
   (:enum-decl
    ((def cpp-enum-decl)))
+  (:friend
+   ((subject cpp-type-spec)))
+  (:typedef
+   ((type cpp-type-spec)
+    (name c$::ident)))
+  (:static-assert
+   ((cond cpp-expr)
+    (msg-p bool)
+    (msg   c$::ident)))
+  (:attribute
+   ((name  c$::ident)
+    (arg-p bool)
+    (arg   c$::ident)))
   :pred cpp-member-decl-p
   :layout :fulltree)
 
@@ -1090,12 +1171,19 @@
      (xdoc::p
       "A top-level declaration that can appear in a namespace or translation
        unit: a namespace definition, class definition, using declaration,
-       enum definition, or an empty declaration (@(';'))."))
-    (:namespace-def ((def  cpp-namespace-def)))
-    (:class-def     ((def  cpp-class-specifier)))
-    (:using-decl    ((decl cpp-using-decl)))
-    (:enum-def      ((def  cpp-enum-decl)))
-    (:empty         ())
+       enum definition, an empty declaration (@(';')),
+       or a function/variable declaration."))
+    (:namespace-def  ((def  cpp-namespace-def)))
+    (:class-def      ((def  cpp-class-specifier)))
+    (:using-decl     ((decl cpp-using-decl)))
+    (:enum-def       ((def  cpp-enum-decl)))
+    (:static-assert  ((cond cpp-expr)
+                      (msg-p bool)
+                      (msg   c$::ident)))
+    (:empty          ())
+    (:func-or-var-decl ((decl cpp-member-decl)))
+    (:extern-linkage ((linkage c$::stringlit)
+                      (body    cpp-top-level-decl-list)))
     :pred cpp-top-level-decl-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
