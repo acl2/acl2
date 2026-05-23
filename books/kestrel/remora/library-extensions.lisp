@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "nat-list-operations")
-(include-book "intger-list-operations")
+(include-book "integer-list-operations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
