@@ -839,7 +839,7 @@
          (renamed-node (aref1 'renaming-array renaming-array top-nodenum))
          )
       (if (< renamed-node original-dag-len)
-          ;;the subdag is present, so merge in the term and do (aset1 'translation-array translation-array nodenum-of-dag nodenum-of-term);
+          ;;the subdag is present, so merge in the term and do (aset1 'translation-array translation-array nodenum-of-dag nodenum-of-term):
           (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (merge-tree-into-dag-array term nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
                                        nil ;interpreted-function-alist fixme
@@ -6047,8 +6047,8 @@
           :rule-alists rule-alists
           :interpreted-function-alist interpreted-function-alist ;Thu Jul 29 02:45:04 2010
           :monitor (append '(;; get-class-of-inner-array-2d
-                             ;;RUN-UNTIL-EXIT-SEGMENT-OR-HIT-LOOP-HEADER-OPENER-2;;
-                             ;;RUN-UNTIL-EXIT-SEGMENT-OR-HIT-LOOP-HEADER-OPENER-1;;
+                             ;;RUN-UNTIL-EXIT-SEGMENT-OR-HIT-LOOP-HEADER-OPENER-2
+                             ;;RUN-UNTIL-EXIT-SEGMENT-OR-HIT-LOOP-HEADER-OPENER-1
                              ;;JVM::INVOKE-STATIC-INITIALIZER-FOR-NEXT-CLASS-BASE
                              )
                            (g :monitor options))

@@ -1,7 +1,7 @@
 ; Redefinining functions from the x86isa model
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 (include-book "projects/x86isa/machine/instructions/rotates-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/xor-spec" :dir :system)
+(include-book "projects/x86isa/machine/instructions/bit" :dir :system)
 ;(include-book "centaur/bitops/fast-rotate" :dir :system)
 ;(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
 (local (include-book "flags"))
@@ -34,6 +35,7 @@
 (include-book "kestrel/bv/bvmod" :dir :system) ; reduce?
 (include-book "kestrel/bv/bvsx" :dir :system) ; reduce?
 (include-book "kestrel/bv/rightrotate" :dir :system)
+(include-book "kestrel/bv/bvshl-def" :dir :system)
 ;(local (include-book "kestrel/bv/sbvlt-rules" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; for logext-of-bvsx
 ;(local (include-book "kestrel/bv/logext" :dir :system))
@@ -52,6 +54,7 @@
 ;; (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system)) ;prevent calls of expt on huge args
 ;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
@@ -420,3 +423,13 @@
            (mv result x86isa::output-rflags x86isa::undefined-flags)))
   :hints (("Goal" :in-theory (acl2::e/d* (x86isa::gpr-xor-spec-8 x86isa::rflag-rows-enables bvxor)
                                          ((tau-system))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm blsi-redef
+  (implies (and (syntaxp (quotep operand-size))
+                (natp operand-size))
+           (equal (x86isa::blsi operand-size src-val)
+                  (let ((bitwidth (* 8 operand-size)))
+                    (bvshl bitwidth 1 (tzcnt bitwidth 0 src-val)))))
+  :hints (("Goal" :in-theory (enable x86isa::blsi ash bvshl bvcat))))

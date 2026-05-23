@@ -188,7 +188,7 @@
             x86isa::ror-spec-32
             ror-spec-64-alt-def ; x86isa::ror-spec-64
 
-            x86isa::blsi
+            blsi-redef ; exposes tzcnt
 
             x86isa::x86-operand-to-xmm/mem
 
@@ -1323,7 +1323,8 @@
     acl2::logbit-becomes-getbit
     acl2::b-and-becomes-bitand
     acl2::b-ior-becomes-bitor
-    acl2::b-xor-becomes-bitxor))
+    acl2::b-xor-becomes-bitxor
+    acl2::b-not-becomes-bitnot))
 
 ;; See also bitops-to-bv-rules.
 ;; todo: add more constant openers

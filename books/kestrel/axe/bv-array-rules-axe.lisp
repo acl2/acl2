@@ -549,7 +549,7 @@
                 (equal len (len data)))
            (equal (bvplus size val (bv-array-read size len index data))
                   (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
+  :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
 
 (defthmd bv-array-read-shorten-when-not-max-smt
   (implies (and (syntaxp (and (quotep data)

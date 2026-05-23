@@ -16732,7 +16732,7 @@
                            (mv (erp-nil) nil rand state))
                  (prog2$ (er hard? 'miter-and-merge "expected t or nil but got the constant ~x0." val)
                          (mv (erp-t) nil rand state)))))
-         ;; Not a constant;
+         ;; Not a constant:
          (b* ((dag dag-or-quotep)
               (miter-array-name (pack$ 'miter-array- miter-depth))
               (miter-array (alist-to-array1 miter-array-name dag)) ;call a -with-len version?
