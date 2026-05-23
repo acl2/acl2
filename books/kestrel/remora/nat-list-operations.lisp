@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/fty/nat-list-list" :dir :system)
 
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
@@ -78,3 +79,12 @@
   (cond ((endp nats) (prog2$ (impossible) 0))
         ((endp (cdr nats)) (- (lnfix (car nats))))
         (t (- (lnfix (car nats)) (nat-list-sum (cdr nats))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nat-append-all ((natss nat-list-listp))
+  :returns (nats nat-listp)
+  :short "Append all the lists of naturals in a list, in that order."
+  (cond ((endp natss) nil)
+        (t (append (nat-list-fix (car natss))
+                   (nat-append-all (cdr natss))))))

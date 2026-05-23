@@ -57,6 +57,7 @@
 (include-book "fold")
 (include-book "hex-digit-char-list")
 (include-book "integer-result")
+(include-book "integer-list-result")
 (include-book "map")
 (include-book "maybe-string")
 (include-book "maybe-string-result")
