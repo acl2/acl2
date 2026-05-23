@@ -5577,37 +5577,41 @@
               :PFX :NO-PREFIX
               :FEAT '(:SSE))
           (ARG :OP1 '(G Y) :OP2 '(U PS))
-          'NIL
+          '(X86-MOVMSKPS-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
     (INST "MOVMSKPD"
           (OP :OP #xF50 :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          'NIL
+          '(X86-MOVMSKPD-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "VMOVMSKPD"
           (OP :OP #xF50
               :VEX '(:0F :128 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPD-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPD"
           (OP :OP #xF50
               :VEX '(:0F :256 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPD-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPS"
           (OP :OP #xF50
               :VEX '(:0F :128 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PS))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPS-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPS"
           (OP :OP #xF50
               :VEX '(:0F :256 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PS))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPS-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "SQRTPS"
           (OP :OP #xF51
               :PFX :NO-PREFIX
