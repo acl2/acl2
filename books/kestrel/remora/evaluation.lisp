@@ -49,12 +49,11 @@
   (define eval-dim ((dim dimp) (denv denvp))
     :returns (int integer-resultp)
     :parents (evaluation eval-dims)
-    :short "Evaluate a dimension."
+    :short "Evaluate a dimension to an integer."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If successful, we return an integer.
-       The integer may be negative,
+      "The integer result may be negative,
        which we allow in intermediate calculations over dimensions,
        but not as top-level dimensions, which must be non-negative.")
      (xdoc::p
@@ -102,12 +101,12 @@
   (define eval-dim-list ((dims dim-listp) (denv denvp))
     :returns (ints integer-list-resultp)
     :parents (evaluation eval-dims)
-    :short "Evaluate a list of dimensions."
+    :short "Evaluate a list of dimensions to a list of integers."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If successful, we return a list of integers,
-       which are the results of evaluating each dimension in turn."))
+      "We evaluate each dimension in turn
+       and return the list of results in the same order."))
     (b* (((when (endp dims)) nil)
          ((ok int) (eval-dim (car dims) denv))
          ((ok ints) (eval-dim-list (cdr dims) denv)))
@@ -132,12 +131,11 @@
   (define eval-shape ((shape shapep) (denv denvp))
     :returns (nats nat-list-resultp)
     :parents (evaluation eval-shapes)
-    :short "Evaluate a shape."
+    :short "Evaluate a shape to a list of naturals."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If successful, we return a list of naturals,
-       which are the dimensions that form the shape.")
+      "The resulting naturals are the dimensions that form the shape.")
      (xdoc::p
       "A variable is looked up in the environment:
        it must be present and have an associated ispace shape value.
@@ -190,12 +188,12 @@
   (define eval-shape-list ((shapes shape-listp) (denv denvp))
     :returns (natss nat-list-list-resultp)
     :parents (evaluation eval-shapes)
-    :short "Evaluate a list of shapes."
+    :short "Evaluate a list of shapes to a list of lists of naturals."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If successful, we return a list of lists of naturals,
-       which are the results of evaluating each shape in turn."))
+      "We evaluate each shape in turn
+       and return the list of results in the same order."))
     (b* (((when (endp shapes)) nil)
          ((ok nats) (eval-shape (car shapes) denv))
          ((ok natss) (eval-shape-list (cdr shapes) denv)))
@@ -209,6 +207,26 @@
   ///
 
   (fty::deffixequiv-mutual eval-shapes))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-ispace ((ispace ispacep) (denv denvp))
+  :returns (ival ispace-value-resultp)
+  :short "Evaluate an ispace to an ispace value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a dimension, we ensure that the integer is non-negative,
+     and we embed it into an ispace value.")
+   (xdoc::p
+    "For a shape, we embed the list of naturals into an ispace value."))
+  (ispace-case
+   ispace
+   :dim (b* (((ok int) (eval-dim ispace.dim denv))
+             ((unless (natp int)) (reserr nil)))
+          (ispace-value-dim int))
+   :shape (b* (((ok nats) (eval-shape ispace.shape denv)))
+            (ispace-value-shape nats))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
