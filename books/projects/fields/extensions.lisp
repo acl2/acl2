@@ -3,25 +3,29 @@
 ;; http://www.russinoff.com
 
 (in-package "DM")
-(include-book "support/extensions")
+(include-book "rtl/rel11/lib/top" :dir :system)
+(include-book "projects/groups/groups" :dir :system)
+(include-book "projects/linear/field" :dir :system)
+(include-book "projects/numbers/fermat" :dir :system)
+(local (include-book "support/extensions"))
 
-;; A field may be represented in ACL2 as a set of 7 functions that satisfy the field axioms: a predicate
-;; that recognizes field elements, 2 binary operations, 2 0-ary identity elements, and 2 unary inverse
+;; A field may be represented in ACL2 as a set of 7 functions that satisfy the usual field axioms: a predicate
+;; that recognizes field elements, 2 binary operations, 2 nullary identity elements, and 2 unary inverse
 ;; operators.  An example of a field is the generic field specified by the encapsulation in the file
 ;; "../linear/field.lisp".
 
-;; We would like to be able to say "Let f be a field" in the ACL2 logic, that is, we would like to
-;; define an ACL2 predicate fieldp that recognizes fields, but in general, fields are not ACL2 objects.
-;; We can, however, define as ACL2 objects a certain class of fields that is sufficiently general to 
-;; allow us to some interesting things
+;; We would like to be able to say "Let f be a field" in the ACL2 logic.  That is, we would like to define an
+;; ACL2 predicate fieldp that recognizes fields, but in general, fields are not ACL2 objects.  We can, however,
+;; define as ACL2 objects a certain class of fields that is sufficiently general to allow us to do some
+;; interesting things.
 
-;; We are interested in field extensions: algebraic number fields, which are finite extensions of the 
-;; rationals, and finite fields, which are finite extensions of prime fields.  We shall also consider 
-;; finite extensions of the generic field mentioned above, because any results pertaining to such an 
-;; extension may be applied, by function instantiation, to an extension of any field.  We shall informally 
-;; refer to the rational field as Q and to the prime field of order p as Fp.  We have previously referred 
-;; to the generic field as F, but henceforth we shall refer to it as F0 so that we may refer to an 
-;; arbitrary field as F.  All of these fields are called "base fields" and are encoded as follows:
+;; We are interested in field extensions: algebraic number fields, which are finite extensions of the rationals, 
+;; and finite fields, which are finite extensions of prime fields.  We shall also consider finite extensions of
+;; the generic field mentioned above, because any results pertaining to such an extension may be applied, by
+;; functional instantiation, to an extension of any field.  We shall informally refer to the rational field as Q
+;; and to the prime field of order p as Fp.  We have previously referred to the generic field as F, but
+;; henceforth we shall refer to it as F0 so that we may refer to an arbitrary field as F.  All of these fields
+;; are called "base fields" and are encoded as follows:
 
 (defund fbasep (f)
   (or (zerop f)       ;the rational field is encoded as 0
@@ -70,19 +74,19 @@
 
 (in-theory (disable (fbasep) (beltp) (badd) (bmul) (bzero) (bone) (bneg) (brecip)))
 
-;; A primitive extension of a field is constructed by the usual process of adjoining a root of an
-;; irreducible monic polynomial; a finite extension is a tower of primitive extensions.  More precisely,
-;; let F[X] denote the polynomial ring over a field F.  If p(X) an irreducible element of F[X] of degree
-;; at least 2, then the primitive extension of F determined by p(X) is the quotient ring F[X]/p(X),
-;; which may be shown to be a field.  Each element of this field is represented by a unique polynomial
-;; in F[X] of degree less than that of p(X); multiplication of these polynomials is performed modulo p(X).
+;; A simple extension of a field is constructed by the usual process of adjoining a root of an irreducible monic
+;; polynomial; a finite extension is a tower of simple extensions.  More precisely,  let F[X] denote the polynomial
+;; ring over a field F.  If p(X) an irreducible element of F[X] of degree at least 2, then the simple extension of
+;; F determined by p(X) is the quotient ring F[X]/p(X), which may be shown to satisfy the field axioms.  Each
+;; element of this field is represented by a unique polynomial in F[X] of degree less than that of p(X).  Note that
+;; multiplication of these polynomials is performed modulo p(X).
 
-;; We shall recursively define a "field" to be either a base field or a primitive extension of a field,
-;; where the latter is represented as a cons of which the cdr is the field F being extended and the car is
-;; an irreducible monic polynomial in F[X].  A polynomial in F[X] is represented by a non-null proper list
-;; of elements of F, which are to be thought of as its coefficients.  The degree of a polynomial is 1 less
-;; than its length.  If the degree of a polynomial is non-zero, then its car (i.e., its leading coefficient)
-;; is required to be non-zero.
+;; We shall recursively define an extension field, or more simply, a "field", to be either a base field or a simple 
+;; extension of a field, where the latter is represented as a cons of which the cdr is the field F being extended 
+;; and the car is an irreducible monic polynomial in F[X].  A polynomial in F[X] is represented by a non-null proper 
+;; list of elements of F, which are to be thought of as its coefficients.  The degree of a polynomial is 1 less than 
+;; its length.  If the degree of a polynomial is non-zero, then its car (i.e., its leading coefficient) is required
+;; to be non-zero.
 
 ;; Thus, a field is an object of the form (p_n ... p_2 p_1 . b), where b is a base field and each p_k is a
 ;; polynomial over the field (p_(k-1) ... p_1 . b).
@@ -106,7 +110,7 @@
 ;;   (f- x)      (fneg x f)
 ;;   (f/ x)      (frecip x f)
 
-;; The above definitions are mutually recursive with functions pertaining the ring of polynomials over
+;; The above definitions are mutually recursive with functions pertaining to the ring of polynomials over
 ;; f, which correspond to the functions constrained by the encapsulation of "../linear/ring.lisp", as
 ;; follows:
 
@@ -120,8 +124,8 @@
 ;; Along with these, we shall define the polynomial division operator, (pdivide x y f), which returns 2 
 ;; values: a quotient (pquot x y f) and a remainder (prem x y f) with (degree (prem x y f)) < (degree y).
 
-;; Once these functions are defined, we shall define the predicate (fieldp f).  Our ultimate objective is
-;; to prove that every field satisfies each of the field axioms, e.g.,
+;; Once these functions are defined, we shall define the predicate (fieldp f).  Our primary objective is
+;; to prove by induction that every field satisfies each of the field axioms, e.g.,
 
 ;; (defthm fadd-closed
 ;;   (implies (and (fieldp f) (feltp x f) (feltp y f))
@@ -133,22 +137,30 @@
 ;;   (implies (and (fieldp f) (polyp x f) (polyp y f))
 ;;            (polyp (padd x y f) f)))
 
-;; as well as other properties.
+;; In the process, we shall derive a variety of other properties of polynomials that are necessary to
+;; establish the field axioms.
 
-;; The mutual recursion connecting these functions is quite complex.  For example, the field multiplication
-;; operation (fmul x y f) is defined as the remainder (prem (pmul x y f) p (cdr f)), where p = (car f) is
-;; the generating polynomial of f.  The division operation pdivide depends on the reciprocal, frecip, which
-;; is based on the greatest common divisor of poynomials x and y as follows: The gcd may be expressed as a 
-;; linear combination of polynomials rx + sy.  Since an element x of f is a polynomial of degree less than 
-;; that of p, the gcd of x and p is 1 and we have rx + sp = 1.  Thus, we define (frecip x f), to be the
-;; remainder (prem x p (cdr f)).
+;; Of course, the raison d'etre of a simple extension of a field f for a polynomial p is the creation of 
+;; a field that includes f and contains a root of p.  The notion of a root of a polynomial is beyond the
+;; scope of this book but will be addressed in the sequel "galois".
 
 
 ;;----------------------------------------------------------------------------------------------------------
 ;;                                            Definitions
 ;;----------------------------------------------------------------------------------------------------------
 
-;; A few of the functions listed above do not require mutual recursion.
+;; The mutual recursion connecting the functions listed above is quite complex.  For example, the field
+;; multiplication operation (fmul x y f) is defined as the remainder (prem (pmul x y f) p (cdr f)), where
+;; p = (car f) is the generating polynomial of f.  The division operation pdivide depends on the reciprocal,
+;; frecip, which is based on the greatest common divisor of polynomials x and y as follows: The gcd may be
+;; expressed as a linear combination of polynomials r * x + s * y.  Since an element x of f is a polynomial
+;; of degree less than that of p, the gcd of x and p is 1 and we have r * x + s * p = 1.  Thus, we define 
+;; (frecip x f) to be the remainder (prem x p (cdr f)).
+
+;; Note that our informal commentary employs some natural abbreviations, e.g., r * s for (pmul r s f) and
+;; 1 for (pone f).
+
+;; A few of the definitions do not require mutual recursion; we list them first.
 
 ;; Additive and multiplicative identities of f:
 
@@ -210,12 +222,12 @@
 ;; f is replaced by (cdr f).  This observation is critical for the admissibility of the clique.
 
 ;; In our treatment of the greatest common divisor, in order to avoid name conflicts (with functions
-;; pertaining to the gcd of integers, defined in "../numbers/euclid.lisp"), we use the names pgcd, rp, and sp
+;; pertaining to the gcd of integers, defined in "../numbers/euclid.lisp"), we use the names pgcd, r$, and s$
 ;; for the functions described earlier. The recursive Euclidean algorithm produces a polynomial of maximal 
 ;; degree that divides both of two given polynomials.  It is convenient to define the greatest common divisor 
-;; to be monic.  Thus, we first define polynomials (pgcd-aux p q f), (rp-aux p q f), and (sp-aux p q f), 
+;; to be monic.  Thus, we first define polynomials (pgcd-aux p q f), (r$-aux p q f), and (s$-aux p q f), 
 ;; which execute the recursive algorithm, and then divide each of these by the leading coefficient of 
-;; (pgcd-aux p q f) to produce (pgcd p q f), (rp p q f), and (sp p q f).
+;; (pgcd-aux p q f) to produce (pgcd p q f), (r$ p q f), and (s$ p q f).
 
 ;; The reader will notice that several definitions contain "nuisance terms" that are required for
 ;; admissibility but do not affect the value of the function in any case of interest.  For example, the
@@ -228,8 +240,8 @@
 ;;	               (pgcd-aux pnew q f)))
 
 ;; The condition (< (len pnew) (len p)) ensures that the declared measure for this function decreases in
-;; the recursive call (pgcd-aux pnew q f).  we shall eventually prove that under suitable constraints on the
-;; arguments, the inequality is necessarily satified and therefore may be ignored.
+;; the recursive call (pgcd-aux pnew q f).  We shall eventually prove that under suitable constraints on the
+;; arguments, the inequality is necessarily satisfied and therefore may be ignored.
 
 (encapsulate ()
 
@@ -248,20 +260,20 @@
              (< (degree x) (degree (car f))))
       (beltp x f)))
 
-  ;; A generalized polynomial is a list of field elements:
+  ;; A generalized polynomial is a proper list of field elements:
 
-  (defun gpolyp (l f)
+  (defun feltsp (l f)
     (declare (xargs :measure (list (len f) 1 (len l))))
     (if (consp l)
         (and (feltp (car l) f)
-             (gpolyp (cdr l) f))
+             (feltsp (cdr l) f))
       (null l)))
 
-  ;; A polynomial is a non-nil generalized polynomial with either degree 1 or a non-zero leading coefficient:
+  ;; A polynomial is a non-nil generalized polynomial with either degree 0 or a non-zero leading coefficient:
 
   (defund polyp (p f)
     (declare (xargs :measure (list (len f) 2 0)))
-    (and (gpolyp p f)
+    (and (feltsp p f)
          (consp p)
          (or (null (cdr p))
              (not (equal (car p) (fzero f))))))
@@ -318,7 +330,7 @@
         (prem (pmul x y (cdr f)) (car f) (cdr f))
       (bmul x y f)))
 
-  ;; Multiplication  of a polynomial by a field element:
+  ;; Multiplication of a polynomial by a field element:
 
   (defun cmul (x p f)
     (declare (xargs :measure (list (len f) 5 (len p))))
@@ -341,14 +353,14 @@
                     (pmul (pstrip (cdr p) f) q f)
 	            f)
 	    (cmul (car p) q f))
-          ())))
+        ())))
 
   ;; Reciprocal:
 
   (defund frecip (x f)
     (declare (xargs :measure (list (len f) 6 0)))
     (if (consp f)
-        (prem (rp x (car f) (cdr f)) (car f) (cdr f))
+        (prem (r$ x (car f) (cdr f)) (car f) (cdr f))
       (brecip x f)))
 
   ;; Greatest common divisor:
@@ -358,7 +370,7 @@
     (if (equal p (pzero f))
         q
       (if (or (equal q (pzero f)) (pconstp p))
-            p
+          p
         (if (pconstp q)
             q
           (if (>= (degree p) (degree q))
@@ -373,7 +385,7 @@
 	      (and (< (len qnew) (len q))
 	           (pgcd-aux p qnew f))))))))
 
-  (defun rp-aux (p q f)
+  (defun r$-aux (p q f)
     (declare (xargs :measure (list (len f) 7 (+ (len p) (len q)))))
     (if (equal p (pzero f))
         (pzero f)
@@ -386,16 +398,16 @@
 	             (a (monomial c (- (degree p) (degree q)) f))
 	             (pnew (padd p (pneg (pmul a q f) f) f)))
                 (and (< (len pnew) (len p))
-	             (rp-aux pnew q f)))
+	             (r$-aux pnew q f)))
  	    (let* ((c (fmul (car q) (frecip (car p) f) f))
 	           (a (monomial c (- (degree q) (degree p)) f))
 	           (qnew (padd q (pneg (pmul a p f) f) f)))
 	      (and (< (len qnew) (len q))
-	           (padd (rp-aux p qnew f)
-	                 (pneg (pmul a (sp-aux p qnew f) f) f)
+	           (padd (r$-aux p qnew f)
+	                 (pneg (pmul a (s$-aux p qnew f) f) f)
 		         f))))))))
 	            
-  (defun sp-aux (p q f)
+  (defun s$-aux (p q f)
     (declare (xargs :measure (list (len f) 7 (+ (len p) (len q)))))
     (if (equal p (pzero f))
         (pone f)
@@ -408,31 +420,31 @@
 	             (a (monomial c (- (degree p) (degree q)) f))
 	             (pnew (padd p (pneg (pmul a q f) f) f)))
                 (and (< (len pnew) (len p))
-	             (padd (sp-aux pnew q f)
-	                   (pneg (pmul a (rp-aux pnew q f) f) f)
+	             (padd (s$-aux pnew q f)
+	                   (pneg (pmul a (r$-aux pnew q f) f) f)
 		           f)))
  	    (let* ((c (fmul (car q) (frecip (car p) f) f))
 	           (a (monomial c (- (degree q) (degree p)) f))
 	           (qnew (padd q (pneg (pmul a p f) f) f)))
 	      (and (< (len qnew) (len q))
-	           (sp-aux p qnew f))))))))
-
-  (defund rp (p q f)
-    (declare (xargs :measure (list (len f) 8 0)))
-    (let ((g (pgcd-aux p q f))
-          (r (rp-aux p q f)))
-      (cmul (frecip (car g) f) r f)))
-
-  (defund sp (p q f)
-    (declare (xargs :measure (list (len f) 8 0)))
-    (let ((g (pgcd-aux p q f))
-          (s (sp-aux p q f)))
-      (cmul (frecip (car g) f) s f)))
+	           (s$-aux p qnew f))))))))
 
   (defund pgcd (p q f)
     (declare (xargs :measure (list (len f) 8 0)))
     (let ((g (pgcd-aux p q f)))
       (cmul (frecip (car g) f) g f)))
+
+  (defund r$ (p q f)
+    (declare (xargs :measure (list (len f) 8 0)))
+    (let ((g (pgcd-aux p q f))
+          (r (r$-aux p q f)))
+      (cmul (frecip (car g) f) r f)))
+
+  (defund s$ (p q f)
+    (declare (xargs :measure (list (len f) 8 0)))
+    (let ((g (pgcd-aux p q f))
+          (s (s$-aux p q f)))
+      (cmul (frecip (car g) f) s f)))
 
   ;; Division of polynomials:
 
@@ -460,18 +472,19 @@
 
 ))
 
-;; Our formal definition of a field extension depends on the notion of an irreducible
-;; polynomial.  We are unable to formulate an algorithmic definition of irreducibility and 
-;; therefore resort to defchoose.  First we define polynomial divisibility:
+;; Our formal definition of a field extension depends on the notion of an irreducible polynomial.  We are 
+;; unable to formulate an algorithmic definition of irreducibility and therefore resort to defchoose.  First
+;; we define polynomial divisibility:
 
 (defund pdivides (q p f)
   (equal (prem p q f) (pzero f)))
 
-;; If p has a non-constant divisor of lesser degree, then such a divisor is returned by
-;; the following function and p is said to be reducible:
+;; If p has a non-constant divisor of lesser degree, then it has a monic divisor q of the same lesser degree.  
+;; In this case, such a divisor is returned by the following function and p is said to be reducible:
 
 (defchoose pfactor q (p f)
   (and (polyp q f)
+       (monicp q f)
        (> (degree q) 0)
        (< (degree q) (degree p))
        (pdivides q p f)))
@@ -479,6 +492,7 @@
 (defund reduciblep (p f)
   (let ((q (pfactor p f)))
     (and (polyp q f)
+         (monicp q f)
          (> (degree q) 0)
          (< (degree q) (degree p))
          (pdivides q p f))))
@@ -505,10 +519,16 @@
 ;; Naturally, the inductive proofs of the axioms are similarly complex.  We shall proceed as follows:
 
 ;; (1) In order to enable the induction, we begin by defining a predicate corresponding to each field axiom
-;;     that holds iff the field f satisfies the axioms, e.g., (fadd-closed-p f), and define the predicate
-;;     (field-axioms-p f) to be the conjunction of these predicates.  (These predicates are defined with
-;;     defun-sk.)  For each of the field axioms, we prove a trivial lemma stating that the axiom follows 
-;;     from (field-axioms-p f), e.g., 
+;;     that holds iff the field f satisfies the axiom.  These predicates are defined with defun-sk, e.g.,
+
+;;     (defun-sk fadd-closed-p (f)
+;;       (forall (x y)
+;;         (implies (and (feltp x f) (feltp y f))
+;;                  (feltp (fadd x y f) f))))
+
+;;     We define the predicate (field-axioms-p f) to be the conjunction of these predicates.  For each of
+;;     the field axioms, we prove a trivial lemma stating, in effect, that the axiom follows from 
+;;     (field-axioms-p f), e.g., 
 
 ;;     (defthm fadd-closed-*
 ;;       (implies (and (field-axioms-p f) (feltp x f) (feltp y f))
@@ -522,7 +542,7 @@
 ;;   	          (or (equal x (fzero f))
 ;;   	              (equal y (fzero f)))))
 
-;;     These lemmas will form the basis of the proofs in Step 2.
+;;     These lemmas will form the basis of the proofs in Step 3.
 
 ;;     (*) The asterisk suffix is intended to reflect the hypothesis (field-axioms-p f), which will be 
 ;;     removed in Step 7.
@@ -876,6 +896,11 @@
            (equal (fmul x (frecip x f) f)
 	          (fone f))))
 
+(defthm fmul-frecip-2-*
+  (implies (and (field-axioms-p f) (feltp x f)  (not (equal x (fzero f))))
+           (equal (fmul (frecip x f) x f)
+	          (fone f))))
+
 (defthm fdistrib-*
   (implies (and (field-axioms-p f) (feltp x f) (feltp y f) (feltp z f))
                 (equal (fmul x (fadd y z f) f)
@@ -895,7 +920,7 @@
   (implies (and (field-axioms-p f) (feltp x f))
 	   (equal (fadd x (fzero f) f) x)))
 
-(defthmd fzero-unique-*
+(defthmd fneg-unique-*
   (implies (and (field-axioms-p f)
                 (feltp x f) (feltp y f) (equal (fadd x y f) (fzero f)))
 	   (equal (fneg y f) x)))
@@ -1048,7 +1073,8 @@
            (equal (bmul x (badd y z f) f)
 	          (badd (bmul x y f) (bmul x z f) f))))
 
-
+;; The following are immediate consequences of the above results and the witness lemmas
+;; of Step 1:
 
 (defthm badd-closed-step
   (implies (fbasep f)
@@ -1116,6 +1142,8 @@
   (implies (fbasep f)
            (fdistrib-p f)))
 
+;;  Combining these results, we have the desired theorem:
+
 (defthmd field-axioms-p-fbasep
   (implies (fbasep f)
            (field-axioms-p f)))
@@ -1157,8 +1185,7 @@
 (defthm len-fneg
   (implies (consp f)
            (equal (len (fneg x f))
-                  (len x)))
-  :hints (("Goal" :expand ((fneg x f)))))
+                  (len x))))
 
 (defthm car-pneg
   (implies (consp x)
@@ -1216,6 +1243,11 @@
 ;; Commutativity
 ;;----------------------
 
+(defthmd faddl-comm
+  (implies (and (fieldp f) (field-axioms-p f)
+                (feltsp x f) (feltsp y f))
+           (equal (faddl x y f) (faddl y x f))))
+
 (defthmd padd-comm-*
   (implies (and (fieldp f) (field-axioms-p f)
                 (polyp x f) (polyp y f))
@@ -1240,7 +1272,7 @@
 
 ;; We nmay assume (car x) = (fzero f).  We consider 2 cases:
 
-;; If (len x) <= (len y), then we can prove the stronger result (faddl (pstrip x f) x f) = (fadd x y f):
+;; If (len x) <= (len y), then we can prove the stronger result (faddl (pstrip x f) y f) = (fadd x y f):
 
 ;; If (len x) < (len y), then
 
@@ -1265,7 +1297,7 @@
 
 (defthmd pstrip-faddl-pstrip
   (implies (and (fieldp f) (field-axioms-p f)
-                (gpolyp x f) (gpolyp y f))
+                (feltsp x f) (feltsp y f))
            (equal (pstrip (faddl (pstrip x f) y f) f)
 	          (pstrip (faddl x y f) f))))
 
@@ -1295,7 +1327,7 @@
 
 (defthmd faddl-assoc
   (implies (and (fieldp f) (field-axioms-p f)
-                (gpolyp x f) (gpolyp y f) (gpolyp z f))
+                (feltsp x f) (feltsp y f) (feltsp z f))
            (equal (faddl (faddl x y f) z f)
                   (faddl x (faddl y z f) f))))
 
@@ -1308,9 +1340,9 @@
 	          (padd (padd x y f) z f))))
 
 
-;;--------------------------------
-;; Degree of a Sum of Polynomials
-;;--------------------------------
+;;-----------------------------------------
+;; Degree and Leading Coefficient of a Sum
+;;-----------------------------------------
 
 (defthmd degree-padd-bound-*
   (<= (degree (padd x y f))
@@ -1328,6 +1360,10 @@
 		(equal (car y) (fneg (car x) f)))
 	   (< (degree (padd x y f)) (degree x))))
 
+(defthm car-padd
+  (implies (and (fieldp f) (polyp x f) (polyp y f) (< (degree y) (degree x)))
+           (equal (car (padd x y f))
+	          (car x))))
 
 ;;----------------------------------------------------------------------------------------------------------
 ;;                                          Step 3: Multiplication
@@ -1378,7 +1414,7 @@
            (equal (len (cmul c x f))
                   (len x))))
 
-(defthmd cmul-nonzero
+(defthmd cmul-nonzero-*
   (implies (and (fieldp f) (field-axioms-p f)
                 (feltp c f) (not (equal c (fzero f)))
 		(polyp x f) (not (equal x (pzero f))))
@@ -1499,6 +1535,11 @@
            (equal (pshift (pshift x k f) l f)
 	          (pshift x (+ k l) f))))
 		  
+(defthmd pstrip-pshift-pstrip
+  (implies (and (fieldp f) (feltsp x f) (natp k))
+           (equal (pstrip (pshift (pstrip x f) k f) f)
+	          (pstrip (pshift x k f) f))))
+		  
 (defthmd pneg-pshift-*
   (implies (and (fieldp f) (field-axioms-p f)
                 (natp k) (polyp x f) (feltp c f) (not (equal c (fzero f))))
@@ -1507,10 +1548,11 @@
 
 (defthmd padd-pshift-*
   (implies (and (fieldp f) (field-axioms-p f)
-		(polyp x f) (polyp y f) (natp k)
-		(not (equal (padd x y f) (pzero f))))
+		(polyp x f) (polyp y f) (natp k))		
 	   (equal (padd (pshift x k f) (pshift y k f) f)
-	          (pshift (padd x y f) k f))))
+	          (if (equal (padd x y f) (pzero f))
+		      (pzero f)
+		    (pshift (padd x y f) k f)))))
 
 (defthmd cmul-pshift-*
   (implies (and (fieldp f) (field-axioms-p f)
@@ -1536,8 +1578,7 @@
                 (natp k) (feltp c f) (not (equal c (fzero f)))
                 (polyp y f) (not (equal y (pzero f))))
 	   (equal (pmul (monomial c k f) y f)
-	          (pshift (cmul c y f) k f)))
-  :hints (("Goal" :use (pmul-monomial-3 pmul-monomial-4))))
+	          (pshift (cmul c y f) k f))))
 
 
 ;;---------
@@ -1555,7 +1596,7 @@
 ;;---------------------
 
 ;; To prove that (degree (prem x y f)) < (degree y), we must show that the polynomial x1
-;; in the definition of pdivision is a polynomial of lesser degree that y.  These lemmas
+;; in the definition of pdivision is a polynomial of lesser degree than y.  These lemmas
 ;; are also used later in deriving the properties of division as well as the greatest common 
 ;; divisor, which is based on the same construction:
 
@@ -1622,6 +1663,20 @@
 ;;----------------------
 ;; Distributivity
 ;;----------------------
+
+;; Note the following properties of pstrip:
+
+(defthmd len-pstrip
+  (<= (len (pstrip x f)) (len x)))
+
+(defthmd polyp-pstrip
+  (implies (fieldp f)
+           (iff (polyp (pstrip x f) f)
+	        (and (feltsp x f) (consp x)))))
+
+(defthmd feltp-pstrip
+  (implies (and (fieldp f) (consp f) (feltsp x (cdr f)) (consp x) (< (len x) (len (car f))))
+           (feltp (pstrip x (cdr f)) f)))
 
 ;; Suppose (consp (cdr x)). Let
 
@@ -2009,10 +2064,7 @@
   (implies (and (fieldp f) (field-axioms-p f)
                 (polyp x f) (polyp y f))
 	   (equal (pmul (pneg x f) y f)
-	          (pneg (pmul x y f) f)))
-  :hints (("Goal" :use (pmul-comm-*
-                        (:instance pmul-comm-* (x (pneg x f)))
-			(:instance pneg-pmul (x y) (y x))))))
+	          (pneg (pmul x y f) f))))
   
 
 ;;---------------------
@@ -2090,8 +2142,7 @@
 		    (equal r (pzero f))
 		  (< (degree r) (degree y))))
            (and (equal (pquot x y f) q)
-	        (equal (prem x y f) r)))
-  :hints (("Goal" :use (pquot-prem-* pquot-prem-unique-9 pquot-prem-unique-10 pquot-prem-unique-12))))
+	        (equal (prem x y f) r))))
 
 
 ;; Some consequences of pquot-prem-unique:
@@ -2175,7 +2226,7 @@
 
 ;; Its properties are derived from those of the remainder.
 
-(defthmd cmul-divides-*
+(defthmd cmul-pdivides-*
   (implies (and (fieldp f) (field-axioms-p f)
                 (polyp x f) (polyp y f) (not (equal y (pzero f)))
 		(feltp c f) (not (equal c (fzero f))))
@@ -2253,13 +2304,34 @@
 		(pdivides x y f))
 	   (pdivides y x f)))
 
+(defund make-monic (x f)
+  (cmul (frecip (car x) f) x f))
 
+(defthmd monicp-make-monic-*
+  (implies (and (fieldp f) (field-axioms-p f)
+                (polyp x f) (not (equal x (pzero f))))
+	   (let ((m (make-monic x f)))
+	     (and (polyp m f)
+	          (monicp m f)
+	          (pdivides m x f)
+		  (pdivides x m f)
+		  (= (degree m) (degree x))))))
+
+(defthmd pdivides-make-monic-*
+  (implies (and (fieldp f) (field-axioms-p f)
+                (polyp x f) (not (equal x (pzero f)))
+		(polyp y f))
+	   (let ((m (make-monic x f)))
+	     (and (iff (pdivides m y f) (pdivides x y f))
+	          (iff (pdivides y m f) (pdivides y x f))))))
+
+		  
 ;;-------------------------
 ;; Greatest Common Divisor
 ;;-------------------------
 
-;; The essential computation of pgcd and the related functions rp and rs is performed by pgcd-aux,
-;; rp-aux, and sp-aux, which execute the Euclidean algorithm.  The properties of pgcd are inherited
+;; The essential computation of pgcd and the related functions r$ and s$ is performed by pgcd-aux,
+;; r$-aux, and s$-aux, which execute the Euclidean algorithm.  The properties of pgcd are inherited
 ;; from the auxiliary functions.
 
 (defthmd polyp-pgcd-*
@@ -2298,8 +2370,8 @@
   (implies (and (fieldp f) (field-axioms-p f)
                 (polyp x f) (polyp y f)
                 (not (and (equal x (pzero f)) (equal y (pzero f)))))
-	   (let ((r (rp x y f))
-	         (s (sp x y f)))
+	   (let ((r (r$ x y f))
+	         (s (s$ x y f)))
 	     (and (polyp r f)
 	          (polyp s f)
 	  	  (equal (padd (pmul r x f) (pmul s y f) f)
@@ -2574,8 +2646,12 @@
 (defthmd fdistrib
   (implies (and (fieldp f) (feltp x f) (feltp y f) (feltp z f))
                 (equal (fmul x (fadd y z f) f)
-		       (fadd (fmul x y f) (fmul x z f) f)))
-  :hints (("Goal" :use (fdistrib-*))))
+		       (fadd (fmul x y f) (fmul x z f) f))))
+
+(defthmd fdistrib-comm
+  (implies (and (fieldp f) (feltp x f) (feltp y f) (feltp z f))
+           (equal (fmul (fadd y z f) x f)
+                  (fadd (fmul y x f) (fmul z x f) f))))
 
 ;;---------------------------------
 ;; Additional properties of fields
@@ -2584,28 +2660,30 @@
 (defthmd fneg-fzero
   (implies (and (fieldp f) (feltp x f))
            (iff (equal (fneg x f) (fzero f))
-                (equal x (fzero f))))
-  :hints (("Goal" :use (fneg-fzero-*))))
+                (equal x (fzero f)))))
 
 (defthm fzero-id-2
   (implies (and (fieldp f) (feltp x f))
 	   (equal (fadd x (fzero f) f) x)))
 
-(defthmd fzero-unique
+(defthmd fneg-unique
   (implies (and (fieldp f)
                 (feltp x f) (feltp y f) (equal (fadd x y f) (fzero f)))
-	   (equal (fneg y f) x))
-  :hints (("Goal" :use (fzero-unique-*))))
+	   (equal (fneg y f) x)))
 
 (defthm fneg-fneg
   (implies (and (fieldp f) (feltp x f))
            (equal (fneg (fneg x f) f)
-	          x))
-  :hints (("Goal" :use (fneg-fneg-*))))
+	          x)))
 
 (defthm fone-id-2
   (implies (and (fieldp f) (feltp x f))
 	   (equal (fmul x (fone f) f) x)))
+
+(defthm fmul-frecip-2
+  (implies (and (fieldp f) (feltp x f)  (not (equal x (fzero f))))
+           (equal (fmul (frecip x f) x f)
+	          (fone f))))
 
 (defthm fmul-fzero
   (implies (and (fieldp f) (feltp x f))
@@ -2621,8 +2699,7 @@
   (implies (and (fieldp f)
                 (feltp x f) (feltp y f))
 	   (equal (fneg (fmul x y f) f)
-	          (fmul x (fneg y f) f)))
-  :hints (("Goal" :use (fneg-fmul-*))))
+	          (fmul x (fneg y f) f))))
 
 (defthm field-integral-domain
   (implies (and (fieldp f)
@@ -2631,17 +2708,24 @@
 		(equal (fmul x y f) (fzero f)))
 	   (or (equal x (fzero f))
 	       (equal y (fzero f))))
-  :rule-classes ()
-  :hints (("Goal" :use (field-integral-domain-*))))
+  :rule-classes ())
 
 (defthmd frecip-not-fzero
   (implies (and (fieldp f) (feltp x f) (not (equal x (fzero f))))
-           (not (equal (frecip x f) (fzero f))))
-  :hints (("Goal" :use (frecip-not-fzero-*))))
+           (not (equal (frecip x f) (fzero f)))))
 
+(defthmd frecip-unique
+  (implies (and (fieldp f) (feltp x f) (feltp y f)
+                (equal (fmul x y f) (fone f)))
+	   (equal (frecip y f) x)))
+	   
 ;;------------------------
 ;; Polynomial ring axioms
 ;;------------------------
+
+(defthm polyp-pzero
+  (implies (fieldp f)
+           (polyp (pzero f) f)))
 
 (defthm polyp-pone
   (implies (fieldp f)
@@ -2651,12 +2735,6 @@
   (implies (and (fieldp f) 
                 (polyp x f))
 	   (equal (padd (pzero f) x f)
-	          x)))
-
-(defthm pzero-id-2
-  (implies (and (fieldp f) 
-                (polyp x f))
-	   (equal (padd x (pzero f) f)
 	          x)))
 
 (defthm pone-id
@@ -2676,14 +2754,7 @@
 (defthmd padd-pneg
   (implies (and (fieldp f)  (polyp x f))
            (equal (padd x (pneg x f) f)
-	          (pzero f)))
-  :hints (("Goal" :use (padd-pneg-*))))
-
-(defthmd pneg-unique
-  (implies (and (fieldp f) 
-                (polyp x f) (polyp y f) (equal (padd x y f) (pzero f)))
-	   (equal (pneg y f) x))
-  :hints (("Goal" :use (pneg-unique-*))))
+	          (pzero f))))
 
 (defthm padd-closed
   (implies (and (fieldp f) 
@@ -2693,21 +2764,13 @@
 (defthmd padd-comm
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f))
-           (equal (padd x y f) (padd y x f)))
-  :hints (("Goal" :use (padd-comm-*))))
+           (equal (padd x y f) (padd y x f))))
 
 (defthmd padd-assoc
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f) (polyp z f))
            (equal (padd x (padd y z f) f)
-	          (padd (padd x y f) z f)))
-  :hints (("Goal" :use (padd-assoc-*))))
-
-(defthm pone-id
-  (implies (and (fieldp f) 
-                (polyp x f))
-	   (equal (pmul (pone f) x f)
-	          x)))
+	          (padd (padd x y f) z f))))
 
 (defthm pmul-closed
   (implies (and (fieldp f) 
@@ -2725,33 +2788,44 @@
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f) (polyp z f))
            (equal (pmul x (pmul y z f) f)
-	          (pmul (pmul x y f) z f)))
-  :hints (("Goal" :use (pmul-assoc-*))))
+	          (pmul (pmul x y f) z f))))
 
 (defthmd pdistrib
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f) (polyp z f))
 	   (equal (pmul x (padd y z f) f)
-	          (padd (pmul x y f) (pmul x z f) f)))
-  :hints (("Goal" :use (pdistrib-*))))
+	          (padd (pmul x y f) (pmul x z f) f))))
 
 ;;-------------------------------------------
 ;; Additional properties of polynomial rings
 ;;-------------------------------------------
 
+(defthm pzero-id-2
+  (implies (and (fieldp f) 
+                (polyp x f))
+	   (equal (padd x (pzero f) f)
+	          x)))
+
 (defthm pone-id-2
   (implies (and (fieldp f)
                 (polyp x f))
 	   (equal (pmul x (pone f) f)
-	          x))
-  :hints (("Goal" :use (pone-id-2-*))))
+	          x)))
+
+(defthm degree-pone
+  (implies (fieldp f)
+           (equal (degree (pone f)) 0)))
+
+(defthmd pneg-unique
+  (implies (and (fieldp f) 
+                (polyp x f) (polyp y f) (equal (padd x y f) (pzero f)))
+	   (equal (pneg y f) x)))
 
 (defthmd pneg-pneg
   (implies (and (fieldp f)
                 (polyp x f))
 	   (equal (pneg (pneg x f) f)
-	          x))
-  :hints (("Goal" :use (pneg-pneg-*))))
+	          x)))
 
 (defthm car-pneg
   (implies (consp x)
@@ -2760,55 +2834,47 @@
 
 (defthm pneg-pzero
   (implies (and (fieldp f))
-           (equal (pneg (pzero f) f) (pzero f)))
-  :hints (("Goal" :use (pneg-pzero-*))))
+           (equal (pneg (pzero f) f) (pzero f))))
 
 (defthmd pneg-nonzero
   (implies (and (fieldp f)
                 (polyp x f)
 	        (equal (pneg x f) (pzero f)))
-	   (equal (pzero f) x))
-  :hints (("Goal" :use (pneg-nonzero-*))))
+	   (equal (pzero f) x)))
 
 (defthmd pneg-padd
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f))
 	   (equal (pneg (padd x y f) f)
-	          (padd (pneg x f) (pneg y f) f)))
-  :hints (("Goal" :use (pneg-padd-*))))
+	          (padd (pneg x f) (pneg y f) f))))
 
 (defthmd pmul-pneg
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f))
 	   (equal (pmul (pneg x f) y f)
-	          (pneg (pmul x y f) f)))
-  :hints (("Goal" :use (pmul-pneg-*))))
+	          (pneg (pmul x y f) f))))
 
 (defthmd pdistrib-2
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (polyp z f))
 	   (equal (pmul (padd y z f) x f)
-	          (padd (pmul y x f) (pmul z x f) f)))
-  :hints (("Goal" :use (pdistrib-2-*))))
+	          (padd (pmul y x f) (pmul z x f) f))))
 
 (defthmd degree-padd-bound
   (<= (degree (padd x y f))
-      (max (degree x) (degree y)))
-  :hints (("Goal" :use (degree-padd-bound-*))))
+      (max (degree x) (degree y))))
 
 (defthmd degree-padd-diff
   (implies (and (polyp x f) (polyp y f) (not (= (degree x) (degree y))))
            (equal (degree (padd x y f))
-	          (max (degree x) (degree y))))
-  :hints (("Goal" :use (degree-padd-diff-*))))
+	          (max (degree x) (degree y)))))
 
 (defthmd degree-padd-less
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f)
 		(= (degree x) (degree y)) (posp (degree x))
 		(equal (car y) (fneg (car x) f)))
-	   (< (degree (padd x y f)) (degree x)))
-  :hints (("Goal" :use (degree-padd-less-*))))
+	   (< (degree (padd x y f)) (degree x))))
 
 (defthm degree-pmul
   (implies (and (fieldp f) 
@@ -2816,31 +2882,34 @@
 		(not (equal x (pzero f)))
 		(not (equal y (pzero f))))
            (equal (degree (pmul x y f))
-	          (+ (degree x) (degree y))))
-  :hints (("Goal" :use (degree-pmul-*))))
+	          (+ (degree x) (degree y)))))
 
 (defthm pmul-nonzero
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f)
 		(not (equal x (pzero f)))
 		(not (equal y (pzero f))))
-	   (not (equal (pmul x y f) (pzero f))))
-  :hints (("Goal" :use (pmul-nonzero-*))))
+	   (not (equal (pmul x y f) (pzero f)))))
+
+(defthm pmul-cancel
+  (implies (and (fieldp f) (polyp x f) (polyp y f) (polyp z f)
+                (not (equal x (pzero f)))
+		(equal (pmul x y f) (pmul x z f)))
+	   (equal y z))
+  :rule-classes ())
 
 (defthmd car-pmul
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f))
 	   (equal (car (pmul x y f))
-	          (fmul (car x) (car y) f)))
-  :hints (("Goal" :use (car-pmul-*))))
+	          (fmul (car x) (car y) f))))
 
 (defthmd degree-prem
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (>= (degree y) 1))
 	   (and (polyp (prem x y f) f)
 	        (< (degree (prem x y f))
-		   (degree y))))
-  :hints (("Goal" :use (degree-prem-*))))
+		   (degree y)))))
 
 (defund precip (x f)
   (list (frecip (car x) f)))
@@ -2852,12 +2921,22 @@
 	     (and (polyp r f)
 	          (pconstp r)
 		  (not (equal r (pzero f)))
-		  (equal (pmul x r f) (pone f)))))
-  :hints (("Goal" :use (pmul-precip-*))))
+		  (equal (pmul x r f) (pone f))))))
 
 ;;-------------------------------------------
 ;; Multiplication by constants and monomials
 ;;-------------------------------------------
+
+(defthm len-cmul
+  (implies (not (equal c (fzero f)))
+           (equal (len (cmul c x f))
+                  (len x))))
+
+(defthmd cmul-nonzero
+  (implies (and (fieldp f) (field-axioms-p f)
+                (feltp c f) (not (equal c (fzero f)))
+		(polyp x f) (not (equal x (pzero f))))
+	   (not (equal (cmul c x f) (pzero f)))))
 
 (defthmd polyp-cmul
   (implies (and (fieldp f) 
@@ -2865,8 +2944,21 @@
            (let ((p (cmul c x f)))
 	     (and (polyp p f)
 	          (equal (degree p) (degree x))
-		  (equal (car p) (fmul c (car x) f)))))
-  :hints (("Goal" :use (polyp-cmul-*))))
+		  (equal (car p) (fmul c (car x) f))))))
+
+(defthmd cmul-pzero
+  (implies (and (fieldp f) (feltp c f))
+           (equal (cmul c (pzero f) f)
+	          (pzero f))))
+
+(defthmd cmul-fzero
+  (equal (cmul (fzero f) x f)
+         (pzero f)))
+
+(defthmd cmul-fadd
+  (implies (and (fieldp f) (feltp c f) (feltp d f) (polyp x f))
+           (equal (cmul (fadd c d f) x f)
+	          (padd (cmul c x f) (cmul d x f) f))))
 
 (defthmd cmul-cmul
   (implies (and (fieldp f)
@@ -2874,8 +2966,7 @@
 		(feltp d f) (not (equal d (fzero f)))
                 (polyp x f))
 	   (equal (cmul c (cmul d x f) f)
-	          (cmul (fmul c d f) x f)))
-  :hints (("Goal" :use (cmul-cmul-*))))
+	          (cmul (fmul c d f) x f))))
 
 (defthmd cmul-append
   (implies (not (equal c (fzero f)))
@@ -2886,15 +2977,13 @@
   (implies (and (fieldp f)
                 (polyp x f) (feltp c f) (not (equal c (fzero f))))
            (equal (pneg (cmul c x f) f)
-	          (cmul c (pneg x f) f)))
-  :hints (("Goal" :use (pneg-cmul-*))))
+	          (cmul c (pneg x f) f))))
 
 (defthmd cmul-pmul
   (implies (and (fieldp f)
                 (feltp c f) (polyp x f) (polyp y f))
 	   (equal (cmul c (pmul x y f) f)
-	          (pmul (cmul c x f) y f)))
-  :hints (("Goal" :use (cmul-pmul-*))))
+	          (pmul (cmul c x f) y f))))
 
 (defthmd pmul-constant
   (implies (and (polyp x f) (not (consp (cdr x)))
@@ -2916,8 +3005,7 @@
 (defthm pneg-fzero-list
   (implies (and (fieldp f) (natp k))
            (equal (pneg (fzero-list k f) f)
-	          (fzero-list k f)))
-  :hints (("Goal" :use (pneg-fzero-list-*))))
+	          (fzero-list k f))))
 
 (defthmd pshift-rewrite
   (implies (and (polyp x f) (natp k))
@@ -2928,16 +3016,14 @@
   (implies (and (fieldp f)
                 (natp k) (polyp x f) (feltp c f) (not (equal c (fzero f))))
            (equal (pneg (pshift (cmul c x f) k f) f)
-	          (pshift (cmul c (pneg x f) f) k f)))
-  :hints (("Goal" :use (pneg-pshift-*))))
+	          (pshift (cmul c (pneg x f) f) k f))))
 
 (defthmd cmul-pshift
   (implies (and (fieldp f)
                 (polyp x f) (natp k)
                 (feltp c f) (not (equal c (fzero f))))
 	   (equal (cmul c (pshift x k f) f)
-	          (pshift (cmul c x f) k f)))
-  :hints (("Goal" :use (cmul-pshift-*))))
+	          (pshift (cmul c x f) k f))))
 
 (defthm polyp-pshift
   (implies (and (fieldp f) (natp k) (polyp x f) (not (equal x (pzero f))))
@@ -2946,21 +3032,31 @@
 	          (equal (degree p) (+ k (degree x)))
 		  (equal (car p) (car x))))))
 
+(defthmd pshift-pshift
+  (implies (and (fieldp f) (field-axioms-p f)
+                (polyp x f) (natp k) (natp l))
+           (equal (pshift (pshift x k f) l f)
+	          (pshift x (+ k l) f))))
+		  
+(defthmd pstrip-pshift-pstrip
+  (implies (and (fieldp f) (feltsp x f) (natp k))
+           (equal (pstrip (pshift (pstrip x f) k f) f)
+	          (pstrip (pshift x k f) f))))
+
 (defthmd padd-pshift
-  (implies (and (fieldp f)
-		(polyp x f) (polyp y f) (natp k)
-		(not (equal (padd x y f) (pzero f))))
+  (implies (and (fieldp f) (field-axioms-p f)
+		(polyp x f) (polyp y f) (natp k))		
 	   (equal (padd (pshift x k f) (pshift y k f) f)
-	          (pshift (padd x y f) k f)))
-  :hints (("Goal" :use (padd-pshift-*))))
+	          (if (equal (padd x y f) (pzero f))
+		      (pzero f)
+		    (pshift (padd x y f) k f)))))
 
 (defthmd pshift-pmul
   (implies (and (fieldp f)
                 (natp k) (polyp x f) (polyp y f)
 		(not (equal x (pzero f))) (not (equal y (pzero f))))
 	   (equal (pshift (pmul x y f) k f)
-	          (pmul x (pshift y k f) f)))
-  :hints (("Goal" :use (pshift-pmul-*))))
+	          (pmul x (pshift y k f) f))))
 
 (defthm polyp-monomial
   (implies (and (fieldp f) (feltp c f) (not (equal c (fzero f))) (natp k))
@@ -2985,8 +3081,7 @@
                 (natp k) (feltp c f) (not (equal c (fzero f)))
                 (polyp y f) (not (equal y (pzero f))))
 	   (equal (pmul (monomial c k f) y f)
-	          (pshift (cmul c y f) k f)))
-  :hints (("Goal" :use (pmul-monomial-*))))
+	          (pshift (cmul c y f) k f))))
 
 ;;---------------------
 ;; Polynomial division
@@ -2999,8 +3094,7 @@
 	     (and (polyp q f) (polyp r f)
 	          (equal x (padd (pmul y q f) r f))
 		  (< (degree r) (degree y)))))
-  :rule-classes ()
-  :hints (("Goal" :use (pdivision-*))))
+  :rule-classes ())
 
 (defthm pquot-prem
   (implies (and (fieldp f)
@@ -3010,35 +3104,30 @@
 	          (equal (padd (pmul y q f) r f) x)
 		  (if (pconstp y)
 		      (equal r (pzero f))
-		    (< (degree r) (degree y))))))
-  :hints (("Goal" :use (pquot-prem-*))))
+		    (< (degree r) (degree y)))))))
 
 (defthm polyp-pquot-prem
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (not (equal y (pzero f))))
 	   (and (polyp (pquot x y f) f)
-	        (polyp (prem x y f) f)))
-  :hints (("Goal" :use (polyp-pquot-prem-*))))
+	        (polyp (prem x y f) f))))
 
 (defthm pconstp-prem-pzero
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (pconstp y) (not (equal y (pzero f))))
-           (equal (prem x y f) (pzero f)))
-  :hints (("Goal" :use (pconstp-prem-pzero-*))))
+           (equal (prem x y f) (pzero f))))
 
 (defthmd prem-padd-prem
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (polyp z f) (not (equal z (pzero f))))
            (equal (prem (padd x (prem y z f) f) z f)
-                  (prem (padd x y f) z f)))
-  :hints (("Goal" :use (prem-padd-prem-*))))
+                  (prem (padd x y f) z f))))
 
 (defthmd prem-padd-prem-comm
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (polyp z f) (not (equal z (pzero f))))
            (equal (prem (padd (prem x z f) y f) z f)
-                  (prem (padd x y f) z f)))
-  :hints (("Goal" :use (prem-padd-prem-comm-*))))
+                  (prem (padd x y f) z f))))
 
 (defthmd prem-pmul-prem
   (implies (and (fieldp f)
@@ -3061,37 +3150,42 @@
 		    (equal r (pzero f))
 		  (< (degree r) (degree y))))
            (and (equal (pquot x y f) q)
-	        (equal (prem x y f) r)))
-   :hints (("Goal" :use (pquot-prem-unique-*))))
+	        (equal (prem x y f) r))))
 
 (defthmd prem-equal
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f)
 		(< (degree x) (degree y)))
 	   (equal (prem x y f)
-	          x))
-  :hints (("Goal" :use (prem-equal-*))))
+	          x)))
+
+(defthmd prem-self
+  (implies (and (fieldp f) (polyp x f) (not (equal x (pzero f))))
+           (equal (prem x x f) (pzero f))))
 
 (defthmd prem+mult
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (polyp a f))
 	   (equal (prem (padd (pmul y a f) x f) y f)
-	          (prem x y f)))
-  :hints (("Goal" :use (prem+mult-*))))
+	          (prem x y f))))
 
 (defthmd prem-padd-prem-prem
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (polyp z f) (not (equal z (pzero f))))
 	  (equal (prem (padd (prem x z f) (prem y z f) f) z f)
-	         (padd (prem x z f) (prem y z f) f)))
-  :hints (("Goal" :use (prem-padd-prem-prem-*))))
+	         (padd (prem x z f) (prem y z f) f))))
+
+(defthmd padd-prem-prem
+  (implies (and (fieldp f)
+                (polyp x f) (polyp y f) (polyp z f) (not (equal z (pzero f))))
+	  (equal (padd (prem x z f) (prem y z f) f)
+	         (prem (padd x y f) z f))))
 
 (defthmd prem-pneg
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (not (equal y (pzero f))))
 	   (equal (prem (pneg x f) y f)
-	          (pneg (prem x y f) f)))
-  :hints (("Goal" :use (prem-pneg-*))))
+	          (pneg (prem x y f) f))))
 
 (defthmd cmul-pquot-prem
   (implies (and (fieldp f)
@@ -3100,8 +3194,7 @@
 	   (and (equal (pquot x (cmul c y f) f)
 	               (cmul (frecip c f) (pquot x y f) f))
 		(equal (prem x (cmul c y f) f)
-		       (prem x y f))))
-  :hints (("Goal" :use (cmul-pquot-prem-*))))
+		       (prem x y f)))))
 
 (defthmd pquot-prem-cmul
   (implies (and (fieldp f)
@@ -3110,8 +3203,7 @@
 	   (and (equal (pquot (cmul c x f) y f)
 	               (cmul c (pquot x y f) f))
 		(equal (prem (cmul c x f) y f)
-	               (cmul c (prem x y f) f))))
-  :hints (("Goal" :use (pquot-prem-cmul-*))))
+	               (cmul c (prem x y f) f)))))
 
 ;;--------------
 ;; Divisibility
@@ -3122,92 +3214,121 @@
                 (polyp x f) (polyp y f)
 		(feltp c f) (not (equal c (fzero f))))
 	   (iff (pdivides y x f)
-	        (pdivides y (cmul c x f) f)))
-   :hints (("Goal" :use (pdivides-cmul-*))))
+	        (pdivides y (cmul c x f) f))))
 
-(defthmd cmul-divides
+(defthmd cmul-pdivides
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (not (equal y (pzero f)))
 		(feltp c f) (not (equal c (fzero f))))
            (iff (pdivides (cmul c y f) x f)
-	        (pdivides y x f)))
-  :hints (("Goal" :use (cmul-divides-*))))
+	        (pdivides y x f))))
 
 (defthmd pconstp-pdivides
   (implies (pconstp y)
-	   (pdivides y x f))
-  :hints (("Goal" :use (pconstp-pdivides-*))))
+	   (pdivides y x f)))
 
 (defthmd pdivides-pzero
   (implies (and (fieldp f) 
                 (polyp x f))
-	   (pdivides x (pzero f) f))
-  :hints (("Goal" :use (pdivides-pzero-*))))
+	   (pdivides x (pzero f) f)))
 
 (defthmd pdivides-equal-degree
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (equal (degree x) (degree y))
 		(pdivides x y f))
-	   (pdivides y x f))
-  :hints (("Goal" :use (pdivides-equal-degree-*))))
+	   (pdivides y x f)))
 
 (defthm pzero-pdivides
-  (pdivides (pzero f) x f)
-  :hints (("Goal" :use (pzero-pdivides-*))))
+  (pdivides (pzero f) x f))
 
 (defthmd pdivides-pquot
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f) (not (equal x (pzero f)))
 		(pdivides x y f))
 	   (equal (pmul x (pquot y x f) f)
-	          y))
-  :hints (("Goal" :use (pdivides-pquot-*))))
+	          y)))
 
 (defthmd pdivides-self
   (implies (and (fieldp f) 
                 (polyp x f))
-	   (pdivides x x f))
-  :hints (("Goal" :use (pdivides-self-*))))
+	   (pdivides x x f)))
 
 (defthmd pdivides-multiple
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f))
-	   (pdivides x (pmul x y f) f))
-  :hints (("Goal" :use (pdivides-multiple-*))))
+	   (pdivides x (pmul x y f) f)))
 
 (defthmd pdivides-padd
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f) (polyp z f)
 		(pdivides x y f) (pdivides x z f))
-	   (pdivides x (padd y z f) f))
-  :hints (("Goal" :use (pdivides-padd-*))))
+	   (pdivides x (padd y z f) f)))
+
+(defthmd pdivides-padd-converse
+  (implies (and (fieldp f) 
+                (polyp x f) (polyp y f) (polyp z f)
+		(pdivides x z f)
+	        (pdivides x (padd y z f) f))
+	   (pdivides x y f)))
 
 (defthmd pdivides-pmul
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f) (polyp z f)
 		(pdivides x y f))
-	   (pdivides x (pmul y z f) f))
-  :hints (("Goal" :use (pdivides-pmul-*))))
+	   (pdivides x (pmul y z f) f)))
+
+(defthmd product-pdivides
+  (implies (and (fieldp f) (polyp x f) (polyp y f) (polyp z f)
+                (not (equal x (pzero f))) (not (equal y (pzero f))))
+	   (iff (pdivides (pmul x y f) z f)
+	        (and (pdivides x z f)
+		     (pdivides y (pquot z x f) f)))))
 
 (defthmd pdivides-transitive
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f) (polyp z f) (not (equal y (pzero f)))
 		(pdivides x y f) (pdivides y z f))
-	   (pdivides x z f))
-  :hints (("Goal" :use (pdivides-transitive-*))))
+	   (pdivides x z f)))
 
 (defthmd pdivides-prem-equal
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f) (polyp z f) (not (equal x (pzero f))))
 	   (iff (pdivides x (padd y (pneg z f) f) f)
-		(equal (prem y x f) (prem z x f))))
-  :hints (("Goal" :use (pdivides-prem-equal-*))))
+		(equal (prem y x f) (prem z x f)))))
 
 (defthmd pdivides-degree
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f) (pdivides x y f) (not (equal y (pzero f))))
-	   (<= (degree x) (degree y)))
-  :hints (("Goal" :use (pdivides-degree-*))))
+	   (<= (degree x) (degree y))))
+
+(defthm pdivides-monic-equal
+  (implies (and (fieldp f)
+                (polyp x f) (monicp x f)
+                (polyp y f) (monicp y f)
+                (pdivides x y f) (pdivides y x f))
+	   (equal x y))
+  :rule-classes ())
+
+(defund make-monic (x f)
+  (cmul (frecip (car x) f) x f))
+
+(defthmd monicp-make-monic
+  (implies (and (fieldp f)
+                (polyp x f) (not (equal x (pzero f))))
+	   (let ((m (make-monic x f)))
+	     (and (polyp m f)
+	          (monicp m f)
+	          (pdivides m x f)
+		  (pdivides x m f)
+		  (= (degree m) (degree x))))))
+
+(defthmd pdivides-make-monic
+  (implies (and (fieldp f)
+                (polyp x f) (not (equal x (pzero f)))
+		(polyp y f))
+	   (let ((m (make-monic x f)))
+	     (and (iff (pdivides m y f) (pdivides x y f))
+	          (iff (pdivides y m f) (pdivides y x f))))))
 
 ;;-------------------------
 ;; Greatest common divisor
@@ -3217,60 +3338,57 @@
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f)
                 (not (and (equal x (pzero f)) (equal y (pzero f)))))
-	   (polyp (pgcd x y f) f))
-  :hints (("Goal" :use (polyp-pgcd-*))))
+	   (polyp (pgcd x y f) f)))
 
 (defthmd pgcd-monic
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f)
                 (not (equal x (pzero f))) (not (equal y (pzero f))))
-           (monicp (pgcd x y f) f))
-  :hints (("Goal" :use (pgcd-monic-*))))
+           (monicp (pgcd x y f) f)))
+
+(defthmd pgcd-pzero
+  (equal (pgcd (pzero f) p f)
+         (make-monic p f)))
 
 (defthmd pgcd-nonzero
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f)
                 (not (equal x (pzero f))) (not (equal y (pzero f))))
-	   (not (equal (pgcd x y f) (pzero f))))
-  :hints (("Goal" :use (pgcd-nonzero-*))))
+	   (not (equal (pgcd x y f) (pzero f)))))
 
 (defthmd pgcd-divides
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f)
                 (not (and (equal x (pzero f)) (equal y (pzero f)))))
 	   (and (pdivides (pgcd x y f) x f)
-	        (pdivides (pgcd x y f) y f)))
-  :hints (("Goal" :use (pgcd-divides-*))))
+	        (pdivides (pgcd x y f) y f))))
 
 (defthmd divides-pgcd
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f) (polyp z f)
                 (not (and (equal x (pzero f)) (equal y (pzero f))))
 		(pdivides z x f) (pdivides z y f))
-	   (pdivides z (pgcd x y f) f))
-  :hints (("Goal" :use (divides-pgcd-*))))
+	   (pdivides z (pgcd x y f) f)))
 
 (defthmd pgcd-comm
   (implies (and (fieldp f)
                 (polyp x f) (polyp y f)
                 (not (and (equal x (pzero f)) (equal y (pzero f)))))
-	   (equal (pgcd x y f) (pgcd y x f)))
-  :hints (("Goal" :use (pgcd-comm-*))))
+	   (equal (pgcd x y f) (pgcd y x f))))
 
 (defthmd pgcd-linear-combination
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f)
                 (not (and (equal x (pzero f)) (equal y (pzero f)))))
-	   (let ((r (rp x y f))
-	         (s (sp x y f)))
+	   (let ((r (r$ x y f))
+	         (s (s$ x y f)))
 	     (and (polyp r f)
 	          (polyp s f)
 	  	  (equal (padd (pmul r x f) (pmul s y f) f)
-		         (pgcd x y f)))))
-  :hints (("Goal" :use (pgcd-linear-combination-*))))
+		         (pgcd x y f))))))
 
 ;;-------------------------
-;; Irreducuble polynomials
+;; Irreducible polynomials
 ;;-------------------------
 
 (defthmd irreduciblep-no-factor
@@ -3279,19 +3397,53 @@
 		(irreduciblep p f)
 		(< (degree x) (degree p))
 		(pdivides x p f))
-	   (pconstp x))
-  :hints (("Goal" :use (irreduciblep-no-factor-*))))
+	   (pconstp x)))
+
+(defthm irreduciblep-pdivides-monic-equal
+  (implies (and (fieldp f)
+                (polyp x f) (monicp x f) (>= (degree x) 1)
+                (polyp y f) (monicp y f) (irreduciblep y f)
+                (pdivides x y f))
+	   (equal x y))
+  :rule-classes ())
 
 (defthmd peuclid
   (implies (and (fieldp f) 
                 (polyp p f) (polyp x f) (polyp y f)
-		(irreduciblep p f) (pdivides p (pmul x y f) f))
-	   (or (pdivides p x f) (pdivides p y f)))
-  :hints (("Goal" :use (peuclid-*))))
+		(irreduciblep p f))
+	   (iff (pdivides p (pmul x y f) f)
+	        (or (pdivides p x f) (pdivides p y f)))))
 
 (defthmd pgcd-irreduciblep
   (implies (and (fieldp f) 
                 (polyp p f) (polyp x f)
 		(irreduciblep p f) (not (pdivides p x f)))
-	   (equal (pgcd p x f) (pone f)))
-  :hints (("Goal" :use (pgcd-irreduciblep-*))))
+	   (equal (pgcd p x f) (pone f))))
+
+(defthm irreduciblep-car-field
+  (implies (and (fieldp f) (consp f))
+           (and (polyp (car f) (cdr f))
+	        (not (pconstp (car f)))
+		(not (equal (car f) (pzero (cdr f))))
+		(irreduciblep (car f) (cdr f)))))
+
+(defthmd degree-car-field
+  (implies (and (fieldp f) (consp f))
+           (>= (degree (car f)) 2)))
+
+;; Every non-constant polynomial has a non-constant irreducible factor, which may be
+;; defined as follows:
+
+(defun irred-factor (p f)
+  (declare (xargs :measure (len p) :hints (("Goal" :in-theory (enable reduciblep)))))
+  (if (and (fieldp f) (polyp p f) (>= (degree p) 1) (reduciblep p f))
+      (irred-factor (pfactor p f) f)
+    p))
+
+(defthmd irreduciblep-irred-factor
+  (implies (and (fieldp f) (polyp p f) (>= (degree p) 1))
+           (let ((q (irred-factor p f)))
+	     (and (polyp q f)
+	          (>= (degree q) 1)
+	          (irreduciblep q f)
+		  (pdivides q p f)))))

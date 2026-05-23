@@ -1,0 +1,32 @@
+David M. Russinoff
+david@russinoff.com
+http://www.russinoff.com
+
+This directory contains an ACL2 formalization of elementary field, a work in progress.  The books of the top-level directory are listed below.
+
+  * extensions:
+    - Mutually recursive definitions of finite field extension and the operations on fields and their polynomial rings
+    - Algebraic properties of fields and polynomials
+    - Greatest common divisor
+    - Divisibility of polynomials
+    - Irreducible polynomials
+
+  embeddings:
+    - Field homomorphisms
+    - The embedding of a field in an extension field
+    - Polynomial evaluation and factorization
+    - Primitive element of an extension
+    - Field extensions as vector spaces
+    - Minimal polynomials
+    - Embeddings and meta-embeddings of an extension field
+    - Composition of embeddings and isomorphisms
+
+  galois:
+    - Automorphism group of an extension field
+    - Artin's Lemma
+    - Characteristic of a field
+    - Formal derivative
+    - Separable polynomials
+    - Splitting fields
+    - Galois extensions
+    - Fundamental Theorem of Galois Theory
