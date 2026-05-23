@@ -1,4 +1,4 @@
-; Remora Library
+; FTY Library
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,10 +8,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "REMORA")
+(in-package "ACL2")
 
-(include-book "abstract-syntax-trees")
-
-(acl2::controlled-configuration)
+(include-book "defresult")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult integer-list-result
+  :parents (fty::fty-extensions fty::specific-types)
+  :short "Fixtype of errors and lists of natural numbers."
+  :ok integer-list
+  :pred integer-list-resultp)

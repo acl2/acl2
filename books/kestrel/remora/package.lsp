@@ -37,6 +37,9 @@
                     enable*
                     impossible
                     int
+                    integer-resultp
+                    integer-list-resultp
+                    lifix
                     lnfix
                     make-string-string-map-pair
                     make-string-string-map-quadruple

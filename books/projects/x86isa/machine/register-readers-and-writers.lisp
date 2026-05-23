@@ -59,6 +59,8 @@
 
 ;; ----------------------------------------------------------------------
 
+; This is also used for indices of XMM/YMM/ZMM registers.
+; So we should generalize the XDOC names and the documentation.
 (defsection GPR-indices
 
   :parents (register-readers-and-writers)
