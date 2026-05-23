@@ -77,13 +77,29 @@
   (:shape ((val nat-list)))
   :pred ispace-valuep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult ispace-value-result
   :short "Fixtype of ispace values and errors."
   :ok ispace-value
   :pred ispace-value-resultp
   :prepwork ((local (in-theory (enable ispace-value-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist ispace-value-list
+  :short "Fixtype of lists of ispace values."
+  :elt-type ispace-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred ispace-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-value-list-result
+  :short "Fixtype of (i) lists of ispace values and (ii) errors."
+  :ok ispace-value-list
+  :pred ispace-value-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

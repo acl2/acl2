@@ -24,7 +24,9 @@
 (local (in-theory (enable acl2::integerp-when-result-not-error
                           acl2::integer-listp-when-result-not-error
                           acl2::nat-listp-when-result-not-error
-                          acl2::nat-list-listp-when-result-not-error)))
+                          acl2::nat-list-listp-when-result-not-error
+                          ispace-valuep-when-result-not-error
+                          ispace-value-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -227,6 +229,16 @@
           (ispace-value-dim int))
    :shape (b* (((ok nats) (eval-shape ispace.shape denv)))
             (ispace-value-shape nats))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-ispace-list ((ispaces ispace-listp) (denv denvp))
+  :returns (ivals ispace-value-list-resultp)
+  :short "Evaluate a list of ispaces to a list of ispace values."
+  (b* (((when (endp ispaces)) nil)
+       ((ok ival) (eval-ispace (car ispaces) denv))
+       ((ok ivals) (eval-ispace-list (cdr ispaces) denv)))
+    (cons ival ivals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
