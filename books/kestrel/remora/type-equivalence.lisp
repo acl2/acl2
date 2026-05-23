@@ -59,7 +59,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used when encountering two product or sum type,
+    "This is used when encountering two product or sum types,
      which need to be checked for equivalence.
      As in the rules in Figure 4.9 of [thesis],
      we need to rename the bound variables in the bodies of both types
@@ -96,7 +96,7 @@
      :dim (ispace-var-case
            var2
            :dim (b* (((ispace-var-dim var)
-                      (fresh-dim-ispace-var "" used))
+                      (fresh-dim-ispace-var "_fresh_ispace_" used))
                      ((ok (string-string-map-quadruple maps))
                       (fresh-ispace-var-renaming (cdr vars1)
                                                  (cdr vars2)
@@ -110,7 +110,7 @@
              var2
              :dim (reserr nil)
              :shape (b* (((ispace-var-shape var)
-                          (fresh-shape-ispace-var "" used))
+                          (fresh-shape-ispace-var "_fresh_ispace_" used))
                          ((ok (string-string-map-quadruple maps))
                           (fresh-ispace-var-renaming (cdr vars1)
                                                      (cdr vars2)
@@ -169,7 +169,7 @@
      :atom (type-var-case
             var2
             :atom (b* (((type-var-atom var)
-                        (fresh-atom-type-var "" used))
+                        (fresh-atom-type-var "_fresh_type_" used))
                        ((ok (string-string-map-quadruple maps))
                         (fresh-type-var-renaming (cdr vars1)
                                                  (cdr vars2)
@@ -183,7 +183,7 @@
              var2
              :atom (reserr nil)
              :array (b* (((type-var-array var)
-                          (fresh-array-type-var "" used))
+                          (fresh-array-type-var "_fresh_type_" used))
                          ((ok (string-string-map-quadruple maps))
                           (fresh-type-var-renaming (cdr vars1)
                                                    (cdr vars2)
