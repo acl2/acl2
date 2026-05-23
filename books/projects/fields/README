@@ -11,7 +11,7 @@ This directory contains an ACL2 formalization of elementary field, a work in pro
     - Divisibility of polynomials
     - Irreducible polynomials
 
-  embeddings:
+  * embeddings:
     - Field homomorphisms
     - The embedding of a field in an extension field
     - Polynomial evaluation and factorization
@@ -21,7 +21,7 @@ This directory contains an ACL2 formalization of elementary field, a work in pro
     - Embeddings and meta-embeddings of an extension field
     - Composition of embeddings and isomorphisms
 
-  galois:
+  * galois:
     - Automorphism group of an extension field
     - Artin's Lemma
     - Characteristic of a field
