@@ -77,6 +77,14 @@
   (:shape ((val nat-list)))
   :pred ispace-valuep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult ispace-value-result
+  :short "Fixtype of ispace values and errors."
+  :ok ispace-value
+  :pred ispace-value-resultp
+  :prepwork ((local (in-theory (enable ispace-value-kind)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes type-values
