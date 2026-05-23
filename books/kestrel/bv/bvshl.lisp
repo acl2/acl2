@@ -166,7 +166,9 @@
 ;gen the size
 (defthm equal-of-bvshl-and-constant
   (implies (and (syntaxp (and (quotep k)
-                              (quotep k2)))
+                              (quotep k2)
+                              (quotep amt) ; prevents non-constant size for bvchop in RHS
+                              ))
                 (natp amt)
                 (< amt 32))
            (equal (equal k (bvshl 32 k2 amt))
