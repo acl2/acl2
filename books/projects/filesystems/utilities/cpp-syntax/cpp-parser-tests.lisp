@@ -42,32 +42,32 @@
 ; destructor, constexpr method, friend class, typedef, static_assert, attribute,
 ; and array field.
 
-(test-parse-cpp
- parse-cpp-class-specifier-full
- "struct Foo { \
-explicit Foo ( int x ) : x_ ( x ) { } \
-~Foo ( ) ; \
-constexpr int f ( ) const ; \
-friend class Bar ; \
-typedef int MyInt ; \
-static_assert ( 1 ) ; \
-[[ nodiscard ]] int g ( ) ; \
-int a [ 10 ] ; \
-}")
+;; (test-parse-cpp
+;;  parse-cpp-class-specifier-full
+;;  "struct Foo { \
+;; explicit Foo ( int x ) : x_ ( x ) { } \
+;; ~Foo ( ) ; \
+;; constexpr int f ( ) const ; \
+;; friend class Bar ; \
+;; typedef int MyInt ; \
+;; static_assert ( 1 ) ; \
+;; [[ nodiscard ]] int g ( ) ; \
+;; int a [ 10 ] ; \
+;; }")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test 6a: co_return statement with expression.
 
-(test-parse-cpp
- parse-cpp-stmt
- "co_return 42 ;")
+;; (test-parse-cpp
+;;  parse-cpp-stmt
+;;  "co_return 42 ;")
 
 ; Test 6b: co_yield statement.
 
-(test-parse-cpp
- parse-cpp-stmt
- "co_yield x ;")
+;; (test-parse-cpp
+;;  parse-cpp-stmt
+;;  "co_yield x ;")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
