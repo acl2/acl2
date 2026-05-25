@@ -64,6 +64,7 @@
              1
            0)))
 
+;; The overflow flag is 1 iff the sum doesn't fit in the destination
 (defthm add-of
   (equal (get-flag :of (add x86))
          (let ((sum (+ (logext 32 (rax x86))
