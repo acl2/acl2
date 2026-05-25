@@ -64,6 +64,19 @@
              1
            0)))
 
+(defthm add-of
+  (equal (get-flag :of (add x86))
+         (let ((sum (+ (logext 32 (rax x86))
+                       (logext 32 (rbx x86)))))
+           (if (or (< sum (- (expt 2 31))) ; sum too small
+                   (<= (expt 2 31) sum) ; sum too big
+                   )
+               1 ; overflow
+             0   ; no overflow
+             )))
+  :hints (("Goal" :in-theory (enable of-spec32 signed-byte-p))))
+
+
 ;; todo: more flags...
 
 ;; All memory addresses are unchanged
