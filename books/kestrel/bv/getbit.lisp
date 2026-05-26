@@ -841,3 +841,9 @@
   :hints (("Goal" :in-theory (e/d (getbit slice)
                                   (;logtail-equal-0 ; todo: loop with unsigned-byte-p-of-bvchop-bigger2
                                    )))))
+
+(defthmd evenp-becomes-equal-of-0-and-getbit-0
+  (implies (integerp x)
+           (equal (evenp x)
+                  (equal 0 (getbit 0 x))))
+  :hints (("Goal" :in-theory (enable getbit bvchop))))
