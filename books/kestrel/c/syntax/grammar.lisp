@@ -75,6 +75,7 @@
 ; (depends-on "grammar/standard-pragmas.abnf")
 ; (depends-on "grammar/standard-pragmas-c17.abnf")
 ; (depends-on "grammar/standard-pragmas-c23.abnf")
+; (depends-on "grammar/tokens.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -398,6 +399,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar tokens "tokens")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -512,6 +517,8 @@
      (c::standard-case dialect.std
                        :c17 *grammar-standard-pragmas-c17*
                        :c23 *grammar-standard-pragmas-c23*)
+     ;; tokens:
+     *grammar-tokens*
      ;; rest (TODO: modularize):
      *grammar-rest*))
 
