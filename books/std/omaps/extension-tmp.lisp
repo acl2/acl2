@@ -1,22 +1,19 @@
 (in-package "OMAP")
 
-; NOTE: make local
 (include-book "core")
-(include-book "assoc")
-(include-book "extensionality")
-(include-book "compatiblep")
-(include-book "submap")
-(include-book "update")
-(include-book "delete")
 
-; NOTE: use osets/top
-(include-book "std/osets/cardinality" :dir :system)
-(include-book "std/osets/intersect" :dir :system)
+(local (include-book "assoc"))
+(local (include-book "extensionality"))
+(local (include-book "compatiblep"))
+(local (include-book "update"))
+(local (include-book "delete"))
+
+(include-book "std/osets/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; move to assoc
-(defrule in-of-cdr-assoc-and-values-when-assoc
+(defrule in-of-cdr-assoc-when-assoc
     (implies (assoc k x)
              (set::in (cdr (assoc k x))
                       (values x)))
@@ -24,19 +21,17 @@
 
 ; move to core
 (defrule cardinality-of-values-<=-cardinality-of-keys
-    (<= (set::cardinality (values x))
-        (set::cardinality (keys x)))
-  :enable (keys values set::insert-cardinality)
+    (<= (cardinality (values x))
+        (cardinality (keys x)))
+  :enable (keys values set::expensive-rules)
   :rule-classes :linear)
 
 ; move to osets
-; NOTE: remove set:: when can
-; NOTE: keep local and disabled for now
 ; NOTE: make general, without implies
-(defrule intersect-of-insert-when-in
+(defruledl intersect-of-insert-when-in
     (implies (set::in a y)
-             (equal (set::intersect (set::insert a x) y)
-                    (set::insert a (set::intersect x y))))
+             (equal (intersect (insert a x) y)
+                    (insert a (intersect x y))))
   :enable set::expensive-rules)
 
 ; move to core?
@@ -45,22 +40,18 @@
              (not (equal k (mv-nth 0 (head x))))))
 
 ; move to core with the next theorem
-; NOTE: use set::emptyp
 (defruled rlookup-to-in-of-values
-    (iff (rlookup v x)
-         (set::in v (values x)))
-  :enable (rlookup values))
+    (equal (set::emptyp (rlookup v x))
+           (not (set::in v (values x))))
+  :enable (rlookup values set::expensive-rules))
 
 (defruled in-of-values-to-rlookup
     (equal (set::in v (values x))
-           (and (rlookup v x) t))
+           (not (set::emptyp (rlookup v x))))
   :enable (rlookup values))
 
-; still needed
-(defruled rlookup-nil-when-not-in-values
-    (implies (not (set::in v (values x)))
-             (not (rlookup v x)))
-  :enable (rlookup values))
+(theory-invariant (incompatible (:rewrite rlookup-to-in-of-values)
+                                (:rewrite in-of-values-to-rlookup)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -165,17 +156,17 @@
                     (k (ext-equal-witness x y)))
     :rule-classes :forward-chaining)
 
-  (defruledl compose-is-restrict-when-args2-identityp-helper
+  (defruledl compose-is-restrict-when-Y-identityp-helper
       (implies (identityp y)
                (equal (assoc k (compose x y))
                       (assoc k (restrict (keys y) x))))
     :enable (assoc assoc-of-restrict in-of-keys-to-assoc))
 
-  (defruled compose-is-restrict-when-args2-identityp
+  (defruled compose-is-restrict-when-Y-identityp
       (implies (identityp y)
                (equal (compose x y)
                       (restrict (keys y) x)))
-    :enable (compose-is-restrict-when-args2-identityp-helper
+    :enable (compose-is-restrict-when-Y-identityp-helper
              extensionality))
 
   (defrule self-compose-is-self-when-identityp
@@ -209,10 +200,8 @@
     (implies (and (identityp-sk x)
                   (mapp x))
              (identityp x))
-  :use (:instance identityp-sk-necc
-                            (k (mv-nth 0 (head x))))
-;  :hints ('(:use (:instance identityp-sk-necc
-;                            (k (mv-nth 0 (head x))))))
+  :hints ('(:use (:instance identityp-sk-necc
+                            (k (mv-nth 0 (head x))))))
   :enable (identityp
            identityp-sk-of-tail-when-identityp-sk))
 
@@ -264,8 +253,8 @@
            (b* (((mv & v) (head x)))
              (and (not (set::in v (values (tail x))))
                   (injectivep (tail x)))))
-       :exec (equal (set::cardinality (keys x))
-                    (set::cardinality (values x))))
+       :exec (equal (cardinality (keys x))
+                    (cardinality (values x))))
   :verify-guards nil
 
   ///
@@ -301,58 +290,81 @@
 
   (defrulel injectivep-implies-equal-cardinality-keys-values
       (implies (injectivep x)
-               (equal (set::cardinality (keys x))
-                      (set::cardinality (values x))))
-    :enable (keys values set::insert-cardinality)
+               (equal (cardinality (keys x))
+                      (cardinality (values x))))
+    :enable (keys values set::expensive-rules)
     :rule-classes :forward-chaining)
 
   (defrulel equal-cardinality-keys-values-implies-injectivep
-      (implies (equal (set::cardinality (keys x))
-                      (set::cardinality (values x)))
+      (implies (equal (cardinality (keys x))
+                      (cardinality (values x)))
                (injectivep x))
-    :enable (keys values set::insert-cardinality)
+    :enable (keys values set::expensive-rules)
     :rule-classes :type-prescription)
 
-; need to specify incompatible with the next one
   (defruled injectivep-to-cardinality-of-keys-and-values
       (equal (injectivep x)
-             (equal (set::cardinality (keys x))
-                    (set::cardinality (values x)))))
+             (equal (cardinality (keys x))
+                    (cardinality (values x)))))
 
   (defruled cardinality-of-keys-and-values-to-injectivep
-      (equal (equal (set::cardinality (keys x))
-                    (set::cardinality (values x)))
+      (equal (equal (cardinality (keys x))
+                    (cardinality (values x)))
              (injectivep x)))
+
+  (theory-invariant (incompatible (:rewrite injectivep-to-cardinality-of-keys-and-values)
+                                  (:rewrite cardinality-of-keys-and-values-to-injectivep)))
 
   (verify-guards injectivep
       :hints (("Goal" :in-theory
                       (enable cardinality-of-keys-and-values-to-injectivep))))
-
-  (defruled cardinality-of-values-and-keys-when-identityp
-      (implies (identityp x)
-               (equal (set::cardinality (values x))
-                      (set::cardinality (keys x))))
-    :enable values-is-keys-when-identityp)
 
   (defrule identityp-implies-injectivep
       (implies (identityp x)
                (injectivep x))
     :enable injectivep-to-cardinality-of-keys-and-values
     :use values-is-keys-when-identityp
-    :rule-classes :forward-chaining))
+    :rule-classes :forward-chaining)
+
+  (defrule rlookup-of-cdr-assoc-when-injectivep
+      (implies (and (injectivep x)
+                    (assoc k x))
+               (equal (rlookup (cdr (assoc k x)) x)
+                      (insert k nil)))
+    :enable (rlookup
+             in-of-values-to-rlookup))
+
+  (defruledl cardinality-of-keys-and-values-when-not-in-keys-and-values
+      (implies (and (injectivep x)
+                    (not (set::in k (keys x)))
+                    (not (set::in v (values x))))
+               (equal (cardinality (keys (update k v x)))
+                      (cardinality (values (update k v x)))))
+    :enable (injectivep-to-cardinality-of-keys-and-values
+             assoc-to-in-of-keys
+             set::expensive-rules))
+
+  (defrule injectivep-of-update-when-not-in-keys-and-values
+      (implies (and (injectivep x)
+                    (not (set::in k (keys x)))
+                    (not (set::in v (values x))))
+               (injectivep (update k v x)))
+    :use (cardinality-of-keys-and-values-when-not-in-keys-and-values
+          (:instance cardinality-of-keys-and-values-to-injectivep
+                     (x (update k v x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrulel compatiblep-implies-equal-restrict-intersect-keys
     (implies (compatiblep x y)
-             (equal (restrict (set::intersect (keys x) (keys y)) x)
-                    (restrict (set::intersect (keys x) (keys y)) y)))
+             (equal (restrict (intersect (keys x) (keys y)) x)
+                    (restrict (intersect (keys x) (keys y)) y)))
   :enable (assoc-of-restrict extensionality)
   :rule-classes :forward-chaining)
 
 ; move to core
 (defrule restrict-of-insert
-    (equal (restrict (set::insert k ks) x)
+    (equal (restrict (insert k ks) x)
            (if (assoc k x)
                (update k (cdr (assoc k x))
                        (restrict ks x))
@@ -400,20 +412,21 @@
   :use equal-of-delete-implies-equal-of-update)
 
 (defrulel equal-restrict-intersect-keys-implies-compatiblep
-    (implies (equal (restrict (set::intersect (keys x) (keys y)) x)
-                    (restrict (set::intersect (keys x) (keys y)) y))
+    (implies (equal (restrict (intersect (keys x) (keys y)) x)
+                    (restrict (intersect (keys x) (keys y)) y))
              (compatiblep x y))
   :enable (restrict
            compatiblep
-           set::intersect-insert-X
+           set::expensive-rules
+           intersect-of-insert-when-in
            assoc-of-restrict
            in-of-keys-to-assoc)
   :rule-classes :forward-chaining)
 
 (defruled compatiblep-is-equal-restrict-intersect-keys
     (equal (compatiblep x y)
-           (equal (restrict (set::intersect (keys x) (keys y)) x)
-                  (restrict (set::intersect (keys x) (keys y)) y))))
+           (equal (restrict (intersect (keys x) (keys y)) x)
+                  (restrict (intersect (keys x) (keys y)) y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -462,7 +475,20 @@
       (implies (set::in (cdr (assoc k x)) vs)
                (equal (assoc k (restrict-values vs x))
                       (assoc k x)))
-    :enable restrict-values))
+    :enable restrict-values)
+
+  (defruledl compose-is-restrict-values-when-X-identityp-helper
+      (implies (identityp x)
+               (equal (assoc k (compose x y))
+                      (assoc k (restrict-values (keys x) y))))
+    :enable (assoc assoc-of-restrict in-of-keys-to-assoc))
+
+  (defruled compose-is-restrict-values-when-X-identityp
+      (implies (identityp x)
+               (equal (compose x y)
+                      (restrict-values (keys x) y)))
+    :enable (extensionality
+             compose-is-restrict-values-when-X-identityp-helper)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -484,146 +510,90 @@
 
   ///
 
-  (defcong mequiv equal (inverse x) 1))
+  (defcong mequiv equal (inverse x) 1)
 
-(defrule keys-of-inverse-is-values
-    (equal (keys (inverse x))
-           (values x))
-  :enable (inverse values))
+  (defrule keys-of-inverse-is-values
+      (equal (keys (inverse x))
+             (values x))
+    :enable values)
 
-(defrule values-of-inverse-is-keys-when-injectivep
-    (implies (injectivep x)
-             (equal (values (inverse x))
-                    (keys x)))
-  :enable (inverse assoc-to-in-of-keys))
+  (defrule values-of-inverse-is-keys-when-injectivep
+      (implies (injectivep x)
+               (equal (values (inverse x))
+                      (keys x)))
+    :enable assoc-to-in-of-keys)
 
-;;;;;
+  (defrule inverse-implies-injectivep
+      (implies (injectivep x)
+               (injectivep (inverse x)))
+    :enable (injectivep
+             in-of-keys-to-assoc)
+    :rule-classes :type-prescription)
 
-; NOTE: might want to prove something stronger than
-; values-of-update-when-not-assoc
+  (defrule not-assoc-of-inverse-when-not-in-values
+      (implies (and (injectivep x)
+                    (not (set::in v (values x))))
+               (not (assoc v (inverse x))))
+    :enable assoc-to-in-of-keys)
 
-(skip-proofs
-(defruled l1
-    (implies (set::in v (values (delete k x)))
-             (set::in v (values x))))
-)
+  (defrulel assoc-of-inverse-when-assoc
+      (implies (and (injectivep x)
+                    (assoc v x)
+                    (equal (cdr (assoc v x)) k))
+               (equal (assoc k (inverse x))
+                      (cons k v)))
+    :enable values
+    :use equal-val-implies-equal-key-when-injectivep)
 
-(skip-proofs
-(defrule values-of-update
-    (equal (values (update k v x))
-           (set::insert v (values (delete k x))))
-  :enable (values delete))
-)
+  (defrule injectivep-implies-not-rlookup-head-val-tail
+      (implies (injectivep x)
+               (set::emptyp (rlookup (mv-nth 1 (head x))
+                                     (tail x))))
+    :enable rlookup-to-in-of-values)
 
-(skip-proofs
-(defruledl cardinality-of-keys-and-values-when-injectivep-and-not-in-values
-    (implies (and (injectivep x)
-                  (not (set::in v (values x))))
-             (equal (set::cardinality (keys (update k v x)))
-                    (set::cardinality (values (update k v x)))))
-  :enable (injectivep-to-cardinality-of-keys-and-values
-           assoc-to-in-of-keys
-           set::expensive-rules
-;           l1
-           )
-  :do-not-induct t
-  :cases ((assoc k x)))
-)
+  (defrule assoc-of-inverse
+      (implies (injectivep x)
+               (equal (assoc k (inverse x))
+                      (and (set::in k (values x))
+                           (cons k (set::head (rlookup k x))))))
+    :enable (rlookup values set::expensive-rules))
 
-(defrule injectivep-update-when-not-in-values
-    (implies (and (injectivep x)
-                  (not (set::in v (values x))))
-             (injectivep (update k v x)))
-  :use (cardinality-of-keys-and-values-when-injectivep-and-not-in-values
-        (:instance cardinality-of-keys-and-values-to-injectivep
-                   (x (update k v x)))))
+  (defrule rlookup-of-update-when-not-assoc
+      (implies (not (assoc k x))
+               (equal (rlookup v2 (update k v1 x))
+                      (if (equal v2 v1)
+                          (insert k (rlookup v2 x))
+                        (rlookup v2 x))))
+    :enable rlookup
+    :expand (rlookup v2 (update k v1 x)))
 
-(defrule inverse-implies-injectivep
-    (implies (injectivep x)
-             (injectivep (inverse x)))
-  :enable (injectivep
-           inverse
-           in-of-keys-to-assoc)
-  :rule-classes :type-prescription)
+  (defruledl assoc-of-inverse-inverse
+      (implies (injectivep x)
+               (equal (assoc k (inverse (inverse x)))
+                      (assoc k x)))
+    :enable (injectivep
+             set::expensive-rules
+             rlookup-to-in-of-values
+             in-of-keys-to-assoc))
 
-;;;;;
+  (defrule inverse-inverse-when-injectivep
+      (implies (and (injectivep x)
+                    (mapp x))
+               (equal (inverse (inverse x)) x))
+    :enable (assoc-of-inverse-inverse
+             extensionality))
 
-(defrule not-assoc-of-inverse-when-not-in-values
-    (implies (and (injectivep x)
-                  (not (set::in v (values x))))
-             (not (assoc v (inverse x))))
-  :enable assoc-to-in-of-keys)
+  (defruledl assoc-of-compose-inverse
+      (implies (and (injectivep x)
+                    (assoc k (compose (inverse x) x)))
+               (equal (assoc k (compose (inverse x) x))
+                      (cons k k))))
 
-(defrulel assoc-of-inverse-when-assoc
-    (implies (and (injectivep x)
-                  (assoc v x)
-                  (equal (cdr (assoc v x)) k))
-             (equal (assoc k (inverse x))
-                    (cons k v)))
-  :enable (inverse values)
-  :use equal-val-implies-equal-key-when-injectivep)
-
-(defrule injectivep-implies-not-rlookup-head-val-tail
-    (implies (injectivep x)
-             (not (rlookup (mv-nth 1 (head x))
-                           (tail x))))
-  :enable rlookup-to-in-of-values)
-
-(defrule assoc-of-inverse
-    (implies (injectivep x)
-             (equal (assoc k (inverse x))
-                    (and (set::in k (values x))
-                         (cons k (set::head (rlookup k x))))))
-  :enable (inverse rlookup values set::insert set::head))
-
-(defrule rlookup-of-update-when-not-assoc
-    (implies (not (assoc k x))
-             (equal (rlookup v2 (update k v1 x))
-                    (if (equal v2 v1)
-                        (set::insert k (rlookup v2 x))
-                      (rlookup v2 x))))
-  :enable rlookup
-  :expand (rlookup v2 (update k v1 x)))
-
-(defruledl assoc-of-inverse-inverse
-    (implies (injectivep x)
-             (equal (assoc k (inverse (inverse x)))
-                    (assoc k x)))
-  :enable (injectivep inverse set::insert
-                      set::head
-;                      in-of-values-to-rlookup
-;                      rlookup-to-in-of-values
-                      rlookup-nil-when-not-in-values
-                      in-of-keys-to-assoc
-                      ))
-
-(defrule inverse-inverse-when-injectivep
-    (implies (and (injectivep x)
-                  (mapp x))
-             (equal (inverse (inverse x)) x))
-  :enable (assoc-of-inverse-inverse
-           extensionality))
-
-; move to injectivep
-(defrule rlookup-of-cdr-assoc-when-injectivep
-    (implies (and (injectivep x)
-                  (assoc k x))
-             (equal (rlookup (cdr (assoc k x)) x)
-                    (set::insert k nil)))
-  :enable (injectivep
-           rlookup
-           in-of-values-to-rlookup))
-
-(defrulel assoc-of-compose-inverse
-    (implies (and (injectivep x)
-                  (assoc k (compose (inverse x) x)))
-             (equal (assoc k (compose (inverse x) x))
-                    (cons k k))))
-
-(defrule identityp-compose-with-inverse
-    (implies (injectivep x)
-             (identityp (compose (inverse x) x)))
-  :enable pick-a-point-identityp)
+  (defrule identityp-compose-with-inverse
+      (implies (injectivep x)
+               (identityp (compose (inverse x) x)))
+    :enable (assoc-of-compose-inverse
+             pick-a-point-identityp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
