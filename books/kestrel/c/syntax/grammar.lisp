@@ -76,6 +76,7 @@
 ; (depends-on "grammar/standard-pragmas-c17.abnf")
 ; (depends-on "grammar/standard-pragmas-c23.abnf")
 ; (depends-on "grammar/tokens.abnf")
+; (depends-on "grammar/lexemes.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -403,6 +404,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar lexemes "lexenes")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -519,6 +524,8 @@
                        :c23 *grammar-standard-pragmas-c23*)
      ;; tokens:
      *grammar-tokens*
+     ;; lexemes:
+     *grammar-lexemes*
      ;; rest (TODO: modularize):
      *grammar-rest*))
 

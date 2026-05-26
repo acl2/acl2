@@ -18,17 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Lexemes
-
-; These are the lexical units after preprocessing.
-; [C17] and [C23] have no rule for lexemes, but our grammar does.
-
-lexeme = token
-       / comment
-       / white-space-character
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Expressions [C17:A.2.1]
 
 ; As a temporary C23 extension,
