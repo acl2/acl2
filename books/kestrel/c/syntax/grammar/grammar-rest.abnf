@@ -394,9 +394,15 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; which should therefore have the syntax '__attribute__((stdcall))',
 ; but apparently it is also accepted by itself, with two underscores in front,
 ; but only in certain places (not everywhere normal attributes are allowed).
+; This seems to be a MSVC (Microsoft Visual C++) extension
+; (https://learn.microsoft.com/en-us/cpp/cpp/stdcall),
+; apparently adopted by GCC.
 
 ; As a GCC extension,
 ; we allow the '__declspec' attribute syntax as a declaration specifier.
+; This seems to be a MSVC (Microsoft Visual C++) extension
+; (https://learn.microsoft.com/en-us/cpp/cpp/declspec),
+; apparently adopted by GCC.
 
 ; As a GCC extension,
 ; we include type qualifiers for x86 named address spaces
