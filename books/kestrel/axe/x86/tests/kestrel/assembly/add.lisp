@@ -77,8 +77,45 @@
              )))
   :hints (("Goal" :in-theory (enable of-spec32 signed-byte-p))))
 
+;; todo: move
+(defthm pf-spec32-alt-def
+  (equal (pf-spec32 res)
+         (if (evenp (bvcount 8 res))
+             1
+           0))
+  :hints (("Goal" :in-theory (enable pf-spec32 acl2::bvcount-becomes-logcount
+                                     acl2::evenp-becomes-equal-of-0-and-getbit-0))))
 
-;; todo: more flags...
+;; The parity flag considers only the 8 least significant bits and is 1 iff
+;; they contain an even number of 1s.
+(defthm add-pf
+  (equal (get-flag :pf (add x86))
+         (let ((sum (+ (rax x86)
+                       (rbx x86))))
+           ;; note that this only considers 8 bits:
+           (if (evenp (bvcount 8 sum))
+               1
+             0)))
+  :hints (("Goal" :in-theory (enable pf-spec32-alt-def bvplus))))
+
+;; The sign flag is just the sign bit of the result.
+(defthm add-sf
+  (equal (get-flag :sf (add x86))
+         (let ((sum (+ (rax x86)
+                       (rbx x86))))
+           (getbit 31 sum)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+;; The auxiliary carry flag is 1 iff there is a carry from bit 3 into bit 4
+;; (that is, the sum of the two low nibbles is greater than 15):
+(defthm add-af
+  (equal (get-flag :af (add x86))
+         (if (> (+ (bvchop 4 (rax x86))
+                   (bvchop 4 (rbx x86)))
+                15)
+             1
+           0))
+  :hints (("Goal" :in-theory (enable bvplus bvlt))))
 
 ;; All memory addresses are unchanged
 (defthm add-memory-unchanged
