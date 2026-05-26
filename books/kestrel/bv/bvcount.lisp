@@ -120,15 +120,6 @@
                    (floor (bvchop (+ 1 size) x) 2)))
    :hints (("Goal" :in-theory (enable bvchop)))))
 
-(local
- ;; todo: move
- (defthm evenp-of-bvchop-2
-   (implies (and (posp size)
-                 (integerp x))
-            (equal (evenp (bvchop size x))
-                   (evenp x)))
-   :hints (("Goal" :in-theory (enable bvchop)))))
-
 (defthmd logcount-split-high-bit
   (implies (and (natp size)
                 (unsigned-byte-p size x))
