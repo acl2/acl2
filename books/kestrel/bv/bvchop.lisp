@@ -888,10 +888,12 @@
            :in-theory (disable <-of-bvchop-and-bvchop-same))))
 
 (defthm evenp-of-bvchop
-  (implies (and (< 1 n)
-                (integerp n))
-           (equal (evenp (bvchop n x))
-                  (equal 0 (bvchop 1 x))))
+  (implies (natp size)
+           (equal (evenp (bvchop size x))
+                  (if (or (equal 0 size)
+                          (not (integerp x)))
+                      t
+                    (evenp x))))
   :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm bvchop-of-sum-expt
