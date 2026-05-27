@@ -117,6 +117,13 @@
            0))
   :hints (("Goal" :in-theory (enable bvplus bvlt))))
 
+(defthm add-other-flags
+  (implies (and (member-equal flag *flags*)
+                (not (member-eq flag *standard-flags*)))
+           (equal (get-flag flag (add x86))
+                  (get-flag flag x86)))
+  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+
 ;; All memory addresses are unchanged
 (defthm add-memory-unchanged
   (equal (memi address (add x86))
