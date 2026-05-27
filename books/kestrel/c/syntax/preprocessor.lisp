@@ -3343,8 +3343,7 @@
     "This is called just after the @('error') identifier has been parsed.")
    (xdoc::p
     "We read the rest of the directive.
-     If errors and warnings must be ignored, we do nothing.
-     Otherwise, we return an error message that contains the rest of the line,
+     We return an error message that contains the rest of the line,
      in printed form (using the preprocessor printer).
      This could be refined in the future.")
    (xdoc::p
@@ -3354,8 +3353,6 @@
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
        ((erp lexemes ppstate) (read-to-end-of-line ppstate))
-       ((when (ppoptions->no-errors/warnings (ppstate->options ppstate)))
-        (retok ppstate))
        (bytes (plexemes-to-bytes lexemes))
        (string (acl2::nats=>string bytes)))
     (reterr (msg "#error: ~s0" string)))
@@ -3377,7 +3374,7 @@
      otherwise we return an error.")
    (xdoc::p
     "We read the rest of the directive.
-     If errors and warnings must be ignored, we do nothing.
+     If warnings must be ignored, we do nothing.
      Otherwise, we use the printer to turn the lexemes in the rest of the line
      into an ACL2 string, which we print as comment output.
      Unlike @(tsee pproc-error), we do not return an error,
@@ -3398,7 +3395,7 @@
         (reterr (msg "#warning directive disallowed in ~
                       C17 without GCC or Clang extensions.")))
        ((erp lexemes ppstate) (read-to-end-of-line ppstate))
-       ((when (ppoptions->no-errors/warnings (ppstate->options ppstate)))
+       ((when (ppoptions->no-warnings (ppstate->options ppstate)))
         (retok ppstate))
        (bytes (plexemes-to-bytes lexemes))
        (string (acl2::nats=>string bytes))
@@ -4669,7 +4666,13 @@
        if they are equivalent modulo the current macro context.
        If the @('#include') can be preserved,
        we return a singleton list with one group part AST,
-       for the @('#include') directive itself.")
+       for the @('#include') directive itself.
+       If the stand-alone preprocessing of the included file gives an error,
+       which may happen if a @('#error') directive is encountered
+       (which perhaps is not encountered when the file
+       is instead preprocessed in the context of the including file,
+       due to conditionals in the included file),
+       then we do not preserve the @('#include').")
      (xdoc::p
       "However, if the options indicate full expansion,
        we do not re-preprocess the file,
@@ -4717,7 +4720,7 @@
                               (list (ppart-line closing-line))))
                   (pfile->parts pfile))))
             (retok pparts pfiles resolved-includes ppstate state)))
-         ((erp standalone-pfile pfiles resolved-includes state)
+         ((mv erp standalone-pfile pfiles resolved-includes state)
           (b* (((reterr) (irr-pfile) nil nil state)
                (name+pfile (assoc-equal resolved-file pfiles)))
             (if name+pfile
@@ -4735,18 +4738,18 @@
                                 resolved-includes
                                 pending
                                 (macro-init (ienv->dialect ienv))
-                                (change-ppoptions options
-                                                  :no-errors/warnings t)
+                                (change-ppoptions options :no-warnings t)
                                 ienv
                                 state
                                 (1- limit)))
                    (pfiles (acons resolved-file pfile pfiles)))
                 (retok pfile pfiles resolved-includes state)))))
          (preserve-include-p
-          (compare-pfiles pfile
-                          standalone-pfile
-                          (ppstate->macros ppstate)
-                          (ppstate->ienv ppstate)))
+          (and (not erp)
+               (compare-pfiles pfile
+                               standalone-pfile
+                               (ppstate->macros ppstate)
+                               (ppstate->ienv ppstate))))
          (ppstate (update-ppstate->macros macros ppstate))
          (pparts (if preserve-include-p
                      (list

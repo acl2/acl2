@@ -36,6 +36,15 @@
             run-until-return
             run-subroutine)))
 
+(defun symbolic-execution-rules32-with-tracing ()
+  (declare (xargs :guard t))
+  (append (symbolic-execution-rules32-common)
+          '(run-until-return-with-tracing-aux-base-axe
+            run-until-return-with-tracing-aux-opener-axe
+            run-until-return-with-tracing-aux-of-if-arg2
+            run-until-return-with-tracing
+            run-subroutine-with-tracing)))
+
 (defun symbolic-execution-rules-with-stop-pcs32 ()
   (declare (xargs :guard t))
   (append (symbolic-execution-rules32-common)
@@ -43,6 +52,16 @@
             run-until-return-or-reach-pc-aux-opener-axe
             run-until-return-or-reach-pc-aux-of-if-arg2
             run-until-return-or-reach-pc
+            acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
+            )))
+
+(defun symbolic-execution-rules-with-stop-pcs32-with-tracing ()
+  (declare (xargs :guard t))
+  (append (symbolic-execution-rules32-common)
+          '(run-until-return-with-tracing-or-reach-pc-aux-base-axe
+            run-until-return-with-tracing-or-reach-pc-aux-opener-axe
+            run-until-return-with-tracing-or-reach-pc-aux-of-if-arg2
+            run-until-return-with-tracing-or-reach-pc
             acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
             )))
 
@@ -107,27 +126,62 @@
             arm::cmp-register-shifted-register-argsp
 
             ;; Additional rules needed for the instruction semantics:
+            arm::adr-common
+            arm::adr-encoding-a1-core
+            arm::adr-encoding-a2-core
+            arm::bfc-core
             arm::bl-blx-common ; todo: add some of these to the A package?
             arm::blx-core
+            arm::ldm-core
+            arm::ldm-loop-base
+            arm::ldm-loop-unroll
+            arm::ldr-literal-core
+            arm::ldrb-literal-core
+            arm::ldrbt-common
+            arm::ldrbt-encoding-a1-core
+            arm::ldrbt-encoding-a2-core
+            arm::ldrd-literal-core
+            arm::ldrh-literal-core
+            arm::ldrht-common
+            arm::ldrht-encoding-a1-core
+            arm::ldrht-encoding-a2-core
+            arm::ldrsb-literal-core
+            arm::ldrsbt-common
+            arm::ldrsbt-encoding-a1-core
+            arm::ldrsbt-encoding-a2-core
+            arm::ldrsh-literal-core
+            arm::ldrsht-common
+            arm::ldrsht-encoding-a1-core
+            arm::ldrsht-encoding-a2-core
+            arm::ldrt-common
+            arm::ldrt-encoding-a1-core
+            arm::ldrt-encoding-a2-core
             arm::mov-common
             arm::mov-register-core
             arm::nop-core
+            arm::pop-common
             arm::pop-encoding-a1-core
             arm::pop-encoding-a2-core
-            arm::pop-common
             arm::pop-loop-base
             arm::pop-loop-unroll
+            arm::push-common
             arm::push-encoding-a1-core
             arm::push-encoding-a2-core
-            arm::push-common
             arm::push-loop-base
             arm::push-loop-unroll
-            arm::ldm-loop-base
-            arm::ldm-loop-unroll
-            arm::ldm-core
-            arm::ldr-literal-core
             arm::stm-loop-base
-            arm::stm-loop-unroll)))
+            arm::stm-loop-unroll
+            arm::stmdb-core
+            arm::strbt-common
+            arm::strbt-encoding-a1-core
+            arm::strbt-encoding-a2-core
+            arm::strht-common
+            arm::strht-encoding-a1-core
+            arm::strht-encoding-a2-core
+            arm::strt-common
+            arm::strt-encoding-a1-core
+            arm::strt-encoding-a2-core
+            arm::tst-immediate-core)))
 
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
@@ -434,6 +488,7 @@
      arm::set-reg-of-set-reg-diff-2
 
      arm::decodeimmshift
+     arm::decoderegshift
      arm::unsigned-byte-p-of-mv-nth-0-of-AddWithCarry ; could drop these if the replacement rule always fires
      arm::unsigned-byte-p-of-mv-nth-1-of-AddWithCarry
      arm::unsigned-byte-p-of-mv-nth-2-of-AddWithCarry

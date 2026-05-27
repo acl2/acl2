@@ -39,7 +39,7 @@
          (options (make-ppoptions :full-expansion nil
                                   :keep-comments t
                                   :trace-expansion t
-                                  :no-errors/warnings nil))
+                                  :no-warnings nil))
          ((mv erp ppstate)
           (ppstate-for-file ""
                             (if (stringp ,input)
