@@ -71,6 +71,10 @@
              (natp x))
     :rule-classes (:rewrite :compound-recognizer))
 
+  (defruled integerp-when-ucharp
+    (implies (ucharp x)
+             (integerp x)))
+
   (defruled ucharp-lower-bound
     (implies (ucharp x)
              (>= x 0))
