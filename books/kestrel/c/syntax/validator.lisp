@@ -1228,14 +1228,15 @@
      the literal may have type @('wchar_t') or @('char16_t') or @('char32_t').
      Since we do not yet model the values of these type definitions,
      we return an array type with an unknown element type in these cases."))
-  (b* (((reterr) (make-type-array :of (irr-type)))
+  (b* (((reterr) (make-type-array :of (irr-type) :size nil))
        ((stringlit strlit) strlit)
        ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
     (retok (make-type-array
             :of (if (or (not strlit.prefix?)
                         (eprefix-case strlit.prefix? :locase-u8))
                     (type-char)
-                  (type-unknown)))))
+                  (type-unknown))
+            :size nil))) ; TODO: size
 
   ///
 
@@ -1283,7 +1284,7 @@
      This covers both the case of well-defined wide string literals
      (whose types we do not yet model),
      and the implementation-defined mixed string encoding."))
-  (b* (((reterr) (make-type-array :of (irr-type)))
+  (b* (((reterr) (make-type-array :of (irr-type) :size nil))
        ((unless (consp strlits))
         (retmsg$ "There must be at least one string literal."))
        ((erp prefix? conflictp) (valid-stringlit-list-loop strlits ienv))
@@ -1298,7 +1299,8 @@
             :of (if (or conflictp
                         (and prefix? (not (eprefix-case prefix? :locase-u8))))
                     (type-unknown)
-                  (type-char)))))
+                  (type-char))
+            :size nil))) ; TODO: size
   :prepwork
   ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))
      :returns (mv (erp maybe-msgp)
@@ -5399,7 +5401,7 @@
                 types
                 vstate))
        :array
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr? index-type? more-types vstate)
@@ -5420,7 +5422,7 @@
                 (set::union types more-types)
                 vstate))
        :array-static1
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr index-type more-types vstate)
@@ -5440,7 +5442,7 @@
                 (set::union types more-types)
                 vstate))
        :array-static2
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr index-type more-types vstate)
@@ -5460,7 +5462,7 @@
                 (set::union types more-types)
                 vstate))
        :array-star
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor
               dirdeclor.declor fundef-params-p type vstate)))
@@ -5657,7 +5659,7 @@
                 types
                 vstate))
        :array
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size? index-type? more-types vstate)
@@ -5678,7 +5680,7 @@
                 (set::union types more-types)
                 vstate))
        :array-static1
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size index-type more-types vstate)
@@ -5698,7 +5700,7 @@
                 (set::union types more-types)
                 vstate))
        :array-static2
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size index-type more-types vstate)
@@ -5718,7 +5720,7 @@
                 (set::union types more-types)
                 vstate))
        :array-star
-       (b* ((type (make-type-array :of type))
+       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate)))
          (retok (dirabsdeclor-array-star new-declor?)
@@ -7835,7 +7837,8 @@
        ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
        (vstate (vstate-add-ord (ident "__func__")
                               (make-valid-ord-info-objfun
-                               :type (make-type-array :of (type-char))
+                               :type (make-type-array :of (type-char)
+                                                      :size nil) ; TODO: size
                                :linkage (linkage-none)
                                :defstatus (valid-defstatus-defined)
                                :uid uid)
@@ -7844,7 +7847,8 @@
        (vstate (if (ienv->gcc/clang ienv)
                   (vstate-add-ord (ident "__FUNCTION__")
                                   (make-valid-ord-info-objfun
-                                   :type (make-type-array :of (type-char))
+                                   :type (make-type-array :of (type-char)
+                                                          :size nil) ; TODO: size
                                    :linkage (linkage-none)
                                    :defstatus (valid-defstatus-defined)
                                    :uid uid)
@@ -7854,7 +7858,8 @@
        (vstate (if (ienv->gcc/clang ienv)
                   (vstate-add-ord (ident "__PRETTY_FUNCTION__")
                                   (make-valid-ord-info-objfun
-                                   :type (make-type-array :of (type-char))
+                                   :type (make-type-array :of (type-char)
+                                                          :size nil) ; TODO: size
                                    :linkage (linkage-none)
                                    :defstatus (valid-defstatus-defined)
                                    :uid uid)

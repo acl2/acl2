@@ -71,6 +71,8 @@
                 packn-pos
                 pos
                 pos-fix
+                pos-option
+                pos-optionp
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr
