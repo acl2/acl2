@@ -108,6 +108,21 @@
     arm::cmp-carry
     arm::cmp-overflow
 
+    arm::eq-condition
+    arm::ne-condition
+    arm::cs-condition
+    arm::cc-condition
+    arm::mi-condition
+    arm::pl-condition
+    arm::vs-condition
+    arm::vc-condition
+    arm::hi-condition
+    arm::ls-condition
+    arm::ge-condition
+    arm::lt-condition
+    arm::gt-condition
+    arm::le-condition
+
     arm::update-error ; todo: more
     ))
 
