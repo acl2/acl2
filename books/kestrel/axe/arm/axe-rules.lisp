@@ -11,6 +11,7 @@
 (in-package "A") ; or use ARM package for consistency with other rules?
 
 (include-book "run-until-return")
+(include-book "run-until-return-with-tracing")
 (include-book "../axe-syntax-functions")
 (include-book "../known-booleans")
 
@@ -47,6 +48,40 @@
            (equal (run-until-return-or-reach-pc-aux call-stack-height stop-pcs arm)
                   ;; todo: decoding is done here twice (in update-call-stack-height and step):
                   (run-until-return-or-reach-pc-aux (update-call-stack-height call-stack-height arm) stop-pcs (step arm)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd run-until-return-with-tracing-aux-base-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if arm dag-array)))
+                (< call-stack-height 0))
+           (equal (run-until-return-with-tracing-aux call-stack-height arm trace)
+                  arm)))
+
+(defthmd run-until-return-with-tracing-aux-opener-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if arm dag-array)))
+                (not (< call-stack-height 0)))
+           (equal (run-until-return-with-tracing-aux call-stack-height arm trace)
+                  ;; todo: decoding is done here twice (in update-call-stack-height and step):
+                  (run-until-return-with-tracing-aux (update-call-stack-height call-stack-height arm) (step arm) (append trace (list (reg *pc* arm)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd run-until-return-with-tracing-or-reach-pc-aux-base-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if arm dag-array)))
+                (or (< call-stack-height 0)
+                    (memberp (reg *pc* arm) ; (pc arm)
+                             stop-pcs)))
+           (equal (run-until-return-with-tracing-or-reach-pc-aux call-stack-height stop-pcs arm trace)
+                  arm)))
+
+(defthmd run-until-return-with-tracing-or-reach-pc-aux-opener-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if arm dag-array)))
+                (not (or (< call-stack-height 0)
+                         (memberp (reg *pc* arm) ; (pc arm)
+                                  stop-pcs))))
+           (equal (run-until-return-with-tracing-or-reach-pc-aux call-stack-height stop-pcs arm trace)
+                  ;; todo: decoding is done here twice (in update-call-stack-height and step):
+                  (run-until-return-with-tracing-or-reach-pc-aux (update-call-stack-height call-stack-height arm) stop-pcs (step arm) (append trace (list (reg *pc* arm)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

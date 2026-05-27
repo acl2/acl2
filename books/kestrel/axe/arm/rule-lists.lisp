@@ -36,6 +36,15 @@
             run-until-return
             run-subroutine)))
 
+(defun symbolic-execution-rules32-with-tracing ()
+  (declare (xargs :guard t))
+  (append (symbolic-execution-rules32-common)
+          '(run-until-return-with-tracing-aux-base-axe
+            run-until-return-with-tracing-aux-opener-axe
+            run-until-return-with-tracing-aux-of-if-arg2
+            run-until-return-with-tracing
+            run-subroutine-with-tracing)))
+
 (defun symbolic-execution-rules-with-stop-pcs32 ()
   (declare (xargs :guard t))
   (append (symbolic-execution-rules32-common)
@@ -43,6 +52,16 @@
             run-until-return-or-reach-pc-aux-opener-axe
             run-until-return-or-reach-pc-aux-of-if-arg2
             run-until-return-or-reach-pc
+            acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
+            )))
+
+(defun symbolic-execution-rules-with-stop-pcs32-with-tracing ()
+  (declare (xargs :guard t))
+  (append (symbolic-execution-rules32-common)
+          '(run-until-return-with-tracing-or-reach-pc-aux-base-axe
+            run-until-return-with-tracing-or-reach-pc-aux-opener-axe
+            run-until-return-with-tracing-or-reach-pc-aux-of-if-arg2
+            run-until-return-with-tracing-or-reach-pc
             acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
             )))
 
