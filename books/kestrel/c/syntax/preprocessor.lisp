@@ -3626,8 +3626,7 @@
                            (plexeme-fix newline-at-end)))
        (closing-line (list (plexeme-line-comment closing-codes)
                            (plexeme-fix newline-at-end))))
-    (mv opening-line closing-line))
-  :guard-hints (("Goal" :in-theory (enable nat-listp-when-uchar-listp))))
+    (mv opening-line closing-line)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

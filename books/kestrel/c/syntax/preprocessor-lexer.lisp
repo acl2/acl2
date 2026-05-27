@@ -1536,7 +1536,7 @@
                                    (current-pos positionp)
                                    (ppstate ppstatep))
      :returns (mv erp
-                  (content nat-listp)
+                  (content uchar-listp)
                   (last-pos positionp)
                   (new-ppstate ppstatep))
      :parents nil

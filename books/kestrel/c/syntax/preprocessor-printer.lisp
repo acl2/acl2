@@ -203,15 +203,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-line-comment ((content nat-listp) (bytes byte-listp))
+(define pprint-line-comment ((content uchar-listp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a line comment after preprocessing."
   (b* ((bytes (pprint-astring "//" bytes))
        ((unless (grammar-character-listp content))
         (raise "Internal error: bad line comment content ~x0."
-               (nat-list-fix content)))
+               (uchar-list-fix content)))
        (bytes (pprint-chars content bytes)))
     bytes)
+  :guard-hints (("Goal" :in-theory (enable nat-listp-when-uchar-listp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
