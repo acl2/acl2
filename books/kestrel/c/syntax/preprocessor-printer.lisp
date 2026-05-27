@@ -416,6 +416,7 @@
                (raise "Internal error: bad character code ~x0." schar.code)))
            (pprint-char schar.code bytes))
    :escape (pprint-escape schar.escape bytes))
+  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

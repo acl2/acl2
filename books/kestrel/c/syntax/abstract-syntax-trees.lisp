@@ -848,11 +848,9 @@
    (xdoc::p
     "This corresponds to @('s-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We do not capture the restriction that the characters cannot be
+    "We do not capture the restriction that the characters cannot be
      double quote, backslash, or new-line."))
-  (:char ((code nat)))
+  (:char ((code uchar)))
   (:escape ((escape escape)))
   :pred s-char-p
   :layout :fulltree)

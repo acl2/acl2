@@ -1164,7 +1164,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-s-char ((schar s-char-p) (prefix? eprefix-optionp) (ienv ienvp))
-  :returns (mv (erp maybe-msgp) (code natp))
+  :returns (mv (erp maybe-msgp)
+               (code natp
+                     :hints (("Goal" :in-theory (enable natp-when-ucharp)))))
   :short "Validate a character of a string literal."
   :long
   (xdoc::topstring
@@ -1197,7 +1199,9 @@
                             a character constant with prefix ~x2."
                            schar.code max (eprefix-option-fix prefix?)))
                  (t (retok schar.code)))
-     :escape (valid-escape schar.escape max))))
+     :escape (valid-escape schar.escape max)))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-ucharp
+                                           rationalp-when-ucharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

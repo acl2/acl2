@@ -95,6 +95,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled ucharp-of-char-code
+  :short "The code of an ACL2 character is a Unicode character."
+  (ucharp (char-code char))
+  :enable ucharp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::deffixer uchar-fix
   :short "Fixer for @(tsee ucharp)."
   :pred ucharp

@@ -3120,7 +3120,8 @@
                      (s-char-escape->escape schar))))
        (qchar (q-char (s-char-char->code schar)))
        ((erp qchars) (s-char-list-to-q-char-list (cdr schars))))
-    (retok (cons qchar qchars))))
+    (retok (cons qchar qchars)))
+  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3143,7 +3144,8 @@
                      (s-char-escape->escape schar))))
        (hchar (h-char (s-char-char->code schar)))
        ((erp hchars) (s-char-list-to-h-char-list (cdr schars))))
-    (retok (cons hchar hchars))))
+    (retok (cons hchar hchars)))
+  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
