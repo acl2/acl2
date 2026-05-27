@@ -3663,7 +3663,7 @@
             (items trans-item-list)
             (elifs hash-elif-list)
             (else hash-else-option)))
-    (:line-comment ((content nat-listp)))
+    (:line-comment ((content uchar-list)))
     :pred trans-itemp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
