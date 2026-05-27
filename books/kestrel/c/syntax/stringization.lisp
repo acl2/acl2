@@ -335,6 +335,7 @@
    :horizontal-tab (raise "Internal error: horizontal tab.")
    :vertical-tab (raise "Internal error: vertical tab.")
    :form-feed (raise "Internal error: form feed."))
+  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

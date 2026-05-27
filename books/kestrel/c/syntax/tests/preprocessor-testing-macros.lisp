@@ -68,7 +68,7 @@
          (options (make-ppoptions :full-expansion ,full-expansion
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
-                                  :no-errors/warnings nil))
+                                  :no-warnings nil))
          (ienv (change-ienv (ienv-default) :dialect dialect))
          ((mv erp fileset & state) (preprocess files
                                                base-dir
@@ -125,7 +125,7 @@
          (options (make-ppoptions :full-expansion ,full-expansion
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
-                                  :no-errors/warnings nil))
+                                  :no-warnings nil))
          (ienv (change-ienv (ienv-default) :dialect dialect))
          ((mv erp fileset & state) (preprocess files
                                                base-dir
@@ -246,11 +246,11 @@
          (options-preserve (make-ppoptions :full-expansion nil
                                            :keep-comments ,keep-comments
                                            :trace-expansion ,trace-expansion
-                                           :no-errors/warnings nil))
+                                           :no-warnings nil))
          (options-expand (make-ppoptions :full-expansion t
                                          :keep-comments ,keep-comments
                                          :trace-expansion nil
-                                         :no-errors/warnings nil))
+                                         :no-warnings nil))
          ;; Initial preprocessing.
          ((mv erp fileset-initial & state)
           (preprocess files base-dir include-dirs options-preserve ienv state))
@@ -323,7 +323,7 @@
          (options (make-ppoptions :full-expansion ,full-expansion
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
-                                  :no-errors/warnings nil))
+                                  :no-warnings nil))
          (ienv (change-ienv (ienv-default) :dialect dialect))
          ((mv erp fileset & state) (preprocess files
                                                base-dir

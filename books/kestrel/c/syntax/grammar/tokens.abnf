@@ -1,0 +1,35 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains the grammar rules for tokens [C17:6.4/1] [C23:6.4.1],
+; which are common to all the C dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Since our preprocessor may preserve certain #include directives,
+; we consider header names as tokens
+; (we need nothing special for the '#include' part,
+; which is just the punctuator '#' followed by the 'include' identifier,
+; possibly with intervening white space and comments between them).
+
+token = keyword
+      / identifier
+      / constant
+      / string-literal
+      / punctuator
+      / header-name
+
+; The differences between tokens and preprocessing tokens are that
+; some identifiers become keywords,
+; preprocessing numbers become integer or floating constants,
+; which are all constants together with character constants,
+; and stray characters, and universal character names in C23, disappear.

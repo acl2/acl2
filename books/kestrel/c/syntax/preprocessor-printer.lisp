@@ -230,7 +230,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-other ((char natp) (bytes byte-listp))
+(define pprint-other ((char ucharp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a character that does not fit any lexeme after preprocessing."
   :long
@@ -240,6 +240,7 @@
   (b* (((unless (grammar-character-p char))
         (raise "Internal error: bad character code ~x0." (nfix char))))
     (pprint-char char bytes))
+  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
