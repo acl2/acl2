@@ -84,7 +84,14 @@
       a declaration or an expression followed by a semicolon,
       represented by the @(':for-ambig') case of @(tsee stmt).
       The disambiguator turns these ambiguous @('for') loops
-      into unambiguous ones."))
+      into unambiguous ones.")
+    (xdoc::li
+     "When GCC or Clang extensions are enabled,
+      @('goto') statements with an identifier
+      are always classified as @('goto')s with an expression by the parser
+      (i.e. the @(':gotoe') summand of @(tsee stmt)),
+      but in some of them the identifier may be a label.
+      The disambiguator re-classifies the latter as required."))
    (xdoc::p
     "The disambiguator does not perform a full (static) semantic analysis,
      but only a light-weight one, enough for disambiguation.
@@ -284,9 +291,24 @@
    (xdoc::p
     "This consists of
      a (mutable) disambiguation table,
+     a (mutable) set of identifiers for which
+     @(':gotoe') statements are re-classified as @(':goto') statements
+     (more on this below),
      a (mutable) macro table,
      an immutable string containing the path of the file,
      and an immutable implementation environment.")
+   (xdoc::p
+    "The aforementioned set of identifiers is always empty,
+     unless GCC or Clang extensions are enabled.
+     As mentioned in @(tsee disambiguator),
+     with those extensions,
+     a @('goto') followed by an identifier
+     may need to be re-classified from @(':gotoe') to @(':goto').
+     When that happens, we add the identifier to the set.
+     The exact use of this set will be explained
+     when we add the code that actually makes use of the set;
+     this is for simplifying our approach to
+     preserving @('#include') directives.")
    (xdoc::p
     "This could be turned into a stobj, if needed for efficiency.
      But note that
@@ -298,6 +320,7 @@
    (xdoc::p
     "We pick the short name `@('dstate')' since it is used a lot."))
   ((table dimb-table)
+   (goto-reclass ident-set)
    (macros macro-table)
    (file string)
    (ienv ienv))
@@ -308,7 +331,7 @@
 (defirrelevant irr-dstate
   :short "An irrelevant disambiguation state."
   :type dstatep
-  :body (dstate (irr-dimb-table) (irr-macro-table) "" (irr-ienv)))
+  :body (dstate (irr-dimb-table) nil (irr-macro-table) "" (irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -453,6 +476,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define dimb-add-goto-reclass ((ident identp) (dstate dstatep))
+  :returns (new-dstate dstatep)
+  :short "Add an identifier to the set for which @('goto')s we re-classified."
+  (b* ((idents (dstate->goto-reclass dstate))
+       (new-idents (set::insert (ident-fix ident) idents)))
+    (change-dstate dstate :goto-reclass new-idents)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define init-dstate ((file stringp) (ienv ienvp))
   :returns (dstate dstatep)
   :short "Initial disambiguation state."
@@ -469,11 +501,15 @@
      We should revisit this, adding all the @(see built-ins),
      with clear and accurate references.")
    (xdoc::p
+    "The set of identifiers for which @('goto')s are re-classified
+     is initially empty, since no re-classification has occurred yet.")
+   (xdoc::p
     "The macro table is the initial one for the given dialect."))
   (b* ((table (list nil))
        (dialect (ienv->dialect ienv))
        (macros (macro-init dialect))
        (dstate (make-dstate :table table
+                            :goto-reclass nil
                             :macros macros
                             :file file
                             :ienv ienv)))
@@ -3032,7 +3068,9 @@
       "A @(':gotoe') followed by an expression that is an identifier
        may need to be re-classified into a @(':goto').
        We base that on whether the identifier is in scope:
-       if it is not, it must be a label."))
+       if it is not, it must be a label.
+       If the re-classification happens,
+       we add the identifier to the set in the state."))
     (b* (((reterr) (irr-stmt) (irr-dstate)))
       (stmt-case
        stmt
@@ -3149,8 +3187,9 @@
                         (not (dimb-lookup-ident
                               (expr-ident->ident stmt.label)
                               dstate))))
-             (retok (stmt-goto (expr-ident->ident stmt.label))
-                    (dstate-fix dstate)))
+             (b* ((ident (expr-ident->ident stmt.label)))
+               (retok (stmt-goto ident)
+                      (dimb-add-goto-reclass ident dstate))))
             ((erp new-label dstate) (dimb-expr stmt.label dstate)))
          (retok (stmt-gotoe new-label) dstate))
        :continue
