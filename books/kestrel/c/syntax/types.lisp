@@ -170,9 +170,22 @@
         because there are different enumeration types.")
       (xdoc::li
        "An array type [C17:6.2.5/20],
-        derived from the ``element type.''
+        derived from the ``element type.'',
+        and with an optional positive size.
         This is an approximation,
-        because we do not track the size of the array type.")
+        because variable length arrays have a size
+        that is an expression in general
+        (e.g. a declaration @('int a[n+1];'), where @('n') is a variable).
+        For now we only track array types with known constant size,
+        using @('nil') to mean `unknown size',
+        making the type partially unknown,
+        as opposed to totally unknown
+        as in the @(':unknown') case described below.
+        We use a positive integer instead of a natural
+        because arrays are not empty [C17:6.2.5/20],
+        and so a known constant size must not be 0
+        (but we can revise this if we discover that
+        array types may need to track a 0 size).")
       (xdoc::li
        "A pointer type [C17:6.2.5/20],
         derived from the ``referenced type.''")
@@ -225,7 +238,8 @@
              (tunit? filepath-option)
              (tag/members type-struni-tag/members)))
     (:enum ())
-    (:array ((of type)))
+    (:array ((of type)
+             (size pos-option)))
     (:pointer ((to type)))
     (:function ((ret type) (params type-params)))
     (:unknown ())
@@ -1463,8 +1477,14 @@
             :otherwise nil)
           :array (type-case
                    y
-                   :array (type-compatible-p-aux
-                            x.of y.of completions incomplete ienv)
+                   :array (and (type-compatible-p-aux x.of
+                                                      y.of
+                                                      completions
+                                                      incomplete
+                                                      ienv)
+                               (or (not x.size)
+                                   (not y.size)
+                                   (equal x.size y.size)))
                    :otherwise nil)
           :pointer (type-case
                      y
@@ -1813,8 +1833,13 @@
       [C17:6.7.6.1/2].")
     (xdoc::li
      "Array types are considered compatible
-      if their element types are compatible;
-      their size is not currently considered [C17:6.7.6.2/6].")
+      if their element types are compatible.
+      If they both have a size, it must be the same size [C17:6.7.6.2/6];
+      if any of them does not have a size, which means unknown size for us,
+      then we consider them compatible,
+      because we are approximating,
+      and the two sizes could be the same
+      (otherwise we may be rejecting legal code).")
     (xdoc::li
      "Enumeration types are considered compatible
       with <i>all</i> integer types.
@@ -2018,8 +2043,12 @@
                                            completions
                                            next-uid
                                            ienv
-                                           (- (the unsigned-byte count) 1))))
-                   (mv (make-type-array :of of-type)
+                                           (- (the unsigned-byte count) 1)))
+                      (size (cond ((equal x.size y.size) x.size)
+                                  ((not x.size) y.size)
+                                  ((not y.size) x.size)
+                                  (t nil))))
+                   (mv (make-type-array :of of-type :size size)
                        completions
                        next-uid))
           :unknown (mv (type-fix x)
@@ -2278,7 +2307,10 @@
      we return @('nil') instead.")
    (xdoc::p
     "These values largely come directly from the implementation environment.
-     The size of the complex floating types is given by [C17:6.2.5/13]."))
+     The size of the complex floating types is given by [C17:6.2.5/13].")
+   (xdoc::p
+    "The size of an array type is known iff
+     the size of its element type and the size component of the type are."))
   (b* (((ienv ienv) ienv))
     (type-case
       type
@@ -2304,10 +2336,14 @@
       :struct nil
       :union nil
       :enum nil
-      :array nil
+      :array (b* ((elem-size (type-size-exact type.of ienv)))
+               (if (and elem-size type.size)
+                   (* elem-size type.size)
+                 nil))
       :pointer ienv.pointer-bytes
       :function nil
-      :unknown nil)))
+      :unknown nil))
+  :measure (type-count type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2403,12 +2439,6 @@
      pointer types,
      and struct types with tags.")
    (xdoc::p
-    "The array types are not supported because
-     they are too coarse compared to their @(tsee c::type) counterparts:
-     they do not include size information.
-     Struct types without tag are not supported,
-     because they always have a tag in @(tsee c::type).")
-   (xdoc::p
     "This predicate can be regarded as an extension of
      the collection of @('-formalp') predicates in @(see formalized-subset)."))
   (or (and (member-eq (type-kind type)
@@ -2426,7 +2456,9 @@
              (type-struni-tag/members-case
                tag/members
                :tagged (ident-formalp tag/members.tag)
-               :untagged nil))))
+               :untagged nil)))
+      (and (type-case type :array)
+           (type-formalp (type-array->of type))))
   :measure (type-count type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2507,7 +2539,8 @@
                                         (type-fix type)))))
      :union (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :enum (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :array (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :array (b* (((erp elty) (ldm-type type.of)))
+              (retok (c::make-type-array :of elty :size type.size)))
      :pointer (b* (((erp refd-type) (ldm-type type.to)))
                 (retok (c::make-type-pointer :to refd-type)))
      :function (reterr (msg "Type ~x0 not supported." (type-fix type)))
@@ -2634,6 +2667,6 @@
    ;; and tunit. Then, we could perhaps create an incomplete struct type.
    :struct (irr-type)
    :pointer (make-type-pointer :to (ildm-type ctype.to))
-   :array (make-type-array :of (ildm-type ctype.of)))
+   :array (make-type-array :of (ildm-type ctype.of) :size ctype.size))
   :measure (c::type-count ctype)
   :verify-guards :after-returns)
