@@ -77,6 +77,9 @@
 ; (depends-on "grammar/standard-pragmas-c23.abnf")
 ; (depends-on "grammar/tokens.abnf")
 ; (depends-on "grammar/lexemes.abnf")
+; (depends-on "grammar/expressions.abnf")
+; (depends-on "grammar/expressions-std.abnf")
+; (depends-on "grammar/expressions-ext.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -404,7 +407,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar lexemes "lexenes")
+(defgrammar lexemes "lexemes")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar expressions
+  "standard pragmas that are common to all the C dialects")
+
+(defgrammar expressions-std
+  "standard pragmas that are specific to the standard C dialects")
+
+(defgrammar expressions-ext
+  "standard pragmas that are specific to the GCC and Clang extensions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -526,6 +540,11 @@
      *grammar-tokens*
      ;; lexemes:
      *grammar-lexemes*
+     ;; expressions:
+     *grammar-expressions*
+     (if (or dialect.gcc dialect.clang)
+         *grammar-expressions-ext*
+       *grammar-expressions-std*)
      ;; rest (TODO: modularize):
      *grammar-rest*))
 

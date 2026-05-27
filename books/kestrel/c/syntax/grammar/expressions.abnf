@@ -1,0 +1,32 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains the grammar rules for expressions [C17:6.5] [C23:6.5]
+; that are common to all the C dialects.
+; Together with the rules in the dialect-specific files expressions-*.abnf,
+; they define the expressions of each C dialect.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The standard primary expressions are the same in the C17 and C23 standards
+; [C17:6.5.1/1] and [C23:6.5.2].
+; As explained in :DOC GRAMMAR,
+; instead of a single string literal,
+; we allow a juxtaposition of one or more string literals.
+
+primary-expression-std = identifier
+                       / constant
+                       / 1*string-literal
+                       / "(" expression ")"
+                       / generic-selection
+
+; TODO: add other kinds of expressions
