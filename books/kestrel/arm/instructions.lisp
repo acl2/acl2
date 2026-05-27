@@ -3147,6 +3147,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst :svc
+    (b* (;; EncodingSpecificOperations:
+         (imm32 (ZeroExtend imm24 32))
+         )
+      (update-error (list *unsupported* :svc imm32) arm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst :swp/swpb
     (b* (;; EncodingSpecificOperations:
          (tval (uint 4 rt)) ; can't call this 't'
