@@ -945,13 +945,11 @@
    (xdoc::p
     "This corresponds to @('q-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We wrap the natural number in this fixtype for more abstraction,
-     and to facilitate the addition of restrictions on the number,
+    "We wrap the Unicode character in this fixtype for more abstraction,
+     and to facilitate the addition of restrictions on the character,
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
-  ((code nat))
+  ((code uchar))
   :pred q-char-p
   :layout :fulltree)
 
@@ -968,7 +966,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection q-char-list->code-list ((x q-char-listp))
-  :returns (chars nat-listp)
+  :returns (chars uchar-listp)
   :short "Lift @(tsee q-char->code) to lists."
   (q-char->code x))
 

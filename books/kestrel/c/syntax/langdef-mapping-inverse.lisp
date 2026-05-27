@@ -883,7 +883,8 @@
   :short "Map a list of ACL2 characters to a list of @(tsee q-char) values."
   (cond ((endp chars) nil)
         (t (cons (q-char (char-code (car chars)))
-                 (chars-to-q-chars (cdr chars))))))
+                 (chars-to-q-chars (cdr chars)))))
+  :guard-hints (("Goal" :in-theory (enable ucharp-of-char-code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
