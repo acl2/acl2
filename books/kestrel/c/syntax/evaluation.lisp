@@ -63,7 +63,7 @@
     "For now, we only distinguish between null and non-null pointers.
      By ``non-null'', we mean any pointer to an object or a function.
      Such a pointer will compare unequal to a null pointer [C17:6.3.2.3/3].
-     Note that there is only once null pointer value,
+     Note that there is only one null pointer value,
      in the sense that null pointers always compare equal [C17:6.3.2.3/3].")
    (xdoc::p
     "We also include an @(':unknown') case."))
