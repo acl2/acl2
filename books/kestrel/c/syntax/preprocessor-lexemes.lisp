@@ -197,7 +197,7 @@
   (:string ((literal stringlit)))
   (:punctuator ((punctuator string)))
   (:other ((char uchar)))
-  (:block-comment ((content nat-list)))
+  (:block-comment ((content uchar-list)))
   (:line-comment ((content nat-list)))
   (:newline ((chars newline)))
   (:spaces ((count pos)))

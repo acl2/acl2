@@ -216,16 +216,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-block-comment ((content nat-listp) (bytes byte-listp))
+(define pprint-block-comment ((content uchar-listp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a block comment after preprocessing."
   (b* ((bytes (pprint-astring "/*" bytes))
        ((unless (grammar-character-listp content))
         (raise "Internal error: bad block comment content ~x0."
-               (nat-list-fix content)))
+               (uchar-list-fix content)))
        (bytes (pprint-chars content bytes))
        (bytes (pprint-astring "*/" bytes)))
     bytes)
+  :guard-hints (("Goal" :in-theory (enable nat-listp-when-uchar-listp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

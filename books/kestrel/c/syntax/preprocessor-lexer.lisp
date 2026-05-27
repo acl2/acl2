@@ -1357,7 +1357,7 @@
      (define plex-rest-of-block-comment ((first-pos positionp)
                                          (ppstate ppstatep))
        :returns (mv erp
-                    (content nat-listp)
+                    (content uchar-listp)
                     (last-pos positionp)
                     (new-ppstate ppstatep))
        :parents nil
@@ -1391,7 +1391,7 @@
      (define plex-rest-of-block-comment-after-star ((first-pos positionp)
                                                     (ppstate ppstatep))
        :returns (mv erp
-                    (content nat-listp)
+                    (content uchar-listp)
                     (last-pos positionp)
                     (new-ppstate ppstatep))
        :parents nil
