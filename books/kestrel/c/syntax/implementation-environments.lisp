@@ -58,10 +58,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We include an indication of the dialect of C; see @(tsee c::dialect).
-     Currently we mainly support C17,
-     with and without GCC and Clang extensions,
-     but we are starting to add some support for C23 as well.")
+    "We include an indication of the dialect of C; see @(tsee c::dialect).")
    (xdoc::p
     "We assume that bytes are 8 bits,
      that signed integers use two's complement,
