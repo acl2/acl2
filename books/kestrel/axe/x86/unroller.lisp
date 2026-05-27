@@ -53,7 +53,6 @@
 (include-book "../equivalent-dags")
 (include-book "../make-term-into-dag-basic")
 ;(include-book "../basic-rules")
-(include-book "../step-increments")
 (include-book "../dag-size")
 (include-book "../dag-info")
 (include-book "../rule-limits")
@@ -816,6 +815,7 @@
        ;; Prepare for symbolic execution:
        (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        (term-to-simulate (if stop-pcs
+                             ;; Run until we either return from the function being lifted or we reach one of the stop-pcs:
                              (let ((stop-pcs-term (if position-independentp
                                                       (if 64-bitp
                                                           (make-cons-nest (add-offsets-to-base-address stop-pcs 'base-address))
@@ -825,6 +825,7 @@
                                (if 64-bitp
                                    `(run-until-return-or-reach-pc64 ,stop-pcs-term x86)
                                  `(run-until-return-or-reach-pc32 ,stop-pcs-term x86)))
+                           ;; Run until we return from the function being lifted:
                            (if 64-bitp
                                '(run-until-return64 x86)
                              '(run-until-return32 x86))))
@@ -1281,7 +1282,7 @@
          (remove-assumption-rules "A symbol-list indicating rules to be removed (from the standard rules) when simplifying assumptions.")
          (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
-         (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
+         (stop-pcs "A list of program counters (natural numbers) at which to stop the execution (e.g., for debugging).")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
          (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
          (normalize-xors "Whether to normalize BITXOR and BVXOR nodes when rewriting (t, nil, or :compact).")

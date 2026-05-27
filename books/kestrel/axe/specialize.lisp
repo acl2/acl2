@@ -298,8 +298,7 @@
                                :assumptions var-replacement-assumptions)
                (if erp
                    (mv erp nil nil state)
-                 (let* (
-;ffixme what if we specialize the same function in several different ways?
+                 (let* (;ffixme what if we specialize the same function in several different ways?
                         (new-function-name (pack$ function-name '-specialized))
                         (new-body-dag (fixup-recursive-calls new-body-dag function-name new-function-name slots-to-drop))
 

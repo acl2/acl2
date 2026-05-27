@@ -11,6 +11,7 @@
 
 (include-book "std/util/defval" :dir :system)
 
+(in-theory (disable mv-nth))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ cpp-keywords
@@ -99,6 +100,7 @@
     ;; C++20 modules
     "export"
     "module"
+    "import"
     ;; Alternative token representations [C++23:5.5]
     "and"
     "and_eq"

@@ -280,21 +280,20 @@
                   (sbvle 32 y x)))
   :hints (("Goal"
            :use (:instance acl2::split-bv (x y) (n 32) (m 31))
-           :in-theory (e/d (cmp-sign
-                            cmp-overflow
-                            addwithcarry-overflow
-                            acl2::sbvlt-rewrite
-                            bvminus
-                            bvplus
-                            acl2::getbit-of-+
-                            bvlt
-                            acl2::bvchop-of-sum-cases
-                            bvnot
-                            ;bvcat
-                            ;logapp
-                            lognot
-                            bvuminus)
-                           ()))))
+           :in-theory (enable cmp-sign
+                              cmp-overflow
+                              addwithcarry-overflow
+                              acl2::sbvlt-rewrite
+                              bvminus
+                              bvplus
+                              acl2::getbit-of-+
+                              bvlt
+                              acl2::bvchop-of-sum-cases
+                              bvnot
+                              ;; bvcat
+                              ;; logapp
+                              lognot
+                              bvuminus))))
 
 (defthm le-condition-cmp-idiom
   (implies (and (unsigned-byte-p 32 x)

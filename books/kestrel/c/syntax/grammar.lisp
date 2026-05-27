@@ -72,6 +72,11 @@
 ; (depends-on "grammar/preprocessing-directives.abnf")
 ; (depends-on "grammar/preprocessing-directives-c17.abnf")
 ; (depends-on "grammar/preprocessing-directives-c23.abnf")
+; (depends-on "grammar/standard-pragmas.abnf")
+; (depends-on "grammar/standard-pragmas-c17.abnf")
+; (depends-on "grammar/standard-pragmas-c23.abnf")
+; (depends-on "grammar/tokens.abnf")
+; (depends-on "grammar/lexemes.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -384,6 +389,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defgrammar standard-pragmas
+  "standard pragmas that are common to all the C dialects")
+
+(defgrammar standard-pragmas-c17
+  "standard pragmas that are specific to the C17 dialects")
+
+(defgrammar standard-pragmas-c23
+  "standard pragmas that are specific to the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar tokens "tokens")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar lexemes "lexenes")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (abnf::defgrammar *grammar-rest*
   :short "Rest of the grammar rules."
   :file "grammar/grammar-rest.abnf"
@@ -493,6 +517,15 @@
      (c::standard-case dialect.std
                        :c17 *grammar-preprocessing-directives-c17*
                        :c23 *grammar-preprocessing-directives-c23*)
+     ;; standard pragmas:
+     *grammar-standard-pragmas*
+     (c::standard-case dialect.std
+                       :c17 *grammar-standard-pragmas-c17*
+                       :c23 *grammar-standard-pragmas-c23*)
+     ;; tokens:
+     *grammar-tokens*
+     ;; lexemes:
+     *grammar-lexemes*
      ;; rest (TODO: modularize):
      *grammar-rest*))
 

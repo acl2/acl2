@@ -146,7 +146,7 @@
                                     rec
                                     function-disabled ; whether to disable the new function
                                     measure ; either :auto or an (untranslated) term
-                                    measure-hints ; either :auto or a list of hints like (("Goal" :in-theory (enable car-cons)))
+                                    measure-hints ; either nil or :auto or a list of hints like (("Goal" :in-theory (enable car-cons)))
                                     normalize
                                     state ; in general, we may need state
                                     )
@@ -206,19 +206,22 @@
                             (if (not (translatable-termp measure wrld))
                                 (er hard ',apply-to-defun-name "Measure, ~x0, is not a recognized term." measure)
                               (replace-xarg-in-declares :measure measure declares)))))
-              ;; Handle the (termination) :hints xarg:
+              ;; Handle the :hints xarg (measure-hints):
               (measure-enables ',measure-enables)
               (declares (if (not rec)
-                            declares ; no termination since not recursive
+                            declares ; no termination proof since not recursive
                           ;; single or mutual recursion:
-                          (replace-xarg-in-declares
-                           :hints
-                           (if (eq :auto measure-hints)
-                               `(("Goal" :in-theory ',measure-enables
-                                         ;; ACL2 automatically replaces the old functions with the new ones in this:
-                                         :use (:instance (:termination-theorem ,fn))))
-                             measure-hints)
-                           declares)))
+                          (if (equal :none measure-hints)
+                              (remove-xarg-in-declares :hints declares)
+                            (replace-xarg-in-declares
+                              :hints
+                              (if (eq :auto measure-hints)
+                                  `(("Goal" :in-theory ',measure-enables
+                                     ;; ACL2 automatically replaces the old functions with the new ones in this:
+                                     :use (:instance (:termination-theorem ,fn))))
+                                ;; put in the explicitly supplied hints:
+                                measure-hints)
+                              declares))))
               ;; Handle the :stobjs xarg:
               (declares (set-stobjs-in-declares-to-match declares fn wrld))
               ;; Handle the :type-prescription xarg:
@@ -297,14 +300,14 @@
                                            ,@transform-specific-arg-names
                                            fn-event function-renaming :mutual function-disabled
                                            (lookup-eq fn measure-alist)
-                                           (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                           (if firstp measure-hints :none) ; attach measure hints to only the first function
                                            normalize
                                            state)
                    ;; Just copy the function and update rec calls:
                    ;; (For copy-function only, this happens to be the same as the branch above.)
                    (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
                                            (lookup-eq fn measure-alist)
-                                           (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                           (if firstp measure-hints :none) ; attach measure hints to only the first function
                                            normalize
                                            state)))
                 ((mv new-defuns rest-info)

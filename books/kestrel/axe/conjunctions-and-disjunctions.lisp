@@ -1,7 +1,7 @@
 ; Conjunctions and disjunctions in Axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -744,7 +744,7 @@
   :hints (("Goal" :expand (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
            :use (:instance BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX (m nodenum)
                            (n nodenum))
-           :in-theory (e/d ( ;pseudo-dag-arrayp-aux nth
+           :in-theory (e/d (;pseudo-dag-arrayp-aux nth
                             )
                            (;nth-of-cdr
                             BOUNDED-DAG-EXPRP-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX)))))
@@ -767,7 +767,7 @@
 ;;   :hints (("Goal" ;:expand (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
 ;;            :use (:instance bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux (m nodenum)
 ;;                            (n nodenum2))
-;;            :in-theory (e/d ( ;pseudo-dag-arrayp-aux nth
+;;            :in-theory (e/d (;pseudo-dag-arrayp-aux nth
 ;;                             )
 ;;                            (nth-of-cdr
 ;;                             bounded-darg-listp-of-dargs-of-aref1
@@ -792,7 +792,7 @@
 ;;   :hints (("Goal" ;:expand (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
 ;;            :use (:instance bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux (m nodenum)
 ;;                            (n nodenum2))
-;;            :in-theory (e/d ( ;pseudo-dag-arrayp-aux nth
+;;            :in-theory (e/d (;pseudo-dag-arrayp-aux nth
 ;;                             myquotep
 ;;                             )
 ;;                            (nth-of-cdr

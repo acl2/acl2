@@ -37,10 +37,14 @@
                     enable*
                     impossible
                     int
+                    integer-resultp
+                    integer-list-resultp
+                    lifix
                     lnfix
                     make-string-string-map-pair
                     make-string-string-map-quadruple
                     nat
+                    nat-resultp
                     nat-list
                     nat-list-fix
                     nat-list-resultp

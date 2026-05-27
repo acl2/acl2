@@ -215,8 +215,7 @@
                                                          natp
                                                          ))
                                  :do-not '(generalize eliminate-destructors)
-                                 :use (
-                                       (:instance <-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP
+                                 :use ((:instance <-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP
                                                   (NODENUM (NTH 0 PREDICATES-OR-NEGATIONS))
                                                   (DAG-ARRAY DAG-ARRAY)
                                                   (DAG-ARRAY-NAME 'DAG-ARRAY)

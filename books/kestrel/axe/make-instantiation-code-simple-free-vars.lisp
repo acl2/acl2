@@ -1,7 +1,7 @@
 ; A tool to generate hyp instantiation code that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -261,7 +261,7 @@
                                                (strip-cars alist))))
          :hints (("Goal" :use (:instance ,(pack$ 'axe-tree-vars-of- instantiate-hyp-name))
                   :in-theory (e/d (axe-tree-vars)
-                                  ( ,(pack$ 'axe-tree-vars-of- instantiate-hyp-name))))))
+                                  (,(pack$ 'axe-tree-vars-of- instantiate-hyp-name))))))
 
        (defthm ,(pack$ 'alist-suitable-for-hyp-args-and-hypsp-after- instantiate-hyp-name)
          (implies (and (alist-suitable-for-hypsp alist hyps)

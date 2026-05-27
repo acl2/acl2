@@ -58,10 +58,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We include an indication of the dialect of C; see @(tsee c::dialect).
-     Currently we mainly support C17,
-     with and without GCC and Clang extensions,
-     but we are starting to add some support for C23 as well.")
+    "We include an indication of the dialect of C; see @(tsee c::dialect).")
    (xdoc::p
     "We assume that bytes are 8 bits,
      that signed integers use two's complement,
@@ -69,11 +66,12 @@
      (except for @('_Bool')s, which are padded to at least one byte).
      Therefore, the characteristics of the integer types
      are defined by five numbers,
-     i.e. the numbers of bytes of @('_Bool'), and (signed and unsigned)
+     i.e. the numbers of bytes of @('_Bool'),
+     and of (signed and unsigned)
      @('short'), @('int'), @('long'), and @('long long');
      constraints on those numbers are derived from
-     [C17:5.2.4.2.1] (for the minima)
-     and [C17:6.2.5/8] (for the increasing sizes).")
+     [C17:5.2.4.2.1] [C23:5.3.5.3.2] (for the minima)
+     and [C17:6.2.5/8] [C23:6.2.5] (for the increasing sizes).")
    (xdoc::p
     "The floating types are characterized by their sizes.
      We make no assumptions about their respective sizes for now.")
@@ -88,7 +86,7 @@
      has the same range as @('signed char') or not [C17:6.2.5/15].
      If the flag is false, it has the same range as @('unsigned char').")
    (xdoc::p
-    "This type will likely be expanded in the future
+    "This fixtype will likely be expanded in the future
      to include further information about the environment.
      This may include details about standard library types
      (such as @('size_t'), @('ptrdiff_t'), etc.),

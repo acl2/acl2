@@ -11,6 +11,7 @@
 
 (in-package "REMORA")
 
+(include-book "library-extensions")
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "parsing-and-printing")
@@ -89,7 +90,8 @@
    (xdoc::p
     "This ACL2 library is work in progress towards building
      formalizations and tools for Remora."))
-  :order-subtopics (concrete-syntax
+  :order-subtopics (library-extensions
+                    concrete-syntax
                     abstract-syntax
                     parsing-and-printing
                     static-semantics

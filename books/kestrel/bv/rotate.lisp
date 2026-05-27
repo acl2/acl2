@@ -48,97 +48,97 @@
   (implies (natp amt) ;new
   (equal (leftrotate32 amt val)
          (BVIF 32
-          (EQUAL (BVCHOP 5 AMT) '0)
-          (leftrotate32alt '0 val)
+          (EQUAL (BVCHOP 5 AMT) 0)
+          (leftrotate32alt 0 val)
           (BVIF 32
-           (EQUAL (BVCHOP 5 AMT) '1)
-           (leftrotate32alt '1 val)
+           (EQUAL (BVCHOP 5 AMT) 1)
+           (leftrotate32alt 1 val)
            (BVIF 32
-            (EQUAL (BVCHOP 5 AMT) '2)
-            (leftrotate32alt '2 val)
+            (EQUAL (BVCHOP 5 AMT) 2)
+            (leftrotate32alt 2 val)
             (BVIF 32
-             (EQUAL (BVCHOP 5 AMT) '3)
-             (leftrotate32alt '3 val)
+             (EQUAL (BVCHOP 5 AMT) 3)
+             (leftrotate32alt 3 val)
              (BVIF 32
-              (EQUAL (BVCHOP 5 AMT) '4)
-              (leftrotate32alt '4 val)
+              (EQUAL (BVCHOP 5 AMT) 4)
+              (leftrotate32alt 4 val)
               (BVIF 32
-               (EQUAL (BVCHOP 5 AMT) '5)
-               (leftrotate32alt '5 val)
+               (EQUAL (BVCHOP 5 AMT) 5)
+               (leftrotate32alt 5 val)
                (BVIF 32
-                (EQUAL (BVCHOP 5 AMT) '6)
-                (leftrotate32alt '6 val)
+                (EQUAL (BVCHOP 5 AMT) 6)
+                (leftrotate32alt 6 val)
                 (BVIF 32
-                 (EQUAL (BVCHOP 5 AMT) '7)
-                 (leftrotate32alt '7 val)
+                 (EQUAL (BVCHOP 5 AMT) 7)
+                 (leftrotate32alt 7 val)
                  (BVIF 32
-                  (EQUAL (BVCHOP 5 AMT) '8)
-                  (leftrotate32alt '8 val)
+                  (EQUAL (BVCHOP 5 AMT) 8)
+                  (leftrotate32alt 8 val)
                   (BVIF 32
-                   (EQUAL (BVCHOP 5 AMT) '9)
-                   (leftrotate32alt '9 val)
+                   (EQUAL (BVCHOP 5 AMT) 9)
+                   (leftrotate32alt 9 val)
                    (BVIF 32
-                    (EQUAL (BVCHOP 5 AMT) '10)
-                    (leftrotate32alt '10 val)
+                    (EQUAL (BVCHOP 5 AMT) 10)
+                    (leftrotate32alt 10 val)
                     (BVIF 32
-                     (EQUAL (BVCHOP 5 AMT) '11)
-                     (leftrotate32alt '11 val)
+                     (EQUAL (BVCHOP 5 AMT) 11)
+                     (leftrotate32alt 11 val)
                      (BVIF 32
-                      (EQUAL (BVCHOP 5 AMT) '12)
-                      (leftrotate32alt '12 val)
+                      (EQUAL (BVCHOP 5 AMT) 12)
+                      (leftrotate32alt 12 val)
                       (BVIF 32
-                       (EQUAL (BVCHOP 5 AMT) '13)
-                       (leftrotate32alt '13 val)
+                       (EQUAL (BVCHOP 5 AMT) 13)
+                       (leftrotate32alt 13 val)
                        (BVIF 32
-                        (EQUAL (BVCHOP 5 AMT) '14)
-                        (leftrotate32alt '14 val)
+                        (EQUAL (BVCHOP 5 AMT) 14)
+                        (leftrotate32alt 14 val)
                         (BVIF 32
-                         (EQUAL (BVCHOP 5 AMT) '15)
-                         (leftrotate32alt '15 val)
+                         (EQUAL (BVCHOP 5 AMT) 15)
+                         (leftrotate32alt 15 val)
                          (BVIF 32
-                          (EQUAL (BVCHOP 5 AMT) '16)
-                          (leftrotate32alt '16 val)
+                          (EQUAL (BVCHOP 5 AMT) 16)
+                          (leftrotate32alt 16 val)
                           (BVIF 32
-                           (EQUAL (BVCHOP 5 AMT) '17)
-                           (leftrotate32alt '17 val)
+                           (EQUAL (BVCHOP 5 AMT) 17)
+                           (leftrotate32alt 17 val)
                            (BVIF 32
-                            (EQUAL (BVCHOP 5 AMT) '18)
-                            (leftrotate32alt '18 val)
+                            (EQUAL (BVCHOP 5 AMT) 18)
+                            (leftrotate32alt 18 val)
                             (BVIF 32
-                             (EQUAL (BVCHOP 5 AMT) '19)
-                             (leftrotate32alt '19 val)
+                             (EQUAL (BVCHOP 5 AMT) 19)
+                             (leftrotate32alt 19 val)
                              (BVIF 32
-                              (EQUAL (BVCHOP 5 AMT) '20)
-                              (leftrotate32alt '20 val)
+                              (EQUAL (BVCHOP 5 AMT) 20)
+                              (leftrotate32alt 20 val)
                               (BVIF 32
-                               (EQUAL (BVCHOP 5 AMT) '21)
-                               (leftrotate32alt '21 val)
+                               (EQUAL (BVCHOP 5 AMT) 21)
+                               (leftrotate32alt 21 val)
                                (BVIF 32
-                                (EQUAL (BVCHOP 5 AMT) '22)
-                                (leftrotate32alt '22 val)
+                                (EQUAL (BVCHOP 5 AMT) 22)
+                                (leftrotate32alt 22 val)
                                 (BVIF 32
-                                 (EQUAL (BVCHOP 5 AMT) '23)
-                                 (leftrotate32alt '23 val)
+                                 (EQUAL (BVCHOP 5 AMT) 23)
+                                 (leftrotate32alt 23 val)
                                  (BVIF 32
-                                  (EQUAL (BVCHOP 5 AMT) '24)
-                                  (leftrotate32alt '24 val)
+                                  (EQUAL (BVCHOP 5 AMT) 24)
+                                  (leftrotate32alt 24 val)
                                   (BVIF 32
-                                   (EQUAL (BVCHOP 5 AMT) '25)
-                                   (leftrotate32alt '25 val)
+                                   (EQUAL (BVCHOP 5 AMT) 25)
+                                   (leftrotate32alt 25 val)
                                    (BVIF 32
-                                    (EQUAL (BVCHOP 5 AMT) '26)
-                                    (leftrotate32alt '26 val)
+                                    (EQUAL (BVCHOP 5 AMT) 26)
+                                    (leftrotate32alt 26 val)
                                     (BVIF 32
-                                     (EQUAL (BVCHOP 5 AMT) '27)
-                                     (leftrotate32alt '27 val)
+                                     (EQUAL (BVCHOP 5 AMT) 27)
+                                     (leftrotate32alt 27 val)
                                      (BVIF 32
-                                      (EQUAL (BVCHOP 5 AMT) '28)
-                                      (leftrotate32alt '28 val)
-                                      (BVIF 32 (EQUAL (BVCHOP 5 AMT) '29)
-                                          (leftrotate32alt '29 val)
-                                          (BVIF 32 (EQUAL (BVCHOP 5 AMT) '30)
-                                              (leftrotate32alt '30 val)
-                                              (leftrotate32alt '31 val))))))))))))))))))))))))))))))))))
+                                      (EQUAL (BVCHOP 5 AMT) 28)
+                                      (leftrotate32alt 28 val)
+                                      (BVIF 32 (EQUAL (BVCHOP 5 AMT) 29)
+                                          (leftrotate32alt 29 val)
+                                          (BVIF 32 (EQUAL (BVCHOP 5 AMT) 30)
+                                              (leftrotate32alt 30 val)
+                                              (leftrotate32alt 31 val))))))))))))))))))))))))))))))))))
   :hints (("Goal" :expand (:with bvchop (BVCHOP 5 AMT))
            :in-theory (enable leftrotate32alt leftrotate32 leftrotate bvif))))
 
@@ -159,97 +159,97 @@
   (implies (natp amt) ;new
   (equal (rightrotate32 amt val)
          (BVIF 32
-          (EQUAL (BVCHOP 5 AMT) '0)
-          (rightrotate32alt '0 val)
+          (EQUAL (BVCHOP 5 AMT) 0)
+          (rightrotate32alt 0 val)
           (BVIF 32
-           (EQUAL (BVCHOP 5 AMT) '1)
-           (rightrotate32alt '1 val)
+           (EQUAL (BVCHOP 5 AMT) 1)
+           (rightrotate32alt 1 val)
            (BVIF 32
-            (EQUAL (BVCHOP 5 AMT) '2)
-            (rightrotate32alt '2 val)
+            (EQUAL (BVCHOP 5 AMT) 2)
+            (rightrotate32alt 2 val)
             (BVIF 32
-             (EQUAL (BVCHOP 5 AMT) '3)
-             (rightrotate32alt '3 val)
+             (EQUAL (BVCHOP 5 AMT) 3)
+             (rightrotate32alt 3 val)
              (BVIF 32
-              (EQUAL (BVCHOP 5 AMT) '4)
-              (rightrotate32alt '4 val)
+              (EQUAL (BVCHOP 5 AMT) 4)
+              (rightrotate32alt 4 val)
               (BVIF 32
-               (EQUAL (BVCHOP 5 AMT) '5)
-               (rightrotate32alt '5 val)
+               (EQUAL (BVCHOP 5 AMT) 5)
+               (rightrotate32alt 5 val)
                (BVIF 32
-                (EQUAL (BVCHOP 5 AMT) '6)
-                (rightrotate32alt '6 val)
+                (EQUAL (BVCHOP 5 AMT) 6)
+                (rightrotate32alt 6 val)
                 (BVIF 32
-                 (EQUAL (BVCHOP 5 AMT) '7)
-                 (rightrotate32alt '7 val)
+                 (EQUAL (BVCHOP 5 AMT) 7)
+                 (rightrotate32alt 7 val)
                  (BVIF 32
-                  (EQUAL (BVCHOP 5 AMT) '8)
-                  (rightrotate32alt '8 val)
+                  (EQUAL (BVCHOP 5 AMT) 8)
+                  (rightrotate32alt 8 val)
                   (BVIF 32
-                   (EQUAL (BVCHOP 5 AMT) '9)
-                   (rightrotate32alt '9 val)
+                   (EQUAL (BVCHOP 5 AMT) 9)
+                   (rightrotate32alt 9 val)
                    (BVIF 32
-                    (EQUAL (BVCHOP 5 AMT) '10)
-                    (rightrotate32alt '10 val)
+                    (EQUAL (BVCHOP 5 AMT) 10)
+                    (rightrotate32alt 10 val)
                     (BVIF 32
-                     (EQUAL (BVCHOP 5 AMT) '11)
-                     (rightrotate32alt '11 val)
+                     (EQUAL (BVCHOP 5 AMT) 11)
+                     (rightrotate32alt 11 val)
                      (BVIF 32
-                      (EQUAL (BVCHOP 5 AMT) '12)
-                      (rightrotate32alt '12 val)
+                      (EQUAL (BVCHOP 5 AMT) 12)
+                      (rightrotate32alt 12 val)
                       (BVIF 32
-                       (EQUAL (BVCHOP 5 AMT) '13)
-                       (rightrotate32alt '13 val)
+                       (EQUAL (BVCHOP 5 AMT) 13)
+                       (rightrotate32alt 13 val)
                        (BVIF 32
-                        (EQUAL (BVCHOP 5 AMT) '14)
-                        (rightrotate32alt '14 val)
+                        (EQUAL (BVCHOP 5 AMT) 14)
+                        (rightrotate32alt 14 val)
                         (BVIF 32
-                         (EQUAL (BVCHOP 5 AMT) '15)
-                         (rightrotate32alt '15 val)
+                         (EQUAL (BVCHOP 5 AMT) 15)
+                         (rightrotate32alt 15 val)
                          (BVIF 32
-                          (EQUAL (BVCHOP 5 AMT) '16)
-                          (rightrotate32alt '16 val)
+                          (EQUAL (BVCHOP 5 AMT) 16)
+                          (rightrotate32alt 16 val)
                           (BVIF 32
-                           (EQUAL (BVCHOP 5 AMT) '17)
-                           (rightrotate32alt '17 val)
+                           (EQUAL (BVCHOP 5 AMT) 17)
+                           (rightrotate32alt 17 val)
                            (BVIF 32
-                            (EQUAL (BVCHOP 5 AMT) '18)
-                            (rightrotate32alt '18 val)
+                            (EQUAL (BVCHOP 5 AMT) 18)
+                            (rightrotate32alt 18 val)
                             (BVIF 32
-                             (EQUAL (BVCHOP 5 AMT) '19)
-                             (rightrotate32alt '19 val)
+                             (EQUAL (BVCHOP 5 AMT) 19)
+                             (rightrotate32alt 19 val)
                              (BVIF 32
-                              (EQUAL (BVCHOP 5 AMT) '20)
-                              (rightrotate32alt '20 val)
+                              (EQUAL (BVCHOP 5 AMT) 20)
+                              (rightrotate32alt 20 val)
                               (BVIF 32
-                               (EQUAL (BVCHOP 5 AMT) '21)
-                               (rightrotate32alt '21 val)
+                               (EQUAL (BVCHOP 5 AMT) 21)
+                               (rightrotate32alt 21 val)
                                (BVIF 32
-                                (EQUAL (BVCHOP 5 AMT) '22)
-                                (rightrotate32alt '22 val)
+                                (EQUAL (BVCHOP 5 AMT) 22)
+                                (rightrotate32alt 22 val)
                                 (BVIF 32
-                                 (EQUAL (BVCHOP 5 AMT) '23)
-                                 (rightrotate32alt '23 val)
+                                 (EQUAL (BVCHOP 5 AMT) 23)
+                                 (rightrotate32alt 23 val)
                                  (BVIF 32
-                                  (EQUAL (BVCHOP 5 AMT) '24)
-                                  (rightrotate32alt '24 val)
+                                  (EQUAL (BVCHOP 5 AMT) 24)
+                                  (rightrotate32alt 24 val)
                                   (BVIF 32
-                                   (EQUAL (BVCHOP 5 AMT) '25)
-                                   (rightrotate32alt '25 val)
+                                   (EQUAL (BVCHOP 5 AMT) 25)
+                                   (rightrotate32alt 25 val)
                                    (BVIF 32
-                                    (EQUAL (BVCHOP 5 AMT) '26)
-                                    (rightrotate32alt '26 val)
+                                    (EQUAL (BVCHOP 5 AMT) 26)
+                                    (rightrotate32alt 26 val)
                                     (BVIF 32
-                                     (EQUAL (BVCHOP 5 AMT) '27)
-                                     (rightrotate32alt '27 val)
+                                     (EQUAL (BVCHOP 5 AMT) 27)
+                                     (rightrotate32alt 27 val)
                                      (BVIF 32
-                                      (EQUAL (BVCHOP 5 AMT) '28)
-                                      (rightrotate32alt '28 val)
-                                      (BVIF 32 (EQUAL (BVCHOP 5 AMT) '29)
-                                          (rightrotate32alt '29 val)
-                                          (BVIF 32 (EQUAL (BVCHOP 5 AMT) '30)
-                                              (rightrotate32alt '30 val)
-                                              (rightrotate32alt '31 val))))))))))))))))))))))))))))))))))
+                                      (EQUAL (BVCHOP 5 AMT) 28)
+                                      (rightrotate32alt 28 val)
+                                      (BVIF 32 (EQUAL (BVCHOP 5 AMT) 29)
+                                          (rightrotate32alt 29 val)
+                                          (BVIF 32 (EQUAL (BVCHOP 5 AMT) 30)
+                                              (rightrotate32alt 30 val)
+                                              (rightrotate32alt 31 val))))))))))))))))))))))))))))))))))
   :hints (("Goal"  :expand (:with bvchop (BVCHOP 5 AMT))
            :in-theory (enable rightrotate32alt rightrotate32 rightrotate bvif))))
 
@@ -354,7 +354,7 @@
 ;see leftrotate32-of-leftrotate32
 ;; (defthm leftrotate32-of-bvuminus-and-leftrotate32
 ;;   (implies (natp amt)
-;;            (equal (leftrotate32 (bvuminus '5 amt) (leftrotate32 amt val))
+;;            (equal (leftrotate32 (bvuminus 5 amt) (leftrotate32 amt val))
 ;;                   (bvchop 32 val)))
 ;;   :hints (("Goal" :in-theory (e/d (leftrotate32 leftrotate bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 

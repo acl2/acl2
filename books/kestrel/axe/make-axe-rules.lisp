@@ -258,7 +258,7 @@
                               (eq 'dag-array (car (last formals)))))
            ((when (and fn-uses-dagp
                        (not (eq 'dag-array (car (last args))))))
-            (er hard? 'process-axe-syntaxp-function-application "Error in rule ~x0: Final arg in ~x1 must be ~x2." rule-symbol expr 'acl2::dag-array)
+            (er hard? 'process-axe-syntaxp-function-application "Error in rule ~x0: Final arg in ~x1 must be ~x2." rule-symbol expr 'dag-array)
             *nil* ; just some pseudo-term (irrelevant)
             )
            (args-to-store (if fn-uses-dagp
@@ -336,7 +336,7 @@
                           (eq 'dag-array (car (last formals)))))
        ((when (and fn-uses-dagp
                    (not (eq 'dag-array (car (last args))))))
-        (er hard? 'process-axe-bind-free-function-application "Error in rule ~x0: Final arg in ~x1 must be ~x2." rule-symbol expr 'acl2::dag-array)
+        (er hard? 'process-axe-bind-free-function-application "Error in rule ~x0: Final arg in ~x1 must be ~x2." rule-symbol expr 'dag-array)
         (mv :bad-axe-bind-free nil))
        (args-to-store (if fn-uses-dagp
                           (butlast args 1)
@@ -403,7 +403,7 @@
                           (call-of 'if core-term)
                           (equal *t* (farg2 core-term))
                           (equal *nil* (farg3 core-term)))))
-              (b* ( ;; We attempt to convert the syntaxp hyp into an axe-syntaxp hyp (this only works for some hyps)
+              (b* (;; We attempt to convert the syntaxp hyp into an axe-syntaxp hyp (this only works for some hyps)
                    ((mv erp hyp)
                     (make-axe-syntaxp-hyp-for-synp-expr (farg1 (unquote (farg3 hyp))) bound-vars rule-symbol hyp))
                    ((when erp) (mv erp *unrelievable-hyps* bound-vars)))
@@ -789,7 +789,7 @@
    (implies (and (consp x)
                  (pseudo-termp term))
             (not (member-equal x (fns-in-term term))))
-   :hints (("Goal" :use ( symbol-listp-of-fns-in-term)
+   :hints (("Goal" :use (symbol-listp-of-fns-in-term)
             :in-theory (disable symbol-listp-of-fns-in-term)))))
 
 ;move
@@ -1434,7 +1434,7 @@
                               (symbol-alistp rule-classes)
                               (symbol-listp known-boolean-fns)
                               (plist-worldp wrld))))
-  (b* ( ;; Split the rule into conclusion and hyps:
+  (b* (;; Split the rule into conclusion and hyps:
        ((mv erp hyps conc)
         (hyps-and-conc-for-axe-rule theorem-body rule-symbol))
        ((when erp) (mv erp nil))

@@ -48,8 +48,8 @@
      "Comments should be generated
       to trace the expansion of @('#include') directives.")
     (xdoc::li
-     "The @('#error') and @('#warning') directives should be ignored,
-      in the sense of not causing actual errors or warnings."))
+     "The @('#warning') directives should be ignored,
+      in the sense of not causing actual warnings."))
    (xdoc::p
     "These options, except the last one,
      are explained in more detail in @(tsee input-files),
@@ -59,7 +59,7 @@
   ((full-expansion bool)
    (keep-comments bool)
    (trace-expansion bool)
-   (no-errors/warnings bool))
+   (no-warnings bool))
   :pred ppoptionsp)
 
 ;;;;;;;;;;;;;;;;;;;;

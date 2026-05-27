@@ -1,7 +1,7 @@
 ; A compositional version of the JVM loop lifter
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -100,7 +100,7 @@
                           (booleanp disable-loop-openers)
                           )
                   :mode :program))
-  (b* ( ;; Check whether an identical call to the lifter has already been done:
+  (b* (;; Check whether an identical call to the lifter has already been done:
        ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Check inputs (TODO: What other checks should we do here?):

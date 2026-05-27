@@ -230,6 +230,7 @@
 
 (define expr-append-all ((exprss expr-list-listp))
   :returns (exprs expr-listp)
+  :short "Append all the lists of expressions in a list, in that order."
   (cond ((endp exprss) nil)
         (t (append (expr-list-fix (car exprss))
                    (expr-append-all (cdr exprss)))))
@@ -245,6 +246,7 @@
 
 (define atom-append-all ((atomss atom-list-listp))
   :returns (atoms atom-listp)
+  :short "Append all the lists of atoms in a list, in that order."
   (cond ((endp atomss) nil)
         (t (append (atom-list-fix (car atomss))
                    (atom-append-all (cdr atomss)))))

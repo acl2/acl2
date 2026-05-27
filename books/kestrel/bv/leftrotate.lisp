@@ -248,7 +248,7 @@
                           (getbit (+ width (- amt) n) x)
                         (getbit (- n amt) x))
                     0)))
-  :hints (("Goal" :in-theory (e/d (getbit leftrotate) ()))))
+  :hints (("Goal" :in-theory (enable getbit leftrotate))))
 
 (defthm equal-of-leftrotate-and-leftrotate
   (implies (natp size)

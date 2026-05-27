@@ -13,6 +13,7 @@
 
 (include-book "grammar")
 (include-book "concrete-syntax-trees")
+(include-book "extra-grammatical-restrictions")
 (include-book "parser")
 (include-book "post-parsing")
 
@@ -44,5 +45,6 @@
   :order-subtopics (; we may want to elaborate on unicode-characters
                     grammar
                     concrete-syntax-trees
+                    extra-grammatical-restrictions
                     parser
                     post-parsing))

@@ -13,13 +13,11 @@
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-well-formed")
 
-(include-book "std/strings/top" :dir :system)
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "unicode/utf8-encode" :dir :system)
 
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
-(local (include-book "std/lists/top" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;; (acl2::controlled-configuration) is intentionally not used here:
@@ -550,7 +548,7 @@
     :returns (out pdocp)
     (dim-case d
       :var (pdoc-text (str::cat "$" d.name))
-      :const (pdoc-text (str::nat-to-dec-string d.value))
+      :const (pdoc-text (str::nat-to-dec-string d.val))
       :add (if (consp d.dims)
                (pdoc-prefix-form "+" (dim-list-to-pdoc d.dims))
              (pdoc-naked-form "+"))
@@ -588,7 +586,7 @@
     :returns (s stringp)
     (dim-case d
       :var (str::cat "$" d.name)
-      :const (str::nat-to-dec-string d.value)
+      :const (str::nat-to-dec-string d.val)
       :add (str::cat "(+" (str::cat (dim-list-to-string d.dims) ")"))
       :mul (str::cat "(*" (str::cat (dim-list-to-string d.dims) ")"))
       :sub (str::cat "(-" (str::cat (dim-list-to-string d.dims) ")")))

@@ -892,8 +892,8 @@
   :hints (("goal" :use ((:instance CLR-NON-NIL-WHEN-GET-FIELD-2 (a (array-contents-pair)) (pair '(:SPECIAL-DATA . :CLASS)))
                         (:instance NON-NIL-WHEN-NTH-IS-NON-NIL-GET-FIELD (n 0) (free :array) (class-field-pair '(:SPECIAL-DATA . :CLASS))))
 
-           :in-theory (e/d ( ;-nil-when-nth-is-non-nil-get-field
-                            ) ( CLR-NON-NIL-WHEN-GET-FIELD-2 CLR-NON-NIL-WHEN-GET-FIELD)))))
+           :in-theory (e/d (;-nil-when-nth-is-non-nil-get-field
+                            ) (clr-non-nil-when-get-field-2 clr-non-nil-when-get-field)))))
 
 ;BOZO make other versions?
 (defthm array-ref-listp-of-set-field-both
@@ -904,14 +904,14 @@
                            (equal dim (len val))
                            (all-unsigned-byte-p 32 val))
                     (array-ref-listp reflist (list dim) ':int heap))))
-  :hints (;("subgoal *1/1.1" :use (:instance CLR-NON-NIL-WHEN-GET-FIELD-2 (a (array-contents-pair)) (ad (NTH 0 REFLIST)))                      :in-theory (e/d (non-nil-when-nth-is-non-nil-get-field) ( CLR-NON-NIL-WHEN-GET-FIELD-2 CLR-NON-NIL-WHEN-GET-FIELD)))
+  :hints (;("subgoal *1/1.1" :use (:instance CLR-NON-NIL-WHEN-GET-FIELD-2 (a (array-contents-pair)) (ad (NTH 0 REFLIST)))                      :in-theory (e/d (non-nil-when-nth-is-non-nil-get-field) (CLR-NON-NIL-WHEN-GET-FIELD-2 CLR-NON-NIL-WHEN-GET-FIELD)))
 
           ("Goal"
            :induct (len reflist)
            :in-theory (e/d ((:induction len)
                             ARRAY-REF-LISTP
                              hack11)
-                           ( ;RKEYS-OF-SET-FIELD-BOTH
+                           (;RKEYS-OF-SET-FIELD-BOTH
                             )))))
 
 (defthmd split-list-hack
@@ -932,9 +932,8 @@
                       x))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use split-list-hack
-           :in-theory (e/d ( ;PERM-OF-CONS PERM-BECOMES-TWO-SUBBAGP-CLAIMS
-                            ) (equal-of-append
-                               )))))
+           :in-theory (e/d (;PERM-OF-CONS PERM-BECOMES-TWO-SUBBAGP-CLAIMS
+                            ) (equal-of-append)))))
 
 ;bozo handle other array types
 ;bozo heaps may not be the same
@@ -1586,8 +1585,9 @@
            (not (equal nil (s (array-contents-pair) new-contents (g ad heap)))))
   :hints (("Goal" ;:use (:instance GET-FIELD-TYPE-FROM-ARRAY-REFP (ref ad) (dim len))
            :expand ((ARRAY-REFP AD (LIST LEN) TYPE HEAP))
-           :in-theory (e/d (get-field) ( ;GET-FIELD-TYPE-FROM-ARRAY-REFP
-                                        G-IFF-GEN S-IFF)))))
+           :in-theory (e/d (get-field)
+                           (;GET-FIELD-TYPE-FROM-ARRAY-REFP
+                            G-IFF-GEN S-IFF)))))
 
 (DEFTHM INTEGERP-NTH-OF-GET-FIELD-CONTENTS-WHEN-ARRAY-REFP2
   (IMPLIES (AND (ARRAY-REFP REF (LIST LEN) TYPE HEAP)
@@ -1683,7 +1683,8 @@
            (equal (getbit n (bv-array-read element-size len index data))
                   (bv-array-read 1 len index (getbit-list n data)))) ;the getbit-list gets computed
   :hints (("Goal" :use getbit-of-bv-array-read-helper
-           :in-theory (e/d (getbit-list) ( getbit-of-bv-array-read-helper)))))
+           :in-theory (e/d (getbit-list)
+                           (getbit-of-bv-array-read-helper)))))
 
 ;disable?
 ;compare to the regular

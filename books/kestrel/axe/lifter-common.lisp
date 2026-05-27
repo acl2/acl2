@@ -14,6 +14,7 @@
 (include-book "dag-size")
 (include-book "dag-to-term")
 (include-book "count-branches")
+(include-book "step-increments") ; or move that material here
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "std/system/untranslate-dollar" :dir :system)
@@ -195,6 +196,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Creates a custom version of the repeatedly-run-function for each unrolling lifter.
 (defun make-repeatedly-run-function-fn (name simplify-dag-name)
   (declare (xargs :guard (and (symbolp name)
                               (symbolp simplify-dag-name))))
@@ -204,22 +206,22 @@
   ;; STEPS-DONE reaches STEP-LIMIT, or a loop (really?) or an unsupported
   ;; instruction is detected.  Returns (mv erp result-dag-or-quotep hits state).
   `(encapsulate ()
-       (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+     (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
      (defund ,name (steps-done
-                   step-limit
-                   step-increment ; not always just a number!
-                   dag ; the state may be wrapped in an output-extractor
-                   rule-alist pruning-rule-alist
-                   assumptions
-                   step-opener-rule ; the rule that gets limited
-                   rules-to-monitor
-                   prune-precise prune-approx
-                   normalize-xors count-hits hits print print-base max-printed-term-size
-                   no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns
-                   untranslatep memoizep
-                   ;; could pass in the stop-pcs, if any
-                   state)
+                    step-limit
+                    step-increment ; not always just a number!
+                    dag ; the state may be wrapped in an output-extractor
+                    rule-alist pruning-rule-alist
+                    assumptions
+                    step-opener-rule ; the rule that gets limited
+                    rules-to-monitor
+                    prune-precise prune-approx
+                    normalize-xors count-hits hits print print-base max-printed-term-size
+                    no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns
+                    untranslatep memoizep
+                    ;; could pass in the stop-pcs, if any
+                    state)
        (declare (xargs :guard (and (natp steps-done)
                                    (natp step-limit)
                                    (step-incrementp step-increment)

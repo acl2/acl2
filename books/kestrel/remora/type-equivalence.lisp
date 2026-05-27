@@ -59,7 +59,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used when encountering two product or sum type,
+    "This is used when encountering two product or sum types,
      which need to be checked for equivalence.
      As in the rules in Figure 4.9 of [thesis],
      we need to rename the bound variables in the bodies of both types
@@ -73,11 +73,11 @@
      one for the dimension variables in @('vars1'),
      one for the shape variables in @('vars1'),
      one for the dimension variables in @('vars2'), and
-     one for the shape variables in @('vars');
+     one for the shape variables in @('vars2');
      in that order.
      While [thesis] only shows two renamings,
      one for @($x\\ldots$) (our @('vars1')) and
-     one for @($x'\\ldots$) (our @('vars')),
+     one for @($x'\\ldots$) (our @('vars2')),
      we split each into two, for dimension and shape variables,
      which are distinct in our formalization.")
    (xdoc::p
@@ -95,7 +95,8 @@
      var1
      :dim (ispace-var-case
            var2
-           :dim (b* (((ispace-var-dim var) (fresh-dim-ispace-var used))
+           :dim (b* (((ispace-var-dim var)
+                      (fresh-dim-ispace-var "_fresh_ispace_" used))
                      ((ok (string-string-map-quadruple maps))
                       (fresh-ispace-var-renaming (cdr vars1)
                                                  (cdr vars2)
@@ -108,7 +109,8 @@
      :shape (ispace-var-case
              var2
              :dim (reserr nil)
-             :shape (b* (((ispace-var-shape var) (fresh-shape-ispace-var used))
+             :shape (b* (((ispace-var-shape var)
+                          (fresh-shape-ispace-var "_fresh_ispace_" used))
                          ((ok (string-string-map-quadruple maps))
                           (fresh-ispace-var-renaming (cdr vars1)
                                                      (cdr vars2)
@@ -144,11 +146,11 @@
      one for the atom variables in @('vars1'),
      one for the array variables in @('vars1'),
      one for the atom variables in @('vars2'), and
-     one for the array variables in @('vars');
+     one for the array variables in @('vars2');
      in that order.
      While [thesis] only shows two renamings,
      one for @($x\\ldots$) (our @('vars1')) and
-     one for @($x'\\ldots$) (our @('vars')),
+     one for @($x'\\ldots$) (our @('vars2')),
      we split each into two, for atom and array variables,
      which are distinct in our formalization.")
    (xdoc::p
@@ -166,7 +168,8 @@
      var1
      :atom (type-var-case
             var2
-            :atom (b* (((type-var-atom var) (fresh-atom-type-var used))
+            :atom (b* (((type-var-atom var)
+                        (fresh-atom-type-var "_fresh_type_" used))
                        ((ok (string-string-map-quadruple maps))
                         (fresh-type-var-renaming (cdr vars1)
                                                  (cdr vars2)
@@ -179,7 +182,8 @@
      :array (type-var-case
              var2
              :atom (reserr nil)
-             :array (b* (((type-var-array var) (fresh-array-type-var used))
+             :array (b* (((type-var-array var)
+                          (fresh-array-type-var "_fresh_type_" used))
                          ((ok (string-string-map-quadruple maps))
                           (fresh-type-var-renaming (cdr vars1)
                                                    (cdr vars2)
@@ -238,7 +242,13 @@
        which we then compare for equivalence.
        The fresh variables must not be in any of the two types:
        so we set the set of variables to avoid to
-       all the (free and bound) variables in the two types."))
+       all the (free and bound) variables in the two types.")
+     (xdoc::p
+      "Since we are renaming (ispace and type) variables to fresh ones,
+       we do not call the predicates to check for variable capture.
+       Once we add those predicates as guards of the renaming operations,
+       we will get a proof obligation showing that
+       the renamings indeed cause no capture."))
     (type-case
      type1
      :var (type-case
