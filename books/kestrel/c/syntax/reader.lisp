@@ -182,7 +182,12 @@
      but we return an error if the character
      is between @('U+202A') and @('U+202E')
      or between @('U+2066') and @('U+2069');
-     see the @('safe-nonascii') rule in our ABNF grammar.")
+     see the @('safe-nonascii') rule in our ABNF grammar.
+     We also return an error if the character is a surrogate,
+     i.e. from @('U+D800') to @('U+DFFF');
+     note that this cannot happen
+     in the first case above and in the third case below,
+     because of their ranges and other checks.")
    (xdoc::p
     "<b>Third case</b>:
      If the first byte has the form @('11110xyy'),
@@ -418,7 +423,9 @@
              ((when (or (and (<= #x202a code)
                              (<= code #x202e))
                         (and (<= #x2066 code)
-                             (<= code #x2069))))
+                             (<= code #x2069))
+                        (and (<= #xd800 code)
+                             (<= code #xdfff))))
               (reterr-msg :where parstate.position
                           :expected "a Unicode character with code ~
                                      in the range 9-13 or 32-126 ~
