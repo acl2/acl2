@@ -603,7 +603,9 @@
      :char (if (<= cchar.code #x10ffff)
                (retok (pvalue-signed cchar.code))
              (reterr (msg "Character ~x0 exceeds 10FFFFh." (c-char-fix cchar))))
-     :escape (peval-escape cchar.escape))))
+     :escape (peval-escape cchar.escape)))
+  :guard-hints (("Goal" :in-theory (enable rationalp-when-ucharp
+                                           integerp-when-ucharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -226,7 +226,9 @@
                ((= cchar.code (char-code #\"))
                 (append (stringize-achars (list #\\ #\"))))
                (t (list (s-char-char cchar.code))))
-   :escape (stringize-escape cchar.escape)))
+   :escape (stringize-escape cchar.escape))
+  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp
+                                           acl2-numberp-when-ucharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

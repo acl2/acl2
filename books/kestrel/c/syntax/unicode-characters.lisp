@@ -75,6 +75,14 @@
     (implies (ucharp x)
              (integerp x)))
 
+  (defruled rationalp-when-ucharp
+    (implies (ucharp x)
+             (rationalp x)))
+
+  (defruled acl2-numberp-when-ucharp
+    (implies (ucharp x)
+             (acl2-numberp x)))
+
   (defruled ucharp-lower-bound
     (implies (ucharp x)
              (>= x 0))

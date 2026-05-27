@@ -1008,7 +1008,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-c-char ((cchar c-char-p) (prefix? eprefix-optionp) (ienv ienvp))
-  :returns (mv (erp maybe-msgp) (code natp))
+  :returns (mv (erp maybe-msgp)
+               (code natp
+                     :hints (("Goal" :in-theory (enable natp-when-ucharp)))))
   :short "Validate a character of a character constant."
   :long
   (xdoc::topstring
@@ -1059,7 +1061,9 @@
                             a character constant with prefix ~x2."
                            cchar.code max (eprefix-option-fix prefix?)))
                  (t (retok cchar.code)))
-     :escape (valid-escape cchar.escape max))))
+     :escape (valid-escape cchar.escape max)))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-ucharp
+                                           rationalp-when-ucharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
