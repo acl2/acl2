@@ -20,40 +20,6 @@
 
 ; Expressions [C17:A.2.1]
 
-; As a temporary C23 extension,
-; we allow 'true' and 'false' as synonyms of '0' and '1'.
-; We plan to modularize this grammar according to C versions.
-
-; As a GCC extension, we include statement expressions,
-; i.e. expressions that consists of a parenthesized compound statement
-; (https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html).
-; Since they are parenthesized, we classify them as primary expressions.
-
-; As a GCC extension, we include calls of '__builtin_types_compatible_p'
-; (https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html),
-; which are not normal function calls, because the arguments are types names.
-; Although function calls are postfix expressions in general,
-; since here the called function is known,
-; it makes more sense for these to be primary expressions.
-
-; As a GCC extension, we include calls of '__builtin_offsetof'
-; (https://gcc.gnu.org/onlinedocs/gcc/Offsetof.html),
-; which are not normal function calls,
-; because the first argument is a type name.
-; The GCC documentation page linked just above
-; provides a grammar for these calls.
-; We render that as an extension of our ABNF grammar;
-; note that the second argument is a restricted form of expressions.
-
-; As a GCC extension, we include calls of '__builtin_va_arg',
-; which are not normal function calls,
-; because the second argument is a type name.
-; We did not find this documented in the GCC manual,
-; presumably because it is an internal function,
-; used to implement the user-visible 'va_arg' macro,
-; although we did not find the latter in the GCC manual either,
-; but some web searches support the view explained just above.
-
 ; As a GCC extension, we allow empty compound literals.
 ; GCC extensions for compound literals are described in
 ; https://gcc.gnu.org/onlinedocs/gcc/Compound-Literals.html,
@@ -62,19 +28,6 @@
 
 ; As a GCC extensions, we allow conditionals with omitted operands,
 ; documented at https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html.
-
-; As a GCC extension, we allow a primary expression
-; to be preceded by '__extension__'.
-; This is briefly mentioned in the GCC manual
-; (https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html);
-; experiments suggest that this keyword only applies to
-; the subsequent primary expression,
-; and not to a larger expression,
-; which makes syntactic sense.
-; The keyword and the expression are juxtaposed,
-; without required parentheses;
-; if there are parentheses, they below to the expression,
-; which is therefore a parenthesized expression.
 
 ; As a GCC extension, we allow '_Alignof' (and variant keywords)
 ; to form unary expressions in the same way as 'sizeof'
@@ -92,33 +45,6 @@
 ; As a GCC extension, we include the unary '&&' operator applied to labels
 ; (https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html),
 ; which syntactically are identifiers (cf. the rule for labeled statements).
-
-primary-expression = identifier
-                   / constant
-                   / 1*string-literal
-                   / "(" expression ")"
-                   / generic-selection
-                   ; GCC extensions:
-                   / "(" compound-statement ")"
-                   / types-compatible-call
-                   / offsetof-call
-                   / va-arg-call
-                   / %s"__extension__" primary-expression
-                   / %s"true" ; C23
-                   / %s"false" ; C23
-
-types-compatible-call =
-    %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
-
-offsetof-call =
-    %s"__builtin_offsetof" "(" type-name "," offsetof-member-designator ")"
-
-offsetof-member-designator = identifier
-                           / offsetof-member-designator "." identifier
-                           / offsetof-member-designator "[" expression "]"
-
-va-arg-call =
-    %s"__builtin_va_arg" "(" assignment-expression "," type-name ")"
 
 generic-selection =
     %s"_Generic" "(" assignment-expression "," generic-assoc-list ")"
