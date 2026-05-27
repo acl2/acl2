@@ -140,4 +140,10 @@
                   (ucharp default))
              (uchar-listp (resize-list chars length default)))
     :induct t
-    :enable resize-list))
+    :enable resize-list)
+
+  (defruled nat-listp-when-uchar-listp
+    (implies (uchar-listp x)
+             (nat-listp x))
+    :induct t
+    :enable (uchar-listp nat-listp natp-when-ucharp)))

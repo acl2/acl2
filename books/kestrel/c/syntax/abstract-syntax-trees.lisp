@@ -911,13 +911,11 @@
    (xdoc::p
     "This corresponds to @('h-char') in the ABNF grammar.")
    (xdoc::p
-    "As explained in @(see abstract-syntax),
-     the natural numbers represent Unicode code points.
-     We wrap the natural number in this fixtype for more abstraction,
-     and to facilitate the addition of restrictions on the number,
+    "We wrap the Unicode character in this fixtype for more abstraction,
+     and to facilitate the addition of restrictions on the character,
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
-  ((code nat))
+  ((code uchar))
   :pred h-char-p
   :layout :fulltree)
 
@@ -934,7 +932,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection h-char-list->code-list ((x h-char-listp))
-  :returns (chars nat-listp)
+  :returns (chars uchar-listp)
   :short "Lift @(tsee h-char->code) to lists."
   (h-char->code x))
 

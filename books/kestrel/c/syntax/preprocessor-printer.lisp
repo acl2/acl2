@@ -429,6 +429,7 @@
        ((unless (grammar-character-p code))
         (raise "Internal error: bad character code ~x0." code)))
     (pprint-char code bytes))
+  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

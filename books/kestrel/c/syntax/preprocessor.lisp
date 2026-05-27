@@ -458,7 +458,9 @@
                         code)))
           (char (code-char code))
           ((erp chars) (h-char-list-to-char-list (cdr hchars))))
-       (retok (cons char chars))))))
+       (retok (cons char chars)))
+     :guard-hints (("Goal" :use (:instance natp-when-ucharp
+                                           (x (h-char->code (car hchars)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3144,8 +3146,7 @@
                      (s-char-escape->escape schar))))
        (hchar (h-char (s-char-char->code schar)))
        ((erp hchars) (s-char-list-to-h-char-list (cdr schars))))
-    (retok (cons hchar hchars)))
-  :guard-hints (("Goal" :in-theory (enable natp-when-ucharp))))
+    (retok (cons hchar hchars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3624,7 +3625,8 @@
                            (plexeme-fix newline-at-end)))
        (closing-line (list (plexeme-line-comment closing-codes)
                            (plexeme-fix newline-at-end))))
-    (mv opening-line closing-line)))
+    (mv opening-line closing-line))
+  :guard-hints (("Goal" :in-theory (enable nat-listp-when-uchar-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
