@@ -60,10 +60,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; See A5.7 Unconditional instructions
-;; todo: flesh this out (pass in the inst!)
-(defund execute-unconditional-instruction (arm)
-  (declare (xargs :stobjs arm))
-  (update-error :unsupported-unconditional-instruction arm))
+;; todo: flesh this out
+(defund execute-unconditional-instruction (arm inst)
+  (declare (xargs :guard (unsigned-byte-p 32 inst)
+                  :stobjs arm))
+  (update-error (list :unsupported-unconditional-instruction inst) arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -58,7 +58,7 @@
                                    check-condition-all-ones)))
     (let* ((body (if check-condition-all-ones
                      `(if (= cond #b1111)
-                          (execute-unconditional-instruction arm)
+                          (execute-unconditional-instruction arm (read 4 inst-address arm))
                         ,body)
                    body))
            (body (if check-condition
@@ -88,7 +88,7 @@
          ,@(and (not (eq :none alt-body))
                 (let* ((alt-body (if check-condition-all-ones
                                      `(if (= cond #b1111)
-                                          (execute-unconditional-instruction arm)
+                                          (execute-unconditional-instruction arm (read 4 inst-address arm))
                                         ,alt-body)
                                    alt-body))
                        (alt-body (if check-condition
