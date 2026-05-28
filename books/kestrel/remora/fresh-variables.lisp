@@ -57,7 +57,7 @@
     "In the loop that attempts to generate a fresh variable:
      @('a') is the variable generated in the current iteration,
      which is still in the set of variables to avoid,
-     so that we need to do another loop iteratino;
+     so that we need to do another loop iteration;
      @('y') is the difference between the set to avoid
      and the variables generated so far, excluding @('a');
      and @('x') is obtained by removing @('a') from @('y').
@@ -76,18 +76,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-var-dim-with-index ((index natp))
+(define ispace-var-dim-with-index ((prefix stringp) (index natp))
   :returns (var ispace-varp)
-  :short "Generate a dimension ispace variable from a numeric index."
+  :short "Generate a dimension ispace variable
+          from a prefix and a numeric index."
   :long
   (xdoc::topstring
    (xdoc::p
     "In concrete syntax,
-     the variable has the form @('$<i>'), where @('<i>') is the index.
-     This is a legal identifier in Remora (see ABNF grammar).
-     A key property is that it is an injective mapping:
+     the variable would have the form @('$<p><i>'),
+     where @('<p>') is the prefix and @('<i>') is the index.
+     If the prefix is a legal Remora identifier,
+     so is the generated variable's name.
+     A key property is that it is an injective mapping given a prefix:
      different indices yield different variables."))
-  (ispace-var-dim (str::nat-to-dec-string (lnfix index)))
+  (ispace-var-dim (str::cat prefix (str::nat-to-dec-string (lnfix index))))
 
   ///
 
@@ -95,17 +98,18 @@
     (equal (ispace-var-kind var) :dim))
 
   (defrule ispace-var-dim-with-index-injective
-    (equal (equal (ispace-var-dim-with-index index1)
-                  (ispace-var-dim-with-index index2))
+    (equal (equal (ispace-var-dim-with-index prefix index1)
+                  (ispace-var-dim-with-index prefix index2))
            (equal (nfix index1)
-                  (nfix index2)))))
+                  (nfix index2)))
+    :enable string-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-vars-dim-with-index-below ((index natp))
+(define ispace-vars-dim-with-index-below ((prefix stringp) (index natp))
   :returns (vars ispace-var-setp)
   :short "Generate the set of dimension ispace variables
-          for all the numeric indices below a given index."
+          with a given prefix for all the numeric indices below a given index."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -117,51 +121,54 @@
      This function is also injective."))
   (b* (((when (zp index)) nil)
        (index (1- index)))
-    (set::insert (ispace-var-dim-with-index index)
-                 (ispace-vars-dim-with-index-below index)))
+    (set::insert (ispace-var-dim-with-index prefix index)
+                 (ispace-vars-dim-with-index-below prefix index)))
   :verify-guards :after-returns
   :prepwork ((local (in-theory (enable nfix))))
 
   ///
 
   (defrule ispace-var-dim-with-index-in-set-below
-    (equal (set::in (ispace-var-dim-with-index index1)
-                    (ispace-vars-dim-with-index-below index2))
+    (equal (set::in (ispace-var-dim-with-index prefix index1)
+                    (ispace-vars-dim-with-index-below prefix index2))
            (< (nfix index1)
               (nfix index2)))
     :induct t
     :enable nfix)
 
   (defrule ispace-vars-dim-with-index-below-subset
-    (equal (set::subset (ispace-vars-dim-with-index-below index1)
-                        (ispace-vars-dim-with-index-below index2))
+    (equal (set::subset (ispace-vars-dim-with-index-below prefix index1)
+                        (ispace-vars-dim-with-index-below prefix index2))
            (<= (nfix index1) (nfix index2)))
     :use (if-part only-if-part)
     :prep-lemmas
     ((defrule if-part
        (implies (<= (nfix index1) (nfix index2))
-                (set::subset (ispace-vars-dim-with-index-below index1)
-                             (ispace-vars-dim-with-index-below index2)))
+                (set::subset (ispace-vars-dim-with-index-below prefix index1)
+                             (ispace-vars-dim-with-index-below prefix index2)))
        :induct t)
      (defrule only-if-part
-       (implies (set::subset (ispace-vars-dim-with-index-below index1)
-                             (ispace-vars-dim-with-index-below index2))
+       (implies (set::subset (ispace-vars-dim-with-index-below prefix index1)
+                             (ispace-vars-dim-with-index-below prefix index2))
                 (<= (nfix index1) (nfix index2)))
        :induct t
        :enable nfix)))
 
   (defrule ispace-vars-dim-with-index-below-injective
-    (implies (equal (ispace-vars-dim-with-index-below index1)
-                    (ispace-vars-dim-with-index-below index2))
+    (implies (equal (ispace-vars-dim-with-index-below prefix index1)
+                    (ispace-vars-dim-with-index-below prefix index2))
              (equal (nfix index1) (nfix index2)))
     :enable set::double-containment-no-backchain-limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define remove-ispace-vars-dim-below-index ((index natp) (vars ispace-var-setp))
+(define remove-ispace-vars-dim-below-index ((prefix stringp)
+                                            (index natp)
+                                            (vars ispace-var-setp))
   :returns (new-vars ispace-var-setp)
   :short "Remove, from a set of ispace variables,
-          all the dimension ispace variables with indices below a given index."
+          all the dimension ispace variables
+          with a given prefix and with indices below a given index."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -170,26 +177,27 @@
      So when we remove the variables below the index,
      we remove all the variables attempted so far."))
   (set::difference (ispace-var-set-fix vars)
-                   (ispace-vars-dim-with-index-below index))
+                   (ispace-vars-dim-with-index-below prefix index))
 
   ///
 
   (defrule ispace-var-dim-with-index-in-remove-ispace-vars-dims-below-index
-    (equal (set::in (ispace-var-dim-with-index index1)
-                    (remove-ispace-vars-dim-below-index index2 vars))
-           (and (set::in (ispace-var-dim-with-index index1)
+    (equal (set::in (ispace-var-dim-with-index prefix index1)
+                    (remove-ispace-vars-dim-below-index prefix index2 vars))
+           (and (set::in (ispace-var-dim-with-index prefix index1)
                          (ispace-var-set-fix vars))
                 (>= (nfix index1) (nfix index2)))))
 
   (defrule remove-ispace-vars-dim-below-index-subset-when-index-leq
     (implies (>= (nfix index1) (nfix index2))
-             (set::subset (remove-ispace-vars-dim-below-index index1 vars)
-                          (remove-ispace-vars-dim-below-index index2 vars)))
+             (set::subset
+              (remove-ispace-vars-dim-below-index prefix index1 vars)
+              (remove-ispace-vars-dim-below-index prefix index2 vars)))
     :enable set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fresh-dim-ispace-var ((used ispace-var-setp))
+(define fresh-dim-ispace-var ((prefix stringp) (used ispace-var-setp))
   :returns (var ispace-varp)
   :short "Generate a fresh dimension ispace variable,
           i.e. one not in the set of already used ispace variables."
@@ -198,29 +206,40 @@
    (xdoc::p
     "We use the approach in @(see fresh-variables).
      The termination lemma relies on the set theorem explained earlier."))
-  (fresh-dim-ispace-var-loop 0 used)
+  (fresh-dim-ispace-var-loop prefix 0 used)
 
   :prepwork
-  ((define fresh-dim-ispace-var-loop ((index natp) (used ispace-var-setp))
+  ((define fresh-dim-ispace-var-loop ((prefix stringp)
+                                      (index natp)
+                                      (used ispace-var-setp))
      :returns (var ispace-varp)
-     (b* ((var (ispace-var-dim-with-index index)))
+     (b* ((var (ispace-var-dim-with-index prefix index)))
        (if (set::in var (ispace-var-set-fix used))
-           (fresh-dim-ispace-var-loop (1+ (lnfix index)) used)
+           (fresh-dim-ispace-var-loop prefix (1+ (lnfix index)) used)
          var))
-     :measure (set::cardinality (remove-ispace-vars-dim-below-index index used))
+     :measure (set::cardinality
+               (remove-ispace-vars-dim-below-index prefix index used))
      :prepwork
      ((defrulel termination-lemma
-        (implies (set::in (ispace-var-dim-with-index index)
+        (implies (set::in (ispace-var-dim-with-index prefix index)
                           (ispace-var-set-fix vars))
                  (< (set::cardinality
-                     (remove-ispace-vars-dim-below-index (1+ (nfix index)) vars))
+                     (remove-ispace-vars-dim-below-index prefix
+                                                         (1+ (nfix index))
+                                                         vars))
                     (set::cardinality
-                     (remove-ispace-vars-dim-below-index index vars))))
+                     (remove-ispace-vars-dim-below-index prefix
+                                                         index
+                                                         vars))))
         :use (:instance
               cardinality-lt-when-subset-and-not-member
-              (x (remove-ispace-vars-dim-below-index (1+ (nfix index)) vars))
-              (y (remove-ispace-vars-dim-below-index index vars))
-              (a (ispace-var-dim-with-index index)))))
+              (x (remove-ispace-vars-dim-below-index prefix
+                                                     (1+ (nfix index))
+                                                     vars))
+              (y (remove-ispace-vars-dim-below-index prefix
+                                                     index
+                                                     vars))
+              (a (ispace-var-dim-with-index prefix index)))))
 
      ///
 
@@ -242,18 +261,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-var-shape-with-index ((index natp))
+(define ispace-var-shape-with-index ((prefix stringp) (index natp))
   :returns (var ispace-varp)
-  :short "Generate a shape ispace variable from a numeric index."
+  :short "Generate a shape ispace variable
+          from a prefix and a numeric index."
   :long
   (xdoc::topstring
    (xdoc::p
     "In concrete syntax,
-     the variable has the form @('@<i>'), where @('<i>') is the index.
-     This is a legal identifier in Remora (see ABNF grammar).
+     the variable would have the form @('@<p><i>'),
+     where @('<p>') is the prefix and @('<i>') is the index.
+     If the prefix is a legal Remora identifier,
+     so is the generated variable's name.
      A key property is that it is an injective mapping:
      different indices yield different variables."))
-  (ispace-var-shape (str::nat-to-dec-string (lnfix index)))
+  (ispace-var-shape (str::cat prefix (str::nat-to-dec-string (lnfix index))))
 
   ///
 
@@ -261,17 +283,18 @@
     (equal (ispace-var-kind var) :shape))
 
   (defrule ispace-var-shape-with-index-injective
-    (equal (equal (ispace-var-shape-with-index index1)
-                  (ispace-var-shape-with-index index2))
+    (equal (equal (ispace-var-shape-with-index prefix index1)
+                  (ispace-var-shape-with-index prefix index2))
            (equal (nfix index1)
-                  (nfix index2)))))
+                  (nfix index2)))
+    :enable string-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ispace-vars-shape-with-index-below ((index natp))
+(define ispace-vars-shape-with-index-below ((prefix stringp) (index natp))
   :returns (vars ispace-var-setp)
   :short "Generate the set of shape ispace variables
-          for all the numeric indices below a given index."
+          with a given prefix for all the numeric indices below a given index."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -283,52 +306,55 @@
      This function is also injective."))
   (b* (((when (zp index)) nil)
        (index (1- index)))
-    (set::insert (ispace-var-shape-with-index index)
-                 (ispace-vars-shape-with-index-below index)))
+    (set::insert (ispace-var-shape-with-index prefix index)
+                 (ispace-vars-shape-with-index-below prefix index)))
   :verify-guards :after-returns
   :prepwork ((local (in-theory (enable nfix))))
 
   ///
 
   (defrule ispace-var-shape-with-index-in-set-below
-    (equal (set::in (ispace-var-shape-with-index index1)
-                    (ispace-vars-shape-with-index-below index2))
+    (equal (set::in (ispace-var-shape-with-index prefix index1)
+                    (ispace-vars-shape-with-index-below prefix index2))
            (< (nfix index1)
               (nfix index2)))
     :induct t
     :enable nfix)
 
   (defrule ispace-vars-shape-with-index-below-subset
-    (equal (set::subset (ispace-vars-shape-with-index-below index1)
-                        (ispace-vars-shape-with-index-below index2))
+    (equal (set::subset (ispace-vars-shape-with-index-below prefix index1)
+                        (ispace-vars-shape-with-index-below prefix index2))
            (<= (nfix index1) (nfix index2)))
     :use (if-part only-if-part)
     :prep-lemmas
     ((defrule if-part
        (implies (<= (nfix index1) (nfix index2))
-                (set::subset (ispace-vars-shape-with-index-below index1)
-                             (ispace-vars-shape-with-index-below index2)))
+                (set::subset
+                 (ispace-vars-shape-with-index-below prefix index1)
+                 (ispace-vars-shape-with-index-below prefix index2)))
        :induct t)
      (defrule only-if-part
-       (implies (set::subset (ispace-vars-shape-with-index-below index1)
-                             (ispace-vars-shape-with-index-below index2))
+       (implies (set::subset (ispace-vars-shape-with-index-below prefix index1)
+                             (ispace-vars-shape-with-index-below prefix index2))
                 (<= (nfix index1) (nfix index2)))
        :induct t
        :enable nfix)))
 
   (defrule ispace-vars-shape-with-index-below-injective
-    (implies (equal (ispace-vars-shape-with-index-below index1)
-                    (ispace-vars-shape-with-index-below index2))
+    (implies (equal (ispace-vars-shape-with-index-below prefix index1)
+                    (ispace-vars-shape-with-index-below prefix index2))
              (equal (nfix index1) (nfix index2)))
     :enable set::double-containment-no-backchain-limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define remove-ispace-vars-shape-below-index ((index natp)
+(define remove-ispace-vars-shape-below-index ((prefix stringp)
+                                              (index natp)
                                               (vars ispace-var-setp))
   :returns (new-vars ispace-var-setp)
   :short "Remove, from a set of ispace variables,
-          all the shape ispace variables with indices below a given index."
+          all the shape ispace variables
+          with a given prefix and with indices below a given index."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -337,26 +363,27 @@
      So when we remove the variables below the index,
      we remove all the variables attempted so far."))
   (set::difference (ispace-var-set-fix vars)
-                   (ispace-vars-shape-with-index-below index))
+                   (ispace-vars-shape-with-index-below prefix index))
 
   ///
 
   (defrule ispace-var-shape-with-index-in-remove-ispace-vars-shapes-below-index
-    (equal (set::in (ispace-var-shape-with-index index1)
-                    (remove-ispace-vars-shape-below-index index2 vars))
-           (and (set::in (ispace-var-shape-with-index index1)
+    (equal (set::in (ispace-var-shape-with-index prefix index1)
+                    (remove-ispace-vars-shape-below-index prefix index2 vars))
+           (and (set::in (ispace-var-shape-with-index prefix index1)
                          (ispace-var-set-fix vars))
                 (>= (nfix index1) (nfix index2)))))
 
   (defrule remove-ispace-vars-shape-below-index-subset-when-index-leq
     (implies (>= (nfix index1) (nfix index2))
-             (set::subset (remove-ispace-vars-shape-below-index index1 vars)
-                          (remove-ispace-vars-shape-below-index index2 vars)))
+             (set::subset
+              (remove-ispace-vars-shape-below-index prefix index1 vars)
+              (remove-ispace-vars-shape-below-index prefix index2 vars)))
     :enable set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fresh-shape-ispace-var ((used ispace-var-setp))
+(define fresh-shape-ispace-var ((prefix stringp) (used ispace-var-setp))
   :returns (var ispace-varp)
   :short "Generate a fresh shape ispace variable,
           i.e. one not in the set of already used ispace variables."
@@ -365,31 +392,40 @@
    (xdoc::p
     "We use the approach in @(see fresh-variables).
      The termination lemma relies on the set theorem explained earlier."))
-  (fresh-shape-ispace-var-loop 0 used)
+  (fresh-shape-ispace-var-loop prefix 0 used)
 
   :prepwork
-  ((define fresh-shape-ispace-var-loop ((index natp) (used ispace-var-setp))
+  ((define fresh-shape-ispace-var-loop ((prefix stringp)
+                                        (index natp)
+                                        (used ispace-var-setp))
      :returns (var ispace-varp)
-     (b* ((var (ispace-var-shape-with-index index)))
+     (b* ((var (ispace-var-shape-with-index prefix index)))
        (if (set::in var (ispace-var-set-fix used))
-           (fresh-shape-ispace-var-loop (1+ (lnfix index)) used)
+           (fresh-shape-ispace-var-loop prefix (1+ (lnfix index)) used)
          var))
      :measure (set::cardinality
-               (remove-ispace-vars-shape-below-index index used))
+               (remove-ispace-vars-shape-below-index prefix index used))
      :prepwork
      ((defrulel termination-lemma
-        (implies (set::in (ispace-var-shape-with-index index)
+        (implies (set::in (ispace-var-shape-with-index prefix index)
                           (ispace-var-set-fix vars))
                  (< (set::cardinality
-                     (remove-ispace-vars-shape-below-index (1+ (nfix index))
+                     (remove-ispace-vars-shape-below-index prefix
+                                                           (1+ (nfix index))
                                                            vars))
                     (set::cardinality
-                     (remove-ispace-vars-shape-below-index index vars))))
+                     (remove-ispace-vars-shape-below-index prefix
+                                                           index
+                                                           vars))))
         :use (:instance
               cardinality-lt-when-subset-and-not-member
-              (x (remove-ispace-vars-shape-below-index (1+ (nfix index)) vars))
-              (y (remove-ispace-vars-shape-below-index index vars))
-              (a (ispace-var-shape-with-index index)))))
+              (x (remove-ispace-vars-shape-below-index prefix
+                                                       (1+ (nfix index))
+                                                       vars))
+              (y (remove-ispace-vars-shape-below-index prefix
+                                                       index
+                                                       vars))
+              (a (ispace-var-shape-with-index prefix index)))))
 
      ///
 
@@ -411,18 +447,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-var-atom-with-index ((index natp))
+(define type-var-atom-with-index ((prefix stringp) (index natp))
   :returns (var type-varp)
-  :short "Generate an atom type variable from a numeric index."
+  :short "Generate an atom type variable
+          from a prefix and a numeric index."
   :long
   (xdoc::topstring
    (xdoc::p
     "In concrete syntax,
-     the variable has the form @('&<i>'), where @('<i>') is the index.
-     This is a legal identifier in Remora (see ABNF grammar).
+     the variable would have the form @('&<p><i>'),
+     where @('<p>') is the prefix and @('<i>') is the index.
+     If the prefix is a legal Remora identifier,
+     so is the generated variable's name.
      A key property is that it is an injective mapping:
      different indices yield different variables."))
-  (type-var-atom (str::nat-to-dec-string (lnfix index)))
+  (type-var-atom (str::cat prefix (str::nat-to-dec-string (lnfix index))))
 
   ///
 
@@ -430,14 +469,15 @@
     (equal (type-var-kind var) :atom))
 
   (defrule type-var-atom-with-index-injective
-    (equal (equal (type-var-atom-with-index index1)
-                  (type-var-atom-with-index index2))
+    (equal (equal (type-var-atom-with-index prefix index1)
+                  (type-var-atom-with-index prefix index2))
            (equal (nfix index1)
-                  (nfix index2)))))
+                  (nfix index2)))
+    :enable string-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-vars-atom-with-index-below ((index natp))
+(define type-vars-atom-with-index-below ((prefix stringp) (index natp))
   :returns (vars type-var-setp)
   :short "Generate the set of atom type variables
           for all the numeric indices below a given index."
@@ -452,48 +492,50 @@
      This function is also injective."))
   (b* (((when (zp index)) nil)
        (index (1- index)))
-    (set::insert (type-var-atom-with-index index)
-                 (type-vars-atom-with-index-below index)))
+    (set::insert (type-var-atom-with-index prefix index)
+                 (type-vars-atom-with-index-below prefix index)))
   :verify-guards :after-returns
   :prepwork ((local (in-theory (enable nfix))))
 
   ///
 
   (defrule type-var-atom-with-index-in-set-below
-    (equal (set::in (type-var-atom-with-index index1)
-                    (type-vars-atom-with-index-below index2))
+    (equal (set::in (type-var-atom-with-index prefix index1)
+                    (type-vars-atom-with-index-below prefix index2))
            (< (nfix index1)
               (nfix index2)))
     :induct t
     :enable nfix)
 
   (defrule type-vars-atom-with-index-below-subset
-    (equal (set::subset (type-vars-atom-with-index-below index1)
-                        (type-vars-atom-with-index-below index2))
+    (equal (set::subset (type-vars-atom-with-index-below prefix index1)
+                        (type-vars-atom-with-index-below prefix index2))
            (<= (nfix index1) (nfix index2)))
     :use (if-part only-if-part)
     :prep-lemmas
     ((defrule if-part
        (implies (<= (nfix index1) (nfix index2))
-                (set::subset (type-vars-atom-with-index-below index1)
-                             (type-vars-atom-with-index-below index2)))
+                (set::subset (type-vars-atom-with-index-below prefix index1)
+                             (type-vars-atom-with-index-below prefix index2)))
        :induct t)
      (defrule only-if-part
-       (implies (set::subset (type-vars-atom-with-index-below index1)
-                             (type-vars-atom-with-index-below index2))
+       (implies (set::subset (type-vars-atom-with-index-below prefix index1)
+                             (type-vars-atom-with-index-below prefix index2))
                 (<= (nfix index1) (nfix index2)))
        :induct t
        :enable nfix)))
 
   (defrule type-vars-atom-with-index-below-injective
-    (implies (equal (type-vars-atom-with-index-below index1)
-                    (type-vars-atom-with-index-below index2))
+    (implies (equal (type-vars-atom-with-index-below prefix index1)
+                    (type-vars-atom-with-index-below prefix index2))
              (equal (nfix index1) (nfix index2)))
     :enable set::double-containment-no-backchain-limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define remove-type-vars-atom-below-index ((index natp) (vars type-var-setp))
+(define remove-type-vars-atom-below-index ((prefix stringp)
+                                           (index natp)
+                                           (vars type-var-setp))
   :returns (new-vars type-var-setp)
   :short "Remove, from a set of type variables,
           all the atom type variables with indices below a given index."
@@ -505,26 +547,27 @@
      So when we remove the variables below the index,
      we remove all the variables attempted so far."))
   (set::difference (type-var-set-fix vars)
-                   (type-vars-atom-with-index-below index))
+                   (type-vars-atom-with-index-below prefix index))
 
   ///
 
   (defrule type-var-atom-with-index-in-remove-type-vars-atoms-below-index
-    (equal (set::in (type-var-atom-with-index index1)
-                    (remove-type-vars-atom-below-index index2 vars))
-           (and (set::in (type-var-atom-with-index index1)
+    (equal (set::in (type-var-atom-with-index prefix index1)
+                    (remove-type-vars-atom-below-index prefix index2 vars))
+           (and (set::in (type-var-atom-with-index prefix index1)
                          (type-var-set-fix vars))
                 (>= (nfix index1) (nfix index2)))))
 
   (defrule remove-type-vars-atom-below-index-subset-when-index-leq
     (implies (>= (nfix index1) (nfix index2))
-             (set::subset (remove-type-vars-atom-below-index index1 vars)
-                          (remove-type-vars-atom-below-index index2 vars)))
+             (set::subset
+              (remove-type-vars-atom-below-index prefix index1 vars)
+              (remove-type-vars-atom-below-index prefix index2 vars)))
     :enable set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fresh-atom-type-var ((used type-var-setp))
+(define fresh-atom-type-var ((prefix stringp) (used type-var-setp))
   :returns (var type-varp)
   :short "Generate a fresh atom type variable,
           i.e. one not in the set of already used type variables."
@@ -533,29 +576,40 @@
    (xdoc::p
     "We use the approach in @(see fresh-variables).
      The termination lemma relies on the set theorem explained earlier."))
-  (fresh-atom-type-var-loop 0 used)
+  (fresh-atom-type-var-loop prefix 0 used)
 
   :prepwork
-  ((define fresh-atom-type-var-loop ((index natp) (used type-var-setp))
+  ((define fresh-atom-type-var-loop ((prefix stringp)
+                                     (index natp)
+                                     (used type-var-setp))
      :returns (var type-varp)
-     (b* ((var (type-var-atom-with-index index)))
+     (b* ((var (type-var-atom-with-index prefix index)))
        (if (set::in var (type-var-set-fix used))
-           (fresh-atom-type-var-loop (1+ (lnfix index)) used)
+           (fresh-atom-type-var-loop prefix (1+ (lnfix index)) used)
          var))
-     :measure (set::cardinality (remove-type-vars-atom-below-index index used))
+     :measure (set::cardinality
+               (remove-type-vars-atom-below-index prefix index used))
      :prepwork
      ((defrulel termination-lemma
-        (implies (set::in (type-var-atom-with-index index)
+        (implies (set::in (type-var-atom-with-index prefix index)
                           (type-var-set-fix vars))
                  (< (set::cardinality
-                     (remove-type-vars-atom-below-index (1+ (nfix index)) vars))
+                     (remove-type-vars-atom-below-index prefix
+                                                        (1+ (nfix index))
+                                                        vars))
                     (set::cardinality
-                     (remove-type-vars-atom-below-index index vars))))
+                     (remove-type-vars-atom-below-index prefix
+                                                        index
+                                                        vars))))
         :use (:instance
               cardinality-lt-when-subset-and-not-member
-              (x (remove-type-vars-atom-below-index (1+ (nfix index)) vars))
-              (y (remove-type-vars-atom-below-index index vars))
-              (a (type-var-atom-with-index index)))))
+              (x (remove-type-vars-atom-below-index prefix
+                                                    (1+ (nfix index))
+                                                    vars))
+              (y (remove-type-vars-atom-below-index prefix
+                                                    index
+                                                    vars))
+              (a (type-var-atom-with-index prefix index)))))
 
      ///
 
@@ -577,18 +631,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-var-array-with-index ((index natp))
+(define type-var-array-with-index ((prefix stringp) (index natp))
   :returns (var type-varp)
   :short "Generate an array type variable from a numeric index."
   :long
   (xdoc::topstring
    (xdoc::p
     "In concrete syntax,
-     the variable has the form @('*<i>'), where @('<i>') is the index.
-     This is a legal identifier in Remora (see ABNF grammar).
+     the variable would have the form @('*<p><i>'),
+     where @('<p>') is the prefix and @('<i>') is the index.
+     If the prefix is a legal Remora identifier,
+     so is the generated variable's name.
      A key property is that it is an injective mapping:
      different indices yield different variables."))
-  (type-var-array (str::nat-to-dec-string (lnfix index)))
+  (type-var-array (str::cat prefix (str::nat-to-dec-string (lnfix index))))
 
   ///
 
@@ -596,14 +652,15 @@
     (equal (type-var-kind var) :array))
 
   (defrule type-var-array-with-index-injective
-    (equal (equal (type-var-array-with-index index1)
-                  (type-var-array-with-index index2))
+    (equal (equal (type-var-array-with-index prefix index1)
+                  (type-var-array-with-index prefix index2))
            (equal (nfix index1)
-                  (nfix index2)))))
+                  (nfix index2)))
+    :enable string-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-vars-array-with-index-below ((index natp))
+(define type-vars-array-with-index-below ((prefix stringp) (index natp))
   :returns (vars type-var-setp)
   :short "Generate the set of array type variables
           for all the numeric indices below a given index."
@@ -614,52 +671,54 @@
      all the failed attempts at generating a fresh variable.")
    (xdoc::p
     "Membership and subset reduce to index comparison;
-     the injectivity of @(tsee type-var-atom-with-index) is needed here.
+     the injectivity of @(tsee type-var-array-with-index) is needed here.
      This function is also injective."))
   (b* (((when (zp index)) nil)
        (index (1- index)))
-    (set::insert (type-var-array-with-index index)
-                 (type-vars-array-with-index-below index)))
+    (set::insert (type-var-array-with-index prefix index)
+                 (type-vars-array-with-index-below prefix index)))
   :verify-guards :after-returns
   :prepwork ((local (in-theory (enable nfix))))
 
   ///
 
   (defrule type-var-array-with-index-in-set-below
-    (equal (set::in (type-var-array-with-index index1)
-                    (type-vars-array-with-index-below index2))
+    (equal (set::in (type-var-array-with-index prefix index1)
+                    (type-vars-array-with-index-below prefix index2))
            (< (nfix index1)
               (nfix index2)))
     :induct t
     :enable nfix)
 
   (defrule type-vars-array-with-index-below-subset
-    (equal (set::subset (type-vars-array-with-index-below index1)
-                        (type-vars-array-with-index-below index2))
+    (equal (set::subset (type-vars-array-with-index-below prefix index1)
+                        (type-vars-array-with-index-below prefix index2))
            (<= (nfix index1) (nfix index2)))
     :use (if-part only-if-part)
     :prep-lemmas
     ((defrule if-part
        (implies (<= (nfix index1) (nfix index2))
-                (set::subset (type-vars-array-with-index-below index1)
-                             (type-vars-array-with-index-below index2)))
+                (set::subset (type-vars-array-with-index-below prefix index1)
+                             (type-vars-array-with-index-below prefix index2)))
        :induct t)
      (defrule only-if-part
-       (implies (set::subset (type-vars-array-with-index-below index1)
-                             (type-vars-array-with-index-below index2))
+       (implies (set::subset (type-vars-array-with-index-below prefix index1)
+                             (type-vars-array-with-index-below prefix index2))
                 (<= (nfix index1) (nfix index2)))
        :induct t
        :enable nfix)))
 
   (defrule type-vars-array-with-index-below-injective
-    (implies (equal (type-vars-array-with-index-below index1)
-                    (type-vars-array-with-index-below index2))
+    (implies (equal (type-vars-array-with-index-below prefix index1)
+                    (type-vars-array-with-index-below prefix index2))
              (equal (nfix index1) (nfix index2)))
     :enable set::double-containment-no-backchain-limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define remove-type-vars-array-below-index ((index natp) (vars type-var-setp))
+(define remove-type-vars-array-below-index ((prefix stringp)
+                                            (index natp)
+                                            (vars type-var-setp))
   :returns (new-vars type-var-setp)
   :short "Remove, from a set of type variables,
           all the array type variables with indices below a given index."
@@ -671,26 +730,27 @@
      So when we remove the variables below the index,
      we remove all the variables attempted so far."))
   (set::difference (type-var-set-fix vars)
-                   (type-vars-array-with-index-below index))
+                   (type-vars-array-with-index-below prefix index))
 
   ///
 
   (defrule type-var-array-with-index-in-remove-type-vars-arrays-below-index
-    (equal (set::in (type-var-array-with-index index1)
-                    (remove-type-vars-array-below-index index2 vars))
-           (and (set::in (type-var-array-with-index index1)
+    (equal (set::in (type-var-array-with-index prefix index1)
+                    (remove-type-vars-array-below-index prefix index2 vars))
+           (and (set::in (type-var-array-with-index prefix index1)
                          (type-var-set-fix vars))
                 (>= (nfix index1) (nfix index2)))))
 
   (defrule remove-type-vars-array-below-index-subset-when-index-leq
     (implies (>= (nfix index1) (nfix index2))
-             (set::subset (remove-type-vars-array-below-index index1 vars)
-                          (remove-type-vars-array-below-index index2 vars)))
+             (set::subset
+              (remove-type-vars-array-below-index prefix index1 vars)
+              (remove-type-vars-array-below-index prefix index2 vars)))
     :enable set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fresh-array-type-var ((used type-var-setp))
+(define fresh-array-type-var ((prefix stringp) (used type-var-setp))
   :returns (var type-varp)
   :short "Generate a fresh array type variable,
           i.e. one not in the set of already used type variables."
@@ -699,30 +759,40 @@
    (xdoc::p
     "We use the approach in @(see fresh-variables).
      The termination lemma relies on the set theorem explained earlier."))
-  (fresh-array-type-var-loop 0 used)
+  (fresh-array-type-var-loop prefix 0 used)
 
   :prepwork
-  ((define fresh-array-type-var-loop ((index natp) (used type-var-setp))
+  ((define fresh-array-type-var-loop ((prefix stringp)
+                                      (index natp)
+                                      (used type-var-setp))
      :returns (var type-varp)
-     (b* ((var (type-var-array-with-index index)))
+     (b* ((var (type-var-array-with-index prefix index)))
        (if (set::in var (type-var-set-fix used))
-           (fresh-array-type-var-loop (1+ (lnfix index)) used)
+           (fresh-array-type-var-loop prefix (1+ (lnfix index)) used)
          var))
-     :measure (set::cardinality (remove-type-vars-array-below-index index used))
+     :measure (set::cardinality
+               (remove-type-vars-array-below-index prefix index used))
      :prepwork
      ((defrulel termination-lemma
-        (implies (set::in (type-var-array-with-index index)
+        (implies (set::in (type-var-array-with-index prefix index)
                           (type-var-set-fix vars))
                  (< (set::cardinality
-                     (remove-type-vars-array-below-index (1+ (nfix index))
+                     (remove-type-vars-array-below-index prefix
+                                                         (1+ (nfix index))
                                                          vars))
                     (set::cardinality
-                     (remove-type-vars-array-below-index index vars))))
+                     (remove-type-vars-array-below-index prefix
+                                                         index
+                                                         vars))))
         :use (:instance
               cardinality-lt-when-subset-and-not-member
-              (x (remove-type-vars-array-below-index (1+ (nfix index)) vars))
-              (y (remove-type-vars-array-below-index index vars))
-              (a (type-var-array-with-index index)))))
+              (x (remove-type-vars-array-below-index prefix
+                                                     (1+ (nfix index))
+                                                     vars))
+              (y (remove-type-vars-array-below-index prefix
+                                                     index
+                                                     vars))
+              (a (type-var-array-with-index prefix index)))))
 
      ///
 

@@ -85,7 +85,23 @@
    (xdoc::p
     "A bracket expression is turned into a frame expression
      with a single dimension that is the number of sub-expressions,
-     and the sub-expressions as arguments."))
+     and the sub-expressions as arguments.
+     Bracket expressions are never empty in concrete syntax;
+     we should carry that invariant to the AST here.")
+   (xdoc::p
+    "All function bindings are turned into value bindings,
+     with an appropriate lambda abstraction.
+     As explained in @(tsee ast-corep),
+     in general it is not possible to desugar @('let'),
+     but at least we can desugar its function bindings.
+     If the function binding includes the optional type,
+     then the value binding includes the optional type as well,
+     obtained by combining the function binding's type
+     with parts of the function binding:
+     for a term function binding, it is a function type;
+     for a type function binding, it is a universal type;
+     for an ispace function binding, it is a product type.
+     A combined function binding results in nested lambda abstractions."))
   :types (shapes
           ispace
           ispace-list
@@ -132,8 +148,122 @@
                  fun-targs-iargs-args))
    (expr :bracket (b* ((exprs (expr-list-desugar expr.exprs)))
                     (make-expr-frame :dims (list (len exprs))
-                                     :exprs exprs))))
+                                     :exprs exprs)))
+   (bind :fun (b* ((params (var+type-list-desugar bind.params))
+                   (type? (type-option-desugar bind.type?))
+                   (expr (expr-desugar bind.expr))
+                   (lambda-type?
+                    (type-option-case
+                     type?
+                     :some (make-type-fun :in (var+type-list->type params)
+                                          :out type?.val)
+                     :none nil))
+                   (lambda-expr
+                    (expr-atom (make-atom-lambda :params params
+                                                 :body expr))))
+                (make-bind-val :var bind.var
+                               :type? lambda-type?
+                               :expr lambda-expr)))
+   (bind :tfun (b* ((type? (type-option-desugar bind.type?))
+                    (expr (expr-desugar bind.expr))
+                    (lambda-type?
+                     (type-option-case
+                      type?
+                      :some (make-type-forall :params bind.params
+                                              :body type?.val)
+                      :none nil))
+                    (lambda-expr
+                     (expr-atom (make-atom-tlambda :params bind.params
+                                                   :body expr))))
+                 (make-bind-val :var bind.var
+                                :type? lambda-type?
+                                :expr lambda-expr)))
+   (bind :ifun (b* ((type? (type-option-desugar bind.type?))
+                    (expr (expr-desugar bind.expr))
+                    (lambda-type?
+                     (type-option-case
+                      type?
+                      :some (make-type-pi :params bind.params
+                                          :body type?.val)
+                      :none nil))
+                    (lambda-expr
+                     (expr-atom (make-atom-ilambda :params bind.params
+                                                   :body expr))))
+                 (make-bind-val :var bind.var
+                                :type? lambda-type?
+                                :expr lambda-expr)))
+   (bind :cfun (b* ((params (var+type-list-desugar bind.params))
+                    (type (type-desugar bind.type))
+                    (expr (expr-desugar bind.expr))
+                    (lambda-type
+                     (make-type-fun :in (var+type-list->type params)
+                                    :out type))
+                    (lambda-expr
+                     (expr-atom
+                      (make-atom-lambda :params params
+                                        :body expr)))
+                    ((mv ilambda-lambda-type
+                         ilambda-lambda-expr)
+                     (ispace-var-list-option-case
+                      bind.iparams?
+                      :some (mv (make-type-pi :params bind.iparams?.val
+                                              :body lambda-type)
+                                (expr-atom
+                                 (make-atom-ilambda :params bind.iparams?.val
+                                                    :body lambda-expr)))
+                      :none (mv lambda-type
+                                lambda-expr)))
+                    ((mv tlambda-ilambda-lambda-type
+                         tlambda-ilambda-lambda-expr)
+                     (type-var-list-option-case
+                      bind.tparams?
+                      :some (mv (make-type-forall :params bind.tparams?.val
+                                                  :body ilambda-lambda-type)
+                                (expr-atom
+                                 (make-atom-tlambda :params bind.tparams?.val
+                                                    :body ilambda-lambda-expr)))
+                      :none (mv ilambda-lambda-type
+                                ilambda-lambda-expr))))
+                 (make-bind-val :var bind.var
+                                :type? tlambda-ilambda-lambda-type
+                                :expr tlambda-ilambda-lambda-expr))))
   :name ast-desugar)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ast-desugar-additional-theorems
+  :short "Additional theorems about the desugaring functions."
+
+  (defruled type-option-desugar-iff
+    (iff (type-option-desugar type)
+         type)
+    :enable type-option-desugar)
+
+  (defruled type-option-desugar-to-type-desugar
+    (implies x
+             (equal (type-option-desugar x)
+                    (type-desugar x)))
+    :enable (type-option-desugar
+             type-option-some->val))
+
+  (defruled var+type->type-of-var+type-desugar
+    (equal (var+type->type (var+type-desugar x))
+           (type-desugar (var+type->type x)))
+    :enable var+type-desugar)
+
+  (defruled var+type-list->type-of-var+type-list-desugar
+    (equal (var+type-list->type (var+type-list-desugar x))
+           (type-list-desugar (var+type-list->type x)))
+    :induct t
+    :enable (var+type-list->type
+             var+type->type-of-var+type-desugar
+             ast-desugar-rules))
+
+  (add-to-ruleset ast-desugar-rules
+                  '(type-option-desugar-iff
+                    type-option-desugar-to-type-desugar
+                    var+type->type-of-var+type-desugar
+                    var+type-list->type-of-var+type-list-desugar)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,12 +340,13 @@
       (bind-list-corep result)
       :fn bind-list-desugar)
     :mutual-recursion exprs/atoms/binds-desugar
-    :hints (("Goal" :in-theory (enable expr-desugar
-                                       expr-list-desugar
-                                       atom-desugar
-                                       atom-list-desugar
-                                       bind-desugar
-                                       bind-list-desugar))))
+    :hints (("Goal" :in-theory (enable* expr-desugar
+                                        expr-list-desugar
+                                        atom-desugar
+                                        atom-list-desugar
+                                        bind-desugar
+                                        bind-list-desugar
+                                        ast-desugar-rules))))
 
   (defret prog-corep-of-prog-desugar
     (prog-corep result)
@@ -317,13 +448,14 @@
       :hyp (bind-list-corep bind-list)
       :fn bind-list-desugar)
     :mutual-recursion exprs/atoms/binds-desugar
-    :hints (("Goal" :in-theory (enable expr-desugar
-                                       expr-list-desugar
-                                       atom-desugar
-                                       atom-list-desugar
-                                       bind-desugar
-                                       bind-list-desugar
-                                       expr-corep))))
+    :hints (("Goal" :in-theory (enable* expr-desugar
+                                        expr-list-desugar
+                                        atom-desugar
+                                        atom-list-desugar
+                                        bind-desugar
+                                        bind-list-desugar
+                                        expr-corep
+                                        ast-corep-rules))))
 
   (defret prog-desugar-when-prog-corep
     (equal result (prog-fix prog))

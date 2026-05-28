@@ -47,7 +47,6 @@
 (include-book "../make-evaluator")
 (include-book "../evaluator-support")
 (include-book "../supporting-functions")
-(include-book "../step-increments")
 (include-book "../rule-limits")
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
@@ -64,6 +63,7 @@
 (include-book "../rules3") ; for equal-of-bvplus-and-bvplus-reduce-constants
 (include-book "assumptions")
 (include-book "run-until-return")
+(include-book "run-until-return-with-tracing")
 ;(include-book "pc")
 (include-book "rule-lists")
 (include-book "axe-rules")
@@ -86,6 +86,8 @@
 (ensure-rules-known (lifter-rules32))
 (ensure-rules-known (symbolic-execution-rules32))
 (ensure-rules-known (symbolic-execution-rules-with-stop-pcs32))
+(ensure-rules-known (symbolic-execution-rules32-with-tracing))
+(ensure-rules-known (symbolic-execution-rules-with-stop-pcs32-with-tracing))
 (ensure-rules-known (debug-rules32))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -94,11 +96,16 @@
 ;; symbolic execution is incomplete:
 (defconst *incomplete-run-fns* '(run-until-return-aux
                                  run-until-return-or-reach-pc-aux
+                                 run-until-return-with-tracing-aux
+                                 run-until-return-with-tracing-or-reach-pc-aux
+
                                  step
                                  run
                                  run-subroutine
                                  run-until-return
-                                 run-until-return-or-reach-pc))
+                                 run-until-return-or-reach-pc
+                                 run-until-return-with-tracing
+                                 run-until-return-with-tracing-or-reach-pc))
 
 ;; The presence of any of these functions in the term/DAG indicates an error state
 ;; arising during lifting (perhaps only on one branch of the execution, and
@@ -291,6 +298,7 @@
                              step-limit
                              step-increment
                              stop-pcs
+                             trace ; whether to record which instructions were executed in the run-until... function
                              memoizep
                              monitor
                              normalize-xors
@@ -436,7 +444,9 @@
        (- (and stop-pcs
                position-independentp ; todo: make this work!
                (er hard? 'unroll-arm-code-core ":stop-pcs are not yet supported with position-independentp.")))
-       (term-to-simulate (if stop-pcs `(run-until-return-or-reach-pc ',stop-pcs arm) '(run-subroutine arm)))
+       (term-to-simulate (if stop-pcs
+                             (if trace `(run-until-return-with-tracing-or-reach-pc ',stop-pcs arm) `(run-until-return-or-reach-pc ',stop-pcs arm))
+                           (if trace '(run-subroutine-with-tracing arm) '(run-subroutine arm))))
        (term-to-simulate (maybe-wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
        ((when (not (termp term-to-simulate (w state))))
         (er hard? 'unroll-arm-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
@@ -453,7 +463,9 @@
        ;; Choose the lifter rules to use:
        (lifter-rules (lifter-rules32) ;(if 64-bitp (unroller-rules64) (unroller-rules32))
                      )
-       (symbolic-execution-rules (if stop-pcs (symbolic-execution-rules-with-stop-pcs32) (symbolic-execution-rules32)))
+       (symbolic-execution-rules (if stop-pcs
+                                     (if trace (symbolic-execution-rules-with-stop-pcs32-with-tracing) (symbolic-execution-rules-with-stop-pcs32))
+                                   (if trace (symbolic-execution-rules32-with-tracing) (symbolic-execution-rules32))))
        (lifter-rules (append symbolic-execution-rules lifter-rules))
        ;; Add any extra-rules:
        ;; (- (cw "Using ~x0 extra-rules: ~X12.~%" (len extra-rules) extra-rules nil))
@@ -486,7 +498,9 @@
        (- (and rules-to-monitor (cw "(Monitoring: ~x0)~%" rules-to-monitor)))
        (- (and (acl2::print-missing-rules rules-to-monitor lifter-rule-alist)))
        ;; Do the symbolic execution:
-       (rule-to-limit (if stop-pcs 'run-until-return-or-reach-pc-aux-opener-axe 'run-until-return-aux-opener-axe))
+       (rule-to-limit (if stop-pcs
+                          (if trace 'run-until-return-with-tracing-or-reach-pc-aux-opener-axe 'run-until-return-or-reach-pc-aux-opener-axe)
+                        (if trace 'run-until-return-with-tracing-aux-opener-axe 'run-until-return-aux-opener-axe)))
        ((mv erp result-dag-or-quotep hits state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
                         rule-to-limit
@@ -538,6 +552,7 @@
                         step-limit
                         step-increment
                         stop-pcs
+                        trace
                         memoizep
                         monitor
                         normalize-xors
@@ -580,6 +595,7 @@
                               (natp step-limit)
                               (step-incrementp step-increment)
                               (nat-listp stop-pcs)
+                              (booleanp trace)
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
@@ -634,6 +650,7 @@
                                  ;; extra-assumption-rules remove-assumption-rules
                                  step-limit step-increment
                                  stop-pcs
+                                 trace
                                  memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result:
@@ -802,6 +819,7 @@
                                   (step-limit '1000000)
                                   (step-increment '100)
                                   (stop-pcs 'nil)
+                                  (trace 'nil)
                                   (memoizep 't)
                                   (monitor 'nil)
                                   (normalize-xors 'nil)
@@ -842,6 +860,7 @@
         ',step-limit
         ',step-increment
         ,stop-pcs
+        ,trace
         ',memoizep
         ,monitor ; gets evaluated since not quoted
         ',normalize-xors
@@ -891,6 +910,7 @@
          (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
          (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
+         (trace "Whether to record a trace of visited instructions in the run-until... function.")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
          (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
          (normalize-xors "Whether to normalize BITXOR and BVXOR nodes when rewriting (@('t'), @('nil'), or @(':compact')).")

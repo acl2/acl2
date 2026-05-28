@@ -731,7 +731,7 @@
                   :stobjs state
                   :mode :program ; because this calls translate-terms on the user-supplied CASES
                   ))
-  (b* ( ;(dag (first problem))
+  (b* (;(dag (first problem))
        (assumptions (second problem))
        (cases (translate-terms cases 'apply-tactic-cases (w state)))
        ((mv exhaustivep state)
@@ -918,7 +918,7 @@
    (if (endp problems)
        (prog2$ (cw "Finished proving all problems.~%")
                (mv *valid* (add-to-end prev-info info-acc) state))
-     (b* ( ;; Try to prove the first problem:
+     (b* (;; Try to prove the first problem:
           (- (cw "(Attacking sub-problem ~x0 of ~x1.~%" num (+ num (- (len problems) 1))))
           ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
           ((mv result new-info-acc state)

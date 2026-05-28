@@ -34,8 +34,8 @@
      and may not be in fact necessary for most purposes.
      However, it is part of [impl]
      (part of desugaring in earlier versions, but not currently),
-     and [tutorial] describes it as syntactic sugar
-     (but [tutorial] is older than [impl])."))
+     and [tutor] describes it as syntactic sugar
+     (but [tutor] is older than [impl])."))
   :order-subtopics t
   :default-parent t)
 

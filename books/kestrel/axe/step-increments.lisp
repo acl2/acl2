@@ -16,7 +16,7 @@
 ;; pausing to reset the memoization and maybe prune the DAG.
 (defund step-incrementp (step-increment)
   (declare (xargs :guard t))
-  (or (posp step-increment) ; a simple increment (always step this many times);
+  (or (posp step-increment) ; a simple increment (always step this many times)
       ;; it's of the form: (list normal-increment total-step-threshold increment-after-threshold).  Means step normal-increment times until the total steps reaches the threshold, after which step increment-after-threshold times per chunk.
       (and (true-listp step-increment)
            (eql 3 (len step-increment))

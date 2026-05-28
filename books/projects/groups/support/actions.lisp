@@ -1,5 +1,6 @@
 (in-package "DM")
 
+(local (include-book "support/groups"))
 (local (include-book "rtl/rel11/lib/top" :dir :system))
 
 (include-book "groups")
@@ -376,7 +377,8 @@
 (defthm aelts-elts
   (equal (dom (a))
          (aelts))
-  :hints (("Goal" :use ((:instance e (g (agrp)))))))                  
+  :hints (("Goal" :use ((:instance e (g (agrp))))
+                  :expand ((a-aux (car (agrp)) (aelts))))))               
 	 
 (defthm act-a-rewrite
   (implies (and (in x (agrp))
@@ -384,7 +386,8 @@
            (equal (act x s (a) (agrp))
 	          (aact x s)))		  
   :hints (("Goal" :in-theory (enable act)  
-                  :use ((:instance e (g (agrp)))))))
+                  :use ((:instance e (g (agrp))))
+                  :expand ((a-aux (car (agrp)) (aelts))))))               
 
 (in-theory (disable a (a)))
 
@@ -728,6 +731,15 @@
   :hints (("Goal" :in-theory (enable permp)
                   :use (permp-orbit-orbit (:instance ordp-equal (g a) (x (orbit r a g)) (y (orbit s a g)))))))
 
+(defthmd member-orbit-member-act-orbit
+  (implies (and (actionp a g)
+                (member-equal s (dom a))
+		(member-equal r (orbit s a g))
+		(in x g))
+	   (member-equal (act x r a g) (orbit s a g)))
+  :hints (("Goal" :use (equal-orbits
+                        (:instance member-act-orbit (s r))))))
+
 (in-theory (disable common-member-shared))
 
 (defthmd disjointp-orbits
@@ -990,12 +1002,20 @@
 		           (STAB-ELTS-AUX S A G (CDR (CAR G))))
                   :use (action-identity))))
 
+(local-defthm member-e-stab-elts
+  (implies (and (actionp a g)
+		(in s a))
+	   (member (e g) (stab-elts s a g)))
+  :hints (("Goal" :in-theory (enable stab-elts e)
+                  :expand ((STAB-ELTS-AUX S A G (CAR G))
+		           (STAB-ELTS-AUX S A G (CDR (CAR G))))
+                  :use (action-identity consp-groupp))))
+
 (defthm consp-stab-elts
   (implies (and (actionp a g)
 		(in s a))
 	   (consp (stab-elts s a g)))
-  :hints (("Goal" :in-theory (enable actionp groupp e)
-                  :use (car-stab-elts))))
+  :hints (("Goal" :use (member-e-stab-elts))))
 
 (defsubgroup stabilizer (s a) g
   (and (actionp a g)
@@ -1256,13 +1276,6 @@
 		(in a g))
 	   (sublistp (conj-sub-list h a g) (elts g)))
   :hints (("Goal" :in-theory (enable conj-sub-list))))
-
-(defthm conj-sub-list-non-nil
-  (implies (and (subgroupp h g)
-		(in a g))
-	   (not (member-equal () (conj-sub-list h a g))))
-  :hints (("Goal" :in-theory (e/d (subgroupp groupp) (sublistp-conj-sub-list))
-                  :use (sublistp-conj-sub-list))))
 
 (defthmd member-conj-sub-list
   (implies (and (subgroupp h g)
@@ -1765,6 +1778,7 @@
   (implies (subgroupp h g)
            (subgroupp h (normalizer h g)))
   :hints (("Goal" :in-theory (disable subgroupp-normalizer member-sublist ACL2::SUBSETP-MEMBER subgroup-of-normalizer-8)
+                  :expand ((SUBGROUPP-CEX H (NORMALIZER H G)))
                   :use (subgroup-of-normalizer-10 subgroupp-normalizer
                         (:instance subgroup-of-normalizer-8 (x (CAR (SXY (CAR H) H (NORMALIZER H G)))))
                         (:instance subgroup-of-normalizer-8 (x (CadR (SXY (CAR H) H (NORMALIZER H G)))))
@@ -2192,7 +2206,7 @@
 
 (local-defthmd act-perm-codomain-cex
   (implies (actionp a g)
-           (not (codomain-cex (act-sym a g) g (sym (order a)))))
+           (not (find-codomain-cex (act-sym a g) g (sym (order a)))))
   :hints (("Goal" :use ((:instance codomain-cex-lemma (map (act-sym a g)) (h (sym (order a))))
                         (:instance act-perm-is-perm (x (codomain-cex (act-sym a g) g (sym (order a)))))))))
 
@@ -2209,13 +2223,20 @@
                         (:instance act-perm-comp (x (car (homomorphism-cex (act-sym a g) g (sym (order a)))))
 			                         (y (cdr (homomorphism-cex (act-sym a g) g (sym (order a))))))))))
 
+(local-defthmd homomorphismp-act-sym-1
+  (implies (actionp a g)
+           (equal (mapply (act-sym a g) (e g))
+	          (act-perm (e g) a g)))
+  :hints (("Goal" :in-theory (enable mapply act-sym act-sym-aux e)
+                  :use (consp-groupp))))
+
 (defthmd homomorphismp-act-sym
   (implies (actionp a g)
            (homomorphismp (act-sym a g)
 	                  g
 			  (sym (order a))))
   :hints (("Goal" :in-theory (enable e homomorphismp)
-                  :use (act-perm-e act-perm-codomain-cex act-perm-homomorphism-cex))))
+                  :use (homomorphismp-act-sym-1 act-perm-e act-perm-codomain-cex act-perm-homomorphism-cex))))
 
 ;; An element of the kernel of (act-sym a g) acts trivially on every element of (dom a):
 

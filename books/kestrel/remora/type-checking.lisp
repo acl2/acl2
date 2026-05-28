@@ -17,6 +17,7 @@
 (include-book "abstract-syntax-variable-operations")
 (include-book "type-equivalence")
 (include-book "static-environments")
+(include-book "nat-list-operations")
 
 (include-book "kestrel/fty/string-string-map-pair-result" :dir :system)
 
@@ -77,32 +78,6 @@
    :bool (base-type-bool)
    :int (base-type-int)
    :float (base-type-float)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define nat-list-product ((nats nat-listp))
-  :returns (product natp)
-  :short "Product of a list of zero or more natural numbers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used to calculate the number of elements of an array or frame.")
-   (xdoc::p
-    "This is 1 if the list is empty."))
-  (cond ((endp nats) 1)
-        (t (* (lnfix (car nats)) (nat-list-product (cdr nats)))))
-
-  ///
-
-  (defret zp-of-nat-list-product-iff-member-0
-    (iff (zp product)
-         (member-equal 0 (nat-list-fix nats)))
-    :hints (("Goal" :induct t)))
-
-  (defret nat-list-product-0-iff-member-0
-    (iff (equal product 0)
-         (member-equal 0 (nat-list-fix nats)))
-    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -505,7 +480,10 @@
        and we apply it to the body atom type
        to obtain the atom type of the resulting array type,
        whose shape is obtained by concatenating
-       the function shape to the body shape.")
+       the function shape to the body shape.
+       We check that the substitution cannot result in variable capture:
+       type checking fails if that check fails;
+       we should instead rename the bound variables to avoid the capture.")
      (xdoc::p
       "For an ispace application,
        first we check the function expression,
@@ -527,10 +505,15 @@
        to obtain the atom type of the resulting array type,
        whose shape is obtained by concatenating
        the function shape to
-       the result of applying the same substitution to the body shape.")
+       the result of applying the same substitution to the body shape.
+       We check that the substitution cannot result in variable capture:
+       type checking fails if that check fails;
+       we should instead rename the bound variables to avoid the capture.")
      (xdoc::p
       "For an unboxing expression,
-       first we check that the ispace variables have no duplicate names.
+       first we check that the ispace variables have no duplicates;
+       two variables with the same name but different sorts
+       (one dimension and one shape) count as distinct.
        We check the target expression,
        which must be an array type of a sum type.
        In [arxiv] and [thesis],
@@ -652,6 +635,10 @@
            (reserr nil))
           ((ok (string-type-map-pair type-maps))
            (check-type-params-and-args vars expr.args))
+          ((unless (type-subst-type-vars-no-capture-p body-atom-type
+                                                      type-maps.1st
+                                                      type-maps.2nd))
+           (reserr nil))
           (body-atom-type-subst
            (type-subst-type-vars body-atom-type
                                  type-maps.1st
@@ -675,6 +662,10 @@
            (reserr nil))
           ((ok (stringdimmap+stringshapemap ispace-maps))
            (check-ispace-params-and-args vars expr.args))
+          ((unless (type-subst-ispace-vars-no-capture-p body-atom-type
+                                                        ispace-maps.dim-map
+                                                        ispace-maps.shape-map))
+           (reserr nil))
           (body-atom-type-subst
            (type-subst-ispace-vars body-atom-type
                                    ispace-maps.dim-map
@@ -687,7 +678,7 @@
         :shape (shape-append (list fun-shape body-shape-subst))))
      :capp (reserr :todo)
      :unbox
-     (b* (((unless (no-duplicatesp-equal (ispace-var-list->name expr.ispaces)))
+     (b* (((unless (no-duplicatesp-equal expr.ispaces))
            (reserr nil))
           ((ok target-arr-type) (check-expr expr.target senv))
           ((ok target-arr-type+shape) (type-match-array target-arr-type))
@@ -699,6 +690,10 @@
           ((unless (= (len expr.ispaces) (len sum-vars))) (reserr nil))
           ((ok (string-string-map-pair renaming))
            (check-ispace-var-renaming sum-vars expr.ispaces))
+          ((unless (type-rename-ispace-vars-no-capture-p sum-body-type
+                                                         renaming.1st
+                                                         renaming.2nd))
+           (reserr nil))
           (sum-body-type-renam
            (type-rename-ispace-vars sum-body-type
                                     renaming.1st
@@ -775,14 +770,18 @@
        and its input types are the ones of the bound variables.")
      (xdoc::p
       "For a type abstraction,
-       first we check that there are no duplicate bound variable names.
+       first we check that there are no duplicate bound variables;
+       two variables with the same name but different kinds
+       (one atom and one array) count as distinct.
        We check the body of the abstraction in the extended environment.
        The resulting type is the body of the universal type
        that is the type of the abstraction,
        whose bound variables are the same as the abstraction.")
      (xdoc::p
       "For an ispace abstraction,
-       first we check that there are no duplicate bound variable names.
+       first we check that there are no duplicate bound variables;
+       two variables with the same name but different sorts
+       (one dimension and one shape) count as distinct.
        We check the body of the abstraction.
        The resulting type is the body of the product type
        that is the type of the abstraction,
@@ -799,7 +798,10 @@
        we apply those substitutions;
        the resulting type must be equivalent to
        the type of the body expression of the box.
-       The type of the boxing atom is the sum type."))
+       The type of the boxing atom is the sum type.
+       We check that the substitution cannot result in variable capture:
+       type checking fails if that check fails;
+       we should instead rename the bound variables to avoid the capture."))
     (atom-case
      atom
      :base
@@ -817,13 +819,13 @@
           ((ok type) (check-expr atom.body senv)))
        (make-type-fun :in types :out type))
      :tlambda
-     (b* (((unless (no-duplicatesp-equal (type-var-list->name atom.params)))
+     (b* (((unless (no-duplicatesp-equal atom.params))
            (reserr nil))
           (senv (senv-add-type-vars atom.params senv))
           ((ok type) (check-expr atom.body senv)))
        (make-type-forall :params atom.params :body type))
      :ilambda
-     (b* (((unless (no-duplicatesp-equal (ispace-var-list->name atom.params)))
+     (b* (((unless (no-duplicatesp-equal atom.params))
            (reserr nil))
           (senv (senv-add-ispace-vars atom.params senv))
           ((ok type) (check-expr atom.body senv)))
@@ -844,6 +846,10 @@
           (body-type (ispacevarlist+type->type vars+type))
           ((ok (stringdimmap+stringshapemap maps))
            (check-ispace-params-and-args vars atom.ispaces))
+          ((unless (type-subst-ispace-vars-no-capture-p body-type
+                                                        maps.dim-map
+                                                        maps.shape-map))
+           (reserr nil))
           (body-type-subst
            (type-subst-ispace-vars body-type
                                    maps.dim-map

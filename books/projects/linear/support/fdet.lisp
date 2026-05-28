@@ -1025,7 +1025,7 @@
   :hints (("Goal" :in-theory (enable fdet)
                   :use ((:instance fdet-sum-replace-row (l (slist n)))))))
 
-;; As a consequence of fdet-n-linear, if a has a zero row, then its deteminant is (f0).
+;; As a consequence of fdet-n-linear, if a has a zero row, then its determinant is (f0).
 ;; To prove this, we instantiate fdet-n-linear with c = (f1) and x = y = (flistn0 n):
 
 (defthmd fdet-replace-0-1

@@ -589,7 +589,7 @@
           (hard-error 'base-cases-in-ite "Expected an ITE or a base-case or a recursive call but got ~x0."
                       (acons #\0 term nil))))
     ;;it's an ITE:
-    (let* ( ;(test (first (fargs term)))
+    (let* (;(test (first (fargs term)))
            (then-part (second (fargs term)))
            (else-part (third (fargs term))))
       ;;does not process the exit-test
@@ -925,7 +925,7 @@
 
 ;fixme put back
 ;; ;lots of subgoals:
-;; (defevaluator if-eval if-eval-list ((if test thenpart elsepart)(not x)))
+;; (defevaluator if-eval if-eval-list ((if test thenpart elsepart) (not x)))
 
 ;fixme put back
 ;; ;just proved this because it seemed easy (but this is slow...):
@@ -1846,11 +1846,11 @@
     (if unchanged-per-trace
         ;; If term is unchaned per trace, we'll generate a hyp that is equals its old var and also will have hyps about that var. (fixme does something try to explain the vals in that case?)
         nil
-      (let* ( ;;fixme these computations should be done mod 32 (or whatever the appropriate size is)?!
+      (let* (;;fixme these computations should be done mod 32 (or whatever the appropriate size is)?!
              (increasingp (all-non-decreasingp traces))
              (decreasingp (all-non-increasingp traces)))
         (if (or increasingp decreasingp)
-            (let ( ;what about i counting up and j counting down until they cross?
+            (let (;what about i counting up and j counting down until they cross?
                   (lower-bounds (if increasingp (strip-cars traces) (map-last-elem traces)))
                   (upper-bounds (if increasingp (map-last-elem traces) (strip-cars traces))))
               (append
@@ -1995,7 +1995,7 @@
         (if (nil-or-consp-list values)
             ;;the values are lists:
             ;;fixme - if the parameter is just passed from one call to the next, get its type by looking at the term passed in to the outer call?
-            (let* ( ;;Generate a hyp about the list length:
+            (let* (;;Generate a hyp about the list length:
                    (all-same-lengthp (len-equal-list values (len value)))
                    (len-hyps (if all-same-lengthp ;can we weaken this?
                                  `((equal (len ,term) ',(len value)))
@@ -2599,7 +2599,7 @@
 ;;ffffixme add more to this?!  copy from find-basic-pattern?
 ;; ;fixme implement differences!  which do we subtract from which?
 ;fixme handle lengths?
-(defun find-basic-unchanged-pattern ( ;target-term
+(defun find-basic-unchanged-pattern (;target-term
                                      target-value-for-each-trace candidate-term candidate-value-for-each-trace)
   (if (equal target-value-for-each-trace candidate-value-for-each-trace)
       candidate-term
@@ -2694,7 +2694,7 @@
                 ;; (cw "Target values: ~x0~%" target-value-for-each-trace)
                 ;; (cw "Candidate values: ~x0~%" candidate-value-for-each-trace)
                 ;;first try to use the whole candidate:
-                (let* ( ;;(cleared-whole-candidate-traces-alist (alist::clearkey candidate-term whole-candidate-traces-alist))
+                (let* (;;(cleared-whole-candidate-traces-alist (alist::clearkey candidate-term whole-candidate-traces-alist))
                        (possible-pattern (find-basic-unchanged-pattern ;target-term
                                           target-value-for-each-trace candidate-term-to-try candidate-value-for-each-trace
                                           ;;cleared- ;why did i remove this clearing?
@@ -2907,7 +2907,7 @@
            (and should-try-it
                 (let ((unchanged-sums (find-unchanged-sums-for-traces target-traces candidate-traces nil)))
                   (and unchanged-sums
-                       (let* ( ;;we remove the traces for the candidate we are trying (we don't want to add or subtract it again):
+                       (let* (;;we remove the traces for the candidate we are trying (we don't want to add or subtract it again):
                               ;;ffixme also remove the target we are trying to explain - should be done?
                               ;; if candidate-term is (len XX) this also removes keys of x, which can prevent loops:
                               ;;(cleared-whole-candidate-traces-alist (clearkeys-that-are-subterms candidate-term whole-candidate-traces-alist)) ;fixme drop this?
@@ -2977,7 +2977,7 @@
                 (let ((unchanged-term `(bvplus '32 ,target-term ,candidate-term)))
                   (prog2$
                    (cw "The value ~x0 is unchanged per trace." unchanged-term)
-                   (let* ( ;;we remove the traces for the candidate we are trying (we don't want to add or subtract it again):
+                   (let* (;;we remove the traces for the candidate we are trying (we don't want to add or subtract it again):
                           ;;ffixme also remove the target we are trying to explain - should be done?
                           ;; if candidate-term is (len XX) this also removes keys of x, which can prevent loops:
                           ;;(cleared-whole-candidate-traces-alist (clearkeys-that-are-subterms candidate-term whole-candidate-traces-alist)) ;fixme drop this?
@@ -3125,7 +3125,7 @@
                                          terms-to-ignore
                                          formal-to-old-var-alist unchanged-components)
     (declare (xargs :measure 1)) ;fixme
-    (let ( ;(dummy (cw "Explaining ~x0 with ~x1, ignoring ~x2.~%" target-term candidate-term terms-to-ignore))
+    (let (;(dummy (cw "Explaining ~x0 with ~x1, ignoring ~x2.~%" target-term candidate-term terms-to-ignore))
           (target-sequence (car target-traces)) ;try not to use these, since they may be atypical?
           (candidate-sequence (car candidate-traces)))
       (cond
@@ -3169,7 +3169,7 @@
                        (nth-traces-for-nthcdr (make-nth-list-for-nthcdr-list target-traces candidate-traces)))
                   (declare (ignore dummy))
                   (if nth-traces-for-nthcdr
-                      (let* ( ;;this is in terms of 'whole-candidate-place-holder-term: - no?
+                      (let* (;;this is in terms of 'whole-candidate-place-holder-term: - no?
                              (nth-pattern
                               (prog2$ nil ;(cw "trying to find a pattern for the nths: ~x0 in the whole traces: ~x1.~%"
 ;nth-traces-for-nthcdr whole-candidate-traces-alist)
@@ -3189,7 +3189,7 @@
 ;this firstn stuff could cause loops.  now we use the prefix operator (but it's not an explanation, so we detect it elsewhere)
                     ;;                      (let* ((nth-traces-for-firstn (make-nth-list-for-firstn-list target-traces candidate-traces)))
                     ;;                        (if nth-traces-for-firstn
-                    ;;                            (let* ( ;;this is in terms of 'whole-candidate-place-holder-term:
+                    ;;                            (let* (;;this is in terms of 'whole-candidate-place-holder-term:
                     ;;                                   (nth-pattern
                     ;;                                    (prog2$ nil ;(cw "trying to find a pattern for the nths: ~x0 in the whole traces: ~x1.~%" nth-traces-for-nthcdr whole-candidate-traces-alist)
                     ;; ;do we have to search for the nth, or can we just write (- (len candidate) (len target))? - maybe it's not okay to mention target..
@@ -3220,7 +3220,7 @@
         (prog2$ (cw "(Explaining ~x0 with ~x1 is disallowed to prevent loops.)~%" target-term candidate-term)
                 nil)
       ;;first try to use the whole candidate:
-      (let ( ;(cleared-whole-candidate-traces-alist (alist::clearkey candidate-term whole-candidate-traces-alist)) ;why did i remove this clearing?
+      (let (;(cleared-whole-candidate-traces-alist (alist::clearkey candidate-term whole-candidate-traces-alist)) ;why did i remove this clearing?
             (possible-pattern (find-basic-pattern target-term target-traces candidate-term candidate-traces
                                                   whole-candidate-traces-alist terms-to-ignore formal-to-old-var-alist unchanged-components)))
         (or possible-pattern
@@ -3247,7 +3247,7 @@
                                              whole-candidate-traces-alist
                                              terms-to-ignore formal-to-old-var-alist unchanged-components))
                     ;; No pattern from the length, so consider the pieces in turn:
-                    (let* ( ;(first-candidate-trace (first candidate-traces))
+                    (let* (;(first-candidate-trace (first candidate-traces))
                            ;;(first-candidate (first first-candidate-trace))
                            (first-candidate (find-a-val-in-traces candidate-traces))
                            (len (len first-candidate)))
@@ -3925,7 +3925,7 @@
 ;; ;arg-count is the length of arg-terms
 ;; ;returns (list explanation-graph explanations)
 ;; (defun try-to-express-rv-with-params (return-value-traces args-traces return-value-term arg-count arg-terms formal-to-old-var-alist unchanged-components)
-;;   (let* ( ;(return-value-traces (g-list-list :return-value traces)) ;g-list-list may be slow?
+;;   (let* (;(return-value-traces (g-list-list :return-value traces)) ;g-list-list may be slow?
 ;;          ;;(args-traces (g-list-list :args traces))
 ;;          ;;can we combine the get-nths-from-traces and the g-list-list for speed?
 ;;          (args-traces-alist (pairlis$ arg-terms (get-nths-from-traces arg-count args-traces))))
@@ -4205,8 +4205,7 @@
 ;;                   :measure (len l)
 ;;                   :hints (("Goal" :use ((:instance len-of-evens-tail-bound (acc nil))
 ;;                                         (:instance len-of-evens-tail-bound (l (cdr l)) (acc nil)))
-;;                            :expand (
-;;                                    ; (EVENS-TAIL (CONS L1 L2) NIL)
+;;                            :expand ( ; (EVENS-TAIL (CONS L1 L2) NIL)
 ;;                                     )
 ;;                            :in-theory (disable len-of-evens-tail-bound)))
 ;;                   ))
@@ -5760,16 +5759,16 @@
 
 
 
-;;               (state (submit-events-brief `( ;; Prove that the invariant implies the rv-predicate on the base-case when the function exits:
+;;               (state (submit-events-brief `(;; Prove that the invariant implies the rv-predicate on the base-case when the function exits:
 
 
 ;;               (state
-;;                (submit-events-brief `( ;;this just opens up the rv predicate:
+;;                (submit-events-brief `(;;this just opens up the rv predicate:
 ;;                          state)))
 
 ;;          ;; The function may have several formals but only returns a single value (may be a tuple), so we need a new predicate for the RV.  But since the base case is simple (a single param or a tuple of some of the params), the rv-predicate should be easy to derive from the invars.
 ;;          ;;We've proved that the predicate holds over the return value (and maybe some pushed-back formals), but some components of the RV may be unchanged from the initial params, so we can do better if we substitute in the corresponding params. example: ...?
-;;                  (let* ( ;;e.g., replace (nth 8 (<function> <formal>)) (or whatever the correct component of the RV is) with (nth 10 <formal>), if (nth 10 <formal>) is in probably-unchanged-components
+;;                  (let* (;;e.g., replace (nth 8 (<function> <formal>)) (or whatever the correct component of the RV is) with (nth 10 <formal>), if (nth 10 <formal>) is in probably-unchanged-components
 ;;                         (unchanged-fn-call-components (sublis-var-simple-lst formal-fn-call-component-alist probably-unchanged-components))
 ;;                         (subst-alist-for-unchanged (pairlis$ unchanged-fn-call-components probably-unchanged-components))
 
@@ -5783,7 +5782,7 @@
 ;;                         (conjuncts-for-rv-predicate-instantiated2
 ;;                          (keep-terms-that-mention fn-call conjuncts-for-rv-predicate-instantiated2))
 
-;;                         (state (submit-events-brief `( ;; this one has the unchanged components of the RV replaced by their params:
+;;                         (state (submit-events-brief `(;; this one has the unchanged components of the RV replaced by their params:
 ;;                                            ;;what if some unchanged components don't appear in the rv invars?
 ;; ;e.g., (nth 1 (nth 2 formal10)) is unchanged but only (nth 2 formal10) appears?
 ;;                                            ;;maybe if we know the length of (nth 2 formal10) we should rewrite it as an
@@ -5824,9 +5823,7 @@
 ;;                                                                              nil 0 state)
 ;;                                    (if erp (mv t nil nil state)
 ;;                                      (let*
-;;                                          (
-;;
-;;                                           ;;this has the original params put in for any unchanged RVs:
+;;                                          (;;this has the original params put in for any unchanged RVs:
 ;;                                           (simplified-exit-test-body-of-fn-pushed-back
 ;;                                            (replace-in-term2 simplified-exit-test-body-of-fn
 ;;                                                           subst-alist-for-unchanged))
@@ -5850,7 +5847,7 @@
 
 ;;                                                 (exit-test-strengthening-events
 ;;                                                  ;;prove that the fn-call satisfies the exit test:
-;;                                                  `( ;;do this even if no strengthenable invars?!
+;;                                                  `(;;do this even if no strengthenable invars?!
 ;;                                                    (defthm ,exit-test-of-fn-call-theorem-name
 ;;                                                      (,exit-fn ,fn-call)
 ;;                                                      :rule-classes nil
@@ -5862,7 +5859,7 @@
 ;;                                                                 (generic-tail-exit ,exit-fn)
 ;;                                                                 (generic-tail ,fn)))
 ;;                                                               :in-theory (union-theories
-;;                                                                           '( ;needed?:
+;;                                                                           '(;needed?:
 ;;                                                                             ,fn
 ;;                                                                             ;;,(pack$ fn '-base) newly removed
 ;;                                                                             )
@@ -6889,7 +6886,7 @@
                                          state)))
               (mv new-fn equivalence-lemma-name alias-base-case-lemma-name state)))))
 
-;;(make-alias-for-tail-function 'sha1-loop-10 '(params) '(SHA1-LOOP-10-EXIT-TEST PARAMS) 'PARAMS '( (SHA1-LOOP-10-UPDATE PARAMS)) 'sha1-loop-10-alias nil state)
+;;(make-alias-for-tail-function 'sha1-loop-10 '(params) '(SHA1-LOOP-10-EXIT-TEST PARAMS) 'PARAMS '((SHA1-LOOP-10-UPDATE PARAMS)) 'sha1-loop-10-alias nil state)
 
 ;makes the limited version of the function and proves that calling it before the regular function is the same as just calling the regular function
 ;;returns (mv split-lemma-helper-name base-case-lemma-name state)
@@ -7791,7 +7788,7 @@
                            (test-casesp test-cases)
                            (interpreted-function-alistp interpreted-function-alist)
                            )))
-  (b* ( ;fixme don't bother to compute sizes if there are no candidates (or for nodes above the largest candidate?)
+  (b* (;fixme don't bother to compute sizes if there are no candidates (or for nodes above the largest candidate?)
          (size-array (make-size-array-for-dag-array-with-name dag-len dag-array-name dag-array 'size-array)) ;; TODO: Consider using a worklist?
          ;;fixme don't bother to cons this up (track the smallest node found so far):
          (candidates (find-node-to-split-candidates 0 dag-len dag-array-name dag-array nil)) ;fixme use the worklist version?
@@ -8957,7 +8954,7 @@
                  )
             (if (all-eql$ len (rest lens))
                 ;; all the targets are the same length
-                (let ( ;; Add a claim for the length:
+                (let (;; Add a claim for the length:
                       (acc (cons `(equal ,length-term ',len)
                                  acc)))
                   ;; Now try to express the pieces:
@@ -8972,7 +8969,7 @@
                                                                                          acc))
                     acc))
               ;;the targets are not all the same length:
-              (let* ( ;; may be nil:
+              (let* (;; may be nil:
                      (length-explanations (try-to-express-last-value-of-whole-target-with-any-candidate length-term lens candidate-values-for-each-trace-alist))
 
                      (acc (if length-explanations
@@ -9478,7 +9475,7 @@
 ;;ex: (tail-rec-consumer 'BVXOR-LIST-SPECIALIZED-TAIL-UNCDRED 'y ..interpreted-function-alist state)
 (defun tail-rec-consumer (fn lst-formal interpreted-function-alist state)
   (declare (xargs :mode :program :stobjs state))
-  (let* ( ;(body (fn-body fn t (w state)))
+  (let* (;(body (fn-body fn t (w state)))
          (formals (fn-formals fn (w state)))
          (is-a-nice-tail-function-result (is-a-nice-tail-function fn state))
          ;; (nice-tail-functionp (first is-a-nice-tail-function-result)) should always be true
@@ -9510,7 +9507,7 @@
 ;; ;;ex: (tail-rec-consumer 'BVXOR-LIST-SPECIALIZED-TAIL-UNCDRED 'y state)
 ;; (defun tail-rec-consumer (fn lst-formal state)
 ;;   (declare (xargs :mode :program :stobjs state))
-;;   (let* ( ;(body (fn-body fn t (w state)))
+;;   (let* (;(body (fn-body fn t (w state)))
 ;;          (formals (fn-formals fn (w state)))
 ;;          (is-a-nice-tail-function-result (is-a-nice-tail-function fn state))
 ;;          ;; (nice-tail-functionp (first is-a-nice-tail-function-result)) should always be true
@@ -9794,32 +9791,32 @@
                                            `((equal ,duplicate-numcdrs-formal ,numcdrs-formal))
                                            update-dags-agree-defthm-names interpreted-function-alist :brief state))
            ;;fixme consider defining functions to capture the exit, base, and update dags (would need to open them up in the proof below)
-           (state (submit-events-brief `(
-                                   (skip-proofs ;fixme pull out the pattern of making a fn given the dags for each piece?
-                                    (defun ,new-fn (,@new-formals)
-                                      (declare (ignorable ,duplicate-numcdrs-formal) (xargs :normalize nil))
-                                      (if ,new-exit-test-expr
-                                          ,new-base-case-expr
-                                        (,new-fn ,@new-update-exprs))))
+           (state (submit-events-brief
+                    `((skip-proofs ;fixme pull out the pattern of making a fn given the dags for each piece?
+                        (defun ,new-fn (,@new-formals)
+                          (declare (ignorable ,duplicate-numcdrs-formal) (xargs :normalize nil))
+                          (if ,new-exit-test-expr
+                              ,new-base-case-expr
+                            (,new-fn ,@new-update-exprs))))
 
-                                   (defthm ,defthm-name
-                                     (equal (,fn ,@formals)
-                                            (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil))))
-                                     :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                                              :induct (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil)))
-                                              :expand ((,fn ,@formals)
-                                                       (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil))))
-                                              :in-theory (union-theories '(,fn ,new-fn) (theory 'minimal-theory)))
-                                             (if stable-under-simplificationp ;better way to do this (we don't know what the goal names will be)?
-                                                 '(:use (,@update-expansion-defthm-names
-                                                         (:instance ,increment-dags-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
-                                                         (:instance ,exit-test-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
-                                                         (:instance ,base-case-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
-                                                         ,@(cons-onto-all :instance (cons-all-onto update-dags-agree-defthm-names
-                                                                                                   `((,duplicate-numcdrs-formal ,numcdrs-formal))))
-                                                         )
-                                                        :do-not '(generalize eliminate-destructors))
-                                               nil))))
+                      (defthm ,defthm-name
+                        (equal (,fn ,@formals)
+                               (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil))))
+                        :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                                 :induct (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil)))
+                                 :expand ((,fn ,@formals)
+                                          (,new-fn ,@(replace-in-terms2 new-formals (acons duplicate-numcdrs-formal numcdrs-formal nil))))
+                                 :in-theory (union-theories '(,fn ,new-fn) (theory 'minimal-theory)))
+                                (if stable-under-simplificationp ;better way to do this (we don't know what the goal names will be)?
+                                    '(:use (,@update-expansion-defthm-names
+                                            (:instance ,increment-dags-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
+                                            (:instance ,exit-test-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
+                                            (:instance ,base-case-defthm-name (,duplicate-numcdrs-formal ,numcdrs-formal))
+                                            ,@(cons-onto-all :instance (cons-all-onto update-dags-agree-defthm-names
+                                                                                      `((,duplicate-numcdrs-formal ,numcdrs-formal))))
+                                            )
+                                      :do-not '(generalize eliminate-destructors))
+                                  nil))))
                                  state))
            ;; (- (cw "~x0 ~x1" defun defthm))
            )
@@ -9989,7 +9986,7 @@
   (let* ((is-a-nice-tail-function-result (is-a-nice-tail-function fn state)))
     (if (not (first is-a-nice-tail-function-result)) ;tells whether it is a nice tail function
         (mv (erp-nil) nil state)
-      (b* ( ;(exit-test-expr (second is-a-nice-tail-function-result)) ;can this mention the list being produced?
+      (b* (;(exit-test-expr (second is-a-nice-tail-function-result)) ;can this mention the list being produced?
            (base-case-expr (third is-a-nice-tail-function-result))
            (update-expr-list (fourth is-a-nice-tail-function-result))
            (formals (fn-formals fn (w state)))
@@ -10158,7 +10155,7 @@
                                              rewriter-rule-alist assumptions interpreted-function-alist monitored-symbols
                                              work-hard-when-instructedp print tag state)
   (declare (xargs :mode :program :stobjs state))
-  (b* ( ;;Since we are not using the usual entry point to the rewriter we have to set up some stuff first:
+  (b* (;;Since we are not using the usual entry point to the rewriter we have to set up some stuff first:
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         ;;fixme thread these aux parts of the dag through the sweeping and mitering code?
         (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
@@ -10385,7 +10382,7 @@
                                          connection-relation-formals
                                          state)
   (declare (xargs :stobjs state :verify-guards nil :mode :program))
-  (b* ( ;a subnest (conses and nths) of the corresponding old formal (if the connection holds, this is equal to the old-formal?)
+  (b* (;a subnest (conses and nths) of the corresponding old formal (if the connection holds, this is equal to the old-formal?)
        (new-formal-in-terms-of-old-formals (lookup-eq-safe new-formal new-formals-in-terms-of-old-alist))
 
        ;;replace each old formal with its updated version (may replace several mentions):
@@ -10733,7 +10730,7 @@
 
        (original-names-of-new-formals (lookup-eq-lst new-formals new-formal-name-to-old-formal-name-alist))
        (state
-        (submit-events-brief `( ;rename the formals of these (will have to change all annotations):
+        (submit-events-brief `(;rename the formals of these (will have to change all annotations):
                          (defun ,new-exit-fn (,@original-names-of-new-formals ,@old-vars-in-explanations) ;fixme figure out which formals are needed?
                            (declare (ignorable ,@original-names-of-new-formals ,@old-vars-in-explanations) (xargs :normalize nil)) ;Thu Mar 11 23:12:52 2010
                            ,(replace-in-term2 simplified-expanded-new-exit-test-expr new-formal-name-to-old-formal-name-alist))
@@ -10817,7 +10814,7 @@
        ;;                                                                                        proved-invars
        ;;                                                                                        connection-equalities
        ;;                                                                                        `(,connection-relation-name ,@connection-relation-formals)
-       ;;                                                                                        `( ;(,invariant-name ,@(sublis-var-simple-lst update-expr-alist formals-in-invar) ,@old-vars-in-invar) ;we assume the invariant both before and after the update?: yuck? might get in the way? ;trying without this
+       ;;                                                                                        `(;(,invariant-name ,@(sublis-var-simple-lst update-expr-alist formals-in-invar) ,@old-vars-in-invar) ;we assume the invariant both before and after the update?: yuck? might get in the way? ;trying without this
 
        ;;                                                                                          ,negated-exit-test ;open this?
        ;;                                                                                          )
@@ -10879,7 +10876,7 @@
                                                                               ,@(list-rules2-executable-counterparts)))
                                           ;;i guess because of substitution, this may not be reliable:
                                           ;;:expand ((,connection-relation-name ,@update-expr-list ,@new-update-exprs ,@old-vars-in-explanations))
-                                          :use ( ;,updates-preserve-invariant-theorem-name
+                                          :use (;,updates-preserve-invariant-theorem-name
                                                 ;;,@update-fn-defthms ;could use these as rewrites if we first subst in the old vars for the new vars
                                                 ;;,@defthm-names
                                                 )
@@ -11035,7 +11032,7 @@
 (defun peel-off-base-case-of-tail-fn (fn interpreted-function-alist analyzed-function-table state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (let* ( ;;First we combine all the base cases into one:
+  (let* (;;First we combine all the base cases into one:
          (combined-fn (packnew fn '-combined-base-cases))
          (lemma-name (packnew fn '-becomes- combined-fn))
          (state (combine-base-cases-of-tail-fn fn combined-fn lemma-name state))
@@ -11086,7 +11083,7 @@
          (peel-theorem-name (packnew combined-fn '-becomes- new-fn))
 
          ;;ffixme what about errors?  submit-events-brief will throw one.  hope that's okay!
-         (state (submit-events-brief `( ;; the new function:
+         (state (submit-events-brief `(;; the new function:
                                  (skip-proofs ;fixme use the same termination argument as the old function?
                                   (defun ,new-fn ,formals
                                     (declare (xargs :normalize nil)) ;this may be crucial, since we turn off all rules to prove the theorem, we don't want any smarts used to transform the body
@@ -11846,7 +11843,7 @@
                                     (g fn analyzed-function-table))
                                  analyzed-function-table)))
                     rand state))
-      (let* ( ;;these are over 'rv and the old-vars:
+      (let* (;;these are over 'rv and the old-vars:
              (conjuncts-for-rv-predicate (sublis-var-simple-lst formal-rv-component-alist claims-for-rv-predicate))
              (all-vars-mentioned-in-rv-predicate (get-vars-from-terms conjuncts-for-rv-predicate))
              (rv-predicate-formals ;guaranteed not to be empty?
@@ -11869,7 +11866,7 @@
 
              ;; Define the predicate on return values:
              (state (submit-events-brief
-                     `( ;; This is over 'rv and some of the old vars:
+                     `(;; This is over 'rv and some of the old vars:
                        (defun ,rv-predicate-name ,rv-predicate-formals
                          (declare (xargs :normalize nil))
                          (and ,@conjuncts-for-rv-predicate))
@@ -11899,7 +11896,7 @@
                          :rule-classes nil ;Tue Jan 11 17:00:19 2011
                          :hints (("Goal"
                                   :do-not '(generalize eliminate-destructors)
-                                  :use ( ;;,better-invariant-theorem-name ;could separate into two steps..
+                                  :use (;;,better-invariant-theorem-name ;could separate into two steps..
                                         ,proved-final-claim-lemma-name
                                         ,proved-final-claim-implies-rv-predicate-theorem-name)
                                   :in-theory (theory 'minimal-theory))))
@@ -12026,7 +12023,7 @@
           (if nil ;;check the whole rhs for any remaining vars!
               (prog2$ (hard-error 'apply-rule-at-nodenum "free vars in rhs." nil)
                       (mv (erp-t) miter-array miter-len))
-            (b* ( ;;add the instantiated rhs to the dag:
+            (b* (;;add the instantiated rhs to the dag:
                  ((mv erp nodenum-or-quotep miter-array miter-len miter-parent-array miter-constant-alist miter-variable-alist)
                   (merge-tree-into-dag-array instantiated-rhs
                                              nil
@@ -12127,8 +12124,7 @@
                   :stobjs state)
            ;; (ignore assumptions interpreted-function-alist rewriter-rule-alist monitored-symbols)
            )
-  (b* (
-       ;; ;; First try to simplify the equality of the node and the constant:
+  (b* (;; ;; First try to simplify the equality of the node and the constant:
        ;; ;; TODO: This step seems slow and maybe not worth it for a pure node
        ;; (- (cw "Making the equality and rewriting (but only the top node).~%"))
        ;; ;;ffixme should we instead call the dag prover here, in case the assumptions are not simplified?
@@ -12575,7 +12571,7 @@
  ;;                                                :rule-classes nil
  ;;                                                :hints (("Goal" :use (:instance ,helper-2-theorem-name)
  ;;                                                         :in-theory (union-theories (theory 'minimal-theory)
- ;;                                                                                    '( ;,connection-relation-name
+ ;;                                                                                    '(;,connection-relation-name
  ;;                                                                                      ))))))
  ;;                                            state))) ;check for error?
  ;;                       (prove-updates-preserve-connection-for-dropping (rest conjuncts)
@@ -12661,7 +12657,7 @@
  ;;               (prog2$ (cw "simplifying the update~%")
  ;;                       (mv-let (dag state)
  ;;                               (simplify-term3 new-update-expr
- ;;                                              (make-rule-alist `(,(ffn-symb update-expr)(:definition blah)  ;e.g., SHA1-LOOP-10-UPDATE
+ ;;                                              (make-rule-alist `(,(ffn-symb update-expr) (:definition blah)  ;e.g., SHA1-LOOP-10-UPDATE
  ;;
  ;;                                                             (:rewrite NTH-OF-CONS-CONSTANT-VERSION) ;Fri Mar  5 00:14:42 2010
  ;;                                                             (:REWRITE LOOKUP-EQUAL-OF-ACONS-DIFF)
@@ -12810,7 +12806,7 @@
                          (if (< trace-count 2)
                              (prog2$ (cw "!! Only ~x0 trace(s), but we require at least 2 (consider adding more test cases, or perhaps this node is irrelevant due to an inconsistent context).)~%" trace-count) ;require more than 2?
                                      (mv nil :failed analyzed-function-table rand state))
-                           (let* ( ;; fixme could we save consing in how we manipulate traces since now they will be simple loop fns?
+                           (let* (;; fixme could we save consing in how we manipulate traces since now they will be simple loop fns?
                                   ;;fixme don't bother to add the RVs to the traces, since they will all be the same for tail-rec fns...
                                   (traces (flatten-traces traces)) ;delay this?
                                   (rep-counts (len-list traces))
@@ -13253,7 +13249,7 @@
  ;;                                                                    "failed to prove the theorem" nil)
  ;;                                                        (prog2$ (cw ")")
  ;;                                                                (mv :error extra-stuff analyzed-function-table state)))
- ;;                                              (let ( ;; (state
+ ;;                                              (let (;; (state
  ;;                                                    ;;                                         (if in-axe-proverp ;fffixme
  ;;                                                    ;;                                             state
  ;;                                                    ;;                                           (f-put-global 'rec-fn-lemma-and-fn-table
@@ -13659,7 +13655,7 @@
 
                  (mv t nil nil rand state))
        (let*
-           ( ;;Test the user-supplied connections on the traces: fixme should this throw an error?
+           (;;Test the user-supplied connections on the traces: fixme should this throw an error?
             (user-supplied-connections (discard-false-connections user-supplied-connections args-traces1 args-traces2 formals1 formals2 interpreted-function-alist old-var-to-formal-alist nil))
             (connections-to-remove (g :connections-to-remove (g fn-with-connections extra-stuff)))
             (dummy5 (progn$ (cw "(user-supplied connections: ~x0)~%" user-supplied-connections)
@@ -13722,7 +13718,7 @@
                                               (list (ffn-symb exit-test-expr2))))
             (dummy8 (cw "(Simplifying exit test 1:~%")))
          (declare (ignore dummy5 dummy6 dummy7 dummy8))
-         (mv-let ( ;;we prove below that this is the same as the original expr
+         (mv-let (;;we prove below that this is the same as the original expr
 ;fffixme can we here turn the "or in terms of if" into a boolor?
                   erp simplified-exit-test-expr1 state)
            (simp-term exit-test-expr1
@@ -13731,7 +13727,7 @@
                               (exit-test-simplification-rules))
                       :print t
                       :monitor
-                      '( ;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger
+                      '(;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger
 ;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger-alt
                         )
                       :assumptions fn1-invars
@@ -13752,7 +13748,7 @@
                                     (exit-test-simplification-rules))
                             :print t
                             :monitor
-                            '( ;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger
+                            '(;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger
 ;sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger-alt
                               )
                             :assumptions fn2-invars
@@ -14017,7 +14013,7 @@
                               (proved-final-claim-lemma-name (packnew proved-final-claim-name '-lemma))
                               (proved-final-claim-lemma-name-helper (packnew proved-final-claim-lemma-name '-helper))
                               (state
-                               (submit-events-brief `( ;fixme could proved-final-claim-formals include more than better-invariant-formals?
+                               (submit-events-brief `(;fixme could proved-final-claim-formals include more than better-invariant-formals?
                                                 ;;do we need both this and the rv predicate?  well, the rv predicate is over rv, not the formals...
                                                 (defun ,proved-final-claim-name (,@proved-final-claim-formals)
                                                   (declare (xargs :normalize nil))
@@ -16309,7 +16305,7 @@
                                              (mv (erp-t) nil
                                                  miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules
                                                  analyzed-function-table monitored-symbols rand state))))
-                         (b* ( ;;fixme - make sure something changed, or this can loop! huh?
+                         (b* (;;fixme - make sure something changed, or this can loop! huh?
                               (miter-len (len dag-lst-or-quotep))
                               (miter-array (alist-to-array1 miter-array-name dag-lst-or-quotep))
                               (- (and print (cw "Miter DAG after sweep ~x0 (depth ~x1):~%" sweep-num miter-depth)))
@@ -16424,7 +16420,7 @@
                                                                     max-conflicts changep print miter-depth options rand state))
               ;;otherwise, we returned (list new-runes new-fn-names)
               ;; trying without simplifying here...  if we do simplify, we need to update test-case-array-alist
-              (b* ( ;(fn (ffn-symb (aref1 dag-array-name dag-array nodenum)))
+              (b* (;(fn (ffn-symb (aref1 dag-array-name dag-array nodenum)))
                      (new-runes (first result))
                      (new-fn-names (second result))
                      (- (and new-fn-names (cw "(Adding ifns: ~x0.)~%" new-fn-names)))
@@ -16552,7 +16548,7 @@
                                             (progn$
 ;fixme separate out the loop functions here:
                                              (cw "(Fns after pre-simplification sweep ~x0: ~x1)~%" sweep-count (dag-fns dag-lst)) ;fixme do better in the not printing case?
-                                             (let* ( ;;(dag-array (alist-to-array1 dag-array-name dag-lst))
+                                             (let* (;;(dag-array (alist-to-array1 dag-array-name dag-lst))
                                                     ;;(dag-len (len dag-lst))
 ;(state (if print (print-dag-array-to-temp-file dag-array-name dag-array dag-len
 ;                                          (concatenate 'string (symbol-name proof-name) "-DAG-AFTER-PS-SWEEP-" (nat-to-string sweep-count)) state)
@@ -16736,7 +16732,7 @@
                            (mv (erp-nil) nil rand state))
                  (prog2$ (er hard? 'miter-and-merge "expected t or nil but got the constant ~x0." val)
                          (mv (erp-t) nil rand state)))))
-         ;; Not a constant;
+         ;; Not a constant:
          (b* ((dag dag-or-quotep)
               (miter-array-name (pack$ 'miter-array- miter-depth))
               (miter-array (alist-to-array1 miter-array-name dag)) ;call a -with-len version?
@@ -16944,7 +16940,7 @@
                           ;;compute contexts? concretize?
                           ;; fffixme add more test cases if needed and if depth=0
                           (- (cw "(False case:~%"))
-                          ;; (let* ( ;(dummy1 (cw "Miter dag for false case:~%"))
+                          ;; (let* (;(dummy1 (cw "Miter dag for false case:~%"))
                           ;;(dummy2 (print-list miter-dag-for-false-case))
                           ;; (dummy ))
                           ;; (declare (ignore dummy))
@@ -17474,7 +17470,7 @@
        ;;   (if erp
        ;;       ;; error translating (should not happen):
        ;;       (mv erp nil state)
-       ;;     (let* ( ;; (stobjs-out (car val))
+       ;;     (let* (;; (stobjs-out (car val))
        ;;            (values-returned (cdr val))
        ;;            ;; Get the non-stobj values returned by prove-with-axe-fn:
        ;;            (erp (first values-returned))
@@ -19416,7 +19412,7 @@
 ;;                                        state)
 ;;   (declare (xargs :mode :program)
 ;;            (ignore print))
-;;   (let* ( ;save the old top node:
+;;   (let* (;save the old top node:
 ;;          (old-top-node (aref1 'dag-array dag-array (+ -1 dag-len)))
 
 ;;          ;;temporarily change the top node to the equality we're interested in:

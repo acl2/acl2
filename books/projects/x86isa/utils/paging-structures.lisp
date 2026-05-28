@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,10 +36,14 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author:
+; Alessandro Coglio   <www.alessandrocoglio.info>
 
 (in-package "X86ISA")
 
 (include-book "basic-structs")
+
+(include-book "xdoc/constructors" :dir :system)
 
 ;; We do these once, here, to avoid each defbitstruct below doing them locally:
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -49,17 +54,28 @@
 
 (defsection paging-bitstructs
   :parents (structures)
-  :short "<b>Bitstructs related to the paging data structures</b>"
-
-  :long "<p>Source: Intel Manual, Dec'23, Vol. 3A, Tables 4-14 through 4-19,
-  Figure 4-11)</p>"
-  )
+  :short "Bitstructs related to the paging data structures."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Source:
+     Intel Manual, Mar 2026, Vol. 3A,
+     Tables 5-15 through 5-20,
+     Figure 5-11.")
+   (xdoc::p
+    "For now we only model structures for 4-level paging.
+     As mentioned in
+     Intel Manual, Mar 2026, Vol. 3A, Section 5.1.1, footnote 1,
+     this paging mode was previously called `IA-32e paging':
+     this is why the names of the bitstructs below start with @('ia32e').
+     We may want to update these names at some point,
+     perhaps when we add structures for the other paging three modes.")))
 
 (local (xdoc::set-default-parents paging-bitstructs))
 
 ;; ----------------------------------------------------------------------
 
-(defbitstruct ia32e-page-tablesBits
+(defbitstruct ia32e-page-tablesBits ; Tables 5-15 through 5-20
 
   ;; This constant defines the common bit fields for page table
   ;; structure entries.
@@ -74,17 +90,34 @@
   ;; reference-addr, the address of the mapped page is contained in
   ;; different-sized fields for each paging structure.
 
+  ;; Note that the d, ps, res1, and res2 fields
+  ;; are not common to all the paging structures,
+  ;; as indicated in the comments next to them.
+  ;; It could be appropriate to:
+  ;; - rename d to d/res
+  ;; - rename ps to ps/pat
+  ;; - split res1 into g/res for bit 8 and res1 for bits 10:9
+  ;; - split res2 into res2 for bits 58:52 and pkey/res for bits 63:59
+  ;; We may do that at some point,
+  ;; but the current names,
+  ;; although not fully descriptive,
+  ;; may be adequate for the current uses of this structure.
+
   ((p bitp)                 ;; Page present
    (r/w bitp)               ;; Read/Write
    (u/s bitp)               ;; User/supervisor
    (pwt bitp)               ;; Page-level Write-Through
    (pcd bitp)               ;; Page-level Cache-Disable
    (a bitp)                 ;; Accessed
-   (d bitp)                 ;; Dirty
-   (ps bitp)                ;; Page size
-   (res1 4bits)             ;; Ignored
+   (d bitp)                 ;; Dirty (or ignored)
+   (ps bitp)                ;; Page size (or PAT)
+   (res1 3bits)             ;; Ignored (bits 10:8),
+                            ;; or global translation in bit 8
+   (r bitp)                 ;; Ignored for ordinary paging;
+                            ;; restart for HLAT paging
    (reference-addr 40bits)  ;; Address of inferior paging table
-   (res2 11bits)            ;; Ignored and/or Reserved
+   (res2 11bits)            ;; Ignored (bits 62:52),
+                            ;; or protection key in bits 62:59
    (xd bitp))               ;; Execute Disable
   :msb-first nil
   :inline t)
@@ -95,20 +128,21 @@
         (unsigned-byte-p 64 x))
    :rule-classes nil))
 
-(defbitstruct ia32e-pml4eBits
-  ((p bitp)      ;; Page present (must be 1)
+(defbitstruct ia32e-pml4eBits ; Table 5-15
+  ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
    (pcd bitp)    ;; Page-level Cache-Disable
-   (a bitp)      ;; Accessed (whether this entry has been used for LA translation)
+   (a bitp)      ;; Accessed (whether entry has been used for LA translation)
    (res1 bitp)   ;; Ignored
-   (ps bitp)     ;; Page size (Must be zero)
-   (res2 4bits)  ;; Ignored
-   (pdpt 40bits) ;; Address of page-directory pointer table
-   (res3 11bits) ;; Ignored and/or Reserved
-   (xd bitp))    ;; If IA32_EFER.NXE = 1, Execute disable;
-                 ;; otherwise 0 (reserved)
+   (ps bitp)     ;; Page size (must be 0)
+   (res2 3bits)  ;; Ignored (bits 10:8)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
+   (pdpt 40bits) ;; Address of page-directory pointer table (bits 51:12, any M)
+   (res3 11bits) ;; Ignored (bits 62:52)
+   (xd bitp))    ;; If IA32_EFER.NXE = 1, execute disable;
+                 ;; otherwise reserved (must be 0)
   :msb-first nil
   :inline t)
 
@@ -118,26 +152,27 @@
         (unsigned-byte-p 64 x))
    :rule-classes nil))
 
-(defbitstruct ia32e-pdpte-1GB-pageBits
-  ((p bitp)      ;; Page present (must be 1)
+(defbitstruct ia32e-pdpte-1GB-pageBits ; Table 5-16
+  ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
    (pcd bitp)    ;; Page-level Cache-Disable
-   (a bitp)      ;; Accessed (whether this entry has been used for LA translation)
-   (d bitp)      ;; Dirty (whether s/w has written to the 1 GB page referenced by this entry)
+   (a bitp)      ;; Accessed (whether entry has been used for LA translation)
+   (d bitp)      ;; Dirty (whether referenced page was written)
    (ps bitp)     ;; Page size (Must be 1 for 1GB pages)
    (g bitp)      ;; Global translation
-   (res1 3bits)  ;; Ignored
+   (res1 2bits)  ;; Ignored (bits 10:9)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
    (pat bitp)    ;; PAT
-   (res2 17bits) ;; Reserved
-   (page 22bits) ;; Address of 1 GB page
-   (res3 11bits) ;; Ignored and/or Reserved
-   (xd bitp))    ;; If IA32_EFER.NXE = 1, Execute disable;
-                 ;; otherwise 0 (reserved)
+   (res2 17bits) ;; Reserved (bits 29:13)
+   (page 22bits) ;; Address of 1GB page (bits 51:30, any M)
+   (res3 7bits)  ;; Ignored (bits 58:52)
+   (pkey 4bits)  ;; Protection key
+   (xd bitp))    ;; If IA32_EFER.NXE = 1, execute disable;
+                 ;; otherwise reserved (must be 0)
   :msb-first nil
-  :inline t
-  )
+  :inline t)
 
 (local
  (defthm ia32e-pdpte-1GB-page-layout-ok
@@ -145,21 +180,21 @@
         (unsigned-byte-p 64 x))
    :rule-classes nil))
 
-(defbitstruct ia32e-pdpte-pg-dirBits
-  ((p bitp)      ;; Page present (must be 1)
+(defbitstruct ia32e-pdpte-pg-dirBits ; Table 5-17
+  ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
    (pcd bitp)    ;; Page-level Cache-Disable
    (a bitp)      ;; Accessed (whether this entry has been used for LA translation)
    (res1 bitp)   ;; Ignored
-   (ps bitp)     ;; Page size (Must be 0)
-   (res2 4bits)  ;; Ignored
-   (pd 40bits)   ;; Physical addres of 4-K aligned PD referenced by this entry
-   (res3 11bits) ;; Ignored and/or Reserved
-   (xd bitp))    ;; If IA32_EFER.NXE = 1, Execute disable;
-                 ;; otherwise 0 (reserved)
-
+   (ps bitp)     ;; Page size (must be 0)
+   (res2 3bits)  ;; Ignored (bits 10:8)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
+   (pd 40bits)   ;; Address of 4K-aligned page directory (bits 52:12, any M)
+   (res3 11bits) ;; Ignored (bits 62:52)
+   (xd bitp))    ;; If IA32_EFER.NXE = 1, execute disable;
+                 ;; otherwise reserved (must be 0)
   :msb-first nil
   :inline t)
 
@@ -169,22 +204,25 @@
         (unsigned-byte-p 64 x))
    :rule-classes nil))
 
-(defbitstruct ia32e-pde-2MB-pageBits
-  ((p bitp)      ;; Page present (must be 1)
+(defbitstruct ia32e-pde-2MB-pageBits ; Table 5-18
+  ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
    (pcd bitp)    ;; Page-level Cache-Disable
    (a bitp)      ;; Accessed
-   (d bitp)      ;; Dirty
+   (d bitp)      ;; Dirty (whether referenced page was written)
    (ps bitp)     ;; Page size (Must be 1 for 2MB pages)
    (g bitp)      ;; Global translation
-   (res1 3bits)  ;; Ignored
+   (res1 2bits)  ;; Ignored (bits 10:9)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
    (pat bitp)    ;; PAT
-   (res2 8bits)  ;; Reserved
-   (page 31bits) ;; Physical addres of the 2MB page referenced by this entry
-   (res3 11bits) ;; Ignored and/or Reserved
-   (xd bitp)     ;; If IA32_EFER.NXE = 1, Execute disable; otherwise 0 (reserved)
+   (res2 8bits)  ;; Reserved (bits 20:13)
+   (page 31bits) ;; Address of the 2MB page (bits 51-21, any M)
+   (res3 7bits)  ;; Ignored (bits 58:52)
+   (pkey 4bits)  ;; Protection key
+   (xd bitp)     ;; If IA32_EFER.NXE = 1, execute disable;
+                 ;; otherwise reserved (must be 0)
    )
   :msb-first nil
   :inline t)
@@ -195,21 +233,21 @@
         (unsigned-byte-p 64 x))
    :rule-classes nil))
 
-(defbitstruct ia32e-pde-pg-tableBits
-  ((p bitp)      ;; Page present (must be 1)
+(defbitstruct ia32e-pde-pg-tableBits ; Table 5-19
+  ((p bitp)      ;; Present
    (r/w bitp)    ;; Read/write
    (u/s bitp)    ;; User/supervisor
    (pwt bitp)    ;; Page-level Write-Through
    (pcd bitp)    ;; Page-level Cache-Disable
    (a bitp)      ;; Accessed
    (res1 bitp)   ;; Ignored
-   (ps bitp)     ;; Page size (Must be 0)
-   (res2 4bits)  ;; Ignored
-   (pt 40bits)   ;; Physical addres of the 4K-aligned
-                 ;; page table referenced by this entry
-   (res3 11bits) ;; Ignored and/or Reserved
-   (xd bitp)     ;; If IA32_EFER.NXE = 1, Execute
-                 ;; disable; otherwise 0 (reserved)
+   (ps bitp)     ;; Page size (must be 0)
+   (res2 3bits)  ;; Ignored (bits 10:8)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
+   (pt 40bits)   ;; Address of the 4K-aligned page table (bits 51:12, any M)
+   (res3 11bits) ;; Ignored (bits 62:52)
+   (xd bitp)     ;; If IA32_EFER.NXE = 1, execute disable;
+                 ;; otherwise reserved (must be 0)
    )
   :msb-first nil
   :inline t)
@@ -220,22 +258,23 @@
         (unsigned-byte-p 64 x))
    :rule-classes nil))
 
-(defbitstruct ia32e-pte-4K-pageBits
-  ((p bitp)        ;; Page present (must be 1)
-   (r/w bitp)      ;; Read/write
-   (u/s bitp)      ;; User/supervisor
-   (pwt bitp)      ;; Page-level Write-Through
-   (pcd bitp)      ;; Page-level Cache-Disable
-   (a bitp)        ;; Accessed
-   (d bitp)        ;; Dirty
-   (pat bitp)      ;; PAT
-   (g bitp)        ;; Global translation
-   (res1 3bits)    ;; Ignored
-   (page 40bits)   ;; Physical address of the 4K page
-                   ;; referenced by this entry
-   (res2 11bits)   ;; Ignored
-   (xd bitp)       ;; If IA32_EFER.NXE = 1, Execute
-                   ;; disable; otherwise 0 (reserved)
+(defbitstruct ia32e-pte-4K-pageBits ; Table 5-20
+  ((p bitp)      ;; Present
+   (r/w bitp)    ;; Read/write
+   (u/s bitp)    ;; User/supervisor
+   (pwt bitp)    ;; Page-level Write-Through
+   (pcd bitp)    ;; Page-level Cache-Disable
+   (a bitp)      ;; Accessed
+   (d bitp)      ;; Dirty (whether referenced page was written)
+   (pat bitp)    ;; PAT
+   (g bitp)      ;; Global translation
+   (res1 2bits)  ;; Ignored (bits 10:9)
+   (r bitp)      ;; Ignored for ordinary paging; restart for HLAT paging
+   (page 40bits) ;; Address of the 4K page (bits 51:12, any M)
+   (res3 7bits)  ;; Ignored (bits 58:52)
+   (pkey 4bits)  ;; Protection key
+   (xd bitp)     ;; If IA32_EFER.NXE = 1, execute disable;
+                 ;; otherwise reserved (must be 0)
    )
   :msb-first nil
   :inline t)

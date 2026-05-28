@@ -16,6 +16,12 @@
 ;; are consulted by check-tree-no-keyword-identifiers below.
 (include-book "identifier-syntax")
 
+;; Certifies that the grammar's `keyword` rule and
+;; *remora-keywords-as-natlists* list the same keywords.  This book
+;; has no exported definitions used here; it is included for its
+;; assert-event side effect at certification time.
+(include-book "check-keywords")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ post-parsing

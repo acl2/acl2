@@ -12,6 +12,7 @@
 
 (include-book "dynamic-values")
 (include-book "dynamic-environments")
+(include-book "evaluation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,9 +22,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The static semantics of Remora is defined via inference rules,
+    "The dynamic semantics of Remora is defined via inference rules,
      in the Remora publications [thesis] [arxiv] [esop].
      We plan to formalize those inference rules as directly as possible,
      but we will start by providing an executable interpreter."))
   :order-subtopics (dynamic-values
-                    dynamic-environments))
+                    dynamic-environments
+                    evaluation))

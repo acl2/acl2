@@ -198,8 +198,8 @@
 ;;                            (size size)
 ;;                            (x (bvcat highsize highval lowsize lowval))
 ;;                            (y x))
-;;            :in-theory (e/d ( ;bvmult
-;;                             ) (  BVMULT-OF-BVCHOP-arg3)))))
+;;            :in-theory (e/d (;bvmult
+;;                             ) (BVMULT-OF-BVCHOP-arg3)))))
 
 ;; (defthm bvmult-8-27-blast
 ;;   (equal (bvmult 8 27 (getbit n x))
@@ -656,7 +656,7 @@
                             ;bvplus-opener
                             subrange
                             )
-                           ( ;EQUAL-*-/-1
+                           (;EQUAL-*-/-1
                             array-reduction-when-top-bit-is-irrelevant-helper
                             firstn bv-array-read))
            :use (:instance array-reduction-when-top-bit-is-irrelevant-helper
@@ -666,7 +666,7 @@
 ;;  (IMPLIES (< INDEX 0)
 ;;           (EQUAL (GETBIT 0 INDEX)
 ;;                  0))
-;;  :hints (("Goal" :in-theory (e/d (getbit) ( )))))
+;;  :hints (("Goal" :in-theory (enable getbit))))
 
 ;; ;yuck?
 ;; (defthmd myif-of-constant-lists
@@ -857,7 +857,7 @@
                 (natp end)
                 (natp start)
                 (natp n))
-           (equal (BV-ARRAY-READ esize '128 n (UPDATE-SUBRANGE start end vals lst))
+           (equal (BV-ARRAY-READ esize 128 n (UPDATE-SUBRANGE start end vals lst))
                   (BV-ARRAY-READ esize (+ 1 end (- start)) (+ N (- START)) vals)))
   :hints (("Goal" :in-theory (e/d (bv-array-read unsigned-byte-p-of-integer-length-gen ceiling-of-lg)
                                   (unsigned-byte-p-of-+-of-minus-alt
@@ -1203,7 +1203,7 @@
                                                   BVCHOP-WHEN-I-IS-NOT-AN-INTEGER
                                                   update-nth-when-equal-of-nth
                                                   )
-                                  ( ;take-of-bvchop-list
+                                  (;take-of-bvchop-list
                                    )))))
 
 ;; ;just use a trim rule?
@@ -1517,7 +1517,7 @@
 ;;                        (:instance equal-of-lens-when-equal-of-clear-nths
 ;;                                   (x (cdr lst)) (y (cdr rhs))
 ;;                                   (n (+ -1 key))))
-;;                       :expand ( ;(LEN LST)
+;;                       :expand (;(LEN LST)
 ;;     ;(LEN cdr)
 ;;                                (ALL-UNSIGNED-BYTE-P ESIZE LST)
 ;;                                (ALL-UNSIGNED-BYTE-P ESIZE RHS))
@@ -1625,7 +1625,7 @@
 
 ;; (thm
 ;;  (implies (integerp x)
-;;           (equal (< (JVM::IDIV x '4) '0)
+;;           (equal (< (JVM::IDIV x 4) 0)
 ;;                  (< x -4)))
 ;;  :hints (("Goal" :in-theory (enable JVM::IDIV))))
 
@@ -1793,8 +1793,8 @@
 ;;   (implies (and (natp index)
 ;;                 (< index 64)
 ;;                 )
-;;            (equal (nth2 '6 index (bv-array-write '16 '64 index2 val array))
-;;                   (bv-array-read '16 '64 index (bv-array-write '16 '64 index2 val array))))
+;;            (equal (nth2 6 index (bv-array-write 16 64 index2 val array))
+;;                   (bv-array-read 16 64 index (bv-array-write 16 64 index2 val array))))
 ;;   :hints (("Goal" :in-theory (enable ;BV-ARRAY-READ
 ;;                               nth2))))
 

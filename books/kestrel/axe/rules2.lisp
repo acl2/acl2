@@ -3374,7 +3374,7 @@
 ;;                                                  JVM::HEAP)))
 ;;                   (JVM::INITIAL-ARRAY-CONTENTS TYPE JVM::INNERCOUNT)))
 ;;   :hints (("Goal" :use (:instance GET-FIELD-CONTENTS-OF-INITIALIZE-2D-ARRAY-SUB-ARRAY)
-;;            :in-theory (e/d (get-field)(GET-FIELD-CONTENTS-OF-INITIALIZE-2D-ARRAY-SUB-ARRAY)))))
+;;            :in-theory (e/d (get-field) (GET-FIELD-CONTENTS-OF-INITIALIZE-2D-ARRAY-SUB-ARRAY)))))
 
 
 

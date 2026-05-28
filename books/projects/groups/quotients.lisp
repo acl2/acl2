@@ -181,7 +181,7 @@
 		(member-equal x c))
 	   (equal (lcoset x h g) c)))
 
-;; lcosets are distinct and non-nil:
+;; lcosets are distinct:
 
 (defthmd member-member-list
   (implies (and (consp x) (member x l))
@@ -190,10 +190,6 @@
 (defthm dlistp-lcosets
   (implies (subgroupp h g)
            (dlistp (lcosets h g))))
-
-(defthmd lcosets-non-nil
-  (implies (subgroupp h g)
-           (not (member-equal () (lcosets h g)))))
 
 (defthmd len-lcosets
   (implies (subgroupp h g)
@@ -496,10 +492,6 @@
   (implies (normalp h g)
            (dlistp (qlist h g))))
 
-(defthm qlist-non-nil
-  (implies (normalp h g)
-           (not (member-equal () (qlist h g)))))
-
 ;; The quotient group operation and inverse operator:
 
 (defun qop (x y h g)
@@ -668,11 +660,6 @@
                 (subgroupp h (quotient g n))
 		(member-equal x (append-elts h)))
            (member-equal (inv x g) (append-elts h))))
-
-(defthm append-elts-non-nil
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (not (member-equal () (append-elts h)))))
 
 (defsubgroup lift (h n) g
   (and (normalp n g)

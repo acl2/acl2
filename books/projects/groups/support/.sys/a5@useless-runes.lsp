@@ -1,2 +1,0 @@
-(DM::A5)
-(DM::A5-REWRITE)

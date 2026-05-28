@@ -1,7 +1,7 @@
 ; BV Lists Library: bytes-to-bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,7 @@
 (local (include-book "../lists-light/true-list-fix"))
 (local (include-book "../bv/bvchop"))
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
+(local (include-book "unsigned-byte-listp"))
 
 ;; Convert a sequence of 8-bit bytes to a sequence of bits.  The bits from
 ;; earlier bytes come earlier in the result.  For a given byte, the most
@@ -36,8 +37,14 @@
             (bytes-to-bits (rest bytes)))))
 
 (defthm all-unsigned-byte-p-of-bytes-to-bits
-  (all-unsigned-byte-p 1 (bytes-to-bits bytes))
+  (implies (posp size)
+           (all-unsigned-byte-p size (bytes-to-bits bytes)))
   :hints (("Goal" :in-theory (enable bytes-to-bits))))
+
+(defthm unsigned-byte-p-listp-of-bytes-to-bits
+  (implies (posp size)
+           (unsigned-byte-listp size (bytes-to-bits byte)))
+  :hints (("Goal" :in-theory (enable bytes-to-bits unsigned-byte-listp))))
 
 (defthm all-integerp-of-bytes-to-bits
   (all-integerp (bytes-to-bits bytes))

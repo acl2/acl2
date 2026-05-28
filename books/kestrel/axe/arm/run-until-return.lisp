@@ -1,4 +1,4 @@
-; Running until we return from a function
+; Running until we return from a function or hit a stop PC
 ;
 ; Copyright (C) 2025-2026 Kestrel Institute
 ;
@@ -11,6 +11,7 @@
 (in-package "A")
 
 ;; This machinery is useful for symbolic execution.
+;; See also run-until-return-with-tracing.lisp.
 
 (include-book "portcullis")
 (include-book "kestrel/arm/step" :dir :system)

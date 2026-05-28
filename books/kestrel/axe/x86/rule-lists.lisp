@@ -188,7 +188,7 @@
             x86isa::ror-spec-32
             ror-spec-64-alt-def ; x86isa::ror-spec-64
 
-            x86isa::blsi
+            blsi-redef ; exposes tzcnt
 
             x86isa::x86-operand-to-xmm/mem
 
@@ -412,7 +412,7 @@
 
 (defund region-rules ()
   (declare (xargs :guard t))
-  '( ;; WARNING: Keep in sync with the list for 64 bits below
+  '(;; WARNING: Keep in sync with the list for 64 bits below
     in-region48p-cancel-constants-1-1+
     in-region48p-cancel-constants-1+-1
     in-region48p-cancel-constants-1+-1+
@@ -556,7 +556,7 @@
 ;; Most of these are for the new normal form (fault, etc.)
 (defund read-over-write-rules-common ()
   (declare (xargs :guard t))
-  '( ; rule to intro app-view?
+  '(; rule to intro app-view?
     x86isa::app-view-of-xw ; needed?
     app-view-of-set-flag
     ;; app-view-of-set-ms ;; we don't want to continue once a branch has a call of set-ms
@@ -728,8 +728,7 @@
 ;; to XW, WRITE, and SET-FLAG (todo: update this comment).
 (defund state-rules ()
   (declare (xargs :guard t))
-  '(
-    force ;todo: think about this, could only open force on a constant arg
+  '(force ;todo: think about this, could only open force on a constant arg
     ;x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
     ;; Flags:
@@ -1324,7 +1323,8 @@
     acl2::logbit-becomes-getbit
     acl2::b-and-becomes-bitand
     acl2::b-ior-becomes-bitor
-    acl2::b-xor-becomes-bitxor))
+    acl2::b-xor-becomes-bitxor
+    acl2::b-not-becomes-bitnot))
 
 ;; See also bitops-to-bv-rules.
 ;; todo: add more constant openers
@@ -1352,7 +1352,7 @@
 ;todo: classify these
 (defund x86-bv-rules ()
   (declare (xargs :guard t))
-  '( ;acl2::bvlt-of-0-arg3 ;todo: more like this?
+  '(;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
     ;; acl2::logext-of-bvplus-64 ;somewhat unusual
 
@@ -1895,7 +1895,7 @@
 ;; for 32-bit mode, without :stop-pcs
 (defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
-  '(    ;; newer scheme, 32-bit:
+  '(;; newer scheme, 32-bit:
     run-until-return32
     run-until-esp-is-above-opener-axe ; not for IFs
     run-until-esp-is-above-base-axe ; not for IFs
@@ -2112,8 +2112,7 @@
 
 (defund canonical-rules-bv ()
   (declare (xargs :guard t))
-  '(
-    ;; these are for the full, 64-bit address space:
+  '(;; these are for the full, 64-bit address space:
     ;; WARNING: Keep in sync with the list for 48 bits above
     in-region64p-of-bvchop-arg1
     in-region64p-of-bvchop-arg3
@@ -5747,7 +5746,7 @@
 ;;             unsigned-byte-p-64-of-xr-of-rgf
 ;;             )
 ;; ;;more:
-;;  ( mv-nth-1-of-add-to-*sp-positive-offset
+;;  (mv-nth-1-of-add-to-*sp-positive-offset
 ;;             mv-nth-1-of-add-to-*sp-gen-special
 ;;             read-from-segment-of-write-to-segment-same
 ;;             read-from-segment-of-write-to-segment-irrel

@@ -36,8 +36,7 @@
                   (< x (expt 2 low))))
   :hints (("Goal"
            :cases ((unsigned-byte-p (+ 1 high) x))
-           :in-theory (e/d (slice equal-of-logtail-and-0)
-                           ()))))
+           :in-theory (enable slice equal-of-logtail-and-0))))
 
 ;consider enabling or improving
 (defthmd usb-slice-helper

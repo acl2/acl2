@@ -18,37 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tokens [C17:A.1.1] [C17:6.4]
-
-; We add header names (which in [C17] are preprocessing tokens, not tokens)
-; because our preprocessor preserves certain #include directives.
-
-token = keyword
-      / identifier
-      / constant
-      / string-literal
-      / punctuator
-      / header-name
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Lexemes
-
-; These are the lexical units after preprocessing.
-; [C17] and [C23] have no rule for lexemes, but our grammar does.
-
-lexeme = token
-       / comment
-       / white-space-character
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Preprocessing Directives [C17:6.10] [C17:A.3]
-
-on-off-switch = %s"ON" / %s"OFF" / %s"DEFAULT"
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Expressions [C17:A.2.1]
 
 ; As a temporary C23 extension,
@@ -400,9 +369,15 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; which should therefore have the syntax '__attribute__((stdcall))',
 ; but apparently it is also accepted by itself, with two underscores in front,
 ; but only in certain places (not everywhere normal attributes are allowed).
+; This seems to be a MSVC (Microsoft Visual C++) extension
+; (https://learn.microsoft.com/en-us/cpp/cpp/stdcall),
+; apparently adopted by GCC.
 
 ; As a GCC extension,
 ; we allow the '__declspec' attribute syntax as a declaration specifier.
+; This seems to be a MSVC (Microsoft Visual C++) extension
+; (https://learn.microsoft.com/en-us/cpp/cpp/declspec),
+; apparently adopted by GCC.
 
 ; As a GCC extension,
 ; we include type qualifiers for x86 named address spaces

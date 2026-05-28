@@ -454,6 +454,10 @@
            (not (subset x y)))
   :hints (("Goal" :use subset-necc)))
 
+(defthmz pair-commutative
+  (equal (pair x y) (pair y x))
+  :hints (("Goal" :in-theory (enable extensionality subset))))
+
 (defthmz in-union2
   (equal (in a (union2 x y))
          (or (in a x) (in a y)))

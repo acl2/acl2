@@ -31,6 +31,16 @@
          (bitnot (bitxor y x)))
   :hints (("Goal" :in-theory (e/d (bitnot bitxor bvxor) (bvxor-1-becomes-bitxor)))))
 
+;see also bitxor-of-bitnot-arg1
+(defthm bitxor-of-bitnot-same-arg1
+  (equal (bitxor (bitnot x) x)
+         1))
+
+;see also bitxor-of-bitnot-arg2
+(defthm bitxor-of-bitnot-same-arg2
+  (equal (bitxor x (bitnot x))
+         1))
+
 (defthm bitxor-of-1-becomes-bitnot-arg1
   (equal (bitxor 1 x)
          (bitnot x))

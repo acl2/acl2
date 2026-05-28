@@ -1,7 +1,7 @@
 ; Recognizing strictly decreasing lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -82,7 +82,7 @@
 (defthm all-<-of-cdr-and-nth-0-when-decreasingp
   (implies (decreasingp nums)
            (all-< (cdr nums) (nth 0 nums)))
-  :hints (("Goal" :in-theory (e/d (decreasingp nth all-<) ()))))
+  :hints (("Goal" :in-theory (enable decreasingp nth all-<))))
 
 (defthm all-<=of-cdr-and-nth-0-when-decreasingp
   (implies (decreasingp nums)

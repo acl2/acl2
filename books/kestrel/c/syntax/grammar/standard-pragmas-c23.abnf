@@ -1,0 +1,39 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+
+; This file contains the grammar rules for standard pragmas
+; that are specific to the C23 standard [C23:6.10.8].
+; Together with the generic rules in standard-pragmas.abnf,
+; they form the rules for standard pragmas for the C23 dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+standard-pragma = "#" %s"pragma" %s"STDC" %s"FP_CONTRACT" on-off-switch
+                / "#" %s"pragma" %s"STDC" %s"FENV_ACCESS" on-off-switch
+                / "#" %s"pragma" %s"STDC" %s"FENV_DEC_ROUND" dec-direction
+                / "#" %s"pragma" %s"STDC" %s"FENV_ROUND" direction
+                / "#" %s"pragma" %s"STDC" %s"CX_LIMITED_RANGE" on-off-switch
+
+direction = %s"FE_DOWNWARD"
+          / %s"FE_TOWARDZERO"
+          / %s"FE_TONEAREST"
+          / %s"FE_UPWARD"
+          / %s"FE_TONEARESTFROMZERO"
+          / %s"FE_DYNAMIC"
+
+dec-direction = %s"FE_DEC_DOWNWARD"
+              / %s"FE_DEC_TOWARDZERO"
+              / %s"FE_DEC_TONEAREST"
+              / %s"FE_DEC_UPWARD"
+              / %s"FE_DEC_TONEARESTFROMZERO"
+              / %s"FE_DEC_DYNAMIC"

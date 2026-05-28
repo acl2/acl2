@@ -14,6 +14,10 @@
 
 (include-book "kestrel/c/syntax/parser-states" :dir :system)
 
+;; Globally disable the forward-chaining token-kind splitter so that
+;; downstream parsers use the targeted one-way lemmas instead.
+(in-theory (disable c$::token-kind-possibilities))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ cpp-token-utilities

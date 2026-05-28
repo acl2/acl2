@@ -60,24 +60,24 @@ paren-exp-body  = array-exp
                 / at-app-exp         ; @f sugar
                 / app-exp            ; [SC3] must be last
 
-array-exp       = "array" ws shape-lit ws 1*( ws atom )
+array-exp       = %s"array" ws shape-lit *( ws atom )
 
-frame-exp       = "frame" ws shape-lit ws 1*( ws exp )
+frame-exp       = %s"frame" ws shape-lit *( ws exp )
 
 app-exp         = exp *( ws exp )      ; [SC1]
                   ; (f e1 ... en): first exp is the function
 
-tapp-exp        = "t-app" ws exp *( ws type-exp )
+tapp-exp        = %s"t-app" ws exp *( ws type-exp )
 
-iapp-exp        = "i-app" ws exp *( ws ispace )
+iapp-exp        = %s"i-app" ws exp *( ws ispace )
 
-unbox-exp       = "unbox" ws "(" ws unbox-spec ws ")" ws exp
+unbox-exp       = %s"unbox" ws "(" ws unbox-spec ws ")" ws exp
 
 unbox-spec      = *( ispace-var ws ) identifier ws exp   ; [SC4]
                   ; binders for the unboxed ispaces and value, plus the
                   ; expression that yields the box being unboxed.
 
-let-exp         = "let" ws "(" *( ws bind ) ws ")" ws exp
+let-exp         = %s"let" ws "(" *( ws bind ) ws ")" ws exp
 
 at-app-exp      = "@" ws exp ws type-args ws ispace-args *( ws exp )
 
@@ -99,19 +99,19 @@ atom-body       = lambda
                 / ispace-lambda
                 / box-expr
 
-lambda          = ( "fn" / %x03BB ) ws            ; fn or <lambda>
+lambda          = ( %s"fn" / %x03BB ) ws            ; fn or <lambda>
                   "(" *( ws pat ) ws ")" ws
                   exp
 
-type-lambda     = ( "t-fn" / ( "t" %x03BB ) ) ws  ; t-fn or t<lambda>
+type-lambda     = ( %s"t-fn" / ( %s"t" %x03BB ) ) ws  ; t-fn or t<lambda>
                   "(" *( ws type-var ) ws ")" ws
                   exp
 
-ispace-lambda   = ( "i-fn" / ( "i" %x03BB ) ) ws  ; i-fn or i<lambda>
+ispace-lambda   = ( %s"i-fn" / ( %s"i" %x03BB ) ) ws  ; i-fn or i<lambda>
                   "(" *( ws ispace-var ) ws ")" ws
                   exp
 
-box-expr        = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type-exp
+box-expr        = %s"box" ws "(" *( ws ispace ) ws ")" ws exp ws type-exp
 
 ; -------------------------------------------------------------------------
 ; Patterns (used in lambda parameters)
@@ -133,39 +133,39 @@ bind-body       = val-bind
                 / ispace-bind
                 / at-fun-bind
 
-val-bind        = "val" ws identifier ws exp
-                / "val" ws "(" ws val-typed-sig ws ")" ws exp
+val-bind        = %s"val" ws identifier ws exp
+                / %s"val" ws "(" ws val-typed-sig ws ")" ws exp
 
 val-typed-sig   = identifier ws colon-type
                   ; inner of typed val-bind: "(" ws val-typed-sig ws ")"
 
-fun-bind        = "fun" ws "(" ws fun-sig ws ")" ws exp
+fun-bind        = %s"fun" ws "(" ws fun-sig ws ")" ws exp
 
 fun-sig         = identifier *( ws pat ) [ ws colon-type ]
                   ; inner of fun-bind: name, parameters, optional return type
 
-tfun-bind       = "t-fun" ws "(" ws tfun-sig ws ")" ws exp
+tfun-bind       = %s"t-fun" ws "(" ws tfun-sig ws ")" ws exp
 
 tfun-sig        = identifier ws "(" *( ws type-var ) ws ")"
                   [ ws colon-type ]
                   ; inner of tfun-bind: name, type parameters, optional
                   ; return type
 
-ifun-bind       = "i-fun" ws "(" ws ifun-sig ws ")" ws exp
+ifun-bind       = %s"i-fun" ws "(" ws ifun-sig ws ")" ws exp
 
 ifun-sig        = identifier ws "(" *( ws ispace-var ) ws ")"
                   [ ws colon-type ]
                   ; inner of ifun-bind: name, ispace parameters, optional
                   ; return type
 
-type-bind       = "type" ws type-var ws type-exp
+type-bind       = %s"type" ws type-var ws type-exp
 
-ispace-bind     = "extent" ws ispace-var ws ispace
+ispace-bind     = %s"extent" ws ispace-var ws ispace
                  ; NOTE: the surface keyword "extent" comes from the
                  ; Haskell Remora parser. The paper (linked above) uses
                  ; the word "index".  Now this concept is called "ispace".
 
-at-fun-bind     = "fun" ws "(" ws at-fun-sig ws ")" ws exp
+at-fun-bind     = %s"fun" ws "(" ws at-fun-sig ws ")" ws exp
 
 at-fun-sig      = "@" ws identifier ws type-vars ws ispace-vars
                   *( ws pat ) ws colon-type
@@ -207,18 +207,18 @@ type-exp-paren  = array-type
                 / pi-type
                 / sigma-type
 
-array-type      = "A" ws type-exp ws shape
+array-type      = %s"A" ws type-exp ws shape
 
 arrow-type      = ( "->" / %x2192 ) ws       ; -> or <arrow>
                   "(" *( ws type-exp ) ws ")" ws type-exp
 
-forall-type     = ( "Forall" / %x2200 ) ws   ; Forall or <forall>
+forall-type     = ( %s"Forall" / %x2200 ) ws   ; Forall or <forall>
                   "(" *( ws type-var ) ws ")" ws type-exp
 
-pi-type         = ( "Pi" / %x03A0 ) ws        ; Pi or <Pi>
+pi-type         = ( %s"Pi" / %x03A0 ) ws        ; Pi or <Pi>
                   "(" *( ws ispace-var ) ws ")" ws type-exp
 
-sigma-type      = ( "Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
+sigma-type      = ( %s"Sigma" / %x03A3 ) ws     ; Sigma or <sigma>
                   "(" *( ws ispace-var ) ws ")" ws type-exp
 
 ; -------------------------------------------------------------------------
@@ -245,7 +245,7 @@ shape           = "@" identifier     ; shape variable
                 / "(" ws shape-paren ws ")"
                 / "[" *( ws ispace ) ws "]"   ; shape splice sugar
 
-shape-paren     = "dims" *( ws dim )             ; (dims d1 d2 ...)
+shape-paren     = %s"dims" *( ws dim )           ; (dims d1 d2 ...)
                 / "++" *( ws shape )             ; (++ s1 s2 ...)
 
 shape-lit       = "[" *( ws decimal ) ws "]"
@@ -273,23 +273,13 @@ num-val         = [ "+" / "-" ] ( float-lit / decimal )
 ; -------------------------------------------------------------------------
 ;
 ; An identifier is a sequence of non-disallowed characters whose first
-; character is also not a digit. The result must not be a keyword.
+; character is also not a digit. The result must not be a keyword
+; (see the `keyword` rule below for the full list).
 ;
 ; Disallowed characters are: whitespace and ( ) [ ] { } " , ' ` ; # | \ @
 ;
 ; The allowed ASCII ranges below are the complement of those disallowed
 ; characters within the printable ASCII range (%x21-%x7E).
-;
-; Keywords (reserved, cannot be used as identifiers):
-;   array, frame, t-app, i-app, unbox, box, dims,
-;   fn, <lambda> (code point #x3bb (GREEK SMALL LETTER LAMDA)),
-;   t-fn, t<lambda>,
-;   i-fn, i<lambda>,
-;   A, ->, <arrow> (code point #x2192 (RIGHTWARDS ARROW)),
-;   Forall, <forall> (code point #x2200 (FOR ALL)),
-;   Pi, <Pi> (code point #x3a0 (GREEK CAPITAL LETTER PI)),
-;   Sigma, <sigma> (code point #x3a3 (GREEK CAPITAL LETTER SIGMA)),
-;   let, type, extent, fun, t-fun, i-fun, val
 
 identifier      = id-start *id-continue        ; [SC2]
                   ; must not match a keyword
@@ -345,6 +335,46 @@ non-ascii       = %x80-9F
                 / %x2060-2FFF
                 / %x3001-D7FF
                 / %xE000-10FFFF
+
+; -------------------------------------------------------------------------
+; Reserved keywords (side condition [SC2])
+; -------------------------------------------------------------------------
+;
+; The `keyword` rule below enumerates the reserved words of Remora that
+; the `identifier` rule must not match (see [SC2]).  Keywords use the
+; case-sensitive %s"..." notation [RFC 7405], since Remora keywords are
+; matched case-sensitively.
+;
+; This rule is not invoked directly by the parser.  Instead the parser
+; matches each individual keyword inline at the rule that uses it
+; (e.g. "array" inside array-exp, "fn" inside lambda), and the
+; post-parsing check `check-tree-no-keyword-identifiers` rejects any
+; identifier whose text appears in the keyword list at
+; *remora-keywords-as-natlists* (defined in identifier-syntax.lisp).
+;
+; The book `check-keywords.lisp` walks the parsed grammar's `keyword`
+; rule and certifies that the sequences it lists are exactly the
+; entries of *remora-keywords-as-natlists*.  If the two ever drift
+; out of sync, that book will fail to certify.
+
+keyword         = %s"array" / %s"frame"
+                / %s"t-app" / %s"i-app"
+                / %s"unbox" / %s"box" / %s"dims"
+                / %s"fn" / %x03BB           ; fn or lambda
+                / %s"t-fn" / %s"t" %x03BB   ; t-fn or t<lambda>
+                / %s"i-fn" / %s"i" %x03BB   ; i-fn or i<lambda>
+                / %s"A"
+                / %s"->" / %x2192           ; -> or rightwards arrow
+                                            ; (%s is redundant for "->"
+                                            ; since it has no letters; kept
+                                            ; to keep the check-keywords
+                                            ; extractor simple --- it only
+                                            ; handles :sensitive char-vals)
+                / %s"Forall" / %x2200       ; Forall or for-all
+                / %s"Pi" / %x03A0           ; Pi or capital Pi
+                / %s"Sigma" / %x03A3        ; Sigma or capital Sigma
+                / %s"let" / %s"type" / %s"extent"
+                / %s"fun" / %s"t-fun" / %s"i-fun" / %s"val"
 
 ; -------------------------------------------------------------------------
 ; Lexical primitives
@@ -501,9 +531,13 @@ HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
 ;   but the language forbids their use as variable names.  This is a
 ;   context-sensitive constraint that ABNF cannot express.
 ;
-;   The full keyword list is given in the comment above the identifier
-;   rule.  The Haskell reference implementation checks this at the end
-;   of lId, failing if the accepted text is in the keyword list.
+;   The full keyword list is given by the `keyword` rule (above the
+;   lexical primitives section).  That rule is not invoked by the
+;   parser; it is cross-checked for consistency against the keyword
+;   list used by the parser (*remora-keywords-as-natlists* in
+;   identifier-syntax.lisp), by the book check-keywords.lisp.
+;   The Haskell reference implementation checks this at the end of
+;   lId, failing if the accepted text is in the keyword list.
 ;
 ; [SC3] app-exp must be last in paren-exp-body (tagged on: paren-exp-body)
 ;
