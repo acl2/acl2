@@ -355,22 +355,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dim/shape-names-of-ispace-var-list ((vars ispace-var-listp))
-  :returns (mv (dim-names string-setp) (shape-names string-setp))
-  :short "Extract the sets of dimension and shape variable names
-          from a list of ispace variables."
-  (b* (((when (endp vars)) (mv nil nil))
-       ((mv dim-vars shape-vars)
-        (dim/shape-names-of-ispace-var-list (cdr vars)))
-       (param (car vars)))
-    (ispace-var-case
-     param
-     :dim (mv (set::insert param.name dim-vars) shape-vars)
-     :shape (mv dim-vars (set::insert param.name shape-vars))))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atom/array-names-of-type-var-list ((vars type-var-listp))
   :returns (mv (atom-names string-setp) (array-names string-setp))
   :short "Extract the sets of atom and array type variable names
