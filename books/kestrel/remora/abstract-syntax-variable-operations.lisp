@@ -372,6 +372,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atom/array-names-of-type-vars ((vars type-var-setp))
+  :returns (mv (atom-names string-setp) (array-names string-setp))
+  :short "Extract the sets of atom and array type variable names
+          from a set of type variables."
+  (b* (((when (set::emptyp (type-var-set-fix vars))) (mv nil nil))
+       ((mv atom-vars array-vars)
+        (atom/array-names-of-type-vars (set::tail vars)))
+       (var (set::head vars)))
+    (type-var-case
+     var
+     :atom (mv (set::insert var.name atom-vars) array-vars)
+     :array (mv atom-vars (set::insert var.name array-vars))))
+  :prepwork ((local (in-theory (enable emptyp-of-type-var-set-fix))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define dim/shape-subst-remove-bound ((vars ispace-var-setp)
                                       (dim-subst string-dim-mapp)
                                       (shape-subst string-shape-mapp))
@@ -400,23 +417,6 @@
         (dim/shape-names-of-ispace-vars vars)))
     (mv (omap::delete* bound-dim-vars (string-dim-map-fix dim-subst))
         (omap::delete* bound-shape-vars (string-shape-map-fix shape-subst))))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atom/array-names-of-type-vars ((vars type-var-setp))
-  :returns (mv (atom-names string-setp) (array-names string-setp))
-  :short "Extract the sets of atom and array type variable names
-          from a set of type variables."
-  (b* (((when (set::emptyp (type-var-set-fix vars))) (mv nil nil))
-       ((mv atom-vars array-vars)
-        (atom/array-names-of-type-vars (set::tail vars)))
-       (var (set::head vars)))
-    (type-var-case
-     var
-     :atom (mv (set::insert var.name atom-vars) array-vars)
-     :array (mv atom-vars (set::insert var.name array-vars))))
-  :prepwork ((local (in-theory (enable emptyp-of-type-var-set-fix))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
