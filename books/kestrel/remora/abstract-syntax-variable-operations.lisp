@@ -402,6 +402,23 @@
   :prepwork ((local (in-theory (enable emptyp-of-ispace-var-set-fix))))
   :verify-guards :after-returns)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom/array-names-of-type-var-set ((vars type-var-setp))
+  :returns (mv (atom-names string-setp) (array-names string-setp))
+  :short "Extract the sets of atom and array type variable names
+          from a set of type variables."
+  (b* (((when (set::emptyp (type-var-set-fix vars))) (mv nil nil))
+       ((mv atom-vars array-vars)
+        (atom/array-names-of-type-var-set (set::tail vars)))
+       (var (set::head vars)))
+    (type-var-case
+     var
+     :atom (mv (set::insert var.name atom-vars) array-vars)
+     :array (mv atom-vars (set::insert var.name array-vars))))
+  :prepwork ((local (in-theory (enable emptyp-of-type-var-set-fix))))
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce subst-ispace-vars-no-capture-p
