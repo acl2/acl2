@@ -426,6 +426,10 @@
        but the type must be an explicit array type (not an array type variable),
        whose shape is concatenated after the frame's dimensions.")
      (xdoc::p
+      "A string is always statically valid.
+       It is syntactic sugar for a mono-dimensional array of integers,
+       where the size is the number of character literals.")
+     (xdoc::p
       "For a term application,
        first we check the function expression,
        which must have an explicit array type of a function type,
@@ -591,7 +595,9 @@
         :elem array.type
         :shape (shape-append (list (shape-dims (dim-const-list expr.dims))
                                    array.shape))))
-     :string (reserr :todo)
+     :string
+     (make-type-array :elem (type-base (base-type-int))
+                      :shape (shape-dims (list (dim-const (len expr.chars)))))
      :app
      (b* (((ok fun-arr-type) (check-expr expr.fun senv))
           ((ok fun-arr-type+shape) (type-match-array fun-arr-type))
