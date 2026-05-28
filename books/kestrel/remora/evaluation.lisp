@@ -321,4 +321,118 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define eval-int-lit ((lit int-litp))
+  :returns (val int-valuep)
+  :short "Evaluate an integer literal to an integer value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We evaluate the digits to a natural,
+     we apply the sign if present,
+     and we embed the integer into an integer value.")
+   (xdoc::p
+    "This never fails, because we assume unbounded integers."))
+  (b* (((int-lit lit))
+       (digits-val (str::dec-digit-chars-value lit.digits))
+       (signed-val (sign-option-case
+                    lit.sign?
+                    :some (sign-case
+                           lit.sign?.val
+                           :plus digits-val
+                           :minus (- digits-val))
+                    :none digits-val)))
+    (int-value signed-val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-expo ((expo expop))
+  :returns (val integerp)
+  :short "Evaluate an exponent to an integer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We evaluate the digits to a natural
+     and we apply the sign if present.")
+   (xdoc::p
+    "This is used as part of the evaluation of float literals."))
+  (b* (((expo expo))
+       (digits-val (str::dec-digit-chars-value expo.digits)))
+    (sign-option-case
+     expo.sign?
+     :some (sign-case
+            expo.sign?.val
+            :plus digits-val
+            :minus (- digits-val))
+     :none digits-val))
+  :type-prescription (integerp (eval-expo expo)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-float-lit ((lit float-litp))
+  :returns (val float-valuep)
+  :short "Evaluate a float literal to a float value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "First we calculate the significand.
+     We evaluate the digits of the whole and fractional parts to two integers.
+     If the second integer is 0, the significand is the first integer,
+     i.e. just the whole part.
+     Otherwise, we divide the fractional integer by @($10^n$),
+     where @($n$) is the number of fractional digits,
+     and we add the whole integer to that,
+     obtaining the significand.")
+   (xdoc::p
+    "Then we calculate the magnitude.
+     If there is no exponent, the magnitude is the significand.
+     Otherwise, we evaluate the exponent,
+     and we multiply the significand by @($10^e$),
+     where @($e$) is the value of the exponent.")
+   (xdoc::p
+    "Finally we apply the sign if present,
+     and we embed the rational into a float value.")
+   (xdoc::p
+    "This never fails, because our current simple model of float values
+     includes all the rationals."))
+  (b* (((float-lit lit))
+       (whole-val (str::dec-digit-chars-value lit.whole-digits))
+       (frac-int (str::dec-digit-chars-value lit.frac-digits))
+       (frac-val (if (= frac-int 0)
+                     0
+                   (/ frac-int (expt 10 (len lit.frac-digits)))))
+       (signif-val (+ whole-val frac-val))
+       (exp-val (expo-option-case
+                 lit.expo?
+                 :some (b* ((expo-val (eval-expo lit.expo?.val)))
+                         (expt 10 expo-val))
+                 :none 1))
+       (magnit-val (* signif-val exp-val))
+       (signed-val (sign-option-case
+                    lit.sign?
+                    :some (sign-case
+                           lit.sign?.val
+                           :plus magnit-val
+                           :minus (- magnit-val))
+                    :none magnit-val)))
+    (float-value-ratio signed-val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-base-lit ((lit base-litp))
+  :returns (val base-valuep)
+  :short "Evaluate a base literal to a base value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Boolean literals evaluate to themselves.")
+   (xdoc::p
+    "Integer and float literals are evaluated via separate functions."))
+  (base-lit-case
+   lit
+   :bool (base-value-bool lit.lit)
+   :int (base-value-int (eval-int-lit lit.lit))
+   :float (base-value-float (eval-float-lit lit.lit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: eval-expr & eval-atom
