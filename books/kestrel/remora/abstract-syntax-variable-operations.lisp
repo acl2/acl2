@@ -575,7 +575,10 @@
                        (expr-subst-ispace-vars-no-capture-p bind.expr
                                                             dim-subst
                                                             shape-subst)))
-          :none (and (type-subst-ispace-vars-no-capture-p bind.type
+          :none (and (var+type-list-subst-ispace-vars-no-capture-p bind.params
+                                                                   dim-subst
+                                                                   shape-subst)
+                     (type-subst-ispace-vars-no-capture-p bind.type
                                                           dim-subst
                                                           shape-subst)
                      (expr-subst-ispace-vars-no-capture-p bind.expr
