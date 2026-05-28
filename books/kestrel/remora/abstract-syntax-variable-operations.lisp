@@ -385,6 +385,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define dim/shape-names-of-ispace-var-set ((vars ispace-var-setp))
+  :returns (mv (dim-names string-setp) (shape-names string-setp))
+  :short "Extract the sets of dimension and shape variable names
+          from a set of ispace variables."
+  (b* (((when (set::emptyp (ispace-var-set-fix vars))) (mv nil nil))
+       ((mv dim-vars shape-vars)
+        (dim/shape-names-of-ispace-var-set (set::tail vars)))
+       (param (set::head vars)))
+    (ispace-var-case
+     param
+     :dim (mv (set::insert param.name dim-vars) shape-vars)
+     :shape (mv dim-vars (set::insert param.name shape-vars))))
+  :prepwork ((local (in-theory (enable emptyp-of-ispace-var-set-fix))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-reduce subst-ispace-vars-no-capture-p
   :short "Check that substituting free ispace variables in ASTs
           does not result in variable capture."
@@ -462,11 +479,11 @@
                                                    shape-subst)
               (b* (((mv bound-dim-vars bound-shape-vars)
                     (dim/shape-names-of-ispace-vars expr.ispaces))
-                   (dim-subst1 (omap::delete* bound-dim-vars
-                                              (string-dim-map-fix dim-subst)))
-                   (shape-subst1 (omap::delete* bound-shape-vars
-                                                (string-shape-map-fix
-                                                 shape-subst))))
+                   (dim-subst (omap::delete* bound-dim-vars
+                                             (string-dim-map-fix dim-subst)))
+                   (shape-subst (omap::delete* bound-shape-vars
+                                               (string-shape-map-fix
+                                                shape-subst))))
                 (and (set::emptyp
                       (set::intersect
                        (set::mergesort expr.ispaces)
@@ -474,8 +491,29 @@
                         (string-dim-map-free-ispace-vars dim-subst)
                         (string-shape-map-free-ispace-vars shape-subst))))
                      (expr-subst-ispace-vars-no-capture-p expr.body
-                                                          dim-subst1
-                                                          shape-subst1)))))
+                                                          dim-subst
+                                                          shape-subst)))))
+   (expr :let
+         (and (bind-list-subst-ispace-vars-no-capture-p expr.binds
+                                                        dim-subst
+                                                        shape-subst)
+              (b* ((bound-ispace-vars (bind-list-bound-ispace-vars expr.binds))
+                   ((mv bound-dim-vars bound-shape-vars)
+                    (dim/shape-names-of-ispace-var-set bound-ispace-vars))
+                   (dim-subst (omap::delete* bound-dim-vars
+                                             (string-dim-map-fix dim-subst)))
+                   (shape-subst (omap::delete* bound-shape-vars
+                                               (string-shape-map-fix
+                                                shape-subst))))
+                (and (set::emptyp
+                      (set::intersect
+                       bound-ispace-vars
+                       (set::union
+                        (string-dim-map-free-ispace-vars dim-subst)
+                        (string-shape-map-free-ispace-vars shape-subst))))
+                     (expr-subst-ispace-vars-no-capture-p expr.body
+                                                          dim-subst
+                                                          shape-subst)))))
    (atom :ilambda
          (b* (((mv bound-dim-vars bound-shape-vars)
                (dim/shape-names-of-ispace-vars atom.params))
@@ -527,6 +565,10 @@
                          (set::union
                           (string-dim-map-free-ispace-vars dim-subst)
                           (string-shape-map-free-ispace-vars shape-subst))))
+                       (var+type-list-subst-ispace-vars-no-capture-p
+                        bind.params
+                        dim-subst
+                        shape-subst)
                        (type-subst-ispace-vars-no-capture-p bind.type
                                                             dim-subst
                                                             shape-subst)
