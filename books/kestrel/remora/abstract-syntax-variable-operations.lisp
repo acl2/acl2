@@ -419,6 +419,38 @@
         (omap::delete* bound-shape-vars (string-shape-map-fix shape-subst))))
   :verify-guards :after-returns)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom/array-subst-remove-bound ((vars type-var-setp)
+                                       (atom-subst string-type-mapp)
+                                       (array-subst string-type-mapp))
+  :returns (mv (new-atom-subst string-type-mapp)
+               (new-array-subst string-type-mapp))
+  :short "Remove a set of bound type variables from
+          an atom-kind and an array-kind type substitution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When a substitution of type variables descends under a construct
+     that binds the type variables in @('vars'),
+     those bound variables must not be substituted under the binder.
+     Accordingly, we remove them from the domains of the substitution maps:
+     the atom-kind type variables in @('vars')
+     are removed from the atom-kind type substitution,
+     and the array-kind type variables in @('vars')
+     are removed from the array-kind type substitution.
+     We use @(tsee atom/array-names-of-type-vars) to split @('vars')
+     into its atom-kind and array-kind type variable names.")
+   (xdoc::p
+    "This is shared by the operations that
+     substitute type variables in ASTs and that
+     check the absence of variable capture by such substitutions."))
+  (b* (((mv bound-atom-vars bound-array-vars)
+        (atom/array-names-of-type-vars vars)))
+    (mv (omap::delete* bound-atom-vars (string-type-map-fix atom-subst))
+        (omap::delete* bound-array-vars (string-type-map-fix array-subst))))
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce subst-ispace-vars-no-capture-p
@@ -621,12 +653,10 @@
   :combine and
   :override
   ((type :forall
-         (b* (((mv bound-atom-vars bound-array-vars)
-               (atom/array-names-of-type-vars (set::mergesort type.params)))
-              (atom-subst (omap::delete* bound-atom-vars
-                                         (string-type-map-fix atom-subst)))
-              (array-subst (omap::delete* bound-array-vars
-                                          (string-type-map-fix array-subst))))
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::mergesort type.params)
+                                              atom-subst
+                                              array-subst)))
            (and (set::emptyp
                  (set::intersect
                   (set::mergesort type.params)
@@ -735,14 +765,10 @@
                        (cdr var+type)
                      (type-var (type-var-array type.var.name))))))
    (type :forall
-         (b* (((mv bound-atom-vars bound-array-vars)
-               (atom/array-names-of-type-vars (set::mergesort type.params)))
-              (atom-subst
-               (omap::delete* bound-atom-vars
-                              (string-type-map-fix atom-subst)))
-              (array-subst
-               (omap::delete* bound-array-vars
-                              (string-type-map-fix array-subst))))
+         (b* (((mv atom-subst array-subst)
+               (atom/array-subst-remove-bound (set::mergesort type.params)
+                                              atom-subst
+                                              array-subst)))
            (make-type-forall
             :params type.params
             :body (type-subst-type-vars type.body
