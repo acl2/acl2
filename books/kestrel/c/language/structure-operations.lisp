@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -213,6 +213,14 @@
     (implies (not (errorp new-struct))
              (equal (value-kind new-struct)
                     :struct)))
+
+  (defruled type-of-value-of-value-struct-write
+    (b* ((new-struct (value-struct-write name val struct)))
+      (implies (and (value-case struct :struct)
+                    (not (errorp new-struct)))
+               (equal (type-of-value new-struct)
+                      (type-of-value struct))))
+    :enable type-of-value)
 
   (defruled valuep-of-value-struct-write
     (b* ((old (value-struct-read name struct))

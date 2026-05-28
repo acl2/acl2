@@ -34,8 +34,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: needs grammar rule for keywords
-
 (define-sk cst-identifier-like-keyword-p ((cst-ident abnf::treep))
   :guard (cst-matchp cst-ident "identifier")
   :returns (yes/no booleanp)

@@ -13,6 +13,7 @@
 (include-book "abstract-syntax-trees")
 (include-book "positions")
 (include-book "spans")
+(include-book "unicode-characters")
 
 (include-book "../language/keywords")
 
@@ -172,7 +173,12 @@
 
 (fty::defprod char+position
   :short "Fixtype of pairs each consisting of a character and a position."
-  ((char nat)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The character is a Unicode character, i.e. a Unicode scalar value;
+     see @(tsee uchar)."))
+  ((char uchar)
    (position position))
   :pred char+position-p
   :layout :fulltree)

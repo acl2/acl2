@@ -329,7 +329,7 @@
     (:sub-register-shifted-register   (cond 4) 0 0 0 0 0 1 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
     ;; "sub SP minus immediate" and "sub SP minus register" seem to be just special cases of the above
 
-;;;    (:svc (cond 4) 1 1 1 1 (imm24 24)) ; supervisor call
+    (:svc (cond 4) 1 1 1 1 (imm24 24)) ; supervisor call
 
     (:swp/swpb (cond 4) 0 0 0 1 0 b 0 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 0 1 (rt2 4))
 

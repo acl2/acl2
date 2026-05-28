@@ -14,8 +14,7 @@
 
 (include-book "std/util/error-value-tuples" :dir :system)
 
-(local (include-book "arithmetic/top" :dir :system))
-(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "kestrel/bv/logand" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -70,7 +69,13 @@
 
 (define read-char ((parstate parstatep))
   :returns (mv erp
-               (char? nat-optionp)
+               (char? uchar-optionp
+                      :hints (("Goal"
+                               :in-theory
+                               (e/d (uchar-optionp)
+                                    (acl2::commutativity-of-logand
+                                     acl2::commutativity-2-of-+
+                                     commutativity-of-+)))))
                (pos positionp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Read a character."
@@ -182,7 +187,12 @@
      but we return an error if the character
      is between @('U+202A') and @('U+202E')
      or between @('U+2066') and @('U+2069');
-     see the @('safe-nonascii') rule in our ABNF grammar.")
+     see the @('safe-nonascii') rule in our ABNF grammar.
+     We also return an error if the character is a surrogate,
+     i.e. from @('U+D800') to @('U+DFFF');
+     note that this cannot happen
+     in the first case above and in the third case below,
+     because of their ranges and other checks.")
    (xdoc::p
     "<b>Third case</b>:
      If the first byte has the form @('11110xyy'),
@@ -418,7 +428,9 @@
              ((when (or (and (<= #x202a code)
                              (<= code #x202e))
                         (and (<= #x2066 code)
-                             (<= code #x2069))))
+                             (<= code #x2069))
+                        (and (<= #xd800 code)
+                             (<= code #xdfff))))
               (reterr-msg :where parstate.position
                           :expected "a Unicode character with code ~
                                      in the range 9-13 or 32-126 ~
@@ -562,13 +574,58 @@
     (reterr-msg :where parstate.position
                 :expected "a byte in the range 9-13 or 32-126 or 192-223"
                 :found (msg "the byte ~x0" byte)))
-  :guard-hints (("Goal" :in-theory (enable len fix natp)))
-  :prepwork ((local (in-theory (enable acl2-numberp-when-bytep
-                                       acl2-numberp-when-natp
-                                       rationalp-when-bytep
-                                       rationalp-when-natp
-                                       integerp-when-natp
-                                       natp-when-bytep))))
+  :guard-hints (("Goal" :in-theory (e/d (len fix natp)
+                                        (acl2::commutativity-of-logand
+                                         acl2::commutativity-2-of-+
+                                         commutativity-of-+))))
+  :prepwork
+
+  ((local (in-theory (enable rationalp-when-bytep
+                             integerp-when-natp
+                             natp-when-bytep)))
+
+   ;; Each decoded UTF-8 code is a Unicode character.
+   ;; The bytewise LOGANDs bound the extracted bits
+   ;; regardless of the bytes' values,
+   ;; so these lemmas need no hypotheses on the bytes;
+   ;; the only conditions are
+   ;; the explicit range and surrogate exclusions
+   ;; that READ-CHAR checks before returning the code.
+
+   (defrulel returns-lemma1 ; ASCII
+     (implies (and (natp byte)
+                   (or (= byte 9) ; HT
+                       (= byte 11) ; VT
+                       (= byte 12) ; FF
+                       (and (<= 32 byte) (<= byte 126))))
+              (ucharp byte))
+     :enable ucharp)
+
+   (defrulel returns-lemma2 ; 2-byte UTF-8
+     (ucharp (+ (ash (logand byte #b00011111) 6)
+                (logand byte2 #b00111111)))
+     :enable ucharp
+     :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+   (defrulel returns-lemma3 ; 3-byte UTF-8
+     (b* ((code (+ (ash (logand byte #b00001111) 12)
+                   (ash (logand byte2 #b00111111) 6)
+                   (logand byte3 #b00111111))))
+       (implies (not (and (<= #xd800 code)
+                          (<= code #xdfff)))
+                (ucharp code)))
+     :enable ucharp
+     :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+   (defrulel returns-lemma4 ; 4-byte UTF-8
+     (b* ((code (+ (ash (logand byte #b00000111) 18)
+                   (ash (logand byte2 #b00111111) 12)
+                   (ash (logand byte3 #b00111111) 6)
+                   (logand byte4 #b00111111))))
+       (implies (not (or (< code #x10000)
+                         (> code #x10ffff)))
+                (ucharp code)))
+     :enable ucharp))
 
   ///
 
@@ -589,7 +646,8 @@
   (defret read-char.char?-type-prescription
     (or (natp char?)
         (equal char? nil))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable natp-when-ucharp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

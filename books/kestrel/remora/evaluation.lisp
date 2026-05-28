@@ -26,7 +26,9 @@
                           acl2::nat-listp-when-result-not-error
                           acl2::nat-list-listp-when-result-not-error
                           ispace-valuep-when-result-not-error
-                          ispace-value-listp-when-result-not-error)))
+                          ispace-value-listp-when-result-not-error
+                          type-valuep-when-result-not-error
+                          type-value-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,7 +157,7 @@
      (xdoc::p
       "For a shape consisting of a list of dimensions,
        we evaluate the dimensions,
-       we ensure that are non-negative,
+       we ensure that they are non-negative,
        and we return their list.")
      (xdoc::p
       "For a concatenation,
@@ -242,4 +244,195 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: continue
+(defines eval-types
+  :short "Evaluate types and lists of types."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-type ((type typep) (denv denvp))
+    :returns (tval type-value-resultp)
+    :parents (evaluation eval-types)
+    :short "Evaluate a type to a type value."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A variable is looked up in the environment.")
+     (xdoc::p
+      "A base type evaluates to itself.")
+     (xdoc::p
+      "For an array type,
+       we evaluate the element type and the shape,
+       and put the results together into an array type value.")
+     (xdoc::p
+      "A bracket type is treated similarly to an array type,
+       but instead of a shape we have a list of shapes,
+       and we concatenate all the naturals.")
+     (xdoc::p
+      "For a function type, we evaluate input and output types,
+       and put the resulting type values together into a function type value.")
+     (xdoc::p
+      "Universal, product, and sum types evaluate to themselves.
+       They are treated like lambda abstractions."))
+    (type-case
+     type
+     :var (b* ((var+val (omap::assoc type.var (denv->type-vars denv)))
+               ((unless var+val) (reserr nil)))
+            (cdr var+val))
+     :base (type-value-base type.type)
+     :array (b* (((ok elem-tval) (eval-type type.elem denv))
+                 ((ok nats) (eval-shape type.shape denv)))
+              (make-type-value-array :elem elem-tval :shape nats))
+     :bracket (b* (((ok elem-tval) (eval-type type.elem denv))
+                   ((ok natss) (eval-shape-list type.shapes denv))
+                   (nats (nat-append-all natss)))
+                (make-type-value-array :elem elem-tval :shape nats))
+     :fun (b* (((ok in-tvals) (eval-type-list type.in denv))
+               ((ok out-tval) (eval-type type.out denv)))
+            (make-type-value-fun :in in-tvals :out out-tval))
+     :forall (make-type-value-forall :params type.params :body type.body)
+     :pi (make-type-value-pi :params type.params :body type.body)
+     :sigma (make-type-value-sigma :params type.params :body type.body))
+    :measure (type-count type))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define eval-type-list ((types type-listp) (denv denvp))
+    :returns (tvals type-value-list-resultp)
+    :parents (evaluation eval-types)
+    :short "Evaluate a list of types to a list of type values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We evaluate each type in turn
+       and return the list of results in the same order."))
+    (b* (((when (endp types)) nil)
+         ((ok tval) (eval-type (car types) denv))
+         ((ok tvals) (eval-type-list (cdr types) denv)))
+      (cons tval tvals))
+    :measure (type-list-count types))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual eval-types))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-int-lit ((lit int-litp))
+  :returns (val int-valuep)
+  :short "Evaluate an integer literal to an integer value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We evaluate the digits to a natural,
+     we apply the sign if present,
+     and we embed the integer into an integer value.")
+   (xdoc::p
+    "This never fails, because we assume unbounded integers."))
+  (b* (((int-lit lit))
+       (digits-val (str::dec-digit-chars-value lit.digits))
+       (signed-val (sign-option-case
+                    lit.sign?
+                    :some (sign-case
+                           lit.sign?.val
+                           :plus digits-val
+                           :minus (- digits-val))
+                    :none digits-val)))
+    (int-value signed-val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-expo ((expo expop))
+  :returns (val integerp)
+  :short "Evaluate an exponent to an integer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We evaluate the digits to a natural
+     and we apply the sign if present.")
+   (xdoc::p
+    "This is used as part of the evaluation of float literals."))
+  (b* (((expo expo))
+       (digits-val (str::dec-digit-chars-value expo.digits)))
+    (sign-option-case
+     expo.sign?
+     :some (sign-case
+            expo.sign?.val
+            :plus digits-val
+            :minus (- digits-val))
+     :none digits-val))
+  :type-prescription (integerp (eval-expo expo)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-float-lit ((lit float-litp))
+  :returns (val float-valuep)
+  :short "Evaluate a float literal to a float value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "First we calculate the significand.
+     We evaluate the digits of the whole and fractional parts to two integers.
+     If the second integer is 0, the significand is the first integer,
+     i.e. just the whole part.
+     Otherwise, we divide the fractional integer by @($10^n$),
+     where @($n$) is the number of fractional digits,
+     and we add the whole integer to that,
+     obtaining the significand.")
+   (xdoc::p
+    "Then we calculate the magnitude.
+     If there is no exponent, the magnitude is the significand.
+     Otherwise, we evaluate the exponent,
+     and we multiply the significand by @($10^e$),
+     where @($e$) is the value of the exponent.")
+   (xdoc::p
+    "Finally we apply the sign if present,
+     and we embed the rational into a float value.")
+   (xdoc::p
+    "This never fails, because our current simple model of float values
+     includes all the rationals."))
+  (b* (((float-lit lit))
+       (whole-val (str::dec-digit-chars-value lit.whole-digits))
+       (frac-int (str::dec-digit-chars-value lit.frac-digits))
+       (frac-val (if (= frac-int 0)
+                     0
+                   (/ frac-int (expt 10 (len lit.frac-digits)))))
+       (signif-val (+ whole-val frac-val))
+       (exp-val (expo-option-case
+                 lit.expo?
+                 :some (b* ((expo-val (eval-expo lit.expo?.val)))
+                         (expt 10 expo-val))
+                 :none 1))
+       (magnit-val (* signif-val exp-val))
+       (signed-val (sign-option-case
+                    lit.sign?
+                    :some (sign-case
+                           lit.sign?.val
+                           :plus magnit-val
+                           :minus (- magnit-val))
+                    :none magnit-val)))
+    (float-value-ratio signed-val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-base-lit ((lit base-litp))
+  :returns (val base-valuep)
+  :short "Evaluate a base literal to a base value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Boolean literals evaluate to themselves.")
+   (xdoc::p
+    "Integer and float literals are evaluated via separate functions."))
+  (base-lit-case
+   lit
+   :bool (base-value-bool lit.lit)
+   :int (base-value-int (eval-int-lit lit.lit))
+   :float (base-value-float (eval-float-lit lit.lit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: eval-expr & eval-atom

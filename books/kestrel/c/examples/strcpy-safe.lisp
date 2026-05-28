@@ -481,7 +481,7 @@
     (equal src-array-vals (c::value-array->elements src-array))
     (src-precond src-array-vals)
 
-    ;; The src parameter is a pointer value
+    ;; The dst parameter is a pointer value
     ;; whose referenced type is unsigned char.
     (c::valuep dst)
     (c::value-case dst :pointer)

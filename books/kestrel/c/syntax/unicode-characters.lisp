@@ -71,6 +71,18 @@
              (natp x))
     :rule-classes (:rewrite :compound-recognizer))
 
+  (defruled integerp-when-ucharp
+    (implies (ucharp x)
+             (integerp x)))
+
+  (defruled rationalp-when-ucharp
+    (implies (ucharp x)
+             (rationalp x)))
+
+  (defruled acl2-numberp-when-ucharp
+    (implies (ucharp x)
+             (acl2-numberp x)))
+
   (defruled ucharp-lower-bound
     (implies (ucharp x)
              (>= x 0))
@@ -80,6 +92,13 @@
     (implies (ucharp x)
              (<= x #x10ffff))
     :rule-classes :forward-chaining))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled ucharp-of-char-code
+  :short "The code of an ACL2 character is a Unicode character."
+  (ucharp (char-code char))
+  :enable ucharp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,4 +140,10 @@
                   (ucharp default))
              (uchar-listp (resize-list chars length default)))
     :induct t
-    :enable resize-list))
+    :enable resize-list)
+
+  (defruled nat-listp-when-uchar-listp
+    (implies (uchar-listp x)
+             (nat-listp x))
+    :induct t
+    :enable (uchar-listp nat-listp natp-when-ucharp)))

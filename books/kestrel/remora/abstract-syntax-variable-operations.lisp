@@ -171,6 +171,7 @@
           var+type
           var+type-list
           exprs/atoms/binds
+          prog
           string-dim-map
           string-shape-map)
   :result ispace-var-setp
@@ -231,6 +232,7 @@
           var+type
           var+type-list
           exprs/atoms/binds
+          prog
           string-type-map)
   :result type-var-setp
   :default nil
@@ -281,7 +283,8 @@
           type-list-option
           var+type
           var+type-list
-          exprs/atoms/binds)
+          exprs/atoms/binds
+          prog)
   :result ispace-var-setp
   :default nil
   :combine set::union
@@ -324,7 +327,8 @@
           type-list-option
           var+type
           var+type-list
-          exprs/atoms/binds)
+          exprs/atoms/binds
+          prog)
   :result type-var-setp
   :default nil
   :combine set::union
@@ -406,7 +410,14 @@
   :types (shapes
           ispace
           ispace-list
-          types)
+          ispace-list-option
+          types
+          type-option
+          type-list-option
+          var+type
+          var+type-list
+          exprs/atoms/binds
+          prog)
   :extra-args ((dim-subst string-dim-mapp)
                (shape-subst string-shape-mapp))
   :result booleanp
@@ -444,7 +455,90 @@
                    (string-shape-map-free-ispace-vars shape-subst))))
                 (type-subst-ispace-vars-no-capture-p type.body
                                                      dim-subst
-                                                     shape-subst)))))
+                                                     shape-subst))))
+   (expr :unbox
+         (and (expr-subst-ispace-vars-no-capture-p expr.target
+                                                   dim-subst
+                                                   shape-subst)
+              (b* (((mv bound-dim-vars bound-shape-vars)
+                    (dim/shape-names-of-ispace-vars expr.ispaces))
+                   (dim-subst1 (omap::delete* bound-dim-vars
+                                              (string-dim-map-fix dim-subst)))
+                   (shape-subst1 (omap::delete* bound-shape-vars
+                                                (string-shape-map-fix
+                                                 shape-subst))))
+                (and (set::emptyp
+                      (set::intersect
+                       (set::mergesort expr.ispaces)
+                       (set::union
+                        (string-dim-map-free-ispace-vars dim-subst)
+                        (string-shape-map-free-ispace-vars shape-subst))))
+                     (expr-subst-ispace-vars-no-capture-p expr.body
+                                                          dim-subst1
+                                                          shape-subst1)))))
+   (atom :ilambda
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars atom.params))
+              (dim-subst (omap::delete* bound-dim-vars
+                                        (string-dim-map-fix dim-subst)))
+              (shape-subst (omap::delete* bound-shape-vars
+                                          (string-shape-map-fix shape-subst))))
+           (and (set::emptyp
+                 (set::intersect
+                  (set::mergesort atom.params)
+                  (set::union
+                   (string-dim-map-free-ispace-vars dim-subst)
+                   (string-shape-map-free-ispace-vars shape-subst))))
+                (expr-subst-ispace-vars-no-capture-p atom.body
+                                                     dim-subst
+                                                     shape-subst))))
+   (bind :ifun
+         (b* (((mv bound-dim-vars bound-shape-vars)
+               (dim/shape-names-of-ispace-vars bind.params))
+              (dim-subst (omap::delete* bound-dim-vars
+                                        (string-dim-map-fix dim-subst)))
+              (shape-subst (omap::delete* bound-shape-vars
+                                          (string-shape-map-fix shape-subst))))
+           (and (set::emptyp
+                 (set::intersect
+                  (set::mergesort bind.params)
+                  (set::union
+                   (string-dim-map-free-ispace-vars dim-subst)
+                   (string-shape-map-free-ispace-vars shape-subst))))
+                (type-option-subst-ispace-vars-no-capture-p bind.type?
+                                                            dim-subst
+                                                            shape-subst)
+                (expr-subst-ispace-vars-no-capture-p bind.expr
+                                                     dim-subst
+                                                     shape-subst))))
+   (bind :cfun
+         (ispace-var-list-option-case
+          bind.iparams?
+          :some (b* (((mv bound-dim-vars bound-shape-vars)
+                      (dim/shape-names-of-ispace-vars bind.iparams?.val))
+                     (dim-subst (omap::delete* bound-dim-vars
+                                               (string-dim-map-fix dim-subst)))
+                     (shape-subst (omap::delete* bound-shape-vars
+                                                 (string-shape-map-fix
+                                                  shape-subst))))
+                  (and (set::emptyp
+                        (set::intersect
+                         (set::mergesort bind.iparams?.val)
+                         (set::union
+                          (string-dim-map-free-ispace-vars dim-subst)
+                          (string-shape-map-free-ispace-vars shape-subst))))
+                       (type-subst-ispace-vars-no-capture-p bind.type
+                                                            dim-subst
+                                                            shape-subst)
+                       (expr-subst-ispace-vars-no-capture-p bind.expr
+                                                            dim-subst
+                                                            shape-subst)))
+          :none (and (type-subst-ispace-vars-no-capture-p bind.type
+                                                          dim-subst
+                                                          shape-subst)
+                     (expr-subst-ispace-vars-no-capture-p bind.expr
+                                                          dim-subst
+                                                          shape-subst)))))
   :name ast-subst-ispace-vars-no-capture-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
