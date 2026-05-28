@@ -233,7 +233,7 @@
     ;; todo: qsub8
     ;; todo: rbit
     ;; todo: rev
-    ;; todo: rev16
+    (:rev16 (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 1 0 1 1 (rm 4))
     ;; todo: revsh
     ;; todo: ror
 

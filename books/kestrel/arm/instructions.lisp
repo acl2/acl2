@@ -2702,6 +2702,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst :rev16
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (result (acl2::bvcat2 8 (slice 23 16 (reg m arm))
+                         8 (slice 31 24 (reg m arm))
+                         8 (slice 7 0 (reg m arm))
+                         8 (slice 15 8 (reg m arm))))
+         (arm (set-reg d result arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst :rrx
     (b* (;; EncodingSpecificOperations:
          ((when (and (== rd #b1111)
