@@ -38,6 +38,7 @@
                   #b11100000000100110000010010010101)
            (not (error arm)) ; no error yet
            (== (ArchVersion arm) 5)
+           (equal *InstrSet_ARM* (isetstate arm))
            (armp arm))
           (equal (step arm)
                  (advance-pc (set-apsr.z (bool-to-bit (equal 0 (bvmult 32 (reg 5 arm) (reg 4 arm))))
@@ -59,6 +60,7 @@
                   #b11100000000100100000010010010011)
            (not (error arm)) ; no error yet
            (== (ArchVersion arm) 5)
+           (equal *InstrSet_ARM* (isetstate arm))
            (armp arm))
           (equal (run 2 arm)
                  ;; state after execution:
