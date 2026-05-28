@@ -355,12 +355,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dim/shape-names-of-ispace-vars ((vars ispace-var-listp))
+(define dim/shape-names-of-ispace-var-list ((vars ispace-var-listp))
   :returns (mv (dim-names string-setp) (shape-names string-setp))
   :short "Extract the sets of dimension and shape variable names
           from a list of ispace variables."
   (b* (((when (endp vars)) (mv nil nil))
-       ((mv dim-vars shape-vars) (dim/shape-names-of-ispace-vars (cdr vars)))
+       ((mv dim-vars shape-vars)
+        (dim/shape-names-of-ispace-var-list (cdr vars)))
        (param (car vars)))
     (ispace-var-case
      param
@@ -370,12 +371,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atom/array-names-of-type-vars ((vars type-var-listp))
+(define atom/array-names-of-type-var-list ((vars type-var-listp))
   :returns (mv (atom-names string-setp) (array-names string-setp))
   :short "Extract the sets of atom and array type variable names
           from a list of type variables."
   (b* (((when (endp vars)) (mv nil nil))
-       ((mv atom-vars array-vars) (atom/array-names-of-type-vars (cdr vars)))
+       ((mv atom-vars array-vars)
+        (atom/array-names-of-type-var-list (cdr vars)))
        (var (car vars)))
     (type-var-case
      var
@@ -443,7 +445,7 @@
   :override
   ((type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-vars type.params))
+               (dim/shape-names-of-ispace-var-list type.params))
               (dim-subst (omap::delete* bound-dim-vars
                                         (string-dim-map-fix dim-subst)))
               (shape-subst (omap::delete* bound-shape-vars
@@ -459,7 +461,7 @@
                                                      shape-subst))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-vars type.params))
+               (dim/shape-names-of-ispace-var-list type.params))
               (dim-subst (omap::delete* bound-dim-vars
                                         (string-dim-map-fix dim-subst)))
               (shape-subst (omap::delete* bound-shape-vars
@@ -478,7 +480,7 @@
                                                    dim-subst
                                                    shape-subst)
               (b* (((mv bound-dim-vars bound-shape-vars)
-                    (dim/shape-names-of-ispace-vars expr.ispaces))
+                    (dim/shape-names-of-ispace-var-list expr.ispaces))
                    (dim-subst (omap::delete* bound-dim-vars
                                              (string-dim-map-fix dim-subst)))
                    (shape-subst (omap::delete* bound-shape-vars
@@ -516,7 +518,7 @@
                                                           shape-subst)))))
    (atom :ilambda
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-vars atom.params))
+               (dim/shape-names-of-ispace-var-list atom.params))
               (dim-subst (omap::delete* bound-dim-vars
                                         (string-dim-map-fix dim-subst)))
               (shape-subst (omap::delete* bound-shape-vars
@@ -532,7 +534,7 @@
                                                      shape-subst))))
    (bind :ifun
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-vars bind.params))
+               (dim/shape-names-of-ispace-var-list bind.params))
               (dim-subst (omap::delete* bound-dim-vars
                                         (string-dim-map-fix dim-subst)))
               (shape-subst (omap::delete* bound-shape-vars
@@ -553,7 +555,7 @@
          (ispace-var-list-option-case
           bind.iparams?
           :some (b* (((mv bound-dim-vars bound-shape-vars)
-                      (dim/shape-names-of-ispace-vars bind.iparams?.val))
+                      (dim/shape-names-of-ispace-var-list bind.iparams?.val))
                      (dim-subst (omap::delete* bound-dim-vars
                                                (string-dim-map-fix dim-subst)))
                      (shape-subst (omap::delete* bound-shape-vars
@@ -619,7 +621,7 @@
   :override
   ((type :forall
          (b* (((mv bound-atom-vars bound-array-vars)
-               (atom/array-names-of-type-vars type.params))
+               (atom/array-names-of-type-var-list type.params))
               (atom-subst (omap::delete* bound-atom-vars
                                          (string-type-map-fix atom-subst)))
               (array-subst (omap::delete* bound-array-vars
@@ -682,7 +684,7 @@
    (shape :dims (shape-dims (dim-list-subst-dim-vars shape.dims dim-subst)))
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
    (type :pi (b* (((mv bound-dim-vars bound-shape-vars)
-                   (dim/shape-names-of-ispace-vars type.params))
+                   (dim/shape-names-of-ispace-var-list type.params))
                   (dim-subst
                    (omap::delete* bound-dim-vars
                                   (string-dim-map-fix dim-subst)))
@@ -695,7 +697,7 @@
                                               dim-subst
                                               shape-subst))))
    (type :sigma (b* (((mv bound-dim-vars bound-shape-vars)
-                      (dim/shape-names-of-ispace-vars type.params))
+                      (dim/shape-names-of-ispace-var-list type.params))
                      (dim-subst
                       (omap::delete* bound-dim-vars
                                      (string-dim-map-fix dim-subst)))
@@ -739,7 +741,7 @@
                      (type-var (type-var-array type.var.name))))))
    (type :forall
          (b* (((mv bound-atom-vars bound-array-vars)
-               (atom/array-names-of-type-vars type.params))
+               (atom/array-names-of-type-var-list type.params))
               (atom-subst
                (omap::delete* bound-atom-vars
                               (string-type-map-fix atom-subst)))
@@ -788,7 +790,7 @@
   :override
   ((type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-vars type.params))
+               (dim/shape-names-of-ispace-var-list type.params))
               (dim-renam (omap::delete* bound-dim-vars
                                         (string-string-map-fix dim-renam)))
               (shape-renam (omap::delete* bound-shape-vars
@@ -803,7 +805,7 @@
                                                       shape-renam))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-vars type.params))
+               (dim/shape-names-of-ispace-var-list type.params))
               (dim-renam (omap::delete* bound-dim-vars
                                         (string-string-map-fix dim-renam)))
               (shape-renam (omap::delete* bound-shape-vars
@@ -850,7 +852,7 @@
   :override
   ((type :forall
          (b* (((mv bound-atom-vars bound-array-vars)
-               (atom/array-names-of-type-vars type.params))
+               (atom/array-names-of-type-var-list type.params))
               (atom-renam (omap::delete* bound-atom-vars
                                          (string-type-map-fix atom-renam)))
               (array-renam (omap::delete* bound-array-vars
@@ -913,7 +915,7 @@
    (ispace :dim (ispace-dim (dim-rename-dim-vars ispace.dim dim-renam)))
    (type :pi
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-vars type.params))
+               (dim/shape-names-of-ispace-var-list type.params))
               (dim-renam
                (omap::delete* bound-dim-vars
                               (string-string-map-fix dim-renam)))
@@ -927,7 +929,7 @@
                                            shape-renam))))
    (type :sigma
          (b* (((mv bound-dim-vars bound-shape-vars)
-               (dim/shape-names-of-ispace-vars type.params))
+               (dim/shape-names-of-ispace-var-list type.params))
               (dim-renam
                (omap::delete* bound-dim-vars
                               (string-string-map-fix dim-renam)))
@@ -991,7 +993,7 @@
                      (type-var (type-var-array type.var.name))))))
    (type :forall
          (b* (((mv bound-atom-vars bound-array-vars)
-               (atom/array-names-of-type-vars type.params))
+               (atom/array-names-of-type-var-list type.params))
               (atom-renam
                (omap::delete* bound-atom-vars
                               (string-string-map-fix atom-renam)))
