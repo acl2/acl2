@@ -43,10 +43,9 @@
     (implies (identityp x)
              (equal (values x)
                     (keys x)))
-  :enable (values keys)
-  :rule-classes (:rewrite :forward-chaining))
+  :enable (values keys))
 
-  (defrule assoc-of-identityp
+  (defrule assoc-when-identityp
       (implies (and (identityp x)
                     (assoc k x))
                (equal (assoc k x)

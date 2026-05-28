@@ -76,6 +76,41 @@
   :rule-classes :linear
   :enable size-of-update)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruledl equal-of-delete-implies-equal-of-assoc-update
+  (implies (and (mapp y)
+                (assoc k1 y)
+                (equal (cdr (assoc k1 y)) v)
+                (equal (delete k1 x)
+                       (delete k1 y)))
+           (equal (assoc k2 (update k1 v x))
+                  (assoc k2 y)))
+  :enable cons-of-key-and-cdr-assoc
+  :use (:instance assoc-of-delete
+                   (x k2)
+                   (y k1)
+                   (map y)))
+
+(defruledl equal-of-delete-implies-equal-of-update
+  (implies (and (mapp y)
+                (assoc k y)
+                (equal (cdr (assoc k y)) v)
+                (equal (delete k x)
+                       (delete k y)))
+           (equal (update k v x) y))
+  :enable (equal-of-delete-implies-equal-of-assoc-update
+           extensionality))
+
+(defruled equal-of-update-is-equal-of-delete
+  (equal (equal (update k v x) y)
+         (and (mapp y)
+              (assoc k y)
+              (equal (cdr (assoc k y)) v)
+              (equal (delete k x)
+                     (delete k y))))
+  :use equal-of-delete-implies-equal-of-update)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule idempotence-of-update*

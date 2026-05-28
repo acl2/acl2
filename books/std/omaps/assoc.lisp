@@ -83,7 +83,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule cons-of-key-and-cdr-assoc
+(defruled cons-of-key-and-cdr-assoc
   (equal (cons k (cdr (assoc k x)))
          (if (assoc k x)
              (assoc k x)

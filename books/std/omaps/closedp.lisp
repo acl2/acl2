@@ -22,7 +22,7 @@
   (xdoc::topstring-p
    "An omap is closed if it is empty or
     its set of values is a subset of its set of keys.")
-  (set::subset (values x) (keys x))
+  (subset (values x) (keys x))
   ///
 
   (defcong mequiv equal (closedp x) 1)

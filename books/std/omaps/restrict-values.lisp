@@ -28,13 +28,14 @@
    "Retains only the key-value pairs of @('x')
     whose associated value belongs to @('values').
     All other pairs are dropped.")
-  (cond ((emptyp x) nil)
-        (t (mv-let (k v)
-               (head x)
-             (if (set::in v values)
-                 (update k v
-                         (restrict-values values (tail x)))
-               (restrict-values values (tail x))))))
+  (if (emptyp x)
+      nil
+    (mv-let (k v)
+        (head x)
+      (if (set::in v values)
+          (update k v
+                  (restrict-values values (tail x)))
+        (restrict-values values (tail x)))))
   :verify-guards :after-returns
 
   ///

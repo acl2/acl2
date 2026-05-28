@@ -28,11 +28,11 @@
     Keys of @('y') with no matching entry in @('x') are dropped.")
   (if (emptyp y)
       nil
-      (mv-let (k v) (head y)
-        (let ((pair (assoc v x)))
-          (if pair
-              (update k (cdr pair) (compose x (tail y)))
-              (compose x (tail y))))))
+    (mv-let (k v) (head y)
+      (let ((pair (assoc v x)))
+        (if pair
+            (update k (cdr pair) (compose x (tail y)))
+          (compose x (tail y))))))
   :verify-guards :after-returns
 
   ///

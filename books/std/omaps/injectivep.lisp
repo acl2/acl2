@@ -43,7 +43,7 @@
                   (injectivep (tail x)))))
        :exec (equal (cardinality (keys x))
                     (cardinality (values x))))
-  :verify-guards nil
+  :verify-guards nil ;; Verified below
 
   ///
 
@@ -52,8 +52,7 @@
   (defrule injectivep-implies-injectivep-tail
       (implies (and (injectivep x)
                     (not (emptyp x)))
-               (injectivep (tail x)))
-    :rule-classes :type-prescription)
+               (injectivep (tail x))))
 
   (defrule injectivep-implies-unique-head-value
       (implies (injectivep x)

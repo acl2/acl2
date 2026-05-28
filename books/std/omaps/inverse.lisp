@@ -28,7 +28,10 @@
   (xdoc::topstring-p
    "Maps each value @('v') of @('x') back to its corresponding key @('k').
     The result is well-behaved when @('x') is injective;
-    see @(tsee injectivep).")
+    see @(tsee injectivep). For non-injective maps,
+    each value is mapped to the smallest corresponding key "
+   (xdoc::seetopic "<<" "total order on ACL2 values")
+   ".")
   (if (emptyp x)
       nil
     (mv-let (k v)
@@ -55,8 +58,7 @@
       (implies (injectivep x)
                (injectivep (inverse x)))
     :enable (injectivep
-             in-of-keys-to-assoc)
-    :rule-classes :type-prescription)
+             in-of-keys-to-assoc))
 
   (defrule not-assoc-of-inverse-when-not-in-values
       (implies (and (injectivep x)
@@ -105,9 +107,9 @@
              in-of-keys-to-assoc))
 
   (defrule inverse-inverse-when-injectivep
-      (implies (and (injectivep x)
-                    (mapp x))
-               (equal (inverse (inverse x)) x))
+      (implies (injectivep x)
+               (equal (inverse (inverse x))
+                      (mfix x)))
     :enable (assoc-of-inverse-inverse
              extensionality))
 
