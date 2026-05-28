@@ -196,7 +196,7 @@ type-exp        = atom-type-var      ; &name
 atom-type-var   = "&" identifier
 array-type-var  = "*" identifier
 
-base-type       = "Bool" / "Int" / "Float"
+base-type       = %s"Bool" / %s"Int" / %s"Float"
 
 bracket-type    = "[" ws type-exp *( ws ispace ) ws "]"
                   ; sugar for (A type shape)
@@ -385,7 +385,7 @@ decimal         = 1*DIGIT
 float-lit       = 1*DIGIT "." 1*DIGIT [ exponent ]
                 / 1*DIGIT exponent
 
-exponent        = ( "e" / "E" ) [ "+" / "-" ] 1*DIGIT
+exponent        = %i"e" [ "+" / "-" ] 1*DIGIT
 
 ; String character: any character except " and \, or an escape sequence.
 ; Modeled on Haskell's character-literal escapes as accepted by Haskell
@@ -408,26 +408,26 @@ escape-char     = char-escape
                 / num-escape
 
 ; Single-character mnemonics
-char-escape     = "a" / "b" / "f" / "n" / "r" / "t" / "v"
+char-escape     = %s"a" / %s"b" / %s"f" / %s"n" / %s"r" / %s"t" / %s"v"
                 / "\" / DQUOTE / "'"
 
 ; ASCII control character names (34 names for %x00-%x20 and %x7F).
 ; SOH must be matched before SO (longest-match); all other
 ; alternatives are prefix-free.
-ascii-escape    = "NUL" / "SOH" / "STX" / "ETX" / "EOT" / "ENQ"
-                / "ACK" / "BEL" / "BS"  / "HT"  / "LF"  / "VT"
-                / "FF"  / "CR"  / "SO"  / "SI"  / "DLE" / "DC1"
-                / "DC2" / "DC3" / "DC4" / "NAK" / "SYN" / "ETB"
-                / "CAN" / "EM"  / "SUB" / "ESC" / "FS"  / "GS"
-                / "RS"  / "US"  / "SP"  / "DEL"
+ascii-escape    = %s"NUL" / %s"SOH" / %s"STX" / %s"ETX" / %s"EOT" / %s"ENQ"
+                / %s"ACK" / %s"BEL" / %s"BS"  / %s"HT"  / %s"LF"  / %s"VT"
+                / %s"FF"  / %s"CR"  / %s"SO"  / %s"SI"  / %s"DLE" / %s"DC1"
+                / %s"DC2" / %s"DC3" / %s"DC4" / %s"NAK" / %s"SYN" / %s"ETB"
+                / %s"CAN" / %s"EM"  / %s"SUB" / %s"ESC" / %s"FS"  / %s"GS"
+                / %s"RS"  / %s"US"  / %s"SP"  / %s"DEL"
 
 ; Caret notation: \^@ through \^_ (to get %x00-%x1F)
 caret-escape    = "^" %x40-5F         ; @ A-Z [ \ ] ^ _
 
 ; Numeric character codes
 num-escape      = 1*DIGIT             ; decimal (0-1114111)
-                / "o" 1*(%x30-37)     ; octal
-                / "x" 1*HEXDIG        ; hexadecimal
+                / %i"o" 1*(%x30-37)     ; octal
+                / %i"x" 1*HEXDIG        ; hexadecimal
 
 ; Empty escape: a string-gap separator producing no character.  Used
 ; to disambiguate adjacent escape sequences.  For example "\5\&7" is
